@@ -1081,100 +1081,101 @@ async function atlasLiveResearch() {
   }
 }
 
+function atlasPriorityBadge(p) {
+  var lvl = (p||'medium').toLowerCase();
+  var cls = 'atlas-priority atlas-priority--' + ({'critical':'critical','high':'high','medium':'medium','low':'low'}[lvl]||'medium');
+  return '<span class="' + cls + '">' + esc(lvl) + '</span>';
+}
+function atlasAgentColor(agent) {
+  return {garves:'var(--agent-garves)',soren:'var(--agent-soren)',shelby:'var(--agent-shelby)',mercury:'var(--agent-mercury)',lisa:'var(--agent-mercury)',atlas:'var(--agent-atlas)',thor:'var(--agent-thor)'}[agent] || 'var(--text-secondary)';
+}
+function atlasAgentLabel(agent) {
+  return {garves:'Garves',soren:'Soren',shelby:'Shelby',mercury:'Lisa',lisa:'Lisa',atlas:'Atlas',thor:'Thor'}[agent] || agent;
+}
+function atlasKvRows(obj) {
+  var html = '';
+  var keys = Object.keys(obj);
+  for (var i = 0; i < keys.length; i++) {
+    var v = obj[keys[i]];
+    var display = (typeof v === 'object' && v !== null) ? JSON.stringify(v) : String(v);
+    html += '<div class="atlas-kv-row"><span class="kv-key">' + esc(keys[i].replace(/_/g, ' ')) + '</span><span class="kv-val">' + esc(display) + '</span></div>';
+  }
+  return html;
+}
+function atlasSection(title, color, bodyHtml) {
+  return '<div class="atlas-report-section"><div class="section-header"><span class="sh-dot" style="background:' + color + ';box-shadow:0 0 6px ' + color + ';"></span>' + esc(title) + '</div><div class="section-body">' + bodyHtml + '</div></div>';
+}
+
 async function atlasFullReport() {
   var el = document.getElementById('atlas-report');
-  el.textContent = 'Generating full report...';
+  el.innerHTML = '<div class="atlas-report-loading"><div class="spinner"></div>Generating full intelligence report...</div>';
   try {
     var resp = await fetch('/api/atlas/report', {method:'POST'});
     var data = await resp.json();
-    if (data.error) { el.textContent = 'Error: ' + data.error; return; }
-    var txt = 'FULL ATLAS REPORT\\n' + '='.repeat(50) + '\\n';
-    txt += 'Generated: ' + (data.generated_at || 'now') + '\\n\\n';
+    if (data.error) { el.innerHTML = '<div class="atlas-report-section"><div class="section-body" style="color:var(--error);">' + esc(data.error) + '</div></div>'; return; }
+    var html = '<div class="atlas-report-header">Full Intelligence Report <span style="float:right;font-size:0.7rem;font-weight:400;color:var(--text-muted);">' + esc(data.generated_at || 'now') + '</span></div>';
     if (data.cross_agent_insights && data.cross_agent_insights.length > 0) {
-      txt += 'CROSS-AGENT INSIGHTS\\n' + '-'.repeat(30) + '\\n';
+      var body = '';
       for (var i = 0; i < data.cross_agent_insights.length; i++) {
-        txt += '  * ' + data.cross_agent_insights[i] + '\\n';
+        body += '<div class="atlas-rec-item"><span class="rec-num" style="color:var(--agent-atlas);">&#x25CF;</span><span class="rec-text">' + esc(data.cross_agent_insights[i]) + '</span></div>';
       }
-      txt += '\\n';
+      html += atlasSection('Cross-Agent Insights', 'var(--agent-atlas)', body);
     }
     var agents = ['garves','soren','shelby','mercury'];
     for (var a = 0; a < agents.length; a++) {
       var name = agents[a];
       var section = data[name];
       if (!section) continue;
-      txt += name.toUpperCase() + '\\n' + '-'.repeat(30) + '\\n';
-      if (section.overview) {
-        var ov = section.overview;
-        var ovKeys = Object.keys(ov);
-        for (var j = 0; j < ovKeys.length; j++) {
-          txt += '  ' + ovKeys[j] + ': ' + ov[ovKeys[j]] + '\\n';
-        }
-      }
+      var color = atlasAgentColor(name);
+      var body = '';
+      if (section.overview) { body += atlasKvRows(section.overview); }
       if (section.recommendations && section.recommendations.length > 0) {
-        txt += '  Recommendations:\\n';
+        body += '<div style="margin-top:var(--space-3);font-family:var(--font-mono);font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:var(--space-2);">Recommendations</div>';
         for (var r = 0; r < section.recommendations.length; r++) {
           var rec = section.recommendations[r];
-          if (typeof rec === 'string') { txt += '    - ' + rec + '\\n'; }
-          else { txt += '    - [' + (rec.priority||'') + '] ' + (rec.recommendation || rec.description || JSON.stringify(rec)) + '\\n'; }
+          var recText = (typeof rec === 'string') ? rec : (rec.recommendation || rec.description || JSON.stringify(rec));
+          var recPri = (typeof rec === 'object' && rec.priority) ? rec.priority : null;
+          body += '<div class="atlas-rec-item">' + (recPri ? atlasPriorityBadge(recPri) + ' ' : '') + '<span class="rec-text">' + esc(recText) + '</span></div>';
         }
       }
-      txt += '\\n';
+      html += atlasSection(atlasAgentLabel(name), color, body);
     }
     if (data.action_items && data.action_items.length > 0) {
-      txt += 'ACTION ITEMS (' + data.action_items.length + ')\\n' + '-'.repeat(30) + '\\n';
+      var body = '';
       for (var k = 0; k < data.action_items.length; k++) {
         var item = data.action_items[k];
-        txt += '  ' + (k+1) + '. [' + (item.priority||'?').toUpperCase() + '] [' + (item.agent||'?').toUpperCase() + '] ' + (item.recommendation || item.description || '') + '\\n';
+        var agentTag = item.agent ? '<span class="atlas-agent-tag" style="color:' + atlasAgentColor(item.agent) + ';border-color:' + atlasAgentColor(item.agent) + ';">' + esc(atlasAgentLabel(item.agent)) + '</span>' : '';
+        body += '<div class="atlas-rec-item"><span class="rec-num">' + (k+1) + '</span>' + atlasPriorityBadge(item.priority) + '<span class="rec-text">' + esc(item.recommendation || item.description || '') + agentTag + '</span></div>';
       }
+      html += atlasSection('Action Items (' + data.action_items.length + ')', 'var(--warning)', body);
     }
-    el.textContent = txt;
-  } catch (e) { el.textContent = 'Error: ' + e.message; }
+    el.innerHTML = html;
+  } catch (e) { el.innerHTML = '<div class="atlas-report-section"><div class="section-body" style="color:var(--error);">Error: ' + esc(e.message) + '</div></div>'; }
 }
 
 async function atlasAnalyze(agent) {
   var el = document.getElementById('atlas-report');
-  el.textContent = 'Analyzing ' + agent + '...';
+  var label = atlasAgentLabel(agent);
+  var color = atlasAgentColor(agent);
+  el.innerHTML = '<div class="atlas-report-loading"><div class="spinner"></div>Analyzing ' + esc(label) + '...</div>';
   try {
     var resp = await fetch('/api/atlas/' + agent);
     var data = await resp.json();
-    if (data.error) { el.textContent = 'Error: ' + data.error; return; }
-    var txt = agent.toUpperCase() + ' DEEP ANALYSIS\\n' + '='.repeat(50) + '\\n\\n';
+    if (data.error) { el.innerHTML = '<div class="atlas-report-section"><div class="section-body" style="color:var(--error);">' + esc(data.error) + '</div></div>'; return; }
+    var html = '<div class="atlas-report-header" style="background:rgba(255,255,255,0.03);border-left-color:' + color + ';">' + esc(label) + ' Deep Analysis</div>';
     if (data.overview) {
-      txt += 'OVERVIEW\\n' + '-'.repeat(30) + '\\n';
-      var ovKeys = Object.keys(data.overview);
-      for (var i = 0; i < ovKeys.length; i++) {
-        txt += '  ' + ovKeys[i].replace(/_/g, ' ') + ': ' + data.overview[ovKeys[i]] + '\\n';
-      }
-      txt += '\\n';
+      html += atlasSection('Overview', color, atlasKvRows(data.overview));
     }
     if (data.edge_analysis) {
-      txt += 'EDGE ANALYSIS\\n' + '-'.repeat(30) + '\\n';
-      var ea = data.edge_analysis;
-      var eaKeys = Object.keys(ea);
-      for (var j = 0; j < eaKeys.length; j++) {
-        txt += '  ' + eaKeys[j].replace(/_/g, ' ') + ': ' + ea[eaKeys[j]] + '\\n';
-      }
-      txt += '\\n';
+      html += atlasSection('Edge Analysis', color, atlasKvRows(data.edge_analysis));
     }
     if (data.breakdowns) {
-      txt += 'BREAKDOWNS\\n' + '-'.repeat(30) + '\\n';
       var bKeys = Object.keys(data.breakdowns);
       for (var b = 0; b < bKeys.length; b++) {
-        txt += '  ' + bKeys[b].replace(/_/g, ' ').toUpperCase() + ':\\n';
         var bd = data.breakdowns[bKeys[b]];
-        if (typeof bd === 'object') {
-          var bdKeys = Object.keys(bd);
-          for (var x = 0; x < bdKeys.length; x++) {
-            var bv = bd[bdKeys[x]];
-            if (typeof bv === 'object') {
-              txt += '    ' + bdKeys[x] + ': ' + JSON.stringify(bv) + '\\n';
-            } else {
-              txt += '    ' + bdKeys[x] + ': ' + bv + '\\n';
-            }
-          }
-        }
+        var body = (typeof bd === 'object' && bd !== null) ? atlasKvRows(bd) : '<div class="atlas-kv-row"><span class="kv-val">' + esc(String(bd)) + '</span></div>';
+        html += atlasSection(bKeys[b].replace(/_/g, ' '), color, body);
       }
-      txt += '\\n';
     }
     var sections = ['regime_analysis','straddle_analysis','time_analysis','indicator_analysis',
                     'queue_audit','pillar_balance','caption_quality','hashtag_audit','ab_testing',
@@ -1183,93 +1184,102 @@ async function atlasAnalyze(agent) {
     for (var s = 0; s < sections.length; s++) {
       var sec = data[sections[s]];
       if (!sec) continue;
-      txt += sections[s].replace(/_/g, ' ').toUpperCase() + '\\n' + '-'.repeat(30) + '\\n';
+      var secTitle = sections[s].replace(/_/g, ' ');
       if (typeof sec === 'object' && !Array.isArray(sec)) {
-        var sKeys = Object.keys(sec);
-        for (var sk = 0; sk < sKeys.length; sk++) {
-          var sv = sec[sKeys[sk]];
-          if (typeof sv === 'object' && sv !== null) {
-            txt += '  ' + sKeys[sk].replace(/_/g, ' ') + ': ' + JSON.stringify(sv) + '\\n';
+        html += atlasSection(secTitle, color, atlasKvRows(sec));
+      } else if (Array.isArray(sec)) {
+        var body = '';
+        for (var si = 0; si < sec.length; si++) {
+          var item = sec[si];
+          if (typeof item === 'string') {
+            body += '<div class="atlas-rec-item"><span class="rec-num">' + (si+1) + '</span><span class="rec-text">' + esc(item) + '</span></div>';
           } else {
-            txt += '  ' + sKeys[sk].replace(/_/g, ' ') + ': ' + sv + '\\n';
+            var pri = item.priority ? atlasPriorityBadge(item.priority) + ' ' : '';
+            body += '<div class="atlas-rec-item"><span class="rec-num">' + (si+1) + '</span>' + pri + '<span class="rec-text">' + esc(item.description || item.recommendation || JSON.stringify(item)) + '</span></div>';
           }
         }
-      } else if (Array.isArray(sec)) {
-        for (var si = 0; si < sec.length; si++) {
-          if (typeof sec[si] === 'string') { txt += '  - ' + sec[si] + '\\n'; }
-          else { txt += '  - ' + (sec[si].description || sec[si].recommendation || JSON.stringify(sec[si])) + '\\n'; }
-        }
+        html += atlasSection(secTitle, color, body);
       }
-      txt += '\\n';
     }
     if (data.recommendations && data.recommendations.length > 0) {
-      txt += 'RECOMMENDATIONS\\n' + '-'.repeat(30) + '\\n';
+      var body = '';
       for (var ri = 0; ri < data.recommendations.length; ri++) {
         var rec = data.recommendations[ri];
-        if (typeof rec === 'string') { txt += '  ' + (ri+1) + '. ' + rec + '\\n'; }
-        else { txt += '  ' + (ri+1) + '. [' + (rec.priority||'') + '] ' + (rec.recommendation || rec.description || '') + '\\n'; }
+        if (typeof rec === 'string') {
+          body += '<div class="atlas-rec-item"><span class="rec-num">' + (ri+1) + '</span><span class="rec-text">' + esc(rec) + '</span></div>';
+        } else {
+          body += '<div class="atlas-rec-item"><span class="rec-num">' + (ri+1) + '</span>' + atlasPriorityBadge(rec.priority) + '<span class="rec-text">' + esc(rec.recommendation || rec.description || '') + '</span></div>';
+        }
       }
+      html += atlasSection('Recommendations', color, body);
     }
-    el.textContent = txt;
-  } catch (e) { el.textContent = 'Error: ' + e.message; }
+    el.innerHTML = html;
+  } catch (e) { el.innerHTML = '<div class="atlas-report-section"><div class="section-body" style="color:var(--error);">Error: ' + esc(e.message) + '</div></div>'; }
 }
 
 async function atlasSuggestImprovements() {
   var el = document.getElementById('atlas-report');
-  el.textContent = 'Generating improvements...';
+  el.innerHTML = '<div class="atlas-report-loading"><div class="spinner"></div>Scanning for improvements...</div>';
   try {
     var resp = await fetch('/api/atlas/improvements', {method:'POST'});
     var data = await resp.json();
-    if (data.error) { el.textContent = 'Error: ' + data.error; return; }
-    var txt = 'SUGGESTED IMPROVEMENTS\\n' + '='.repeat(50) + '\\n\\n';
+    if (data.error) { el.innerHTML = '<div class="atlas-report-section"><div class="section-body" style="color:var(--error);">' + esc(data.error) + '</div></div>'; return; }
+    var html = '<div class="atlas-report-header" style="border-left-color:var(--warning);">Improvement Scan</div>';
     var count = 0;
     var agents = ['garves','soren','shelby','mercury'];
     for (var a = 0; a < agents.length; a++) {
       var name = agents[a];
       var items = data[name];
       if (!items || items.length === 0) continue;
-      txt += name.toUpperCase() + ' (' + items.length + ' suggestions)\\n' + '-'.repeat(30) + '\\n';
+      var color = atlasAgentColor(name);
+      var body = '';
       for (var i = 0; i < items.length; i++) {
         var imp = items[i];
         count++;
-        txt += '  ' + count + '. [' + (imp.priority||'?').toUpperCase() + '] ' + (imp.description || imp.title || '') + '\\n';
-        if (imp.impact) txt += '     Impact: ' + imp.impact + '\\n';
-        if (imp.effort) txt += '     Effort: ' + imp.effort + '\\n';
-        if (imp.skill) txt += '     Skill: ' + imp.skill + '\\n';
+        body += '<div class="atlas-rec-item">' + atlasPriorityBadge(imp.priority) + '<span class="rec-text">' + esc(imp.description || imp.title || '');
+        var chips = '';
+        if (imp.impact) chips += '<span class="atlas-impact-chip">Impact: ' + esc(imp.impact) + '</span> ';
+        if (imp.effort) chips += '<span class="atlas-impact-chip">Effort: ' + esc(imp.effort) + '</span> ';
+        if (imp.skill) chips += '<span class="atlas-impact-chip">Skill: ' + esc(imp.skill) + '</span>';
+        if (chips) body += '<div style="margin-top:3px;">' + chips + '</div>';
+        body += '</span></div>';
       }
-      txt += '\\n';
+      html += atlasSection(atlasAgentLabel(name) + ' (' + items.length + ')', color, body);
     }
     if (data.system_wide && data.system_wide.length > 0) {
-      txt += 'SYSTEM-WIDE (' + data.system_wide.length + ')\\n' + '-'.repeat(30) + '\\n';
+      var body = '';
       for (var sw = 0; sw < data.system_wide.length; sw++) {
         var s = data.system_wide[sw];
         count++;
-        txt += '  ' + count + '. [' + (s.priority||'?').toUpperCase() + '] ' + (s.suggestion || s.description || '') + '\\n';
-        if (s.area) txt += '     Area: ' + s.area + '\\n';
+        body += '<div class="atlas-rec-item">' + atlasPriorityBadge(s.priority) + '<span class="rec-text">' + esc(s.suggestion || s.description || '');
+        if (s.area) body += '<span class="atlas-impact-chip" style="margin-left:6px;">Area: ' + esc(s.area) + '</span>';
+        body += '</span></div>';
       }
-      txt += '\\n';
+      html += atlasSection('System-Wide (' + data.system_wide.length + ')', 'var(--text-secondary)', body);
     }
     if (data.new_agents && data.new_agents.length > 0) {
-      txt += 'NEW AGENTS SUGGESTED (' + data.new_agents.length + ')\\n' + '-'.repeat(30) + '\\n';
+      var body = '';
       for (var na = 0; na < data.new_agents.length; na++) {
         var ag = data.new_agents[na];
-        txt += '  * ' + (ag.name||'?') + ' (' + (ag.role||'?') + ')\\n';
-        txt += '    ' + (ag.description||'') + '\\n';
+        body += '<div class="atlas-rec-item"><span class="rec-text"><strong style="color:var(--text);">' + esc(ag.name||'?') + '</strong> <span class="atlas-agent-tag">' + esc(ag.role||'?') + '</span><br><span style="color:var(--text-muted);font-size:0.72rem;">' + esc(ag.description||'') + '</span></span></div>';
       }
-      txt += '\\n';
+      html += atlasSection('New Agents Suggested (' + data.new_agents.length + ')', 'var(--agent-soren)', body);
     }
     if (data.new_skills && data.new_skills.length > 0) {
-      txt += 'NEW SKILLS SUGGESTED (' + data.new_skills.length + ')\\n' + '-'.repeat(30) + '\\n';
+      var body = '';
       for (var ns = 0; ns < data.new_skills.length; ns++) {
         var sk = data.new_skills[ns];
-        txt += '  * [' + (sk.agent||'?').toUpperCase() + '] ' + (sk.skill||'') + ': ' + (sk.description||'') + '\\n';
+        body += '<div class="atlas-rec-item"><span class="atlas-agent-tag" style="color:' + atlasAgentColor(sk.agent) + ';border-color:' + atlasAgentColor(sk.agent) + ';">' + esc(atlasAgentLabel(sk.agent)) + '</span><span class="rec-text"><strong style="color:var(--text);">' + esc(sk.skill||'') + '</strong> &#x2014; ' + esc(sk.description||'') + '</span></div>';
       }
-      txt += '\\n';
+      html += atlasSection('New Skills Suggested (' + data.new_skills.length + ')', 'var(--agent-thor)', body);
     }
-    if (count === 0) { txt += 'No specific improvements found at this time.\\n'; }
-    else { txt += '\\nTotal: ' + count + ' improvements suggested\\n'; }
-    el.textContent = txt;
-  } catch (e) { el.textContent = 'Error: ' + e.message; }
+    if (count === 0) {
+      html += '<div class="atlas-report-section"><div class="section-body" style="text-align:center;color:var(--text-muted);padding:var(--space-8);">No improvements found at this time. System is running optimally.</div></div>';
+    } else {
+      html += '<div style="text-align:right;font-family:var(--font-mono);font-size:0.72rem;color:var(--text-muted);padding:var(--space-2) 0;">Total: ' + count + ' improvements</div>';
+    }
+    el.innerHTML = html;
+  } catch (e) { el.innerHTML = '<div class="atlas-report-section"><div class="section-body" style="color:var(--error);">Error: ' + esc(e.message) + '</div></div>'; }
 }
 
 
@@ -1278,9 +1288,26 @@ async function atlasAcknowledgeImprovements() {
   try {
     var resp = await fetch('/api/atlas/improvements/acknowledge', {method:'POST'});
     var data = await resp.json();
-    if (data.error) { el.textContent = 'Error: ' + data.error; return; }
-    el.textContent = 'Acknowledged ' + data.acknowledged + ' suggestions. Atlas will generate fresh insights next cycle.\\nTotal dismissed: ' + data.total_dismissed;
-  } catch (e) { el.textContent = 'Error: ' + e.message; }
+    if (data.error) { el.innerHTML = '<div class="atlas-report-section"><div class="section-body" style="color:var(--error);">' + esc(data.error) + '</div></div>'; return; }
+    el.innerHTML = atlasSection('Suggestions Dismissed', 'var(--text-muted)', '<div style="text-align:center;padding:var(--space-4);color:var(--text-secondary);font-family:var(--font-mono);font-size:0.78rem;">Acknowledged <strong>' + data.acknowledged + '</strong> suggestions. Atlas will generate fresh insights next cycle.<br><span style="color:var(--text-muted);font-size:0.72rem;">Total dismissed: ' + data.total_dismissed + '</span></div>');
+  } catch (e) { el.innerHTML = '<div class="atlas-report-section"><div class="section-body" style="color:var(--error);">Error: ' + esc(e.message) + '</div></div>'; }
+}
+
+async function atlasCompressKB() {
+  var el = document.getElementById('atlas-report');
+  el.innerHTML = '<div class="atlas-report-loading"><div class="spinner"></div>Compressing knowledge base...</div>';
+  try {
+    var resp = await fetch('/api/atlas/summarize', {method:'POST'});
+    var data = await resp.json();
+    if (data.error) { el.innerHTML = '<div class="atlas-report-section"><div class="section-body" style="color:var(--error);">' + esc(data.error) + '</div></div>'; return; }
+    var body = '';
+    if (data.before_count !== undefined) body += '<div class="atlas-kv-row"><span class="kv-key">Before</span><span class="kv-val">' + data.before_count + ' observations</span></div>';
+    if (data.after_count !== undefined) body += '<div class="atlas-kv-row"><span class="kv-key">After</span><span class="kv-val">' + data.after_count + ' observations</span></div>';
+    if (data.new_learnings !== undefined) body += '<div class="atlas-kv-row"><span class="kv-key">New Learnings</span><span class="kv-val" style="color:var(--success);">' + data.new_learnings + '</span></div>';
+    if (data.message) body += '<div style="margin-top:var(--space-3);color:var(--text-secondary);font-size:0.76rem;">' + esc(data.message) + '</div>';
+    if (!body) body = '<div style="color:var(--text-secondary);">' + esc(JSON.stringify(data)) + '</div>';
+    el.innerHTML = atlasSection('Knowledge Base Compressed', 'var(--agent-atlas)', body);
+  } catch (e) { el.innerHTML = '<div class="atlas-report-section"><div class="section-body" style="color:var(--error);">Error: ' + esc(e.message) + '</div></div>'; }
 }
 
 async function loadCompetitorIntel() {

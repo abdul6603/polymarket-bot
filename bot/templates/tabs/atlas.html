@@ -19,22 +19,50 @@
   <div id="atlas-bg-status" class="glass-card" style="margin-top:12px;margin-bottom:12px;"></div>
   <div id="atlas-cost-panel" style="margin-bottom:12px;padding:12px 16px;background:var(--surface-secondary);border-radius:8px;"></div>
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="atlas">Actions</h2>
-    <div class="btn-group">
-      <button class="btn btn-primary" onclick="atlasFullReport()">Full Report</button>
-      <button class="btn" onclick="atlasAnalyze('garves')" style="color:var(--agent-garves);">Analyze Garves</button>
-      <button class="btn" onclick="atlasAnalyze('soren')" style="color:var(--agent-soren);">Analyze Soren</button>
-      <button class="btn" onclick="atlasAnalyze('shelby')" style="color:var(--agent-shelby);">Analyze Shelby</button>
-      <button class="btn" onclick="atlasAnalyze('mercury')" style="color:var(--agent-mercury);">Analyze Lisa</button>
-      <button class="btn btn-warning" onclick="atlasSuggestImprovements()">Improvements</button>
-      <button class="btn" onclick="atlasAcknowledgeImprovements()" style="color:var(--text-secondary);">Dismiss All</button>
-      <button class="btn" onclick="atlasLiveResearch()" style="color:var(--agent-atlas);">Live Research</button>
+    <h2 class="section-title" data-accent="atlas">Command Center</h2>
+    <div class="atlas-cmd-grid">
+      <div class="atlas-cmd-card atlas-cmd-card--wide" data-color="green" onclick="atlasFullReport()">
+        <span class="cmd-icon">&#x1F9E0;</span>
+        <div class="cmd-text"><span class="cmd-title">Full Intelligence Report</span><span class="cmd-sub">Cross-agent analysis, insights, and action items</span></div>
+      </div>
+      <div class="atlas-cmd-card" data-color="warning" onclick="atlasSuggestImprovements()">
+        <span class="cmd-icon">&#x26A1;</span>
+        <div class="cmd-text"><span class="cmd-title">Improvement Scan</span><span class="cmd-sub">Find optimizations across all agents</span></div>
+      </div>
+      <div class="atlas-cmd-card" data-color="green" onclick="atlasLiveResearch()">
+        <span class="cmd-icon">&#x1F50D;</span>
+        <div class="cmd-text"><span class="cmd-title">Live Research</span><span class="cmd-sub">Real-time intelligence gathering</span></div>
+      </div>
+      <div class="atlas-cmd-card" data-color="cyan" onclick="atlasAnalyze('garves')">
+        <span class="cmd-icon">&#x1F4CA;</span>
+        <div class="cmd-text"><span class="cmd-title">Analyze Garves</span><span class="cmd-sub">Trading signals, edge, regime detection</span></div>
+      </div>
+      <div class="atlas-cmd-card" data-color="purple" onclick="atlasAnalyze('soren')">
+        <span class="cmd-icon">&#x1F3A8;</span>
+        <div class="cmd-text"><span class="cmd-title">Analyze Soren</span><span class="cmd-sub">Content quality, A/B tests, trends</span></div>
+      </div>
+      <div class="atlas-cmd-card" data-color="gold" onclick="atlasAnalyze('shelby')">
+        <span class="cmd-icon">&#x1F451;</span>
+        <div class="cmd-text"><span class="cmd-title">Analyze Shelby</span><span class="cmd-sub">Scheduler, tasks, economics</span></div>
+      </div>
+      <div class="atlas-cmd-card" data-color="orange" onclick="atlasAnalyze('mercury')">
+        <span class="cmd-icon">&#x1F4F1;</span>
+        <div class="cmd-text"><span class="cmd-title">Analyze Lisa</span><span class="cmd-sub">Posting schedule, engagement, platform health</span></div>
+      </div>
+      <div class="atlas-cmd-card" data-color="muted" onclick="atlasCompressKB()">
+        <span class="cmd-icon">&#x1F5DC;</span>
+        <div class="cmd-text"><span class="cmd-title">Compress KB</span><span class="cmd-sub">Summarize knowledge base</span></div>
+      </div>
+      <div class="atlas-cmd-card" data-color="muted" onclick="atlasAcknowledgeImprovements()">
+        <span class="cmd-icon">&#x2716;</span>
+        <div class="cmd-text"><span class="cmd-title">Dismiss Suggestions</span><span class="cmd-sub">Clear current improvement queue</span></div>
+      </div>
     </div>
   </div>
   <div id="atlas-live-research" style="display:none;margin-bottom:12px;padding:12px 16px;background:var(--surface-secondary);border-radius:8px;max-height:400px;overflow-y:auto;"></div>
   <div class="section-spacer">
     <h2 class="section-title" data-accent="atlas">Report / Analysis</h2>
-    <div class="report-container" id="atlas-report">Run an analysis or generate a report to see results here.</div>
+    <div class="atlas-report" id="atlas-report"><div class="text-muted" style="text-align:center;padding:var(--space-8);font-family:var(--font-mono);font-size:0.78rem;">Select a command above to generate a report.</div></div>
   </div>
   <div class="section-spacer">
     <h2 class="section-title" data-accent="atlas">Competitor Intel</h2>
