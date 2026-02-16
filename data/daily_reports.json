@@ -1,0 +1,102 @@
+[
+  {
+    "date": "2026-02-16",
+    "generated_at": "2026-02-16T07:59:47.838761-05:00",
+    "summary": {
+      "total_trades": 143,
+      "resolved": 99,
+      "pending": 3,
+      "stale": 41,
+      "wins": 50,
+      "losses": 49,
+      "win_rate": 50.5,
+      "pnl": 37.9,
+      "avg_edge": 10.6,
+      "avg_confidence": 0.4016
+    },
+    "by_asset": {
+      "bitcoin": {
+        "wins": 19,
+        "losses": 21,
+        "pnl": 5.1
+      },
+      "ethereum": {
+        "wins": 19,
+        "losses": 13,
+        "pnl": 39.8
+      },
+      "solana": {
+        "wins": 12,
+        "losses": 15,
+        "pnl": -7.0
+      }
+    },
+    "by_timeframe": {
+      "15m": {
+        "wins": 43,
+        "losses": 42
+      },
+      "4h": {
+        "wins": 7,
+        "losses": 7
+      }
+    },
+    "by_direction": {
+      "up": {
+        "wins": 28,
+        "losses": 24
+      },
+      "down": {
+        "wins": 22,
+        "losses": 25
+      }
+    },
+    "regime_distribution": {
+      "extreme_fear": 143
+    },
+    "strategy": {
+      "engine": "11-indicator ensemble + ConvictionEngine",
+      "conviction_scoring": "9-layer evidence (0-100)",
+      "safety_rails": "losing streak 0.6x, low WR 0.7x, extreme fear 0.75x, $50 daily loss cap",
+      "sizing": "conviction-based $5-$25",
+      "assets": [
+        "bitcoin",
+        "solana",
+        "ethereum"
+      ],
+      "timeframes": [
+        "4h",
+        "15m"
+      ],
+      "regime": "extreme_fear"
+    },
+    "mistakes": [
+      {
+        "type": "approach",
+        "severity": "high",
+        "title": "Low-Edge Trades Taken",
+        "detail": "1 losing trades had edge < 5%. ConvictionEngine should block these more aggressively.",
+        "trades": [
+          "0x5dca7fcacf"
+        ]
+      },
+      {
+        "type": "technical",
+        "severity": "medium",
+        "title": "Dead Zone Trades Leaked Through",
+        "detail": "33 trades placed outside 8AM-11PM ET window.",
+        "trades": [
+          "0x631d2d4fb8",
+          "0x0e529e8087",
+          "0x2b81b3f762"
+        ]
+      },
+      {
+        "type": "approach",
+        "severity": "high",
+        "title": "Losing Streak of 8",
+        "detail": "Hit a 8-trade losing streak. Safety rails should have reduced sizing or paused trading after 3 consecutive losses."
+      }
+    ]
+  }
+]

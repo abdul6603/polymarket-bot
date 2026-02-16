@@ -303,7 +303,44 @@ def api_intelligence():
         wr = (wins / len(resolved) * 100) if resolved else 0
         total = len(trades)
 
-        # 1. Market Knowledge
+        # Merge in historical data from daily reports for cumulative intelligence
+        daily_reports_file = DATA_DIR / "daily_reports.json"
+        hist_total = 0
+        hist_resolved = 0
+        hist_wins = 0
+        hist_days = 0
+        hist_assets = set()
+        hist_timeframes = set()
+        hist_avg_edge = 0
+        if daily_reports_file.exists():
+            try:
+                with open(daily_reports_file) as f:
+                    daily_reports = json.load(f)
+                for dr in daily_reports:
+                    s = dr.get("summary", {})
+                    hist_total += s.get("total_trades", 0)
+                    hist_resolved += s.get("resolved", 0)
+                    hist_wins += s.get("wins", 0)
+                    hist_days += 1
+                    hist_avg_edge += s.get("avg_edge", 0)
+                    for a in dr.get("by_asset", {}):
+                        hist_assets.add(a)
+                    for tf in dr.get("by_timeframe", {}):
+                        hist_timeframes.add(tf)
+                if hist_days > 0:
+                    hist_avg_edge /= hist_days
+            except Exception:
+                pass
+
+        # Combined stats (today + history)
+        combined_total = total + hist_total
+        combined_resolved = len(resolved) + hist_resolved
+        combined_wins = wins + hist_wins
+        combined_wr = (combined_wins / combined_resolved * 100) if combined_resolved > 0 else 0
+        all_assets = set(t.get("asset", "") for t in trades) | hist_assets
+        all_timeframes = set(t.get("timeframe", "") for t in trades) | hist_timeframes
+
+        # 1. Market Knowledge (indicators, regime, assets — capabilities don't reset)
         indicators_file = DATA_DIR / "indicator_accuracy.json"
         indicator_count = 0
         if indicators_file.exists():
@@ -312,16 +349,15 @@ def api_intelligence():
             indicator_count = len(ind)
         regime_file = DATA_DIR / "regime_state.json"
         has_regime = regime_file.exists()
-        assets = set(t.get("asset", "") for t in trades)
-        knowledge = min(100, indicator_count * 6 + (20 if has_regime else 0) + len(assets) * 10)
+        knowledge = min(100, indicator_count * 6 + (20 if has_regime else 0) + len(all_assets) * 10)
         garves["dimensions"]["Market Knowledge"] = knowledge
 
-        # 2. Accuracy
-        accuracy = min(100, int(wr * 1.3)) if resolved else 15
+        # 2. Accuracy (from combined win rate — knowledge carries over)
+        accuracy = min(100, int(combined_wr * 1.3)) if combined_resolved else 15
         garves["dimensions"]["Accuracy"] = accuracy
 
-        # 3. Experience
-        experience = min(100, int(total * 0.5)) if total else 5
+        # 3. Experience (cumulative trades across all days)
+        experience = min(100, int(combined_total * 0.5)) if combined_total else 5
         garves["dimensions"]["Experience"] = experience
 
         # 4. Risk Management
@@ -331,12 +367,17 @@ def api_intelligence():
         if resolved:
             edges = [t.get("edge", 0) for t in resolved if t.get("edge")]
             avg_edge = sum(edges) / len(edges) if edges else 0
-        risk = 40 + (20 if has_straddle else 0) + min(40, int(avg_edge * 400))
+        elif hist_avg_edge > 0:
+            avg_edge = hist_avg_edge / 100  # stored as percentage
+        # ConvictionEngine and daily cycle add to risk management
+        has_conviction = (DATA_DIR.parent / "bot" / "conviction.py").exists()
+        has_daily_cycle = (DATA_DIR.parent / "bot" / "daily_cycle.py").exists()
+        risk = 40 + (20 if has_straddle else 0) + min(20, int(avg_edge * 200))
+        risk += (10 if has_conviction else 0) + (10 if has_daily_cycle else 0)
         garves["dimensions"]["Risk Management"] = min(100, risk)
 
-        # 5. Adaptability
-        timeframes = set(t.get("timeframe", "") for t in trades)
-        adaptability = min(100, len(assets) * 15 + len(timeframes) * 15 + (25 if has_regime else 0))
+        # 5. Adaptability (assets, timeframes, regime — capabilities persist)
+        adaptability = min(100, len(all_assets) * 15 + len(all_timeframes) * 15 + (25 if has_regime else 0))
         garves["dimensions"]["Adaptability"] = adaptability
 
         scores = list(garves["dimensions"].values())
