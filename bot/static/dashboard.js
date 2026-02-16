@@ -1702,6 +1702,19 @@ async function refresh() {
     } else if (currentTab === 'chat') {
       if (!chatLoaded) loadChatHistory();
     }
+    // Always cache overview + atlas bg for intel live panels
+    if (currentTab !== 'overview') {
+      try {
+        var bgResp = await fetch('/api/atlas/background/status');
+        _atlasBgCache = await bgResp.json();
+      } catch(e) {}
+      if (!_overviewCache) {
+        try {
+          var ovResp = await fetch('/api/overview');
+          _overviewCache = await ovResp.json();
+        } catch(e) {}
+      }
+    }
     document.getElementById('last-update').textContent = 'Updated ' + new Date().toLocaleTimeString();
   } catch (e) {
     console.error('refresh error:', e);
@@ -1876,6 +1889,68 @@ function radarSVG(size, values, labels, color) {
   return svg;
 }
 
+function intelLivePanel(agentKey, color) {
+  var o = _overviewCache || {};
+  var bg = _atlasBgCache || {};
+  var h = '<div class="intel-live-panel" style="border-left:1px solid ' + color + '22;">';
+  h += '<div class="ilp-title" style="color:' + color + ';">Live Status</div>';
+
+  if (agentKey === 'atlas') {
+    // State
+    if (bg.running) {
+      var isWorking = bg.state && bg.state !== 'running' && bg.state !== 'idle' && bg.state !== 'stopped';
+      h += '<div class="ilp-row"><span class="ilp-label">State</span>';
+      if (isWorking) {
+        h += '<span class="ilp-val" style="color:var(--agent-atlas);"><span class="aqs-dot aqs-dot-active"></span>' + esc(bg.state_label || bg.state) + '</span>';
+      } else {
+        h += '<span class="ilp-val" style="color:var(--text-secondary);">Idle</span>';
+      }
+      h += '</div>';
+      // Countdown
+      if (!isWorking && bg.last_cycle && bg.cycle_minutes) {
+        var remain = new Date(bg.last_cycle).getTime() + bg.cycle_minutes * 60000 - Date.now();
+        if (remain > 0) {
+          h += '<div class="ilp-row"><span class="ilp-label">Next Cycle</span><span class="ilp-val" style="color:var(--agent-atlas);">' + Math.floor(remain / 60000) + 'm ' + Math.floor((remain % 60000) / 1000) + 's</span></div>';
+        }
+      }
+      // Cycles
+      h += '<div class="ilp-row"><span class="ilp-label">Cycles</span><span class="ilp-val">' + (bg.cycles || 0) + '</span></div>';
+      // Researches
+      h += '<div class="ilp-row"><span class="ilp-label">Researches</span><span class="ilp-val">' + (bg.total_researches || 0) + '</span></div>';
+      // URLs
+      h += '<div class="ilp-row"><span class="ilp-label">URLs Seen</span><span class="ilp-val">' + (bg.unique_urls || 0) + '</span></div>';
+      // Target
+      if (bg.current_target) {
+        h += '<div class="ilp-row"><span class="ilp-label">Feeding</span><span class="ilp-val" style="color:#22cc55;">' + esc(bg.current_target === 'all' ? 'All Agents' : bg.current_target.charAt(0).toUpperCase() + bg.current_target.slice(1)) + '</span></div>';
+      }
+    } else {
+      h += '<div class="ilp-row"><span class="ilp-val" style="color:var(--error);">Offline</span></div>';
+    }
+  } else if (agentKey === 'garves') {
+    var g = o.garves || {};
+    h += '<div class="ilp-row"><span class="ilp-label">Win Rate</span><span class="ilp-val" style="color:' + ((g.win_rate||0) >= 50 ? 'var(--success)' : 'var(--error)') + ';">' + (g.win_rate || 0) + '%</span></div>';
+    h += '<div class="ilp-row"><span class="ilp-label">Total Trades</span><span class="ilp-val">' + (g.total_trades || 0) + '</span></div>';
+    h += '<div class="ilp-row"><span class="ilp-label">Pending</span><span class="ilp-val">' + (g.pending || 0) + '</span></div>';
+    h += '<div class="ilp-row"><span class="ilp-label">Status</span><span class="ilp-val" style="color:' + (g.running ? 'var(--success)' : 'var(--error)') + ';">' + (g.running ? 'Running' : 'Stopped') + '</span></div>';
+  } else if (agentKey === 'soren') {
+    var sr = o.soren || {};
+    h += '<div class="ilp-row"><span class="ilp-label">Queue</span><span class="ilp-val">' + (sr.queue_pending || 0) + ' pending</span></div>';
+    h += '<div class="ilp-row"><span class="ilp-label">Posted</span><span class="ilp-val">' + (sr.total_posted || 0) + '</span></div>';
+  } else if (agentKey === 'shelby') {
+    var sh = o.shelby || {};
+    h += '<div class="ilp-row"><span class="ilp-label">Status</span><span class="ilp-val" style="color:' + (sh.running ? 'var(--success)' : 'var(--error)') + ';">' + (sh.running ? 'Online' : 'Offline') + '</span></div>';
+  } else if (agentKey === 'lisa') {
+    var m = o.mercury || {};
+    h += '<div class="ilp-row"><span class="ilp-label">Posts</span><span class="ilp-val">' + (m.total_posts || 0) + '</span></div>';
+    if (m.review_avg) h += '<div class="ilp-row"><span class="ilp-label">Review Avg</span><span class="ilp-val">' + m.review_avg + '/10</span></div>';
+  } else if (agentKey === 'robotox') {
+    h += '<div class="ilp-row"><span class="ilp-label">Status</span><span class="ilp-val" style="color:var(--success);">Watching</span></div>';
+  }
+
+  h += '</div>';
+  return h;
+}
+
 function renderIntelMeter(containerId, agentKey, data) {
   var el = document.getElementById(containerId);
   if (!el || !data || !data.dimensions) return;
@@ -1889,9 +1964,9 @@ function renderIntelMeter(containerId, agentKey, data) {
   var keys = Object.keys(dims);
   var values = keys.map(function(k) { return dims[k]; });
 
-  var html = '<div style="display:flex;align-items:center;gap:16px;">';
+  var html = '<div style="display:flex;align-items:flex-start;gap:16px;">';
   html += '<div style="flex-shrink:0;">' + radarSVG(140, values, keys, color) + '</div>';
-  html += '<div style="flex:1;min-width:0;">';
+  html += '<div style="min-width:140px;">';
   html += '<div class="radar-title">' + esc(title) + ' Intelligence</div>';
   html += '<div style="display:flex;align-items:baseline;gap:8px;">';
   html += '<span class="radar-score" style="color:' + color + ';">' + overall + '</span>';
@@ -1903,7 +1978,10 @@ function renderIntelMeter(containerId, agentKey, data) {
     var vc = val >= 75 ? 'var(--success)' : val >= 50 ? color : val >= 30 ? 'var(--warning)' : 'var(--error)';
     html += '<div class="radar-dim"><span class="radar-dim-label">' + keys[i] + '</span><span class="radar-dim-val" style="color:' + vc + ';">' + val + '</span></div>';
   }
-  html += '</div></div></div>';
+  html += '</div></div>';
+  // Live status panel on the right
+  html += intelLivePanel(agentKey, color);
+  html += '</div>';
 
   el.innerHTML = html;
 }

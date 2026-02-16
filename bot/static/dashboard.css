@@ -616,6 +616,43 @@
   .aqs-dim { color: var(--text-muted); }
   .aqs-sep { color: var(--text-muted); opacity: 0.5; }
   .aqs-offline { color: var(--error); }
+
+  .intel-live-panel {
+    margin-left: auto;
+    padding-left: 16px;
+    min-width: 160px;
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .ilp-title {
+    font-family: var(--font-heading);
+    font-size: 0.65rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 2px;
+  }
+  .ilp-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+  .ilp-label {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+  }
+  .ilp-val {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
   .team-agent-level {
     font-size: 0.55rem;
     margin-top: 2px;
