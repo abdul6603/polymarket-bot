@@ -2,43 +2,33 @@
 <div class="tab-content" id="tab-shelby">
   <div id="intel-shelby" class="intel-meter" style="margin-bottom:12px;"></div>
   <div class="grid-4">
-    <div class="stat-card" data-accent="shelby"><div class="stat-value" id="shelby-agents-online">--</div><div class="stat-label">Agents Online</div></div>
-    <div class="stat-card" data-accent="shelby"><div class="stat-value" id="shelby-agents-working">--</div><div class="stat-label">Agents Working</div></div>
-    <div class="stat-card" data-accent="warning"><div class="stat-value" id="shelby-tasks-total">--</div><div class="stat-label">Total Tasks</div></div>
-    <div class="stat-card" data-accent="success"><div class="stat-value" id="shelby-health-badge">--</div><div class="stat-label">System Health</div></div>
+    <div class="stat-card" data-accent="shelby"><div class="stat-value" id="shelby-tasks-active">--</div><div class="stat-label">Tasks In Progress</div></div>
+    <div class="stat-card" data-accent="success"><div class="stat-value" id="shelby-tasks-done-today">--</div><div class="stat-label">Completed Today</div></div>
+    <div class="stat-card" data-accent="atlas"><div class="stat-value" id="shelby-next-routine">--</div><div class="stat-label">Next Routine</div></div>
+    <div class="stat-card" data-accent="warning"><div class="stat-value" id="shelby-pending-alerts">--</div><div class="stat-label">Pending Alerts</div></div>
   </div>
-  <div class="mt-4 flex items-center gap-3 flex-wrap">
+  <div style="display:flex;align-items:center;gap:8px;margin:8px 0 12px;flex-wrap:wrap;">
     <div class="telegram-status" style="background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.15);">
       <span class="telegram-dot" id="telegram-dot" style="background:var(--success);"></span>
       <span id="telegram-status-text" style="color:var(--success);">Telegram Connected</span>
     </div>
-    <button class="btn btn-primary" onclick="exportAgentReport()">Download Report</button>
+    <button class="btn btn-primary" onclick="exportAgentReport()" style="font-size:0.74rem;">Download Report</button>
+    <button class="agent-chat-trigger" onclick="openAgentChat('shelby')">&#x1F4AC; Chat with Shelby</button>
   </div>
   <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-shelby);">
     <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Agent Activity</h3>
     <div id="shelby-activity-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:150px;overflow-y:auto;"><span class="text-muted">Waiting for activity...</span></div>
   </div>
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="shelby">Activity Brief (Last 30 min)</h2>
-    <div class="glass-card" id="shelby-activity-brief"><div class="text-muted" style="text-align:center;padding:var(--space-4);">Loading activity...</div></div>
-  </div>
-  <div class="section-spacer">
     <h2 class="section-title" data-accent="shelby">Agent Tasks &amp; Progress</h2>
     <div class="flex flex-col gap-3" id="shelby-agent-tasks"><div class="text-muted" style="padding:var(--space-4);">Loading tasks...</div></div>
-  </div>
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="shelby">System &amp; Weather</h2>
-    <div class="grid-2">
-      <div class="system-card" id="shelby-system-info"><div class="text-muted">Loading system info...</div></div>
-      <div class="system-card" id="shelby-weather"><div class="text-muted">Loading weather...</div></div>
-    </div>
   </div>
   <div class="section-spacer">
     <h2 class="section-title" data-accent="shelby">Daily Schedule</h2>
     <div class="flex flex-col gap-2" id="shelby-schedule"><div class="text-muted" style="padding:var(--space-4);">Loading schedule...</div></div>
   </div>
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="shelby">Shelby&apos;s Assessment</h2>
+    <h2 class="section-title" data-accent="shelby">Agent Assessment</h2>
     <div class="grid-3" id="shelby-assessments"><div class="text-muted" style="padding:var(--space-4);">Loading assessments...</div></div>
   </div>
   <div class="section-spacer">
@@ -54,10 +44,6 @@
     <div class="glass-card" id="shelby-economics"><div class="text-muted" style="text-align:center;padding:var(--space-6);">Loading economics...</div></div>
   </div>
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="shelby">Decision Memory</h2>
-    <div class="glass-card" id="shelby-decisions"><div class="text-muted" style="text-align:center;padding:var(--space-4);">Loading decisions...</div></div>
-  </div>
-  <div class="section-spacer">
     <h2 class="section-title" data-accent="shelby">Suggested Actions</h2>
     <div id="shelby-smart-actions" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"><span class="text-muted" style="font-size:0.76rem;">Loading...</span></div>
   </div>
@@ -66,15 +52,22 @@
     <div class="glass-card"><div id="shelby-commands" style="max-height:250px;overflow-y:auto;"><span class="text-muted">Loading commands...</span></div></div>
   </div>
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="shelby">Brain Notes</h2>
-    <div class="glass-card">
-      <div style="display:flex;gap:var(--space-2);margin-bottom:var(--space-2);">
-        <input type="text" class="input" id="shelby-brain-topic" placeholder="Topic..." style="flex:1;font-size:0.76rem;padding:4px 8px;">
-        <select class="input" id="shelby-brain-type" style="width:auto;font-size:0.72rem;padding:4px 6px;"><option value="note">Note</option><option value="command">Command</option><option value="memory">Memory</option></select>
-        <button class="btn btn-primary" onclick="addBrainNote('shelby')" style="font-size:0.72rem;">Add</button>
+    <h2 class="section-title" data-accent="shelby" style="margin-bottom:0;">Knowledge & Memory</h2>
+    <div class="glass-card" style="margin-top:var(--space-3);">
+      <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;">
+        <input type="text" class="input" id="shelby-brain-topic" placeholder="Topic..." style="flex:1;font-size:0.76rem;padding:5px 10px;">
+        <div id="shelby-brain-type-pills" style="display:flex;gap:4px;">
+          <button class="brain-pill active" data-type="note" onclick="setBrainType('shelby','note',this)">Note</button>
+          <button class="brain-pill" data-type="command" onclick="setBrainType('shelby','command',this)">Cmd</button>
+          <button class="brain-pill" data-type="memory" onclick="setBrainType('shelby','memory',this)">Mem</button>
+        </div>
       </div>
-      <textarea class="input" id="shelby-brain-content" placeholder="Knowledge, instructions, or notes for Shelby..." style="width:100%;min-height:60px;font-size:0.76rem;padding:8px;resize:vertical;margin-bottom:var(--space-3);box-sizing:border-box;"></textarea>
-      <div id="shelby-brain-list" style="max-height:300px;overflow-y:auto;"><div class="text-muted" style="text-align:center;padding:var(--space-4);">No brain notes yet.</div></div>
+      <div style="display:flex;gap:8px;">
+        <textarea class="input" id="shelby-brain-content" placeholder="Instructions, knowledge, or notes for Shelby..." style="flex:1;min-height:48px;font-size:0.76rem;padding:5px 10px;resize:vertical;box-sizing:border-box;"></textarea>
+        <button class="btn btn-primary" onclick="addBrainNote('shelby')" style="align-self:flex-end;padding:6px 14px;font-size:0.74rem;">Add</button>
+      </div>
+      <input type="hidden" id="shelby-brain-type" value="note">
+      <div id="shelby-brain-list" style="margin-top:10px;max-height:350px;overflow-y:auto;"><div class="text-muted" style="text-align:center;padding:12px;font-size:0.74rem;">No notes yet.</div></div>
     </div>
   </div>
 </div>

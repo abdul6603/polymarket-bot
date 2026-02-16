@@ -599,18 +599,20 @@ function closeModal() {
 }
 
 function renderShelby(data) {
-  document.getElementById('shelby-tasks-total').textContent = data.tasks_total || 0;
-  // Agents working = tasks in progress
   var tasks = data.tasks || [];
-  var agentsWorking = 0;
+  var tasksActive = 0;
+  var tasksDoneToday = 0;
+  var todayStr = new Date().toISOString().substring(0, 10);
   var agentNames = ['garves','soren','atlas','mercury','sentinel'];
   for (var i = 0; i < tasks.length; i++) {
-    if (tasks[i].status === 'in_progress' || tasks[i].status === 'pending') {
-      var assignee = (tasks[i].agent || tasks[i].assigned_to || '').toLowerCase();
-      if (agentNames.indexOf(assignee) !== -1) agentsWorking++;
-    }
+    var st = tasks[i].status || '';
+    if (st === 'in_progress') tasksActive++;
+    if ((st === 'done' || st === 'completed') && (tasks[i].completed_at || tasks[i].updated_at || '').substring(0, 10) === todayStr) tasksDoneToday++;
   }
-  document.getElementById('shelby-agents-working').textContent = agentsWorking;
+  document.getElementById('shelby-tasks-active').textContent = tasksActive;
+  document.getElementById('shelby-tasks-done-today').textContent = tasksDoneToday;
+  // Pending alerts = tasks_pending from API
+  document.getElementById('shelby-pending-alerts').textContent = data.tasks_pending || 0;
   // Render agent task cards
   var el = document.getElementById('shelby-agent-tasks');
   var html = '';
@@ -629,7 +631,8 @@ function renderShelby(data) {
     var color = AGENT_COLORS[name] || 'var(--text)';
     html += '<div class="glass-card" style="padding:var(--space-4) var(--space-5);margin-bottom:var(--space-2);">';
     html += '<div class="flex items-center justify-between mb-4">';
-    html += '<span style="font-family:var(--font-mono);font-size:0.82rem;font-weight:600;color:' + color + ';">' + name.charAt(0).toUpperCase() + name.slice(1) + '</span>';
+    var displayName = name === 'mercury' ? 'Lisa' : name === 'sentinel' ? 'Robotox' : name.charAt(0).toUpperCase() + name.slice(1);
+    html += '<span style="font-family:var(--font-mono);font-size:0.82rem;font-weight:600;color:' + color + ';">' + displayName + '</span>';
     html += '<span class="badge badge-neutral">' + done + '/' + total + ' done</span></div>';
     html += '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%;background:' + color + ';"></div></div>';
     if (agentTasks.length > 0) {
@@ -2109,12 +2112,28 @@ async function loadAgentLearning(agent) {
   } catch (e) {}
 }
 
-async function loadShelbyOnlineCount() {
+async function loadShelbyNextRoutine() {
   try {
-    var resp = await fetch('/api/sentinel');
+    var resp = await fetch('/api/shelby/schedule');
     var data = await resp.json();
-    document.getElementById('shelby-agents-online').textContent = data.agents_online || 0;
-    document.getElementById('shelby-agents-online').style.color = (data.agents_online || 0) > 0 ? 'var(--success)' : 'var(--error)';
+    var schedule = data.schedule || {};
+    var currentTime = data.current_time || '';
+    var el = document.getElementById('shelby-next-routine');
+    if (!el) return;
+    var times = Object.keys(schedule).sort();
+    var nextRoutine = null;
+    for (var i = 0; i < times.length; i++) {
+      if (!schedule[times[i]].completed && times[i] >= currentTime) {
+        nextRoutine = times[i] + ' ' + (schedule[times[i]].name || '');
+        break;
+      }
+    }
+    if (nextRoutine) {
+      el.textContent = nextRoutine.split(' ')[0];
+      el.title = nextRoutine;
+    } else {
+      el.textContent = 'All done';
+    }
   } catch (e) {}
 }
 
@@ -2271,11 +2290,8 @@ async function refresh() {
       renderShelby(await resp.json());
       try { loadSchedule(); } catch(e) {}
       try { loadEconomics(); } catch(e) {}
-      try { loadActivityBrief(); } catch(e) {}
-      try { loadSystemInfo(); } catch(e) {}
       try { loadAssessments(); } catch(e) {}
-      try { loadShelbyOnlineCount(); } catch(e) {}
-      try { loadShelbyDecisions(); } catch(e) {}
+      try { loadShelbyNextRoutine(); } catch(e) {}
       loadBrainNotes('shelby');
       loadCommandTable('shelby');
       loadAgentSmartActions('shelby');
@@ -3508,41 +3524,66 @@ async function loadBrainNotes(agent) {
     var data = await resp.json();
     var notes = data.notes || [];
     if (notes.length === 0) {
-      el.innerHTML = '<div class="text-muted" style="text-align:center;padding:var(--space-4);">No brain notes yet.</div>';
+      el.innerHTML = '<div class="text-muted" style="text-align:center;padding:12px;font-size:0.74rem;">No notes yet. Add knowledge, commands, or memories above.</div>';
       return;
     }
     var typeColors = {note: '#3b82f6', command: '#ef4444', memory: '#22c55e'};
+    var typeIcons = {note: '&#x1F4DD;', command: '&#x26A1;', memory: '&#x1F9E0;'};
     var typeLabels = {note: 'NOTE', command: 'CMD', memory: 'MEM'};
     var agentColor = AGENT_COLORS[agent] || '#3b82f6';
     var html = '';
     for (var i = notes.length - 1; i >= 0; i--) {
       var n = notes[i];
-      var ts = n.created_at ? n.created_at.substring(0, 16).replace('T', ' ') : '';
+      var ts = n.created_at ? n.created_at.substring(11, 16) : '';
+      var dateStr = n.created_at ? n.created_at.substring(5, 10) : '';
       var ntype = n.type || 'note';
       var tcolor = typeColors[ntype] || '#3b82f6';
-      var tlabel = typeLabels[ntype] || 'NOTE';
-      var tags = (n.tags && n.tags.length > 0) ? n.tags.map(function(t) { return '<span style="background:rgba(255,255,255,0.08);padding:1px 6px;border-radius:4px;font-size:0.68rem;margin-right:4px;">' + esc(t) + '</span>'; }).join('') : '';
-      html += '<div style="border-bottom:1px solid rgba(255,255,255,0.06);padding:8px 0;display:flex;justify-content:space-between;align-items:flex-start;">';
-      html += '<div style="flex:1;">';
-      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">';
-      html += '<span style="background:' + tcolor + '22;color:' + tcolor + ';padding:1px 6px;border-radius:4px;font-size:0.62rem;font-weight:700;font-family:var(--font-mono);letter-spacing:0.05em;">' + tlabel + '</span>';
-      html += '<span style="font-weight:600;font-size:0.82rem;color:var(--text-primary);">' + esc(n.topic) + '</span>';
+      var ticon = typeIcons[ntype] || '&#x1F4DD;';
+      html += '<div style="background:rgba(255,255,255,0.02);border-radius:8px;padding:10px 12px;margin-bottom:6px;border:1px solid rgba(255,255,255,0.04);transition:border-color 0.15s;" onmouseenter="this.style.borderColor=\'rgba(255,255,255,0.1)\'" onmouseleave="this.style.borderColor=\'rgba(255,255,255,0.04)\'">';
+      // Header row: icon + topic + actions
+      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">';
+      html += '<span style="font-size:0.78rem;">' + ticon + '</span>';
+      html += '<span style="flex:1;font-weight:600;font-size:0.78rem;color:var(--text-primary);">' + esc(n.topic) + '</span>';
+      html += '<span style="background:' + tcolor + '18;color:' + tcolor + ';padding:1px 6px;border-radius:10px;font-size:0.58rem;font-weight:700;letter-spacing:0.05em;">' + typeLabels[ntype] + '</span>';
+      // Execute button
+      html += '<button onclick="executeBrainNote(\'' + agent + '\',' + JSON.stringify(n.content).replace(/'/g, "\\'") + ')" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:var(--text-secondary);cursor:pointer;font-size:0.64rem;padding:2px 8px;border-radius:6px;transition:all 0.15s;" onmouseenter="this.style.background=\'rgba(59,130,246,0.2)\';this.style.color=\'#60a5fa\'" onmouseleave="this.style.background=\'rgba(255,255,255,0.06)\';this.style.color=\'var(--text-secondary)\'" title="Send to agent">Run</button>';
+      // Delete button
+      html += '<button onclick="deleteBrainNote(\'' + agent + '\',\'' + n.id + '\')" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.9rem;padding:0 4px;opacity:0.5;transition:opacity 0.15s;" onmouseenter="this.style.opacity=\'1\';this.style.color=\'var(--error)\'" onmouseleave="this.style.opacity=\'0.5\';this.style.color=\'var(--text-muted)\'" title="Delete">&times;</button>';
       html += '</div>';
-      html += '<div style="font-size:0.76rem;color:var(--text-secondary);white-space:pre-wrap;word-break:break-word;">' + esc(n.content) + '</div>';
+      // Content
+      html += '<div style="font-size:0.74rem;color:var(--text-secondary);line-height:1.5;white-space:pre-wrap;word-break:break-word;">' + esc(n.content) + '</div>';
+      // AI Response
       if (n.response) {
-        html += '<div style="margin-top:6px;padding:6px 10px;background:rgba(0,0,0,0.3);border-left:3px solid ' + agentColor + ';border-radius:4px;">';
-        html += '<div style="font-size:0.65rem;font-weight:600;color:' + agentColor + ';margin-bottom:2px;font-family:var(--font-mono);letter-spacing:0.05em;">AI RESPONSE</div>';
-        html += '<div style="font-size:0.76rem;color:var(--text-secondary);font-style:italic;white-space:pre-wrap;word-break:break-word;">' + esc(n.response) + '</div>';
+        html += '<div style="margin-top:6px;padding:6px 10px;background:rgba(0,0,0,0.25);border-left:2px solid ' + agentColor + ';border-radius:0 6px 6px 0;">';
+        html += '<div style="font-size:0.74rem;color:var(--text-secondary);font-style:italic;white-space:pre-wrap;word-break:break-word;">' + esc(n.response) + '</div>';
         html += '</div>';
       }
-      html += '<div style="margin-top:4px;font-size:0.68rem;color:var(--text-muted);">' + ts + ' ' + tags + '</div>';
-      html += '</div>';
-      html += '<button onclick="deleteBrainNote(\'' + agent + '\',\'' + n.id + '\')" style="background:none;border:none;color:var(--error);cursor:pointer;font-size:1rem;padding:4px 8px;opacity:0.7;" title="Delete">&times;</button>';
+      // Footer: timestamp
+      html += '<div style="margin-top:4px;font-size:0.62rem;color:var(--text-muted);">' + dateStr + ' ' + ts + '</div>';
       html += '</div>';
     }
     el.innerHTML = html;
   } catch(e) {
     el.innerHTML = '<span style="color:var(--error);">Failed to load: ' + esc(e.message) + '</span>';
+  }
+}
+
+function setBrainType(agent, type, btn) {
+  var typeEl = document.getElementById(agent + '-brain-type');
+  if (typeEl) typeEl.value = type;
+  // Update pill styles
+  var pills = btn.parentElement.querySelectorAll('.brain-pill');
+  for (var i = 0; i < pills.length; i++) pills[i].classList.remove('active');
+  btn.classList.add('active');
+}
+
+async function executeBrainNote(agent, content) {
+  // Send the note content to the agent via chat
+  openAgentChat(agent);
+  var inputEl = document.getElementById('agent-chat-input');
+  if (inputEl) {
+    inputEl.value = content;
+    sendAgentChat();
   }
 }
 
@@ -3565,8 +3606,13 @@ async function addBrainNote(agent) {
     if (data.error) { alert('Error: ' + data.error); return; }
     topicEl.value = '';
     contentEl.value = '';
+    // Reset pills to Note
+    var pills = document.querySelectorAll('#' + agent + '-brain-type-pills .brain-pill');
+    for (var p = 0; p < pills.length; p++) {
+      pills[p].classList.remove('active');
+      if (pills[p].getAttribute('data-type') === 'note') pills[p].classList.add('active');
+    }
     if (typeEl) typeEl.value = 'note';
-    // Show interpreting spinner then poll for response
     loadBrainNotes(agent);
     var noteId = data.note ? data.note.id : null;
     if (noteId) {
@@ -3574,11 +3620,10 @@ async function addBrainNote(agent) {
       if (statusEl) {
         var spinner = document.createElement('div');
         spinner.id = 'brain-interpret-spinner';
-        spinner.style.cssText = 'text-align:center;padding:8px;font-size:0.78rem;color:var(--text-secondary);font-style:italic;';
+        spinner.style.cssText = 'text-align:center;padding:8px;font-size:0.74rem;color:var(--text-secondary);font-style:italic;';
         spinner.textContent = 'Interpreting...';
         statusEl.insertBefore(spinner, statusEl.firstChild);
       }
-      // Poll for interpretation result (background thread writes it)
       var polls = 0;
       var pollInterval = setInterval(async function() {
         polls++;
@@ -3600,6 +3645,101 @@ async function addBrainNote(agent) {
       }, 1000);
     }
   } catch(e) { alert('Failed: ' + e.message); }
+}
+
+// ═══════════════════════════════════════════════════════
+// AGENT CHAT POPUP — Per-agent direct chat
+// ═══════════════════════════════════════════════════════
+var _agentChatTarget = null;
+
+function openAgentChat(agent) {
+  _agentChatTarget = agent;
+  var popup = document.getElementById('agent-chat-popup');
+  var titleEl = document.getElementById('agent-chat-title');
+  var agentName = AGENT_NAMES[agent] || agent;
+  var agentColor = AGENT_COLORS[agent] || '#888';
+  if (titleEl) titleEl.innerHTML = '<span style="color:' + agentColor + ';">Chat with ' + esc(agentName) + '</span>';
+  if (popup) popup.style.display = 'flex';
+  // Load history
+  loadAgentChatHistory(agent);
+  var inputEl = document.getElementById('agent-chat-input');
+  if (inputEl) inputEl.focus();
+}
+
+function closeAgentChat() {
+  var popup = document.getElementById('agent-chat-popup');
+  if (popup) popup.style.display = 'none';
+  _agentChatTarget = null;
+}
+
+async function loadAgentChatHistory(agent) {
+  var msgsEl = document.getElementById('agent-chat-messages');
+  if (!msgsEl) return;
+  try {
+    var resp = await fetch('/api/chat/agent/' + agent + '/history');
+    var data = await resp.json();
+    renderAgentChatMessages(data.history || [], agent);
+  } catch(e) {
+    msgsEl.innerHTML = '<div class="text-muted" style="padding:12px;text-align:center;">Start a conversation...</div>';
+  }
+}
+
+function renderAgentChatMessages(history, agent) {
+  var msgsEl = document.getElementById('agent-chat-messages');
+  if (!msgsEl) return;
+  if (!history.length) {
+    var agentName = AGENT_NAMES[agent] || agent;
+    msgsEl.innerHTML = '<div class="text-muted" style="padding:20px;text-align:center;font-size:0.74rem;">Send a message to ' + esc(agentName) + '...</div>';
+    return;
+  }
+  var agentColor = AGENT_COLORS[agent] || '#888';
+  var html = '';
+  for (var i = 0; i < history.length; i++) {
+    var m = history[i];
+    if (m.role === 'user') {
+      html += '<div class="agent-chat-msg agent-chat-msg-user"><div class="chat-bubble">' + esc(m.content) + '</div></div>';
+    } else {
+      html += '<div class="agent-chat-msg agent-chat-msg-agent"><div class="chat-bubble" style="border-left:2px solid ' + agentColor + ';">' + esc(m.content) + '</div></div>';
+    }
+  }
+  msgsEl.innerHTML = html;
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+
+async function sendAgentChat() {
+  if (!_agentChatTarget) return;
+  var inputEl = document.getElementById('agent-chat-input');
+  var sendBtn = document.getElementById('agent-chat-send');
+  if (!inputEl || !inputEl.value.trim()) return;
+  var msg = inputEl.value.trim();
+  inputEl.value = '';
+  if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = '...'; }
+
+  // Show user message immediately
+  var msgsEl = document.getElementById('agent-chat-messages');
+  if (msgsEl) {
+    // Remove "Start a conversation" placeholder
+    var placeholder = msgsEl.querySelector('.text-muted');
+    if (placeholder && msgsEl.children.length === 1) msgsEl.innerHTML = '';
+    msgsEl.innerHTML += '<div class="agent-chat-msg agent-chat-msg-user"><div class="chat-bubble">' + esc(msg) + '</div></div>';
+    msgsEl.innerHTML += '<div id="agent-chat-typing" class="agent-chat-msg agent-chat-msg-agent"><div class="chat-bubble" style="color:var(--text-muted);font-style:italic;">Thinking...</div></div>';
+    msgsEl.scrollTop = msgsEl.scrollHeight;
+  }
+
+  try {
+    var resp = await fetch('/api/chat/agent/' + _agentChatTarget, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: msg})
+    });
+    var data = await resp.json();
+    // Remove typing indicator and render full history
+    renderAgentChatMessages(data.history || [], _agentChatTarget);
+  } catch(e) {
+    var typing = document.getElementById('agent-chat-typing');
+    if (typing) typing.querySelector('.chat-bubble').textContent = 'Error: ' + e.message;
+  }
+  if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Send'; }
 }
 
 // ══════════════════════════════════════════════
