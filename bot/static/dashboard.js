@@ -1,6 +1,7 @@
 var currentTab = 'overview';
 var chatLoaded = false;
 var econPeriod = 'month';
+var _atlasBgCache = null;
 var AGENT_COLORS = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',mercury:'#ff8800',sentinel:'#00ff44'};
 var AGENT_INITIALS = {garves:'GA',soren:'SO',shelby:'SH',atlas:'AT',mercury:'LI',sentinel:'RO'};
 var AGENT_ROLES = {garves:'Trading Bot',soren:'Content Creator',shelby:'Team Leader',atlas:'Data Scientist',mercury:'Social Media',sentinel:'Health Monitor'};
@@ -551,6 +552,25 @@ async function loadAtlasBgStatus() {
         html += ' &middot; Running for ' + (startedAgo >= 1 ? startedAgo + 'h' : '<1h');
       }
       html += '</div>';
+      // Countdown to next cycle
+      if (running && d.cycle_minutes) {
+        var cyclMs = d.cycle_minutes * 60000;
+        var nextAt = new Date(d.last_cycle).getTime() + cyclMs;
+        var remain = nextAt - Date.now();
+        if (d.state !== 'running') {
+          html += '<div style="margin-top:6px;font-size:0.78rem;color:var(--agent-atlas);font-family:var(--font-mono);display:flex;align-items:center;gap:6px;">';
+          html += '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--agent-atlas);animation:pulse-glow 1.5s ease-in-out infinite;"></span>';
+          html += 'Currently working...</div>';
+        } else if (remain > 0) {
+          var rm = Math.floor(remain / 60000);
+          var rs = Math.floor((remain % 60000) / 1000);
+          html += '<div id="atlas-countdown-timer" data-next="' + nextAt + '" style="margin-top:6px;font-size:0.78rem;color:var(--agent-atlas);font-family:var(--font-mono);display:flex;align-items:center;gap:6px;">';
+          html += '<svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="var(--agent-atlas)" stroke-width="1.5" opacity="0.3"/><circle cx="7" cy="7" r="6" fill="none" stroke="var(--agent-atlas)" stroke-width="1.5" stroke-dasharray="37.7" stroke-dashoffset="' + (37.7 * remain / cyclMs) + '" transform="rotate(-90 7 7)" stroke-linecap="round"/></svg>';
+          html += 'Next cycle in: <strong>' + rm + 'm ' + rs + 's</strong></div>';
+        } else {
+          html += '<div style="margin-top:6px;font-size:0.78rem;color:var(--success);font-family:var(--font-mono);">Cycle starting soon...</div>';
+        }
+      }
     }
 
     if (d.last_error) {
@@ -566,7 +586,9 @@ async function loadAtlasBgStatus() {
     html += '</div>';
 
     el.innerHTML = html;
+    _atlasBgCache = d;
     renderAtlasHierarchy(d);
+    updateOverviewCountdown();
   } catch (e) {
     el.innerHTML = '<div class="text-muted" style="padding:8px;">Background status unavailable</div>';
   }
@@ -607,12 +629,12 @@ function renderAtlasHierarchy(bgStatus) {
   for (var i = 0; i < agents.length; i++) {
     var ag = agents[i];
     var isActive = target === ag.key || target === 'all';
-    var lineColor = isActive ? ag.color : 'rgba(255,255,255,0.08)';
+    var lineColor = isActive ? '#22cc55' : 'rgba(255,255,255,0.08)';
     var lineWidth = isActive ? 2 : 1;
     var dashAttr = isActive ? ' stroke-dasharray="8 8" style="animation:hierarchy-flow 0.8s linear infinite;"' : '';
     svg += '<line x1="' + atlasX + '" y1="' + atlasY + '" x2="' + ag.x + '" y2="' + (ag.y + 16) + '" stroke="' + lineColor + '" stroke-width="' + lineWidth + '"' + dashAttr + '/>';
     if (isActive) {
-      svg += '<circle cx="' + ag.x + '" cy="' + (ag.y + 16) + '" r="4" fill="' + ag.color + '" opacity="0.6"><animate attributeName="r" values="3;6;3" dur="1.5s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.8;0.3;0.8" dur="1.5s" repeatCount="indefinite"/></circle>';
+      svg += '<circle cx="' + ag.x + '" cy="' + (ag.y + 16) + '" r="4" fill="#22cc55" opacity="0.6"><animate attributeName="r" values="3;6;3" dur="1.5s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.8;0.3;0.8" dur="1.5s" repeatCount="indefinite"/></circle>';
     }
   }
 
@@ -660,6 +682,50 @@ async function atlasStartBg() {
 async function atlasStopBg() {
   try { await fetch('/api/atlas/background/stop', {method:'POST'}); loadAtlasBgStatus(); } catch(e) {}
 }
+
+function tickAtlasCountdown() {
+  // Atlas tab countdown
+  var timer = document.getElementById('atlas-countdown-timer');
+  if (timer) {
+    var nextAt = parseInt(timer.getAttribute('data-next'));
+    var remain = nextAt - Date.now();
+    if (remain > 0) {
+      var rm = Math.floor(remain / 60000);
+      var rs = Math.floor((remain % 60000) / 1000);
+      var cyclMs = (_atlasBgCache && _atlasBgCache.cycle_minutes ? _atlasBgCache.cycle_minutes * 60000 : 2700000);
+      var svgOffset = (37.7 * remain / cyclMs);
+      timer.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="6" fill="none" stroke="var(--agent-atlas)" stroke-width="1.5" opacity="0.3"/><circle cx="7" cy="7" r="6" fill="none" stroke="var(--agent-atlas)" stroke-width="1.5" stroke-dasharray="37.7" stroke-dashoffset="' + svgOffset + '" transform="rotate(-90 7 7)" stroke-linecap="round"/></svg>Next cycle in: <strong>' + rm + 'm ' + rs + 's</strong>';
+    } else {
+      timer.innerHTML = '<span style="color:var(--success);">Cycle starting soon...</span>';
+    }
+  }
+  // Overview tab countdown
+  updateOverviewCountdown();
+}
+
+function updateOverviewCountdown() {
+  var el = document.getElementById('overview-atlas-countdown');
+  if (!el) return;
+  var d = _atlasBgCache;
+  if (!d || !d.running || !d.last_cycle || !d.cycle_minutes) {
+    el.innerHTML = '';
+    return;
+  }
+  var cyclMs = d.cycle_minutes * 60000;
+  var nextAt = new Date(d.last_cycle).getTime() + cyclMs;
+  var remain = nextAt - Date.now();
+  if (d.state !== 'running') {
+    el.innerHTML = '<div class="atlas-cycle-badge working"><span class="atlas-cycle-dot"></span>Atlas working: ' + esc(d.state_label || d.state) + '</div>';
+  } else if (remain > 0) {
+    var rm = Math.floor(remain / 60000);
+    var rs = Math.floor((remain % 60000) / 1000);
+    el.innerHTML = '<div class="atlas-cycle-badge idle"><svg width="14" height="14" viewBox="0 0 14 14" style="flex-shrink:0;"><circle cx="7" cy="7" r="6" fill="none" stroke="var(--agent-atlas)" stroke-width="1.5" opacity="0.3"/><circle cx="7" cy="7" r="6" fill="none" stroke="var(--agent-atlas)" stroke-width="1.5" stroke-dasharray="37.7" stroke-dashoffset="' + (37.7 * remain / cyclMs) + '" transform="rotate(-90 7 7)" stroke-linecap="round"/></svg>Next Atlas cycle: <strong>' + rm + 'm ' + rs + 's</strong></div>';
+  } else {
+    el.innerHTML = '<div class="atlas-cycle-badge starting">Atlas cycle starting soon...</div>';
+  }
+}
+
+setInterval(tickAtlasCountdown, 1000);
 
 async function atlasLiveResearch() {
   var el = document.getElementById('atlas-live-research');
@@ -1567,6 +1633,13 @@ async function refresh() {
       var data = await resp.json();
       renderAgentGrid(data);
       renderIndicatorAccuracy(data);
+      // Fetch atlas bg status for countdown on overview
+      try {
+        var bgResp = await fetch('/api/atlas/background/status');
+        var bgData = await bgResp.json();
+        _atlasBgCache = bgData;
+        updateOverviewCountdown();
+      } catch(e) {}
     } else if (currentTab === 'garves') {
       var resp = await fetch('/api/trades');
       var data = await resp.json();
