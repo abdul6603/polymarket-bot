@@ -1,0 +1,82 @@
+[
+  {
+    "message": "[ATLAS CRITICAL] HIGH anomalies detected: soren/content_drought: Only 0 approved items \u2014 content running low",
+    "priority": "high",
+    "from": "atlas",
+    "timestamp": "2026-02-15T19:04:05.804862-05:00"
+  },
+  {
+    "message": "[ATLAS CRITICAL] HIGH anomalies detected: soren/content_drought: Only 0 approved items \u2014 content running low",
+    "priority": "high",
+    "from": "atlas",
+    "timestamp": "2026-02-15T19:35:22.738058-05:00"
+  },
+  {
+    "message": "[ATLAS CRITICAL] HIGH anomalies detected: garves/losing_streak: 4/5 recent trades lost, soren/content_drought: Only 0 approved items \u2014 content running low",
+    "priority": "high",
+    "from": "atlas",
+    "timestamp": "2026-02-15T20:06:40.212123-05:00"
+  },
+  {
+    "message": "[SHELBY DIRECTIVE] Atlas V3 \"The Almighty\" is now LIVE.\n\nWHAT CHANGED \u2014 Atlas has been upgraded from a DDG snippet scraper to a true deep research engine:\n\n1. LLM SYNTHESIS: All research now uses GPT-4o-mini to read actual articles and extract actionable insights \u2014 no more recycled snippets.\n\n2. ARTICLE READING: Atlas now fetches and reads the top 2 articles per search (using _fetch_page_text), then synthesizes them. Insights are now real sentences with numbers, strategies, and techniques.\n\n3. DYNAMIC QUERIES: Research queries are no longer fixed. Atlas generates state-aware queries based on your current performance. Example: if Garves WR drops below 50%, Atlas auto-searches for \"how to improve crypto prediction accuracy\".\n\n4. URL DEDUPLICATION: Atlas tracks all researched URLs and never re-reads the same article. No more 200 entries from 17 unique articles.\n\n5. SMART IMPROVEMENTS: All hardcoded suggestions are gone (\"Add Telegram bot\", \"Move to cloud VPS\", etc.). Suggestions are now LLM-generated based on your actual state. Previous suggestions are auto-acknowledged so they never repeat.\n\n6. ALL-AGENT LEARNING: Auto-learn now covers ALL agents \u2014 Soren (posting bottleneck detection), Shelby (task completion monitoring), Mercury (dry-run blocking detection), Atlas (self-check on research quality).\n\n7. COMPETITOR SPY UPGRADED: Now tracks new vs. previously-seen findings and generates LLM-synthesized takeaways.\n\nIMPACT ON YOU:\n- GARVES: Expect higher-quality trading research with specific strategies and numbers. Dynamic queries will target your weak spots.\n- SOREN: Research insights will be content-ready \u2014 specific hooks, techniques, and trend data instead of generic snippets.\n- MERCURY/LISA: Social media strategy insights will be actionable and platform-specific.\n- ROBOTOX: System monitoring research will surface concrete techniques.\n- ATLAS: Self-monitoring for research quality \u2014 will alert if queries become too repetitive.\n\nCost: ~$0.82/day for GPT-4o-mini calls. All existing data pipelines and observation flows remain unchanged.\n\nThis is a Shelby-authorized system upgrade. No action required from agents \u2014 improvements take effect on the next background cycle.\n\n\u2014 Shelby, The Commander",
+    "priority": "high",
+    "from": "shelby",
+    "timestamp": "2026-02-15T20:12:14.131244-05:00",
+    "type": "system_upgrade"
+  },
+  {
+    "message": "[ATLAS CRITICAL] HIGH anomalies detected: soren/content_drought: Only 0 approved items \u2014 content running low",
+    "priority": "high",
+    "from": "atlas",
+    "timestamp": "2026-02-15T20:36:22.476877-05:00"
+  },
+  {
+    "message": "[ATLAS CRITICAL] HIGH anomalies detected: soren/content_drought: Only 0 approved items \u2014 content running low",
+    "priority": "high",
+    "from": "atlas",
+    "timestamp": "2026-02-15T20:38:32.932328-05:00"
+  },
+  {
+    "message": "[ATLAS CRITICAL] HIGH anomalies detected: soren/content_drought: Only 0 approved items \u2014 content running low",
+    "priority": "high",
+    "from": "atlas",
+    "timestamp": "2026-02-15T20:48:10.004892-05:00"
+  },
+  {
+    "message": "[ATLAS CRITICAL] HIGH anomalies detected: soren/content_drought: Only 0 approved items \u2014 content running low",
+    "priority": "high",
+    "from": "atlas",
+    "timestamp": "2026-02-15T20:59:51.471825-05:00"
+  },
+  {
+    "message": "[ATLAS CRITICAL] HIGH anomalies detected: garves/losing_streak: 4/5 recent trades lost, soren/content_drought: Only 0 approved items \u2014 content running low",
+    "priority": "high",
+    "from": "atlas",
+    "timestamp": "2026-02-15T21:10:46.708507-05:00"
+  },
+  {
+    "message": "[ATLAS CRITICAL] HIGH anomalies detected: garves/losing_streak: 4/5 recent trades lost, soren/content_drought: Only 0 approved items \u2014 content running low, sentinel/process_down: Robotox health monitor is not running",
+    "priority": "high",
+    "from": "atlas",
+    "timestamp": "2026-02-15T21:17:38.452658-05:00"
+  },
+  {
+    "message": "[ATLAS CRITICAL] HIGH anomalies detected: garves/losing_streak: 4/5 recent trades lost, soren/content_drought: Only 0 approved items \u2014 content running low",
+    "priority": "high",
+    "from": "atlas",
+    "timestamp": "2026-02-15T21:22:20.895597-05:00"
+  },
+  {
+    "id": "bc_1771208858",
+    "message": "Atlas, prioritize speed without compromising the quality of data in your research. Report back with findings as soon as possible.",
+    "priority": "high",
+    "from": "shelby",
+    "timestamp": "2026-02-15T21:27:38.820821-05:00"
+  },
+  {
+    "message": "[ATLAS CRITICAL] HIGH anomalies detected: garves/losing_streak: 4/5 recent trades lost, soren/content_drought: Only 0 approved items \u2014 content running low",
+    "priority": "high",
+    "from": "atlas",
+    "timestamp": "2026-02-15T21:29:42.767110-05:00"
+  }
+]

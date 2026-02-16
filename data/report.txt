@@ -1,0 +1,25 @@
+======================================================================
+  GARVES — PERFORMANCE REPORT
+  Generated: February 14, 2026 at 06:00 PM ET
+======================================================================
+
+OVERALL SUMMARY
+----------------------------------------
+  Total signals generated:  5
+  Resolved:                 0
+  Pending resolution:       5
+  Stale (unresolvable):     0
+
+RECENT TRADES (last 20)
+----------------------------------------------------------------------
+  Time     Asset      TF   Dir   Prob   Edge   Result  
+  ──────── ────────── ──── ───── ────── ────── ────────
+  18:00    BITCOIN    5m   UP    57%    4.8%   PENDING 
+  17:55    BITCOIN    5m   UP    55%    2.8%   PENDING 
+  17:54    BITCOIN    15m  UP    51%    1.3%   PENDING 
+  17:48    BITCOIN    15m  DOWN  46%    9.2%   PENDING 
+  17:48    BITCOIN    5m   UP    54%    1.6%   PENDING 
+
+======================================================================
+  Next report: check data/trades.jsonl for live updates
+======================================================================

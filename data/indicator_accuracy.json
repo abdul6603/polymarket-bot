@@ -1,0 +1,72 @@
+{
+  "macd": {
+    "total_votes": 170,
+    "correct_votes": 93,
+    "accuracy": 0.5470588235294118
+  },
+  "ema": {
+    "total_votes": 182,
+    "correct_votes": 101,
+    "accuracy": 0.554945054945055
+  },
+  "heikin_ashi": {
+    "total_votes": 182,
+    "correct_votes": 105,
+    "accuracy": 0.5769230769230769
+  },
+  "momentum": {
+    "total_votes": 177,
+    "correct_votes": 97,
+    "accuracy": 0.5480225988700564
+  },
+  "vwap": {
+    "total_votes": 126,
+    "correct_votes": 58,
+    "accuracy": 0.4603174603174603
+  },
+  "order_flow": {
+    "total_votes": 177,
+    "correct_votes": 104,
+    "accuracy": 0.5875706214689266
+  },
+  "price_div": {
+    "total_votes": 149,
+    "correct_votes": 86,
+    "accuracy": 0.5771812080536913
+  },
+  "temporal_arb": {
+    "total_votes": 120,
+    "correct_votes": 68,
+    "accuracy": 0.5666666666666667
+  },
+  "volume_spike": {
+    "total_votes": 38,
+    "correct_votes": 25,
+    "accuracy": 0.6578947368421053
+  },
+  "sentiment": {
+    "total_votes": 126,
+    "correct_votes": 61,
+    "accuracy": 0.48412698412698413
+  },
+  "bollinger": {
+    "total_votes": 106,
+    "correct_votes": 48,
+    "accuracy": 0.4528301886792453
+  },
+  "rsi": {
+    "total_votes": 51,
+    "correct_votes": 28,
+    "accuracy": 0.5490196078431373
+  },
+  "orderbook": {
+    "total_votes": 4,
+    "correct_votes": 4,
+    "accuracy": 1.0
+  },
+  "liquidity": {
+    "total_votes": 4,
+    "correct_votes": 4,
+    "accuracy": 1.0
+  }
+}

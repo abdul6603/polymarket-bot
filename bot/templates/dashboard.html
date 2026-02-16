@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="/static/dashboard.css">
+</head>
+<body>
+<div class="shell">
+
+  <header class="header">
+    <div class="header-left">
+      <h1 class="header-title">Command Center</h1>
+      <div class="header-subtitle"><span class="dot-online"></span> 6 Agents Online</div>
+    </div>
+    <div class="header-right">Last update: <span id="last-update">--:--:--</span></div>
+  </header>
+
+  <nav class="tab-bar">
+    <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview')"><span class="tab-dot"></span> Overview</button>
+    <button class="tab-btn" data-tab="garves" onclick="switchTab('garves')"><span class="tab-dot"></span> Garves</button>
+    <button class="tab-btn" data-tab="soren" onclick="switchTab('soren')"><span class="tab-dot"></span> Soren</button>
+    <button class="tab-btn" data-tab="shelby" onclick="switchTab('shelby')"><span class="tab-dot"></span> Shelby</button>
+    <button class="tab-btn" data-tab="atlas" onclick="switchTab('atlas')"><span class="tab-dot"></span> Atlas</button>
+    <button class="tab-btn" data-tab="mercury" onclick="switchTab('mercury')"><span class="tab-dot"></span> Lisa</button>
+    <button class="tab-btn" data-tab="sentinel" onclick="switchTab('sentinel')"><span class="tab-dot"></span> Robotox</button>
+    <button class="tab-btn" data-tab="chat" onclick="switchTab('chat')"><span class="tab-dot"></span> Chat</button>
+  </nav>
+
+  <!-- OVERVIEW -->
+  <div class="tab-content active" id="tab-overview">
+    <h2 class="section-title">Agent Status</h2>
+    <div class="grid-auto" id="agent-grid"></div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="garves">Indicator Accuracy</h2>
+      <div class="glass-card" id="indicator-accuracy"><table class="data-table"><thead><tr><th>Indicator</th><th>Accuracy</th><th>Signals</th><th>Correct</th><th>Weight</th></tr></thead><tbody id="indicator-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">Waiting for data...</td></tr></tbody></table></div>
+    </div>
+    <div class="section-spacer">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="section-title" data-accent="atlas">4-Hour Report</h2>
+        <button class="btn btn-primary" onclick="generate4hReport()">Generate Report</button>
+      </div>
+      <div class="report-container" id="report-4h-content">Click "Generate Report" to create one.</div>
+    </div>
+  </div>
+
+  <!-- GARVES -->
+  <div class="tab-content" id="tab-garves">
+    <div class="agent-widget-row" id="garves-widgets">
+      <div class="widget-badge" id="garves-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
+      <button class="btn" onclick="openKPIModal(&apos;garves&apos;)" style="font-size:0.72rem;">Performance KPIs</button>
+      <button class="btn" onclick="healthCheckAgent(&apos;garves&apos;)" style="font-size:0.72rem;">Health Check</button>
+    </div>
+    <div class="health-inline" id="garves-health-result"></div>
+    <div class="grid-6" id="stats-grid">
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="garves-winrate">--</div><div class="stat-label">Win Rate</div></div>
+      <div class="stat-card" data-accent="success"><div class="stat-value" id="garves-pnl">--</div><div class="stat-label">PnL</div></div>
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="garves-wins-losses">--</div><div class="stat-label">Wins / Losses</div></div>
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="garves-total">--</div><div class="stat-label">Total</div></div>
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="garves-resolved">--</div><div class="stat-label">Resolved</div></div>
+      <div class="stat-card" data-accent="warning"><div class="stat-value" id="garves-pending">--</div><div class="stat-label">Pending</div></div>
+    </div>
+    <div class="mt-6" id="garves-regime-badge"><span class="badge badge-info">Regime: --</span></div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="garves">Breakdowns</h2>
+      <div class="grid-3" id="breakdowns">
+        <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Asset</h3><table class="data-table"><thead><tr><th>Asset</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="bd-asset"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+        <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Timeframe</h3><table class="data-table"><thead><tr><th>TF</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="bd-tf"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+        <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Direction</h3><table class="data-table"><thead><tr><th>Dir</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="bd-dir"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+      </div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="warning">Pending Trades</h2>
+      <div class="glass-card"><table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Direction</th><th>Edge</th><th>Consensus</th><th>Status</th></tr></thead><tbody id="pending-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No pending trades</td></tr></tbody></table></div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="garves">Resolved Trades</h2>
+      <div class="glass-card"><table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Direction</th><th>Edge</th><th>Result</th><th>PnL</th></tr></thead><tbody id="resolved-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No resolved trades</td></tr></tbody></table></div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="garves">Live Log</h2>
+      <div class="log-feed" id="log-feed"><div class="log-line"><span class="log-time">--:--:--</span><span class="log-msg">Waiting for log data...</span></div></div>
+    </div>
+  </div>
+
+  <!-- SOREN -->
+  <div class="tab-content" id="tab-soren">
+    <div class="agent-widget-row" id="soren-widgets">
+      <div class="widget-badge" id="soren-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
+      <button class="btn" onclick="openKPIModal(&apos;soren&apos;)" style="font-size:0.72rem;">Performance KPIs</button>
+      <button class="btn" onclick="healthCheckAgent(&apos;soren&apos;)" style="font-size:0.72rem;">Health Check</button>
+    </div>
+    <div class="health-inline" id="soren-health-result"></div>
+    <div class="grid-4" id="soren-stats">
+      <div class="stat-card" data-accent="soren"><div class="stat-value" id="soren-queue-total">--</div><div class="stat-label">Queue Total</div></div>
+      <div class="stat-card" data-accent="warning"><div class="stat-value" id="soren-pending">--</div><div class="stat-label">Pending</div></div>
+      <div class="stat-card" data-accent="success"><div class="stat-value" id="soren-posted">--</div><div class="stat-label">Posted</div></div>
+      <div class="stat-card" data-accent="error"><div class="stat-value" id="soren-failed">--</div><div class="stat-label">Failed</div></div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="soren">Content Queue</h2>
+      <div class="flex flex-col gap-3" id="soren-queue"><div class="queue-item"><div class="queue-item-header"><span class="queue-item-title">Loading...</span></div></div></div>
+    </div>
+  </div>
+
+  <!-- SHELBY -->
+  <div class="tab-content" id="tab-shelby">
+    <!-- Stat Cards Row -->
+    <div class="grid-4">
+      <div class="stat-card" data-accent="shelby"><div class="stat-value" id="shelby-agents-online">--</div><div class="stat-label">Agents Online</div></div>
+      <div class="stat-card" data-accent="shelby"><div class="stat-value" id="shelby-agents-working">--</div><div class="stat-label">Agents Working</div></div>
+      <div class="stat-card" data-accent="warning"><div class="stat-value" id="shelby-tasks-total">--</div><div class="stat-label">Total Tasks</div></div>
+      <div class="stat-card" data-accent="success"><div class="stat-value" id="shelby-health-badge">--</div><div class="stat-label">System Health</div></div>
+    </div>
+
+    <!-- Telegram + Actions Row -->
+    <div class="mt-4 flex items-center gap-3 flex-wrap">
+      <div class="telegram-status" style="background:rgba(255,170,0,0.08);border:1px solid rgba(255,170,0,0.15);">
+        <span class="telegram-dot" id="telegram-dot" style="background:var(--warning);"></span>
+        <span id="telegram-status-text" style="color:var(--warning);">Not Connected</span>
+      </div>
+      <button class="btn btn-warning" onclick="openTelegramModal()">Connect Telegram</button>
+      <button class="btn btn-primary" onclick="exportAgentReport()">Download Report</button>
+      <button class="btn btn-success" onclick="openHireModal()">Hire New Agent</button>
+    </div>
+
+    <!-- Activity Brief -->
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="shelby">Activity Brief (Last 30 min)</h2>
+      <div class="glass-card" id="shelby-activity-brief"><div class="text-muted" style="text-align:center;padding:var(--space-4);">Loading activity...</div></div>
+    </div>
+
+    <!-- Agent Tasks + Progress -->
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="shelby">Agent Tasks &amp; Progress</h2>
+      <div class="flex flex-col gap-3" id="shelby-agent-tasks"><div class="text-muted" style="padding:var(--space-4);">Loading tasks...</div></div>
+    </div>
+
+    <!-- System & Weather -->
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="shelby">System &amp; Weather</h2>
+      <div class="grid-2">
+        <div class="system-card" id="shelby-system-info"><div class="text-muted">Loading system info...</div></div>
+        <div class="system-card" id="shelby-weather"><div class="text-muted">Loading weather...</div></div>
+      </div>
+    </div>
+
+    <!-- Daily Schedule -->
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="shelby">Daily Schedule</h2>
+      <div class="flex flex-col gap-2" id="shelby-schedule"><div class="text-muted" style="padding:var(--space-4);">Loading schedule...</div></div>
+    </div>
+
+    <!-- Shelby's Assessments -->
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="shelby">Shelby&apos;s Assessment</h2>
+      <div class="grid-3" id="shelby-assessments"><div class="text-muted" style="padding:var(--space-4);">Loading assessments...</div></div>
+    </div>
+
+    <!-- Agent Economics -->
+    <div class="section-spacer">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="section-title" data-accent="shelby">Agent Economics</h2>
+        <div class="btn-group">
+          <button class="btn" onclick="setEconPeriod(&apos;today&apos;)">Today</button>
+          <button class="btn" onclick="setEconPeriod(&apos;week&apos;)">Week</button>
+          <button class="btn btn-primary" onclick="setEconPeriod(&apos;month&apos;)">Month</button>
+          <button class="btn" onclick="setEconPeriod(&apos;all_time&apos;)">All</button>
+        </div>
+      </div>
+      <div class="glass-card" id="shelby-economics"><div class="text-muted" style="text-align:center;padding:var(--space-6);">Loading economics...</div></div>
+    </div>
+  </div>
+
+  <!-- ATLAS -->
+  <div class="tab-content" id="tab-atlas">
+    <div class="agent-widget-row" id="atlas-widgets">
+      <div class="widget-badge" id="atlas-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
+      <button class="btn" onclick="openKPIModal(&apos;atlas&apos;)" style="font-size:0.72rem;">Performance KPIs</button>
+      <button class="btn" onclick="healthCheckAgent(&apos;atlas&apos;)" style="font-size:0.72rem;">Health Check</button>
+    </div>
+    <div class="health-inline" id="atlas-health-result"></div>
+    <div class="grid-4">
+      <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-uptime" style="font-size:1rem;">--</div><div class="stat-label">Uptime</div></div>
+      <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-observations">--</div><div class="stat-label">Observations</div></div>
+      <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-improvements">--</div><div class="stat-label">Improvements</div></div>
+      <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-cycles">--</div><div class="stat-label">Cycles</div></div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="atlas">Actions</h2>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="atlasFullReport()">Full Report</button>
+        <button class="btn" onclick="atlasAnalyze('garves')" style="color:var(--agent-garves);">Analyze Garves</button>
+        <button class="btn" onclick="atlasAnalyze('soren')" style="color:var(--agent-soren);">Analyze Soren</button>
+        <button class="btn" onclick="atlasAnalyze('shelby')" style="color:var(--agent-shelby);">Analyze Shelby</button>
+        <button class="btn" onclick="atlasAnalyze('mercury')" style="color:var(--agent-mercury);">Analyze Lisa</button>
+        <button class="btn btn-warning" onclick="atlasSuggestImprovements()">Improvements</button>
+        <button class="btn" onclick="atlasAcknowledgeImprovements()" style="color:var(--text-secondary);">Dismiss All</button>
+      </div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="atlas">Report / Analysis</h2>
+      <div class="report-container" id="atlas-report">Run an analysis or generate a report to see results here.</div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="atlas">Competitor Intel</h2>
+      <div class="glass-card" id="atlas-competitors"><div class="text-muted" style="text-align:center;padding:var(--space-6);">No competitor intel yet.</div></div>
+    </div>
+  </div>
+
+  <!-- MERCURY -->
+  <div class="tab-content" id="tab-mercury">
+    <div class="agent-widget-row" id="mercury-widgets">
+      <div class="widget-badge" id="mercury-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
+      <button class="btn" onclick="openKPIModal(&apos;mercury&apos;)" style="font-size:0.72rem;">Performance KPIs</button>
+      <button class="btn" onclick="healthCheckAgent(&apos;mercury&apos;)" style="font-size:0.72rem;">Health Check</button>
+    </div>
+    <div class="health-inline" id="mercury-health-result"></div>
+    <div class="grid-4">
+      <div class="stat-card" data-accent="mercury"><div class="stat-value" id="mercury-outbox-stat">--</div><div class="stat-label">Outbox</div></div>
+      <div class="stat-card" data-accent="mercury"><div class="stat-value" id="mercury-total-posted">--</div><div class="stat-label">Posted</div></div>
+      <div class="stat-card" data-accent="mercury"><div class="stat-value" id="mercury-platforms-count">--</div><div class="stat-label">Platforms</div></div>
+      <div class="stat-card" data-accent="mercury"><div class="stat-value" id="mercury-review-avg">--</div><div class="stat-label">Avg Review</div></div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="mercury">Brand Review Gate</h2>
+      <div class="glass-card">
+        <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-4);flex-wrap:wrap;">
+          <div id="mercury-review-stats" style="display:flex;gap:var(--space-4);font-size:0.76rem;font-family:var(--font-mono);align-items:center;">
+            <span class="text-muted">No reviews yet</span>
+          </div>
+        </div>
+        <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:var(--space-3);">Test any caption against Soren&apos;s brand voice:</div>
+        <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-3);flex-wrap:wrap;align-items:end;">
+          <div style="flex:1;min-width:200px;">
+            <textarea class="input" id="mercury-review-caption" rows="2" placeholder="Paste a caption to review..." style="width:100%;resize:vertical;font-family:var(--font-mono);font-size:0.78rem;"></textarea>
+          </div>
+          <div style="display:flex;gap:var(--space-2);flex-direction:column;">
+            <select class="input" id="mercury-review-platform" style="font-size:0.76rem;padding:4px 8px;">
+              <option value="instagram">Instagram</option>
+              <option value="tiktok">TikTok</option>
+              <option value="x">X</option>
+            </select>
+            <button class="btn btn-primary" onclick="mercuryReviewCaption()" style="white-space:nowrap;">Review Caption</button>
+          </div>
+        </div>
+        <div id="mercury-review-result" style="min-height:40px;font-family:var(--font-mono);font-size:0.76rem;"></div>
+      </div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="mercury">Outbox — Brand Check</h2>
+      <div class="glass-card" id="mercury-outbox-review"><div class="text-muted">No approved items in outbox.</div></div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="mercury">Strategy Plan</h2>
+      <div class="glass-card" id="mercury-plan"><div class="text-muted">Loading plan...</div></div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="mercury">Knowledge Base</h2>
+      <div class="flex flex-col gap-2" id="mercury-knowledge"><div class="text-muted">Loading knowledge...</div></div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="mercury">Reply Intelligence</h2>
+      <div class="glass-card">
+        <div class="flex gap-2" style="margin-bottom:var(--space-4);">
+          <input type="text" class="input" id="mercury-reply-input" placeholder="Paste a comment to test reply..." />
+          <button class="btn btn-primary" onclick="mercuryTestReply()">Test</button>
+        </div>
+        <div class="report-container" id="mercury-reply-result" style="min-height:60px;">Enter a comment and click "Test" to see reply suggestion.</div>
+      </div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="mercury">Recent Posts</h2>
+      <div class="glass-card"><table class="data-table"><thead><tr><th>Time</th><th>Platform</th><th>Content</th><th>Score</th><th>Status</th></tr></thead><tbody id="mercury-posts-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No posts yet</td></tr></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- ROBOTOX -->
+  <div class="tab-content" id="tab-sentinel">
+    <div class="agent-widget-row" id="sentinel-widgets">
+      <div class="widget-badge" id="sentinel-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
+      <button class="btn" onclick="openKPIModal(&apos;sentinel&apos;)" style="font-size:0.72rem;">Performance KPIs</button>
+      <button class="btn" onclick="healthCheckAgent(&apos;sentinel&apos;)" style="font-size:0.72rem;">Health Check</button>
+    </div>
+    <div class="health-inline" id="sentinel-health-result"></div>
+    <div class="grid-4">
+      <div class="stat-card" data-accent="sentinel"><div class="stat-value" id="sentinel-agents-online">--</div><div class="stat-label">Agents Online</div></div>
+      <div class="stat-card" data-accent="warning"><div class="stat-value" id="sentinel-active-issues">--</div><div class="stat-label">Issues</div></div>
+      <div class="stat-card" data-accent="success"><div class="stat-value" id="sentinel-total-fixes">--</div><div class="stat-label">Fixes</div></div>
+      <div class="stat-card" data-accent="sentinel"><div class="stat-value" id="sentinel-last-scan">--</div><div class="stat-label">Last Scan</div></div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="sentinel">Actions</h2>
+      <div class="btn-group">
+        <button class="btn btn-success" onclick="sentinelScan()">Health Scan</button>
+        <button class="btn btn-warning" onclick="sentinelBugs()">Bug Scan</button>
+      </div>
+    </div>
+    <div class="section-spacer">
+      <div class="report-container" id="sentinel-report" style="display:none;"></div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="sentinel">Alerts</h2>
+      <div class="feed-scroll" id="sentinel-alerts"><div class="feed-item"><span class="badge badge-success">OK</span> <span style="font-family:var(--font-mono);font-size:0.76rem;color:var(--text-secondary);margin-left:8px;">All systems nominal</span></div></div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="sentinel">Fix History</h2>
+      <div class="glass-card"><table class="data-table"><thead><tr><th>Time</th><th>Agent</th><th>Action</th><th>Status</th></tr></thead><tbody id="sentinel-fixes-tbody"><tr><td colspan="4" class="text-muted" style="text-align:center;padding:24px;">No fixes</td></tr></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="tab-content" id="tab-chat">
+    <h2 class="section-title">Group Chat</h2>
+    <div class="chat-container">
+      <div class="chat-messages" id="chat-messages">
+        <div class="chat-msg">
+          <div class="chat-msg-avatar" style="color:var(--agent-shelby);border-color:rgba(255,170,0,0.3);">SH</div>
+          <div class="chat-msg-body"><div style="font-size:0.68rem;color:var(--agent-shelby);margin-bottom:2px;font-weight:600;">Shelby</div>Welcome to Command Center. All agents online.</div>
+        </div>
+      </div>
+      <div class="chat-input-row">
+        <select class="input" id="chat-agent-select">
+          <option value="all">All Agents</option>
+          <option value="shelby">Shelby</option>
+          <option value="garves">Garves</option>
+          <option value="soren">Soren</option>
+          <option value="atlas">Atlas</option>
+          <option value="mercury">Lisa</option>
+          <option value="sentinel">Robotox</option>
+        </select>
+        <input type="text" class="input" id="chat-input" placeholder="Type a message..." onkeydown="chatKeyDown(event)" />
+        <button class="btn btn-primary" id="chat-send-btn" onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Video Modal -->
+  <div class="video-modal" id="video-modal">
+    <div class="video-modal-inner">
+      <video id="modal-video" controls></video>
+      <div class="video-modal-btns">
+        <button class="btn" id="modal-download-btn">Download</button>
+        <button class="btn btn-error" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI Modal -->
+  <div class="generic-modal" id="kpi-modal">
+    <div class="generic-modal-inner" style="position:relative;">
+      <div class="modal-title" id="kpi-modal-title">Performance KPIs</div>
+      <div id="kpi-modal-content"><div class="text-muted">Loading...</div></div>
+      <div style="margin-top:var(--space-6);text-align:right;">
+        <button class="btn btn-error" onclick="closeKPIModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hire Agent Modal -->
+  <div class="generic-modal" id="hire-modal">
+    <div class="generic-modal-inner" style="position:relative;">
+      <div class="modal-title" style="color:var(--agent-shelby);">Hire New Agent</div>
+      <div class="flex flex-col gap-4">
+        <div>
+          <label style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:var(--space-1);">AGENT NAME</label>
+          <input type="text" class="input" id="hire-name" placeholder="e.g. phoenix" />
+        </div>
+        <div>
+          <label style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:var(--space-1);">ROLE</label>
+          <select class="input" id="hire-role">
+            <option value="General">General</option>
+            <option value="Trading">Trading</option>
+            <option value="Content">Content</option>
+            <option value="Analytics">Analytics</option>
+            <option value="Social Media">Social Media</option>
+            <option value="Developer">Developer</option>
+            <option value="Monitor">Monitor</option>
+            <option value="Research">Research</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:var(--space-1);">DESCRIPTION</label>
+          <textarea class="input" id="hire-desc" rows="3" placeholder="What will this agent do?"></textarea>
+        </div>
+        <div id="hire-result" style="display:none;font-family:var(--font-mono);font-size:0.78rem;padding:var(--space-3);border-radius:var(--radius-sm);"></div>
+      </div>
+      <div style="margin-top:var(--space-6);display:flex;gap:var(--space-2);justify-content:flex-end;">
+        <button class="btn btn-success" onclick="submitHire()">Create Agent</button>
+        <button class="btn btn-error" onclick="closeHireModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Telegram Modal -->
+  <div class="generic-modal" id="telegram-modal">
+    <div class="generic-modal-inner" style="position:relative;">
+      <div class="modal-title" style="color:var(--agent-shelby);">Connect Telegram</div>
+      <div style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-secondary);line-height:1.7;">
+        <p style="margin-bottom:var(--space-4);">Telegram integration lets Shelby send you notifications, daily briefs, and alerts directly to your phone.</p>
+        <p style="margin-bottom:var(--space-4);color:var(--warning);">This feature is coming soon. The integration will be wired in a future update.</p>
+        <div style="padding:var(--space-4);background:var(--surface-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);">
+          <div style="color:var(--text-muted);font-size:0.72rem;margin-bottom:var(--space-2);">STATUS</div>
+          <div style="color:var(--warning);">Not Connected</div>
+        </div>
+      </div>
+      <div style="margin-top:var(--space-6);text-align:right;">
+        <button class="btn btn-error" onclick="closeTelegramModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="/static/dashboard.js"></script>
+</body>
+</html>

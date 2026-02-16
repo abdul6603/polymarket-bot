@@ -1,0 +1,653 @@
+/Users/abdallaalhamdan/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+Traceback (most recent call last):
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/runpy.py", line 197, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/runpy.py", line 87, in _run_code
+    exec(code, run_globals)
+  File "/Users/abdallaalhamdan/polymarket-bot/bot/main.py", line 12, in <module>
+    from bot.auth import build_client
+  File "/Users/abdallaalhamdan/polymarket-bot/bot/auth.py", line 5, in <module>
+    from py_clob_client.client import ClobClient
+ModuleNotFoundError: No module named 'py_clob_client'
+00:00:04 [INFO] bot: Shutdown complete
+00:02:20 [INFO] bot: Running in DRY RUN mode — no CLOB client needed
+00:02:20 [INFO] bot.tracker: Loaded 0 pending trades to resolve
+00:02:20 [INFO] bot: ============================================================
+00:02:20 [INFO] bot: Garves v2 — Multi-Timeframe Trading Bot
+00:02:20 [INFO] bot: Assets: Bitcoin, Ethereum, Solana
+00:02:20 [INFO] bot: Timeframes: 5m, 15m, 1h, 4h
+00:02:20 [INFO] bot: Signal engine: Ensemble + Temporal Arb + ATR Filter + Fee Awareness
+00:02:20 [INFO] bot: Indicators: RSI, MACD, EMA, Heikin Ashi, VWAP, Bollinger, Momentum, Fear&Greed
+00:02:20 [INFO] bot: Order flow: Cumulative delta + Orderbook imbalance + Liquidity depth
+00:02:20 [INFO] bot: Cross-venue: Binance real-time price divergence + Temporal arbitrage
+00:02:20 [INFO] bot: Fees: 2%% winner + dynamic 15m taker fee deducted from edge
+00:02:20 [INFO] bot: Dry run: True | Max exposure: $100.00 | Order size: $10.00 | Tick: 15s
+00:02:20 [INFO] bot: Max concurrent positions: 10
+00:02:20 [INFO] bot: ============================================================
+00:02:20 [INFO] bot: --- Tick ---
+00:02:20 [INFO] bot.market_discovery: Searching for market offset range...
+00:02:20 [INFO] bot.http_session: HTTP session initialized with retry strategy (3 retries, exponential backoff)
+00:02:23 [INFO] bot.market_discovery: Approximate total markets: 448828
+00:02:23 [INFO] bot.market_discovery: Found active Up/Down markets near offset 448828
+00:02:23 [INFO] bot.market_discovery: Market offset range starts at ~443828
+00:02:25 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:02:25 [INFO] bot: Evaluating 6 markets for signals...
+00:02:25 [INFO] bot.signals: Warming up [SOLANA/4h] (0/30 candles)
+00:02:25 [INFO] bot.signals: Warming up [BITCOIN/4h] (0/30 candles)
+00:02:25 [INFO] bot.signals: Warming up [ETHEREUM/4h] (0/30 candles)
+00:02:25 [INFO] bot.signals: Warming up [BITCOIN/15m] (0/30 candles)
+00:02:25 [INFO] bot.signals: Warming up [ETHEREUM/15m] (0/30 candles)
+00:02:25 [INFO] bot.signals: Warming up [SOLANA/15m] (0/30 candles)
+00:02:25 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:02:25 [INFO] bot.binance_feed: Connecting to Binance WS: wss://stream.binance.us:9443/stream?streams=btcusdt@trade/ethusdt@trade/solusdt@
+00:02:25 [INFO] bot.ws_feed: Connecting to WS: wss://ws-subscriptions-clob.polymarket.com/ws/market
+00:02:26 [INFO] bot.ws_feed: WebSocket connected
+00:02:26 [INFO] bot.binance_feed: Binance WebSocket connected
+00:02:40 [INFO] bot: --- Tick ---
+00:02:41 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:02:41 [INFO] bot: Evaluating 6 markets for signals...
+00:02:41 [INFO] bot.signals: Warming up [SOLANA/4h] (0/30 candles)
+00:02:41 [INFO] bot.signals: Warming up [BITCOIN/4h] (0/30 candles)
+00:02:41 [INFO] bot.signals: Warming up [ETHEREUM/4h] (0/30 candles)
+00:02:41 [INFO] bot.signals: Warming up [BITCOIN/15m] (0/30 candles)
+00:02:41 [INFO] bot.signals: Warming up [ETHEREUM/15m] (0/30 candles)
+00:02:42 [INFO] bot.signals: Warming up [SOLANA/15m] (0/30 candles)
+00:02:42 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:02:57 [INFO] bot: --- Tick ---
+00:02:59 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:02:59 [INFO] bot: Evaluating 6 markets for signals...
+00:02:59 [INFO] bot.signals: Warming up [SOLANA/4h] (1/30 candles)
+00:02:59 [INFO] bot.signals: Warming up [BITCOIN/4h] (0/30 candles)
+00:02:59 [INFO] bot.signals: Warming up [ETHEREUM/4h] (0/30 candles)
+00:02:59 [INFO] bot.signals: Warming up [BITCOIN/15m] (0/30 candles)
+00:02:59 [INFO] bot.signals: Warming up [ETHEREUM/15m] (0/30 candles)
+00:03:00 [INFO] bot.signals: Warming up [SOLANA/15m] (1/30 candles)
+00:03:00 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:03:15 [INFO] bot: --- Tick ---
+00:03:15 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:03:15 [INFO] bot: Evaluating 6 markets for signals...
+00:03:15 [INFO] bot.signals: Warming up [SOLANA/4h] (1/30 candles)
+00:03:15 [INFO] bot.signals: Warming up [BITCOIN/4h] (0/30 candles)
+00:03:16 [INFO] bot.signals: Warming up [ETHEREUM/4h] (0/30 candles)
+00:03:16 [INFO] bot.signals: Warming up [BITCOIN/15m] (0/30 candles)
+00:03:16 [INFO] bot.signals: Warming up [ETHEREUM/15m] (0/30 candles)
+00:03:16 [INFO] bot.signals: Warming up [SOLANA/15m] (1/30 candles)
+00:03:16 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:03:31 [INFO] bot: --- Tick ---
+00:03:33 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:03:33 [INFO] bot: Evaluating 6 markets for signals...
+00:03:33 [INFO] bot.signals: Warming up [SOLANA/4h] (1/30 candles)
+00:03:34 [INFO] bot.signals: Warming up [BITCOIN/4h] (0/30 candles)
+00:03:34 [INFO] bot.signals: Warming up [ETHEREUM/4h] (0/30 candles)
+00:03:34 [INFO] bot.signals: Warming up [BITCOIN/15m] (0/30 candles)
+00:03:34 [INFO] bot.signals: Warming up [ETHEREUM/15m] (0/30 candles)
+00:03:34 [INFO] bot.signals: Warming up [SOLANA/15m] (1/30 candles)
+00:03:34 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:03:49 [INFO] bot: --- Tick ---
+00:03:50 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:03:50 [INFO] bot: Evaluating 6 markets for signals...
+00:03:50 [INFO] bot.signals: Warming up [SOLANA/4h] (1/30 candles)
+00:03:50 [INFO] bot.signals: Warming up [BITCOIN/4h] (0/30 candles)
+00:03:50 [INFO] bot.signals: Warming up [ETHEREUM/4h] (0/30 candles)
+00:03:50 [INFO] bot.signals: Warming up [BITCOIN/15m] (0/30 candles)
+00:03:50 [INFO] bot.signals: Warming up [ETHEREUM/15m] (0/30 candles)
+00:03:50 [INFO] bot.signals: Warming up [SOLANA/15m] (1/30 candles)
+00:03:50 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:04:05 [INFO] bot: --- Tick ---
+00:04:07 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:04:07 [INFO] bot: Evaluating 6 markets for signals...
+00:04:08 [INFO] bot.signals: Warming up [SOLANA/4h] (1/30 candles)
+00:04:08 [INFO] bot.signals: Warming up [BITCOIN/4h] (0/30 candles)
+00:04:08 [INFO] bot.signals: Warming up [ETHEREUM/4h] (0/30 candles)
+00:04:08 [INFO] bot.signals: Warming up [BITCOIN/15m] (0/30 candles)
+00:04:08 [INFO] bot.signals: Warming up [ETHEREUM/15m] (0/30 candles)
+00:04:08 [INFO] bot.signals: Warming up [SOLANA/15m] (1/30 candles)
+00:04:08 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:04:23 [INFO] bot: --- Tick ---
+00:04:24 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:04:24 [INFO] bot: Evaluating 6 markets for signals...
+00:04:24 [INFO] bot.signals: Warming up [SOLANA/4h] (1/30 candles)
+00:04:24 [INFO] bot.signals: Warming up [BITCOIN/4h] (0/30 candles)
+00:04:24 [INFO] bot.signals: Warming up [ETHEREUM/4h] (0/30 candles)
+00:04:24 [INFO] bot.signals: Warming up [BITCOIN/15m] (0/30 candles)
+00:04:24 [INFO] bot.signals: Warming up [ETHEREUM/15m] (0/30 candles)
+00:04:24 [INFO] bot.signals: Warming up [SOLANA/15m] (1/30 candles)
+00:04:24 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:04:39 [INFO] bot: --- Tick ---
+00:04:42 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:04:42 [INFO] bot: Evaluating 6 markets for signals...
+00:04:42 [INFO] bot.signals: Warming up [SOLANA/4h] (1/30 candles)
+00:04:42 [INFO] bot.signals: Warming up [BITCOIN/4h] (0/30 candles)
+00:04:42 [INFO] bot.signals: Warming up [ETHEREUM/4h] (0/30 candles)
+00:04:42 [INFO] bot.signals: Warming up [BITCOIN/15m] (0/30 candles)
+00:04:42 [INFO] bot.signals: Warming up [ETHEREUM/15m] (0/30 candles)
+00:04:43 [INFO] bot.signals: Warming up [SOLANA/15m] (1/30 candles)
+00:04:43 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:04:58 [INFO] bot: --- Tick ---
+00:04:58 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:04:58 [INFO] bot: Evaluating 6 markets for signals...
+00:04:58 [INFO] bot.signals: Warming up [SOLANA/4h] (2/30 candles)
+00:04:58 [INFO] bot.signals: Warming up [BITCOIN/4h] (1/30 candles)
+00:04:58 [INFO] bot.signals: Warming up [ETHEREUM/4h] (0/30 candles)
+00:04:59 [INFO] bot.signals: Warming up [BITCOIN/15m] (1/30 candles)
+00:04:59 [INFO] bot.signals: Warming up [ETHEREUM/15m] (0/30 candles)
+00:04:59 [INFO] bot.signals: Warming up [SOLANA/15m] (2/30 candles)
+00:04:59 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:05:14 [INFO] bot: --- Tick ---
+00:05:16 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:05:16 [INFO] bot: Evaluating 6 markets for signals...
+00:05:16 [INFO] bot.signals: Warming up [SOLANA/4h] (3/30 candles)
+00:05:16 [INFO] bot.signals: Warming up [BITCOIN/4h] (1/30 candles)
+00:05:17 [INFO] bot.signals: Warming up [ETHEREUM/4h] (0/30 candles)
+00:05:17 [INFO] bot.signals: Warming up [BITCOIN/15m] (1/30 candles)
+00:05:17 [INFO] bot.signals: Warming up [ETHEREUM/15m] (0/30 candles)
+00:05:17 [INFO] bot.signals: Warming up [SOLANA/15m] (3/30 candles)
+00:05:17 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:05:32 [INFO] bot: --- Tick ---
+00:05:32 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:05:32 [INFO] bot: Evaluating 6 markets for signals...
+00:05:33 [INFO] bot.signals: Warming up [SOLANA/4h] (3/30 candles)
+00:05:33 [INFO] bot.signals: Warming up [BITCOIN/4h] (2/30 candles)
+00:05:33 [INFO] bot.signals: Warming up [ETHEREUM/4h] (0/30 candles)
+00:05:33 [INFO] bot.signals: Warming up [BITCOIN/15m] (2/30 candles)
+00:05:33 [INFO] bot.signals: Warming up [ETHEREUM/15m] (0/30 candles)
+00:05:33 [INFO] bot.signals: Warming up [SOLANA/15m] (3/30 candles)
+00:05:33 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:05:48 [INFO] bot: --- Tick ---
+00:05:51 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:05:51 [INFO] bot: Evaluating 6 markets for signals...
+00:05:51 [INFO] bot.signals: Warming up [SOLANA/4h] (3/30 candles)
+00:05:51 [INFO] bot.signals: Warming up [BITCOIN/4h] (2/30 candles)
+00:05:51 [INFO] bot.signals: Warming up [ETHEREUM/4h] (0/30 candles)
+00:05:51 [INFO] bot.signals: Warming up [BITCOIN/15m] (2/30 candles)
+00:05:51 [INFO] bot.signals: Warming up [ETHEREUM/15m] (0/30 candles)
+00:05:51 [INFO] bot.signals: Warming up [SOLANA/15m] (3/30 candles)
+00:05:51 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:06:06 [INFO] bot: --- Tick ---
+00:06:07 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:06:07 [INFO] bot: Evaluating 6 markets for signals...
+00:06:07 [INFO] bot.signals: Warming up [SOLANA/4h] (3/30 candles)
+00:06:07 [INFO] bot.signals: Warming up [BITCOIN/4h] (2/30 candles)
+00:06:07 [INFO] bot.signals: Warming up [ETHEREUM/4h] (0/30 candles)
+00:06:07 [INFO] bot.signals: Warming up [BITCOIN/15m] (2/30 candles)
+00:06:07 [INFO] bot.signals: Warming up [ETHEREUM/15m] (0/30 candles)
+00:06:08 [INFO] bot.signals: Warming up [SOLANA/15m] (3/30 candles)
+00:06:08 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:06:23 [INFO] bot: --- Tick ---
+00:06:25 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:06:25 [INFO] bot: Evaluating 6 markets for signals...
+00:06:25 [INFO] bot.signals: Warming up [SOLANA/4h] (3/30 candles)
+00:06:25 [INFO] bot.signals: Warming up [BITCOIN/4h] (3/30 candles)
+00:06:25 [INFO] bot.signals: Warming up [ETHEREUM/4h] (1/30 candles)
+00:06:26 [INFO] bot.signals: Warming up [BITCOIN/15m] (3/30 candles)
+00:06:26 [INFO] bot.signals: Warming up [ETHEREUM/15m] (1/30 candles)
+00:06:26 [INFO] bot.signals: Warming up [SOLANA/15m] (3/30 candles)
+00:06:26 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:06:41 [INFO] bot: --- Tick ---
+00:06:41 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:06:41 [INFO] bot: Evaluating 6 markets for signals...
+00:06:41 [INFO] bot.signals: Warming up [SOLANA/4h] (3/30 candles)
+00:06:41 [INFO] bot.signals: Warming up [BITCOIN/4h] (3/30 candles)
+00:06:42 [INFO] bot.signals: Warming up [ETHEREUM/4h] (1/30 candles)
+00:06:42 [INFO] bot.signals: Warming up [BITCOIN/15m] (3/30 candles)
+00:06:42 [INFO] bot.signals: Warming up [ETHEREUM/15m] (1/30 candles)
+00:06:42 [INFO] bot.signals: Warming up [SOLANA/15m] (3/30 candles)
+00:06:42 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:06:57 [INFO] bot: --- Tick ---
+00:06:59 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:06:59 [INFO] bot: Evaluating 6 markets for signals...
+00:06:59 [INFO] bot.signals: Warming up [SOLANA/4h] (3/30 candles)
+00:06:59 [INFO] bot.signals: Warming up [BITCOIN/4h] (3/30 candles)
+00:07:00 [INFO] bot.signals: Warming up [ETHEREUM/4h] (1/30 candles)
+00:07:00 [INFO] bot.signals: Warming up [BITCOIN/15m] (3/30 candles)
+00:07:00 [INFO] bot.signals: Warming up [ETHEREUM/15m] (1/30 candles)
+00:07:00 [INFO] bot.signals: Warming up [SOLANA/15m] (3/30 candles)
+00:07:00 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:07:15 [INFO] bot: --- Tick ---
+00:07:15 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:07:15 [INFO] bot: Evaluating 6 markets for signals...
+00:07:16 [INFO] bot.signals: Warming up [SOLANA/4h] (3/30 candles)
+00:07:16 [INFO] bot.signals: Warming up [BITCOIN/4h] (4/30 candles)
+00:07:16 [INFO] bot.signals: Warming up [ETHEREUM/4h] (1/30 candles)
+00:07:16 [INFO] bot.signals: Warming up [BITCOIN/15m] (4/30 candles)
+00:07:16 [INFO] bot.signals: Warming up [ETHEREUM/15m] (1/30 candles)
+00:07:16 [INFO] bot.signals: Warming up [SOLANA/15m] (3/30 candles)
+00:07:16 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:07:31 [INFO] bot: --- Tick ---
+00:07:33 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:07:33 [INFO] bot: Evaluating 6 markets for signals...
+00:07:34 [INFO] bot.signals: Warming up [SOLANA/4h] (3/30 candles)
+00:07:34 [INFO] bot.signals: Warming up [BITCOIN/4h] (4/30 candles)
+00:07:34 [INFO] bot.signals: Warming up [ETHEREUM/4h] (2/30 candles)
+00:07:34 [INFO] bot.signals: Warming up [BITCOIN/15m] (4/30 candles)
+00:07:34 [INFO] bot.signals: Warming up [ETHEREUM/15m] (2/30 candles)
+00:07:34 [INFO] bot.signals: Warming up [SOLANA/15m] (3/30 candles)
+00:07:34 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:07:49 [INFO] bot: --- Tick ---
+00:07:50 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:07:50 [INFO] bot: Evaluating 6 markets for signals...
+00:07:50 [INFO] bot.signals: Warming up [SOLANA/4h] (3/30 candles)
+00:07:50 [INFO] bot.signals: Warming up [BITCOIN/4h] (4/30 candles)
+00:07:50 [INFO] bot.signals: Warming up [ETHEREUM/4h] (2/30 candles)
+00:07:50 [INFO] bot.signals: Warming up [BITCOIN/15m] (4/30 candles)
+00:07:50 [INFO] bot.signals: Warming up [ETHEREUM/15m] (2/30 candles)
+00:07:50 [INFO] bot.signals: Warming up [SOLANA/15m] (3/30 candles)
+00:07:50 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:08:05 [INFO] bot: --- Tick ---
+00:08:08 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:08:08 [INFO] bot: Evaluating 6 markets for signals...
+00:08:08 [INFO] bot.signals: Warming up [SOLANA/4h] (3/30 candles)
+00:08:08 [INFO] bot.signals: Warming up [BITCOIN/4h] (5/30 candles)
+00:08:08 [INFO] bot.signals: Warming up [ETHEREUM/4h] (2/30 candles)
+00:08:08 [INFO] bot.signals: Warming up [BITCOIN/15m] (5/30 candles)
+00:08:08 [INFO] bot.signals: Warming up [ETHEREUM/15m] (2/30 candles)
+00:08:09 [INFO] bot.signals: Warming up [SOLANA/15m] (3/30 candles)
+00:08:09 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:08:24 [INFO] bot: --- Tick ---
+00:08:24 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:08:24 [INFO] bot: Evaluating 6 markets for signals...
+00:08:24 [INFO] bot.signals: Warming up [SOLANA/4h] (3/30 candles)
+00:08:24 [INFO] bot.signals: Warming up [BITCOIN/4h] (5/30 candles)
+00:08:24 [INFO] bot.signals: Warming up [ETHEREUM/4h] (2/30 candles)
+00:08:25 [INFO] bot.signals: Warming up [BITCOIN/15m] (5/30 candles)
+00:08:25 [INFO] bot.signals: Warming up [ETHEREUM/15m] (2/30 candles)
+00:08:25 [INFO] bot.signals: Warming up [SOLANA/15m] (3/30 candles)
+00:08:25 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:08:40 [INFO] bot: --- Tick ---
+00:08:43 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:08:43 [INFO] bot: Evaluating 6 markets for signals...
+00:08:43 [INFO] bot.signals: Warming up [SOLANA/4h] (3/30 candles)
+00:08:43 [INFO] bot.signals: Warming up [BITCOIN/4h] (5/30 candles)
+00:08:43 [INFO] bot.signals: Warming up [ETHEREUM/4h] (2/30 candles)
+00:08:43 [INFO] bot.signals: Warming up [BITCOIN/15m] (5/30 candles)
+00:08:43 [INFO] bot.signals: Warming up [ETHEREUM/15m] (2/30 candles)
+00:08:43 [INFO] bot.signals: Warming up [SOLANA/15m] (3/30 candles)
+00:08:43 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:08:58 [INFO] bot: --- Tick ---
+00:08:59 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:08:59 [INFO] bot: Evaluating 6 markets for signals...
+00:08:59 [INFO] bot.signals: Warming up [SOLANA/4h] (3/30 candles)
+00:08:59 [INFO] bot.signals: Warming up [BITCOIN/4h] (5/30 candles)
+00:08:59 [INFO] bot.signals: Warming up [ETHEREUM/4h] (2/30 candles)
+00:08:59 [INFO] bot.signals: Warming up [BITCOIN/15m] (5/30 candles)
+00:08:59 [INFO] bot.signals: Warming up [ETHEREUM/15m] (2/30 candles)
+00:08:59 [INFO] bot.signals: Warming up [SOLANA/15m] (3/30 candles)
+00:08:59 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:09:14 [INFO] bot: --- Tick ---
+00:09:17 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:09:17 [INFO] bot: Evaluating 6 markets for signals...
+00:09:17 [INFO] bot.signals: Warming up [SOLANA/4h] (3/30 candles)
+00:09:17 [INFO] bot.signals: Warming up [BITCOIN/4h] (6/30 candles)
+00:09:17 [INFO] bot.signals: Warming up [ETHEREUM/4h] (2/30 candles)
+00:09:17 [INFO] bot.signals: Warming up [BITCOIN/15m] (6/30 candles)
+00:09:17 [INFO] bot.signals: Warming up [ETHEREUM/15m] (2/30 candles)
+00:09:17 [INFO] bot.signals: Warming up [SOLANA/15m] (3/30 candles)
+00:09:17 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:09:32 [INFO] bot: --- Tick ---
+00:09:33 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:09:33 [INFO] bot: Evaluating 6 markets for signals...
+00:09:33 [INFO] bot.signals: Warming up [SOLANA/4h] (3/30 candles)
+00:09:33 [INFO] bot.signals: Warming up [BITCOIN/4h] (6/30 candles)
+00:09:33 [INFO] bot.signals: Warming up [ETHEREUM/4h] (3/30 candles)
+00:09:33 [INFO] bot.signals: Warming up [BITCOIN/15m] (6/30 candles)
+00:09:33 [INFO] bot.signals: Warming up [ETHEREUM/15m] (3/30 candles)
+00:09:34 [INFO] bot.signals: Warming up [SOLANA/15m] (3/30 candles)
+00:09:34 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:09:49 [INFO] bot: --- Tick ---
+00:09:51 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:09:51 [INFO] bot: Evaluating 6 markets for signals...
+00:09:51 [INFO] bot.signals: Warming up [SOLANA/4h] (3/30 candles)
+00:09:51 [INFO] bot.signals: Warming up [BITCOIN/4h] (6/30 candles)
+00:09:51 [INFO] bot.signals: Warming up [ETHEREUM/4h] (3/30 candles)
+00:09:51 [INFO] bot.signals: Warming up [BITCOIN/15m] (6/30 candles)
+00:09:52 [INFO] bot.signals: Warming up [ETHEREUM/15m] (3/30 candles)
+00:09:52 [INFO] bot.signals: Warming up [SOLANA/15m] (3/30 candles)
+00:09:52 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:10:07 [INFO] bot: --- Tick ---
+00:10:07 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:10:07 [INFO] bot: Evaluating 6 markets for signals...
+00:10:07 [INFO] bot.signals: Warming up [SOLANA/4h] (3/30 candles)
+00:10:07 [INFO] bot.signals: Warming up [BITCOIN/4h] (6/30 candles)
+00:10:07 [INFO] bot.signals: Warming up [ETHEREUM/4h] (3/30 candles)
+00:10:08 [INFO] bot.signals: Warming up [BITCOIN/15m] (6/30 candles)
+00:10:08 [INFO] bot.signals: Warming up [ETHEREUM/15m] (3/30 candles)
+00:10:08 [INFO] bot.signals: Warming up [SOLANA/15m] (3/30 candles)
+00:10:08 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:10:23 [INFO] bot: --- Tick ---
+00:10:25 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:10:25 [INFO] bot: Evaluating 6 markets for signals...
+00:10:25 [INFO] bot.signals: Warming up [SOLANA/4h] (4/30 candles)
+00:10:25 [INFO] bot.signals: Warming up [BITCOIN/4h] (6/30 candles)
+00:10:25 [INFO] bot.signals: Warming up [ETHEREUM/4h] (3/30 candles)
+00:10:25 [INFO] bot.signals: Warming up [BITCOIN/15m] (6/30 candles)
+00:10:26 [INFO] bot.signals: Warming up [ETHEREUM/15m] (3/30 candles)
+00:10:26 [INFO] bot.signals: Warming up [SOLANA/15m] (4/30 candles)
+00:10:26 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:10:41 [INFO] bot: --- Tick ---
+00:10:41 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:10:41 [INFO] bot: Evaluating 6 markets for signals...
+00:10:41 [INFO] bot.signals: Warming up [SOLANA/4h] (4/30 candles)
+00:10:41 [INFO] bot.signals: Warming up [BITCOIN/4h] (6/30 candles)
+00:10:42 [INFO] bot.signals: Warming up [ETHEREUM/4h] (3/30 candles)
+00:10:42 [INFO] bot.signals: Warming up [BITCOIN/15m] (6/30 candles)
+00:10:42 [INFO] bot.signals: Warming up [ETHEREUM/15m] (3/30 candles)
+00:10:42 [INFO] bot.signals: Warming up [SOLANA/15m] (4/30 candles)
+00:10:42 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:10:57 [INFO] bot: --- Tick ---
+00:10:59 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:10:59 [INFO] bot: Evaluating 6 markets for signals...
+00:10:59 [INFO] bot.signals: Warming up [SOLANA/4h] (4/30 candles)
+00:10:59 [INFO] bot.signals: Warming up [BITCOIN/4h] (7/30 candles)
+00:11:00 [INFO] bot.signals: Warming up [ETHEREUM/4h] (3/30 candles)
+00:11:00 [INFO] bot.signals: Warming up [BITCOIN/15m] (7/30 candles)
+00:11:00 [INFO] bot.signals: Warming up [ETHEREUM/15m] (3/30 candles)
+00:11:00 [INFO] bot.signals: Warming up [SOLANA/15m] (4/30 candles)
+00:11:00 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:11:15 [INFO] bot: --- Tick ---
+00:11:15 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:11:15 [INFO] bot: Evaluating 6 markets for signals...
+00:11:15 [INFO] bot.signals: Warming up [SOLANA/4h] (4/30 candles)
+00:11:16 [INFO] bot.signals: Warming up [BITCOIN/4h] (7/30 candles)
+00:11:16 [INFO] bot.signals: Warming up [ETHEREUM/4h] (4/30 candles)
+00:11:16 [INFO] bot.signals: Warming up [BITCOIN/15m] (7/30 candles)
+00:11:16 [INFO] bot.signals: Warming up [ETHEREUM/15m] (4/30 candles)
+00:11:16 [INFO] bot.signals: Warming up [SOLANA/15m] (4/30 candles)
+00:11:16 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:11:31 [INFO] bot: --- Tick ---
+00:11:33 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:11:33 [INFO] bot: Evaluating 6 markets for signals...
+00:11:33 [INFO] bot.signals: Warming up [SOLANA/4h] (4/30 candles)
+00:11:33 [INFO] bot.signals: Warming up [BITCOIN/4h] (7/30 candles)
+00:11:34 [INFO] bot.signals: Warming up [ETHEREUM/4h] (4/30 candles)
+00:11:34 [INFO] bot.signals: Warming up [BITCOIN/15m] (7/30 candles)
+00:11:34 [INFO] bot.signals: Warming up [ETHEREUM/15m] (4/30 candles)
+00:11:34 [INFO] bot.signals: Warming up [SOLANA/15m] (4/30 candles)
+00:11:34 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:11:49 [INFO] bot: --- Tick ---
+00:11:50 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:11:50 [INFO] bot: Evaluating 6 markets for signals...
+00:11:50 [INFO] bot.signals: Warming up [SOLANA/4h] (4/30 candles)
+00:11:50 [INFO] bot.signals: Warming up [BITCOIN/4h] (7/30 candles)
+00:11:50 [INFO] bot.signals: Warming up [ETHEREUM/4h] (4/30 candles)
+00:11:50 [INFO] bot.signals: Warming up [BITCOIN/15m] (7/30 candles)
+00:11:50 [INFO] bot.signals: Warming up [ETHEREUM/15m] (4/30 candles)
+00:11:50 [INFO] bot.signals: Warming up [SOLANA/15m] (4/30 candles)
+00:11:50 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:12:05 [INFO] bot: --- Tick ---
+00:12:07 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:12:07 [INFO] bot: Evaluating 6 markets for signals...
+00:12:07 [INFO] bot.signals: Warming up [SOLANA/4h] (4/30 candles)
+00:12:07 [INFO] bot.signals: Warming up [BITCOIN/4h] (7/30 candles)
+00:12:08 [INFO] bot.signals: Warming up [ETHEREUM/4h] (4/30 candles)
+00:12:08 [INFO] bot.signals: Warming up [BITCOIN/15m] (7/30 candles)
+00:12:08 [INFO] bot.signals: Warming up [ETHEREUM/15m] (4/30 candles)
+00:12:08 [INFO] bot.signals: Warming up [SOLANA/15m] (4/30 candles)
+00:12:08 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:12:23 [INFO] bot: --- Tick ---
+00:12:23 [INFO] bot.market_discovery: Searching for market offset range...
+00:12:27 [INFO] bot.market_discovery: Approximate total markets: 448828
+00:12:27 [INFO] bot.market_discovery: Found active Up/Down markets near offset 448828
+00:12:27 [INFO] bot.market_discovery: Market offset range starts at ~443828
+00:12:27 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:12:27 [INFO] bot: Evaluating 6 markets for signals...
+00:12:27 [INFO] bot.signals: Warming up [SOLANA/4h] (4/30 candles)
+00:12:27 [INFO] bot.signals: Warming up [BITCOIN/4h] (7/30 candles)
+00:12:27 [INFO] bot.signals: Warming up [ETHEREUM/4h] (4/30 candles)
+00:12:27 [INFO] bot.signals: Warming up [BITCOIN/15m] (7/30 candles)
+00:12:28 [INFO] bot.signals: Warming up [ETHEREUM/15m] (4/30 candles)
+00:12:28 [INFO] bot.signals: Warming up [SOLANA/15m] (4/30 candles)
+00:12:28 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:12:28 [ERROR] bot.ws_feed: WebSocket error, reconnecting in 5s
+Traceback (most recent call last):
+  File "/Users/abdallaalhamdan/polymarket-bot/bot/ws_feed.py", line 101, in _run_loop
+    await self._connect()
+  File "/Users/abdallaalhamdan/polymarket-bot/bot/ws_feed.py", line 120, in _connect
+    async for raw in ws:
+  File "/Users/abdallaalhamdan/polymarket-bot/.venv/lib/python3.12/site-packages/websockets/asyncio/connection.py", line 244, in __aiter__
+    yield await self.recv()
+          ^^^^^^^^^^^^^^^^^
+  File "/Users/abdallaalhamdan/polymarket-bot/.venv/lib/python3.12/site-packages/websockets/asyncio/connection.py", line 324, in recv
+    raise self.protocol.close_exc from self.recv_exc
+websockets.exceptions.ConnectionClosedError: no close frame received or sent
+00:12:33 [INFO] bot.ws_feed: Connecting to WS: wss://ws-subscriptions-clob.polymarket.com/ws/market
+00:12:33 [INFO] bot.ws_feed: WebSocket connected
+00:12:43 [INFO] bot: --- Tick ---
+00:12:45 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:12:45 [INFO] bot: Evaluating 6 markets for signals...
+00:12:45 [INFO] bot.signals: Warming up [SOLANA/4h] (4/30 candles)
+00:12:45 [INFO] bot.signals: Warming up [BITCOIN/4h] (8/30 candles)
+00:12:45 [INFO] bot.signals: Warming up [ETHEREUM/4h] (4/30 candles)
+00:12:45 [INFO] bot.signals: Warming up [BITCOIN/15m] (8/30 candles)
+00:12:45 [INFO] bot.signals: Warming up [ETHEREUM/15m] (4/30 candles)
+00:12:46 [INFO] bot.signals: Warming up [SOLANA/15m] (4/30 candles)
+00:12:46 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:13:01 [INFO] bot: --- Tick ---
+00:13:01 [INFO] bot.market_discovery: Found markets — bitcoin/4h: 1, ethereum/4h: 1, solana/4h: 1 (total: 3)
+00:13:01 [INFO] bot: Evaluating 3 markets for signals...
+00:13:01 [INFO] bot.signals: Warming up [SOLANA/4h] (4/30 candles)
+00:13:01 [INFO] bot.signals: Warming up [BITCOIN/4h] (8/30 candles)
+00:13:01 [INFO] bot.signals: Warming up [ETHEREUM/4h] (4/30 candles)
+00:13:01 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:13:16 [INFO] bot: --- Tick ---
+00:13:19 [INFO] bot.market_discovery: Found markets — bitcoin/4h: 1, ethereum/4h: 1, solana/4h: 1 (total: 3)
+00:13:19 [INFO] bot: Evaluating 3 markets for signals...
+00:13:19 [INFO] bot.signals: Warming up [SOLANA/4h] (5/30 candles)
+00:13:19 [INFO] bot.signals: Warming up [BITCOIN/4h] (9/30 candles)
+00:13:19 [INFO] bot.signals: Warming up [ETHEREUM/4h] (4/30 candles)
+00:13:19 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:13:34 [INFO] bot: --- Tick ---
+00:13:35 [INFO] bot.market_discovery: Found markets — bitcoin/4h: 1, ethereum/4h: 1, solana/4h: 1 (total: 3)
+00:13:35 [INFO] bot: Evaluating 3 markets for signals...
+00:13:35 [INFO] bot.signals: Warming up [SOLANA/4h] (5/30 candles)
+00:13:35 [INFO] bot.signals: Warming up [BITCOIN/4h] (9/30 candles)
+00:13:35 [INFO] bot.signals: Warming up [ETHEREUM/4h] (5/30 candles)
+00:13:35 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:13:50 [INFO] bot: --- Tick ---
+00:13:52 [INFO] bot.market_discovery: Found markets — bitcoin/4h: 1, ethereum/4h: 1, solana/4h: 1 (total: 3)
+00:13:52 [INFO] bot: Evaluating 3 markets for signals...
+00:13:52 [INFO] bot.signals: Warming up [SOLANA/4h] (5/30 candles)
+00:13:52 [INFO] bot.signals: Warming up [BITCOIN/4h] (9/30 candles)
+00:13:52 [INFO] bot.signals: Warming up [ETHEREUM/4h] (5/30 candles)
+00:13:52 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:14:07 [INFO] bot: --- Tick ---
+00:14:08 [INFO] bot.market_discovery: Found markets — bitcoin/4h: 1, ethereum/4h: 1, solana/4h: 1 (total: 3)
+00:14:08 [INFO] bot: Evaluating 3 markets for signals...
+00:14:08 [INFO] bot.signals: Warming up [SOLANA/4h] (5/30 candles)
+00:14:08 [INFO] bot.signals: Warming up [BITCOIN/4h] (9/30 candles)
+00:14:08 [INFO] bot.signals: Warming up [ETHEREUM/4h] (6/30 candles)
+00:14:08 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:14:23 [INFO] bot: --- Tick ---
+00:14:25 [INFO] bot.market_discovery: Found markets — bitcoin/4h: 1, ethereum/4h: 1, solana/4h: 1 (total: 3)
+00:14:25 [INFO] bot: Evaluating 3 markets for signals...
+00:14:25 [INFO] bot.signals: Warming up [SOLANA/4h] (5/30 candles)
+00:14:26 [INFO] bot.signals: Warming up [BITCOIN/4h] (9/30 candles)
+00:14:26 [INFO] bot.signals: Warming up [ETHEREUM/4h] (6/30 candles)
+00:14:26 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:14:41 [INFO] bot: --- Tick ---
+00:14:41 [INFO] bot.market_discovery: Found markets — bitcoin/4h: 1, ethereum/4h: 1, solana/4h: 1 (total: 3)
+00:14:41 [INFO] bot: Evaluating 3 markets for signals...
+00:14:41 [INFO] bot.signals: Warming up [SOLANA/4h] (5/30 candles)
+00:14:41 [INFO] bot.signals: Warming up [BITCOIN/4h] (9/30 candles)
+00:14:41 [INFO] bot.signals: Warming up [ETHEREUM/4h] (6/30 candles)
+00:14:41 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:14:56 [INFO] bot: --- Tick ---
+00:14:59 [INFO] bot.market_discovery: Found markets — bitcoin/4h: 1, ethereum/4h: 1, solana/4h: 1 (total: 3)
+00:14:59 [INFO] bot: Evaluating 3 markets for signals...
+00:14:59 [INFO] bot.signals: Warming up [SOLANA/4h] (5/30 candles)
+00:14:59 [INFO] bot.signals: Warming up [BITCOIN/4h] (9/30 candles)
+00:14:59 [INFO] bot.signals: Warming up [ETHEREUM/4h] (6/30 candles)
+00:14:59 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:15:14 [INFO] bot: --- Tick ---
+00:15:15 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:15:15 [INFO] bot: Evaluating 6 markets for signals...
+00:15:15 [INFO] bot.signals: Warming up [SOLANA/4h] (5/30 candles)
+00:15:15 [INFO] bot.signals: Warming up [BITCOIN/4h] (9/30 candles)
+00:15:15 [INFO] bot.signals: Warming up [ETHEREUM/4h] (6/30 candles)
+00:15:15 [INFO] bot.signals: Warming up [BITCOIN/15m] (9/30 candles)
+00:15:15 [INFO] bot.signals: Warming up [ETHEREUM/15m] (6/30 candles)
+00:15:15 [INFO] bot.signals: Warming up [SOLANA/15m] (5/30 candles)
+00:15:15 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:15:30 [INFO] bot: --- Tick ---
+00:15:32 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:15:32 [INFO] bot: Evaluating 6 markets for signals...
+00:15:32 [INFO] bot.signals: Warming up [SOLANA/4h] (5/30 candles)
+00:15:32 [INFO] bot.signals: Warming up [BITCOIN/4h] (9/30 candles)
+00:15:33 [INFO] bot.signals: Warming up [ETHEREUM/4h] (6/30 candles)
+00:15:33 [INFO] bot.signals: Warming up [BITCOIN/15m] (9/30 candles)
+00:15:33 [INFO] bot.signals: Warming up [ETHEREUM/15m] (6/30 candles)
+00:15:33 [INFO] bot.signals: Warming up [SOLANA/15m] (5/30 candles)
+00:15:33 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:15:48 [INFO] bot: --- Tick ---
+00:15:49 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:15:49 [INFO] bot: Evaluating 6 markets for signals...
+00:15:49 [INFO] bot.signals: Warming up [SOLANA/4h] (5/30 candles)
+00:15:49 [INFO] bot.signals: Warming up [BITCOIN/4h] (9/30 candles)
+00:15:49 [INFO] bot.signals: Warming up [ETHEREUM/4h] (6/30 candles)
+00:15:49 [INFO] bot.signals: Warming up [BITCOIN/15m] (9/30 candles)
+00:15:49 [INFO] bot.signals: Warming up [ETHEREUM/15m] (6/30 candles)
+00:15:49 [INFO] bot.signals: Warming up [SOLANA/15m] (5/30 candles)
+00:15:49 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:16:04 [INFO] bot: --- Tick ---
+00:16:07 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:16:07 [INFO] bot: Evaluating 6 markets for signals...
+00:16:07 [INFO] bot.signals: Warming up [SOLANA/4h] (5/30 candles)
+00:16:07 [INFO] bot.signals: Warming up [BITCOIN/4h] (10/30 candles)
+00:16:07 [INFO] bot.signals: Warming up [ETHEREUM/4h] (6/30 candles)
+00:16:07 [INFO] bot.signals: Warming up [BITCOIN/15m] (10/30 candles)
+00:16:07 [INFO] bot.signals: Warming up [ETHEREUM/15m] (6/30 candles)
+00:16:07 [INFO] bot.signals: Warming up [SOLANA/15m] (5/30 candles)
+00:16:07 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:16:22 [INFO] bot: --- Tick ---
+00:16:23 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:16:23 [INFO] bot: Evaluating 6 markets for signals...
+00:16:23 [INFO] bot.signals: Warming up [SOLANA/4h] (5/30 candles)
+00:16:23 [INFO] bot.signals: Warming up [BITCOIN/4h] (11/30 candles)
+00:16:23 [INFO] bot.signals: Warming up [ETHEREUM/4h] (6/30 candles)
+00:16:23 [INFO] bot.signals: Warming up [BITCOIN/15m] (11/30 candles)
+00:16:23 [INFO] bot.signals: Warming up [ETHEREUM/15m] (6/30 candles)
+00:16:23 [INFO] bot.signals: Warming up [SOLANA/15m] (5/30 candles)
+00:16:23 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:16:38 [INFO] bot: --- Tick ---
+00:16:41 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:16:41 [INFO] bot: Evaluating 6 markets for signals...
+00:16:41 [INFO] bot.signals: Warming up [SOLANA/4h] (5/30 candles)
+00:16:41 [INFO] bot.signals: Warming up [BITCOIN/4h] (11/30 candles)
+00:16:41 [INFO] bot.signals: Warming up [ETHEREUM/4h] (6/30 candles)
+00:16:41 [INFO] bot.signals: Warming up [BITCOIN/15m] (11/30 candles)
+00:16:41 [INFO] bot.signals: Warming up [ETHEREUM/15m] (6/30 candles)
+00:16:41 [INFO] bot.signals: Warming up [SOLANA/15m] (5/30 candles)
+00:16:41 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:16:56 [INFO] bot: --- Tick ---
+00:16:57 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:16:57 [INFO] bot: Evaluating 6 markets for signals...
+00:16:57 [INFO] bot.signals: Warming up [SOLANA/4h] (6/30 candles)
+00:16:57 [INFO] bot.signals: Warming up [BITCOIN/4h] (11/30 candles)
+00:16:57 [INFO] bot.signals: Warming up [ETHEREUM/4h] (6/30 candles)
+00:16:57 [INFO] bot.signals: Warming up [BITCOIN/15m] (11/30 candles)
+00:16:57 [INFO] bot.signals: Warming up [ETHEREUM/15m] (6/30 candles)
+00:16:57 [INFO] bot.signals: Warming up [SOLANA/15m] (6/30 candles)
+00:16:57 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:17:12 [INFO] bot: --- Tick ---
+00:17:16 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:17:16 [INFO] bot: Evaluating 6 markets for signals...
+00:17:16 [INFO] bot.signals: Warming up [SOLANA/4h] (6/30 candles)
+00:17:16 [INFO] bot.signals: Warming up [BITCOIN/4h] (11/30 candles)
+00:17:16 [INFO] bot.signals: Warming up [ETHEREUM/4h] (6/30 candles)
+00:17:16 [INFO] bot.signals: Warming up [BITCOIN/15m] (11/30 candles)
+00:17:16 [INFO] bot.signals: Warming up [ETHEREUM/15m] (6/30 candles)
+00:17:16 [INFO] bot.signals: Warming up [SOLANA/15m] (6/30 candles)
+00:17:16 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:17:31 [INFO] bot: --- Tick ---
+00:17:32 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:17:32 [INFO] bot: Evaluating 6 markets for signals...
+00:17:32 [INFO] bot.signals: Warming up [SOLANA/4h] (6/30 candles)
+00:17:32 [INFO] bot.signals: Warming up [BITCOIN/4h] (12/30 candles)
+00:17:32 [INFO] bot.signals: Warming up [ETHEREUM/4h] (7/30 candles)
+00:17:32 [INFO] bot.signals: Warming up [BITCOIN/15m] (12/30 candles)
+00:17:32 [INFO] bot.signals: Warming up [ETHEREUM/15m] (7/30 candles)
+00:17:32 [INFO] bot.signals: Warming up [SOLANA/15m] (6/30 candles)
+00:17:32 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:17:47 [INFO] bot: --- Tick ---
+00:17:50 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:17:50 [INFO] bot: Evaluating 6 markets for signals...
+00:17:50 [INFO] bot.signals: Warming up [SOLANA/4h] (7/30 candles)
+00:17:50 [INFO] bot.signals: Warming up [BITCOIN/4h] (12/30 candles)
+00:17:50 [INFO] bot.signals: Warming up [ETHEREUM/4h] (7/30 candles)
+00:17:50 [INFO] bot.signals: Warming up [BITCOIN/15m] (12/30 candles)
+00:17:51 [INFO] bot.signals: Warming up [ETHEREUM/15m] (7/30 candles)
+00:17:51 [INFO] bot.signals: Warming up [SOLANA/15m] (7/30 candles)
+00:17:51 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:18:06 [INFO] bot: --- Tick ---
+00:18:06 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:18:06 [INFO] bot: Evaluating 6 markets for signals...
+00:18:06 [INFO] bot.signals: Warming up [SOLANA/4h] (7/30 candles)
+00:18:06 [INFO] bot.signals: Warming up [BITCOIN/4h] (12/30 candles)
+00:18:06 [INFO] bot.signals: Warming up [ETHEREUM/4h] (7/30 candles)
+00:18:07 [INFO] bot.signals: Warming up [BITCOIN/15m] (12/30 candles)
+00:18:07 [INFO] bot.signals: Warming up [ETHEREUM/15m] (7/30 candles)
+00:18:07 [INFO] bot.signals: Warming up [SOLANA/15m] (7/30 candles)
+00:18:07 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:18:22 [INFO] bot: --- Tick ---
+00:18:25 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:18:25 [INFO] bot: Evaluating 6 markets for signals...
+00:18:25 [INFO] bot.signals: Warming up [SOLANA/4h] (7/30 candles)
+00:18:25 [INFO] bot.signals: Warming up [BITCOIN/4h] (12/30 candles)
+00:18:25 [INFO] bot.signals: Warming up [ETHEREUM/4h] (7/30 candles)
+00:18:25 [INFO] bot.signals: Warming up [BITCOIN/15m] (12/30 candles)
+00:18:25 [INFO] bot.signals: Warming up [ETHEREUM/15m] (7/30 candles)
+00:18:25 [INFO] bot.signals: Warming up [SOLANA/15m] (7/30 candles)
+00:18:25 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:18:40 [INFO] bot: --- Tick ---
+00:18:41 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:18:41 [INFO] bot: Evaluating 6 markets for signals...
+00:18:41 [INFO] bot.signals: Warming up [SOLANA/4h] (7/30 candles)
+00:18:41 [INFO] bot.signals: Warming up [BITCOIN/4h] (12/30 candles)
+00:18:41 [INFO] bot.signals: Warming up [ETHEREUM/4h] (7/30 candles)
+00:18:41 [INFO] bot.signals: Warming up [BITCOIN/15m] (12/30 candles)
+00:18:41 [INFO] bot.signals: Warming up [ETHEREUM/15m] (7/30 candles)
+00:18:41 [INFO] bot.signals: Warming up [SOLANA/15m] (7/30 candles)
+00:18:41 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:18:56 [INFO] bot: --- Tick ---
+00:18:59 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:18:59 [INFO] bot: Evaluating 6 markets for signals...
+00:18:59 [INFO] bot.signals: Warming up [SOLANA/4h] (7/30 candles)
+00:18:59 [INFO] bot.signals: Warming up [BITCOIN/4h] (12/30 candles)
+00:18:59 [INFO] bot.signals: Warming up [ETHEREUM/4h] (7/30 candles)
+00:18:59 [INFO] bot.signals: Warming up [BITCOIN/15m] (12/30 candles)
+00:18:59 [INFO] bot.signals: Warming up [ETHEREUM/15m] (7/30 candles)
+00:18:59 [INFO] bot.signals: Warming up [SOLANA/15m] (7/30 candles)
+00:18:59 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:19:14 [INFO] bot: --- Tick ---
+00:19:15 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:19:15 [INFO] bot: Evaluating 6 markets for signals...
+00:19:15 [INFO] bot.signals: Warming up [SOLANA/4h] (7/30 candles)
+00:19:15 [INFO] bot.signals: Warming up [BITCOIN/4h] (12/30 candles)
+00:19:15 [INFO] bot.signals: Warming up [ETHEREUM/4h] (7/30 candles)
+00:19:15 [INFO] bot.signals: Warming up [BITCOIN/15m] (12/30 candles)
+00:19:15 [INFO] bot.signals: Warming up [ETHEREUM/15m] (7/30 candles)
+00:19:15 [INFO] bot.signals: Warming up [SOLANA/15m] (7/30 candles)
+00:19:15 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:19:30 [INFO] bot: --- Tick ---
+00:19:33 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:19:33 [INFO] bot: Evaluating 6 markets for signals...
+00:19:33 [INFO] bot.signals: Warming up [SOLANA/4h] (7/30 candles)
+00:19:34 [INFO] bot.signals: Warming up [BITCOIN/4h] (12/30 candles)
+00:19:34 [INFO] bot.signals: Warming up [ETHEREUM/4h] (7/30 candles)
+00:19:34 [INFO] bot.signals: Warming up [BITCOIN/15m] (12/30 candles)
+00:19:34 [INFO] bot.signals: Warming up [ETHEREUM/15m] (7/30 candles)
+00:19:34 [INFO] bot.signals: Warming up [SOLANA/15m] (7/30 candles)
+00:19:34 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:19:49 [INFO] bot: --- Tick ---
+00:19:50 [INFO] bot.market_discovery: Found markets — bitcoin/15m: 1, bitcoin/4h: 1, ethereum/15m: 1, ethereum/4h: 1, solana/15m: 1, solana/4h: 1 (total: 6)
+00:19:50 [INFO] bot: Evaluating 6 markets for signals...
+00:19:50 [INFO] bot.signals: Warming up [SOLANA/4h] (7/30 candles)
+00:19:50 [INFO] bot.signals: Warming up [BITCOIN/4h] (12/30 candles)
+00:19:50 [INFO] bot.signals: Warming up [ETHEREUM/4h] (7/30 candles)
+00:19:50 [INFO] bot.signals: Warming up [BITCOIN/15m] (12/30 candles)
+00:19:50 [INFO] bot.signals: Warming up [ETHEREUM/15m] (7/30 candles)
+00:19:50 [INFO] bot.signals: Warming up [SOLANA/15m] (7/30 candles)
+00:19:50 [INFO] bot: No trades this tick (positions: 0, exposure: $0.00)
+00:19:57 [INFO] bot: Shutdown signal received
+00:19:57 [INFO] bot: Shutting down...
+00:19:57 [INFO] bot.execution: [DRY RUN] Would cancel 0 open orders
