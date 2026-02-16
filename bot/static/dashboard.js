@@ -1888,6 +1888,7 @@ async function refresh() {
       } catch(e) {}
       // Re-render intel cards with fresh overview data
       if (_intelData) renderTeamIntelligence(_intelData);
+      loadBrainNotes('claude');
     } else if (currentTab === 'garves') {
       var resp = await fetch('/api/trades');
       var data = await resp.json();
@@ -1904,11 +1905,13 @@ async function refresh() {
       loadDerivatives();
       loadAgentLearning('garves');
       loadNewsSentiment();
+      loadBrainNotes('garves');
     } else if (currentTab === 'soren') {
       var resp = await fetch('/api/soren');
       renderSoren(await resp.json());
       loadAgentLearning('soren');
       loadSorenCompetitors();
+      loadBrainNotes('soren');
     } else if (currentTab === 'shelby') {
       var resp = await fetch('/api/shelby');
       renderShelby(await resp.json());
@@ -1919,6 +1922,7 @@ async function refresh() {
       try { loadAssessments(); } catch(e) {}
       try { loadShelbyOnlineCount(); } catch(e) {}
       try { loadShelbyDecisions(); } catch(e) {}
+      loadBrainNotes('shelby');
     } else if (currentTab === 'atlas') {
       var resp = await fetch('/api/atlas');
       var atlasData = await resp.json();
@@ -1932,6 +1936,7 @@ async function refresh() {
       loadCompetitorIntel();
       loadAgentLearning('atlas');
       loadTradeAnalysis();
+      loadBrainNotes('atlas');
     } else if (currentTab === 'mercury') {
       var resp = await fetch('/api/mercury');
       renderMercury(await resp.json());
@@ -1940,13 +1945,17 @@ async function refresh() {
       loadAgentLearning('mercury');
       loadLisaGoLive();
       loadLisaCommentStats();
+      loadBrainNotes('lisa');
     } else if (currentTab === 'sentinel') {
       var resp = await fetch('/api/sentinel');
       renderSentinel(await resp.json());
       loadAgentLearning('sentinel');
       loadRobotoxDeps();
+      loadBrainNotes('robotox');
     } else if (currentTab === 'thor') {
       loadThor();
+      loadSmartActions();
+      loadBrainNotes('thor');
     } else if (currentTab === 'chat') {
       if (!chatLoaded) loadChatHistory();
     }
@@ -2489,23 +2498,68 @@ async function loadThorResults() {
   } catch(e) {}
 }
 
-async function thorQuickAction(action) {
+var _smartActionsCache = [];
+
+async function loadSmartActions() {
+  var el = document.getElementById('thor-smart-actions');
+  if (!el) return;
+  try {
+    var resp = await fetch('/api/thor/smart-actions');
+    var data = await resp.json();
+    _smartActionsCache = data.actions || [];
+    if (_smartActionsCache.length === 0) {
+      el.innerHTML = '<span class="text-muted">No suggested actions right now. All systems nominal.</span>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < _smartActionsCache.length; i++) {
+      var a = _smartActionsCache[i];
+      var color = a.color || '#888';
+      var priorityBadge = '';
+      if (a.priority === 'critical') priorityBadge = '<span style="background:#ff0000;color:#fff;font-size:0.6rem;padding:1px 5px;border-radius:3px;margin-right:4px;">CRITICAL</span>';
+      else if (a.priority === 'high') priorityBadge = '<span style="background:rgba(255,100,0,0.3);color:#ff6644;font-size:0.6rem;padding:1px 5px;border-radius:3px;margin-right:4px;">HIGH</span>';
+      var sourceIcon = '';
+      if (a.source === 'atlas') sourceIcon = 'Atlas';
+      else if (a.source === 'robotox') sourceIcon = 'Robotox';
+      else if (a.source === 'shelby') sourceIcon = 'Shelby';
+      else if (a.source === 'live_data') sourceIcon = 'Live';
+      else if (a.source === 'thor') sourceIcon = 'Thor';
+      html += '<button class="btn" onclick="submitSmartAction(' + i + ')" style="color:' + color + ';border-color:' + color + '33;font-size:0.74rem;padding:6px 12px;position:relative;">';
+      html += priorityBadge;
+      html += esc(a.title.substring(0, 50));
+      if (sourceIcon) html += ' <span style="font-size:0.6rem;opacity:0.6;margin-left:4px;">(' + sourceIcon + ')</span>';
+      html += '</button>';
+    }
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '<span class="text-muted">Failed to load suggestions.</span>';
+  }
+}
+
+async function submitSmartAction(index) {
+  var a = _smartActionsCache[index];
+  if (!a) return;
+  if (!confirm('Submit to Thor:\\n\\n' + a.title + '\\n\\n' + (a.description || '').substring(0, 200) + '...')) return;
   try {
     var resp = await fetch('/api/thor/quick-action', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({action: action})
+      body: JSON.stringify({
+        title: a.title,
+        description: a.description,
+        target_files: a.target_files || [],
+        agent: a.agent || '',
+        priority: a.priority || 'normal',
+        source: a.source || 'smart-action'
+      })
     });
     var data = await resp.json();
-    if (data.error) {
-      alert('Error: ' + data.error);
-      return;
-    }
-    showToast('Task submitted: ' + (data.title || action), 'var(--agent-thor)');
+    if (data.error) { alert('Error: ' + data.error); return; }
+    showToast('Task submitted: ' + a.title, 'var(--agent-thor)');
     loadThorQueue();
     loadThor();
   } catch(e) {
-    alert('Failed to submit quick action: ' + e.message);
+    alert('Failed: ' + e.message);
   }
 }
 
@@ -2906,4 +2960,69 @@ async function loadSystemHealth() {
     var resp = await fetch('/api/health');
     return await resp.json();
   } catch(e) { return null; }
+}
+
+// ══════════════════════════════════════════════
+// BRAIN MANAGEMENT — Store/Delete Notes
+// ══════════════════════════════════════════════
+async function loadBrainNotes(agent) {
+  var el = document.getElementById(agent + '-brain-list');
+  if (!el) return;
+  try {
+    var resp = await fetch('/api/brain/' + agent);
+    var data = await resp.json();
+    var notes = data.notes || [];
+    if (notes.length === 0) {
+      el.innerHTML = '<div class="text-muted" style="text-align:center;padding:var(--space-4);">No brain notes yet.</div>';
+      return;
+    }
+    var html = '';
+    for (var i = notes.length - 1; i >= 0; i--) {
+      var n = notes[i];
+      var ts = n.created_at ? n.created_at.substring(0, 16).replace('T', ' ') : '';
+      var tags = (n.tags && n.tags.length > 0) ? n.tags.map(function(t) { return '<span style="background:rgba(255,255,255,0.08);padding:1px 6px;border-radius:4px;font-size:0.68rem;margin-right:4px;">' + esc(t) + '</span>'; }).join('') : '';
+      html += '<div style="border-bottom:1px solid rgba(255,255,255,0.06);padding:8px 0;display:flex;justify-content:space-between;align-items:flex-start;">';
+      html += '<div style="flex:1;">';
+      html += '<div style="font-weight:600;font-size:0.82rem;color:var(--text-primary);margin-bottom:2px;">' + esc(n.topic) + '</div>';
+      html += '<div style="font-size:0.76rem;color:var(--text-secondary);white-space:pre-wrap;word-break:break-word;">' + esc(n.content) + '</div>';
+      html += '<div style="margin-top:4px;font-size:0.68rem;color:var(--text-muted);">' + ts + ' ' + tags + '</div>';
+      html += '</div>';
+      html += '<button onclick="deleteBrainNote(\'' + agent + '\',\'' + n.id + '\')" style="background:none;border:none;color:var(--error);cursor:pointer;font-size:1rem;padding:4px 8px;opacity:0.7;" title="Delete">&times;</button>';
+      html += '</div>';
+    }
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '<span style="color:var(--error);">Failed to load: ' + esc(e.message) + '</span>';
+  }
+}
+
+async function addBrainNote(agent) {
+  var topicEl = document.getElementById(agent + '-brain-topic');
+  var contentEl = document.getElementById(agent + '-brain-content');
+  if (!topicEl || !contentEl) return;
+  var topic = topicEl.value.trim();
+  var content = contentEl.value.trim();
+  if (!topic || !content) { alert('Both topic and content are required.'); return; }
+  try {
+    var resp = await fetch('/api/brain/' + agent, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({topic: topic, content: content})
+    });
+    var data = await resp.json();
+    if (data.error) { alert('Error: ' + data.error); return; }
+    topicEl.value = '';
+    contentEl.value = '';
+    loadBrainNotes(agent);
+  } catch(e) { alert('Failed: ' + e.message); }
+}
+
+async function deleteBrainNote(agent, noteId) {
+  if (!confirm('Delete this brain note?')) return;
+  try {
+    var resp = await fetch('/api/brain/' + agent + '/' + noteId, {method: 'DELETE'});
+    var data = await resp.json();
+    if (data.error) { alert('Error: ' + data.error); return; }
+    loadBrainNotes(agent);
+  } catch(e) { alert('Failed: ' + e.message); }
 }

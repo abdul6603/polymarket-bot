@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 
 from flask import Blueprint, jsonify, request
@@ -128,73 +129,298 @@ def api_thor_activity():
         return jsonify({"error": str(e)})
 
 
-QUICK_ACTIONS = {
-    "optimize_garves": {
-        "title": "Optimize Garves Signal Accuracy",
-        "description": "Review and optimize signal generation in bot/signals.py and bot/indicators.py. "
-                       "Analyze indicator weights, accuracy thresholds, and consensus logic. "
-                       "Suggest improvements to increase win rate.",
-        "target_files": ["bot/signals.py", "bot/indicators.py"],
-        "agent": "garves",
-        "priority": "high",
-    },
-    "fix_soren_pipeline": {
-        "title": "Fix Soren Posting Pipeline",
-        "description": "Debug and fix issues in Lisa's posting scheduler and Soren's content pipeline. "
-                       "Check for stale queue items, failed posts, and scheduling gaps.",
-        "target_files": ["mercury/core/scheduler.py", "soren-content/generate.py"],
-        "agent": "soren",
-        "priority": "normal",
-    },
-    "clear_shelby_tasks": {
-        "title": "Clear Shelby Stale Tasks",
-        "description": "Audit shelby/shelby.py task management. Remove stale/completed tasks, "
-                       "fix any stuck tasks, and optimize the task queue.",
-        "target_files": ["shelby/shelby.py", "shelby/data/tasks.json"],
-        "agent": "shelby",
-        "priority": "normal",
-    },
-    "improve_atlas_dedup": {
-        "title": "Improve Atlas Research Deduplication",
-        "description": "Enhance deduplication in atlas/researcher.py to prevent redundant research. "
-                       "Improve URL tracking, content hashing, and result quality filtering.",
-        "target_files": ["atlas/researcher.py"],
-        "agent": "atlas",
-        "priority": "normal",
-    },
-    "dashboard_scan": {
-        "title": "Dashboard Bug Scan",
-        "description": "Scan bot/live_dashboard.py and bot/static/dashboard.js for bugs, "
-                       "broken API calls, missing error handling, and performance issues.",
-        "target_files": ["bot/live_dashboard.py", "bot/static/dashboard.js"],
-        "agent": "dashboard",
-        "priority": "normal",
-    },
-    "system_audit": {
-        "title": "Run Full System Health Audit",
-        "description": "Comprehensive audit of all agents: check imports, file integrity, "
-                       "config validity, API connectivity, and inter-agent communication. "
-                       "Report on each agent's health status.",
-        "target_files": [
-            "bot/main.py", "bot/signals.py", "shelby/shelby.py",
-            "atlas/brain.py", "mercury/core/brain.py", "sentinel/sentinel.py",
-        ],
-        "agent": "system",
-        "priority": "high",
-    },
+ATLAS_DATA = Path.home() / "atlas" / "data"
+SHELBY_DATA = Path.home() / "shelby" / "data"
+SENTINEL_DATA = Path.home() / "sentinel" / "data"
+GARVES_DATA = Path.home() / "polymarket-bot" / "data"
+SOREN_DATA = Path.home() / "soren-content" / "data"
+MERCURY_DATA = Path.home() / "mercury" / "data"
+
+# Agent colors for smart action UI
+AGENT_COLORS = {
+    "garves": "#FFD700", "soren": "#9370DB", "shelby": "#4169E1",
+    "atlas": "#32CD32", "lisa": "#FF69B4", "robotox": "#FF4500",
+    "thor": "#00CED1", "dashboard": "#708090", "system": "#e0e0e0",
 }
+
+# Project file mappings
+AGENT_FILE_MAP = {
+    "garves": {"root": "polymarket-bot", "key_files": ["bot/signals.py", "bot/indicators.py", "bot/main.py"]},
+    "soren": {"root": "soren-content", "key_files": ["generate.py", "writer.py", "scheduler.py"]},
+    "shelby": {"root": "shelby", "key_files": ["shelby.py", "app.py", "core/tools.py"]},
+    "atlas": {"root": "atlas", "key_files": ["brain.py", "researcher.py", "background.py"]},
+    "lisa": {"root": "mercury", "key_files": ["mercury.py", "core/brain.py", "core/publisher.py"]},
+    "robotox": {"root": "sentinel", "key_files": ["sentinel.py"]},
+    "thor": {"root": "thor", "key_files": ["agent.py", "core/brain.py", "core/coder.py"]},
+    "dashboard": {"root": "polymarket-bot", "key_files": ["bot/live_dashboard.py", "bot/static/dashboard.js", "bot/templates/dashboard.html"]},
+}
+
+
+def _generate_smart_actions() -> list[dict]:
+    """Generate dynamic quick actions from live agent data."""
+    actions = []
+
+    # 1. Atlas improvements → actionable tasks
+    try:
+        imp_file = ATLAS_DATA / "improvements.json"
+        if imp_file.exists():
+            improvements = json.loads(imp_file.read_text())
+            if isinstance(improvements, dict):
+                for agent_name, items in improvements.items():
+                    if not isinstance(items, list):
+                        continue
+                    for item in items[:2]:  # top 2 per agent
+                        if not isinstance(item, dict):
+                            continue
+                        title = item.get("title", item.get("suggestion", ""))[:80]
+                        if not title:
+                            continue
+                        desc = item.get("description", item.get("detail", title))
+                        files = AGENT_FILE_MAP.get(agent_name, {}).get("key_files", [])
+                        actions.append({
+                            "id": f"atlas_{agent_name}_{hash(title) % 10000}",
+                            "title": title,
+                            "description": str(desc)[:500],
+                            "agent": agent_name,
+                            "source": "atlas",
+                            "priority": item.get("priority", "normal"),
+                            "target_files": files,
+                            "color": AGENT_COLORS.get(agent_name, "#888"),
+                        })
+    except Exception:
+        pass
+
+    # 2. Robotox bug scan → fix actions
+    try:
+        scan_file = SENTINEL_DATA / "scan_results.json"
+        if scan_file.exists():
+            scan_data = json.loads(scan_file.read_text())
+            bugs = scan_data if isinstance(scan_data, list) else scan_data.get("bugs", [])
+            for bug in bugs[:3]:
+                if not isinstance(bug, dict):
+                    continue
+                agent = bug.get("agent", "system")
+                title = f"Fix: {bug.get('title', bug.get('description', 'Bug'))[:60]}"
+                files = bug.get("files", AGENT_FILE_MAP.get(agent, {}).get("key_files", []))
+                actions.append({
+                    "id": f"bug_{hash(title) % 10000}",
+                    "title": title,
+                    "description": bug.get("description", title)[:500],
+                    "agent": agent,
+                    "source": "robotox",
+                    "priority": "high",
+                    "target_files": files if isinstance(files, list) else [],
+                    "color": AGENT_COLORS.get(agent, "#FF4500"),
+                })
+    except Exception:
+        pass
+
+    # 3. Garves performance → optimization actions
+    try:
+        trades_file = GARVES_DATA / "trades.json"
+        if trades_file.exists():
+            trades = json.loads(trades_file.read_text())
+            if isinstance(trades, list) and len(trades) >= 5:
+                recent = trades[-20:]
+                wins = sum(1 for t in recent if t.get("result") == "win")
+                wr = wins / len(recent) * 100 if recent else 0
+                if wr < 55:
+                    actions.append({
+                        "id": "garves_wr_low",
+                        "title": f"Garves Win Rate Low ({wr:.0f}%) — Optimize Signals",
+                        "description": f"Win rate dropped to {wr:.0f}% over last {len(recent)} trades. "
+                                       "Review indicator weights, thresholds, and regime detection. "
+                                       "Check if market conditions changed.",
+                        "agent": "garves",
+                        "source": "live_data",
+                        "priority": "high",
+                        "target_files": ["bot/signals.py", "bot/indicators.py", "bot/regime.py"],
+                        "color": AGENT_COLORS["garves"],
+                    })
+    except Exception:
+        pass
+
+    # 4. Soren queue health → pipeline actions
+    try:
+        queue_file = Path.home() / "soren-content" / "data" / "content_queue.json"
+        if queue_file.exists():
+            queue = json.loads(queue_file.read_text())
+            items = queue if isinstance(queue, list) else queue.get("items", [])
+            pending = [i for i in items if i.get("status") == "pending"]
+            failed = [i for i in items if i.get("status") == "failed"]
+            if len(failed) > 2:
+                actions.append({
+                    "id": "soren_failed_posts",
+                    "title": f"Soren: {len(failed)} Failed Posts — Fix Pipeline",
+                    "description": f"{len(failed)} content items failed. Check generation errors, "
+                                   "API connectivity, and retry failed items.",
+                    "agent": "soren",
+                    "source": "live_data",
+                    "priority": "high",
+                    "target_files": ["soren-content/generate.py", "mercury/core/publisher.py"],
+                    "color": AGENT_COLORS["soren"],
+                })
+            if len(pending) < 3:
+                actions.append({
+                    "id": "soren_low_queue",
+                    "title": f"Soren Queue Low ({len(pending)} pending) — Generate Content",
+                    "description": "Content queue running low. Generate a fresh batch of content "
+                                   "across all pillars to keep posting schedule on track.",
+                    "agent": "soren",
+                    "source": "live_data",
+                    "priority": "normal",
+                    "target_files": ["soren-content/generate.py", "soren-content/writer.py"],
+                    "color": AGENT_COLORS["soren"],
+                })
+    except Exception:
+        pass
+
+    # 5. Atlas KB health → maintenance actions
+    try:
+        kb_file = ATLAS_DATA / "knowledge_base.json"
+        if kb_file.exists():
+            kb = json.loads(kb_file.read_text())
+            obs_count = len(kb.get("observations", []))
+            learnings = kb.get("learnings", [])
+            unapplied = len([l for l in learnings if not l.get("applied")])
+            if obs_count > 400:
+                actions.append({
+                    "id": "atlas_compress_kb",
+                    "title": f"Atlas KB Bloated ({obs_count} obs) — Compress",
+                    "description": f"Knowledge base has {obs_count} observations (max 500). "
+                                   "Run auto-summarization to compress old observations into learnings.",
+                    "agent": "atlas",
+                    "source": "live_data",
+                    "priority": "normal",
+                    "target_files": ["atlas/brain.py"],
+                    "color": AGENT_COLORS["atlas"],
+                })
+            if unapplied > 10:
+                actions.append({
+                    "id": "atlas_apply_learnings",
+                    "title": f"Atlas: {unapplied} Unapplied Learnings — Review",
+                    "description": f"{unapplied} validated learnings haven't been applied yet. "
+                                   "Review and implement the most impactful ones.",
+                    "agent": "atlas",
+                    "source": "live_data",
+                    "priority": "normal",
+                    "target_files": ["atlas/brain.py", "atlas/improvements.py"],
+                    "color": AGENT_COLORS["atlas"],
+                })
+    except Exception:
+        pass
+
+    # 6. Shelby assessments → low-scoring agent actions
+    try:
+        assess_file = SHELBY_DATA / "agent_assessments.json"
+        if assess_file.exists():
+            assessments = json.loads(assess_file.read_text())
+            if isinstance(assessments, dict):
+                for agent_name, data in assessments.items():
+                    if not isinstance(data, dict):
+                        continue
+                    score = data.get("score", data.get("rating", 100))
+                    if isinstance(score, (int, float)) and score < 60:
+                        actions.append({
+                            "id": f"low_score_{agent_name}",
+                            "title": f"{agent_name.title()} Score Low ({score}) — Investigate",
+                            "description": f"Shelby rates {agent_name.title()} at {score}/100. "
+                                           f"Reason: {data.get('reason', data.get('notes', 'underperforming'))}. "
+                                           "Investigate and fix root cause.",
+                            "agent": agent_name,
+                            "source": "shelby",
+                            "priority": "high",
+                            "target_files": AGENT_FILE_MAP.get(agent_name, {}).get("key_files", []),
+                            "color": AGENT_COLORS.get(agent_name, "#888"),
+                        })
+    except Exception:
+        pass
+
+    # 7. Dependency checker → security actions
+    try:
+        dep_file = SENTINEL_DATA / "dep_report.json"
+        if dep_file.exists():
+            dep_data = json.loads(dep_file.read_text())
+            cves = dep_data.get("vulnerabilities", dep_data.get("cves", []))
+            if cves and len(cves) > 0:
+                actions.append({
+                    "id": "dep_cves",
+                    "title": f"{len(cves)} Security Vulnerabilities Found — Patch",
+                    "description": "Robotox found vulnerable dependencies. "
+                                   "Update affected packages and verify no breaking changes.",
+                    "agent": "system",
+                    "source": "robotox",
+                    "priority": "critical",
+                    "target_files": [],
+                    "color": "#FF0000",
+                })
+    except Exception:
+        pass
+
+    # 8. Thor failed tasks → retry actions
+    try:
+        tasks_dir = THOR_DATA / "tasks"
+        if tasks_dir.exists():
+            failed_tasks = []
+            for f in tasks_dir.glob("task_*.json"):
+                try:
+                    td = json.loads(f.read_text())
+                    if td.get("status") == "failed":
+                        failed_tasks.append(td)
+                except Exception:
+                    pass
+            if failed_tasks:
+                latest = sorted(failed_tasks, key=lambda x: x.get("created_at", 0), reverse=True)[0]
+                actions.append({
+                    "id": f"retry_{latest.get('id', 'unknown')[:8]}",
+                    "title": f"Retry Failed: {latest.get('title', 'Task')[:50]}",
+                    "description": f"Task failed: {latest.get('error', 'unknown error')[:200]}. "
+                                   "Retry with improved context.",
+                    "agent": latest.get("agent", "system"),
+                    "source": "thor",
+                    "priority": "normal",
+                    "target_files": latest.get("target_files", []),
+                    "color": AGENT_COLORS["thor"],
+                })
+    except Exception:
+        pass
+
+    # Sort by priority (critical > high > normal > low)
+    priority_order = {"critical": 0, "high": 1, "normal": 2, "low": 3}
+    actions.sort(key=lambda a: priority_order.get(a.get("priority", "normal"), 2))
+
+    # Deduplicate by id
+    seen = set()
+    unique = []
+    for a in actions:
+        if a["id"] not in seen:
+            seen.add(a["id"])
+            unique.append(a)
+
+    return unique[:12]  # max 12 actions
+
+
+@thor_bp.route("/api/thor/smart-actions")
+def api_thor_smart_actions():
+    """Generate dynamic quick actions from live agent data."""
+    try:
+        actions = _generate_smart_actions()
+        return jsonify({"actions": actions, "count": len(actions), "generated_at": time.time()})
+    except Exception as e:
+        return jsonify({"actions": [], "error": str(e)})
 
 
 @thor_bp.route("/api/thor/quick-action", methods=["POST"])
 def api_thor_quick_action():
-    """Submit a pre-built quick action task to Thor's queue."""
+    """Submit a smart action or custom action as a Thor task."""
     try:
         data = request.get_json() or {}
-        action = data.get("action", "")
-        if action not in QUICK_ACTIONS:
-            return jsonify({"error": f"Unknown action: {action}", "available": list(QUICK_ACTIONS.keys())}), 400
 
-        template = QUICK_ACTIONS[action]
+        # Accept either a pre-built action object or action fields directly
+        title = data.get("title", "")
+        description = data.get("description", "")
+        if not title or not description:
+            return jsonify({"error": "title and description required"}), 400
 
         from thor.core.task_queue import CodingTask, TaskQueue
         from thor.config import ThorConfig
@@ -202,16 +428,16 @@ def api_thor_quick_action():
         queue = TaskQueue(cfg.tasks_dir, cfg.results_dir)
 
         task = CodingTask(
-            title=template["title"],
-            description=template["description"],
-            target_files=template.get("target_files", []),
-            context_files=template.get("context_files", []),
-            agent=template.get("agent", ""),
-            priority=template.get("priority", "normal"),
-            assigned_by="dashboard-quick-action",
+            title=title,
+            description=description,
+            target_files=data.get("target_files", []),
+            context_files=data.get("context_files", []),
+            agent=data.get("agent", ""),
+            priority=data.get("priority", "normal"),
+            assigned_by=f"dashboard-smart-action:{data.get('source', 'manual')}",
         )
         task_id = queue.submit(task)
-        return jsonify({"task_id": task_id, "status": "submitted", "action": action, "title": template["title"]})
+        return jsonify({"task_id": task_id, "status": "submitted", "title": title})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
