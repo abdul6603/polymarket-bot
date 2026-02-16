@@ -2214,7 +2214,6 @@ async function refresh() {
       var data = await resp.json();
       _overviewCache = data;
       renderAgentGrid(data);
-      renderIndicatorAccuracy(data);
       loadInfrastructure();
       loadEventFeed();
       // Fetch atlas bg status for countdown on overview
@@ -2238,6 +2237,7 @@ async function refresh() {
       renderLivePendingTrades(data.pending_trades);
       renderLiveResolvedTrades(data.recent_trades);
       fetch('/api/logs').then(function(r){return r.json();}).then(function(d){renderLiveLogs(d.lines);}).catch(function(){});
+      loadAgentActivity('garves-live');
     } else if (currentTab === 'garves') {
       var resp = await fetch('/api/trades/sim');
       var data = await resp.json();
@@ -2265,6 +2265,7 @@ async function refresh() {
       loadBrainNotes('soren');
       loadCommandTable('soren');
       loadAgentSmartActions('soren');
+      loadAgentActivity('soren');
     } else if (currentTab === 'shelby') {
       var resp = await fetch('/api/shelby');
       renderShelby(await resp.json());
@@ -2278,6 +2279,7 @@ async function refresh() {
       loadBrainNotes('shelby');
       loadCommandTable('shelby');
       loadAgentSmartActions('shelby');
+      loadAgentActivity('shelby');
     } else if (currentTab === 'atlas') {
       var resp = await fetch('/api/atlas');
       var atlasData = await resp.json();
@@ -2294,6 +2296,7 @@ async function refresh() {
       loadBrainNotes('atlas');
       loadCommandTable('atlas');
       loadAgentSmartActions('atlas');
+      loadAgentActivity('atlas');
     } else if (currentTab === 'mercury') {
       var resp = await fetch('/api/mercury');
       renderMercury(await resp.json());
@@ -2305,6 +2308,7 @@ async function refresh() {
       loadBrainNotes('lisa');
       loadCommandTable('lisa');
       loadAgentSmartActions('lisa');
+      loadAgentActivity('mercury');
     } else if (currentTab === 'sentinel') {
       var resp = await fetch('/api/sentinel');
       renderSentinel(await resp.json());
@@ -2314,11 +2318,15 @@ async function refresh() {
       loadBrainNotes('robotox');
       loadCommandTable('robotox');
       loadAgentSmartActions('robotox');
+      loadAgentActivity('sentinel');
     } else if (currentTab === 'thor') {
       loadThor();
       loadSmartActions();
       loadBrainNotes('thor');
       loadCommandTable('thor');
+      loadAgentActivity('thor');
+    } else if (currentTab === 'system') {
+      loadSystemTab();
     } else if (currentTab === 'chat') {
       if (!chatLoaded) loadChatHistory();
     }
@@ -2665,35 +2673,6 @@ function healthBadge(h) {
 }
 
 async function loadInfrastructure() {
-  // Heartbeats
-  try {
-    var resp = await fetch('/api/heartbeats');
-    var data = await resp.json();
-    var hbs = data.heartbeats || {};
-    var keys = Object.keys(hbs);
-    var aliveCount = 0;
-    var html = '';
-    for (var i = 0; i < keys.length; i++) {
-      var name = keys[i];
-      var hb = hbs[name];
-      if (hb.health === 'healthy') aliveCount++;
-      var ageStr = hb.age_seconds < 60 ? hb.age_seconds + 's ago' :
-                   hb.age_seconds < 3600 ? Math.floor(hb.age_seconds / 60) + 'm ago' :
-                   Math.floor(hb.age_seconds / 3600) + 'h ago';
-      html += '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);">';
-      html += '<span>' + esc(hb.display_name || name) + '</span>';
-      html += '<span>' + healthBadge(hb.health) + ' <span class="text-muted" style="font-size:0.68rem;">' + ageStr + '</span></span>';
-      html += '</div>';
-    }
-    if (!keys.length) html = '<span class="text-muted">No heartbeats yet. Agents will register shortly.</span>';
-    var el = document.getElementById('infra-heartbeat-list');
-    if (el) el.innerHTML = html;
-    var hbEl = document.getElementById('infra-agents-alive');
-    if (hbEl) hbEl.textContent = aliveCount + '/' + keys.length;
-  } catch(e) {
-    console.error('heartbeat load error:', e);
-  }
-
   // System health
   try {
     var resp2 = await fetch('/api/system-health');
@@ -2704,46 +2683,45 @@ async function loadInfrastructure() {
       var color = overall === 'HEALTHY' ? 'var(--success)' : overall === 'DEGRADED' ? 'var(--warning)' : 'var(--error)';
       el2.innerHTML = '<span style="color:' + color + ';">' + overall + '</span>';
     }
-    var servEl = document.getElementById('infra-services');
-    if (servEl) {
-      var regKeys = Object.keys(health.registry || {});
-      servEl.textContent = regKeys.length;
+  } catch(e) {}
+
+  // Active agents from heartbeats
+  try {
+    var resp = await fetch('/api/heartbeats');
+    var data = await resp.json();
+    var hbs = data.heartbeats || {};
+    var alive = 0;
+    var total = Object.keys(hbs).length;
+    for (var k in hbs) { if (hbs[k].health === 'healthy') alive++; }
+    var aaEl = document.getElementById('infra-active-agents');
+    if (aaEl) {
+      var aaColor = alive === total ? 'var(--success)' : alive > 0 ? 'var(--warning)' : 'var(--error)';
+      aaEl.innerHTML = '<span style="color:' + aaColor + ';">' + alive + '/' + total + '</span>';
     }
   } catch(e) {}
 
-  // Broadcasts
+  // Events (24h) from event bus stats
   try {
-    var resp3 = await fetch('/api/broadcasts');
-    var bcData = await resp3.json();
-    var bcs = bcData.broadcasts || [];
-    var bcCountEl = document.getElementById('infra-broadcasts');
-    if (bcCountEl) bcCountEl.textContent = bcs.length;
-    var bcListEl = document.getElementById('infra-broadcast-list');
-    if (bcListEl) {
-      var bcHtml = '';
-      var recent = bcs.slice(-5).reverse();
-      for (var b = 0; b < recent.length; b++) {
-        var bc = recent[b];
-        var acks = bc.acks || {};
-        var ackCount = Object.keys(acks).length;
-        var deliveredCount = (bc.delivered_to || []).length;
-        var prioClass = bc.priority === 'high' ? 'color:var(--warning);' : 'color:var(--text-secondary);';
-        var ts = bc.timestamp || '';
-        var shortTs = ts.length > 16 ? ts.substring(11, 16) : ts;
-        var msg = (bc.message || '').substring(0, 80);
-        if ((bc.message || '').length > 80) msg += '...';
-        bcHtml += '<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);">';
-        bcHtml += '<div style="display:flex;justify-content:space-between;">';
-        bcHtml += '<span style="' + prioClass + '">' + esc(bc.from || 'shelby') + '</span>';
-        bcHtml += '<span class="text-muted" style="font-size:0.68rem;">' + esc(shortTs) + ' | ' + ackCount + '/' + deliveredCount + ' ack</span>';
-        bcHtml += '</div>';
-        bcHtml += '<div class="text-muted" style="font-size:0.68rem;margin-top:2px;">' + esc(msg) + '</div>';
-        bcHtml += '</div>';
-      }
-      if (!recent.length) bcHtml = '<span class="text-muted">No broadcasts yet.</span>';
-      bcListEl.innerHTML = bcHtml;
+    var stResp = await fetch('/api/events/stats');
+    var stData = await stResp.json();
+    var etEl = document.getElementById('infra-events-today');
+    if (etEl) etEl.textContent = stData.total || 0;
+  } catch(e) {}
+
+  // Errors (24h) from health check
+  try {
+    var hResp = await fetch('/api/health');
+    var hData = await hResp.json();
+    var errEl = document.getElementById('infra-errors-today');
+    if (errEl) {
+      var errCount = (hData.error || 0) + (hData.degraded || 0);
+      var errColor = errCount === 0 ? 'var(--success)' : 'var(--error)';
+      errEl.innerHTML = '<span style="color:' + errColor + ';">' + errCount + '</span>';
     }
   } catch(e) {}
+
+  // Agent Comms — event bus events in chat-like format
+  loadAgentComms();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -3736,6 +3714,277 @@ async function loadEventFeed() {
     var data = await resp.json();
     renderEventFeed(data.events || [], 'event-feed');
   } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════
+// AGENT COMMS — Overview chat-like event feed
+// ═══════════════════════════════════════════════════════
+async function loadAgentComms() {
+  try {
+    var resp = await fetch('/api/events?limit=20');
+    var data = await resp.json();
+    var events = data.events || [];
+    var el = document.getElementById('agent-comms-feed');
+    if (!el) return;
+    if (!events.length) {
+      el.innerHTML = '<span class="text-muted" style="padding:8px;">No agent communications yet. Agents publish here as they work.</span>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < events.length; i++) {
+      var e = events[i];
+      var agentColor = EVENT_AGENT_COLORS[e.agent] || '#888';
+      var agentName = AGENT_NAMES[e.agent] || e.agent || '?';
+      var typeLabel = (e.type || '').replace(/_/g, ' ');
+      html += '<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);">';
+      html += '<div style="width:28px;height:28px;border-radius:50%;background:' + agentColor + '22;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:0.62rem;font-weight:700;color:' + agentColor + ';">' + (AGENT_INITIALS[e.agent] || '??') + '</div>';
+      html += '<div style="flex:1;min-width:0;">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+      html += '<span style="font-weight:600;color:' + agentColor + ';font-size:0.74rem;">' + esc(agentName) + '</span>';
+      html += '<span class="text-muted" style="font-size:0.64rem;">' + eventTimeAgo(e.ts) + '</span>';
+      html += '</div>';
+      html += '<div style="color:var(--text-primary);font-size:0.74rem;margin-top:1px;">' + esc(e.summary || typeLabel) + '</div>';
+      if (e.severity && e.severity !== 'info') {
+        var sc = EVENT_SEVERITY_COLORS[e.severity] || 'var(--text-muted)';
+        html += '<span style="font-size:0.62rem;color:' + sc + ';padding:1px 5px;border-radius:3px;background:rgba(255,255,255,0.04);margin-top:2px;display:inline-block;">' + esc(e.severity) + '</span>';
+      }
+      html += '</div></div>';
+    }
+    el.innerHTML = html;
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════
+// AGENT ACTIVITY — Per-agent event feed in each tab
+// ═══════════════════════════════════════════════════════
+var _agentActivityMap = {
+  'garves-live': {agent: 'garves', id: 'garves-activity-feed'},
+  'soren': {agent: 'soren', id: 'soren-activity-feed'},
+  'shelby': {agent: 'shelby', id: 'shelby-activity-feed'},
+  'atlas': {agent: 'atlas', id: 'atlas-activity-feed'},
+  'mercury': {agent: 'lisa', id: 'lisa-activity-feed'},
+  'sentinel': {agent: 'robotox', id: 'robotox-activity-feed'},
+  'thor': {agent: 'thor', id: 'thor-activity-feed'},
+};
+
+async function loadAgentActivity(tabName) {
+  var cfg = _agentActivityMap[tabName];
+  if (!cfg) return;
+  try {
+    var resp = await fetch('/api/events?agent=' + cfg.agent + '&limit=8');
+    var data = await resp.json();
+    var events = data.events || [];
+    var el = document.getElementById(cfg.id);
+    if (!el) return;
+    if (!events.length) {
+      el.innerHTML = '<span class="text-muted">No recent activity from this agent.</span>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < events.length; i++) {
+      var e = events[i];
+      var sevColor = EVENT_SEVERITY_COLORS[e.severity] || 'var(--text-secondary)';
+      var typeLabel = (e.type || '').replace(/_/g, ' ');
+      html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.03);">';
+      html += '<div style="flex:1;min-width:0;">';
+      html += '<span style="color:' + sevColor + ';font-size:0.66rem;padding:0 4px;border-radius:2px;background:rgba(255,255,255,0.04);margin-right:6px;">' + esc(typeLabel) + '</span>';
+      html += '<span style="color:var(--text-primary);font-size:0.72rem;">' + esc(e.summary || '') + '</span>';
+      html += '</div>';
+      html += '<span class="text-muted" style="font-size:0.62rem;flex-shrink:0;margin-left:8px;">' + eventTimeAgo(e.ts) + '</span>';
+      html += '</div>';
+    }
+    el.innerHTML = html;
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════
+// SYSTEM TAB — Real-time infrastructure monitoring
+// ═══════════════════════════════════════════════════════
+async function loadSystemTab() {
+  try {
+    var resp = await fetch('/api/system/metrics');
+    var d = await resp.json();
+
+    // CPU stat card
+    var cpuEl = document.getElementById('sys-cpu');
+    if (cpuEl) {
+      var cpuPct = (d.cpu || {}).percent || 0;
+      var cpuColor = cpuPct > 80 ? 'var(--error)' : cpuPct > 50 ? 'var(--warning)' : 'var(--success)';
+      cpuEl.innerHTML = '<span style="color:' + cpuColor + ';">' + cpuPct + '%</span>';
+    }
+
+    // Memory stat card
+    var memEl = document.getElementById('sys-memory');
+    if (memEl) {
+      var mem = d.memory || {};
+      var memColor = mem.percent > 85 ? 'var(--error)' : mem.percent > 70 ? 'var(--warning)' : 'var(--success)';
+      memEl.innerHTML = '<span style="color:' + memColor + ';">' + mem.percent + '%</span>';
+    }
+
+    // Disk stat card
+    var diskEl = document.getElementById('sys-disk');
+    if (diskEl) {
+      var disk = d.disk || {};
+      var diskColor = disk.percent > 90 ? 'var(--error)' : disk.percent > 75 ? 'var(--warning)' : 'var(--success)';
+      diskEl.innerHTML = '<span style="color:' + diskColor + ';">' + disk.percent + '%</span>';
+    }
+
+    // Uptime stat card
+    var upEl = document.getElementById('sys-uptime');
+    if (upEl) upEl.textContent = (d.uptime || {}).text || '--';
+
+    // Processes stat card
+    var procEl = document.getElementById('sys-processes');
+    if (procEl) procEl.textContent = (d.processes || []).length;
+
+    // Ports stat card
+    var portEl = document.getElementById('sys-ports');
+    if (portEl) portEl.textContent = (d.ports || []).length;
+
+    // Process table
+    var ptbody = document.getElementById('sys-process-tbody');
+    if (ptbody) {
+      var procs = d.processes || [];
+      if (!procs.length) {
+        ptbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;">No Python processes found</td></tr>';
+      } else {
+        var ph = '';
+        for (var i = 0; i < procs.length; i++) {
+          var p = procs[i];
+          var agentColor = AGENT_COLORS[p.agent] || '#888';
+          var agentName = AGENT_NAMES[p.agent] || p.agent || 'unknown';
+          ph += '<tr>';
+          ph += '<td style="color:' + agentColor + ';font-weight:600;">' + esc(agentName) + '</td>';
+          ph += '<td>' + p.pid + '</td>';
+          ph += '<td>' + p.cpu_percent + '</td>';
+          ph += '<td>' + p.mem_mb + '</td>';
+          ph += '<td>' + esc(p.uptime) + '</td>';
+          ph += '<td style="font-size:0.68rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(p.command) + '</td>';
+          ph += '</tr>';
+        }
+        ptbody.innerHTML = ph;
+      }
+    }
+
+    // LaunchAgents
+    var laEl = document.getElementById('sys-launchagents');
+    if (laEl) {
+      var las = d.launchagents || [];
+      if (!las.length) {
+        laEl.innerHTML = '<span class="text-muted">No LaunchAgents found.</span>';
+      } else {
+        var laHtml = '';
+        for (var j = 0; j < las.length; j++) {
+          var la = las[j];
+          var statusColor = la.loaded ? (la.pid ? 'var(--success)' : 'var(--warning)') : 'var(--error)';
+          var statusText = la.loaded ? (la.pid ? 'Running (PID ' + la.pid + ')' : 'Loaded (not running)') : 'Not loaded';
+          laHtml += '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);">';
+          laHtml += '<span style="font-size:0.72rem;">' + esc(la.label) + '</span>';
+          laHtml += '<span style="color:' + statusColor + ';font-size:0.72rem;">' + statusText + '</span>';
+          laHtml += '</div>';
+        }
+        laEl.innerHTML = laHtml;
+      }
+    }
+
+    // Ports
+    var plEl = document.getElementById('sys-port-list');
+    if (plEl) {
+      var ports = d.ports || [];
+      if (!ports.length) {
+        plEl.innerHTML = '<span class="text-muted">No listening ports found.</span>';
+      } else {
+        var plHtml = '';
+        for (var k = 0; k < ports.length; k++) {
+          var pt = ports[k];
+          plHtml += '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);">';
+          plHtml += '<span style="font-size:0.72rem;">:' + pt.port + ' <span class="text-muted" style="font-size:0.66rem;">(' + esc(pt.process) + ')</span></span>';
+          plHtml += '<span style="color:var(--success);font-size:0.72rem;">' + esc(pt.service) + '</span>';
+          plHtml += '</div>';
+        }
+        plEl.innerHTML = plHtml;
+      }
+    }
+
+    // Resource bars
+    var rbEl = document.getElementById('sys-resource-bars');
+    if (rbEl) {
+      var cpu = d.cpu || {};
+      var mem = d.memory || {};
+      var disk = d.disk || {};
+      var rbHtml = '';
+      var bars = [
+        {label: 'CPU', pct: cpu.percent || 0, detail: 'Load: ' + (cpu.load_1m || 0) + ' / ' + (cpu.cores || 1) + ' cores'},
+        {label: 'Memory', pct: mem.percent || 0, detail: (mem.used_gb || 0) + ' / ' + (mem.total_gb || 0) + ' GB'},
+        {label: 'Disk', pct: disk.percent || 0, detail: (disk.used_gb || 0) + ' / ' + (disk.total_gb || 0) + ' GB'}
+      ];
+      for (var b = 0; b < bars.length; b++) {
+        var bar = bars[b];
+        var barColor = bar.pct > 85 ? 'var(--error)' : bar.pct > 60 ? 'var(--warning)' : 'var(--success)';
+        rbHtml += '<div style="margin-bottom:10px;">';
+        rbHtml += '<div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:3px;">';
+        rbHtml += '<span>' + bar.label + '</span>';
+        rbHtml += '<span class="text-muted">' + bar.detail + '</span>';
+        rbHtml += '</div>';
+        rbHtml += '<div style="width:100%;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;">';
+        rbHtml += '<div style="width:' + Math.min(bar.pct, 100) + '%;height:100%;background:' + barColor + ';border-radius:4px;transition:width 0.5s ease;"></div>';
+        rbHtml += '</div></div>';
+      }
+      rbEl.innerHTML = rbHtml;
+    }
+
+    // Recent errors
+    var errEl = document.getElementById('sys-errors');
+    if (errEl) {
+      var errs = d.errors || [];
+      if (!errs.length) {
+        errEl.innerHTML = '<span style="color:var(--success);">No recent errors detected.</span>';
+      } else {
+        var eHtml = '';
+        for (var m = 0; m < errs.length; m++) {
+          var err = errs[m];
+          eHtml += '<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);">';
+          eHtml += '<div style="display:flex;justify-content:space-between;">';
+          eHtml += '<span style="color:var(--error);font-size:0.72rem;">' + esc(err.pattern || err.type || 'error') + '</span>';
+          eHtml += '<span class="text-muted" style="font-size:0.64rem;">' + esc(err.agent || '') + ' | ' + eventTimeAgo(err.timestamp || err.ts) + '</span>';
+          eHtml += '</div>';
+          eHtml += '<div class="text-muted" style="font-size:0.68rem;margin-top:1px;">' + esc((err.message || err.line || '').substring(0, 120)) + '</div>';
+          eHtml += '</div>';
+        }
+        errEl.innerHTML = eHtml;
+      }
+    }
+
+  } catch(e) {
+    console.error('System tab load error:', e);
+  }
+
+  // Also load event feed in system tab
+  try {
+    var evResp = await fetch('/api/events?limit=20');
+    var evData = await evResp.json();
+    renderEventFeed(evData.events || [], 'sys-event-feed');
+  } catch(e) {}
+}
+
+async function sysAction(action) {
+  var resultEl = document.getElementById('sys-action-result');
+  if (resultEl) resultEl.innerHTML = '<span style="color:var(--warning);">Executing ' + esc(action) + '...</span>';
+  try {
+    var resp = await fetch('/api/system/action/' + action, {method: 'POST'});
+    var data = await resp.json();
+    if (resultEl) {
+      if (data.success) {
+        resultEl.innerHTML = '<span style="color:var(--success);">' + esc(data.message || 'Done') + '</span>';
+      } else {
+        resultEl.innerHTML = '<span style="color:var(--error);">' + esc(data.error || 'Failed') + '</span>';
+      }
+    }
+    // Refresh after action
+    setTimeout(function() { loadSystemTab(); }, 2000);
+  } catch(e) {
+    if (resultEl) resultEl.innerHTML = '<span style="color:var(--error);">Error: ' + esc(e.message) + '</span>';
+  }
 }
 
 async function atlasEventBus() {

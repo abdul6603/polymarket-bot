@@ -20,6 +20,7 @@ def register_all_blueprints(app: Flask) -> None:
     from bot.routes.infra import infra_bp
     from bot.routes.thor import thor_bp
     from bot.routes.brain import brain_bp
+    from bot.routes.system import system_bp
 
     app.register_blueprint(garves_bp)
     app.register_blueprint(soren_bp)
@@ -32,3 +33,4 @@ def register_all_blueprints(app: Flask) -> None:
     app.register_blueprint(infra_bp)
     app.register_blueprint(thor_bp)
     app.register_blueprint(brain_bp)
+    app.register_blueprint(system_bp)

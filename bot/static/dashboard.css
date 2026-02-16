@@ -114,6 +114,7 @@
   .sidebar-btn[data-tab="mercury"].active { color:var(--agent-mercury); box-shadow:inset 3px 0 0 var(--agent-mercury); }
   .sidebar-btn[data-tab="sentinel"].active { color:var(--agent-sentinel); box-shadow:inset 3px 0 0 var(--agent-sentinel); }
   .sidebar-btn[data-tab="thor"].active { color:var(--agent-thor); box-shadow:inset 3px 0 0 var(--agent-thor); }
+  .sidebar-btn[data-tab="system"].active { color:var(--agent-shelby); box-shadow:inset 3px 0 0 var(--agent-shelby); }
   .sidebar-btn[data-tab="chat"].active { color:var(--text-secondary); box-shadow:inset 3px 0 0 var(--text-secondary); }
   .sidebar-spacer { flex:1; }
 

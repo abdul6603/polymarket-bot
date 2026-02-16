@@ -8,28 +8,14 @@
     <h2 class="section-title" data-accent="shelby">System Infrastructure</h2>
     <div class="grid-4" id="infra-stats">
       <div class="stat-card" data-accent="success"><div class="stat-value" id="infra-health">--</div><div class="stat-label">System Health</div></div>
-      <div class="stat-card" data-accent="shelby"><div class="stat-value" id="infra-agents-alive">--</div><div class="stat-label">Heartbeats</div></div>
-      <div class="stat-card" data-accent="atlas"><div class="stat-value" id="infra-broadcasts">--</div><div class="stat-label">Broadcasts</div></div>
-      <div class="stat-card" data-accent="garves"><div class="stat-value" id="infra-services">--</div><div class="stat-label">Services</div></div>
-    </div>
-    <div class="grid-2 mt-3">
-      <div class="glass-card">
-        <h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">Agent Heartbeats</h3>
-        <div id="infra-heartbeat-list" style="font-family:var(--font-mono);font-size:0.76rem;"><span class="text-muted">Loading heartbeats...</span></div>
-      </div>
-      <div class="glass-card">
-        <h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">Recent Broadcasts</h3>
-        <div id="infra-broadcast-list" style="font-family:var(--font-mono);font-size:0.76rem;max-height:200px;overflow-y:auto;"><span class="text-muted">Loading broadcasts...</span></div>
-      </div>
+      <div class="stat-card" data-accent="shelby"><div class="stat-value" id="infra-active-agents">--</div><div class="stat-label">Active Agents</div></div>
+      <div class="stat-card" data-accent="atlas"><div class="stat-value" id="infra-events-today">--</div><div class="stat-label">Events (24h)</div></div>
+      <div class="stat-card" data-accent="error"><div class="stat-value" id="infra-errors-today">--</div><div class="stat-label">Errors (24h)</div></div>
     </div>
     <div class="glass-card mt-3">
-      <h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">Live Event Feed</h3>
-      <div id="event-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:280px;overflow-y:auto;"><span class="text-muted">Loading events...</span></div>
+      <h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">Agent Comms</h3>
+      <div id="agent-comms-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:320px;overflow-y:auto;"><span class="text-muted">Loading agent communications...</span></div>
     </div>
-  </div>
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="garves">Indicator Accuracy</h2>
-    <div class="glass-card" id="indicator-accuracy"><table class="data-table"><thead><tr><th>Indicator</th><th>Accuracy</th><th>Signals</th><th>Correct</th><th>Weight</th></tr></thead><tbody id="indicator-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">Waiting for data...</td></tr></tbody></table></div>
   </div>
   <div class="section-spacer">
     <div class="flex items-center justify-between mb-4">

@@ -7,6 +7,10 @@
     <button class="btn" onclick="healthCheckAgent(&apos;mercury&apos;)" style="font-size:0.72rem;">Health Check</button>
   </div>
   <div class="health-inline" id="mercury-health-result"></div>
+  <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-mercury);">
+    <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Agent Activity</h3>
+    <div id="lisa-activity-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:150px;overflow-y:auto;"><span class="text-muted">Waiting for activity...</span></div>
+  </div>
   <div class="grid-4">
     <div class="stat-card" data-accent="mercury"><div class="stat-value" id="mercury-outbox-stat">--</div><div class="stat-label">Outbox</div></div>
     <div class="stat-card" data-accent="mercury"><div class="stat-value" id="mercury-total-posted">--</div><div class="stat-label">Posted</div></div>
