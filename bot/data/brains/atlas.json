@@ -1,1 +1,15 @@
-{"agent": "atlas", "notes": []}
+{
+  "agent": "atlas",
+  "notes": [
+    {
+      "id": "note_name_changes_001",
+      "topic": "Agent Name Changes",
+      "content": "IMPORTANT: Two agents were renamed on 2026-02-15. Mercury is now LISA — always refer to her as Lisa, never Mercury. Sentinel is now ROBOTOX — always refer to him as Robotox, never Sentinel. Code directories remain ~/mercury/ and ~/sentinel/ but display names, reports, and all references must use Lisa and Robotox.",
+      "type": "memory",
+      "tags": ["naming", "critical"],
+      "created_at": "2026-02-16T17:50:00.000000-05:00",
+      "source": "dashboard",
+      "response": "Acknowledged. Updating all references: Mercury → Lisa, Sentinel → Robotox."
+    }
+  ]
+}

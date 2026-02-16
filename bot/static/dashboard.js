@@ -704,7 +704,8 @@ async function loadEconomics() {
       var name = agentNames[i];
       var a = agents[name] || {costs:0,revenue:0};
       var net = (a.revenue || 0) - (a.costs || 0);
-      html += '<div class="econ-row"><span style="flex:1;color:' + (AGENT_COLORS[name]||'var(--text)') + ';font-weight:500;">' + name.charAt(0).toUpperCase() + name.slice(1) + '</span>';
+      var dn = name === 'mercury' ? 'Lisa' : name === 'sentinel' ? 'Robotox' : name.charAt(0).toUpperCase() + name.slice(1);
+      html += '<div class="econ-row"><span style="flex:1;color:' + (AGENT_COLORS[name]||'var(--text)') + ';font-weight:500;">' + dn + '</span>';
       html += '<span style="width:100px;text-align:right;color:var(--error);">$' + (a.costs||0).toFixed(2) + '</span>';
       html += '<span style="width:100px;text-align:right;color:var(--success);">$' + (a.revenue||0).toFixed(2) + '</span>';
       html += '<span style="width:100px;text-align:right;color:' + (net >= 0 ? 'var(--success)' : 'var(--error)') + ';">$' + net.toFixed(2) + '</span></div>';
@@ -1932,7 +1933,7 @@ function renderChatMessages(history) {
     var agent = msg.agent || 'shelby';
     var color = isUser ? 'var(--agent-garves)' : (AGENT_COLORS[agent] || 'var(--text-secondary)');
     var initials = isUser ? 'YOU' : (AGENT_INITIALS[agent] || agent.substring(0,2).toUpperCase());
-    var name = isUser ? 'You' : agent.charAt(0).toUpperCase() + agent.slice(1);
+    var name = isUser ? 'You' : (AGENT_NAMES[agent] || agent.charAt(0).toUpperCase() + agent.slice(1));
     html += '<div class="chat-msg' + (isUser ? ' user' : '') + '">';
     html += '<div class="chat-msg-avatar" style="color:' + color + ';border-color:' + color + ';">' + initials + '</div>';
     html += '<div class="chat-msg-body"><div style="font-size:0.68rem;color:' + color + ';margin-bottom:2px;font-weight:600;">' + esc(name) + '</div>';
@@ -1998,7 +1999,7 @@ async function submitAgentTask(agent) {
     input.value = '';
     var el = document.getElementById('task-input-' + agent);
     if (el) el.classList.remove('visible');
-    alert('Task "' + text + '" queued for ' + agent.charAt(0).toUpperCase() + agent.slice(1) + '. (Save to tasks.json manually or via Shelby.)');
+    alert('Task "' + text + '" queued for ' + (AGENT_NAMES[agent] || agent.charAt(0).toUpperCase() + agent.slice(1)) + '. (Save to tasks.json manually or via Shelby.)');
   } catch (e) { alert('Error: ' + e.message); }
 }
 
@@ -2088,7 +2089,8 @@ async function loadAssessments() {
       var scoreColor = (a.score || 0) >= 70 ? 'var(--success)' : (a.score || 0) >= 50 ? 'var(--warning)' : 'var(--error)';
       html += '<div class="assessment-card">';
       html += '<div class="assessment-header">';
-      html += '<span class="assessment-name" style="color:' + color + ';">' + name.charAt(0).toUpperCase() + name.slice(1) + '</span>';
+      var dn = name === 'mercury' ? 'Lisa' : name === 'sentinel' ? 'Robotox' : name.charAt(0).toUpperCase() + name.slice(1);
+      html += '<span class="assessment-name" style="color:' + color + ';">' + dn + '</span>';
       html += '<span class="assessment-score" style="color:' + scoreColor + ';">' + (a.score || 0) + '<span class="trend-arrow ' + trendClass + '">' + trendSymbol + '</span></span>';
       html += '</div>';
       html += '<div class="progress-bar" style="margin:var(--space-2) 0;"><div class="progress-fill" style="width:' + (a.score || 0) + '%;background:' + scoreColor + ';"></div></div>';
@@ -2141,7 +2143,7 @@ async function openKPIModal(agent) {
   var modal = document.getElementById('kpi-modal');
   var title = document.getElementById('kpi-modal-title');
   var content = document.getElementById('kpi-modal-content');
-  title.textContent = agent.charAt(0).toUpperCase() + agent.slice(1) + ' - Performance KPIs';
+  title.textContent = (AGENT_NAMES[agent] || agent.charAt(0).toUpperCase() + agent.slice(1)) + ' - Performance KPIs';
   title.style.color = AGENT_COLORS[agent] || 'var(--text)';
   content.innerHTML = '<div class="text-muted">Loading...</div>';
   modal.classList.add('active');
