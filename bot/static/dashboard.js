@@ -2174,6 +2174,7 @@ async function refresh() {
       renderAgentGrid(data);
       renderIndicatorAccuracy(data);
       loadInfrastructure();
+      loadEventFeed();
       // Fetch atlas bg status for countdown on overview
       try {
         var bgResp = await fetch('/api/atlas/background/status');
@@ -3640,4 +3641,87 @@ async function deleteBrainNote(agent, noteId) {
     if (data.error) { alert('Error: ' + data.error); return; }
     loadBrainNotes(agent);
   } catch(e) { alert('Failed: ' + e.message); }
+}
+
+// ── Shared Event Bus ──
+
+var EVENT_SEVERITY_COLORS = {info: 'var(--text-secondary)', warning: 'var(--warning)', critical: 'var(--error)', error: 'var(--error)'};
+var EVENT_AGENT_COLORS = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',robotox:'#00ff44',thor:'#ff6600'};
+
+function eventTimeAgo(ts) {
+  if (!ts) return '';
+  try {
+    var d = new Date(ts);
+    var now = new Date();
+    var diff = Math.floor((now - d) / 1000);
+    if (diff < 60) return diff + 's ago';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    return Math.floor(diff / 86400) + 'd ago';
+  } catch(e) { return ''; }
+}
+
+function renderEventFeed(events, containerId) {
+  var el = document.getElementById(containerId);
+  if (!el) return;
+  if (!events || events.length === 0) {
+    el.innerHTML = '<span class="text-muted" style="padding:8px;">No events yet. Agents will publish here as they work.</span>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < events.length; i++) {
+    var e = events[i];
+    var agentColor = EVENT_AGENT_COLORS[e.agent] || '#888';
+    var sevColor = EVENT_SEVERITY_COLORS[e.severity] || 'var(--text-secondary)';
+    var agentLabel = (AGENT_NAMES[e.agent] || e.agent || '?');
+    html += '<div style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);">';
+    html += '<span style="width:6px;height:6px;border-radius:50%;background:' + agentColor + ';margin-top:5px;flex-shrink:0;"></span>';
+    html += '<div style="flex:1;min-width:0;">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+    html += '<span style="font-weight:600;color:' + agentColor + ';font-size:0.72rem;">' + esc(agentLabel) + '</span>';
+    html += '<span style="color:' + sevColor + ';font-size:0.66rem;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,0.04);">' + esc(e.type || '') + '</span>';
+    html += '</div>';
+    html += '<div style="color:var(--text-primary);font-size:0.72rem;margin-top:1px;">' + esc(e.summary || '') + '</div>';
+    html += '<div style="color:var(--text-muted);font-size:0.64rem;margin-top:1px;">' + eventTimeAgo(e.ts) + '</div>';
+    html += '</div></div>';
+  }
+  el.innerHTML = html;
+}
+
+async function loadEventFeed() {
+  try {
+    var resp = await fetch('/api/events?limit=15');
+    var data = await resp.json();
+    renderEventFeed(data.events || [], 'event-feed');
+  } catch(e) {}
+}
+
+async function atlasEventBus() {
+  var reportEl = document.getElementById('atlas-report');
+  if (!reportEl) return;
+  reportEl.innerHTML = '<div class="text-muted" style="text-align:center;padding:var(--space-6);">Loading event bus...</div>';
+  try {
+    var evResp = await fetch('/api/events?limit=50');
+    var evData = await evResp.json();
+    var stResp = await fetch('/api/events/stats');
+    var stData = await stResp.json();
+    var events = evData.events || [];
+    var html = '<h3 style="margin-bottom:12px;">Event Bus — Stats</h3>';
+    html += '<div style="display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap;">';
+    html += '<div style="padding:8px 14px;background:rgba(255,255,255,0.04);border-radius:6px;"><div style="font-size:1.2rem;font-weight:700;">' + (stData.total || 0) + '</div><div style="font-size:0.68rem;color:var(--text-secondary);">Total Events</div></div>';
+    var byAgent = stData.by_agent || {};
+    var agentKeys = Object.keys(byAgent);
+    for (var a = 0; a < agentKeys.length; a++) {
+      var ak = agentKeys[a];
+      var ac = EVENT_AGENT_COLORS[ak] || '#888';
+      html += '<div style="padding:8px 14px;background:rgba(255,255,255,0.04);border-radius:6px;"><div style="font-size:1.2rem;font-weight:700;color:' + ac + ';">' + byAgent[ak] + '</div><div style="font-size:0.68rem;color:var(--text-secondary);">' + esc(AGENT_NAMES[ak] || ak) + '</div></div>';
+    }
+    html += '</div>';
+    html += '<h3 style="margin-bottom:8px;">Recent Events (' + events.length + ')</h3>';
+    html += '<div id="atlas-event-feed" style="max-height:400px;overflow-y:auto;"></div>';
+    reportEl.innerHTML = html;
+    renderEventFeed(events, 'atlas-event-feed');
+  } catch(e) {
+    reportEl.innerHTML = '<div class="text-muted" style="text-align:center;padding:var(--space-6);">Failed to load event bus: ' + esc(e.message) + '</div>';
+  }
 }

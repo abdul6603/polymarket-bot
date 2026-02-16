@@ -1,10 +1,10 @@
-"""Infrastructure routes: heartbeats, service registry, broadcasts, system health."""
+"""Infrastructure routes: heartbeats, service registry, broadcasts, system health, event bus."""
 from __future__ import annotations
 
 import sys
 from pathlib import Path
 
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 
 # Add agent hub to path
 sys.path.insert(0, str(Path.home() / ".agent-hub"))
@@ -184,3 +184,41 @@ def api_agent_logs(agent_name: str):
         return jsonify({"agent": agent_name, "logs": lines[-50:]})
     except Exception as e:
         return jsonify({"agent": agent_name, "logs": [], "error": str(e)[:200]})
+
+
+# ── Shared Event Bus ──
+
+@infra_bp.route("/api/events")
+def api_events():
+    """Query the shared event bus with optional filters."""
+    try:
+        sys.path.insert(0, str(Path.home()))
+        from shared.events import get_events
+
+        since_id = request.args.get("since_id")
+        agent = request.args.get("agent")
+        event_type = request.args.get("type")
+        severity = request.args.get("severity")
+        limit = int(request.args.get("limit", 50))
+
+        events = get_events(
+            since_id=since_id,
+            agent=agent,
+            event_type=event_type,
+            severity=severity,
+            limit=min(limit, 200),
+        )
+        return jsonify({"events": events})
+    except Exception as e:
+        return jsonify({"events": [], "error": str(e)[:200]})
+
+
+@infra_bp.route("/api/events/stats")
+def api_events_stats():
+    """Get event bus statistics."""
+    try:
+        sys.path.insert(0, str(Path.home()))
+        from shared.events import get_stats
+        return jsonify(get_stats())
+    except Exception as e:
+        return jsonify({"total": 0, "error": str(e)[:200]})
