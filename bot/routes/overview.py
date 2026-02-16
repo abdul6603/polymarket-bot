@@ -1,0 +1,696 @@
+"""Overview routes: /api/overview, /api/intelligence, /api/broadcasts, /api/agent/<agent>/kpis"""
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import sys
+import time
+from datetime import datetime, timezone, timedelta
+from pathlib import Path
+
+from flask import Blueprint, jsonify
+
+from bot.shared import (
+    _load_trades,
+    get_atlas,
+    ET,
+    DATA_DIR,
+    INDICATOR_ACCURACY_FILE,
+    SOREN_QUEUE_FILE,
+    ATLAS_ROOT,
+    MERCURY_ROOT,
+    MERCURY_POSTING_LOG,
+    SHELBY_ROOT_DIR,
+    SHELBY_TASKS_FILE,
+    SHELBY_ASSESSMENTS_FILE,
+)
+
+overview_bp = Blueprint("overview", __name__)
+
+
+@overview_bp.route("/api/overview")
+def api_overview():
+    """High-level status of all agents."""
+    # Garves
+    trades = _load_trades()
+    resolved = [t for t in trades if t.get("resolved") and t.get("outcome") not in ("unknown", None)]
+    wins = sum(1 for t in resolved if t.get("won"))
+    garves_wr = (wins / len(resolved) * 100) if resolved else 0
+    garves_running = False
+    try:
+        result = subprocess.run(["pgrep", "-f", "bot.main"], capture_output=True, text=True)
+        garves_running = bool(result.stdout.strip())
+    except Exception:
+        pass
+
+    # Indicator accuracy
+    accuracy_data = {}
+    if INDICATOR_ACCURACY_FILE.exists():
+        try:
+            with open(INDICATOR_ACCURACY_FILE) as f:
+                accuracy_data = json.load(f)
+        except Exception:
+            pass
+
+    # Soren
+    soren_queue = 0
+    soren_posted = 0
+    if SOREN_QUEUE_FILE.exists():
+        try:
+            with open(SOREN_QUEUE_FILE) as f:
+                q = json.load(f)
+                soren_queue = sum(1 for x in q if x.get("status") == "pending")
+                soren_posted = sum(1 for x in q if x.get("status") == "posted")
+        except Exception:
+            pass
+
+    # Shelby
+    shelby_running = False
+    try:
+        result = subprocess.run(["pgrep", "-f", "app.py"], capture_output=True, text=True)
+        shelby_running = bool(result.stdout.strip())
+    except Exception:
+        pass
+
+    # Mercury review stats
+    mercury_review_avg = None
+    mercury_total_posts = 0
+    if MERCURY_POSTING_LOG.exists():
+        try:
+            with open(MERCURY_POSTING_LOG) as f:
+                mlog = json.load(f)
+            mercury_total_posts = len(mlog)
+            reviewed = [p for p in mlog if p.get("review_score") is not None and p.get("review_score", -1) != -1]
+            if reviewed:
+                mercury_review_avg = round(sum(p["review_score"] for p in reviewed) / len(reviewed), 1)
+        except Exception:
+            pass
+
+    return jsonify({
+        "garves": {
+            "running": garves_running,
+            "win_rate": round(garves_wr, 1),
+            "total_trades": len(trades),
+            "resolved": len(resolved),
+            "wins": wins,
+            "losses": len(resolved) - wins,
+            "pending": len(trades) - len([t for t in trades if t.get("resolved")]),
+            "indicator_accuracy": accuracy_data,
+        },
+        "soren": {
+            "queue_pending": soren_queue,
+            "total_posted": soren_posted,
+        },
+        "shelby": {
+            "running": shelby_running,
+        },
+        "mercury": {
+            "total_posts": mercury_total_posts,
+            "review_avg": mercury_review_avg,
+        },
+    })
+
+
+@overview_bp.route("/api/agent/<agent>/kpis")
+def api_agent_kpis(agent):
+    """Per-agent KPIs."""
+    agent = agent.lower()
+    kpis = {}
+
+    if agent == "garves":
+        trades = _load_trades()
+        resolved = [t for t in trades if t.get("resolved") and t.get("outcome") not in ("unknown", None)]
+        wins = sum(1 for t in resolved if t.get("won"))
+        wr = (wins / len(resolved) * 100) if resolved else 0
+        stake = float(os.getenv("ORDER_SIZE_USD", "5.0"))
+        pnl = 0.0
+        for t in resolved:
+            implied = t.get("implied_up_price", 0.5)
+            d = t.get("direction", "up")
+            ep = implied if d == "up" else (1 - implied)
+            if t.get("won"):
+                pnl += stake * (1 - ep) - stake * 0.02
+            else:
+                pnl += -stake * ep
+        # Trades per day
+        if trades:
+            first_ts = min(t.get("timestamp", time.time()) for t in trades)
+            days = max(1, (time.time() - first_ts) / 86400)
+            trades_per_day = round(len(trades) / days, 1)
+        else:
+            trades_per_day = 0
+        # Best timeframe
+        by_tf = {}
+        for t in resolved:
+            tf = t.get("timeframe", "?")
+            if tf not in by_tf:
+                by_tf[tf] = {"w": 0, "l": 0}
+            if t.get("won"):
+                by_tf[tf]["w"] += 1
+            else:
+                by_tf[tf]["l"] += 1
+        best_tf = "N/A"
+        best_wr = 0
+        for tf, d in by_tf.items():
+            total = d["w"] + d["l"]
+            if total >= 3:
+                tfwr = d["w"] / total * 100
+                if tfwr > best_wr:
+                    best_wr = tfwr
+                    best_tf = tf
+        avg_edge = 0
+        if trades:
+            avg_edge = sum(t.get("edge", 0) for t in trades) / len(trades)
+        kpis = {
+            "win_rate": round(wr, 1),
+            "pnl": round(pnl, 2),
+            "trades_per_day": trades_per_day,
+            "avg_edge": round(avg_edge * 100, 2),
+            "best_timeframe": best_tf,
+            "total_trades": len(trades),
+            "resolved": len(resolved),
+        }
+    elif agent == "soren":
+        if SOREN_QUEUE_FILE.exists():
+            try:
+                with open(SOREN_QUEUE_FILE) as f:
+                    queue = json.load(f)
+                total = len(queue)
+                posted = sum(1 for q in queue if q.get("status") == "posted")
+                approved = sum(1 for q in queue if q.get("status") == "approved")
+                pending = sum(1 for q in queue if q.get("status") == "pending")
+                by_pillar = {}
+                for q in queue:
+                    p = q.get("pillar", "unknown")
+                    by_pillar[p] = by_pillar.get(p, 0) + 1
+                kpis = {
+                    "content_produced": total,
+                    "approval_rate": round(((posted + approved) / total * 100) if total else 0, 1),
+                    "pending": pending,
+                    "posted": posted,
+                    "pillar_distribution": by_pillar,
+                }
+            except Exception:
+                kpis = {"content_produced": 0}
+        else:
+            kpis = {"content_produced": 0}
+    elif agent == "atlas":
+        atlas_status_file = ATLAS_ROOT / "data" / "background_status.json"
+        kb_file = ATLAS_ROOT / "data" / "knowledge_base.json"
+        cycles = 0
+        obs = 0
+        improvements = 0
+        if atlas_status_file.exists():
+            try:
+                with open(atlas_status_file) as f:
+                    bg = json.load(f)
+                cycles = bg.get("cycles", 0)
+            except Exception:
+                pass
+        if kb_file.exists():
+            try:
+                with open(kb_file) as f:
+                    kb = json.load(f)
+                obs = len(kb.get("observations", []))
+                improvements = len(kb.get("improvements", []))
+            except Exception:
+                pass
+        kpis = {
+            "cycles_total": cycles,
+            "observations": obs,
+            "improvements": improvements,
+            "obs_per_cycle": round(obs / max(1, cycles), 1),
+        }
+    elif agent == "mercury":
+        total_posts = 0
+        review_kpis = {}
+        if MERCURY_POSTING_LOG.exists():
+            try:
+                with open(MERCURY_POSTING_LOG) as f:
+                    posts = json.load(f)
+                total_posts = len(posts)
+                reviewed = [p for p in posts if p.get("review_score") is not None and p.get("review_score", -1) != -1]
+                if reviewed:
+                    scores = [p["review_score"] for p in reviewed]
+                    review_kpis = {
+                        "total_reviewed": len(reviewed),
+                        "avg_score": str(round(sum(scores) / len(scores), 1)) + "/10",
+                        "passed": sum(1 for s in scores if s >= 7),
+                        "warned": sum(1 for s in scores if 4 <= s < 7),
+                        "failed": sum(1 for s in scores if s < 4),
+                        "pass_rate": str(round(sum(1 for s in scores if s >= 7) / len(scores) * 100, 1)) + "%",
+                    }
+            except Exception:
+                pass
+        # Platform breakdown
+        platform_dist = {}
+        if MERCURY_POSTING_LOG.exists():
+            try:
+                with open(MERCURY_POSTING_LOG) as f:
+                    posts = json.load(f)
+                for p in posts:
+                    plat = p.get("platform", "unknown")
+                    platform_dist[plat] = platform_dist.get(plat, 0) + 1
+            except Exception:
+                pass
+        kpis = {
+            "total_posts": total_posts,
+            "mode": "semi-auto",
+        }
+        if review_kpis:
+            kpis["brand_review"] = review_kpis
+        if platform_dist:
+            kpis["platform_distribution"] = platform_dist
+    elif agent == "sentinel":
+        try:
+            from sentinel.sentinel import Sentinel
+            s = Sentinel()
+            status = s.get_status()
+            kpis = {
+                "agents_online": status.get("agents_online", 0),
+                "total_scans": status.get("total_scans", 0),
+                "issues_detected": status.get("active_issues", 0),
+                "auto_fixes": status.get("total_fixes", 0),
+            }
+        except Exception:
+            kpis = {"agents_online": 0, "total_scans": 0}
+
+    return jsonify(kpis)
+
+
+@overview_bp.route("/api/intelligence")
+def api_intelligence():
+    """Intelligence meter for all agents -- 5 dimensions each, 0-100 scale."""
+    ET_tz = timezone(timedelta(hours=-5))
+
+    result = {}
+
+    # -- GARVES -- The Trader --
+    try:
+        garves = {"dimensions": {}, "overall": 0, "title": "The Trader"}
+        trades_file = DATA_DIR / "trades.jsonl"
+        trades = []
+        if trades_file.exists():
+            with open(trades_file) as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        trades.append(json.loads(line))
+
+        resolved = [t for t in trades if t.get("resolved")]
+        wins = sum(1 for t in resolved if t.get("won"))
+        wr = (wins / len(resolved) * 100) if resolved else 0
+        total = len(trades)
+
+        # 1. Market Knowledge
+        indicators_file = DATA_DIR / "indicator_accuracy.json"
+        indicator_count = 0
+        if indicators_file.exists():
+            with open(indicators_file) as f:
+                ind = json.load(f)
+            indicator_count = len(ind)
+        regime_file = DATA_DIR / "regime_state.json"
+        has_regime = regime_file.exists()
+        assets = set(t.get("asset", "") for t in trades)
+        knowledge = min(100, indicator_count * 6 + (20 if has_regime else 0) + len(assets) * 10)
+        garves["dimensions"]["Market Knowledge"] = knowledge
+
+        # 2. Accuracy
+        accuracy = min(100, int(wr * 1.3)) if resolved else 15
+        garves["dimensions"]["Accuracy"] = accuracy
+
+        # 3. Experience
+        experience = min(100, int(total * 0.5)) if total else 5
+        garves["dimensions"]["Experience"] = experience
+
+        # 4. Risk Management
+        straddle_file = DATA_DIR / "straddle_trades.json"
+        has_straddle = straddle_file.exists()
+        avg_edge = 0
+        if resolved:
+            edges = [t.get("edge", 0) for t in resolved if t.get("edge")]
+            avg_edge = sum(edges) / len(edges) if edges else 0
+        risk = 40 + (20 if has_straddle else 0) + min(40, int(avg_edge * 400))
+        garves["dimensions"]["Risk Management"] = min(100, risk)
+
+        # 5. Adaptability
+        timeframes = set(t.get("timeframe", "") for t in trades)
+        adaptability = min(100, len(assets) * 15 + len(timeframes) * 15 + (25 if has_regime else 0))
+        garves["dimensions"]["Adaptability"] = adaptability
+
+        scores = list(garves["dimensions"].values())
+        garves["overall"] = int(sum(scores) / len(scores)) if scores else 0
+        result["garves"] = garves
+    except Exception:
+        result["garves"] = {"dimensions": {}, "overall": 0, "title": "The Trader"}
+
+    # -- SOREN -- The Thinker --
+    try:
+        soren = {"dimensions": {}, "overall": 0, "title": "The Thinker"}
+        queue_file = Path.home() / "soren-content" / "data" / "content_queue.json"
+        queue = []
+        if queue_file.exists():
+            with open(queue_file) as f:
+                queue = json.load(f)
+
+        posted = [i for i in queue if i.get("status") == "posted"]
+        pending = [i for i in queue if i.get("status") == "pending"]
+        approved = [i for i in queue if i.get("status") == "approved"]
+        pillars = set(i.get("pillar", "") for i in queue if i.get("pillar"))
+        platforms = set(i.get("platform", "") for i in queue if i.get("platform"))
+
+        # 1. Creativity
+        creativity = min(100, len(pillars) * 15 + len(queue) * 2)
+        soren["dimensions"]["Creativity"] = creativity
+
+        # 2. Productivity
+        productivity = min(100, len(posted) * 10 + len(approved) * 5 + len(pending) * 2)
+        soren["dimensions"]["Productivity"] = productivity
+
+        # 3. Brand Consistency
+        ab_file = Path.home() / "soren-content" / "data" / "ab_results.json"
+        has_ab = ab_file.exists()
+        consistency = 55 + (15 if has_ab else 0) + min(30, len(pillars) * 6)
+        soren["dimensions"]["Brand Voice"] = min(100, consistency)
+
+        # 4. Platform Awareness
+        platform_score = min(100, len(platforms) * 25 + 20)
+        soren["dimensions"]["Platform Reach"] = platform_score
+
+        # 5. Trend Awareness
+        trend_file = Path.home() / "soren-content" / "data" / "trend_topics.json"
+        trends_count = 0
+        if trend_file.exists():
+            with open(trend_file) as f:
+                trends_count = len(json.load(f))
+        trend_score = min(100, 30 + trends_count * 5)
+        soren["dimensions"]["Trend Awareness"] = trend_score
+
+        scores = list(soren["dimensions"].values())
+        soren["overall"] = int(sum(scores) / len(scores)) if scores else 0
+        result["soren"] = soren
+    except Exception:
+        result["soren"] = {"dimensions": {}, "overall": 0, "title": "The Thinker"}
+
+    # -- ATLAS -- The Scientist --
+    try:
+        atlas_intel = {"dimensions": {}, "overall": 0, "title": "The Scientist"}
+        atlas = get_atlas()
+        kb_stats = atlas.kb.stats() if atlas else {}
+        bg = atlas.background.get_status() if atlas else {}
+        research = atlas.researcher.get_research_stats() if atlas else {}
+
+        obs = kb_stats.get("total_observations", 0)
+        learnings = kb_stats.get("total_learnings", 0)
+        cycles = bg.get("cycles", 0)
+        quality = research.get("avg_quality_score", 0)
+        seen = research.get("seen_urls", 0)
+
+        # 1. Knowledge Depth
+        depth = min(100, int(obs * 0.2 + learnings * 1.5))
+        atlas_intel["dimensions"]["Knowledge Depth"] = depth
+
+        # 2. Research Quality
+        rq = min(100, int(quality * 10)) if quality else 20
+        atlas_intel["dimensions"]["Research Quality"] = rq
+
+        # 3. Learning Rate
+        lr = min(100, int((learnings / max(cycles, 1)) * 25))
+        atlas_intel["dimensions"]["Learning Rate"] = lr
+
+        # 4. Coverage
+        agents_covered = len(kb_stats.get("agents_observed", []))
+        coverage = min(100, agents_covered * 15 + min(40, seen))
+        atlas_intel["dimensions"]["Agent Coverage"] = coverage
+
+        # 5. Synthesis
+        exp_stats = atlas.hypothesis.stats() if atlas else {}
+        improvements_file = Path.home() / "atlas" / "data" / "improvements.json"
+        imp_count = 0
+        if improvements_file.exists():
+            with open(improvements_file) as f:
+                imp_data = json.load(f)
+            imp_count = sum(len(v) for v in imp_data.values() if isinstance(v, list))
+        synthesis = min(100, exp_stats.get("completed", 0) * 10 + imp_count * 3 + 20)
+        atlas_intel["dimensions"]["Synthesis"] = synthesis
+
+        scores = list(atlas_intel["dimensions"].values())
+        atlas_intel["overall"] = int(sum(scores) / len(scores)) if scores else 0
+        result["atlas"] = atlas_intel
+    except Exception:
+        result["atlas"] = {"dimensions": {}, "overall": 0, "title": "The Scientist"}
+
+    # -- SHELBY -- The Commander --
+    try:
+        shelby = {"dimensions": {}, "overall": 0, "title": "The Commander"}
+
+        # 1. Team Awareness
+        assess_file = SHELBY_ROOT_DIR / "data" / "agent_assessments.json"
+        assessments = {}
+        if assess_file.exists():
+            with open(assess_file) as f:
+                assessments = json.load(f)
+        awareness = min(100, len(assessments) * 15 + 25)
+        shelby["dimensions"]["Team Awareness"] = awareness
+
+        # 2. Task Management
+        tasks_file = SHELBY_ROOT_DIR / "data" / "tasks.json"
+        task_completion = 50
+        if tasks_file.exists():
+            with open(tasks_file) as f:
+                tasks = json.load(f)
+            done = sum(1 for t in tasks if t.get("done") or t.get("status") == "done")
+            total = len(tasks)
+            if total > 0:
+                task_completion = min(100, int(done / total * 100) + 10)
+        shelby["dimensions"]["Task Management"] = task_completion
+
+        # 3. Communication
+        bc_file = SHELBY_ROOT_DIR / "data" / "broadcasts.json"
+        bc_count = 0
+        if bc_file.exists():
+            with open(bc_file) as f:
+                bc_count = len(json.load(f))
+        comm = min(100, 40 + bc_count * 5)
+        shelby["dimensions"]["Communication"] = comm
+
+        # 4. Scheduling
+        sched_file = SHELBY_ROOT_DIR / "data" / "scheduler_log.json"
+        sched_count = 0
+        if sched_file.exists():
+            with open(sched_file) as f:
+                sched_count = len(json.load(f))
+        scheduling = min(100, 35 + sched_count * 3)
+        shelby["dimensions"]["Scheduling"] = scheduling
+
+        # 5. Decision Quality
+        avg_score = 0
+        if assessments:
+            agent_scores = [a.get("score", 0) for a in assessments.values()]
+            avg_score = sum(agent_scores) / len(agent_scores) if agent_scores else 0
+        decision = min(100, int(avg_score * 1.2) + 10)
+        shelby["dimensions"]["Decision Quality"] = decision
+
+        scores = list(shelby["dimensions"].values())
+        shelby["overall"] = int(sum(scores) / len(scores)) if scores else 0
+        result["shelby"] = shelby
+    except Exception:
+        result["shelby"] = {"dimensions": {}, "overall": 0, "title": "The Commander"}
+
+    # -- LISA -- The Operator --
+    try:
+        lisa = {"dimensions": {}, "overall": 0, "title": "The Operator"}
+        mercury_root = Path.home() / "mercury"
+
+        # 1. Platform Knowledge
+        brain_file = mercury_root / "data" / "brain.json"
+        insights_count = 0
+        if brain_file.exists():
+            with open(brain_file) as f:
+                brain = json.load(f)
+            insights_count = len(brain.get("insights", []))
+        platform_knowledge = min(100, 25 + insights_count * 3)
+        lisa["dimensions"]["Platform Knowledge"] = platform_knowledge
+
+        # 2. Posting Discipline
+        posting_log = mercury_root / "data" / "posting_log.json"
+        post_count = 0
+        if posting_log.exists():
+            with open(posting_log) as f:
+                post_count = len(json.load(f))
+        discipline = min(100, 20 + post_count * 5)
+        lisa["dimensions"]["Posting Discipline"] = discipline
+
+        # 3. Brand Alignment
+        review_file = mercury_root / "data" / "brand_reviews.json"
+        avg_review = 0
+        if review_file.exists():
+            with open(review_file) as f:
+                reviews = json.load(f)
+            if reviews:
+                scores_list = [r.get("score", 0) for r in reviews if r.get("score")]
+                avg_review = sum(scores_list) / len(scores_list) if scores_list else 0
+        brand = min(100, int(avg_review * 10) + 20) if avg_review else 40
+        lisa["dimensions"]["Brand Alignment"] = brand
+
+        # 4. Strategy Depth
+        plan_file = mercury_root / "data" / "strategy_plan.json"
+        plan_depth = 30
+        if plan_file.exists():
+            with open(plan_file) as f:
+                plan = json.load(f)
+            plan_depth = min(100, 30 + len(str(plan)) // 100)
+        lisa["dimensions"]["Strategy Depth"] = plan_depth
+
+        # 5. Engagement IQ
+        reply_file = mercury_root / "data" / "reply_templates.json"
+        reply_count = 0
+        if reply_file.exists():
+            with open(reply_file) as f:
+                reply_count = len(json.load(f))
+        engagement = min(100, 25 + reply_count * 5 + insights_count * 2)
+        lisa["dimensions"]["Engagement IQ"] = engagement
+
+        scores = list(lisa["dimensions"].values())
+        lisa["overall"] = int(sum(scores) / len(scores)) if scores else 0
+        result["lisa"] = lisa
+    except Exception:
+        result["lisa"] = {"dimensions": {}, "overall": 0, "title": "The Operator"}
+
+    # -- ROBOTOX -- The Watchman --
+    try:
+        robotox = {"dimensions": {}, "overall": 0, "title": "The Watchman"}
+        sentinel_root = Path.home() / "sentinel"
+
+        # 1. Detection
+        scan_file = sentinel_root / "data" / "scan_results.json"
+        total_issues = 0
+        scan_count = 0
+        if scan_file.exists():
+            with open(scan_file) as f:
+                scans = json.load(f)
+            if isinstance(scans, list):
+                scan_count = len(scans)
+                total_issues = sum(s.get("issues_found", s.get("issues", 0)) for s in scans)
+        detection = min(100, 40 + scan_count * 3 + total_issues * 2)
+        robotox["dimensions"]["Detection"] = detection
+
+        # 2. Auto-Fix
+        fix_file = sentinel_root / "data" / "fix_log.json"
+        fix_count = 0
+        if fix_file.exists():
+            with open(fix_file) as f:
+                fix_count = len(json.load(f))
+        autofix = min(100, 30 + fix_count * 8)
+        robotox["dimensions"]["Auto-Fix"] = autofix
+
+        # 3. Vigilance
+        vigilance = min(100, 35 + scan_count * 5)
+        robotox["dimensions"]["Vigilance"] = vigilance
+
+        # 4. Coverage
+        config_file = sentinel_root / "config.json"
+        agents_monitored = 5  # default
+        if config_file.exists():
+            with open(config_file) as f:
+                cfg = json.load(f)
+            agents_monitored = len(cfg.get("agents", {}))
+        coverage = min(100, agents_monitored * 15 + 20)
+        robotox["dimensions"]["Coverage"] = coverage
+
+        # 5. Response Speed
+        response = 50 + min(50, fix_count * 5)
+        robotox["dimensions"]["Response Speed"] = min(100, response)
+
+        scores = list(robotox["dimensions"].values())
+        robotox["overall"] = int(sum(scores) / len(scores)) if scores else 0
+        result["robotox"] = robotox
+    except Exception:
+        result["robotox"] = {"dimensions": {}, "overall": 0, "title": "The Watchman"}
+
+    # -- TEAM -- Collective Intelligence --
+    try:
+        team = {"dimensions": {}, "overall": 0, "title": "Brotherhood"}
+        agents = ["garves", "soren", "atlas", "shelby", "lisa", "robotox"]
+        agent_scores = {a: result.get(a, {}).get("overall", 0) for a in agents}
+
+        # 1. Collective Knowledge
+        atlas_depth = result.get("atlas", {}).get("dimensions", {}).get("Knowledge Depth", 0)
+        garves_know = result.get("garves", {}).get("dimensions", {}).get("Market Knowledge", 0)
+        soren_brand = result.get("soren", {}).get("dimensions", {}).get("Brand Voice", 0)
+        shelby_aware = result.get("shelby", {}).get("dimensions", {}).get("Team Awareness", 0)
+        lisa_plat = result.get("lisa", {}).get("dimensions", {}).get("Platform Knowledge", 0)
+        robotox_cov = result.get("robotox", {}).get("dimensions", {}).get("Coverage", 0)
+        collective_knowledge = int((atlas_depth * 0.3 + garves_know * 0.2 + soren_brand * 0.15 +
+                                    shelby_aware * 0.15 + lisa_plat * 0.1 + robotox_cov * 0.1))
+        team["dimensions"]["Collective Knowledge"] = min(100, collective_knowledge)
+
+        # 2. Coordination
+        shelby_comm = result.get("shelby", {}).get("dimensions", {}).get("Communication", 0)
+        shelby_sched = result.get("shelby", {}).get("dimensions", {}).get("Scheduling", 0)
+        atlas_coverage = result.get("atlas", {}).get("dimensions", {}).get("Agent Coverage", 0)
+        coordination = int((shelby_comm * 0.35 + shelby_sched * 0.25 + atlas_coverage * 0.4))
+        team["dimensions"]["Coordination"] = min(100, coordination)
+
+        # 3. Performance
+        garves_acc = result.get("garves", {}).get("dimensions", {}).get("Accuracy", 0)
+        soren_prod = result.get("soren", {}).get("dimensions", {}).get("Productivity", 0)
+        atlas_quality = result.get("atlas", {}).get("dimensions", {}).get("Research Quality", 0)
+        shelby_task = result.get("shelby", {}).get("dimensions", {}).get("Task Management", 0)
+        lisa_disc = result.get("lisa", {}).get("dimensions", {}).get("Posting Discipline", 0)
+        robotox_det = result.get("robotox", {}).get("dimensions", {}).get("Detection", 0)
+        performance = int((garves_acc + soren_prod + atlas_quality + shelby_task + lisa_disc + robotox_det) / 6)
+        team["dimensions"]["Performance"] = min(100, performance)
+
+        # 4. Autonomy
+        robotox_fix = result.get("robotox", {}).get("dimensions", {}).get("Auto-Fix", 0)
+        atlas_synth = result.get("atlas", {}).get("dimensions", {}).get("Synthesis", 0)
+        atlas_lr = result.get("atlas", {}).get("dimensions", {}).get("Learning Rate", 0)
+        garves_risk = result.get("garves", {}).get("dimensions", {}).get("Risk Management", 0)
+        autonomy = int((robotox_fix * 0.25 + atlas_synth * 0.25 + atlas_lr * 0.25 + garves_risk * 0.25))
+        team["dimensions"]["Autonomy"] = min(100, autonomy)
+
+        # 5. Adaptability
+        garves_adapt = result.get("garves", {}).get("dimensions", {}).get("Adaptability", 0)
+        soren_trend = result.get("soren", {}).get("dimensions", {}).get("Trend Awareness", 0)
+        lisa_strat = result.get("lisa", {}).get("dimensions", {}).get("Strategy Depth", 0)
+        shelby_dec = result.get("shelby", {}).get("dimensions", {}).get("Decision Quality", 0)
+        adaptability = int((garves_adapt * 0.3 + soren_trend * 0.2 + lisa_strat * 0.2 + shelby_dec * 0.3))
+        team["dimensions"]["Adaptability"] = min(100, adaptability)
+
+        team_scores = list(team["dimensions"].values())
+        team["overall"] = int(sum(team_scores) / len(team_scores)) if team_scores else 0
+        team["agent_scores"] = agent_scores
+        result["team"] = team
+    except Exception:
+        result["team"] = {"dimensions": {}, "overall": 0, "title": "Brotherhood", "agent_scores": {}}
+
+    return jsonify(result)
+
+
+@overview_bp.route("/api/broadcasts")
+def api_broadcasts():
+    """Recent broadcasts with acknowledgment status."""
+    try:
+        sys.path.insert(0, str(SHELBY_ROOT_DIR))
+        from core.broadcast import get_recent_broadcasts, check_acknowledgments
+
+        broadcasts = get_recent_broadcasts(limit=15)
+        result = []
+        for bc in reversed(broadcasts):
+            bc_id = bc.get("id", "")
+            acks = check_acknowledgments(bc_id) if bc_id else {}
+            result.append({
+                "id": bc_id,
+                "message": bc.get("message", ""),
+                "priority": bc.get("priority", "normal"),
+                "from": bc.get("from", "shelby"),
+                "timestamp": bc.get("timestamp", ""),
+                "delivered_to": bc.get("delivered_to", []),
+                "acked": acks.get("acked", []),
+                "pending": acks.get("pending", []),
+            })
+        return jsonify({"broadcasts": result})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200], "broadcasts": []})
