@@ -141,6 +141,30 @@ def api_atlas_mercury():
         return jsonify({"error": str(e)[:200]}), 500
 
 
+@atlas_bp.route("/api/atlas/thor")
+def api_atlas_thor():
+    """Atlas deep analysis of Thor."""
+    atlas = get_atlas()
+    if not atlas:
+        return jsonify({"error": "Atlas not available"}), 503
+    try:
+        return jsonify(atlas.api_thor_deep())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@atlas_bp.route("/api/atlas/robotox")
+def api_atlas_robotox():
+    """Atlas deep analysis of Robotox."""
+    atlas = get_atlas()
+    if not atlas:
+        return jsonify({"error": "Atlas not available"}), 503
+    try:
+        return jsonify(atlas.api_robotox_deep())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
 @atlas_bp.route("/api/atlas/improvements", methods=["POST"])
 def api_atlas_improvements():
     """Generate improvement suggestions for all agents."""
@@ -403,3 +427,224 @@ def api_atlas_trade_analysis():
         return jsonify({"message": "No trade analysis yet", "analyzed_at": None})
     except Exception as e:
         return jsonify({"error": str(e)[:200]})
+
+
+@atlas_bp.route("/api/atlas/infra-eval")
+def api_atlas_infra_eval():
+    """Evaluate system infrastructure — agents, paths, health."""
+    atlas = get_atlas()
+    if not atlas:
+        return jsonify({"error": "Atlas not available"}), 503
+    try:
+        status = atlas.system_status()
+        kb_stats = atlas.kb.stats()
+        # Collect per-agent quick status
+        agents_health = {}
+        for name, opt in [("garves", atlas.garves), ("soren", atlas.soren),
+                          ("shelby", atlas.shelby), ("lisa", atlas.mercury),
+                          ("thor", atlas.thor), ("robotox", atlas.robotox)]:
+            try:
+                agents_health[name] = opt.quick_status()
+            except Exception as e:
+                agents_health[name] = {"status": "error", "error": str(e)[:100]}
+
+        # Infrastructure summary
+        infra = {
+            "timestamp": status.get("timestamp"),
+            "knowledge_base": kb_stats,
+            "agents_health": agents_health,
+            "hierarchy": status.get("hierarchy", {}),
+            "recommendations": [],
+        }
+        # Auto-generate infra recommendations
+        total_agents = len(agents_health)
+        errors = sum(1 for v in agents_health.values()
+                     if isinstance(v, dict) and v.get("status") == "error")
+        if errors:
+            infra["recommendations"].append({
+                "priority": "high",
+                "recommendation": f"{errors}/{total_agents} agents returned errors on quick_status. Check their data files.",
+            })
+        obs_count = kb_stats.get("observations", kb_stats.get("total_observations", 0))
+        if obs_count > 300:
+            infra["recommendations"].append({
+                "priority": "medium",
+                "recommendation": f"Knowledge base has {obs_count} observations. Consider running Compress KB.",
+            })
+        if not infra["recommendations"]:
+            infra["recommendations"].append({
+                "priority": "info",
+                "recommendation": "Infrastructure is healthy. All agent data files accessible.",
+            })
+        return jsonify(infra)
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@atlas_bp.route("/api/atlas/thoughts")
+def api_atlas_thoughts():
+    """Atlas thoughts — recent observations, learnings, and hypotheses."""
+    atlas = get_atlas()
+    if not atlas:
+        return jsonify({"error": "Atlas not available"}), 503
+    try:
+        observations = atlas.kb.get_observations(limit=15)
+        learnings = atlas.kb.get_learnings()
+        experiments = atlas.hypothesis.get_experiments()
+        # Research articles
+        research_log = []
+        rl_path = ATLAS_ROOT / "data" / "research_log.json"
+        if rl_path.exists():
+            try:
+                with open(rl_path) as f:
+                    rl = json.load(f)
+                research_log = rl[-10:] if isinstance(rl, list) else []
+            except Exception:
+                pass
+
+        return jsonify({
+            "observations": observations[-15:] if isinstance(observations, list) else [],
+            "learnings": learnings[-10:] if isinstance(learnings, list) else [],
+            "experiments": experiments[-5:] if isinstance(experiments, list) else [],
+            "recent_research": research_log,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@atlas_bp.route("/api/atlas/hub-eval")
+def api_atlas_hub_eval():
+    """Evaluate our agent hub vs industry best practices using Atlas research."""
+    atlas = get_atlas()
+    if not atlas:
+        return jsonify({"error": "Atlas not available"}), 503
+    try:
+        # Gather competitor intel
+        comp = {}
+        comp_path = COMPETITOR_INTEL_FILE
+        if comp_path and comp_path.exists():
+            try:
+                with open(comp_path) as f:
+                    comp = json.load(f)
+            except Exception:
+                pass
+
+        # Gather research insights about agent orchestration
+        research_log = []
+        rl_path = ATLAS_ROOT / "data" / "research_log.json"
+        if rl_path.exists():
+            try:
+                with open(rl_path) as f:
+                    rl = json.load(f)
+                research_log = [r for r in (rl if isinstance(rl, list) else [])
+                                if any(kw in str(r).lower() for kw in
+                                       ["agent", "orchestr", "multi-agent", "ai system", "infra"])][-10:]
+            except Exception:
+                pass
+
+        # Our system capabilities
+        our_system = {
+            "total_agents": 7,
+            "agents": ["Garves (Trading)", "Soren (Content)", "Shelby (Commander)",
+                       "Atlas (Research)", "Lisa (Social)", "Thor (Engineering)", "Robotox (Monitoring)"],
+            "features": [
+                "Cross-agent intelligence sharing via Atlas KB",
+                "Autonomous health monitoring and auto-fix (Robotox)",
+                "Proactive scheduling with 4 daily routines (Shelby)",
+                "Background research loop (45-min cycles, Tavily API)",
+                "Agent economics tracking",
+                "Task queue system (Thor)",
+                "A/B content testing (Soren)",
+                "Competitor intelligence gathering",
+                "Telegram notifications",
+                "Centralized dashboard with per-agent tabs",
+            ],
+            "architecture": "Hierarchical: Owner > Claude > Shelby > Agents, Atlas cross-cuts",
+        }
+
+        # Build evaluation
+        eval_result = {
+            "our_system": our_system,
+            "competitor_insights": comp.get("ai_agents", [])[:5],
+            "research_insights": research_log,
+            "strengths": [
+                "Unified command center dashboard",
+                "Cross-agent knowledge sharing (Atlas feeds all)",
+                "Autonomous monitoring and self-healing (Robotox)",
+                "Hierarchical command structure with clear roles",
+                "Background continuous research and learning",
+            ],
+            "gaps": [
+                "No inter-agent direct messaging (agents go through Atlas/Shelby)",
+                "No ML-based anomaly detection (rule-based patterns only)",
+                "No A/B testing framework for agent configurations",
+                "No automated rollback on failed deployments",
+                "Limited real-time collaboration between agents",
+            ],
+            "recommendations": [
+                {"priority": "high", "recommendation": "Add inter-agent event bus for real-time coordination"},
+                {"priority": "medium", "recommendation": "Implement ML anomaly detection in Robotox log watcher"},
+                {"priority": "medium", "recommendation": "Add agent config versioning and rollback system"},
+                {"priority": "low", "recommendation": "Build agent performance benchmarking against industry metrics"},
+            ],
+        }
+        return jsonify(eval_result)
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@atlas_bp.route("/api/atlas/suggest-agent")
+def api_atlas_suggest_agent():
+    """Atlas suggests whether a new agent is needed and describes its role."""
+    atlas = get_atlas()
+    if not atlas:
+        return jsonify({"error": "Atlas not available"}), 503
+    try:
+        # Check improvement suggestions for new_agents
+        improvements = {}
+        imp_path = ATLAS_ROOT / "data" / "improvements.json"
+        if imp_path.exists():
+            try:
+                with open(imp_path) as f:
+                    improvements = json.load(f)
+            except Exception:
+                pass
+
+        suggested_agents = improvements.get("new_agents", [])
+
+        # Check research insights for agent-related findings
+        research_insights = []
+        rl_path = ATLAS_ROOT / "data" / "research_log.json"
+        if rl_path.exists():
+            try:
+                with open(rl_path) as f:
+                    rl = json.load(f)
+                research_insights = [r for r in (rl if isinstance(rl, list) else [])
+                                     if any(kw in str(r).lower() for kw in
+                                            ["new agent", "missing agent", "additional agent", "agent gap"])][-5:]
+            except Exception:
+                pass
+
+        # Current system gaps that might warrant a new agent
+        current_agents = ["garves", "soren", "shelby", "atlas", "lisa", "thor", "robotox"]
+        gap_areas = [
+            {"area": "Analytics/BI", "description": "Dedicated data visualization and business intelligence agent",
+             "need": "medium", "reason": "Currently Atlas handles both research and analytics — a dedicated BI agent could provide richer dashboards and trend analysis"},
+            {"area": "DevOps/CI-CD", "description": "Automated deployment, testing pipeline, and infrastructure management",
+             "need": "low", "reason": "Thor handles coding but there is no dedicated CI/CD pipeline agent — launchctl management is manual"},
+            {"area": "Finance/Accounting", "description": "Track API costs, revenue, P&L across all agents",
+             "need": "medium", "reason": "Shelby tracks economics but a dedicated finance agent could do deeper cost optimization"},
+        ]
+
+        return jsonify({
+            "current_agents": len(current_agents),
+            "agent_list": current_agents,
+            "suggested_by_atlas": suggested_agents,
+            "research_based_suggestions": research_insights,
+            "gap_analysis": gap_areas,
+            "verdict": "System is well-covered with 7 agents. Consider a BI/Analytics agent if dashboard complexity grows."
+                       if not suggested_agents
+                       else f"Atlas has identified {len(suggested_agents)} potential new agent(s).",
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500

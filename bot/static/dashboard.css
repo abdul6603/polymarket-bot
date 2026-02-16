@@ -831,13 +831,19 @@
   .atlas-cmd-card[data-color="orange"]  { border-left-color:var(--agent-mercury); }
   .atlas-cmd-card[data-color="orange"]:hover  { box-shadow:0 6px 28px rgba(255,136,0,0.12); border-color:rgba(255,136,0,0.25); }
   .atlas-cmd-card[data-color="orange"]  .cmd-title { color:var(--agent-mercury); }
+  .atlas-cmd-card[data-color="thor"]  { border-left-color:var(--agent-thor); }
+  .atlas-cmd-card[data-color="thor"]:hover  { box-shadow:0 6px 28px rgba(255,102,0,0.12); border-color:rgba(255,102,0,0.25); }
+  .atlas-cmd-card[data-color="thor"]  .cmd-title { color:var(--agent-thor); }
+  .atlas-cmd-card[data-color="sentinel"]  { border-left-color:var(--agent-sentinel); }
+  .atlas-cmd-card[data-color="sentinel"]:hover  { box-shadow:0 6px 28px rgba(0,255,68,0.12); border-color:rgba(0,255,68,0.25); }
+  .atlas-cmd-card[data-color="sentinel"]  .cmd-title { color:var(--agent-sentinel); }
   .atlas-cmd-card[data-color="muted"]  { border-left-color:var(--text-muted); }
   .atlas-cmd-card[data-color="muted"]:hover  { box-shadow:0 6px 28px rgba(136,136,170,0.08); border-color:rgba(136,136,170,0.25); }
   .atlas-cmd-card[data-color="muted"]  .cmd-title { color:var(--text-secondary); }
 
   /* Atlas V3 Report Rendering */
   .atlas-report {
-    max-height:600px; overflow-y:auto; display:flex; flex-direction:column; gap:var(--space-4);
+    max-height:600px; overflow-y:auto; overflow-x:hidden; display:flex; flex-direction:column; gap:var(--space-4);
   }
   .atlas-report-header {
     font-family:var(--font-heading); font-size:0.92rem; font-weight:700;
@@ -863,9 +869,6 @@
   .atlas-report-section .section-header .sh-dot {
     width:8px; height:8px; border-radius:50%; flex-shrink:0;
   }
-  .atlas-report-section .section-body {
-    padding:var(--space-4) var(--space-5);
-  }
   .atlas-kv-row {
     display:flex; justify-content:space-between; align-items:center;
     padding:var(--space-2) 0;
@@ -885,6 +888,9 @@
   .atlas-priority--high { background:rgba(255,170,0,0.15); color:#ffaa00; border:1px solid rgba(255,170,0,0.25); }
   .atlas-priority--medium { background:rgba(0,212,255,0.15); color:#00d4ff; border:1px solid rgba(0,212,255,0.25); }
   .atlas-priority--low { background:rgba(136,136,170,0.12); color:#8888aa; border:1px solid rgba(136,136,170,0.2); }
+  .atlas-report-section .section-body {
+    padding:var(--space-4) var(--space-5); overflow:hidden;
+  }
   .atlas-rec-item {
     display:flex; align-items:flex-start; gap:var(--space-3);
     padding:var(--space-3) var(--space-4);
@@ -897,7 +903,7 @@
   .atlas-rec-item .rec-num {
     font-weight:700; color:var(--text-muted); flex-shrink:0; min-width:20px;
   }
-  .atlas-rec-item .rec-text { flex:1; }
+  .atlas-rec-item .rec-text { flex:1; min-width:0; word-wrap:break-word; overflow-wrap:break-word; }
   .atlas-agent-tag {
     display:inline-flex; align-items:center;
     font-family:var(--font-mono); font-size:0.62rem; font-weight:600;

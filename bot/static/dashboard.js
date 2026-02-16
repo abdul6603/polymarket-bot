@@ -1087,10 +1087,10 @@ function atlasPriorityBadge(p) {
   return '<span class="' + cls + '">' + esc(lvl) + '</span>';
 }
 function atlasAgentColor(agent) {
-  return {garves:'var(--agent-garves)',soren:'var(--agent-soren)',shelby:'var(--agent-shelby)',mercury:'var(--agent-mercury)',lisa:'var(--agent-mercury)',atlas:'var(--agent-atlas)',thor:'var(--agent-thor)'}[agent] || 'var(--text-secondary)';
+  return {garves:'var(--agent-garves)',soren:'var(--agent-soren)',shelby:'var(--agent-shelby)',mercury:'var(--agent-mercury)',lisa:'var(--agent-mercury)',atlas:'var(--agent-atlas)',thor:'var(--agent-thor)',robotox:'var(--agent-sentinel)',sentinel:'var(--agent-sentinel)'}[agent] || 'var(--text-secondary)';
 }
 function atlasAgentLabel(agent) {
-  return {garves:'Garves',soren:'Soren',shelby:'Shelby',mercury:'Lisa',lisa:'Lisa',atlas:'Atlas',thor:'Thor'}[agent] || agent;
+  return {garves:'Garves',soren:'Soren',shelby:'Shelby',mercury:'Lisa',lisa:'Lisa',atlas:'Atlas',thor:'Thor',robotox:'Robotox',sentinel:'Robotox'}[agent] || agent;
 }
 function atlasKvRows(obj) {
   var html = '';
@@ -1307,6 +1307,199 @@ async function atlasCompressKB() {
     if (data.message) body += '<div style="margin-top:var(--space-3);color:var(--text-secondary);font-size:0.76rem;">' + esc(data.message) + '</div>';
     if (!body) body = '<div style="color:var(--text-secondary);">' + esc(JSON.stringify(data)) + '</div>';
     el.innerHTML = atlasSection('Knowledge Base Compressed', 'var(--agent-atlas)', body);
+  } catch (e) { el.innerHTML = '<div class="atlas-report-section"><div class="section-body" style="color:var(--error);">Error: ' + esc(e.message) + '</div></div>'; }
+}
+
+async function atlasInfraEval() {
+  var el = document.getElementById('atlas-report');
+  el.innerHTML = '<div class="atlas-report-loading"><div class="spinner"></div>Evaluating system infrastructure...</div>';
+  try {
+    var resp = await fetch('/api/atlas/infra-eval');
+    var data = await resp.json();
+    if (data.error) { el.innerHTML = '<div class="atlas-report-section"><div class="section-body" style="color:var(--error);">' + esc(data.error) + '</div></div>'; return; }
+    var html = '<div class="atlas-report-header" style="border-left-color:var(--agent-atlas);">System / Infrastructure Evaluation</div>';
+    // KB stats
+    if (data.knowledge_base) {
+      html += atlasSection('Knowledge Base', 'var(--agent-atlas)', atlasKvRows(data.knowledge_base));
+    }
+    // Per-agent health
+    if (data.agents_health) {
+      var agents = Object.keys(data.agents_health);
+      for (var i = 0; i < agents.length; i++) {
+        var name = agents[i];
+        var h = data.agents_health[name];
+        html += atlasSection(atlasAgentLabel(name) + ' Health', atlasAgentColor(name), atlasKvRows(h));
+      }
+    }
+    // Recommendations
+    if (data.recommendations && data.recommendations.length > 0) {
+      var body = '';
+      for (var r = 0; r < data.recommendations.length; r++) {
+        var rec = data.recommendations[r];
+        body += '<div class="atlas-rec-item">' + atlasPriorityBadge(rec.priority) + '<span class="rec-text">' + esc(rec.recommendation || '') + '</span></div>';
+      }
+      html += atlasSection('Recommendations', 'var(--warning)', body);
+    }
+    el.innerHTML = html;
+  } catch (e) { el.innerHTML = '<div class="atlas-report-section"><div class="section-body" style="color:var(--error);">Error: ' + esc(e.message) + '</div></div>'; }
+}
+
+async function atlasThoughts() {
+  var el = document.getElementById('atlas-report');
+  el.innerHTML = '<div class="atlas-report-loading"><div class="spinner"></div>Loading Atlas thoughts...</div>';
+  try {
+    var resp = await fetch('/api/atlas/thoughts');
+    var data = await resp.json();
+    if (data.error) { el.innerHTML = '<div class="atlas-report-section"><div class="section-body" style="color:var(--error);">' + esc(data.error) + '</div></div>'; return; }
+    var html = '<div class="atlas-report-header" style="border-left-color:var(--agent-atlas);">Atlas Thoughts</div>';
+    // Recent observations
+    if (data.observations && data.observations.length > 0) {
+      var body = '';
+      for (var i = 0; i < data.observations.length; i++) {
+        var obs = data.observations[i];
+        var agent = obs.agent || obs.source || '';
+        var tag = agent ? '<span class="atlas-agent-tag" style="color:' + atlasAgentColor(agent) + ';border-color:' + atlasAgentColor(agent) + ';">' + esc(agent) + '</span> ' : '';
+        body += '<div class="atlas-rec-item"><span class="rec-num" style="color:var(--agent-atlas);">&#x25CF;</span><span class="rec-text">' + tag + esc(obs.observation || obs.content || obs.text || JSON.stringify(obs).substring(0, 200)) + '</span></div>';
+      }
+      html += atlasSection('Recent Observations (' + data.observations.length + ')', 'var(--agent-atlas)', body);
+    }
+    // Learnings
+    if (data.learnings && data.learnings.length > 0) {
+      var body = '';
+      for (var i = 0; i < data.learnings.length; i++) {
+        var l = data.learnings[i];
+        body += '<div class="atlas-rec-item"><span class="rec-num">' + (i+1) + '</span><span class="rec-text">' + esc(l.learning || l.content || l.summary || JSON.stringify(l).substring(0, 200)) + '</span></div>';
+      }
+      html += atlasSection('Lessons Learned (' + data.learnings.length + ')', 'var(--success)', body);
+    }
+    // Experiments/Hypotheses
+    if (data.experiments && data.experiments.length > 0) {
+      var body = '';
+      for (var i = 0; i < data.experiments.length; i++) {
+        var ex = data.experiments[i];
+        body += '<div class="atlas-rec-item"><span class="rec-num">' + (i+1) + '</span><span class="rec-text"><strong>' + esc(ex.hypothesis || ex.title || '?') + '</strong>';
+        if (ex.status) body += ' <span class="atlas-impact-chip">' + esc(ex.status) + '</span>';
+        if (ex.result) body += '<br><span style="color:var(--text-muted);font-size:0.72rem;">' + esc(ex.result) + '</span>';
+        body += '</span></div>';
+      }
+      html += atlasSection('Active Experiments (' + data.experiments.length + ')', 'var(--agent-soren)', body);
+    }
+    // Recent research
+    if (data.recent_research && data.recent_research.length > 0) {
+      var body = '';
+      for (var i = 0; i < data.recent_research.length; i++) {
+        var r = data.recent_research[i];
+        var q = r.query || r.topic || '';
+        var insight = r.insight || r.summary || '';
+        body += '<div class="atlas-rec-item"><span class="rec-num" style="color:var(--agent-garves);">&#x1F50D;</span><span class="rec-text"><strong>' + esc(q) + '</strong>';
+        if (insight) body += '<br><span style="color:var(--text-muted);font-size:0.72rem;">' + esc(insight) + '</span>';
+        body += '</span></div>';
+      }
+      html += atlasSection('Recent Research (' + data.recent_research.length + ')', 'var(--agent-garves)', body);
+    }
+    if (!data.observations?.length && !data.learnings?.length && !data.experiments?.length) {
+      html += '<div class="atlas-report-section"><div class="section-body" style="text-align:center;color:var(--text-muted);padding:var(--space-8);">Atlas has no thoughts yet. Start the background loop to begin learning.</div></div>';
+    }
+    el.innerHTML = html;
+  } catch (e) { el.innerHTML = '<div class="atlas-report-section"><div class="section-body" style="color:var(--error);">Error: ' + esc(e.message) + '</div></div>'; }
+}
+
+async function atlasHubEval() {
+  var el = document.getElementById('atlas-report');
+  el.innerHTML = '<div class="atlas-report-loading"><div class="spinner"></div>Evaluating agent hub vs best practices...</div>';
+  try {
+    var resp = await fetch('/api/atlas/hub-eval');
+    var data = await resp.json();
+    if (data.error) { el.innerHTML = '<div class="atlas-report-section"><div class="section-body" style="color:var(--error);">' + esc(data.error) + '</div></div>'; return; }
+    var html = '<div class="atlas-report-header" style="border-left-color:var(--warning);">Hub Evaluation — System vs Industry</div>';
+    // Our system
+    if (data.our_system) {
+      var body = '<div class="atlas-kv-row"><span class="kv-key">Total Agents</span><span class="kv-val">' + data.our_system.total_agents + '</span></div>';
+      body += '<div class="atlas-kv-row"><span class="kv-key">Architecture</span><span class="kv-val">' + esc(data.our_system.architecture || '') + '</span></div>';
+      if (data.our_system.features) {
+        body += '<div style="margin-top:var(--space-3);font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:var(--space-2);">Features</div>';
+        for (var i = 0; i < data.our_system.features.length; i++) {
+          body += '<div class="atlas-rec-item"><span class="rec-num" style="color:var(--success);">&#x2713;</span><span class="rec-text">' + esc(data.our_system.features[i]) + '</span></div>';
+        }
+      }
+      html += atlasSection('Our System', 'var(--agent-atlas)', body);
+    }
+    // Strengths
+    if (data.strengths && data.strengths.length > 0) {
+      var body = '';
+      for (var i = 0; i < data.strengths.length; i++) {
+        body += '<div class="atlas-rec-item"><span class="rec-num" style="color:var(--success);">&#x2713;</span><span class="rec-text">' + esc(data.strengths[i]) + '</span></div>';
+      }
+      html += atlasSection('Strengths', 'var(--success)', body);
+    }
+    // Gaps
+    if (data.gaps && data.gaps.length > 0) {
+      var body = '';
+      for (var i = 0; i < data.gaps.length; i++) {
+        body += '<div class="atlas-rec-item"><span class="rec-num" style="color:var(--error);">&#x2717;</span><span class="rec-text">' + esc(data.gaps[i]) + '</span></div>';
+      }
+      html += atlasSection('Gaps', 'var(--error)', body);
+    }
+    // Competitor insights
+    if (data.competitor_insights && data.competitor_insights.length > 0) {
+      var body = '';
+      for (var i = 0; i < data.competitor_insights.length; i++) {
+        var ci = data.competitor_insights[i];
+        body += '<div class="atlas-rec-item"><span class="rec-num">' + (i+1) + '</span><span class="rec-text">' + esc(ci.title || ci.name || ci.snippet || JSON.stringify(ci).substring(0, 150)) + '</span></div>';
+      }
+      html += atlasSection('Competitor / Industry Intel', 'var(--agent-soren)', body);
+    }
+    // Research insights
+    if (data.research_insights && data.research_insights.length > 0) {
+      var body = '';
+      for (var i = 0; i < data.research_insights.length; i++) {
+        var ri = data.research_insights[i];
+        body += '<div class="atlas-rec-item"><span class="rec-num">&#x1F50D;</span><span class="rec-text">' + esc(ri.insight || ri.query || JSON.stringify(ri).substring(0, 150)) + '</span></div>';
+      }
+      html += atlasSection('Research Insights', 'var(--agent-garves)', body);
+    }
+    // Recommendations
+    if (data.recommendations && data.recommendations.length > 0) {
+      var body = '';
+      for (var i = 0; i < data.recommendations.length; i++) {
+        var rec = data.recommendations[i];
+        body += '<div class="atlas-rec-item">' + atlasPriorityBadge(rec.priority) + '<span class="rec-text">' + esc(rec.recommendation || '') + '</span></div>';
+      }
+      html += atlasSection('Recommendations', 'var(--warning)', body);
+    }
+    el.innerHTML = html;
+  } catch (e) { el.innerHTML = '<div class="atlas-report-section"><div class="section-body" style="color:var(--error);">Error: ' + esc(e.message) + '</div></div>'; }
+}
+
+async function atlasSuggestAgent() {
+  var el = document.getElementById('atlas-report');
+  el.innerHTML = '<div class="atlas-report-loading"><div class="spinner"></div>Analyzing if a new agent is needed...</div>';
+  try {
+    var resp = await fetch('/api/atlas/suggest-agent');
+    var data = await resp.json();
+    if (data.error) { el.innerHTML = '<div class="atlas-report-section"><div class="section-body" style="color:var(--error);">' + esc(data.error) + '</div></div>'; return; }
+    var html = '<div class="atlas-report-header" style="border-left-color:var(--agent-soren);">New Agent Suggestion</div>';
+    // Verdict
+    html += atlasSection('Verdict', 'var(--agent-atlas)', '<div style="padding:var(--space-3);color:var(--text);font-family:var(--font-mono);font-size:0.82rem;line-height:1.6;">' + esc(data.verdict || 'No verdict') + '</div><div class="atlas-kv-row"><span class="kv-key">Current Agents</span><span class="kv-val">' + (data.current_agents || 0) + '</span></div>');
+    // Suggested by Atlas
+    if (data.suggested_by_atlas && data.suggested_by_atlas.length > 0) {
+      var body = '';
+      for (var i = 0; i < data.suggested_by_atlas.length; i++) {
+        var ag = data.suggested_by_atlas[i];
+        body += '<div class="atlas-rec-item"><span class="rec-text"><strong style="color:var(--text);">' + esc(ag.name || '?') + '</strong> <span class="atlas-agent-tag">' + esc(ag.role || '?') + '</span><br><span style="color:var(--text-muted);font-size:0.72rem;">' + esc(ag.description || '') + '</span></span></div>';
+      }
+      html += atlasSection('Atlas Suggestions (' + data.suggested_by_atlas.length + ')', 'var(--agent-soren)', body);
+    }
+    // Gap analysis
+    if (data.gap_analysis && data.gap_analysis.length > 0) {
+      var body = '';
+      for (var i = 0; i < data.gap_analysis.length; i++) {
+        var gap = data.gap_analysis[i];
+        body += '<div class="atlas-rec-item">' + atlasPriorityBadge(gap.need || 'medium') + '<span class="rec-text"><strong style="color:var(--text);">' + esc(gap.area || '') + '</strong> — ' + esc(gap.description || '') + '<br><span style="color:var(--text-muted);font-size:0.72rem;">' + esc(gap.reason || '') + '</span></span></div>';
+      }
+      html += atlasSection('Gap Analysis', 'var(--warning)', body);
+    }
+    el.innerHTML = html;
   } catch (e) { el.innerHTML = '<div class="atlas-report-section"><div class="section-body" style="color:var(--error);">Error: ' + esc(e.message) + '</div></div>'; }
 }
 
