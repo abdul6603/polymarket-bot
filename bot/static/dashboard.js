@@ -552,16 +552,19 @@ async function loadAtlasBgStatus() {
         html += ' &middot; Running for ' + (startedAgo >= 1 ? startedAgo + 'h' : '<1h');
       }
       html += '</div>';
-      // Countdown to next cycle
-      if (running && d.cycle_minutes) {
-        var cyclMs = d.cycle_minutes * 60000;
+    }
+    // Cycle countdown — works even before first cycle completes
+    if (running && d.cycle_minutes) {
+      var cyclMs = d.cycle_minutes * 60000;
+      var isWorking = d.state !== 'running' && d.state !== 'idle' && d.state !== 'stopped';
+      if (isWorking) {
+        html += '<div style="margin-top:6px;font-size:0.78rem;color:var(--agent-atlas);font-family:var(--font-mono);display:flex;align-items:center;gap:6px;">';
+        html += '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--agent-atlas);box-shadow:0 0 8px var(--agent-atlas);animation:pulse-glow 1.5s ease-in-out infinite;"></span>';
+        html += 'Working: ' + esc(d.state_label || d.state) + '</div>';
+      } else if (d.last_cycle) {
         var nextAt = new Date(d.last_cycle).getTime() + cyclMs;
         var remain = nextAt - Date.now();
-        if (d.state !== 'running') {
-          html += '<div style="margin-top:6px;font-size:0.78rem;color:var(--agent-atlas);font-family:var(--font-mono);display:flex;align-items:center;gap:6px;">';
-          html += '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--agent-atlas);animation:pulse-glow 1.5s ease-in-out infinite;"></span>';
-          html += 'Currently working...</div>';
-        } else if (remain > 0) {
+        if (remain > 0) {
           var rm = Math.floor(remain / 60000);
           var rs = Math.floor((remain % 60000) / 1000);
           html += '<div id="atlas-countdown-timer" data-next="' + nextAt + '" style="margin-top:6px;font-size:0.78rem;color:var(--agent-atlas);font-family:var(--font-mono);display:flex;align-items:center;gap:6px;">';
@@ -707,21 +710,26 @@ function updateOverviewCountdown() {
   var el = document.getElementById('overview-atlas-countdown');
   if (!el) return;
   var d = _atlasBgCache;
-  if (!d || !d.running || !d.last_cycle || !d.cycle_minutes) {
+  if (!d || !d.running || !d.cycle_minutes) {
     el.innerHTML = '';
     return;
   }
   var cyclMs = d.cycle_minutes * 60000;
-  var nextAt = new Date(d.last_cycle).getTime() + cyclMs;
-  var remain = nextAt - Date.now();
-  if (d.state !== 'running') {
+  var isWorking = d.state !== 'running' && d.state !== 'idle' && d.state !== 'stopped';
+  if (isWorking) {
     el.innerHTML = '<div class="atlas-cycle-badge working"><span class="atlas-cycle-dot"></span>Atlas working: ' + esc(d.state_label || d.state) + '</div>';
-  } else if (remain > 0) {
-    var rm = Math.floor(remain / 60000);
-    var rs = Math.floor((remain % 60000) / 1000);
-    el.innerHTML = '<div class="atlas-cycle-badge idle"><svg width="14" height="14" viewBox="0 0 14 14" style="flex-shrink:0;"><circle cx="7" cy="7" r="6" fill="none" stroke="var(--agent-atlas)" stroke-width="1.5" opacity="0.3"/><circle cx="7" cy="7" r="6" fill="none" stroke="var(--agent-atlas)" stroke-width="1.5" stroke-dasharray="37.7" stroke-dashoffset="' + (37.7 * remain / cyclMs) + '" transform="rotate(-90 7 7)" stroke-linecap="round"/></svg>Next Atlas cycle: <strong>' + rm + 'm ' + rs + 's</strong></div>';
+  } else if (d.last_cycle) {
+    var nextAt = new Date(d.last_cycle).getTime() + cyclMs;
+    var remain = nextAt - Date.now();
+    if (remain > 0) {
+      var rm = Math.floor(remain / 60000);
+      var rs = Math.floor((remain % 60000) / 1000);
+      el.innerHTML = '<div class="atlas-cycle-badge idle"><svg width="14" height="14" viewBox="0 0 14 14" style="flex-shrink:0;"><circle cx="7" cy="7" r="6" fill="none" stroke="var(--agent-atlas)" stroke-width="1.5" opacity="0.3"/><circle cx="7" cy="7" r="6" fill="none" stroke="var(--agent-atlas)" stroke-width="1.5" stroke-dasharray="37.7" stroke-dashoffset="' + (37.7 * remain / cyclMs) + '" transform="rotate(-90 7 7)" stroke-linecap="round"/></svg>Next Atlas cycle: <strong>' + rm + 'm ' + rs + 's</strong></div>';
+    } else {
+      el.innerHTML = '<div class="atlas-cycle-badge starting">Atlas cycle starting soon...</div>';
+    }
   } else {
-    el.innerHTML = '<div class="atlas-cycle-badge starting">Atlas cycle starting soon...</div>';
+    el.innerHTML = '';
   }
 }
 
