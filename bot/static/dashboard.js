@@ -823,16 +823,18 @@ function renderAtlasHierarchy(bgStatus) {
   var target = bgStatus.current_target;
   var learnCount = bgStatus.recent_learn_count || 0;
   var stateLabel = bgStatus.state_label || state;
+  var feedLog = bgStatus.agent_feed_log || {};
 
   var agents = [
-    {key:'garves', name:'Garves', color:'#00d4ff', x:80, y:30},
-    {key:'soren', name:'Soren', color:'#cc66ff', x:200, y:30},
-    {key:'shelby', name:'Shelby', color:'#ffaa00', x:320, y:30},
-    {key:'lisa', name:'Lisa', color:'#ff8800', x:440, y:30},
-    {key:'robotox', name:'Robotox', color:'#00ff44', x:560, y:30}
+    {key:'garves', name:'Garves', color:'#00d4ff', x:60,  y:30},
+    {key:'soren',  name:'Soren',  color:'#cc66ff', x:175, y:30},
+    {key:'shelby', name:'Shelby', color:'#ffaa00', x:290, y:30},
+    {key:'lisa',   name:'Lisa',   color:'#ff8800', x:405, y:30},
+    {key:'robotox',name:'Robotox',color:'#00ff44', x:520, y:30},
+    {key:'thor',   name:'Thor',   color:'#ff6600', x:635, y:30}
   ];
-  var atlasX = 320, atlasY = 140;
-  var w = 640, h = 180;
+  var atlasX = 350, atlasY = 150;
+  var w = 700, h = 210;
 
   var html = '<div class="hierarchy-header">';
   html += '<span class="hierarchy-title">Live Feed Hierarchy</span>';
@@ -844,15 +846,16 @@ function renderAtlasHierarchy(bgStatus) {
   }
   html += '</div>';
 
-  var svg = '<svg viewBox="0 0 ' + w + ' ' + h + '" style="width:100%;max-height:180px;">';
+  var svg = '<svg viewBox="0 0 ' + w + ' ' + h + '" style="width:100%;max-height:210px;">';
 
   // Draw lines from Atlas to each agent
   for (var i = 0; i < agents.length; i++) {
     var ag = agents[i];
     var isActive = target === ag.key || target === 'all';
-    var lineColor = isActive ? '#22cc55' : 'rgba(255,255,255,0.08)';
-    var lineWidth = isActive ? 2 : 1;
-    var dashAttr = isActive ? ' stroke-dasharray="8 8" style="animation:hierarchy-flow 0.8s linear infinite;"' : '';
+    var hasFed = feedLog[ag.key] && feedLog[ag.key].feed_count > 0;
+    var lineColor = isActive ? '#22cc55' : hasFed ? ag.color + '33' : 'rgba(255,255,255,0.06)';
+    var lineWidth = isActive ? 2.5 : hasFed ? 1.5 : 1;
+    var dashAttr = isActive ? ' stroke-dasharray="8 4" style="animation:hierarchy-flow 0.8s linear infinite;"' : '';
     svg += '<line x1="' + atlasX + '" y1="' + atlasY + '" x2="' + ag.x + '" y2="' + (ag.y + 16) + '" stroke="' + lineColor + '" stroke-width="' + lineWidth + '"' + dashAttr + '/>';
     if (isActive) {
       svg += '<circle cx="' + ag.x + '" cy="' + (ag.y + 16) + '" r="4" fill="#22cc55" opacity="0.6"><animate attributeName="r" values="3;6;3" dur="1.5s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.8;0.3;0.8" dur="1.5s" repeatCount="indefinite"/></circle>';
@@ -863,7 +866,8 @@ function renderAtlasHierarchy(bgStatus) {
   for (var i = 0; i < agents.length; i++) {
     var ag = agents[i];
     var isActive = target === ag.key || target === 'all';
-    var opacity = isActive ? '1' : '0.4';
+    var hasFed = feedLog[ag.key] && feedLog[ag.key].feed_count > 0;
+    var opacity = isActive ? '1' : hasFed ? '0.8' : '0.35';
     var glow = isActive ? ' filter="url(#glow-' + ag.key + ')"' : '';
 
     if (isActive) {
@@ -871,9 +875,22 @@ function renderAtlasHierarchy(bgStatus) {
     }
 
     svg += '<g opacity="' + opacity + '"' + glow + '>';
-    svg += '<circle cx="' + ag.x + '" cy="' + ag.y + '" r="16" fill="rgba(8,8,16,0.9)" stroke="' + ag.color + '" stroke-width="' + (isActive ? 2 : 1) + '"/>';
+    svg += '<circle cx="' + ag.x + '" cy="' + ag.y + '" r="16" fill="rgba(8,8,16,0.9)" stroke="' + ag.color + '" stroke-width="' + (isActive ? 2.5 : 1) + '"/>';
     svg += '<text x="' + ag.x + '" y="' + (ag.y + 4) + '" text-anchor="middle" fill="' + ag.color + '" font-size="9" font-family="\'JetBrains Mono\',monospace" font-weight="600">' + ag.name.substring(0,2).toUpperCase() + '</text>';
-    svg += '<text x="' + ag.x + '" y="' + (ag.y - 22) + '" text-anchor="middle" fill="' + ag.color + '" font-size="8" font-family="Inter,sans-serif" opacity="0.7">' + ag.name + '</text>';
+    svg += '<text x="' + ag.x + '" y="' + (ag.y - 22) + '" text-anchor="middle" fill="' + ag.color + '" font-size="8" font-family="Inter,sans-serif" opacity="0.8">' + ag.name + '</text>';
+
+    // Feed status label under node
+    var agFeed = feedLog[ag.key];
+    if (isActive) {
+      svg += '<text x="' + ag.x + '" y="' + (ag.y + 32) + '" text-anchor="middle" fill="#22cc55" font-size="6.5" font-family="\'JetBrains Mono\',monospace" font-weight="600">FEEDING</text>';
+    } else if (agFeed && agFeed.last_fed) {
+      var feedTime = agFeed.last_fed.substring(11, 16);
+      svg += '<text x="' + ag.x + '" y="' + (ag.y + 30) + '" text-anchor="middle" fill="' + ag.color + '" font-size="6" font-family="\'JetBrains Mono\',monospace" opacity="0.6">' + feedTime + '</text>';
+      svg += '<text x="' + ag.x + '" y="' + (ag.y + 39) + '" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="5.5" font-family="Inter,sans-serif">' + agFeed.feed_count + 'x fed</text>';
+    } else {
+      svg += '<text x="' + ag.x + '" y="' + (ag.y + 32) + '" text-anchor="middle" fill="rgba(255,255,255,0.2)" font-size="6" font-family="Inter,sans-serif">unfed</text>';
+    }
+
     svg += '</g>';
   }
 
@@ -883,12 +900,13 @@ function renderAtlasHierarchy(bgStatus) {
     svg += '<defs><filter id="glow-atlas"><feGaussianBlur stdDeviation="6" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
   }
   svg += '<g' + atlasGlow + '>';
-  svg += '<circle cx="' + atlasX + '" cy="' + atlasY + '" r="24" fill="rgba(8,8,16,0.95)" stroke="#22cc55" stroke-width="2"/>';
+  svg += '<circle cx="' + atlasX + '" cy="' + atlasY + '" r="26" fill="rgba(8,8,16,0.95)" stroke="#22cc55" stroke-width="2"/>';
   if (running && state !== 'running' && state !== 'idle') {
-    svg += '<circle cx="' + atlasX + '" cy="' + atlasY + '" r="24" fill="none" stroke="#22cc55" stroke-width="1" opacity="0.3"><animate attributeName="r" values="24;32;24" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.3;0;0.3" dur="2s" repeatCount="indefinite"/></circle>';
+    svg += '<circle cx="' + atlasX + '" cy="' + atlasY + '" r="26" fill="none" stroke="#22cc55" stroke-width="1" opacity="0.3"><animate attributeName="r" values="26;34;26" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.3;0;0.3" dur="2s" repeatCount="indefinite"/></circle>';
   }
   svg += '<text x="' + atlasX + '" y="' + (atlasY + 1) + '" text-anchor="middle" fill="#22cc55" font-size="10" font-family="\'Exo 2\',sans-serif" font-weight="700" letter-spacing="1">ATLAS</text>';
-  svg += '<text x="' + atlasX + '" y="' + (atlasY + 12) + '" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-size="7" font-family="Inter,sans-serif">' + (running ? 'FEEDING' : 'OFFLINE') + '</text>';
+  var atlasSubLabel = running ? (target ? 'FEEDING → ' + (target === 'all' ? 'ALL' : target.toUpperCase()) : 'ONLINE') : 'OFFLINE';
+  svg += '<text x="' + atlasX + '" y="' + (atlasY + 13) + '" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="7" font-family="\'JetBrains Mono\',monospace">' + atlasSubLabel + '</text>';
   svg += '</g>';
 
   svg += '</svg>';

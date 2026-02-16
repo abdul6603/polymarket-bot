@@ -310,6 +310,7 @@ def api_atlas_bg_status():
             "current_target": status.get("current_target", None),
             "recent_learn_count": status.get("recent_learn_count", 0),
             "cycle_minutes": 45,
+            "agent_feed_log": status.get("agent_feed_log", {}),
         })
     except Exception as e:
         return jsonify({"running": False, "state": "error", "error": str(e)[:200]})
