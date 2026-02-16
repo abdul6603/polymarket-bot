@@ -155,19 +155,22 @@ def _load_trades() -> list[dict]:
         return []
     trades = []
     seen = set()
-    with open(TRADES_FILE) as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                t = json.loads(line)
-                tid = t.get("trade_id", "")
-                if tid not in seen:
-                    seen.add(tid)
-                    trades.append(t)
-            except json.JSONDecodeError:
-                continue
+    try:
+        with open(TRADES_FILE) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    t = json.loads(line)
+                    tid = t.get("trade_id", "")
+                    if tid not in seen:
+                        seen.add(tid)
+                        trades.append(t)
+                except json.JSONDecodeError:
+                    continue
+    except Exception:
+        return []
     return trades
 
 
@@ -846,7 +849,10 @@ def api_soren_download(item_id):
 def _serve_video(video_path: str) -> Response:
     """Serve a video file with HTTP Range request support for browser streaming."""
     file_path = Path(video_path)
-    file_size = file_path.stat().st_size
+    try:
+        file_size = file_path.stat().st_size
+    except Exception:
+        return jsonify({"error": "Video file not found"}), 404
 
     range_header = request.headers.get("Range")
     if range_header:
@@ -858,9 +864,12 @@ def _serve_video(video_path: str) -> Response:
         end = min(end, file_size - 1)
         length = end - start + 1
 
-        with open(video_path, "rb") as f:
-            f.seek(start)
-            data = f.read(length)
+        try:
+            with open(video_path, "rb") as f:
+                f.seek(start)
+                data = f.read(length)
+        except Exception:
+            return jsonify({"error": "Failed to read video file"}), 500
 
         resp = Response(
             data,
@@ -978,8 +987,11 @@ def api_soren_custom_generate():
         except Exception:
             pass
     queue.insert(0, item)
-    with open(SOREN_QUEUE_FILE, "w") as f:
-        json.dump(queue, f, indent=2)
+    try:
+        with open(SOREN_QUEUE_FILE, "w") as f:
+            json.dump(queue, f, indent=2)
+    except Exception as e:
+        return jsonify({"error": f"Failed to write queue file: {e}"}), 500
 
     # Start generation
     thread = threading.Thread(target=_do_generate, args=(item_id, item, mode), daemon=True)
@@ -2064,8 +2076,11 @@ def api_shelby_assessments():
             pass
     # Create defaults
     SHELBY_ASSESSMENTS_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(SHELBY_ASSESSMENTS_FILE, "w") as f:
-        json.dump(_DEFAULT_ASSESSMENTS, f, indent=2)
+    try:
+        with open(SHELBY_ASSESSMENTS_FILE, "w") as f:
+            json.dump(_DEFAULT_ASSESSMENTS, f, indent=2)
+    except Exception:
+        pass
     return jsonify(_DEFAULT_ASSESSMENTS)
 
 
@@ -2101,8 +2116,11 @@ def api_shelby_hire():
     registry[name] = agent_entry
 
     SHELBY_AGENT_REGISTRY_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(SHELBY_AGENT_REGISTRY_FILE, "w") as f:
-        json.dump(registry, f, indent=2)
+    try:
+        with open(SHELBY_AGENT_REGISTRY_FILE, "w") as f:
+            json.dump(registry, f, indent=2)
+    except Exception as e:
+        return jsonify({"error": f"Failed to write registry: {e}"}), 500
 
     return jsonify({"success": True, "agent": agent_entry})
 

@@ -19,12 +19,15 @@ def _load_trades() -> list[dict]:
     if not TRADES_FILE.exists():
         return []
     trades = []
-    with open(TRADES_FILE) as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            trades.append(json.loads(line))
+    try:
+        with open(TRADES_FILE) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                trades.append(json.loads(line))
+    except Exception:
+        return []
     return trades
 
 

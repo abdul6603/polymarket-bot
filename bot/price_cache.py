@@ -165,25 +165,31 @@ class PriceCache:
             # Load existing, merge, save (avoid duplicates by timestamp)
             existing = {}
             if fpath.exists():
-                with open(fpath) as f:
-                    for line in f:
-                        line = line.strip()
-                        if not line:
-                            continue
-                        try:
-                            c = json.loads(line)
-                            existing[c["timestamp"]] = c
-                        except (json.JSONDecodeError, KeyError):
-                            continue  # skip corrupted lines
+                try:
+                    with open(fpath) as f:
+                        for line in f:
+                            line = line.strip()
+                            if not line:
+                                continue
+                            try:
+                                c = json.loads(line)
+                                existing[c["timestamp"]] = c
+                            except (json.JSONDecodeError, KeyError):
+                                continue  # skip corrupted lines
+                except Exception as e:
+                    log.warning("Failed to read existing candles for %s: %s", asset, e)
             # Add new candles
             for c in candle_deque:
                 existing[c.timestamp] = asdict(c)
             # Write sorted by timestamp
             sorted_candles = sorted(existing.values(), key=lambda x: x["timestamp"])
-            with open(fpath, "w") as f:
-                for c in sorted_candles:
-                    f.write(json.dumps(c) + "\n")
-            log.debug("Saved %d candles for %s", len(sorted_candles), asset)
+            try:
+                with open(fpath, "w") as f:
+                    for c in sorted_candles:
+                        f.write(json.dumps(c) + "\n")
+                log.debug("Saved %d candles for %s", len(sorted_candles), asset)
+            except Exception as e:
+                log.error("Failed to write candles for %s: %s", asset, e)
 
     @staticmethod
     def load_candles(asset: str) -> list[Candle]:
@@ -192,14 +198,18 @@ class PriceCache:
         if not fpath.exists():
             return []
         candles = []
-        with open(fpath) as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    d = json.loads(line)
-                    candles.append(Candle(**d))
-                except (json.JSONDecodeError, KeyError, TypeError):
-                    continue
+        try:
+            with open(fpath) as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    try:
+                        d = json.loads(line)
+                        candles.append(Candle(**d))
+                    except (json.JSONDecodeError, KeyError, TypeError):
+                        continue
+        except Exception as e:
+            log.warning("Failed to load candles for %s: %s", asset, e)
+            return []
         return sorted(candles, key=lambda c: c.timestamp)

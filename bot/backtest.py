@@ -188,22 +188,28 @@ def save_backtest_candles(asset: str, candles: list[Candle]) -> None:
     fpath = CANDLE_DIR / f"{asset}_backtest.jsonl"
     existing: dict[float, dict] = {}
     if fpath.exists():
-        with open(fpath) as f:
-            for line in f:
-                line = line.strip()
-                if line:
-                    c = json.loads(line)
-                    existing[c["timestamp"]] = c
+        try:
+            with open(fpath) as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        c = json.loads(line)
+                        existing[c["timestamp"]] = c
+        except Exception as e:
+            log.warning("Failed to read existing backtest candles for %s: %s", asset, e)
     for c in candles:
         existing[c.timestamp] = {
             "timestamp": c.timestamp, "open": c.open, "high": c.high,
             "low": c.low, "close": c.close, "volume": c.volume,
         }
     sorted_c = sorted(existing.values(), key=lambda x: x["timestamp"])
-    with open(fpath, "w") as f:
-        for c in sorted_c:
-            f.write(json.dumps(c) + "\n")
-    log.info("Saved %d candles to %s", len(sorted_c), fpath)
+    try:
+        with open(fpath, "w") as f:
+            for c in sorted_c:
+                f.write(json.dumps(c) + "\n")
+        log.info("Saved %d candles to %s", len(sorted_c), fpath)
+    except Exception as e:
+        log.error("Failed to write backtest candles for %s: %s", asset, e)
 
 
 def load_backtest_candles(asset: str) -> list[Candle]:
@@ -212,12 +218,16 @@ def load_backtest_candles(asset: str) -> list[Candle]:
     if not fpath.exists():
         return []
     candles = []
-    with open(fpath) as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                d = json.loads(line)
-                candles.append(Candle(**d))
+    try:
+        with open(fpath) as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    d = json.loads(line)
+                    candles.append(Candle(**d))
+    except Exception as e:
+        log.warning("Failed to load backtest candles for %s: %s", asset, e)
+        return []
     return sorted(candles, key=lambda c: c.timestamp)
 
 
@@ -728,24 +738,28 @@ def print_sweep_report(results: list[tuple[str, BacktestResult]]) -> None:
 
 def export_trades(trades: list[BacktestTrade], filepath: str) -> None:
     """Export trades to CSV."""
-    with open(filepath, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=[
-            "timestamp", "datetime", "asset", "timeframe", "direction",
-            "probability", "edge", "confidence", "outcome", "won", "pnl",
-            "entry_price", "indicator_votes",
-        ])
-        writer.writeheader()
-        for t in trades:
-            writer.writerow({
-                "timestamp": t.timestamp,
-                "datetime": datetime.fromtimestamp(t.timestamp, tz=timezone.utc).isoformat(),
-                "asset": t.asset, "timeframe": t.timeframe, "direction": t.direction,
-                "probability": f"{t.probability:.4f}", "edge": f"{t.edge:.4f}",
-                "confidence": f"{t.confidence:.4f}", "outcome": t.outcome,
-                "won": t.won, "pnl": f"{t.pnl:.4f}", "entry_price": f"{t.entry_price:.4f}",
-                "indicator_votes": json.dumps(t.indicator_votes),
-            })
-    print(f"\nExported {len(trades)} trades to {filepath}")
+    try:
+        with open(filepath, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=[
+                "timestamp", "datetime", "asset", "timeframe", "direction",
+                "probability", "edge", "confidence", "outcome", "won", "pnl",
+                "entry_price", "indicator_votes",
+            ])
+            writer.writeheader()
+            for t in trades:
+                writer.writerow({
+                    "timestamp": t.timestamp,
+                    "datetime": datetime.fromtimestamp(t.timestamp, tz=timezone.utc).isoformat(),
+                    "asset": t.asset, "timeframe": t.timeframe, "direction": t.direction,
+                    "probability": f"{t.probability:.4f}", "edge": f"{t.edge:.4f}",
+                    "confidence": f"{t.confidence:.4f}", "outcome": t.outcome,
+                    "won": t.won, "pnl": f"{t.pnl:.4f}", "entry_price": f"{t.entry_price:.4f}",
+                    "indicator_votes": json.dumps(t.indicator_votes),
+                })
+        print(f"\nExported {len(trades)} trades to {filepath}")
+    except Exception as e:
+        log.error("Failed to export trades to %s: %s", filepath, e)
+        print(f"\nError exporting trades to {filepath}: {e}")
 
 
 # ── CLI ──
