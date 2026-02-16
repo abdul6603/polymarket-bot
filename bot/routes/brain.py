@@ -4,10 +4,13 @@ from __future__ import annotations
 import json
 import time
 import uuid
+import threading
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 from flask import Blueprint, jsonify, request
+
+from bot.brain_interpreter import interpret_note
 
 brain_bp = Blueprint("brain", __name__)
 
@@ -88,6 +91,22 @@ def api_brain_add(agent: str):
     data["notes"] = data["notes"][-500:]
     _save_brain(agent, data)
 
+    # Auto-interpret in background so the response is fast
+    def _do_interpret():
+        try:
+            result = interpret_note(agent, note)
+            if result.get("status") == "ok" and result.get("message"):
+                d = _load_brain(agent)
+                for n in d["notes"]:
+                    if n.get("id") == note["id"]:
+                        n["response"] = result["message"]
+                        break
+                _save_brain(agent, d)
+        except Exception:
+            pass
+
+    threading.Thread(target=_do_interpret, daemon=True).start()
+
     return jsonify({"success": True, "note": note})
 
 
@@ -106,6 +125,30 @@ def api_brain_delete(agent: str, note_id: str):
 
     _save_brain(agent, data)
     return jsonify({"success": True, "deleted": note_id})
+
+
+@brain_bp.route("/api/brain/<agent>/interpret/<note_id>", methods=["POST"])
+def api_brain_interpret(agent: str, note_id: str):
+    """Interpret a specific brain note with GPT."""
+    if agent not in VALID_AGENTS:
+        return jsonify({"error": f"Unknown agent: {agent}"}), 400
+
+    data = _load_brain(agent)
+    target = None
+    for n in data["notes"]:
+        if n.get("id") == note_id:
+            target = n
+            break
+
+    if not target:
+        return jsonify({"error": "Note not found"}), 404
+
+    result = interpret_note(agent, target)
+    if result.get("status") == "ok" and result.get("message"):
+        target["response"] = result["message"]
+        _save_brain(agent, data)
+
+    return jsonify({"success": True, "note": target, "interpretation": result})
 
 
 @brain_bp.route("/api/brain/all")

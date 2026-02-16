@@ -3095,6 +3095,7 @@ async function loadBrainNotes(agent) {
     }
     var typeColors = {note: '#3b82f6', command: '#ef4444', memory: '#22c55e'};
     var typeLabels = {note: 'NOTE', command: 'CMD', memory: 'MEM'};
+    var agentColor = AGENT_COLORS[agent] || '#3b82f6';
     var html = '';
     for (var i = notes.length - 1; i >= 0; i--) {
       var n = notes[i];
@@ -3110,6 +3111,12 @@ async function loadBrainNotes(agent) {
       html += '<span style="font-weight:600;font-size:0.82rem;color:var(--text-primary);">' + esc(n.topic) + '</span>';
       html += '</div>';
       html += '<div style="font-size:0.76rem;color:var(--text-secondary);white-space:pre-wrap;word-break:break-word;">' + esc(n.content) + '</div>';
+      if (n.response) {
+        html += '<div style="margin-top:6px;padding:6px 10px;background:rgba(0,0,0,0.3);border-left:3px solid ' + agentColor + ';border-radius:4px;">';
+        html += '<div style="font-size:0.65rem;font-weight:600;color:' + agentColor + ';margin-bottom:2px;font-family:var(--font-mono);letter-spacing:0.05em;">AI RESPONSE</div>';
+        html += '<div style="font-size:0.76rem;color:var(--text-secondary);font-style:italic;white-space:pre-wrap;word-break:break-word;">' + esc(n.response) + '</div>';
+        html += '</div>';
+      }
       html += '<div style="margin-top:4px;font-size:0.68rem;color:var(--text-muted);">' + ts + ' ' + tags + '</div>';
       html += '</div>';
       html += '<button onclick="deleteBrainNote(\'' + agent + '\',\'' + n.id + '\')" style="background:none;border:none;color:var(--error);cursor:pointer;font-size:1rem;padding:4px 8px;opacity:0.7;" title="Delete">&times;</button>';
@@ -3141,7 +3148,39 @@ async function addBrainNote(agent) {
     topicEl.value = '';
     contentEl.value = '';
     if (typeEl) typeEl.value = 'note';
+    // Show interpreting spinner then poll for response
     loadBrainNotes(agent);
+    var noteId = data.note ? data.note.id : null;
+    if (noteId) {
+      var statusEl = document.getElementById(agent + '-brain-list');
+      if (statusEl) {
+        var spinner = document.createElement('div');
+        spinner.id = 'brain-interpret-spinner';
+        spinner.style.cssText = 'text-align:center;padding:8px;font-size:0.78rem;color:var(--text-secondary);font-style:italic;';
+        spinner.textContent = 'Interpreting...';
+        statusEl.insertBefore(spinner, statusEl.firstChild);
+      }
+      // Poll for interpretation result (background thread writes it)
+      var polls = 0;
+      var pollInterval = setInterval(async function() {
+        polls++;
+        try {
+          var r2 = await fetch('/api/brain/' + agent);
+          var d2 = await r2.json();
+          var found = (d2.notes || []).find(function(nn) { return nn.id === noteId; });
+          if (found && found.response) {
+            clearInterval(pollInterval);
+            loadBrainNotes(agent);
+          } else if (polls >= 15) {
+            clearInterval(pollInterval);
+            var sp = document.getElementById('brain-interpret-spinner');
+            if (sp) sp.remove();
+          }
+        } catch(pe) {
+          clearInterval(pollInterval);
+        }
+      }, 1000);
+    }
   } catch(e) { alert('Failed: ' + e.message); }
 }
 
