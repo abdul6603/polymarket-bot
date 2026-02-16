@@ -19,6 +19,7 @@
   <button class="sidebar-btn" data-tab="atlas" onclick="switchTab('atlas')" title="Atlas">Atlas</button>
   <button class="sidebar-btn" data-tab="mercury" onclick="switchTab('mercury')" title="Lisa">Lisa</button>
   <button class="sidebar-btn" data-tab="sentinel" onclick="switchTab('sentinel')" title="Robotox">Robotox</button>
+  <button class="sidebar-btn" data-tab="thor" onclick="switchTab('thor')" title="Thor">Thor</button>
   <div class="sidebar-spacer"></div>
   <button class="sidebar-btn" data-tab="chat" onclick="switchTab('chat')" title="Chat">Chat</button>
 </nav>
@@ -375,6 +376,74 @@
     <div class="section-spacer">
       <h2 class="section-title" data-accent="sentinel">Fix History</h2>
       <div class="glass-card"><table class="data-table"><thead><tr><th>Time</th><th>Agent</th><th>Action</th><th>Status</th></tr></thead><tbody id="sentinel-fixes-tbody"><tr><td colspan="4" class="text-muted" style="text-align:center;padding:24px;">No fixes</td></tr></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- THOR -->
+  <div class="tab-content" id="tab-thor">
+    <div id="intel-thor" class="intel-meter" style="margin-bottom:12px;"></div>
+    <div class="agent-widget-row" id="thor-widgets">
+      <div class="widget-badge" id="thor-state"><span class="wb-label">State:</span> <span>--</span></div>
+      <div class="widget-badge" id="thor-model"><span class="wb-label">Model:</span> <span>--</span></div>
+      <button class="btn" onclick="openKPIModal('thor')" style="font-size:0.72rem;">Performance KPIs</button>
+      <button class="btn" onclick="healthCheckAgent('thor')" style="font-size:0.72rem;">Health Check</button>
+    </div>
+    <div class="health-inline" id="thor-health-result"></div>
+    <div class="grid-6">
+      <div class="stat-card" data-accent="thor"><div class="stat-value" id="thor-queue-pending">0</div><div class="stat-label">Pending Tasks</div></div>
+      <div class="stat-card" data-accent="success"><div class="stat-value" id="thor-completed">0</div><div class="stat-label">Completed</div></div>
+      <div class="stat-card" data-accent="warning"><div class="stat-value" id="thor-failed">0</div><div class="stat-label">Failed</div></div>
+      <div class="stat-card" data-accent="thor"><div class="stat-value" id="thor-knowledge">0</div><div class="stat-label">Knowledge Entries</div></div>
+      <div class="stat-card" data-accent="thor"><div class="stat-value" id="thor-tokens">0</div><div class="stat-label">Tokens Used</div></div>
+      <div class="stat-card" data-accent="success"><div class="stat-value" id="thor-success-rate">--</div><div class="stat-label">Success Rate</div></div>
+    </div>
+
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="thor">Quick Actions</h2>
+      <div class="btn-group" style="flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="thorQuickAction('optimize_garves')" style="color:#00d4ff;border-color:rgba(0,212,255,0.3);">Optimize Garves Signals</button>
+        <button class="btn" onclick="thorQuickAction('fix_soren_pipeline')" style="color:#cc66ff;border-color:rgba(204,102,255,0.3);">Fix Soren Pipeline</button>
+        <button class="btn" onclick="thorQuickAction('clear_shelby_tasks')" style="color:#ffaa00;border-color:rgba(255,170,0,0.3);">Clear Shelby Tasks</button>
+        <button class="btn" onclick="thorQuickAction('improve_atlas_dedup')" style="color:#22aa44;border-color:rgba(34,170,68,0.3);">Improve Atlas Dedup</button>
+        <button class="btn" onclick="thorQuickAction('dashboard_scan')" style="color:#ff6600;border-color:rgba(255,102,0,0.3);">Dashboard Bug Scan</button>
+        <button class="btn btn-warning" onclick="thorQuickAction('system_audit')">System Health Audit</button>
+      </div>
+    </div>
+
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="thor">Submit Custom Task</h2>
+      <div class="glass-card">
+        <div style="display:flex;flex-direction:column;gap:var(--space-3);">
+          <input type="text" class="input" id="thor-custom-title" placeholder="Task title..." style="font-family:var(--font-mono);font-size:0.78rem;" />
+          <textarea class="input" id="thor-custom-desc" rows="3" placeholder="Describe what Thor should do..." style="width:100%;resize:vertical;font-family:var(--font-mono);font-size:0.78rem;"></textarea>
+          <div style="display:flex;gap:var(--space-3);align-items:center;">
+            <input type="text" class="input" id="thor-custom-files" placeholder="Target files (comma-separated)" style="flex:1;font-size:0.76rem;" />
+            <select class="input" id="thor-custom-priority" style="font-size:0.76rem;padding:4px 8px;">
+              <option value="normal">Normal</option>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
+            </select>
+            <button class="btn btn-primary" onclick="thorSubmitCustomTask()">Submit Task</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="thor">Task Queue</h2>
+      <div class="glass-card"><table class="data-table"><thead><tr><th>ID</th><th>Title</th><th>Agent</th><th>Priority</th><th>Status</th></tr></thead><tbody id="thor-queue-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No tasks</td></tr></tbody></table></div>
+    </div>
+
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="thor">Recent Results</h2>
+      <div class="glass-card"><table class="data-table"><thead><tr><th>Task</th><th>Model</th><th>Files</th><th>Test</th><th>Phrase</th></tr></thead><tbody id="thor-results-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No results yet</td></tr></tbody></table></div>
+    </div>
+
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="thor">Activity Log</h2>
+      <div class="glass-card" style="max-height:300px;overflow-y:auto;">
+        <div id="thor-activity-log" style="font-family:monospace;font-size:0.75rem;padding:12px;color:var(--text-primary);">Waiting for data...</div>
+      </div>
     </div>
   </div>
 

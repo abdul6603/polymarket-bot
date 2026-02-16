@@ -28,6 +28,35 @@ from bot.shared import (
 
 overview_bp = Blueprint("overview", __name__)
 
+THOR_DATA = Path.home() / "thor" / "data"
+
+
+def _get_thor_overview() -> dict:
+    """Quick Thor status for overview grid."""
+    try:
+        status_file = THOR_DATA / "status.json"
+        state = "offline"
+        if status_file.exists():
+            data = json.loads(status_file.read_text())
+            state = data.get("state", "offline")
+
+        pending = completed = 0
+        tasks_dir = THOR_DATA / "tasks"
+        if tasks_dir.exists():
+            for f in tasks_dir.glob("task_*.json"):
+                try:
+                    td = json.loads(f.read_text())
+                    if td.get("status") == "pending":
+                        pending += 1
+                    elif td.get("status") == "completed":
+                        completed += 1
+                except Exception:
+                    pass
+
+        return {"state": state, "pending": pending, "completed": completed}
+    except Exception:
+        return {"state": "offline", "pending": 0, "completed": 0}
+
 
 @overview_bp.route("/api/overview")
 def api_overview():
@@ -109,6 +138,7 @@ def api_overview():
             "total_posts": mercury_total_posts,
             "review_avg": mercury_review_avg,
         },
+        "thor": _get_thor_overview(),
     })
 
 
@@ -650,10 +680,120 @@ def api_intelligence():
     except Exception:
         result["robotox"] = {"dimensions": {}, "overall": 0, "title": "The Watchman"}
 
+    # -- THOR -- The Engineer --
+    try:
+        thor_intel = {"dimensions": {}, "overall": 0, "title": "The Engineer"}
+        thor_data_dir = Path.home() / "thor" / "data"
+
+        # Gather task stats
+        tasks_dir = thor_data_dir / "tasks"
+        results_dir = thor_data_dir / "results"
+        pending = completed = failed = in_progress = total_tasks = 0
+        agents_worked_on = set()
+        total_retries = 0
+        if tasks_dir.exists():
+            for f in tasks_dir.glob("task_*.json"):
+                try:
+                    td = json.loads(f.read_text())
+                    total_tasks += 1
+                    s = td.get("status", "")
+                    if s == "pending":
+                        pending += 1
+                    elif s == "completed":
+                        completed += 1
+                    elif s == "failed":
+                        failed += 1
+                    elif s == "in_progress":
+                        in_progress += 1
+                    ag = td.get("agent", "")
+                    if ag:
+                        agents_worked_on.add(ag)
+                    total_retries += td.get("retries", 0)
+                except Exception:
+                    pass
+
+        # Knowledge entries
+        kb_index = thor_data_dir / "knowledge" / "index.json"
+        kb_entries = 0
+        if kb_index.exists():
+            try:
+                kb_entries = len(json.loads(kb_index.read_text()))
+            except Exception:
+                pass
+
+        # Activity log for token/model stats
+        activity_file = thor_data_dir / "activity.json"
+        sonnet_uses = opus_uses = 0
+        total_tokens = 0
+        test_passes = test_total = 0
+        if activity_file.exists():
+            try:
+                activities = json.loads(activity_file.read_text())
+                for a in activities:
+                    total_tokens += a.get("tokens", 0)
+                    model = a.get("model", "")
+                    if "sonnet" in model:
+                        sonnet_uses += 1
+                    elif "opus" in model:
+                        opus_uses += 1
+                    if a.get("test_passed") is True:
+                        test_passes += 1
+                        test_total += 1
+                    elif a.get("test_passed") is False:
+                        test_total += 1
+            except Exception:
+                pass
+
+        # Results for test pass rate
+        if results_dir.exists():
+            for f in results_dir.glob("result_*.json"):
+                try:
+                    rd = json.loads(f.read_text())
+                    if rd.get("test_passed") is True:
+                        test_passes += 1
+                        test_total += 1
+                    elif rd.get("test_passed") is False:
+                        test_total += 1
+                except Exception:
+                    pass
+
+        # 1. Code Quality — task completion rate + test pass rate
+        completion_rate = (completed / max(1, completed + failed)) * 100 if (completed + failed) > 0 else 0
+        test_rate = (test_passes / max(1, test_total)) * 100 if test_total > 0 else 0
+        code_quality = min(100, int(completion_rate * 0.5 + test_rate * 0.3 + 20))
+        thor_intel["dimensions"]["Code Quality"] = code_quality
+
+        # 2. Knowledge Depth — based on KB entries
+        knowledge_depth = min(100, 15 + kb_entries * 4)
+        thor_intel["dimensions"]["Knowledge Depth"] = knowledge_depth
+
+        # 3. Task Execution — completed tasks, retries, volume
+        task_exec = min(100, completed * 5 + max(0, 30 - total_retries * 3) + 10)
+        thor_intel["dimensions"]["Task Execution"] = task_exec
+
+        # 4. System Coverage — how many agents Thor has worked on (7 total possible)
+        system_coverage = min(100, len(agents_worked_on) * 14 + 15)
+        thor_intel["dimensions"]["System Coverage"] = system_coverage
+
+        # 5. Efficiency — Sonnet vs Opus ratio (more Sonnet = more efficient)
+        total_model_uses = sonnet_uses + opus_uses
+        if total_model_uses > 0:
+            sonnet_ratio = sonnet_uses / total_model_uses
+            efficiency = min(100, int(sonnet_ratio * 60 + 30))
+        else:
+            efficiency = 40
+        thor_intel["dimensions"]["Efficiency"] = efficiency
+
+        scores = list(thor_intel["dimensions"].values())
+        thor_intel["overall"] = int(sum(scores) / len(scores)) if scores else 0
+        result["thor"] = thor_intel
+    except Exception:
+        result["thor"] = {"dimensions": {}, "overall": 0, "title": "The Engineer"}
+
     # -- TEAM -- Collective Intelligence --
     try:
         team = {"dimensions": {}, "overall": 0, "title": "Brotherhood"}
-        agents = ["garves", "soren", "atlas", "shelby", "lisa", "robotox"]
+        agents = ["garves", "soren", "atlas", "shelby", "lisa", "robotox", "thor"]
         agent_scores = {a: result.get(a, {}).get("overall", 0) for a in agents}
 
         # 1. Collective Knowledge
@@ -663,8 +803,10 @@ def api_intelligence():
         shelby_aware = result.get("shelby", {}).get("dimensions", {}).get("Team Awareness", 0)
         lisa_plat = result.get("lisa", {}).get("dimensions", {}).get("Platform Knowledge", 0)
         robotox_cov = result.get("robotox", {}).get("dimensions", {}).get("Coverage", 0)
-        collective_knowledge = int((atlas_depth * 0.3 + garves_know * 0.2 + soren_brand * 0.15 +
-                                    shelby_aware * 0.15 + lisa_plat * 0.1 + robotox_cov * 0.1))
+        thor_know = result.get("thor", {}).get("dimensions", {}).get("Knowledge Depth", 0)
+        collective_knowledge = int((atlas_depth * 0.25 + garves_know * 0.18 + soren_brand * 0.12 +
+                                    shelby_aware * 0.13 + lisa_plat * 0.1 + robotox_cov * 0.1 +
+                                    thor_know * 0.12))
         team["dimensions"]["Collective Knowledge"] = min(100, collective_knowledge)
 
         # 2. Coordination
@@ -681,7 +823,8 @@ def api_intelligence():
         shelby_task = result.get("shelby", {}).get("dimensions", {}).get("Task Management", 0)
         lisa_disc = result.get("lisa", {}).get("dimensions", {}).get("Posting Discipline", 0)
         robotox_det = result.get("robotox", {}).get("dimensions", {}).get("Detection", 0)
-        performance = int((garves_acc + soren_prod + atlas_quality + shelby_task + lisa_disc + robotox_det) / 6)
+        thor_exec = result.get("thor", {}).get("dimensions", {}).get("Task Execution", 0)
+        performance = int((garves_acc + soren_prod + atlas_quality + shelby_task + lisa_disc + robotox_det + thor_exec) / 7)
         team["dimensions"]["Performance"] = min(100, performance)
 
         # 4. Autonomy
@@ -689,7 +832,8 @@ def api_intelligence():
         atlas_synth = result.get("atlas", {}).get("dimensions", {}).get("Synthesis", 0)
         atlas_lr = result.get("atlas", {}).get("dimensions", {}).get("Learning Rate", 0)
         garves_risk = result.get("garves", {}).get("dimensions", {}).get("Risk Management", 0)
-        autonomy = int((robotox_fix * 0.25 + atlas_synth * 0.25 + atlas_lr * 0.25 + garves_risk * 0.25))
+        thor_eff = result.get("thor", {}).get("dimensions", {}).get("Efficiency", 0)
+        autonomy = int((robotox_fix * 0.2 + atlas_synth * 0.2 + atlas_lr * 0.2 + garves_risk * 0.2 + thor_eff * 0.2))
         team["dimensions"]["Autonomy"] = min(100, autonomy)
 
         # 5. Adaptability
@@ -697,7 +841,9 @@ def api_intelligence():
         soren_trend = result.get("soren", {}).get("dimensions", {}).get("Trend Awareness", 0)
         lisa_strat = result.get("lisa", {}).get("dimensions", {}).get("Strategy Depth", 0)
         shelby_dec = result.get("shelby", {}).get("dimensions", {}).get("Decision Quality", 0)
-        adaptability = int((garves_adapt * 0.3 + soren_trend * 0.2 + lisa_strat * 0.2 + shelby_dec * 0.3))
+        thor_coverage = result.get("thor", {}).get("dimensions", {}).get("System Coverage", 0)
+        adaptability = int((garves_adapt * 0.25 + soren_trend * 0.15 + lisa_strat * 0.15 +
+                            shelby_dec * 0.25 + thor_coverage * 0.2))
         team["dimensions"]["Adaptability"] = min(100, adaptability)
 
         team_scores = list(team["dimensions"].values())

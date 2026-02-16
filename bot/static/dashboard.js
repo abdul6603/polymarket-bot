@@ -3,10 +3,10 @@ var chatLoaded = false;
 var econPeriod = 'month';
 var _atlasBgCache = null;
 var _overviewCache = null;
-var AGENT_COLORS = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',mercury:'#ff8800',sentinel:'#00ff44'};
-var AGENT_INITIALS = {garves:'GA',soren:'SO',shelby:'SH',atlas:'AT',mercury:'LI',sentinel:'RO'};
-var AGENT_ROLES = {garves:'Trading Bot',soren:'Content Creator',shelby:'Team Leader',atlas:'Data Scientist',mercury:'Social Media',sentinel:'Health Monitor'};
-var AGENT_NAMES = {garves:'Garves',soren:'Soren',shelby:'Shelby',atlas:'Atlas',mercury:'Lisa',sentinel:'Robotox'};
+var AGENT_COLORS = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',mercury:'#ff8800',sentinel:'#00ff44',thor:'#ff6600'};
+var AGENT_INITIALS = {garves:'GA',soren:'SO',shelby:'SH',atlas:'AT',mercury:'LI',sentinel:'RO',thor:'TH'};
+var AGENT_ROLES = {garves:'Trading Bot',soren:'Content Creator',shelby:'Team Leader',atlas:'Data Scientist',mercury:'Social Media',sentinel:'Health Monitor',thor:'Coding Lieutenant'};
+var AGENT_NAMES = {garves:'Garves',soren:'Soren',shelby:'Shelby',atlas:'Atlas',mercury:'Lisa',sentinel:'Robotox',thor:'Thor'};
 
 function switchTab(tab) {
   currentTab = tab;
@@ -35,7 +35,8 @@ function renderAgentGrid(overview) {
     {id:'shelby', stats:[['Status',sh.running?'Online':'Offline']], online:sh.running},
     {id:'atlas', stats:[['Status','Active']], online:true},
     {id:'mercury', stats:[['Posts',(overview.mercury||{}).total_posts||0],['Review Avg',(overview.mercury||{}).review_avg ? (overview.mercury.review_avg+'/10') : '--']], online:true},
-    {id:'sentinel', stats:[['Role','Monitor']], online:true}
+    {id:'sentinel', stats:[['Role','Monitor']], online:true},
+    {id:'thor', stats:[['Tasks',(overview.thor||{}).completed||0],['Queue',(overview.thor||{}).pending||0]], online:(overview.thor||{}).state !== 'offline'}
   ];
   var html = '';
   for (var i = 0; i < cards.length; i++) {
@@ -1919,6 +1920,8 @@ async function refresh() {
       var resp = await fetch('/api/sentinel');
       renderSentinel(await resp.json());
       loadAgentLearning('sentinel');
+    } else if (currentTab === 'thor') {
+      loadThor();
     } else if (currentTab === 'chat') {
       if (!chatLoaded) loadChatHistory();
     }
@@ -1980,6 +1983,9 @@ function agentQuickStatus(key) {
     if (m.review_avg) s += ' <span class="aqs-sep">&middot;</span> ' + m.review_avg + '/10';
   } else if (key === 'robotox') {
     s += '<span class="aqs-dot aqs-dot-online"></span>Watching';
+  } else if (key === 'thor') {
+    var th = o.thor || {};
+    s += (th.pending || 0) + ' pending <span class="aqs-sep">&middot;</span> ' + (th.completed || 0) + ' done';
   }
   s += '</div>';
   return s;
@@ -2022,6 +2028,7 @@ function renderTeamIntelligence(data) {
     {key:'shelby', name:'Shelby',  color:'#ffaa00'},
     {key:'lisa',   name:'Lisa',    color:'#ff8800'},
     {key:'robotox',name:'Robotox', color:'#00ff44'},
+    {key:'thor',   name:'Thor',    color:'#ff6600'},
   ];
 
   html += '<div class="team-agents-row">';
@@ -2050,8 +2057,8 @@ function renderTeamIntelligence(data) {
 
   el.innerHTML = html;
 }
-var _intelAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',mercury:'lisa',sentinel:'robotox'};
-var _intelColors = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',robotox:'#00ff44'};
+var _intelAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',mercury:'lisa',sentinel:'robotox',thor:'thor'};
+var _intelColors = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',robotox:'#00ff44',thor:'#ff6600'};
 
 function radarSVG(size, values, labels, color) {
   var cx = size / 2, cy = size / 2;
@@ -2165,6 +2172,13 @@ function intelLivePanel(agentKey, color) {
     if (m.review_avg) h += '<div class="ilp-row"><span class="ilp-label">Review Avg</span><span class="ilp-val">' + m.review_avg + '/10</span></div>';
   } else if (agentKey === 'robotox') {
     h += '<div class="ilp-row"><span class="ilp-label">Status</span><span class="ilp-val" style="color:var(--success);">Watching</span></div>';
+  } else if (agentKey === 'thor') {
+    var th = o.thor || {};
+    var thState = th.state || 'offline';
+    var thStateColor = thState === 'coding' ? 'var(--agent-thor)' : thState === 'idle' ? 'var(--success)' : 'var(--error)';
+    h += '<div class="ilp-row"><span class="ilp-label">State</span><span class="ilp-val" style="color:' + thStateColor + ';">' + thState.charAt(0).toUpperCase() + thState.slice(1) + '</span></div>';
+    h += '<div class="ilp-row"><span class="ilp-label">Queue</span><span class="ilp-val">' + (th.pending || 0) + ' pending</span></div>';
+    h += '<div class="ilp-row"><span class="ilp-label">Completed</span><span class="ilp-val" style="color:var(--success);">' + (th.completed || 0) + '</span></div>';
   }
 
   h += '</div>';
@@ -2332,5 +2346,217 @@ async function loadInfrastructure() {
       if (!recent.length) bcHtml = '<span class="text-muted">No broadcasts yet.</span>';
       bcListEl.innerHTML = bcHtml;
     }
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════
+// THOR — The Engineer
+// ═══════════════════════════════════════════════════════
+async function loadThor() {
+  try {
+    var resp = await fetch('/api/thor');
+    var data = await resp.json();
+
+    // Status widgets
+    var stateEl = document.querySelector('#thor-state span:last-child');
+    var modelEl = document.querySelector('#thor-model span:last-child');
+    if (stateEl) {
+      var state = data.state || 'offline';
+      var stateColor = state === 'coding' ? 'var(--agent-thor)' : state === 'idle' ? 'var(--success)' : 'var(--text-muted)';
+      stateEl.textContent = state.charAt(0).toUpperCase() + state.slice(1);
+      stateEl.style.color = stateColor;
+    }
+    if (modelEl) modelEl.textContent = data.model || '--';
+
+    // Stat cards
+    var q = data.queue || {};
+    setText('thor-queue-pending', q.pending || 0);
+    setText('thor-completed', q.completed || 0);
+    setText('thor-failed', q.failed || 0);
+    setText('thor-knowledge', data.knowledge_entries || 0);
+
+    // Tokens used
+    var tokens = data.total_tokens || 0;
+    var tokensDisplay = tokens >= 1000000 ? (tokens / 1000000).toFixed(1) + 'M' : tokens >= 1000 ? (tokens / 1000).toFixed(1) + 'K' : tokens;
+    setText('thor-tokens', tokensDisplay);
+
+    // Success rate
+    var totalDone = (q.completed || 0) + (q.failed || 0);
+    var successRate = totalDone > 0 ? Math.round((q.completed || 0) / totalDone * 100) + '%' : '--';
+    setText('thor-success-rate', successRate);
+
+    // Current task
+    if (data.current_task && data.state === 'coding') {
+      setText('thor-queue-pending', (q.pending || 0) + ' (active: ' + data.current_task.substring(0, 30) + ')');
+    }
+  } catch(e) {
+    setText('thor-queue-pending', '--');
+  }
+
+  // Load queue
+  loadThorQueue();
+  // Load results
+  loadThorResults();
+  // Load activity
+  loadThorActivity();
+}
+
+function setText(id, val) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+async function loadThorQueue() {
+  try {
+    var resp = await fetch('/api/thor/queue');
+    var data = await resp.json();
+    var tasks = data.tasks || [];
+    var tbody = document.getElementById('thor-queue-tbody');
+    if (!tbody) return;
+    if (!tasks.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No tasks in queue</td></tr>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < Math.min(tasks.length, 20); i++) {
+      var t = tasks[i];
+      var statusColor = t.status === 'completed' ? 'var(--success)' : t.status === 'in_progress' ? 'var(--agent-thor)' : t.status === 'failed' ? 'var(--error)' : 'var(--text-muted)';
+      html += '<tr>';
+      html += '<td style="font-family:var(--font-mono);font-size:0.72rem;">' + esc(t.id || '').substring(0, 12) + '</td>';
+      html += '<td>' + esc(t.title || '') + '</td>';
+      html += '<td>' + esc(t.agent || 'general') + '</td>';
+      html += '<td><span style="color:' + (t.priority === 'critical' ? 'var(--error)' : t.priority === 'high' ? 'var(--warning)' : 'var(--text-muted)') + ';">' + esc(t.priority || 'normal') + '</span></td>';
+      html += '<td><span style="color:' + statusColor + ';">' + esc(t.status || '') + '</span></td>';
+      html += '</tr>';
+    }
+    tbody.innerHTML = html;
+  } catch(e) {}
+}
+
+async function loadThorResults() {
+  try {
+    var resp = await fetch('/api/thor/results');
+    var data = await resp.json();
+    var results = data.results || [];
+    var tbody = document.getElementById('thor-results-tbody');
+    if (!tbody) return;
+    if (!results.length) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No results yet</td></tr>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < Math.min(results.length, 15); i++) {
+      var r = results[i];
+      var files = r.files_written || [];
+      var fileCount = Array.isArray(files) ? files.length : Object.keys(files).length;
+      var testStatus = r.test_passed === true ? 'PASS' : r.test_passed === false ? 'FAIL' : '--';
+      var testColor = r.test_passed === true ? 'var(--success)' : r.test_passed === false ? 'var(--error)' : 'var(--text-muted)';
+      var model = (r.model_used || '').replace('claude-', '').substring(0, 12);
+      html += '<tr>';
+      html += '<td style="font-size:0.72rem;">' + esc(r.task_id || '').substring(0, 12) + '</td>';
+      html += '<td style="font-size:0.72rem;">' + esc(model) + '</td>';
+      html += '<td>' + fileCount + ' file' + (fileCount !== 1 ? 's' : '') + '</td>';
+      html += '<td style="color:' + testColor + ';">' + testStatus + '</td>';
+      html += '<td style="font-style:italic;color:var(--agent-thor);font-size:0.72rem;">"' + esc(r.phrase || '') + '"</td>';
+      html += '</tr>';
+    }
+    tbody.innerHTML = html;
+  } catch(e) {}
+}
+
+async function thorQuickAction(action) {
+  try {
+    var resp = await fetch('/api/thor/quick-action', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({action: action})
+    });
+    var data = await resp.json();
+    if (data.error) {
+      alert('Error: ' + data.error);
+      return;
+    }
+    showToast('Task submitted: ' + (data.title || action), 'var(--agent-thor)');
+    loadThorQueue();
+    loadThor();
+  } catch(e) {
+    alert('Failed to submit quick action: ' + e.message);
+  }
+}
+
+async function thorSubmitCustomTask() {
+  var title = document.getElementById('thor-custom-title');
+  var desc = document.getElementById('thor-custom-desc');
+  var files = document.getElementById('thor-custom-files');
+  var priority = document.getElementById('thor-custom-priority');
+  if (!title || !desc || !title.value.trim() || !desc.value.trim()) {
+    alert('Title and description are required');
+    return;
+  }
+  var targetFiles = files && files.value.trim() ? files.value.split(',').map(function(f) { return f.trim(); }) : [];
+  try {
+    var resp = await fetch('/api/thor/submit', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        title: title.value.trim(),
+        description: desc.value.trim(),
+        target_files: targetFiles,
+        priority: priority ? priority.value : 'normal',
+        assigned_by: 'dashboard'
+      })
+    });
+    var data = await resp.json();
+    if (data.error) {
+      alert('Error: ' + data.error);
+      return;
+    }
+    showToast('Custom task submitted: ' + title.value.trim(), 'var(--agent-thor)');
+    title.value = '';
+    desc.value = '';
+    if (files) files.value = '';
+    loadThorQueue();
+    loadThor();
+  } catch(e) {
+    alert('Failed to submit task: ' + e.message);
+  }
+}
+
+function showToast(msg, color) {
+  var existing = document.getElementById('cc-toast');
+  if (existing) existing.remove();
+  var toast = document.createElement('div');
+  toast.id = 'cc-toast';
+  toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:var(--surface-secondary);border:1px solid ' + (color || 'var(--success)') + ';color:var(--text-primary);padding:12px 20px;border-radius:8px;font-size:0.82rem;font-family:var(--font-mono);z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.5);';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(function() { toast.remove(); }, 3500);
+}
+
+async function loadThorActivity() {
+  try {
+    var resp = await fetch('/api/thor/activity');
+    var data = await resp.json();
+    var activities = data.activities || [];
+    var el = document.getElementById('thor-activity-log');
+    if (!el) return;
+    if (!activities.length) {
+      el.innerHTML = '<span class="text-muted">No activity yet. Thor is standing by.</span>';
+      return;
+    }
+    var html = '';
+    var recent = activities.slice(-30).reverse();
+    for (var i = 0; i < recent.length; i++) {
+      var a = recent[i];
+      var color = a.success ? 'var(--agent-thor)' : 'var(--error)';
+      var icon = a.success ? '+' : '!';
+      html += '<div style="margin-bottom:4px;">';
+      html += '<span style="color:' + color + ';">[' + icon + ']</span> ';
+      html += '<span class="text-muted">' + esc(a.time || '') + '</span> ';
+      html += '<span style="color:var(--agent-thor);">' + esc(a.action || '') + '</span> ';
+      html += esc(a.details || '').substring(0, 100);
+      html += '</div>';
+    }
+    el.innerHTML = html;
   } catch(e) {}
 }
