@@ -1705,6 +1705,7 @@ async function refresh() {
       _overviewCache = data;
       renderAgentGrid(data);
       renderIndicatorAccuracy(data);
+      loadInfrastructure();
       // Fetch atlas bg status for countdown on overview
       try {
         var bgResp = await fetch('/api/atlas/background/status');
@@ -2087,3 +2088,93 @@ switchTab = function(tab) {
 // Load on startup + every 30s
 refreshIntelligence();
 setInterval(refreshIntelligence, 30000);
+
+// ── Infrastructure Display ──
+
+function healthBadge(h) {
+  if (h === 'healthy') return '<span style="color:var(--success);">HEALTHY</span>';
+  if (h === 'stale') return '<span style="color:var(--warning);">STALE</span>';
+  return '<span style="color:var(--error);">DEAD</span>';
+}
+
+async function loadInfrastructure() {
+  // Heartbeats
+  try {
+    var resp = await fetch('/api/heartbeats');
+    var data = await resp.json();
+    var hbs = data.heartbeats || {};
+    var keys = Object.keys(hbs);
+    var aliveCount = 0;
+    var html = '';
+    for (var i = 0; i < keys.length; i++) {
+      var name = keys[i];
+      var hb = hbs[name];
+      if (hb.health === 'healthy') aliveCount++;
+      var ageStr = hb.age_seconds < 60 ? hb.age_seconds + 's ago' :
+                   hb.age_seconds < 3600 ? Math.floor(hb.age_seconds / 60) + 'm ago' :
+                   Math.floor(hb.age_seconds / 3600) + 'h ago';
+      html += '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);">';
+      html += '<span>' + esc(hb.display_name || name) + '</span>';
+      html += '<span>' + healthBadge(hb.health) + ' <span class="text-muted" style="font-size:0.68rem;">' + ageStr + '</span></span>';
+      html += '</div>';
+    }
+    if (!keys.length) html = '<span class="text-muted">No heartbeats yet. Agents will register shortly.</span>';
+    var el = document.getElementById('infra-heartbeat-list');
+    if (el) el.innerHTML = html;
+    var hbEl = document.getElementById('infra-agents-alive');
+    if (hbEl) hbEl.textContent = aliveCount + '/' + keys.length;
+  } catch(e) {
+    console.error('heartbeat load error:', e);
+  }
+
+  // System health
+  try {
+    var resp2 = await fetch('/api/system-health');
+    var health = await resp2.json();
+    var el2 = document.getElementById('infra-health');
+    if (el2) {
+      var overall = (health.overall || 'unknown').toUpperCase();
+      var color = overall === 'HEALTHY' ? 'var(--success)' : overall === 'DEGRADED' ? 'var(--warning)' : 'var(--error)';
+      el2.innerHTML = '<span style="color:' + color + ';">' + overall + '</span>';
+    }
+    var servEl = document.getElementById('infra-services');
+    if (servEl) {
+      var regKeys = Object.keys(health.registry || {});
+      servEl.textContent = regKeys.length;
+    }
+  } catch(e) {}
+
+  // Broadcasts
+  try {
+    var resp3 = await fetch('/api/broadcasts');
+    var bcData = await resp3.json();
+    var bcs = bcData.broadcasts || [];
+    var bcCountEl = document.getElementById('infra-broadcasts');
+    if (bcCountEl) bcCountEl.textContent = bcs.length;
+    var bcListEl = document.getElementById('infra-broadcast-list');
+    if (bcListEl) {
+      var bcHtml = '';
+      var recent = bcs.slice(-5).reverse();
+      for (var b = 0; b < recent.length; b++) {
+        var bc = recent[b];
+        var acks = bc.acks || {};
+        var ackCount = Object.keys(acks).length;
+        var deliveredCount = (bc.delivered_to || []).length;
+        var prioClass = bc.priority === 'high' ? 'color:var(--warning);' : 'color:var(--text-secondary);';
+        var ts = bc.timestamp || '';
+        var shortTs = ts.length > 16 ? ts.substring(11, 16) : ts;
+        var msg = (bc.message || '').substring(0, 80);
+        if ((bc.message || '').length > 80) msg += '...';
+        bcHtml += '<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);">';
+        bcHtml += '<div style="display:flex;justify-content:space-between;">';
+        bcHtml += '<span style="' + prioClass + '">' + esc(bc.from || 'shelby') + '</span>';
+        bcHtml += '<span class="text-muted" style="font-size:0.68rem;">' + esc(shortTs) + ' | ' + ackCount + '/' + deliveredCount + ' ack</span>';
+        bcHtml += '</div>';
+        bcHtml += '<div class="text-muted" style="font-size:0.68rem;margin-top:2px;">' + esc(msg) + '</div>';
+        bcHtml += '</div>';
+      }
+      if (!recent.length) bcHtml = '<span class="text-muted">No broadcasts yet.</span>';
+      bcListEl.innerHTML = bcHtml;
+    }
+  } catch(e) {}
+}

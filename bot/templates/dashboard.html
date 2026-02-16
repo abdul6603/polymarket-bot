@@ -39,6 +39,25 @@
     <h2 class="section-title">Agent Status</h2>
     <div class="grid-auto" id="agent-grid"></div>
     <div class="section-spacer">
+      <h2 class="section-title" data-accent="shelby">System Infrastructure</h2>
+      <div class="grid-4" id="infra-stats">
+        <div class="stat-card" data-accent="success"><div class="stat-value" id="infra-health">--</div><div class="stat-label">System Health</div></div>
+        <div class="stat-card" data-accent="shelby"><div class="stat-value" id="infra-agents-alive">--</div><div class="stat-label">Heartbeats</div></div>
+        <div class="stat-card" data-accent="atlas"><div class="stat-value" id="infra-broadcasts">--</div><div class="stat-label">Broadcasts</div></div>
+        <div class="stat-card" data-accent="garves"><div class="stat-value" id="infra-services">--</div><div class="stat-label">Services</div></div>
+      </div>
+      <div class="grid-2 mt-3">
+        <div class="glass-card">
+          <h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">Agent Heartbeats</h3>
+          <div id="infra-heartbeat-list" style="font-family:var(--font-mono);font-size:0.76rem;"><span class="text-muted">Loading heartbeats...</span></div>
+        </div>
+        <div class="glass-card">
+          <h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">Recent Broadcasts</h3>
+          <div id="infra-broadcast-list" style="font-family:var(--font-mono);font-size:0.76rem;max-height:200px;overflow-y:auto;"><span class="text-muted">Loading broadcasts...</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="section-spacer">
       <h2 class="section-title" data-accent="garves">Indicator Accuracy</h2>
       <div class="glass-card" id="indicator-accuracy"><table class="data-table"><thead><tr><th>Indicator</th><th>Accuracy</th><th>Signals</th><th>Correct</th><th>Weight</th></tr></thead><tbody id="indicator-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">Waiting for data...</td></tr></tbody></table></div>
     </div>
@@ -395,5 +414,29 @@
 </main>
 
 <script src="/static/dashboard.js"></script>
+<script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+<script>
+// SocketIO real-time connection (optional — degrades gracefully)
+(function() {
+  if (typeof io === 'undefined') return;
+  try {
+    var socket = io({transports: ['websocket', 'polling']});
+    socket.on('connect', function() {
+      console.log('[SocketIO] Connected to Command Center');
+      var dot = document.querySelector('.dot-online');
+      if (dot) dot.style.background = 'var(--success)';
+    });
+    socket.on('disconnect', function() {
+      console.log('[SocketIO] Disconnected');
+    });
+    socket.on('heartbeats', function(data) {
+      console.log('[SocketIO] Heartbeat push received');
+    });
+    window._ccSocket = socket;
+  } catch(e) {
+    console.log('[SocketIO] Not available, using polling');
+  }
+})();
+</script>
 </body>
 </html>

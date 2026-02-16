@@ -16,6 +16,12 @@ from pathlib import Path
 from dotenv import load_dotenv
 from flask import Flask, render_template
 
+try:
+    from flask_socketio import SocketIO, emit
+    HAS_SOCKETIO = True
+except ImportError:
+    HAS_SOCKETIO = False
+
 # Load .env so OPENAI_API_KEY is available
 load_dotenv(Path(__file__).parent.parent / ".env")
 
@@ -64,6 +70,11 @@ app = Flask(
     template_folder=str(Path(__file__).parent / "templates"),
 )
 
+# ── SocketIO for real-time push (optional — falls back to polling if unavailable) ──
+socketio = None
+if HAS_SOCKETIO:
+    socketio = SocketIO(app, async_mode="threading", cors_allowed_origins="*")
+
 
 @app.after_request
 def add_no_cache(response):
@@ -86,6 +97,31 @@ from bot.routes import register_all_blueprints
 register_all_blueprints(app)
 
 
+# ── SocketIO events (if available) ──
+if socketio:
+    @socketio.on("connect")
+    def handle_connect():
+        emit("status", {"connected": True, "server": "Command Center"})
+
+    @socketio.on("request_heartbeats")
+    def handle_request_heartbeats():
+        try:
+            sys.path.insert(0, str(Path.home() / ".agent-hub"))
+            from hub import AgentHub
+            emit("heartbeats", AgentHub.get_heartbeats())
+        except Exception:
+            emit("heartbeats", {})
+
+    @socketio.on("request_health")
+    def handle_request_health():
+        try:
+            sys.path.insert(0, str(Path.home() / ".agent-hub"))
+            from hub import AgentHub
+            emit("system_health", AgentHub.system_health())
+        except Exception:
+            emit("system_health", {"overall": "unknown"})
+
+
 # ── Main entry point ──
 
 if __name__ == "__main__":
@@ -102,11 +138,21 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"[Dashboard] Atlas auto-start failed: {e}")
 
-    # Auto-process broadcasts for agents without active loops (Soren, Lisa, Garves)
+    # Auto-process broadcasts + send heartbeats for agents without active loops
     def _broadcast_processor():
-        """Periodically ack broadcasts for agents that don't have their own loops."""
+        """Periodically ack broadcasts and send heartbeats for dashboard + passive agents."""
         import time as _time
         _time.sleep(10)  # Wait for app to start
+
+        # Initialize hub for dashboard heartbeats
+        try:
+            sys.path.insert(0, str(Path.home() / ".agent-hub"))
+            from hub import AgentHub
+            dashboard_hub = AgentHub("dashboard")
+            dashboard_hub.register(port=8877, capabilities=["web_ui", "api", "chat"])
+        except Exception:
+            dashboard_hub = None
+
         while True:
             try:
                 sys.path.insert(0, str(SHELBY_ROOT_DIR))
@@ -122,10 +168,27 @@ if __name__ == "__main__":
                         acknowledge_broadcast(agent, bc.get("id", ""), data_dir)
             except Exception:
                 pass
+
+            # Send dashboard heartbeat
+            if dashboard_hub:
+                try:
+                    dashboard_hub.heartbeat(status="online", metrics={
+                        "port": 8877,
+                        "uptime": "active",
+                    })
+                except Exception:
+                    pass
+
             _time.sleep(30)
 
     threading.Thread(target=_broadcast_processor, daemon=True, name="broadcast-ack").start()
 
     threading.Timer(2.0, _auto_start_atlas).start()
     threading.Timer(1.0, lambda: webbrowser.open("http://localhost:8877")).start()
-    app.run(host="0.0.0.0", port=8877, debug=False, threaded=True)
+
+    if socketio:
+        print("[Dashboard] Running with Flask-SocketIO (WebSocket support)")
+        socketio.run(app, host="0.0.0.0", port=8877, debug=False, allow_unsafe_werkzeug=True)
+    else:
+        print("[Dashboard] Running without SocketIO (polling only)")
+        app.run(host="0.0.0.0", port=8877, debug=False, threaded=True)
