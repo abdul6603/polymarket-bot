@@ -22,6 +22,7 @@ from bot.straddle import StraddleEngine
 from bot.tracker import PerformanceTracker
 from bot.ws_feed import MarketFeed
 from bot.v2_tools import is_emergency_stopped, accept_commands, process_command, daily_trade_report
+from bot.daily_cycle import should_reset, archive_and_reset
 
 log = logging.getLogger("bot")
 
@@ -143,6 +144,22 @@ class TradingBot:
     async def _tick(self) -> None:
         """Single tick: evaluate ALL discovered markets, trade any with edge."""
         log.info("--- Tick ---")
+
+        # Daily cycle: archive yesterday's trades and start fresh at midnight ET
+        if should_reset():
+            try:
+                report = archive_and_reset()
+                day = report.get("date", "?")
+                s = report.get("summary", {})
+                log.info(
+                    "=== DAILY RESET === %s: %dW-%dL (%.1f%%) PnL=$%.2f | Archived & cleared",
+                    day, s.get("wins", 0), s.get("losses", 0),
+                    s.get("win_rate", 0), s.get("pnl", 0),
+                )
+                # Reload tracker with empty state
+                self.perf_tracker = PerformanceTracker(self.cfg)
+            except Exception as e:
+                log.error("Daily reset failed: %s", str(e)[:200])
 
         # V2: Check emergency stop
         stop_info = is_emergency_stopped()

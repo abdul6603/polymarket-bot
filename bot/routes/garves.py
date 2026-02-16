@@ -315,6 +315,28 @@ def api_garves_conviction():
         return jsonify({"error": str(e)[:200]})
 
 
+@garves_bp.route("/api/garves/daily-reports")
+def api_garves_daily_reports():
+    """Get the daily performance history table."""
+    try:
+        from bot.daily_cycle import get_daily_reports
+        reports = get_daily_reports(limit=30)
+        return jsonify({"reports": reports})
+    except Exception as e:
+        return jsonify({"reports": [], "error": str(e)[:200]})
+
+
+@garves_bp.route("/api/garves/daily-report/today")
+def api_garves_daily_today():
+    """Get today's live report (without archiving)."""
+    try:
+        from bot.daily_cycle import generate_daily_report
+        report = generate_daily_report()
+        return jsonify(report)
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
 @garves_bp.route("/api/garves/broadcasts")
 def api_garves_broadcasts():
     """Process and acknowledge broadcasts for Garves."""

@@ -160,6 +160,74 @@ function renderLogs(lines) {
   el.scrollTop = el.scrollHeight;
 }
 
+async function loadDailyReports() {
+  // Load daily history table
+  try {
+    var resp = await fetch('/api/garves/daily-reports');
+    var data = await resp.json();
+    var reports = data.reports || [];
+    var tbody = document.getElementById('daily-history-tbody');
+    if (!tbody) return;
+    if (!reports.length) {
+      tbody.innerHTML = '<tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No daily reports yet — first report generates at midnight ET</td></tr>';
+      return;
+    }
+    var html = '';
+    for (var i = reports.length - 1; i >= 0; i--) {
+      var r = reports[i];
+      var s = r.summary || {};
+      var wr = s.win_rate || 0;
+      var wrColor = wr >= 55 ? 'var(--success)' : wr >= 45 ? 'var(--warning)' : 'var(--error)';
+      var pnlColor = (s.pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)';
+      var mistakeCount = (r.mistakes || []).filter(function(m) { return m.severity === 'high'; }).length;
+      var regime = (r.strategy || {}).regime || '?';
+      html += '<tr>';
+      html += '<td style="font-weight:600;">' + esc(r.date || '?') + '</td>';
+      html += '<td>' + (s.total_trades || 0) + '</td>';
+      html += '<td>' + (s.wins || 0) + '-' + (s.losses || 0) + '</td>';
+      html += '<td style="color:' + wrColor + ';font-weight:600;">' + wr.toFixed(1) + '%</td>';
+      html += '<td style="color:' + pnlColor + ';font-weight:600;">$' + (s.pnl || 0).toFixed(2) + '</td>';
+      html += '<td>' + (s.avg_edge || 0).toFixed(1) + '%</td>';
+      html += '<td><span class="badge badge-info">' + esc(regime) + '</span></td>';
+      html += '<td>' + (mistakeCount > 0 ? '<span style="color:var(--error);">' + mistakeCount + ' high</span>' : '<span style="color:var(--success);">clean</span>') + '</td>';
+      html += '</tr>';
+    }
+    tbody.innerHTML = html;
+  } catch(e) {
+    console.error('daily reports error:', e);
+  }
+
+  // Load today's mistake analysis
+  try {
+    var resp2 = await fetch('/api/garves/daily-report/today');
+    var today = await resp2.json();
+    var mistakes = today.mistakes || [];
+    var el = document.getElementById('daily-mistakes');
+    if (!el) return;
+    if (!mistakes.length) {
+      el.innerHTML = '<div class="text-muted" style="padding:var(--space-4);">No issues detected today.</div>';
+      return;
+    }
+    var mhtml = '';
+    for (var j = 0; j < mistakes.length; j++) {
+      var m = mistakes[j];
+      var sevColor = m.severity === 'high' ? 'var(--error)' : m.severity === 'medium' ? 'var(--warning)' : 'var(--success)';
+      var typeIcon = m.type === 'technical' ? 'TECH' : m.type === 'approach' ? 'STRAT' : m.type === 'functional' ? 'FUNC' : 'INFO';
+      mhtml += '<div class="glass-card" style="border-left:3px solid ' + sevColor + ';">';
+      mhtml += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;">';
+      mhtml += '<span style="font-weight:600;font-size:0.8rem;">' + esc(m.title || '') + '</span>';
+      mhtml += '<span><span class="badge" style="background:' + sevColor + ';color:#000;font-size:0.62rem;">' + typeIcon + '</span>';
+      mhtml += ' <span class="badge" style="background:rgba(255,255,255,0.08);font-size:0.62rem;">' + esc(m.severity || '') + '</span></span>';
+      mhtml += '</div>';
+      mhtml += '<div style="font-size:0.76rem;color:var(--text-secondary);font-family:var(--font-mono);">' + esc(m.detail || '') + '</div>';
+      mhtml += '</div>';
+    }
+    el.innerHTML = mhtml;
+  } catch(e) {
+    console.error('daily mistakes error:', e);
+  }
+}
+
 async function loadConvictionData() {
   try {
     var resp = await fetch('/api/garves/conviction');
@@ -1727,6 +1795,7 @@ async function refresh() {
       fetch('/api/logs').then(function(r){return r.json();}).then(function(d){renderLogs(d.lines);}).catch(function(){});
       loadRegimeBadge();
       loadConvictionData();
+      loadDailyReports();
       loadAgentLearning('garves');
     } else if (currentTab === 'soren') {
       var resp = await fetch('/api/soren');
