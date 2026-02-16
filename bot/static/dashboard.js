@@ -10,11 +10,11 @@ function switchTab(tab) {
   currentTab = tab;
   var tabs = document.querySelectorAll('.tab-content');
   for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
-  var btns = document.querySelectorAll('.tab-btn');
+  var btns = document.querySelectorAll('.sidebar-btn');
   for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
   var el = document.getElementById('tab-' + tab);
   if (el) el.classList.add('active');
-  var btn = document.querySelector('.tab-btn[data-tab="' + tab + '"]');
+  var btn = document.querySelector('.sidebar-btn[data-tab="' + tab + '"]');
   if (btn) btn.classList.add('active');
   refresh();
 }
@@ -172,11 +172,27 @@ async function loadRegimeBadge() {
   } catch (e) {}
 }
 
+function freshnessBadge(f) {
+  if (!f) return '';
+  var colors = {green:'badge-success',yellow:'badge-warning',orange:'badge-warning',red:'badge-error'};
+  var cls = colors[f.color] || 'badge-neutral';
+  return '<span class="badge ' + cls + '" title="Freshness: ' + f.score + '/100">' + f.label + ' ' + f.score + '</span>';
+}
 function renderSoren(data) {
   document.getElementById('soren-queue-total').textContent = data.queue_total || 0;
   document.getElementById('soren-pending').textContent = data.pending || 0;
   document.getElementById('soren-posted').textContent = data.posted || 0;
   document.getElementById('soren-failed').textContent = data.failed || 0;
+  // Freshness summary
+  var fs = data.freshness || {};
+  var fEl = document.getElementById('soren-freshness');
+  if (fEl) {
+    fEl.innerHTML = '<span style="font-size:0.75rem;color:var(--text-secondary);">Freshness: <strong>' + (fs.avg_score||0) + '</strong>/100 &nbsp; ' +
+      '<span style="color:var(--success);">' + (fs.fresh||0) + ' fresh</span> · ' +
+      '<span style="color:var(--warning);">' + (fs.ok||0) + ' ok</span> · ' +
+      '<span style="color:#ff8800;">' + (fs.stale||0) + ' stale</span> · ' +
+      '<span style="color:var(--error);">' + (fs.expired||0) + ' expired</span></span>';
+  }
   var items = data.items || [];
   var el = document.getElementById('soren-queue');
   if (items.length === 0) { el.innerHTML = '<div class="text-muted" style="padding:var(--space-6);text-align:center;">No content in queue.</div>'; return; }
@@ -189,6 +205,7 @@ function renderSoren(data) {
     html += '<div class="queue-item">';
     html += '<div class="queue-item-header"><span class="queue-item-title">' + esc(item.title || item.pillar || 'Content #' + id) + '</span>';
     html += '<div class="queue-item-badges"><span class="badge ' + bcls + '">' + esc(status) + '</span>';
+    if (item.freshness) html += freshnessBadge(item.freshness);
     if (item.platform) html += '<span class="badge badge-neutral">' + esc(item.platform) + '</span>';
     if (item.pillar) html += '<span class="badge badge-neutral">' + esc(item.pillar) + '</span>';
     html += '</div></div>';
@@ -444,8 +461,83 @@ function renderAtlas(data) {
     tickAtlasUptime();
   }
   document.getElementById('atlas-observations').textContent = brain.observations || 0;
+  document.getElementById('atlas-learnings').textContent = brain.learnings || 0;
   document.getElementById('atlas-improvements').textContent = brain.unapplied || 0;
   document.getElementById('atlas-cycles').textContent = bg.cycles || 0;
+  // Learning badge — show per-agent breakdown
+  var lBadge = document.getElementById('atlas-learning');
+  if (lBadge && data.recent_learnings) {
+    var agentCounts = {};
+    (data.recent_learnings || []).forEach(function(l) {
+      var a = l.agent || 'atlas';
+      agentCounts[a] = (agentCounts[a] || 0) + 1;
+    });
+    var parts = [];
+    for (var a in agentCounts) {
+      var name = {garves:'Garves',soren:'Soren',shelby:'Shelby',lisa:'Lisa',atlas:'Atlas'}[a] || a;
+      parts.push(name + ': ' + agentCounts[a]);
+    }
+    var level = (brain.learnings||0) >= 50 ? 'Expert' : (brain.learnings||0) >= 20 ? 'Advanced' : (brain.learnings||0) >= 5 ? 'Learning' : 'Novice';
+    lBadge.innerHTML = '<span class="wb-label">Learning:</span> <span style="color:var(--success);">' + level + '</span> ' + (brain.learnings||0) + ' lessons' + (parts.length ? ' (' + parts.join(', ') + ')' : '') + ' | ' + (brain.observations||0) + ' obs';
+  }
+  // Research quality score
+  var research = data.research || {};
+  var qEl = document.getElementById('atlas-quality-score');
+  if (qEl) {
+    var qs = research.avg_quality_score || 0;
+    qEl.textContent = qs > 0 ? qs + '/10' : '--';
+    qEl.style.color = qs >= 8 ? 'var(--success)' : qs >= 6 ? 'var(--warning)' : qs > 0 ? 'var(--error)' : 'var(--text-secondary)';
+  }
+  // Cost panel
+  var costEl = document.getElementById('atlas-cost-panel');
+  if (costEl && data.costs) {
+    var c = data.costs;
+    var totalProj = (c.total_cost_projected||0);
+    var totalBudget = (c.total_budget||140);
+    var budgetColor = totalProj > totalBudget ? 'var(--error)' : totalProj > totalBudget * 0.8 ? 'var(--warning)' : 'var(--success)';
+    costEl.innerHTML = '<div style="display:flex;gap:20px;flex-wrap:wrap;">' +
+      '<div><span class="stat-label">TODAY</span><div style="font-size:1.1rem;font-weight:600;">Tavily: ' + (c.today_tavily||0) + ' researches | OpenAI: ' + (c.today_openai||0) + ' analyses</div></div>' +
+      '<div><span class="stat-label">THIS MONTH</span><div style="font-size:1.1rem;font-weight:600;">Tavily: ' + (c.month_tavily||0) + ' researches | OpenAI: ' + (c.month_openai||0) + ' analyses</div></div>' +
+      '<div><span class="stat-label">PROJECTED MONTHLY</span><div style="font-size:1.1rem;font-weight:600;">Tavily: ' + (c.projected_tavily||0) + ' / 12,000 researches | OpenAI: ' + (c.projected_openai||0) + ' analyses</div></div>' +
+      '<div><span class="stat-label">PROJECTED COST</span><div style="font-size:1.1rem;font-weight:600;color:' + budgetColor + ';">$' + totalProj.toFixed(2) + ' / $' + totalBudget.toFixed(2) + ' budget</div>' +
+      '<div style="font-size:0.8rem;color:var(--text-secondary);">Tavily $' + (c.tavily_cost_projected||0).toFixed(2) + ' / $' + (c.tavily_budget||90) + ' | OpenAI $' + (c.openai_cost_projected||0).toFixed(2) + ' / $' + (c.openai_budget||50) + '</div></div>' +
+      '</div>';
+  }
+}
+
+async function atlasLiveResearch() {
+  var el = document.getElementById('atlas-live-research');
+  if (el.style.display !== 'none') { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.innerHTML = '<div style="color:var(--text-secondary);">Loading live research...</div>';
+  try {
+    var resp = await fetch('/api/atlas/live-research');
+    var data = await resp.json();
+    if (data.error) { el.innerHTML = '<div style="color:var(--error);">' + data.error + '</div>'; return; }
+    var articles = data.articles || [];
+    var html = '<div style="margin-bottom:8px;font-weight:600;color:var(--agent-atlas);">Atlas Live Research (' + data.total_researched + ' total | ' + data.seen_urls + ' unique URLs)</div>';
+    if (articles.length === 0) {
+      html += '<div style="color:var(--text-secondary);">No research yet this session. Atlas researches every 45 min.</div>';
+    } else {
+      var agentColors = {garves:'var(--agent-garves)',soren:'var(--agent-soren)',shelby:'var(--agent-shelby)',lisa:'var(--agent-mercury)',atlas:'var(--agent-atlas)'};
+      articles.forEach(function(a) {
+        var agentName = {garves:'Garves',soren:'Soren',shelby:'Shelby',lisa:'Lisa',atlas:'Atlas'}[a.agent] || a.agent;
+        var color = agentColors[a.agent] || 'var(--text-primary)';
+        html += '<div style="padding:8px 0;border-bottom:1px solid var(--border);">';
+        html += '<div style="display:flex;gap:8px;align-items:center;">';
+        html += '<span style="color:' + color + ';font-weight:600;font-size:0.8rem;">[' + agentName + ']</span>';
+        html += '<span style="font-size:0.75rem;color:var(--text-secondary);">' + (a.query||'') + '</span>';
+        if (a.quality) html += '<span style="font-size:0.7rem;color:' + (a.quality >= 8 ? 'var(--success)' : a.quality >= 6 ? 'var(--warning)' : 'var(--error)') + ';">' + a.quality + '/10</span>';
+        html += '</div>';
+        if (a.url) html += '<a href="' + a.url + '" target="_blank" style="font-size:0.8rem;color:var(--agent-atlas);word-break:break-all;">' + (a.source || a.url) + '</a>';
+        if (a.insight) html += '<div style="font-size:0.8rem;color:var(--text-secondary);margin-top:2px;">' + a.insight + '</div>';
+        html += '</div>';
+      });
+    }
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--error);">Failed to load: ' + e.message + '</div>';
+  }
 }
 
 async function atlasFullReport() {
@@ -897,6 +989,19 @@ function renderSentinel(data) {
   document.getElementById('sentinel-total-fixes').textContent = data.total_fixes || 0;
   document.getElementById('sentinel-last-scan').textContent = data.last_scan ? new Date(data.last_scan).toLocaleTimeString() : '--';
 
+  // Error trend
+  var trendEl = document.getElementById('sentinel-error-trend');
+  if (trendEl && data.error_trend) {
+    var et = data.error_trend;
+    var arrow = et.direction === 'up' ? '&#9650;' : et.direction === 'down' ? '&#9660;' : '&#9644;';
+    var arrowColor = et.spike ? 'var(--error)' : et.direction === 'up' ? 'var(--warning)' : et.direction === 'down' ? 'var(--success)' : 'var(--text-secondary)';
+    var spikeTag = et.spike ? ' <span class="badge badge-error">SPIKE</span>' : '';
+    trendEl.innerHTML = '<span style="font-size:0.8rem;color:var(--text-secondary);">Error Trend: </span>' +
+      '<span style="font-size:1.2rem;color:' + arrowColor + ';">' + arrow + '</span> ' +
+      '<span style="font-size:0.85rem;">' + (et.latest !== undefined ? et.latest : '--') + ' errors</span>' +
+      '<span style="font-size:0.75rem;color:var(--text-secondary);margin-left:8px;">(avg: ' + (et.avg_last_5||0) + ')</span>' + spikeTag;
+  }
+
   var alerts = data.recent_alerts || [];
   var alertEl = document.getElementById('sentinel-alerts');
   if (alerts.length === 0) {
@@ -1251,43 +1356,6 @@ function closeKPIModal() {
   document.getElementById('kpi-modal').classList.remove('active');
 }
 
-function openHireModal() {
-  document.getElementById('hire-result').style.display = 'none';
-  document.getElementById('hire-name').value = '';
-  document.getElementById('hire-desc').value = '';
-  document.getElementById('hire-modal').classList.add('active');
-}
-
-function closeHireModal() {
-  document.getElementById('hire-modal').classList.remove('active');
-}
-
-async function submitHire() {
-  var name = document.getElementById('hire-name').value.trim();
-  var role = document.getElementById('hire-role').value;
-  var desc = document.getElementById('hire-desc').value.trim();
-  var result = document.getElementById('hire-result');
-  if (!name) { result.style.display = 'block'; result.style.background = 'rgba(255,68,68,0.1)'; result.style.color = 'var(--error)'; result.textContent = 'Agent name is required.'; return; }
-  try {
-    var resp = await fetch('/api/shelby/hire', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name:name, role:role, description:desc})});
-    var data = await resp.json();
-    if (data.success) {
-      result.style.display = 'block'; result.style.background = 'rgba(0,255,136,0.1)'; result.style.color = 'var(--success)';
-      result.textContent = 'Agent "' + name + '" created successfully as ' + role + '.';
-    } else {
-      result.style.display = 'block'; result.style.background = 'rgba(255,68,68,0.1)'; result.style.color = 'var(--error)';
-      result.textContent = data.error || 'Failed to create agent.';
-    }
-  } catch (e) { result.style.display = 'block'; result.style.background = 'rgba(255,68,68,0.1)'; result.style.color = 'var(--error)'; result.textContent = 'Error: ' + e.message; }
-}
-
-function openTelegramModal() {
-  document.getElementById('telegram-modal').classList.add('active');
-}
-
-function closeTelegramModal() {
-  document.getElementById('telegram-modal').classList.remove('active');
-}
 
 function exportAgentReport() {
   var a = document.createElement('a');
@@ -1370,7 +1438,13 @@ async function refresh() {
       try { loadShelbyOnlineCount(); } catch(e) {}
     } else if (currentTab === 'atlas') {
       var resp = await fetch('/api/atlas');
-      renderAtlas(await resp.json());
+      var atlasData = await resp.json();
+      // Also fetch costs
+      try {
+        var costResp = await fetch('/api/atlas/costs');
+        atlasData.costs = await costResp.json();
+      } catch(e) {}
+      renderAtlas(atlasData);
       loadCompetitorIntel();
       loadAgentLearning('atlas');
     } else if (currentTab === 'mercury') {
@@ -1395,3 +1469,200 @@ async function refresh() {
 
 refresh();
 setInterval(refresh, 5000);
+
+// ── Intelligence Meters ──
+var _intelData = null;
+
+function renderTeamIntelligence(data) {
+  var el = document.getElementById('team-intelligence');
+  if (!el || !data || !data.team) return;
+  var team = data.team;
+  var dims = team.dimensions || {};
+  var overall = team.overall || 0;
+  var agentScores = team.agent_scores || {};
+
+  var iqLabel = overall >= 90 ? 'GENIUS' : overall >= 75 ? 'EXPERT' : overall >= 60 ? 'SKILLED' : overall >= 40 ? 'LEARNING' : 'NOVICE';
+  var teamColor = overall >= 80 ? '#00ff88' : overall >= 60 ? '#22aa44' : overall >= 40 ? '#ffaa00' : '#ff4444';
+
+  var dimKeys = Object.keys(dims);
+  var dimValues = dimKeys.map(function(k) { return dims[k]; });
+
+  var html = '<div style="display:flex;align-items:center;gap:20px;margin-bottom:14px;">';
+  html += '<div style="flex-shrink:0;">' + radarSVG(160, dimValues, dimKeys, teamColor) + '</div>';
+  html += '<div style="flex:1;">';
+  html += '<div class="radar-title">Team Intelligence</div>';
+  html += '<div style="display:flex;align-items:baseline;gap:8px;">';
+  html += '<span class="radar-score" style="color:' + teamColor + ';">' + overall + '</span>';
+  html += '<span class="radar-level" style="color:' + teamColor + ';">' + iqLabel + '</span>';
+  html += '</div>';
+  html += '<div class="radar-dims">';
+  for (var i = 0; i < dimKeys.length; i++) {
+    var val = dims[dimKeys[i]];
+    var vc = val >= 75 ? 'var(--success)' : val >= 50 ? teamColor : val >= 30 ? 'var(--warning)' : 'var(--error)';
+    html += '<div class="radar-dim"><span class="radar-dim-label">' + dimKeys[i] + '</span><span class="radar-dim-val" style="color:' + vc + ';">' + val + '</span></div>';
+  }
+  html += '</div></div></div>';
+
+  var agentMeta = [
+    {key:'atlas',  name:'Atlas',   color:'#22aa44'},
+    {key:'garves', name:'Garves',  color:'#00d4ff'},
+    {key:'soren',  name:'Soren',   color:'#cc66ff'},
+    {key:'shelby', name:'Shelby',  color:'#ffaa00'},
+    {key:'lisa',   name:'Lisa',    color:'#ff8800'},
+    {key:'robotox',name:'Robotox', color:'#00ff44'},
+  ];
+
+  html += '<div class="team-agents-row">';
+  for (var j = 0; j < agentMeta.length; j++) {
+    var ag = agentMeta[j];
+    var score = agentScores[ag.key] || 0;
+    var agData = data[ag.key] || {};
+    var agDims = agData.dimensions || {};
+    var agDimKeys = Object.keys(agDims);
+    var agDimValues = agDimKeys.map(function(k) { return agDims[k]; });
+    var level = score >= 90 ? 'GENIUS' : score >= 75 ? 'EXPERT' : score >= 60 ? 'SKILLED' : score >= 40 ? 'LEARNING' : 'NOVICE';
+    var levelColor = score >= 75 ? 'var(--success)' : score >= 50 ? ag.color : score >= 30 ? 'var(--warning)' : 'var(--error)';
+
+    var tabKey = ag.key === 'lisa' ? 'mercury' : ag.key === 'robotox' ? 'sentinel' : ag.key;
+    html += '<div class="team-agent-card" onclick="switchTab(\'' + tabKey + '\')" style="cursor:pointer;">';
+    if (agDimValues.length > 0) {
+      html += '<div style="margin:0 auto 2px;">' + radarSVG(68, agDimValues, null, ag.color) + '</div>';
+    }
+    html += '<div class="team-agent-name" style="color:' + ag.color + ';">' + ag.name + '</div>';
+    html += '<div style="font-family:var(--font-mono);font-size:0.85rem;font-weight:700;color:' + ag.color + ';">' + score + '</div>';
+    html += '<div class="team-agent-level" style="color:' + levelColor + ';">' + level + '</div>';
+    html += '</div>';
+  }
+  html += '</div>';
+
+  el.innerHTML = html;
+}
+var _intelAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',mercury:'lisa',sentinel:'robotox'};
+var _intelColors = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',robotox:'#00ff44'};
+
+function radarSVG(size, values, labels, color) {
+  var cx = size / 2, cy = size / 2;
+  var R = size / 2 - (labels ? 20 : 8);
+  var n = values.length;
+  var angles = [];
+  for (var i = 0; i < n; i++) angles.push(-Math.PI / 2 + i * 2 * Math.PI / n);
+
+  var svg = '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" style="filter:drop-shadow(0 0 8px ' + color + '33);">';
+
+  var levels = [25, 50, 75, 100];
+  for (var l = 0; l < levels.length; l++) {
+    var pts = '';
+    for (var i = 0; i < n; i++) {
+      var x = cx + (levels[l] / 100) * R * Math.cos(angles[i]);
+      var y = cy + (levels[l] / 100) * R * Math.sin(angles[i]);
+      pts += x.toFixed(1) + ',' + y.toFixed(1) + ' ';
+    }
+    svg += '<polygon points="' + pts.trim() + '" fill="none" stroke="rgba(255,255,255,' + (levels[l] === 100 ? '0.1' : '0.04') + '" stroke-width="1"/>';
+  }
+
+  for (var i = 0; i < n; i++) {
+    var x = cx + R * Math.cos(angles[i]);
+    var y = cy + R * Math.sin(angles[i]);
+    svg += '<line x1="' + cx + '" y1="' + cy + '" x2="' + x.toFixed(1) + '" y2="' + y.toFixed(1) + '" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>';
+  }
+
+  var dataPts = '';
+  for (var i = 0; i < n; i++) {
+    var v = Math.max(5, Math.min(100, values[i] || 0));
+    var x = cx + (v / 100) * R * Math.cos(angles[i]);
+    var y = cy + (v / 100) * R * Math.sin(angles[i]);
+    dataPts += x.toFixed(1) + ',' + y.toFixed(1) + ' ';
+  }
+  svg += '<polygon points="' + dataPts.trim() + '" fill="' + color + '" fill-opacity="0.15" stroke="' + color + '" stroke-width="2" stroke-linejoin="round"/>';
+
+  for (var i = 0; i < n; i++) {
+    var v = Math.max(5, Math.min(100, values[i] || 0));
+    var x = cx + (v / 100) * R * Math.cos(angles[i]);
+    var y = cy + (v / 100) * R * Math.sin(angles[i]);
+    svg += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="3" fill="' + color + '"/>';
+  }
+
+  if (labels) {
+    for (var i = 0; i < n; i++) {
+      var lx = cx + (R + 13) * Math.cos(angles[i]);
+      var ly = cy + (R + 13) * Math.sin(angles[i]);
+      var anchor = Math.abs(Math.cos(angles[i])) < 0.15 ? 'middle' : Math.cos(angles[i]) > 0 ? 'start' : 'end';
+      var dy = angles[i] < -0.3 ? '-0.3em' : angles[i] > 0.3 ? '0.8em' : '0.35em';
+      svg += '<text x="' + lx.toFixed(1) + '" y="' + ly.toFixed(1) + '" text-anchor="' + anchor + '" dy="' + dy + '" fill="rgba(255,255,255,0.45)" font-size="8" font-family="Inter,sans-serif">' + esc(labels[i]) + '</text>';
+    }
+  }
+
+  svg += '</svg>';
+  return svg;
+}
+
+function renderIntelMeter(containerId, agentKey, data) {
+  var el = document.getElementById(containerId);
+  if (!el || !data || !data.dimensions) return;
+  var dims = data.dimensions;
+  var overall = data.overall || 0;
+  var title = data.title || '';
+  var color = _intelColors[agentKey] || '#ffffff';
+
+  var iqLabel = overall >= 90 ? 'GENIUS' : overall >= 75 ? 'EXPERT' : overall >= 60 ? 'SKILLED' : overall >= 40 ? 'LEARNING' : 'NOVICE';
+
+  var keys = Object.keys(dims);
+  var values = keys.map(function(k) { return dims[k]; });
+
+  var html = '<div style="display:flex;align-items:center;gap:16px;">';
+  html += '<div style="flex-shrink:0;">' + radarSVG(140, values, keys, color) + '</div>';
+  html += '<div style="flex:1;min-width:0;">';
+  html += '<div class="radar-title">' + esc(title) + ' Intelligence</div>';
+  html += '<div style="display:flex;align-items:baseline;gap:8px;">';
+  html += '<span class="radar-score" style="color:' + color + ';">' + overall + '</span>';
+  html += '<span class="radar-level" style="color:' + color + ';">' + iqLabel + '</span>';
+  html += '</div>';
+  html += '<div class="radar-dims">';
+  for (var i = 0; i < keys.length; i++) {
+    var val = dims[keys[i]];
+    var vc = val >= 75 ? 'var(--success)' : val >= 50 ? color : val >= 30 ? 'var(--warning)' : 'var(--error)';
+    html += '<div class="radar-dim"><span class="radar-dim-label">' + keys[i] + '</span><span class="radar-dim-val" style="color:' + vc + ';">' + val + '</span></div>';
+  }
+  html += '</div></div></div>';
+
+  el.innerHTML = html;
+}
+
+async function refreshIntelligence() {
+  try {
+    var resp = await fetch('/api/intelligence');
+    _intelData = await resp.json();
+
+    // Render team intel on overview
+    if (currentTab === 'overview' && _intelData.team) {
+      renderTeamIntelligence(_intelData);
+    }
+
+    // Render the meter for whatever agent tab is active
+    var activeAgent = _intelAgentMap[currentTab];
+    if (activeAgent && _intelData[activeAgent]) {
+      renderIntelMeter('intel-' + activeAgent, activeAgent, _intelData[activeAgent]);
+    }
+  } catch(e) {
+    console.error('Intel refresh error:', e);
+  }
+}
+
+// Refresh intel on tab switch too
+var _origSwitchTab = switchTab;
+switchTab = function(tab) {
+  _origSwitchTab(tab);
+  if (_intelData) {
+    if (tab === 'overview' && _intelData.team) {
+      renderTeamIntelligence(_intelData);
+    }
+    var activeAgent = _intelAgentMap[tab];
+    if (activeAgent && _intelData[activeAgent]) {
+      renderIntelMeter('intel-' + activeAgent, activeAgent, _intelData[activeAgent]);
+    }
+  }
+};
+
+// Load on startup + every 30s
+refreshIntelligence();
+setInterval(refreshIntelligence, 30000);

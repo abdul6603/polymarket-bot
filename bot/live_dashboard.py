@@ -349,6 +349,26 @@ def api_soren():
         except Exception:
             pass
 
+    # Freshness scoring per item
+    try:
+        from atlas.soren_optimizer import SorenOptimizer
+        for item in queue:
+            item["freshness"] = SorenOptimizer.compute_freshness(item)
+    except Exception:
+        pass
+
+    # Freshness summary
+    freshness_summary = {"avg_score": 0, "fresh": 0, "ok": 0, "stale": 0, "expired": 0}
+    items_with_freshness = [q for q in queue if q.get("freshness")]
+    if items_with_freshness:
+        freshness_summary["avg_score"] = round(
+            sum(q["freshness"]["score"] for q in items_with_freshness) / len(items_with_freshness), 1
+        )
+        for q in items_with_freshness:
+            label = q["freshness"]["label"]
+            if label in freshness_summary:
+                freshness_summary[label] += 1
+
     return jsonify({
         "queue_total": len(queue),
         "pending": len(pending),
@@ -359,6 +379,7 @@ def api_soren():
         "items": sorted(queue, key=lambda x: x.get("scheduled_time", ""))[:30],
         "trends_count": len(trends.get("trending_topics", [])),
         "trends_scanned": trends.get("scanned_at", ""),
+        "freshness": freshness_summary,
     })
 
 
@@ -1015,6 +1036,34 @@ def api_atlas_soren():
         return jsonify({"error": str(e)[:200]}), 500
 
 
+@app.route("/api/atlas/live-research")
+def api_atlas_live_research():
+    """What Atlas is currently researching — recent URLs, sources, insights."""
+    atlas = get_atlas()
+    if not atlas:
+        return jsonify({"error": "Atlas not available", "articles": []})
+    try:
+        stats = atlas.researcher.get_research_stats()
+        articles = []
+        for entry in reversed(stats.get("recent", [])):
+            articles.append({
+                "agent": entry.get("agent", "?"),
+                "query": entry.get("query", ""),
+                "source": entry.get("source", ""),
+                "url": entry.get("url", ""),
+                "insight": entry.get("insight", "")[:200],
+                "quality": entry.get("quality_score", 0),
+                "timestamp": entry.get("timestamp", ""),
+            })
+        return jsonify({
+            "total_researched": stats.get("total_researches", 0),
+            "seen_urls": stats.get("seen_urls", 0),
+            "articles": articles,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200], "articles": []})
+
+
 @app.route("/api/atlas/experiments")
 def api_atlas_experiments():
     """Atlas experiment data."""
@@ -1093,6 +1142,85 @@ def api_atlas_acknowledge():
         return jsonify({"acknowledged": count, "total_dismissed": len(atlas.improvements._acknowledged)})
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500
+
+
+@app.route("/api/atlas/costs")
+def api_atlas_costs():
+    """API cost tracker data (Tavily + OpenAI)."""
+    cost_file = ATLAS_ROOT / "data" / "cost_tracker.json"
+    if not cost_file.exists():
+        return jsonify({"today_tavily": 0, "today_openai": 0,
+                        "month_tavily": 0, "month_openai": 0,
+                        "projected_tavily": 0})
+    try:
+        with open(cost_file) as f:
+            tracker = json.load(f)
+
+        daily = tracker.get("daily", {})
+        today = datetime.now(timezone(timedelta(hours=-5))).strftime("%Y-%m-%d")
+        today_data = daily.get(today, {})
+
+        # Monthly totals
+        month_prefix = today[:7]  # "YYYY-MM"
+        month_tavily = 0
+        month_openai = 0
+        days_in_month = 0
+        for day_key, day_data in daily.items():
+            if day_key.startswith(month_prefix):
+                month_tavily += day_data.get("tavily_calls", 0)
+                month_openai += day_data.get("openai_calls", 0)
+                days_in_month += 1
+
+        # Project monthly usage (calls + dollars)
+        # Budgets: Tavily $90/mo (12k credits), OpenAI $50/mo
+        TAVILY_BUDGET = 90.0
+        TAVILY_MONTHLY_CREDITS = 12000
+        OPENAI_BUDGET = 50.0
+        # GPT-4o-mini pricing: $0.15/1M input + $0.60/1M output
+        # Atlas uses ~300 output tokens + ~500 input tokens per call
+        OPENAI_COST_PER_CALL = (500 * 0.15 + 300 * 0.60) / 1_000_000  # ~$0.000255
+
+        month_openai_tokens = 0
+        for day_key, day_data in daily.items():
+            if day_key.startswith(month_prefix):
+                month_openai_tokens += day_data.get("openai_tokens_est", 0)
+
+        if days_in_month > 0:
+            avg_daily_tavily = month_tavily / days_in_month
+            avg_daily_openai = month_openai / days_in_month
+            projected_tavily = int(avg_daily_tavily * 30)
+            projected_openai = int(avg_daily_openai * 30)
+        else:
+            projected_tavily = 0
+            projected_openai = 0
+
+        # Dollar projections
+        tavily_cost_projected = round(TAVILY_BUDGET * (projected_tavily / TAVILY_MONTHLY_CREDITS), 2) if TAVILY_MONTHLY_CREDITS else 0
+        # OpenAI: use actual token estimates if available, else per-call estimate
+        if month_openai_tokens > 0 and days_in_month > 0:
+            avg_daily_tokens = month_openai_tokens / days_in_month
+            projected_tokens = avg_daily_tokens * 30
+            openai_cost_projected = round(projected_tokens * 0.60 / 1_000_000, 2)  # mostly output tokens
+        else:
+            openai_cost_projected = round(projected_openai * OPENAI_COST_PER_CALL, 2)
+
+        return jsonify({
+            "today_tavily": today_data.get("tavily_calls", 0),
+            "today_openai": today_data.get("openai_calls", 0),
+            "month_tavily": month_tavily,
+            "month_openai": month_openai,
+            "projected_tavily": projected_tavily,
+            "projected_openai": projected_openai,
+            "tavily_budget": TAVILY_BUDGET,
+            "openai_budget": OPENAI_BUDGET,
+            "tavily_cost_projected": tavily_cost_projected,
+            "openai_cost_projected": openai_cost_projected,
+            "total_cost_projected": round(tavily_cost_projected + openai_cost_projected, 2),
+            "total_budget": TAVILY_BUDGET + OPENAI_BUDGET,
+            "daily": daily,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
 
 
 @app.route("/api/atlas/summarize", methods=["POST"])
@@ -1580,13 +1708,16 @@ def api_sentinel():
 
 @app.route("/api/sentinel/scan", methods=["POST"])
 def api_sentinel_scan():
-    """Trigger a full health scan."""
+    """Trigger a full health scan (skip notifications to avoid blocking)."""
     try:
-        from sentinel.sentinel import Sentinel
-        sentinel_agent = Sentinel()
-        return jsonify(sentinel_agent.full_scan())
+        from sentinel.core.monitor import HealthMonitor
+        monitor = HealthMonitor()
+        result = monitor.scan_all(skip_notifications=True)
+        return jsonify(result)
     except Exception as e:
-        return jsonify({"error": str(e)})
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)[:500]})
 
 
 @app.route("/api/sentinel/bugs")
@@ -2133,6 +2264,477 @@ def api_atlas_learning(agent):
 
 
 
+@app.route("/api/intelligence")
+def api_intelligence():
+    """Intelligence meter for all agents — 5 dimensions each, 0-100 scale."""
+    from datetime import datetime, timezone, timedelta
+    ET = timezone(timedelta(hours=-5))
+
+    result = {}
+
+    # ── GARVES — The Trader ──
+    try:
+        garves = {"dimensions": {}, "overall": 0, "title": "The Trader"}
+        trades_file = DATA_DIR / "trades.jsonl"
+        trades = []
+        if trades_file.exists():
+            with open(trades_file) as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        trades.append(json.loads(line))
+
+        resolved = [t for t in trades if t.get("resolved")]
+        wins = sum(1 for t in resolved if t.get("won"))
+        wr = (wins / len(resolved) * 100) if resolved else 0
+        total = len(trades)
+
+        # 1. Market Knowledge — indicators, regime awareness, asset coverage
+        indicators_file = DATA_DIR / "indicator_accuracy.json"
+        indicator_count = 0
+        if indicators_file.exists():
+            with open(indicators_file) as f:
+                ind = json.load(f)
+            indicator_count = len(ind)
+        regime_file = DATA_DIR / "regime_state.json"
+        has_regime = regime_file.exists()
+        assets = set(t.get("asset", "") for t in trades)
+        knowledge = min(100, indicator_count * 6 + (20 if has_regime else 0) + len(assets) * 10)
+        garves["dimensions"]["Market Knowledge"] = knowledge
+
+        # 2. Accuracy — win rate performance
+        accuracy = min(100, int(wr * 1.3)) if resolved else 15
+        garves["dimensions"]["Accuracy"] = accuracy
+
+        # 3. Experience — total trades placed
+        experience = min(100, int(total * 0.5)) if total else 5
+        garves["dimensions"]["Experience"] = experience
+
+        # 4. Risk Management — edge thresholds, straddle awareness
+        straddle_file = DATA_DIR / "straddle_trades.json"
+        has_straddle = straddle_file.exists()
+        avg_edge = 0
+        if resolved:
+            edges = [t.get("edge", 0) for t in resolved if t.get("edge")]
+            avg_edge = sum(edges) / len(edges) if edges else 0
+        risk = 40 + (20 if has_straddle else 0) + min(40, int(avg_edge * 400))
+        garves["dimensions"]["Risk Management"] = min(100, risk)
+
+        # 5. Adaptability — multi-asset, multi-timeframe, regime switching
+        timeframes = set(t.get("timeframe", "") for t in trades)
+        adaptability = min(100, len(assets) * 15 + len(timeframes) * 15 + (25 if has_regime else 0))
+        garves["dimensions"]["Adaptability"] = adaptability
+
+        scores = list(garves["dimensions"].values())
+        garves["overall"] = int(sum(scores) / len(scores)) if scores else 0
+        result["garves"] = garves
+    except Exception:
+        result["garves"] = {"dimensions": {}, "overall": 0, "title": "The Trader"}
+
+    # ── SOREN — The Thinker ──
+    try:
+        soren = {"dimensions": {}, "overall": 0, "title": "The Thinker"}
+        queue_file = Path.home() / "soren-content" / "data" / "content_queue.json"
+        queue = []
+        if queue_file.exists():
+            with open(queue_file) as f:
+                queue = json.load(f)
+
+        posted = [i for i in queue if i.get("status") == "posted"]
+        pending = [i for i in queue if i.get("status") == "pending"]
+        approved = [i for i in queue if i.get("status") == "approved"]
+        pillars = set(i.get("pillar", "") for i in queue if i.get("pillar"))
+        platforms = set(i.get("platform", "") for i in queue if i.get("platform"))
+
+        # 1. Creativity — pillar diversity, total content generated
+        creativity = min(100, len(pillars) * 15 + len(queue) * 2)
+        soren["dimensions"]["Creativity"] = creativity
+
+        # 2. Productivity — content output volume
+        productivity = min(100, len(posted) * 10 + len(approved) * 5 + len(pending) * 2)
+        soren["dimensions"]["Productivity"] = productivity
+
+        # 3. Brand Consistency — voice, archetype adherence
+        # Based on: has voice config, uses consistent pillars, A/B testing
+        ab_file = Path.home() / "soren-content" / "data" / "ab_results.json"
+        has_ab = ab_file.exists()
+        consistency = 55 + (15 if has_ab else 0) + min(30, len(pillars) * 6)
+        soren["dimensions"]["Brand Voice"] = min(100, consistency)
+
+        # 4. Platform Awareness — multi-platform coverage
+        platform_score = min(100, len(platforms) * 25 + 20)
+        soren["dimensions"]["Platform Reach"] = platform_score
+
+        # 5. Trend Awareness — from Atlas learnings about Soren
+        trend_file = Path.home() / "soren-content" / "data" / "trend_topics.json"
+        trends_count = 0
+        if trend_file.exists():
+            with open(trend_file) as f:
+                trends_count = len(json.load(f))
+        trend_score = min(100, 30 + trends_count * 5)
+        soren["dimensions"]["Trend Awareness"] = trend_score
+
+        scores = list(soren["dimensions"].values())
+        soren["overall"] = int(sum(scores) / len(scores)) if scores else 0
+        result["soren"] = soren
+    except Exception:
+        result["soren"] = {"dimensions": {}, "overall": 0, "title": "The Thinker"}
+
+    # ── ATLAS — The Scientist ──
+    try:
+        atlas_intel = {"dimensions": {}, "overall": 0, "title": "The Scientist"}
+        atlas = get_atlas()
+        kb_stats = atlas.kb.stats() if atlas else {}
+        bg = atlas.background.get_status() if atlas else {}
+        research = atlas.researcher.get_research_stats() if atlas else {}
+
+        obs = kb_stats.get("total_observations", 0)
+        learnings = kb_stats.get("total_learnings", 0)
+        cycles = bg.get("cycles", 0)
+        quality = research.get("avg_quality_score", 0)
+        seen = research.get("seen_urls", 0)
+
+        # 1. Knowledge Depth — observations + learnings accumulated
+        depth = min(100, int(obs * 0.2 + learnings * 1.5))
+        atlas_intel["dimensions"]["Knowledge Depth"] = depth
+
+        # 2. Research Quality — avg quality score from LLM synthesis
+        rq = min(100, int(quality * 10)) if quality else 20
+        atlas_intel["dimensions"]["Research Quality"] = rq
+
+        # 3. Learning Rate — learnings per cycle
+        lr = min(100, int((learnings / max(cycles, 1)) * 25))
+        atlas_intel["dimensions"]["Learning Rate"] = lr
+
+        # 4. Coverage — how many agents it covers + URL diversity
+        agents_covered = len(kb_stats.get("agents_observed", []))
+        coverage = min(100, agents_covered * 15 + min(40, seen))
+        atlas_intel["dimensions"]["Agent Coverage"] = coverage
+
+        # 5. Synthesis — ability to turn raw data into insights (experiments + improvements)
+        exp_stats = atlas.hypothesis.stats() if atlas else {}
+        improvements_file = Path.home() / "atlas" / "data" / "improvements.json"
+        imp_count = 0
+        if improvements_file.exists():
+            with open(improvements_file) as f:
+                imp_data = json.load(f)
+            imp_count = sum(len(v) for v in imp_data.values() if isinstance(v, list))
+        synthesis = min(100, exp_stats.get("completed", 0) * 10 + imp_count * 3 + 20)
+        atlas_intel["dimensions"]["Synthesis"] = synthesis
+
+        scores = list(atlas_intel["dimensions"].values())
+        atlas_intel["overall"] = int(sum(scores) / len(scores)) if scores else 0
+        result["atlas"] = atlas_intel
+    except Exception:
+        result["atlas"] = {"dimensions": {}, "overall": 0, "title": "The Scientist"}
+
+    # ── SHELBY — The Commander ──
+    try:
+        shelby = {"dimensions": {}, "overall": 0, "title": "The Commander"}
+
+        # 1. Team Awareness — assessments quality, monitoring breadth
+        assess_file = SHELBY_ROOT_DIR / "data" / "agent_assessments.json"
+        assessments = {}
+        if assess_file.exists():
+            with open(assess_file) as f:
+                assessments = json.load(f)
+        awareness = min(100, len(assessments) * 15 + 25)
+        shelby["dimensions"]["Team Awareness"] = awareness
+
+        # 2. Task Management — completion rate
+        tasks_file = SHELBY_ROOT_DIR / "data" / "tasks.json"
+        task_completion = 50
+        if tasks_file.exists():
+            with open(tasks_file) as f:
+                tasks = json.load(f)
+            done = sum(1 for t in tasks if t.get("done") or t.get("status") == "done")
+            total = len(tasks)
+            if total > 0:
+                task_completion = min(100, int(done / total * 100) + 10)
+        shelby["dimensions"]["Task Management"] = task_completion
+
+        # 3. Communication — broadcasts sent, telegram connected
+        bc_file = SHELBY_ROOT_DIR / "data" / "broadcasts.json"
+        bc_count = 0
+        if bc_file.exists():
+            with open(bc_file) as f:
+                bc_count = len(json.load(f))
+        comm = min(100, 40 + bc_count * 5)
+        shelby["dimensions"]["Communication"] = comm
+
+        # 4. Scheduling — routine reliability
+        sched_file = SHELBY_ROOT_DIR / "data" / "scheduler_log.json"
+        sched_count = 0
+        if sched_file.exists():
+            with open(sched_file) as f:
+                sched_count = len(json.load(f))
+        scheduling = min(100, 35 + sched_count * 3)
+        shelby["dimensions"]["Scheduling"] = scheduling
+
+        # 5. Decision Quality — agent scores average
+        avg_score = 0
+        if assessments:
+            agent_scores = [a.get("score", 0) for a in assessments.values()]
+            avg_score = sum(agent_scores) / len(agent_scores) if agent_scores else 0
+        decision = min(100, int(avg_score * 1.2) + 10)
+        shelby["dimensions"]["Decision Quality"] = decision
+
+        scores = list(shelby["dimensions"].values())
+        shelby["overall"] = int(sum(scores) / len(scores)) if scores else 0
+        result["shelby"] = shelby
+    except Exception:
+        result["shelby"] = {"dimensions": {}, "overall": 0, "title": "The Commander"}
+
+    # ── LISA — The Operator ──
+    try:
+        lisa = {"dimensions": {}, "overall": 0, "title": "The Operator"}
+        mercury_root = Path.home() / "mercury"
+
+        # 1. Platform Knowledge — brain insights, strategy plan depth
+        brain_file = mercury_root / "data" / "brain.json"
+        insights_count = 0
+        if brain_file.exists():
+            with open(brain_file) as f:
+                brain = json.load(f)
+            insights_count = len(brain.get("insights", []))
+        platform_knowledge = min(100, 25 + insights_count * 3)
+        lisa["dimensions"]["Platform Knowledge"] = platform_knowledge
+
+        # 2. Posting Discipline — consistency, outbox management
+        posting_log = mercury_root / "data" / "posting_log.json"
+        post_count = 0
+        if posting_log.exists():
+            with open(posting_log) as f:
+                post_count = len(json.load(f))
+        discipline = min(100, 20 + post_count * 5)
+        lisa["dimensions"]["Posting Discipline"] = discipline
+
+        # 3. Brand Alignment — review scores
+        review_file = mercury_root / "data" / "brand_reviews.json"
+        avg_review = 0
+        if review_file.exists():
+            with open(review_file) as f:
+                reviews = json.load(f)
+            if reviews:
+                scores_list = [r.get("score", 0) for r in reviews if r.get("score")]
+                avg_review = sum(scores_list) / len(scores_list) if scores_list else 0
+        brand = min(100, int(avg_review * 10) + 20) if avg_review else 40
+        lisa["dimensions"]["Brand Alignment"] = brand
+
+        # 4. Strategy Depth — plan evolution
+        plan_file = mercury_root / "data" / "strategy_plan.json"
+        plan_depth = 30
+        if plan_file.exists():
+            with open(plan_file) as f:
+                plan = json.load(f)
+            plan_depth = min(100, 30 + len(str(plan)) // 100)
+        lisa["dimensions"]["Strategy Depth"] = plan_depth
+
+        # 5. Engagement IQ — reply intelligence, audience understanding
+        reply_file = mercury_root / "data" / "reply_templates.json"
+        reply_count = 0
+        if reply_file.exists():
+            with open(reply_file) as f:
+                reply_count = len(json.load(f))
+        engagement = min(100, 25 + reply_count * 5 + insights_count * 2)
+        lisa["dimensions"]["Engagement IQ"] = engagement
+
+        scores = list(lisa["dimensions"].values())
+        lisa["overall"] = int(sum(scores) / len(scores)) if scores else 0
+        result["lisa"] = lisa
+    except Exception:
+        result["lisa"] = {"dimensions": {}, "overall": 0, "title": "The Operator"}
+
+    # ── ROBOTOX — The Watchman ──
+    try:
+        robotox = {"dimensions": {}, "overall": 0, "title": "The Watchman"}
+        sentinel_root = Path.home() / "sentinel"
+
+        # 1. Detection — issues found, scan coverage
+        scan_file = sentinel_root / "data" / "scan_results.json"
+        total_issues = 0
+        scan_count = 0
+        if scan_file.exists():
+            with open(scan_file) as f:
+                scans = json.load(f)
+            if isinstance(scans, list):
+                scan_count = len(scans)
+                total_issues = sum(s.get("issues_found", s.get("issues", 0)) for s in scans)
+        detection = min(100, 40 + scan_count * 3 + total_issues * 2)
+        robotox["dimensions"]["Detection"] = detection
+
+        # 2. Auto-Fix — fixes applied without human intervention
+        fix_file = sentinel_root / "data" / "fix_log.json"
+        fix_count = 0
+        if fix_file.exists():
+            with open(fix_file) as f:
+                fix_count = len(json.load(f))
+        autofix = min(100, 30 + fix_count * 8)
+        robotox["dimensions"]["Auto-Fix"] = autofix
+
+        # 3. Vigilance — monitoring uptime, scan frequency
+        vigilance = min(100, 35 + scan_count * 5)
+        robotox["dimensions"]["Vigilance"] = vigilance
+
+        # 4. Coverage — number of agents/ports monitored
+        config_file = sentinel_root / "config.json"
+        agents_monitored = 5  # default
+        if config_file.exists():
+            with open(config_file) as f:
+                cfg = json.load(f)
+            agents_monitored = len(cfg.get("agents", {}))
+        coverage = min(100, agents_monitored * 15 + 20)
+        robotox["dimensions"]["Coverage"] = coverage
+
+        # 5. Response Speed — how fast issues get resolved
+        response = 50 + min(50, fix_count * 5)
+        robotox["dimensions"]["Response Speed"] = min(100, response)
+
+        scores = list(robotox["dimensions"].values())
+        robotox["overall"] = int(sum(scores) / len(scores)) if scores else 0
+        result["robotox"] = robotox
+    except Exception:
+        result["robotox"] = {"dimensions": {}, "overall": 0, "title": "The Watchman"}
+
+    # ── TEAM — Collective Intelligence ──
+    try:
+        team = {"dimensions": {}, "overall": 0, "title": "Brotherhood"}
+        agents = ["garves", "soren", "atlas", "shelby", "lisa", "robotox"]
+        agent_scores = {a: result.get(a, {}).get("overall", 0) for a in agents}
+
+        # 1. Collective Knowledge — sum of all agents' knowledge/depth
+        # Weighted: Atlas (research powerhouse) contributes most
+        atlas_depth = result.get("atlas", {}).get("dimensions", {}).get("Knowledge Depth", 0)
+        garves_know = result.get("garves", {}).get("dimensions", {}).get("Market Knowledge", 0)
+        soren_brand = result.get("soren", {}).get("dimensions", {}).get("Brand Voice", 0)
+        shelby_aware = result.get("shelby", {}).get("dimensions", {}).get("Team Awareness", 0)
+        lisa_plat = result.get("lisa", {}).get("dimensions", {}).get("Platform Knowledge", 0)
+        robotox_cov = result.get("robotox", {}).get("dimensions", {}).get("Coverage", 0)
+        collective_knowledge = int((atlas_depth * 0.3 + garves_know * 0.2 + soren_brand * 0.15 +
+                                    shelby_aware * 0.15 + lisa_plat * 0.1 + robotox_cov * 0.1))
+        team["dimensions"]["Collective Knowledge"] = min(100, collective_knowledge)
+
+        # 2. Coordination — how well agents communicate and sync
+        shelby_comm = result.get("shelby", {}).get("dimensions", {}).get("Communication", 0)
+        shelby_sched = result.get("shelby", {}).get("dimensions", {}).get("Scheduling", 0)
+        atlas_coverage = result.get("atlas", {}).get("dimensions", {}).get("Agent Coverage", 0)
+        coordination = int((shelby_comm * 0.35 + shelby_sched * 0.25 + atlas_coverage * 0.4))
+        team["dimensions"]["Coordination"] = min(100, coordination)
+
+        # 3. Performance — execution quality across all agents
+        garves_acc = result.get("garves", {}).get("dimensions", {}).get("Accuracy", 0)
+        soren_prod = result.get("soren", {}).get("dimensions", {}).get("Productivity", 0)
+        atlas_quality = result.get("atlas", {}).get("dimensions", {}).get("Research Quality", 0)
+        shelby_task = result.get("shelby", {}).get("dimensions", {}).get("Task Management", 0)
+        lisa_disc = result.get("lisa", {}).get("dimensions", {}).get("Posting Discipline", 0)
+        robotox_det = result.get("robotox", {}).get("dimensions", {}).get("Detection", 0)
+        performance = int((garves_acc + soren_prod + atlas_quality + shelby_task + lisa_disc + robotox_det) / 6)
+        team["dimensions"]["Performance"] = min(100, performance)
+
+        # 4. Autonomy — how much runs without human intervention
+        robotox_fix = result.get("robotox", {}).get("dimensions", {}).get("Auto-Fix", 0)
+        atlas_synth = result.get("atlas", {}).get("dimensions", {}).get("Synthesis", 0)
+        atlas_lr = result.get("atlas", {}).get("dimensions", {}).get("Learning Rate", 0)
+        garves_risk = result.get("garves", {}).get("dimensions", {}).get("Risk Management", 0)
+        autonomy = int((robotox_fix * 0.25 + atlas_synth * 0.25 + atlas_lr * 0.25 + garves_risk * 0.25))
+        team["dimensions"]["Autonomy"] = min(100, autonomy)
+
+        # 5. Adaptability — how fast the system evolves
+        garves_adapt = result.get("garves", {}).get("dimensions", {}).get("Adaptability", 0)
+        soren_trend = result.get("soren", {}).get("dimensions", {}).get("Trend Awareness", 0)
+        lisa_strat = result.get("lisa", {}).get("dimensions", {}).get("Strategy Depth", 0)
+        shelby_dec = result.get("shelby", {}).get("dimensions", {}).get("Decision Quality", 0)
+        adaptability = int((garves_adapt * 0.3 + soren_trend * 0.2 + lisa_strat * 0.2 + shelby_dec * 0.3))
+        team["dimensions"]["Adaptability"] = min(100, adaptability)
+
+        team_scores = list(team["dimensions"].values())
+        team["overall"] = int(sum(team_scores) / len(team_scores)) if team_scores else 0
+        team["agent_scores"] = agent_scores
+        result["team"] = team
+    except Exception:
+        result["team"] = {"dimensions": {}, "overall": 0, "title": "Brotherhood", "agent_scores": {}}
+
+    return jsonify(result)
+
+
+@app.route("/api/broadcasts")
+def api_broadcasts():
+    """Recent broadcasts with acknowledgment status."""
+    try:
+        sys.path.insert(0, str(SHELBY_ROOT_DIR))
+        from core.broadcast import get_recent_broadcasts, check_acknowledgments
+
+        broadcasts = get_recent_broadcasts(limit=15)
+        result = []
+        for bc in reversed(broadcasts):
+            bc_id = bc.get("id", "")
+            acks = check_acknowledgments(bc_id) if bc_id else {}
+            result.append({
+                "id": bc_id,
+                "message": bc.get("message", ""),
+                "priority": bc.get("priority", "normal"),
+                "from": bc.get("from", "shelby"),
+                "timestamp": bc.get("timestamp", ""),
+                "delivered_to": bc.get("delivered_to", []),
+                "acked": acks.get("acked", []),
+                "pending": acks.get("pending", []),
+            })
+        return jsonify({"broadcasts": result})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200], "broadcasts": []})
+
+
+@app.route("/api/garves/broadcasts")
+def api_garves_broadcasts():
+    """Process and acknowledge broadcasts for Garves."""
+    try:
+        sys.path.insert(0, str(SHELBY_ROOT_DIR))
+        from core.broadcast import get_unread_broadcasts, acknowledge_broadcast
+
+        garves_data = DATA_DIR
+        unread = get_unread_broadcasts(garves_data)
+        for bc in unread:
+            acknowledge_broadcast("garves", bc.get("id", ""), garves_data)
+
+        return jsonify({"processed": len(unread), "agent": "garves"})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@app.route("/api/soren/broadcasts")
+def api_soren_broadcasts():
+    """Process and acknowledge broadcasts for Soren."""
+    try:
+        sys.path.insert(0, str(SHELBY_ROOT_DIR))
+        from core.broadcast import get_unread_broadcasts, acknowledge_broadcast
+
+        soren_data = SOREN_ROOT / "data"
+        unread = get_unread_broadcasts(soren_data)
+        for bc in unread:
+            acknowledge_broadcast("soren", bc.get("id", ""), soren_data)
+
+        return jsonify({"processed": len(unread), "agent": "soren"})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@app.route("/api/lisa/broadcasts")
+def api_lisa_broadcasts():
+    """Process and acknowledge broadcasts for Lisa."""
+    try:
+        sys.path.insert(0, str(SHELBY_ROOT_DIR))
+        from core.broadcast import get_unread_broadcasts, acknowledge_broadcast
+
+        lisa_data = MERCURY_ROOT / "data"
+        unread = get_unread_broadcasts(lisa_data)
+        for bc in unread:
+            acknowledge_broadcast("lisa", bc.get("id", ""), lisa_data)
+
+        return jsonify({"processed": len(unread), "agent": "lisa"})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
 if __name__ == "__main__":
     import webbrowser
     import threading
@@ -2146,6 +2748,30 @@ if __name__ == "__main__":
                 print("[Dashboard] Atlas background research loop auto-started")
         except Exception as e:
             print(f"[Dashboard] Atlas auto-start failed: {e}")
+
+    # Auto-process broadcasts for agents without active loops (Soren, Lisa, Garves)
+    def _broadcast_processor():
+        """Periodically ack broadcasts for agents that don't have their own loops."""
+        import time as _time
+        _time.sleep(10)  # Wait for app to start
+        while True:
+            try:
+                sys.path.insert(0, str(SHELBY_ROOT_DIR))
+                from core.broadcast import get_unread_broadcasts, acknowledge_broadcast
+
+                for agent, data_dir in [
+                    ("garves", DATA_DIR),
+                    ("soren", SOREN_ROOT / "data"),
+                    ("lisa", MERCURY_ROOT / "data"),
+                ]:
+                    unread = get_unread_broadcasts(data_dir)
+                    for bc in unread:
+                        acknowledge_broadcast(agent, bc.get("id", ""), data_dir)
+            except Exception:
+                pass
+            _time.sleep(30)
+
+    threading.Thread(target=_broadcast_processor, daemon=True, name="broadcast-ack").start()
 
     threading.Timer(2.0, _auto_start_atlas).start()
     threading.Timer(1.0, lambda: webbrowser.open("http://localhost:8877")).start()

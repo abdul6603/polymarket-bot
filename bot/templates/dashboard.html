@@ -6,12 +6,24 @@
 <title>Command Center</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <link rel="stylesheet" href="/static/dashboard.css">
 </head>
 <body>
-<div class="shell">
+<nav class="sidebar">
+  <div class="sidebar-brand">CC</div>
+  <button class="sidebar-btn active" data-tab="overview" onclick="switchTab('overview')" title="Overview">OV</button>
+  <button class="sidebar-btn" data-tab="garves" onclick="switchTab('garves')" title="Garves">GA</button>
+  <button class="sidebar-btn" data-tab="soren" onclick="switchTab('soren')" title="Soren">SO</button>
+  <button class="sidebar-btn" data-tab="shelby" onclick="switchTab('shelby')" title="Shelby">SH</button>
+  <button class="sidebar-btn" data-tab="atlas" onclick="switchTab('atlas')" title="Atlas">AT</button>
+  <button class="sidebar-btn" data-tab="mercury" onclick="switchTab('mercury')" title="Lisa">LI</button>
+  <button class="sidebar-btn" data-tab="sentinel" onclick="switchTab('sentinel')" title="Robotox">RO</button>
+  <div class="sidebar-spacer"></div>
+  <button class="sidebar-btn" data-tab="chat" onclick="switchTab('chat')" title="Chat">CH</button>
+</nav>
 
+<main class="main">
   <header class="header">
     <div class="header-left">
       <h1 class="header-title">Command Center</h1>
@@ -20,19 +32,9 @@
     <div class="header-right">Last update: <span id="last-update">--:--:--</span></div>
   </header>
 
-  <nav class="tab-bar">
-    <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview')"><span class="tab-dot"></span> Overview</button>
-    <button class="tab-btn" data-tab="garves" onclick="switchTab('garves')"><span class="tab-dot"></span> Garves</button>
-    <button class="tab-btn" data-tab="soren" onclick="switchTab('soren')"><span class="tab-dot"></span> Soren</button>
-    <button class="tab-btn" data-tab="shelby" onclick="switchTab('shelby')"><span class="tab-dot"></span> Shelby</button>
-    <button class="tab-btn" data-tab="atlas" onclick="switchTab('atlas')"><span class="tab-dot"></span> Atlas</button>
-    <button class="tab-btn" data-tab="mercury" onclick="switchTab('mercury')"><span class="tab-dot"></span> Lisa</button>
-    <button class="tab-btn" data-tab="sentinel" onclick="switchTab('sentinel')"><span class="tab-dot"></span> Robotox</button>
-    <button class="tab-btn" data-tab="chat" onclick="switchTab('chat')"><span class="tab-dot"></span> Chat</button>
-  </nav>
-
   <!-- OVERVIEW -->
   <div class="tab-content active" id="tab-overview">
+    <div id="team-intelligence" class="team-intel-panel"></div>
     <h2 class="section-title">Agent Status</h2>
     <div class="grid-auto" id="agent-grid"></div>
     <div class="section-spacer">
@@ -50,6 +52,7 @@
 
   <!-- GARVES -->
   <div class="tab-content" id="tab-garves">
+    <div id="intel-garves" class="intel-meter" style="margin-bottom:12px;"></div>
     <div class="agent-widget-row" id="garves-widgets">
       <div class="widget-badge" id="garves-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
       <button class="btn" onclick="openKPIModal(&apos;garves&apos;)" style="font-size:0.72rem;">Performance KPIs</button>
@@ -89,6 +92,7 @@
 
   <!-- SOREN -->
   <div class="tab-content" id="tab-soren">
+    <div id="intel-soren" class="intel-meter" style="margin-bottom:12px;"></div>
     <div class="agent-widget-row" id="soren-widgets">
       <div class="widget-badge" id="soren-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
       <button class="btn" onclick="openKPIModal(&apos;soren&apos;)" style="font-size:0.72rem;">Performance KPIs</button>
@@ -101,6 +105,7 @@
       <div class="stat-card" data-accent="success"><div class="stat-value" id="soren-posted">--</div><div class="stat-label">Posted</div></div>
       <div class="stat-card" data-accent="error"><div class="stat-value" id="soren-failed">--</div><div class="stat-label">Failed</div></div>
     </div>
+    <div id="soren-freshness" style="margin-bottom:8px;"></div>
     <div class="section-spacer">
       <h2 class="section-title" data-accent="soren">Content Queue</h2>
       <div class="flex flex-col gap-3" id="soren-queue"><div class="queue-item"><div class="queue-item-header"><span class="queue-item-title">Loading...</span></div></div></div>
@@ -109,6 +114,7 @@
 
   <!-- SHELBY -->
   <div class="tab-content" id="tab-shelby">
+    <div id="intel-shelby" class="intel-meter" style="margin-bottom:12px;"></div>
     <!-- Stat Cards Row -->
     <div class="grid-4">
       <div class="stat-card" data-accent="shelby"><div class="stat-value" id="shelby-agents-online">--</div><div class="stat-label">Agents Online</div></div>
@@ -117,15 +123,13 @@
       <div class="stat-card" data-accent="success"><div class="stat-value" id="shelby-health-badge">--</div><div class="stat-label">System Health</div></div>
     </div>
 
-    <!-- Telegram + Actions Row -->
+    <!-- Actions Row -->
     <div class="mt-4 flex items-center gap-3 flex-wrap">
-      <div class="telegram-status" style="background:rgba(255,170,0,0.08);border:1px solid rgba(255,170,0,0.15);">
-        <span class="telegram-dot" id="telegram-dot" style="background:var(--warning);"></span>
-        <span id="telegram-status-text" style="color:var(--warning);">Not Connected</span>
+      <div class="telegram-status" style="background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.15);">
+        <span class="telegram-dot" id="telegram-dot" style="background:var(--success);"></span>
+        <span id="telegram-status-text" style="color:var(--success);">Telegram Connected</span>
       </div>
-      <button class="btn btn-warning" onclick="openTelegramModal()">Connect Telegram</button>
       <button class="btn btn-primary" onclick="exportAgentReport()">Download Report</button>
-      <button class="btn btn-success" onclick="openHireModal()">Hire New Agent</button>
     </div>
 
     <!-- Activity Brief -->
@@ -178,6 +182,7 @@
 
   <!-- ATLAS -->
   <div class="tab-content" id="tab-atlas">
+    <div id="intel-atlas" class="intel-meter" style="margin-bottom:12px;"></div>
     <div class="agent-widget-row" id="atlas-widgets">
       <div class="widget-badge" id="atlas-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
       <button class="btn" onclick="openKPIModal(&apos;atlas&apos;)" style="font-size:0.72rem;">Performance KPIs</button>
@@ -187,9 +192,12 @@
     <div class="grid-4">
       <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-uptime" style="font-size:1rem;">--</div><div class="stat-label">Uptime</div></div>
       <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-observations">--</div><div class="stat-label">Observations</div></div>
+      <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-learnings">--</div><div class="stat-label">Lessons Learned</div></div>
       <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-improvements">--</div><div class="stat-label">Improvements</div></div>
       <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-cycles">--</div><div class="stat-label">Cycles</div></div>
+      <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-quality-score">--</div><div class="stat-label">Research Quality</div></div>
     </div>
+    <div id="atlas-cost-panel" style="margin-bottom:12px;padding:12px 16px;background:var(--surface-secondary);border-radius:8px;"></div>
     <div class="section-spacer">
       <h2 class="section-title" data-accent="atlas">Actions</h2>
       <div class="btn-group">
@@ -200,8 +208,10 @@
         <button class="btn" onclick="atlasAnalyze('mercury')" style="color:var(--agent-mercury);">Analyze Lisa</button>
         <button class="btn btn-warning" onclick="atlasSuggestImprovements()">Improvements</button>
         <button class="btn" onclick="atlasAcknowledgeImprovements()" style="color:var(--text-secondary);">Dismiss All</button>
+        <button class="btn" onclick="atlasLiveResearch()" style="color:var(--agent-atlas);">Live Research</button>
       </div>
     </div>
+    <div id="atlas-live-research" style="display:none;margin-bottom:12px;padding:12px 16px;background:var(--surface-secondary);border-radius:8px;max-height:400px;overflow-y:auto;"></div>
     <div class="section-spacer">
       <h2 class="section-title" data-accent="atlas">Report / Analysis</h2>
       <div class="report-container" id="atlas-report">Run an analysis or generate a report to see results here.</div>
@@ -214,6 +224,7 @@
 
   <!-- MERCURY -->
   <div class="tab-content" id="tab-mercury">
+    <div id="intel-lisa" class="intel-meter" style="margin-bottom:12px;"></div>
     <div class="agent-widget-row" id="mercury-widgets">
       <div class="widget-badge" id="mercury-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
       <button class="btn" onclick="openKPIModal(&apos;mercury&apos;)" style="font-size:0.72rem;">Performance KPIs</button>
@@ -281,6 +292,7 @@
 
   <!-- ROBOTOX -->
   <div class="tab-content" id="tab-sentinel">
+    <div id="intel-robotox" class="intel-meter" style="margin-bottom:12px;"></div>
     <div class="agent-widget-row" id="sentinel-widgets">
       <div class="widget-badge" id="sentinel-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
       <button class="btn" onclick="openKPIModal(&apos;sentinel&apos;)" style="font-size:0.72rem;">Performance KPIs</button>
@@ -293,6 +305,7 @@
       <div class="stat-card" data-accent="success"><div class="stat-value" id="sentinel-total-fixes">--</div><div class="stat-label">Fixes</div></div>
       <div class="stat-card" data-accent="sentinel"><div class="stat-value" id="sentinel-last-scan">--</div><div class="stat-label">Last Scan</div></div>
     </div>
+    <div id="sentinel-error-trend" style="margin-bottom:8px;padding:8px 12px;background:var(--surface-secondary);border-radius:8px;"></div>
     <div class="section-spacer">
       <h2 class="section-title" data-accent="sentinel">Actions</h2>
       <div class="btn-group">
@@ -361,60 +374,8 @@
     </div>
   </div>
 
-  <!-- Hire Agent Modal -->
-  <div class="generic-modal" id="hire-modal">
-    <div class="generic-modal-inner" style="position:relative;">
-      <div class="modal-title" style="color:var(--agent-shelby);">Hire New Agent</div>
-      <div class="flex flex-col gap-4">
-        <div>
-          <label style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:var(--space-1);">AGENT NAME</label>
-          <input type="text" class="input" id="hire-name" placeholder="e.g. phoenix" />
-        </div>
-        <div>
-          <label style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:var(--space-1);">ROLE</label>
-          <select class="input" id="hire-role">
-            <option value="General">General</option>
-            <option value="Trading">Trading</option>
-            <option value="Content">Content</option>
-            <option value="Analytics">Analytics</option>
-            <option value="Social Media">Social Media</option>
-            <option value="Developer">Developer</option>
-            <option value="Monitor">Monitor</option>
-            <option value="Research">Research</option>
-          </select>
-        </div>
-        <div>
-          <label style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-muted);display:block;margin-bottom:var(--space-1);">DESCRIPTION</label>
-          <textarea class="input" id="hire-desc" rows="3" placeholder="What will this agent do?"></textarea>
-        </div>
-        <div id="hire-result" style="display:none;font-family:var(--font-mono);font-size:0.78rem;padding:var(--space-3);border-radius:var(--radius-sm);"></div>
-      </div>
-      <div style="margin-top:var(--space-6);display:flex;gap:var(--space-2);justify-content:flex-end;">
-        <button class="btn btn-success" onclick="submitHire()">Create Agent</button>
-        <button class="btn btn-error" onclick="closeHireModal()">Cancel</button>
-      </div>
-    </div>
-  </div>
 
-  <!-- Telegram Modal -->
-  <div class="generic-modal" id="telegram-modal">
-    <div class="generic-modal-inner" style="position:relative;">
-      <div class="modal-title" style="color:var(--agent-shelby);">Connect Telegram</div>
-      <div style="font-family:var(--font-mono);font-size:0.78rem;color:var(--text-secondary);line-height:1.7;">
-        <p style="margin-bottom:var(--space-4);">Telegram integration lets Shelby send you notifications, daily briefs, and alerts directly to your phone.</p>
-        <p style="margin-bottom:var(--space-4);color:var(--warning);">This feature is coming soon. The integration will be wired in a future update.</p>
-        <div style="padding:var(--space-4);background:var(--surface-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);">
-          <div style="color:var(--text-muted);font-size:0.72rem;margin-bottom:var(--space-2);">STATUS</div>
-          <div style="color:var(--warning);">Not Connected</div>
-        </div>
-      </div>
-      <div style="margin-top:var(--space-6);text-align:right;">
-        <button class="btn btn-error" onclick="closeTelegramModal()">Close</button>
-      </div>
-    </div>
-  </div>
-
-</div>
+</main>
 
 <script src="/static/dashboard.js"></script>
 </body>
