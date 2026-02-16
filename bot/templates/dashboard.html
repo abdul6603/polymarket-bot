@@ -12,15 +12,15 @@
 <body>
 <nav class="sidebar">
   <div class="sidebar-brand">CC</div>
-  <button class="sidebar-btn active" data-tab="overview" onclick="switchTab('overview')" title="Overview">OV</button>
-  <button class="sidebar-btn" data-tab="garves" onclick="switchTab('garves')" title="Garves">GA</button>
-  <button class="sidebar-btn" data-tab="soren" onclick="switchTab('soren')" title="Soren">SO</button>
-  <button class="sidebar-btn" data-tab="shelby" onclick="switchTab('shelby')" title="Shelby">SH</button>
-  <button class="sidebar-btn" data-tab="atlas" onclick="switchTab('atlas')" title="Atlas">AT</button>
-  <button class="sidebar-btn" data-tab="mercury" onclick="switchTab('mercury')" title="Lisa">LI</button>
-  <button class="sidebar-btn" data-tab="sentinel" onclick="switchTab('sentinel')" title="Robotox">RO</button>
+  <button class="sidebar-btn active" data-tab="overview" onclick="switchTab('overview')" title="Overview">Overview</button>
+  <button class="sidebar-btn" data-tab="garves" onclick="switchTab('garves')" title="Garves">Garves</button>
+  <button class="sidebar-btn" data-tab="soren" onclick="switchTab('soren')" title="Soren">Soren</button>
+  <button class="sidebar-btn" data-tab="shelby" onclick="switchTab('shelby')" title="Shelby">Shelby</button>
+  <button class="sidebar-btn" data-tab="atlas" onclick="switchTab('atlas')" title="Atlas">Atlas</button>
+  <button class="sidebar-btn" data-tab="mercury" onclick="switchTab('mercury')" title="Lisa">Lisa</button>
+  <button class="sidebar-btn" data-tab="sentinel" onclick="switchTab('sentinel')" title="Robotox">Robotox</button>
   <div class="sidebar-spacer"></div>
-  <button class="sidebar-btn" data-tab="chat" onclick="switchTab('chat')" title="Chat">CH</button>
+  <button class="sidebar-btn" data-tab="chat" onclick="switchTab('chat')" title="Chat">Chat</button>
 </nav>
 
 <main class="main">
@@ -197,6 +197,7 @@
       <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-cycles">--</div><div class="stat-label">Cycles</div></div>
       <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-quality-score">--</div><div class="stat-label">Research Quality</div></div>
     </div>
+    <div id="atlas-bg-status" class="glass-card" style="margin-top:12px;margin-bottom:12px;"></div>
     <div id="atlas-cost-panel" style="margin-bottom:12px;padding:12px 16px;background:var(--surface-secondary);border-radius:8px;"></div>
     <div class="section-spacer">
       <h2 class="section-title" data-accent="atlas">Actions</h2>

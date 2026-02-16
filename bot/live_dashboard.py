@@ -1235,6 +1235,53 @@ def api_atlas_summarize():
         return jsonify({"error": str(e)[:200]}), 500
 
 
+@app.route("/api/atlas/background/status")
+def api_atlas_bg_status():
+    """Get Atlas background loop status — state, cycles, last cycle, errors, research stats."""
+    atlas = get_atlas()
+    if not atlas:
+        return jsonify({"running": False, "state": "offline", "error": "Atlas not available"})
+    try:
+        bg = atlas.background
+        status = bg.get_status()
+        research = status.get("research_stats", {})
+        data_feed = status.get("data_feed", {})
+        # Build a clean response
+        state = status.get("state", "idle")
+        state_labels = {
+            "idle": "Idle",
+            "running": "Waiting for next cycle",
+            "researching": "Researching agents",
+            "feeding_agents": "Feeding data to agents",
+            "teaching_lisa": "Teaching Lisa",
+            "analyzing": "Analyzing agents",
+            "spying": "Competitor intelligence",
+            "v2_anomaly_detection": "Anomaly detection",
+            "v2_experiment_runner": "Running experiments",
+            "v2_onchain": "On-chain analysis",
+            "generating_improvements": "Generating improvements",
+            "summarizing_kb": "Summarizing knowledge base",
+            "v2_report_delivery": "Delivering reports",
+            "stopped": "Stopped",
+        }
+        return jsonify({
+            "running": status.get("running", False),
+            "state": state,
+            "state_label": state_labels.get(state, state.replace("_", " ").title()),
+            "cycles": status.get("cycles", 0),
+            "started_at": status.get("started_at", None),
+            "last_cycle": status.get("last_cycle", None),
+            "last_findings": status.get("last_findings", 0),
+            "last_error": status.get("last_error", None),
+            "total_researches": research.get("total_researches", 0),
+            "unique_urls": research.get("seen_urls", 0) if isinstance(research.get("seen_urls"), int) else len(research.get("seen_urls", [])),
+            "data_feed_active": data_feed.get("active", False),
+            "data_feed_sources": data_feed.get("sources_count", 0),
+        })
+    except Exception as e:
+        return jsonify({"running": False, "state": "error", "error": str(e)[:200]})
+
+
 @app.route("/api/atlas/background/start", methods=["POST"])
 def api_atlas_bg_start():
     """Start Atlas background research loop."""

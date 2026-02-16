@@ -505,6 +505,80 @@ function renderAtlas(data) {
   }
 }
 
+async function loadAtlasBgStatus() {
+  var el = document.getElementById('atlas-bg-status');
+  if (!el) return;
+  try {
+    var resp = await fetch('/api/atlas/background/status');
+    var d = await resp.json();
+    var running = d.running;
+    var stateColor = running ? (d.state === 'running' ? 'var(--success)' : 'var(--agent-atlas)') : 'var(--error)';
+    var dotCls = running ? (d.state === 'running' ? 'online' : 'idle') : 'offline';
+
+    var html = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">';
+    html += '<span class="status-dot ' + dotCls + '"></span>';
+    html += '<span style="font-family:var(--font-heading);font-size:0.82rem;font-weight:600;color:' + stateColor + ';">' + esc(d.state_label || d.state || 'Unknown') + '</span>';
+    if (running && d.state !== 'running') {
+      html += '<span class="badge badge-info" style="animation:pulse-glow 1.5s ease-in-out infinite;">Working</span>';
+    }
+    html += '</div>';
+
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;">';
+
+    html += '<div style="padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;">';
+    html += '<div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;">Cycles</div>';
+    html += '<div style="font-family:var(--font-mono);font-size:1rem;font-weight:600;color:var(--agent-atlas);">' + (d.cycles || 0) + '</div></div>';
+
+    html += '<div style="padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;">';
+    html += '<div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;">Researches</div>';
+    html += '<div style="font-family:var(--font-mono);font-size:1rem;font-weight:600;color:var(--agent-atlas);">' + (d.total_researches || 0) + '</div></div>';
+
+    html += '<div style="padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;">';
+    html += '<div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;">URLs Seen</div>';
+    html += '<div style="font-family:var(--font-mono);font-size:1rem;font-weight:600;color:var(--agent-atlas);">' + (d.unique_urls || 0) + '</div></div>';
+
+    html += '<div style="padding:6px 10px;background:var(--surface);border:1px solid var(--border);border-radius:6px;">';
+    html += '<div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;">Last Findings</div>';
+    html += '<div style="font-family:var(--font-mono);font-size:1rem;font-weight:600;color:var(--agent-atlas);">' + (d.last_findings || 0) + '</div></div>';
+
+    html += '</div>';
+
+    if (d.last_cycle) {
+      var ago = Math.round((Date.now() - new Date(d.last_cycle).getTime()) / 60000);
+      html += '<div style="margin-top:8px;font-size:0.72rem;color:var(--text-muted);">Last cycle: ' + ago + ' min ago';
+      if (d.started_at) {
+        var startedAgo = Math.round((Date.now() - new Date(d.started_at).getTime()) / 3600000);
+        html += ' &middot; Running for ' + (startedAgo >= 1 ? startedAgo + 'h' : '<1h');
+      }
+      html += '</div>';
+    }
+
+    if (d.last_error) {
+      html += '<div style="margin-top:6px;font-size:0.72rem;color:var(--error);padding:4px 8px;background:rgba(255,68,68,0.06);border-radius:4px;">Last error: ' + esc(d.last_error) + '</div>';
+    }
+
+    html += '<div style="margin-top:8px;display:flex;gap:6px;">';
+    if (!running) {
+      html += '<button class="btn btn-success" onclick="atlasStartBg()" style="font-size:0.7rem;">Start Background</button>';
+    } else {
+      html += '<button class="btn btn-error" onclick="atlasStopBg()" style="font-size:0.7rem;">Stop Background</button>';
+    }
+    html += '</div>';
+
+    el.innerHTML = html;
+  } catch (e) {
+    el.innerHTML = '<div class="text-muted" style="padding:8px;">Background status unavailable</div>';
+  }
+}
+
+async function atlasStartBg() {
+  try { await fetch('/api/atlas/background/start', {method:'POST'}); loadAtlasBgStatus(); } catch(e) {}
+}
+
+async function atlasStopBg() {
+  try { await fetch('/api/atlas/background/stop', {method:'POST'}); loadAtlasBgStatus(); } catch(e) {}
+}
+
 async function atlasLiveResearch() {
   var el = document.getElementById('atlas-live-research');
   if (el.style.display !== 'none') { el.style.display = 'none'; return; }
@@ -1445,6 +1519,7 @@ async function refresh() {
         atlasData.costs = await costResp.json();
       } catch(e) {}
       renderAtlas(atlasData);
+      loadAtlasBgStatus();
       loadCompetitorIntel();
       loadAgentLearning('atlas');
     } else if (currentTab === 'mercury') {
