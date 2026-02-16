@@ -1,1 +1,95 @@
-{"agent": "lisa", "notes": []}
+{
+  "agent": "lisa",
+  "notes": [
+    {
+      "id": "note_posting_strategy_001",
+      "topic": "Cross-Platform Posting Schedule",
+      "content": "DAILY SCHEDULE (ET): 7-8AM X post #1 (morning grinders) | 10-11AM IG Reel/Carousel (mid-morning peak) | 12-1PM X post #2 (lunch scroll) | 7-8PM X post #3 (evening engagement) | 8-10PM TikTok video (evening peak). STAGGER same content 4-8 hours between platforms. NEVER post same thing at same time. WEEKLY: TikTok 5-7 videos, IG 3-5 Reels + 2-3 Carousels + daily Stories, X 14-21 posts + 2-3 threads. Semi-auto mode: queue posts, send Telegram preview to Jordan, wait for approve/reject.",
+      "type": "command",
+      "tags": ["scheduling", "cross-platform"],
+      "created_at": "2026-02-16T18:30:00.000000-05:00",
+      "source": "atlas-research"
+    },
+    {
+      "id": "note_hashtag_strategy_002",
+      "topic": "Hashtag Strategy Per Platform",
+      "content": "INSTAGRAM (3-5 tags): 1 niche-specific (#stoicmindset, #darkmotivation), 1 medium-competition (#disciplineoverfeeling, #silentstrength), 1 broader (#motivation, #selfimprovement), 1 community (#stoictok, #wolfpack), 1 rotating/trending. Rotate 5-6 sets, never same set twice in a row. TIKTOK (4-6 tags): 1 broad (#fyp), 1-2 niche (#stoicism, #darkmotivation), 1-2 medium (#mindsetshift, #mentalstrength), 1 trending. X (1-2 tags MAX): Only when joining active conversation. Keywords in post body work better than hashtags. Never start tweets with hashtags.",
+      "type": "memory",
+      "tags": ["hashtags", "strategy"],
+      "created_at": "2026-02-16T18:30:01.000000-05:00",
+      "source": "atlas-research"
+    },
+    {
+      "id": "note_platform_adaptation_003",
+      "topic": "Content Adaptation Per Platform",
+      "content": "ONE CORE IDEA, THREE NATIVE EXECUTIONS. TikTok: Raw, fast, 30-60s, trending sound optional, short punchy caption 1-2 lines, hook in video not caption. Instagram Reel: Slightly more polished, 15-30s sweet spot, original audio preferred, keyword-rich caption 150-300 words, branded text overlay. IG Carousel: 7-10 slides, hook on slide 1+2, save-worthy reference material. X: Razor-sharp text, 70-100 chars for quick reads, threads for depth (7-tweet framework). NEVER cross-post with TikTok watermark on IG (60-80% reach death). Export clean files from editor for each platform.",
+      "type": "memory",
+      "tags": ["adaptation", "cross-platform"],
+      "created_at": "2026-02-16T18:30:02.000000-05:00",
+      "source": "atlas-research"
+    },
+    {
+      "id": "note_x_posting_rules_004",
+      "topic": "X (Twitter) Posting Rules",
+      "content": "API: Free tier = 500 posts/month (enough for 2-4/day). Use tweepy + OAuth 1.0a. SAFE AUTOMATION: Max 15-20 tweets/day, space 30-60 min between automated posts, vary content structure, randomize posting time +/-5-15 min, never automate replies/likes. ACCOUNT WARMING: Week 1 = 2-3 posts/day manual, Week 2 = 4-5 with light automation, Week 3 = 5-7, Week 4+ = full schedule. SHADOWBAN TRIGGERS: Mass follow/unfollow, burst posting 5+ rapid, duplicate content, external links in main tweet, 3+ hashtags, combative tone (Grok monitors sentiment).",
+      "type": "command",
+      "tags": ["x-rules", "automation"],
+      "created_at": "2026-02-16T18:30:03.000000-05:00",
+      "source": "atlas-research"
+    },
+    {
+      "id": "note_ig_posting_rules_005",
+      "topic": "Instagram Posting Rules",
+      "content": "API: Graph API requires FB Business Page linked to IG Business/Creator account. Two-step: create media container (POST /{ig-user-id}/media) then publish (POST /{ig-user-id}/media_publish). All media must be at PUBLIC URLs (not local files). Long-lived tokens last 60 days (auto-refresh after 24h). Rate limit: 25 posts/day. SHADOWBAN PREVENTION: No bots, no auto-follow tools, engage at human pace, 3-5 verified hashtags only, original content only, consistent schedule, check for banned hashtags before using.",
+      "type": "command",
+      "tags": ["ig-rules", "automation"],
+      "created_at": "2026-02-16T18:30:04.000000-05:00",
+      "source": "atlas-research"
+    },
+    {
+      "id": "note_tiktok_posting_rules_006",
+      "topic": "TikTok Posting Rules",
+      "content": "API: Content Posting API requires formal app approval (2-4 weeks). Direct Post publishes immediately. Upload to Drafts as fallback. Rate limit: 6 requests/min for posting, ~15 posts/day per account. POST-APPROVAL AUDIT required before content is publicly visible. File upload: chunked (5-64MB chunks). OAuth 2.0 per-user authorization. GROWTH: Post 1-2x daily (3-5x daily first 2 weeks to train algorithm). Reply to EVERY comment in first hour. Need 70%+ completion rate for viral distribution.",
+      "type": "command",
+      "tags": ["tiktok-rules", "automation"],
+      "created_at": "2026-02-16T18:30:05.000000-05:00",
+      "source": "atlas-research"
+    },
+    {
+      "id": "note_growth_playbook_007",
+      "topic": "First 90 Days Growth Playbook",
+      "content": "PHASE 1 (Days 1-30): Establish brand, build content engine, target 500-1K followers. Post 2x/day TikTok, 1x/day IG, 3x/day X + 1 thread every 2 days. 30 genuine comments/day on niche accounts. Reply to every comment. PHASE 2 (Days 31-60): Hit 2K-5K followers. Double down on what works. 2-3 IG collabs, 5-10 TikTok duets/stitches. Launch DM funnel on IG ('Comment DISCIPLINE and I'll DM you the guide'). PHASE 3 (Days 61-90): Hit 5K-10K total. Sustainable cadence. Cross-promote between platforms. A/B test everything. Start repurposing top content.",
+      "type": "memory",
+      "tags": ["growth", "playbook"],
+      "created_at": "2026-02-16T18:30:06.000000-05:00",
+      "source": "atlas-research"
+    },
+    {
+      "id": "note_engagement_strategy_008",
+      "topic": "Engagement Strategy — Community Building",
+      "content": "DAILY 30-MIN ROUTINE: 0-5min reply to YOUR comments/DMs (first hour after posting critical). 5-15min comment on 5-10 niche accounts (10K-500K followers). 15-25min reply strategy on X (3-5 replies to big accounts' posts within first 1-2 hours). 25-30min IG Stories engagement. SOREN VOICE IN REPLIES: 'Good. Now what are you going to do about it?' / 'The question isn't whether you agree. The question is whether you'll act.' COMMUNITY TACTICS: Weekly challenge posts, 'Wolf Pack' identity for followers, Story Q&A sessions, pin best comment replies.",
+      "type": "memory",
+      "tags": ["engagement", "community"],
+      "created_at": "2026-02-16T18:30:07.000000-05:00",
+      "source": "atlas-research"
+    },
+    {
+      "id": "note_cross_promotion_009",
+      "topic": "Cross-Platform Promotion Funnel",
+      "content": "TikTok-to-IG: Post TikTok teasing 'full breakdown on IG @soren.era'. Use TikTok for raw hooks, IG for deeper lesson. IG-to-X: End carousels with 'I tweet thoughts like this daily @soren.era on X'. Share X posts as IG Story screenshots. X-to-All: Pin tweet 'I make videos about this. Follow @soren.era on IG/TikTok'. EXCLUSIVE CONTENT per platform: TikTok = raw unfiltered vlog style, IG = deep-dive carousels + cinematic Reels, X = daily stoic principles + threads + hot takes. Different value on each = follow all three.",
+      "type": "memory",
+      "tags": ["cross-promotion", "funnel"],
+      "created_at": "2026-02-16T18:30:08.000000-05:00",
+      "source": "atlas-research"
+    },
+    {
+      "id": "note_name_changes_001",
+      "topic": "Agent Name Changes",
+      "content": "IMPORTANT: Mercury is now LISA. Sentinel is now ROBOTOX. Always use correct display names.",
+      "type": "memory",
+      "tags": ["naming"],
+      "created_at": "2026-02-16T17:50:00.000000-05:00",
+      "source": "dashboard"
+    }
+  ]
+}

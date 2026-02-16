@@ -1,1 +1,77 @@
-{"agent": "soren", "notes": []}
+{
+  "agent": "soren",
+  "notes": [
+    {
+      "id": "note_x_algorithm_001",
+      "topic": "X Algorithm — How It Works (2026)",
+      "content": "X uses weighted scoring: Reply-to-reply +75, Retweet +20, Reply +13.5, Profile click +12, Bookmark +10, Dwell time +10, Like +0.5. LIKES ARE NEARLY WORTHLESS. Replies generating conversation are 150x more valuable. Engagement velocity in first 30 minutes is the single biggest factor. Grok AI now monitors tone — positive/empowering content gets wider distribution, negative/combative tone gets suppressed even with high engagement. External links = death for non-Premium accounts. X Premium gives 6x more impressions (600 vs <100).",
+      "type": "memory",
+      "tags": ["x-algorithm", "platform-knowledge"],
+      "created_at": "2026-02-16T18:30:00.000000-05:00",
+      "source": "atlas-research"
+    },
+    {
+      "id": "note_x_content_strategy_002",
+      "topic": "X Content Strategy for @soren.era",
+      "content": "CONTENT MIX: 40% entertaining/relatable (dark humor, lone wolf struggles), 30% educational (stoic principles applied), 20% inspirational (transformation, power), 10% personal (raw thoughts). FORMATS RANKED: 1) Threads (63% more impressions), 2) Native video (10x engagement), 3) Image+text (35-70% boost), 4) Text-only (punchy one-liners). POST 5-10x/day. 7-tweet thread framework: Hook > Context > Insight 1 > Insight 2 > Insight 3 > Application > CTA. Create bookmarkable content (lists, frameworks, principles). Quote tweet larger accounts with your take.",
+      "type": "memory",
+      "tags": ["x-strategy", "content"],
+      "created_at": "2026-02-16T18:30:01.000000-05:00",
+      "source": "atlas-research"
+    },
+    {
+      "id": "note_x_hooks_003",
+      "topic": "X Hooks That Work — Dark Motivation Niche",
+      "content": "HARD TRUTH OPENERS: 'Nobody is coming to save you. That's the best news you'll ever hear.' / 'The reason you're stuck isn't talent. It's this...' CONTRARIAN: 'Unpopular opinion: Motivation is a trap.' / 'The advice everyone gives is dead wrong.' CURIOSITY GAP: 'There's a reason wolves hunt alone. Read this.' / 'Marcus Aurelius wrote one line that changed everything.' DIRECT ADDRESS: 'You already know what you need to do. You're just afraid.' / 'Your silence is your power. Stop explaining yourself.' RETWEET TRIGGERS: Identity-affirming content, save-this frameworks, dark aesthetic images with text, transformation narratives.",
+      "type": "memory",
+      "tags": ["x-hooks", "content"],
+      "created_at": "2026-02-16T18:30:02.000000-05:00",
+      "source": "atlas-research"
+    },
+    {
+      "id": "note_tiktok_algorithm_004",
+      "topic": "TikTok Algorithm — How It Works (2026)",
+      "content": "Videos tested with followers first (2026 change), then cascading to larger audiences. Need 70%+ completion rate for viral distribution. SIGNAL WEIGHTS: User interactions 40-50% (watch time, completion, rewatches, shares), Video info 25-30% (captions, hashtags, sounds), User info 15-20%. HIERARCHY: Watch time > Shares > Saves > Comments > Rewatches > Follows > Likes. First 3 seconds determine 71% of retention — videos with 65%+ 3-second hold get 4-7x more impressions. Search value now a direct ranking signal.",
+      "type": "memory",
+      "tags": ["tiktok-algorithm", "platform-knowledge"],
+      "created_at": "2026-02-16T18:30:03.000000-05:00",
+      "source": "atlas-research"
+    },
+    {
+      "id": "note_ig_algorithm_005",
+      "topic": "Instagram Algorithm — How It Works (2026)",
+      "content": "THREE MOST IMPORTANT SIGNALS: 1) Watch time (highest weight across all formats), 2) Sends per reach (DM shares = #1 signal for reaching NEW audiences), 3) Likes per reach. Reels get 55% views from non-followers = best discovery format. Carousels get 1.92% engagement (highest of ANY format). Original content gets 40-60% more distribution than reposts. TikTok watermarks on IG = death sentence (60-80% reach reduction). Keywords in captions > hashtags. Alt text matters. IG is now a search engine. 3-5 hashtags max (testing 5-tag limit).",
+      "type": "memory",
+      "tags": ["ig-algorithm", "platform-knowledge"],
+      "created_at": "2026-02-16T18:30:04.000000-05:00",
+      "source": "atlas-research"
+    },
+    {
+      "id": "note_dark_motivation_format_006",
+      "topic": "Winning Dark Motivation Content Format",
+      "content": "PRIMARY FORMAT: Voiceover + cinematic footage. Deep commanding voice (Brian/ElevenLabs) + dark moody B-roll (rain, cityscapes, training montages, lone figure, storms) + bold text overlays synced to key phrases + dark color grading (desaturated, high contrast) + ambient background (heartbeat, rain, wind). SCRIPT STRUCTURE: Short rhythmic lines building emotional tension. Build to resolution/payoff. End with quotable line (drives shares). LENGTHS: TikTok 30-60s, IG Reels 15-30s (sweet spot), IG Carousels 7-10 slides. SECONDARY: Text-on-screen quotes (15-20s, designed for looping).",
+      "type": "memory",
+      "tags": ["content-format", "creative"],
+      "created_at": "2026-02-16T18:30:05.000000-05:00",
+      "source": "atlas-research"
+    },
+    {
+      "id": "note_competitive_landscape_007",
+      "topic": "Competitive Landscape — Dark Motivation Niche",
+      "content": "TOP COMPETITORS: Motiversity (800K IG, compilation speeches), Einzelganger (300K YT, lone wolf philosophy), Daily Stoic (3M IG, Ryan Holiday), Academy of Ideas (1M YT, philosophical essays), Hamza (3M YT, self-improvement for young men). WINNERS: Original content, consistent visual brand, recognizable voice, deep philosophy not surface quotes, save/share-worthy content. LOSERS: Reposted generic quotes, hustle porn without substance, no visual identity. SOREN'S EDGE: Original ElevenLabs voiceover = distinct audio brand, cinematic dark aesthetic, philosophical depth over grind cliches, A/B tested captions (built-in system).",
+      "type": "memory",
+      "tags": ["competition", "strategy"],
+      "created_at": "2026-02-16T18:30:06.000000-05:00",
+      "source": "atlas-research"
+    },
+    {
+      "id": "note_name_changes_001",
+      "topic": "Agent Name Changes",
+      "content": "IMPORTANT: Mercury is now LISA. Sentinel is now ROBOTOX. Always use correct display names.",
+      "type": "memory",
+      "tags": ["naming"],
+      "created_at": "2026-02-16T17:50:00.000000-05:00",
+      "source": "dashboard"
+    }
+  ]
+}
