@@ -478,3 +478,17 @@ def api_soren_broadcasts():
         return jsonify({"processed": len(unread), "agent": "soren"})
     except Exception as e:
         return jsonify({"error": str(e)[:200]})
+
+
+@soren_bp.route("/api/soren/competitors")
+def api_soren_competitors():
+    """Soren competitor content intelligence from Atlas."""
+    try:
+        from atlas.competitor_spy import CompetitorSpy
+        spy = CompetitorSpy()
+        latest = spy.get_soren_latest()
+        if latest:
+            return jsonify(latest)
+        return jsonify({"competitors": [], "scanned_at": None, "message": "No competitor data yet"})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})

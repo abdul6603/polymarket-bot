@@ -1903,10 +1903,12 @@ async function refresh() {
       loadDailyReports();
       loadDerivatives();
       loadAgentLearning('garves');
+      loadNewsSentiment();
     } else if (currentTab === 'soren') {
       var resp = await fetch('/api/soren');
       renderSoren(await resp.json());
       loadAgentLearning('soren');
+      loadSorenCompetitors();
     } else if (currentTab === 'shelby') {
       var resp = await fetch('/api/shelby');
       renderShelby(await resp.json());
@@ -1916,6 +1918,7 @@ async function refresh() {
       try { loadSystemInfo(); } catch(e) {}
       try { loadAssessments(); } catch(e) {}
       try { loadShelbyOnlineCount(); } catch(e) {}
+      try { loadShelbyDecisions(); } catch(e) {}
     } else if (currentTab === 'atlas') {
       var resp = await fetch('/api/atlas');
       var atlasData = await resp.json();
@@ -1928,16 +1931,20 @@ async function refresh() {
       loadAtlasBgStatus();
       loadCompetitorIntel();
       loadAgentLearning('atlas');
+      loadTradeAnalysis();
     } else if (currentTab === 'mercury') {
       var resp = await fetch('/api/mercury');
       renderMercury(await resp.json());
       loadMercuryPlan();
       loadMercuryKnowledge();
       loadAgentLearning('mercury');
+      loadLisaGoLive();
+      loadLisaCommentStats();
     } else if (currentTab === 'sentinel') {
       var resp = await fetch('/api/sentinel');
       renderSentinel(await resp.json());
       loadAgentLearning('sentinel');
+      loadRobotoxDeps();
     } else if (currentTab === 'thor') {
       loadThor();
     } else if (currentTab === 'chat') {
@@ -2577,4 +2584,326 @@ async function loadThorActivity() {
     }
     el.innerHTML = html;
   } catch(e) {}
+}
+
+// ══════════════════════════════════════════════
+// TIER 2: News Sentiment (Garves)
+// ══════════════════════════════════════════════
+async function loadNewsSentiment() {
+  try {
+    var resp = await fetch('/api/garves/news-sentiment');
+    var data = await resp.json();
+    var el = document.getElementById('garves-sentiment-grid');
+    if (!el) return;
+    var assets = data.assets || {};
+    var keys = Object.keys(assets);
+    if (keys.length === 0) {
+      el.innerHTML = '<div class="text-muted" style="padding:var(--space-4);grid-column:1/-1;text-align:center;">No sentiment data yet. Atlas will scan on next cycle.</div>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < keys.length; i++) {
+      var asset = keys[i];
+      var d = assets[asset];
+      var sentiment = (d.sentiment || 'neutral').toLowerCase();
+      var score = d.score || 0;
+      var color = sentiment === 'bullish' ? 'var(--success)' : sentiment === 'bearish' ? 'var(--error)' : 'var(--text-secondary)';
+      var icon = sentiment === 'bullish' ? '&#9650;' : sentiment === 'bearish' ? '&#9660;' : '&#9654;';
+      html += '<div class="glass-card" style="text-align:center;">';
+      html += '<div style="font-size:0.82rem;font-weight:600;margin-bottom:4px;">' + esc(asset.toUpperCase()) + '</div>';
+      html += '<div style="font-size:1.4rem;font-weight:700;color:' + color + ';">' + icon + ' ' + esc(sentiment.toUpperCase()) + '</div>';
+      html += '<div style="font-size:0.74rem;color:var(--text-secondary);margin-top:4px;">Score: ' + score.toFixed(1) + '/10</div>';
+      if (d.headlines && d.headlines.length > 0) {
+        html += '<div style="font-size:0.7rem;color:var(--text-secondary);margin-top:6px;text-align:left;">';
+        for (var j = 0; j < Math.min(d.headlines.length, 2); j++) {
+          html += '<div style="margin-bottom:2px;">' + esc((d.headlines[j] || '').substring(0, 80)) + '</div>';
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+    el.innerHTML = html;
+  } catch(e) { console.error('loadNewsSentiment:', e); }
+}
+
+// ══════════════════════════════════════════════
+// TIER 2: Soren Competitors
+// ══════════════════════════════════════════════
+async function loadSorenCompetitors() {
+  try {
+    var resp = await fetch('/api/soren/competitors');
+    var data = await resp.json();
+    var el = document.getElementById('soren-competitors');
+    if (!el) return;
+    var competitors = data.competitors || [];
+    if (competitors.length === 0) {
+      el.innerHTML = '<div class="text-muted" style="text-align:center;padding:var(--space-4);">No competitor data yet. Atlas will scan on next cycle.</div>';
+      return;
+    }
+    var html = '';
+    if (data.takeaways && data.takeaways.length > 0) {
+      html += '<div style="margin-bottom:var(--space-4);padding:8px 12px;background:rgba(204,102,255,0.06);border-radius:6px;border:1px solid rgba(204,102,255,0.15);">';
+      html += '<div style="font-size:0.74rem;font-weight:600;color:var(--agent-soren);margin-bottom:4px;">Takeaways</div>';
+      for (var i = 0; i < data.takeaways.length; i++) {
+        html += '<div style="font-size:0.74rem;color:var(--text-secondary);margin-bottom:2px;">' + esc(data.takeaways[i]) + '</div>';
+      }
+      html += '</div>';
+    }
+    html += '<div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:6px;">Found ' + competitors.length + ' competitors (' + (data.new_count || 0) + ' new) &middot; Scanned ' + esc(data.scanned_at || 'never') + '</div>';
+    for (var i = 0; i < Math.min(competitors.length, 10); i++) {
+      var c = competitors[i];
+      var isNew = c.is_new ? '<span class="badge badge-success" style="font-size:0.6rem;margin-left:6px;">NEW</span>' : '';
+      html += '<div style="margin-bottom:8px;padding:6px 8px;background:var(--surface-secondary);border-radius:4px;">';
+      html += '<div style="font-size:0.76rem;font-weight:500;">' + esc(c.title || '') + isNew + '</div>';
+      html += '<div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px;">' + esc((c.snippet || '').substring(0, 150)) + '</div>';
+      html += '</div>';
+    }
+    el.innerHTML = html;
+  } catch(e) { console.error('loadSorenCompetitors:', e); }
+}
+
+// ══════════════════════════════════════════════
+// TIER 2: Shelby Decision Memory
+// ══════════════════════════════════════════════
+async function loadShelbyDecisions() {
+  try {
+    var resp = await fetch('/api/shelby/decisions?limit=15');
+    var data = await resp.json();
+    var el = document.getElementById('shelby-decisions');
+    if (!el) return;
+    var decisions = data.decisions || [];
+    var stats = data.stats || {};
+    if (decisions.length === 0) {
+      el.innerHTML = '<div class="text-muted" style="text-align:center;padding:var(--space-4);">No decisions recorded yet.</div>';
+      return;
+    }
+    var html = '<div style="display:flex;gap:var(--space-4);margin-bottom:var(--space-4);font-size:0.74rem;">';
+    html += '<span style="color:var(--agent-shelby);">Total: ' + (stats.total || 0) + '</span>';
+    if (stats.top_tags && stats.top_tags.length > 0) {
+      html += '<span class="text-muted">Tags: ' + stats.top_tags.slice(0, 5).map(function(t) { return esc(t); }).join(', ') + '</span>';
+    }
+    html += '</div>';
+    for (var i = 0; i < decisions.length; i++) {
+      var d = decisions[i];
+      var tags = (d.tags || []).map(function(t) { return '<span class="badge" style="font-size:0.6rem;margin-right:4px;">' + esc(t) + '</span>'; }).join('');
+      html += '<div style="margin-bottom:8px;padding:8px 10px;background:var(--surface-secondary);border-radius:6px;border-left:3px solid var(--agent-shelby);">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
+      html += '<span style="font-size:0.78rem;font-weight:600;">' + esc(d.topic || '') + '</span>';
+      html += '<span class="text-muted" style="font-size:0.68rem;">' + esc((d.timestamp || '').substring(0, 16)) + '</span>';
+      html += '</div>';
+      html += '<div style="font-size:0.74rem;color:var(--text-primary);margin-bottom:4px;">' + esc(d.decision || '') + '</div>';
+      if (d.context) html += '<div style="font-size:0.7rem;color:var(--text-secondary);">' + esc(d.context) + '</div>';
+      if (tags) html += '<div style="margin-top:4px;">' + tags + '</div>';
+      html += '</div>';
+    }
+    el.innerHTML = html;
+  } catch(e) { console.error('loadShelbyDecisions:', e); }
+}
+
+// ══════════════════════════════════════════════
+// TIER 2: Atlas Trade Analysis
+// ══════════════════════════════════════════════
+async function loadTradeAnalysis() {
+  try {
+    var resp = await fetch('/api/atlas/trade-analysis');
+    var data = await resp.json();
+    var el = document.getElementById('atlas-trade-analysis');
+    if (!el) return;
+    if (!data.analyzed_at && !data.total_trades) {
+      el.innerHTML = '<div class="text-muted" style="text-align:center;padding:var(--space-4);">No trade analysis yet. Atlas will analyze on next cycle.</div>';
+      return;
+    }
+    var html = '<div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px;">Analyzed ' + (data.total_trades || 0) + ' trades &middot; ' + esc(data.analyzed_at || '') + '</div>';
+    // Suggestions
+    if (data.suggestions && data.suggestions.length > 0) {
+      html += '<div style="margin-bottom:var(--space-4);padding:8px 12px;background:rgba(34,170,68,0.06);border-radius:6px;border:1px solid rgba(34,170,68,0.15);">';
+      html += '<div style="font-size:0.74rem;font-weight:600;color:var(--agent-atlas);margin-bottom:4px;">AI Suggestions</div>';
+      for (var i = 0; i < data.suggestions.length; i++) {
+        html += '<div style="font-size:0.74rem;color:var(--text-secondary);margin-bottom:2px;">' + esc(data.suggestions[i]) + '</div>';
+      }
+      html += '</div>';
+    }
+    // Key stats
+    var stats = [];
+    if (data.by_asset) {
+      var assetKeys = Object.keys(data.by_asset);
+      for (var i = 0; i < assetKeys.length; i++) {
+        var a = data.by_asset[assetKeys[i]];
+        stats.push(assetKeys[i].toUpperCase() + ': ' + (a.total || 0) + ' trades, ' + ((a.win_rate || 0)).toFixed(1) + '% WR');
+      }
+    }
+    if (stats.length > 0) {
+      html += '<div style="font-size:0.74rem;color:var(--text-secondary);">' + stats.join(' &middot; ') + '</div>';
+    }
+    el.innerHTML = html;
+  } catch(e) { console.error('loadTradeAnalysis:', e); }
+}
+
+// ══════════════════════════════════════════════
+// TIER 2: Lisa Go-Live Toggle
+// ══════════════════════════════════════════════
+async function loadLisaGoLive() {
+  try {
+    var resp = await fetch('/api/lisa/live-config');
+    var config = await resp.json();
+    var el = document.getElementById('lisa-golive-toggles');
+    if (!el) return;
+    var platforms = ['instagram', 'tiktok', 'x'];
+    var html = '';
+    for (var i = 0; i < platforms.length; i++) {
+      var p = platforms[i];
+      var c = config[p] || {};
+      var isLive = c.live === true;
+      var statusColor = isLive ? 'var(--success)' : 'var(--text-secondary)';
+      var statusText = isLive ? 'LIVE' : 'DRY RUN';
+      var btnText = isLive ? 'Go Dry Run' : 'Go Live';
+      var btnClass = isLive ? 'btn btn-warning' : 'btn btn-success';
+      html += '<div class="glass-card" style="text-align:center;">';
+      html += '<div style="font-size:0.82rem;font-weight:600;margin-bottom:6px;">' + esc(p.charAt(0).toUpperCase() + p.slice(1)) + '</div>';
+      html += '<div style="font-size:1.1rem;font-weight:700;color:' + statusColor + ';margin-bottom:8px;">' + statusText + '</div>';
+      if (isLive && c.enabled_at) {
+        html += '<div style="font-size:0.68rem;color:var(--text-secondary);margin-bottom:6px;">Since: ' + esc(c.enabled_at.substring(0, 16)) + '</div>';
+      }
+      html += '<button class="' + btnClass + '" onclick="toggleLisaGoLive(\'' + p + '\',' + !isLive + ')" style="font-size:0.72rem;">' + btnText + '</button>';
+      html += '</div>';
+    }
+    el.innerHTML = html;
+  } catch(e) { console.error('loadLisaGoLive:', e); }
+}
+
+async function toggleLisaGoLive(platform, enable) {
+  try {
+    var resp = await fetch('/api/lisa/go-live', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({platform: platform, enable: enable})
+    });
+    var data = await resp.json();
+    if (data.error) { alert('Error: ' + data.error); return; }
+    loadLisaGoLive();
+  } catch(e) { alert('Failed: ' + e.message); }
+}
+
+// ══════════════════════════════════════════════
+// TIER 2: Lisa Comment Analyzer
+// ══════════════════════════════════════════════
+async function loadLisaCommentStats() {
+  try {
+    var resp = await fetch('/api/lisa/comments?limit=10');
+    var data = await resp.json();
+    var el = document.getElementById('lisa-comment-stats');
+    if (!el) return;
+    var stats = data.stats || {};
+    if (!stats.total || stats.total === 0) {
+      el.innerHTML = '<div class="text-muted" style="grid-column:1/-1;text-align:center;">No comments analyzed yet. Use the form below to test.</div>';
+      return;
+    }
+    var html = '';
+    html += '<div class="stat-card" data-accent="mercury" style="padding:8px;"><div class="stat-value" style="font-size:1rem;">' + (stats.total || 0) + '</div><div class="stat-label">Analyzed</div></div>';
+    html += '<div class="stat-card" data-accent="success" style="padding:8px;"><div class="stat-value" style="font-size:1rem;">' + (stats.positive || 0) + '</div><div class="stat-label">Positive</div></div>';
+    html += '<div class="stat-card" data-accent="error" style="padding:8px;"><div class="stat-value" style="font-size:1rem;">' + (stats.negative || 0) + '</div><div class="stat-label">Negative</div></div>';
+    el.innerHTML = html;
+  } catch(e) { console.error('loadLisaCommentStats:', e); }
+}
+
+async function lisaAnalyzeComment() {
+  var comment = document.getElementById('lisa-comment-input').value.trim();
+  var platform = document.getElementById('lisa-comment-platform').value;
+  var el = document.getElementById('lisa-comment-result');
+  if (!comment) { el.innerHTML = '<span class="text-muted">Enter a comment first.</span>'; return; }
+  el.innerHTML = '<span class="text-muted">Analyzing...</span>';
+  try {
+    var resp = await fetch('/api/lisa/comment/analyze', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({comment: comment, platform: platform})
+    });
+    var data = await resp.json();
+    if (data.error) { el.innerHTML = '<span style="color:var(--error);">Error: ' + esc(data.error) + '</span>'; return; }
+    var sentColor = data.sentiment === 'positive' ? 'var(--success)' : data.sentiment === 'negative' ? 'var(--error)' : 'var(--text-secondary)';
+    var html = '<div style="margin-bottom:6px;">';
+    html += '<span style="font-weight:600;">Sentiment:</span> <span style="color:' + sentColor + ';">' + esc(data.sentiment || 'unknown') + '</span>';
+    html += ' &middot; <span style="font-weight:600;">Intent:</span> ' + esc(data.intent || 'unknown');
+    html += ' &middot; <span style="font-weight:600;">Priority:</span> ' + esc(data.priority || 'low');
+    html += '</div>';
+    if (data.suggested_reply) {
+      html += '<div style="padding:8px 10px;background:rgba(204,102,255,0.06);border-radius:6px;border:1px solid rgba(204,102,255,0.15);margin-top:6px;">';
+      html += '<div style="font-size:0.72rem;font-weight:600;color:var(--agent-soren);margin-bottom:4px;">Suggested Reply (Soren Voice):</div>';
+      html += '<div>' + esc(data.suggested_reply) + '</div>';
+      html += '</div>';
+    }
+    el.innerHTML = html;
+    loadLisaCommentStats();
+  } catch(e) { el.innerHTML = '<span style="color:var(--error);">Failed: ' + esc(e.message) + '</span>'; }
+}
+
+// ══════════════════════════════════════════════
+// TIER 2: Robotox Dependency Checker
+// ══════════════════════════════════════════════
+async function loadRobotoxDeps() {
+  try {
+    var resp = await fetch('/api/robotox/dependencies');
+    var data = await resp.json();
+    var el = document.getElementById('robotox-deps-content');
+    var lastEl = document.getElementById('robotox-deps-last-check');
+    if (!el) return;
+    if (data.error || !data.checked_at) {
+      el.innerHTML = '<div class="text-muted" style="text-align:center;padding:var(--space-4);">No dependency report yet. Click "Run Check" to scan.</div>';
+      return;
+    }
+    if (lastEl) lastEl.textContent = 'Last check: ' + (data.checked_at || 'never');
+    var html = '';
+    // CVE section
+    var cves = data.cve_check || {};
+    var totalCves = cves.total_cves || 0;
+    if (totalCves > 0) {
+      html += '<div style="margin-bottom:var(--space-4);padding:8px 12px;background:rgba(255,68,68,0.08);border-radius:6px;border:1px solid rgba(255,68,68,0.2);">';
+      html += '<div style="font-size:0.78rem;font-weight:600;color:var(--error);margin-bottom:4px;">CVEs Found: ' + totalCves + '</div>';
+      var vulns = cves.vulnerabilities || [];
+      for (var i = 0; i < Math.min(vulns.length, 5); i++) {
+        var v = vulns[i];
+        html += '<div style="font-size:0.72rem;margin-bottom:2px;"><span style="color:var(--error);">' + esc(v.id || '') + '</span> ' + esc(v.package || '') + ' ' + esc(v.affected || '') + '</div>';
+      }
+      html += '</div>';
+    } else {
+      html += '<div style="margin-bottom:var(--space-3);padding:6px 10px;background:rgba(0,255,136,0.06);border-radius:6px;font-size:0.76rem;color:var(--success);">No CVEs found. All clear.</div>';
+    }
+    // Outdated packages
+    var outdated = data.outdated || {};
+    var outdatedTotal = outdated.total || 0;
+    if (outdatedTotal > 0) {
+      html += '<div style="font-size:0.76rem;font-weight:600;margin-bottom:4px;">Outdated Packages: ' + outdatedTotal + '</div>';
+      html += '<table class="data-table" style="font-size:0.72rem;"><thead><tr><th>Package</th><th>Current</th><th>Latest</th></tr></thead><tbody>';
+      var pkgs = outdated.packages || [];
+      for (var i = 0; i < Math.min(pkgs.length, 10); i++) {
+        var p = pkgs[i];
+        html += '<tr><td>' + esc(p.name || '') + '</td><td>' + esc(p.current || '') + '</td><td style="color:var(--success);">' + esc(p.latest || '') + '</td></tr>';
+      }
+      html += '</tbody></table>';
+    } else {
+      html += '<div style="font-size:0.76rem;color:var(--success);">All packages up to date.</div>';
+    }
+    el.innerHTML = html;
+  } catch(e) { console.error('loadRobotoxDeps:', e); }
+}
+
+async function robotoxDepCheck() {
+  var el = document.getElementById('robotox-deps-content');
+  if (el) el.innerHTML = '<div class="text-muted" style="text-align:center;padding:var(--space-4);">Running dependency check...</div>';
+  try {
+    var resp = await fetch('/api/robotox/dependencies/check', {method: 'POST'});
+    var data = await resp.json();
+    if (data.error) { el.innerHTML = '<span style="color:var(--error);">Error: ' + esc(data.error) + '</span>'; return; }
+    loadRobotoxDeps();
+  } catch(e) { el.innerHTML = '<span style="color:var(--error);">Failed: ' + esc(e.message) + '</span>'; }
+}
+
+// ══════════════════════════════════════════════
+// TIER 2: System Health (Overview)
+// ══════════════════════════════════════════════
+async function loadSystemHealth() {
+  try {
+    var resp = await fetch('/api/health');
+    return await resp.json();
+  } catch(e) { return null; }
 }

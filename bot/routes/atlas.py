@@ -389,3 +389,17 @@ def api_atlas_learning(agent):
             pass
 
     return jsonify(result)
+
+
+@atlas_bp.route("/api/atlas/trade-analysis")
+def api_atlas_trade_analysis():
+    """Trade journal analysis from Atlas."""
+    try:
+        from atlas.trade_analyzer import TradeJournalAnalyzer
+        analyzer = TradeJournalAnalyzer()
+        latest = analyzer.get_latest()
+        if latest:
+            return jsonify(latest)
+        return jsonify({"message": "No trade analysis yet", "analyzed_at": None})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})

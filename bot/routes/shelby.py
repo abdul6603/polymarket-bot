@@ -7,6 +7,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import time
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -584,3 +585,24 @@ def api_shelby_system():
     result["weather"] = _weather_cache["data"]
 
     return jsonify(result)
+
+
+@shelby_bp.route("/api/shelby/decisions")
+def api_shelby_decisions():
+    """Shelby decision memory — recent decisions and stats."""
+    try:
+        sys.path.insert(0, str(SHELBY_ROOT_DIR))
+        from core.decisions import DecisionMemory
+        dm = DecisionMemory()
+        tag = request.args.get("tag")
+        q = request.args.get("q")
+        limit = int(request.args.get("limit", "30"))
+        if tag:
+            decisions = dm.search_by_tag(tag)[:limit]
+        elif q:
+            decisions = dm.recall(q, limit=limit)
+        else:
+            decisions = dm.list_recent(n=limit)
+        return jsonify({"decisions": decisions, "stats": dm.stats()})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})

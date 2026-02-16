@@ -62,3 +62,25 @@ def api_sentinel_alerts():
         return jsonify({"alerts": sentinel_agent.get_alerts()})
     except Exception as e:
         return jsonify({"error": str(e)})
+
+
+@sentinel_bp.route("/api/robotox/dependencies")
+def api_robotox_dependencies():
+    """Get dependency version check report."""
+    try:
+        from sentinel.core.dep_checker import DependencyChecker
+        checker = DependencyChecker()
+        return jsonify(checker.get_latest())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@sentinel_bp.route("/api/robotox/dependencies/check", methods=["POST"])
+def api_robotox_dep_check():
+    """Trigger a fresh dependency check."""
+    try:
+        from sentinel.core.dep_checker import DependencyChecker
+        checker = DependencyChecker()
+        return jsonify(checker.full_check())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})

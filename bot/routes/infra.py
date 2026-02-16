@@ -80,6 +80,81 @@ def api_hub_config():
         return jsonify({"error": str(e)[:200]})
 
 
+@infra_bp.route("/api/health")
+def api_health():
+    """Aggregated health status for all agents."""
+    from pathlib import Path
+    import json
+
+    health_paths = {
+        "garves": Path.home() / "polymarket-bot" / "data" / "health.json",
+        "shelby": Path.home() / "shelby" / "data" / "health.json",
+        "atlas": Path.home() / "atlas" / "data" / "health.json",
+        "lisa": Path.home() / "mercury" / "data" / "health.json",
+        "robotox": Path.home() / "sentinel" / "data" / "health.json",
+        "thor": Path.home() / "thor" / "data" / "health.json",
+        "soren": Path.home() / "soren-content" / "data" / "health.json",
+    }
+
+    agents = {}
+    for agent, path in health_paths.items():
+        if path.exists():
+            try:
+                with open(path) as f:
+                    agents[agent] = json.load(f)
+            except Exception:
+                agents[agent] = {"status": "error", "message": "Failed to read health file"}
+        else:
+            agents[agent] = {"status": "unknown", "message": "No health file"}
+
+    healthy = sum(1 for a in agents.values() if a.get("status") == "healthy")
+    degraded = sum(1 for a in agents.values() if a.get("status") == "degraded")
+    errored = sum(1 for a in agents.values() if a.get("status") in ("error", "unknown"))
+
+    overall = "healthy" if errored == 0 and degraded == 0 else "degraded" if errored == 0 else "unhealthy"
+
+    return jsonify({
+        "overall": overall,
+        "healthy": healthy,
+        "degraded": degraded,
+        "error": errored,
+        "agents": agents,
+    })
+
+
+@infra_bp.route("/api/health/<agent_name>")
+def api_health_agent(agent_name: str):
+    """Individual agent health status."""
+    from pathlib import Path
+    import json
+
+    name_map = {"lisa": "mercury", "robotox": "sentinel"}
+    lookup = name_map.get(agent_name, agent_name)
+
+    path_map = {
+        "garves": Path.home() / "polymarket-bot" / "data" / "health.json",
+        "shelby": Path.home() / "shelby" / "data" / "health.json",
+        "atlas": Path.home() / "atlas" / "data" / "health.json",
+        "mercury": Path.home() / "mercury" / "data" / "health.json",
+        "sentinel": Path.home() / "sentinel" / "data" / "health.json",
+        "thor": Path.home() / "thor" / "data" / "health.json",
+        "soren": Path.home() / "soren-content" / "data" / "health.json",
+    }
+
+    path = path_map.get(lookup)
+    if not path:
+        return jsonify({"error": f"Unknown agent: {agent_name}"}), 404
+
+    if path.exists():
+        try:
+            with open(path) as f:
+                return jsonify(json.load(f))
+        except Exception as e:
+            return jsonify({"status": "error", "message": str(e)[:200]})
+
+    return jsonify({"status": "unknown", "message": "No health file found"})
+
+
 @infra_bp.route("/api/agent-logs/<agent_name>")
 def api_agent_logs(agent_name: str):
     """Get structured logs for an agent from the hub log files."""

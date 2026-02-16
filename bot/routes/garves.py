@@ -378,3 +378,17 @@ def api_garves_broadcasts():
         return jsonify({"processed": len(unread), "agent": "garves"})
     except Exception as e:
         return jsonify({"error": str(e)[:200]})
+
+
+@garves_bp.route("/api/garves/news-sentiment")
+def api_garves_news_sentiment():
+    """Crypto news sentiment from Atlas Tavily feed."""
+    try:
+        from atlas.news_sentiment import TavilyCryptoSentiment
+        sentiment = TavilyCryptoSentiment()
+        latest = sentiment.get_latest()
+        if latest:
+            return jsonify(latest)
+        return jsonify({"assets": {}, "scanned_at": None, "message": "No sentiment data yet"})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})

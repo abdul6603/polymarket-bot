@@ -156,6 +156,103 @@ def api_mercury_review_item(item_id):
         return jsonify({"error": str(e)})
 
 
+@mercury_bp.route("/api/lisa/go-live", methods=["POST"])
+def api_lisa_go_live():
+    """Toggle a platform between dry-run and live mode."""
+    try:
+        from mercury.core.publisher import _load_live_config, save_live_config
+        data = request.json or {}
+        platform = data.get("platform", "")
+        enable = data.get("enable", False)
+
+        if platform not in ("instagram", "tiktok", "x"):
+            return jsonify({"error": f"Unknown platform: {platform}"}), 400
+
+        config = _load_live_config()
+        from datetime import datetime, timezone, timedelta
+        ET = timezone(timedelta(hours=-5))
+
+        if enable:
+            config[platform] = {
+                "live": True,
+                "enabled_at": datetime.now(ET).isoformat(),
+                "confirmed_by": "dashboard",
+            }
+        else:
+            config[platform] = {
+                "live": False,
+                "enabled_at": None,
+                "confirmed_by": None,
+            }
+
+        save_live_config(config)
+        return jsonify({"status": "ok", "platform": platform, "live": enable, "config": config})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@mercury_bp.route("/api/lisa/live-config")
+def api_lisa_live_config():
+    """Get current live/dry-run config per platform."""
+    try:
+        from mercury.core.publisher import _load_live_config
+        return jsonify(_load_live_config())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@mercury_bp.route("/api/lisa/comments")
+def api_lisa_comments():
+    """Get analyzed comments."""
+    try:
+        from mercury.core.comment_ai import CommentAnalyzer
+        analyzer = CommentAnalyzer()
+        status = request.args.get("status")
+        limit = int(request.args.get("limit", "50"))
+        return jsonify({
+            "comments": analyzer.get_comments(limit=limit, status=status),
+            "stats": analyzer.stats(),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@mercury_bp.route("/api/lisa/comment/analyze", methods=["POST"])
+def api_lisa_comment_analyze():
+    """Analyze a new comment with AI."""
+    try:
+        from mercury.core.comment_ai import CommentAnalyzer
+        analyzer = CommentAnalyzer()
+        data = request.json or {}
+        comment = data.get("comment", "")
+        platform = data.get("platform", "instagram")
+        post_id = data.get("post_id", "")
+
+        if not comment:
+            return jsonify({"error": "No comment provided"}), 400
+
+        result = analyzer.analyze_comment(comment, platform, post_id)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@mercury_bp.route("/api/lisa/comment/<comment_id>/status", methods=["POST"])
+def api_lisa_comment_status(comment_id: str):
+    """Update a comment's status (approved, posted, dismissed)."""
+    try:
+        from mercury.core.comment_ai import CommentAnalyzer
+        analyzer = CommentAnalyzer()
+        data = request.json or {}
+        status = data.get("status", "")
+        if status not in ("approved", "posted", "dismissed"):
+            return jsonify({"error": "Invalid status"}), 400
+        ok = analyzer.update_status(comment_id, status)
+        return jsonify({"ok": ok, "comment_id": comment_id, "status": status})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
 @mercury_bp.route("/api/lisa/broadcasts")
 def api_lisa_broadcasts():
     """Process and acknowledge broadcasts for Lisa."""

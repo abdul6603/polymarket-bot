@@ -139,6 +139,10 @@
       <h2 class="section-title" data-accent="garves">Live Log</h2>
       <div class="log-feed" id="log-feed"><div class="log-line"><span class="log-time">--:--:--</span><span class="log-msg">Waiting for log data...</span></div></div>
     </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="garves">News Sentiment</h2>
+      <div class="grid-3" id="garves-sentiment-grid"><div class="text-muted" style="padding:var(--space-4);grid-column:1/-1;text-align:center;">Loading sentiment data...</div></div>
+    </div>
   </div>
 
   <!-- SOREN -->
@@ -160,6 +164,10 @@
     <div class="section-spacer">
       <h2 class="section-title" data-accent="soren">Content Queue</h2>
       <div class="flex flex-col gap-3" id="soren-queue"><div class="queue-item"><div class="queue-item-header"><span class="queue-item-title">Loading...</span></div></div></div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="soren">Competitor Intelligence</h2>
+      <div class="glass-card" id="soren-competitors"><div class="text-muted" style="text-align:center;padding:var(--space-4);">No competitor data yet.</div></div>
     </div>
   </div>
 
@@ -229,6 +237,10 @@
       </div>
       <div class="glass-card" id="shelby-economics"><div class="text-muted" style="text-align:center;padding:var(--space-6);">Loading economics...</div></div>
     </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="shelby">Decision Memory</h2>
+      <div class="glass-card" id="shelby-decisions"><div class="text-muted" style="text-align:center;padding:var(--space-4);">Loading decisions...</div></div>
+    </div>
   </div>
 
   <!-- ATLAS -->
@@ -272,6 +284,10 @@
     <div class="section-spacer">
       <h2 class="section-title" data-accent="atlas">Competitor Intel</h2>
       <div class="glass-card" id="atlas-competitors"><div class="text-muted" style="text-align:center;padding:var(--space-6);">No competitor intel yet.</div></div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="atlas">Trade Journal Analysis</h2>
+      <div class="glass-card" id="atlas-trade-analysis"><div class="text-muted" style="text-align:center;padding:var(--space-4);">No trade analysis yet.</div></div>
     </div>
   </div>
 
@@ -341,6 +357,33 @@
       <h2 class="section-title" data-accent="mercury">Recent Posts</h2>
       <div class="glass-card"><table class="data-table"><thead><tr><th>Time</th><th>Platform</th><th>Content</th><th>Score</th><th>Status</th></tr></thead><tbody id="mercury-posts-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No posts yet</td></tr></tbody></table></div>
     </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="mercury">Go-Live Toggle</h2>
+      <div class="glass-card" id="lisa-golive-panel">
+        <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:var(--space-3);">Toggle platforms between dry-run and live posting:</div>
+        <div class="grid-3" id="lisa-golive-toggles"><div class="text-muted" style="text-align:center;">Loading...</div></div>
+      </div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="mercury">Comment Analyzer</h2>
+      <div class="glass-card">
+        <div class="grid-3" id="lisa-comment-stats" style="margin-bottom:var(--space-4);"><div class="text-muted" style="grid-column:1/-1;text-align:center;">No comment data yet</div></div>
+        <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-3);flex-wrap:wrap;align-items:end;">
+          <div style="flex:1;min-width:200px;">
+            <textarea class="input" id="lisa-comment-input" rows="2" placeholder="Paste a comment to analyze..." style="width:100%;resize:vertical;font-family:var(--font-mono);font-size:0.78rem;"></textarea>
+          </div>
+          <div style="display:flex;gap:var(--space-2);flex-direction:column;">
+            <select class="input" id="lisa-comment-platform" style="font-size:0.76rem;padding:4px 8px;">
+              <option value="instagram">Instagram</option>
+              <option value="tiktok">TikTok</option>
+              <option value="x">X</option>
+            </select>
+            <button class="btn btn-primary" onclick="lisaAnalyzeComment()">Analyze</button>
+          </div>
+        </div>
+        <div id="lisa-comment-result" style="min-height:40px;font-family:var(--font-mono);font-size:0.76rem;"></div>
+      </div>
+    </div>
   </div>
 
   <!-- ROBOTOX -->
@@ -376,6 +419,16 @@
     <div class="section-spacer">
       <h2 class="section-title" data-accent="sentinel">Fix History</h2>
       <div class="glass-card"><table class="data-table"><thead><tr><th>Time</th><th>Agent</th><th>Action</th><th>Status</th></tr></thead><tbody id="sentinel-fixes-tbody"><tr><td colspan="4" class="text-muted" style="text-align:center;padding:24px;">No fixes</td></tr></tbody></table></div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="sentinel">Dependency Checker</h2>
+      <div class="glass-card" id="robotox-deps-panel">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
+          <span class="text-muted" style="font-size:0.78rem;" id="robotox-deps-last-check">Last check: never</span>
+          <button class="btn" onclick="robotoxDepCheck()" style="font-size:0.72rem;">Run Check</button>
+        </div>
+        <div id="robotox-deps-content"><div class="text-muted" style="text-align:center;padding:var(--space-4);">No dependency report yet.</div></div>
+      </div>
     </div>
   </div>
 
