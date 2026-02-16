@@ -111,3 +111,41 @@ def api_brain_all():
         data = _load_brain(agent)
         counts[agent] = len(data.get("notes", []))
     return jsonify({"agents": counts})
+
+
+# ── Command Registry ──
+COMMANDS_FILE = Path.home() / "thor" / "data" / "brotherhood_commands.json"
+
+# Agent name mapping (JSON uses title case, dashboard uses lowercase)
+_AGENT_MAP = {
+    "claude": "Claude", "garves": "Garves", "soren": "Soren",
+    "shelby": "Shelby", "atlas": "Atlas", "lisa": "Lisa",
+    "robotox": "Robotox", "thor": "Thor", "dashboard": "Dashboard",
+}
+
+
+def _load_commands() -> list[dict]:
+    if COMMANDS_FILE.exists():
+        try:
+            return json.loads(COMMANDS_FILE.read_text())
+        except Exception:
+            pass
+    return []
+
+
+@brain_bp.route("/api/commands")
+def api_commands_all():
+    """All agent commands/tools/endpoints."""
+    data = _load_commands()
+    return jsonify({"agents": data, "total": sum(len(a.get("commands", [])) for a in data)})
+
+
+@brain_bp.route("/api/commands/<agent>")
+def api_commands_agent(agent: str):
+    """Commands for a specific agent."""
+    target = _AGENT_MAP.get(agent, agent.title())
+    data = _load_commands()
+    for a in data:
+        if a.get("agent_name", "").lower() == agent or a.get("agent_name") == target:
+            return jsonify(a)
+    return jsonify({"agent_name": agent, "commands": [], "error": "Agent not found"})

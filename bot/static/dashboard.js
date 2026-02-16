@@ -1889,6 +1889,7 @@ async function refresh() {
       // Re-render intel cards with fresh overview data
       if (_intelData) renderTeamIntelligence(_intelData);
       loadBrainNotes('claude');
+      loadCommandTable('claude');
     } else if (currentTab === 'garves') {
       var resp = await fetch('/api/trades');
       var data = await resp.json();
@@ -1906,12 +1907,14 @@ async function refresh() {
       loadAgentLearning('garves');
       loadNewsSentiment();
       loadBrainNotes('garves');
+      loadCommandTable('garves');
     } else if (currentTab === 'soren') {
       var resp = await fetch('/api/soren');
       renderSoren(await resp.json());
       loadAgentLearning('soren');
       loadSorenCompetitors();
       loadBrainNotes('soren');
+      loadCommandTable('soren');
     } else if (currentTab === 'shelby') {
       var resp = await fetch('/api/shelby');
       renderShelby(await resp.json());
@@ -1923,6 +1926,7 @@ async function refresh() {
       try { loadShelbyOnlineCount(); } catch(e) {}
       try { loadShelbyDecisions(); } catch(e) {}
       loadBrainNotes('shelby');
+      loadCommandTable('shelby');
     } else if (currentTab === 'atlas') {
       var resp = await fetch('/api/atlas');
       var atlasData = await resp.json();
@@ -1937,6 +1941,7 @@ async function refresh() {
       loadAgentLearning('atlas');
       loadTradeAnalysis();
       loadBrainNotes('atlas');
+      loadCommandTable('atlas');
     } else if (currentTab === 'mercury') {
       var resp = await fetch('/api/mercury');
       renderMercury(await resp.json());
@@ -1946,16 +1951,19 @@ async function refresh() {
       loadLisaGoLive();
       loadLisaCommentStats();
       loadBrainNotes('lisa');
+      loadCommandTable('lisa');
     } else if (currentTab === 'sentinel') {
       var resp = await fetch('/api/sentinel');
       renderSentinel(await resp.json());
       loadAgentLearning('sentinel');
       loadRobotoxDeps();
       loadBrainNotes('robotox');
+      loadCommandTable('robotox');
     } else if (currentTab === 'thor') {
       loadThor();
       loadSmartActions();
       loadBrainNotes('thor');
+      loadCommandTable('thor');
     } else if (currentTab === 'chat') {
       if (!chatLoaded) loadChatHistory();
     }
@@ -3015,6 +3023,57 @@ async function addBrainNote(agent) {
     contentEl.value = '';
     loadBrainNotes(agent);
   } catch(e) { alert('Failed: ' + e.message); }
+}
+
+// ══════════════════════════════════════════════
+// COMMAND TABLES — Agent capabilities registry
+// ══════════════════════════════════════════════
+var _commandsCache = {};
+var _commandsFetched = false;
+
+async function fetchAllCommands() {
+  if (_commandsFetched) return;
+  try {
+    var resp = await fetch('/api/commands');
+    var data = await resp.json();
+    var agents = data.agents || [];
+    for (var i = 0; i < agents.length; i++) {
+      var a = agents[i];
+      var key = (a.agent_name || '').toLowerCase();
+      _commandsCache[key] = a;
+      if (key === 'command center dashboard') _commandsCache['dashboard'] = a;
+    }
+    _commandsFetched = true;
+  } catch(e) { console.error('fetchAllCommands:', e); }
+}
+
+function renderCommandTable(agent) {
+  var el = document.getElementById(agent + '-commands');
+  if (!el) return;
+  var data = _commandsCache[agent];
+  if (!data || !data.commands || data.commands.length === 0) {
+    el.innerHTML = '<span class="text-muted">No commands registered.</span>';
+    return;
+  }
+  var cmds = data.commands;
+  var typeColors = {cli: '#00CED1', api: '#FFD700', tool: '#9370DB', capability: '#32CD32'};
+  var html = '<table class="data-table" style="font-size:0.74rem;"><thead><tr><th style="width:35%;">Command</th><th style="width:12%;">Type</th><th>Description</th></tr></thead><tbody>';
+  for (var i = 0; i < cmds.length; i++) {
+    var c = cmds[i];
+    var typeColor = typeColors[c.type] || '#888';
+    html += '<tr>';
+    html += '<td style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-primary);word-break:break-all;">' + esc(c.name) + '</td>';
+    html += '<td><span style="background:' + typeColor + '22;color:' + typeColor + ';padding:1px 6px;border-radius:4px;font-size:0.66rem;font-weight:600;">' + esc(c.type || 'other') + '</span></td>';
+    html += '<td style="font-size:0.72rem;color:var(--text-secondary);">' + esc(c.description || '') + '</td>';
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+async function loadCommandTable(agent) {
+  await fetchAllCommands();
+  renderCommandTable(agent);
 }
 
 async function deleteBrainNote(agent, noteId) {
