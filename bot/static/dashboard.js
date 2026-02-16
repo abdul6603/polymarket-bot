@@ -2676,6 +2676,54 @@ async function submitAgentSmartAction(agent, index) {
   }
 }
 
+async function thorUpdateSheet() {
+  var btn = document.getElementById('btn-update-sheet');
+  var status = document.getElementById('thor-action-status');
+  btn.disabled = true;
+  btn.textContent = 'Updating...';
+  status.textContent = '';
+  try {
+    var resp = await fetch('/api/thor/update-sheet', {method: 'POST'});
+    var data = await resp.json();
+    if (data.error) {
+      status.textContent = 'Error: ' + data.error;
+      status.style.color = 'var(--error)';
+    } else {
+      status.textContent = 'Sheet updated — ' + data.added + ' new entries (total: ' + data.total_rows + ' rows)';
+      status.style.color = 'var(--success)';
+    }
+  } catch(e) {
+    status.textContent = 'Failed: ' + e.message;
+    status.style.color = 'var(--error)';
+  }
+  btn.disabled = false;
+  btn.textContent = 'Update Progress Sheet';
+}
+
+async function thorUpdateDashboard() {
+  var btn = document.getElementById('btn-update-dash');
+  var status = document.getElementById('thor-action-status');
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+  status.textContent = '';
+  try {
+    var resp = await fetch('/api/thor/update-dashboard', {method: 'POST'});
+    var data = await resp.json();
+    if (data.error) {
+      status.textContent = 'Error: ' + data.error;
+      status.style.color = 'var(--error)';
+    } else {
+      status.textContent = 'Task submitted to Thor (' + data.task_id.substring(0, 12) + ') — he will update the dashboard';
+      status.style.color = 'var(--success)';
+    }
+  } catch(e) {
+    status.textContent = 'Failed: ' + e.message;
+    status.style.color = 'var(--error)';
+  }
+  btn.disabled = false;
+  btn.textContent = 'Update Dashboard';
+}
+
 async function loadSmartActions() {
   var el = document.getElementById('thor-smart-actions');
   if (!el) return;

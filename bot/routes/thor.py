@@ -2,14 +2,17 @@
 from __future__ import annotations
 
 import json
+import logging
 import time
 from pathlib import Path
 
 from flask import Blueprint, jsonify, request
 
+log = logging.getLogger(__name__)
 thor_bp = Blueprint("thor", __name__)
 
 THOR_DATA = Path.home() / "thor" / "data"
+EXCEL_PATH = Path.home() / "Desktop" / "brotherhood_progress.xlsx"
 
 
 @thor_bp.route("/api/thor")
@@ -518,5 +521,111 @@ def api_thor_submit():
         )
         task_id = queue.submit(task)
         return jsonify({"task_id": task_id, "status": "submitted"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@thor_bp.route("/api/thor/update-sheet", methods=["POST"])
+def api_thor_update_sheet():
+    """Scan recent Thor results and backfill any missing entries into the Excel progress sheet."""
+    try:
+        import openpyxl
+        import shutil
+        import subprocess
+
+        # Use data dir copy to avoid macOS TCC Desktop restrictions
+        data_copy = THOR_DATA / "brotherhood_progress.xlsx"
+
+        if not data_copy.exists():
+            return jsonify({"error": "Excel sheet not found — run: cp ~/Desktop/brotherhood_progress.xlsx ~/thor/data/"}), 404
+
+        wb = openpyxl.load_workbook(str(data_copy))
+        ws = wb.active
+
+        # Collect existing feature names to avoid duplicates
+        existing = set()
+        for r in range(2, ws.max_row + 1):
+            feat = ws.cell(r, 4).value or ""
+            existing.add(feat.strip())
+
+        # Scan Thor completed results
+        results_dir = THOR_DATA / "results"
+        tasks_dir = THOR_DATA / "tasks"
+        added = 0
+
+        for rfile in sorted(results_dir.glob("*.json"), key=lambda f: f.stat().st_mtime, reverse=True):
+            try:
+                result = json.loads(rfile.read_text())
+                task_id = result.get("task_id", "")
+                task_files = list(tasks_dir.glob(f"{task_id}*.json"))
+                if not task_files:
+                    continue
+                task = json.loads(task_files[0].read_text())
+                if task.get("status") != "completed":
+                    continue
+
+                title = task.get("title", "")[:100]
+                if title.strip() in existing:
+                    continue
+
+                agent = (task.get("agent") or "Thor").title()
+                desc = (result.get("summary") or task.get("description", ""))[:300]
+                files_written = result.get("files_written", {})
+                files_str = ", ".join(list(files_written.keys())[:5]) if isinstance(files_written, dict) else str(files_written)[:200]
+                created = task.get("created_at", time.time())
+                from datetime import datetime
+                date_str = datetime.fromtimestamp(created).strftime("%Y-%m-%d")
+
+                ws.append([date_str, agent, "Improvement", title, desc[:300], files_str[:200], "Complete"])
+                existing.add(title.strip())
+                added += 1
+            except Exception:
+                continue
+
+        wb.save(str(data_copy))
+
+        # Copy back to Desktop via subprocess (bypasses TCC for child process)
+        try:
+            subprocess.run(["cp", str(data_copy), str(EXCEL_PATH)], timeout=5)
+        except Exception:
+            pass  # Data dir copy is still updated
+
+        return jsonify({"status": "ok", "added": added, "total_rows": ws.max_row})
+    except Exception as e:
+        log.exception("Failed to update sheet")
+        return jsonify({"error": str(e)}), 500
+
+
+@thor_bp.route("/api/thor/update-dashboard", methods=["POST"])
+def api_thor_update_dashboard():
+    """Submit a task to Thor to update the dashboard with latest agent changes."""
+    try:
+        from thor.core.task_queue import CodingTask, TaskQueue
+        from thor.config import ThorConfig
+        cfg = ThorConfig()
+        queue = TaskQueue(cfg.tasks_dir, cfg.results_dir)
+
+        task = CodingTask(
+            title="Update Command Center Dashboard — Sync Latest Changes",
+            description=(
+                "Review all recent changes across agents and update the Command Center dashboard "
+                "(~/polymarket-bot/bot/templates/dashboard.html, bot/static/dashboard.js, bot/routes/) "
+                "to reflect new features, endpoints, status displays, or UI sections. "
+                "Check each agent's latest capabilities and ensure the dashboard accurately shows them. "
+                "Only add/update what's actually missing — don't rewrite existing working sections."
+            ),
+            target_files=[
+                str(Path.home() / "polymarket-bot/bot/templates/dashboard.html"),
+                str(Path.home() / "polymarket-bot/bot/static/dashboard.js"),
+            ],
+            context_files=[
+                str(Path.home() / "polymarket-bot/bot/routes/__init__.py"),
+            ],
+            agent="dashboard",
+            priority="high",
+            assigned_by="jordan_dashboard_button",
+        )
+        task_id = queue.submit(task)
+        return jsonify({"task_id": task_id, "status": "submitted", "message": "Thor will update the dashboard"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500

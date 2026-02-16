@@ -615,6 +615,11 @@
       <button class="btn" onclick="healthCheckAgent('thor')" style="font-size:0.72rem;">Health Check</button>
     </div>
     <div class="health-inline" id="thor-health-result"></div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <button class="btn" id="btn-update-sheet" onclick="thorUpdateSheet()" style="font-size:0.76rem;background:#ff6600;color:#000;font-weight:600;">Update Progress Sheet</button>
+      <button class="btn" id="btn-update-dash" onclick="thorUpdateDashboard()" style="font-size:0.76rem;background:#ff6600;color:#000;font-weight:600;">Update Dashboard</button>
+      <span id="thor-action-status" class="text-muted" style="font-size:0.72rem;align-self:center;"></span>
+    </div>
     <div class="grid-6">
       <div class="stat-card" data-accent="thor"><div class="stat-value" id="thor-queue-pending">0</div><div class="stat-label">Pending Tasks</div></div>
       <div class="stat-card" data-accent="success"><div class="stat-value" id="thor-completed">0</div><div class="stat-label">Completed</div></div>
