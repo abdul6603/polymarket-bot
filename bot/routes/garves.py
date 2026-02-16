@@ -268,6 +268,53 @@ def api_garves_regime():
         return jsonify({"label": "unknown", "fng_value": -1, "error": str(e)[:200]})
 
 
+@garves_bp.route("/api/garves/conviction")
+def api_garves_conviction():
+    """ConvictionEngine status — asset signals, scoring components, safety rails."""
+    try:
+        from bot.conviction import ConvictionEngine, TRADES_FILE as CE_TRADES
+        # Build a standalone engine to read current state from trades.jsonl
+        engine = ConvictionEngine()
+        status = engine.get_status()
+
+        # Load indicator accuracy for display
+        acc_data = {}
+        if INDICATOR_ACCURACY_FILE.exists():
+            with open(INDICATOR_ACCURACY_FILE) as f:
+                acc_data = json.load(f)
+
+        # Compute dynamic weights for display
+        from bot.weight_learner import get_dynamic_weights
+        from bot.signals import WEIGHTS
+        dyn_weights = get_dynamic_weights(WEIGHTS)
+
+        # Build weight comparison
+        weight_info = {}
+        for name, base_w in WEIGHTS.items():
+            entry = acc_data.get(name, {})
+            weight_info[name] = {
+                "base_weight": base_w,
+                "dynamic_weight": round(dyn_weights.get(name, base_w), 3),
+                "accuracy": round(entry.get("accuracy", 0) * 100, 1) if entry else None,
+                "total_votes": entry.get("total_votes", 0) if entry else 0,
+                "disabled": dyn_weights.get(name, base_w) <= 0,
+            }
+
+        return jsonify({
+            "engine_status": status,
+            "indicator_weights": weight_info,
+            "size_tiers": {
+                "0-29": "$0 (no trade)",
+                "30-49": "$5-8 (small)",
+                "50-69": "$10-15 (standard)",
+                "70-84": "$15-20 (increased)",
+                "85-100": "$20-25 (max conviction)",
+            },
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
 @garves_bp.route("/api/garves/broadcasts")
 def api_garves_broadcasts():
     """Process and acknowledge broadcasts for Garves."""

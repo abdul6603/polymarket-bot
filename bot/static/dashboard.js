@@ -160,6 +160,68 @@ function renderLogs(lines) {
   el.scrollTop = el.scrollHeight;
 }
 
+async function loadConvictionData() {
+  try {
+    var resp = await fetch('/api/garves/conviction');
+    var data = await resp.json();
+    if (data.error) return;
+    var es = data.engine_status || {};
+    document.getElementById('conv-rolling-wr').textContent = es.rolling_wr || 'N/A';
+    var streak = es.current_streak || 0;
+    var streakEl = document.getElementById('conv-streak');
+    streakEl.textContent = (streak > 0 ? '+' : '') + streak;
+    streakEl.style.color = streak > 0 ? 'var(--success)' : streak < 0 ? 'var(--error)' : 'var(--text-secondary)';
+    var dpEl = document.getElementById('conv-daily-pnl');
+    dpEl.textContent = es.daily_pnl || '$0.00';
+    dpEl.style.color = (es.daily_pnl || '').indexOf('-') !== -1 ? 'var(--error)' : 'var(--success)';
+    document.getElementById('conv-total-resolved').textContent = es.total_resolved || 0;
+    // Asset signals cards
+    var assets = es.asset_signals || {};
+    var assetHtml = '';
+    var assetKeys = ['bitcoin','ethereum','solana'];
+    for (var i = 0; i < assetKeys.length; i++) {
+      var ak = assetKeys[i];
+      var sig = assets[ak] || {};
+      var label = ak.charAt(0).toUpperCase() + ak.slice(1);
+      if (sig.status === 'no_signal') {
+        assetHtml += '<div class="glass-card" style="text-align:center;"><h4 style="margin:0 0 4px;font-size:0.76rem;color:var(--text-secondary);">' + label + '</h4><span class="text-muted">No signal</span></div>';
+      } else {
+        var dirColor = sig.direction === 'up' ? 'var(--success)' : 'var(--error)';
+        assetHtml += '<div class="glass-card" style="text-align:center;"><h4 style="margin:0 0 4px;font-size:0.76rem;color:var(--agent-garves);">' + label + '</h4>';
+        assetHtml += '<div style="font-size:1.1rem;font-weight:700;color:' + dirColor + ';">' + (sig.direction || '').toUpperCase() + '</div>';
+        assetHtml += '<div style="font-size:0.68rem;color:var(--text-secondary);">Consensus: ' + (sig.consensus || '--') + ' | Edge: ' + (sig.edge || '--') + '</div>';
+        var badges = '';
+        if (sig.volume_spike) badges += '<span class="badge badge-success" style="font-size:0.6rem;margin:2px;">VOL</span>';
+        if (sig.temporal_arb) badges += '<span class="badge badge-success" style="font-size:0.6rem;margin:2px;">ARB</span>';
+        if (badges) assetHtml += '<div style="margin-top:3px;">' + badges + '</div>';
+        assetHtml += '</div>';
+      }
+    }
+    document.getElementById('conv-asset-signals').innerHTML = assetHtml;
+    // Indicator weights table
+    var weights = data.indicator_weights || {};
+    var wKeys = Object.keys(weights);
+    if (wKeys.length > 0) {
+      var wHtml = '';
+      wKeys.sort(function(a,b) { return (weights[b].dynamic_weight||0) - (weights[a].dynamic_weight||0); });
+      for (var j = 0; j < wKeys.length; j++) {
+        var wk = wKeys[j];
+        var w = weights[wk];
+        var statusBadge = '';
+        if (w.disabled) statusBadge = '<span class="badge badge-error" style="font-size:0.6rem;">DISABLED</span>';
+        else if (w.dynamic_weight > w.base_weight) statusBadge = '<span class="badge badge-success" style="font-size:0.6rem;">BOOSTED</span>';
+        else if (w.dynamic_weight < w.base_weight) statusBadge = '<span class="badge badge-warning" style="font-size:0.6rem;">REDUCED</span>';
+        else statusBadge = '<span class="badge badge-info" style="font-size:0.6rem;">BASE</span>';
+        var accText = w.accuracy !== null ? w.accuracy + '%' : '--';
+        var accColor = w.accuracy !== null ? (w.accuracy >= 55 ? 'var(--success)' : w.accuracy < 45 ? 'var(--error)' : 'var(--text-primary)') : 'var(--text-secondary)';
+        wHtml += '<tr><td style="font-weight:600;">' + esc(wk) + '</td><td>' + w.base_weight + '</td><td>' + w.dynamic_weight + '</td>';
+        wHtml += '<td style="color:' + accColor + ';">' + accText + '</td><td>' + (w.total_votes || 0) + '</td><td>' + statusBadge + '</td></tr>';
+      }
+      document.getElementById('conv-weights-tbody').innerHTML = wHtml;
+    }
+  } catch (e) {}
+}
+
 async function loadRegimeBadge() {
   try {
     var resp = await fetch('/api/garves/regime');
@@ -1663,6 +1725,7 @@ async function refresh() {
       renderResolvedTrades(data.recent_trades);
       fetch('/api/logs').then(function(r){return r.json();}).then(function(d){renderLogs(d.lines);}).catch(function(){});
       loadRegimeBadge();
+      loadConvictionData();
       loadAgentLearning('garves');
     } else if (currentTab === 'soren') {
       var resp = await fetch('/api/soren');

@@ -123,6 +123,7 @@ class Signal:
     timeframe: str        # "5m", "15m", "1h", "4h"
     asset: str            # "bitcoin", "ethereum", "solana"
     indicator_votes: dict | None = None  # indicator_name -> direction at signal time
+    atr_value: float | None = None       # ATR as fraction of price (for conviction engine)
 
 
 def _estimate_fees(timeframe: str, implied_price: float | None) -> float:
@@ -498,6 +499,7 @@ class SignalEngine:
                 timeframe=timeframe,
                 asset=asset,
                 indicator_votes=ind_votes,
+                atr_value=atr_val,
             )
 
         log.info(

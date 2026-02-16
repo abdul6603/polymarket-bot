@@ -8,6 +8,7 @@ import time
 
 from bot.binance_feed import BinanceFeed
 from bot.config import Config
+from bot.conviction import ConvictionEngine
 from bot.http_session import get_session
 from bot.auth import build_client
 from bot.execution import Executor
@@ -68,6 +69,7 @@ class TradingBot:
                 log.warning("No private key configured")
 
         self.executor = Executor(cfg, self.client, self.tracker)
+        self.conviction_engine = ConvictionEngine()
         self.straddle_engine = StraddleEngine(cfg, self.executor, self.tracker, self.price_cache)
         self.perf_tracker = PerformanceTracker(cfg)
         self._shutdown_event = asyncio.Event()
@@ -91,7 +93,7 @@ class TradingBot:
         log.info("Garves V2 — Multi-Timeframe Trading Bot")
         log.info("Signal -> Probability -> Edge -> Action -> Confidence -> P&L")
         log.info("Assets: BTC, ETH, SOL | Timeframes: 5m, 15m, 1h, 4h")
-        log.info("Ensemble: 11 indicators + Temporal Arb + ATR Filter + Fee Awareness")
+        log.info("Ensemble: 11 indicators + Temporal Arb + ATR Filter + Fee Awareness + ConvictionEngine")
         log.info("Risk: max %d concurrent, $%.2f cap, 5min cooldown",
                  self.cfg.max_concurrent_positions, self.cfg.max_position_usd)
         log.info("Dry run: %s | Tick: %ds", self.cfg.dry_run, self.cfg.tick_interval_s)
@@ -175,6 +177,9 @@ class TradingBot:
                 self._subscribe_time[tid] = now
             self._subscribed_tokens = all_tokens
 
+        # Expire stale conviction signals at the start of each tick
+        self.conviction_engine.expire_stale_signals()
+
         # 2. Evaluate each market for signals, trade the best ones
         trades_this_tick = 0
         for dm in ranked:
@@ -240,18 +245,51 @@ class TradingBot:
                 dm.question[:50],
             )
 
+            # ── ConvictionEngine: register signal + score conviction ──
+            votes = sig.indicator_votes or {}
+            up_count = sum(1 for d in votes.values() if d == "up")
+            down_count = sum(1 for d in votes.values() if d == "down")
+            snapshot = ConvictionEngine.build_snapshot(
+                signal=sig,
+                indicator_votes=votes,
+                up_count=up_count,
+                down_count=down_count,
+                total_indicators=len(votes),
+            )
+            self.conviction_engine.register_signal(snapshot)
+            self.conviction_engine.register_timeframe_signal(asset, timeframe, sig.direction)
+
+            conviction = self.conviction_engine.score(
+                signal=sig,
+                asset_snapshot=snapshot,
+                regime=regime,
+                atr_value=sig.atr_value,
+            )
+
+            if conviction.position_size_usd <= 0:
+                log.info("  -> ConvictionEngine: score=%.0f [%s] -> $0 (NO TRADE)",
+                         conviction.total_score, conviction.tier_label)
+                continue
+
             # Risk check
             allowed, reason = check_risk(self.cfg, sig, self.tracker, market_id)
             if not allowed:
                 log.info("  -> Blocked: %s", reason)
                 continue
 
-            # Execute
-            order_id = self.executor.place_order(sig, market_id)
+            # Execute with conviction-based sizing
+            order_id = self.executor.place_order(
+                sig, market_id, conviction_size=conviction.position_size_usd
+            )
             if order_id:
                 trades_this_tick += 1
                 self._market_cooldown[market_id] = now
-                log.info("  -> Order placed: %s", order_id)
+                log.info(
+                    "  -> Order placed: %s | Conviction: %.0f/100 [%s] $%.2f%s",
+                    order_id, conviction.total_score, conviction.tier_label,
+                    conviction.position_size_usd,
+                    " ALL-ALIGNED" if conviction.all_assets_aligned else "",
+                )
 
                 # Track for performance measurement
                 self.perf_tracker.record_signal(

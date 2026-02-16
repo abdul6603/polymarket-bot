@@ -108,18 +108,29 @@ class Executor:
         )
         return size
 
-    def place_order(self, signal: Signal, market_id: str) -> str | None:
+    def place_order(
+        self, signal: Signal, market_id: str, conviction_size: float | None = None
+    ) -> str | None:
         """Place a GTC limit order for the given signal.
+
+        Args:
+            signal: Signal from the ensemble engine.
+            market_id: Polymarket market ID.
+            conviction_size: If provided, use this position size (from ConvictionEngine)
+                instead of the legacy _dynamic_position_size() calculation.
 
         Returns:
             Order ID if placed, None otherwise.
         """
-        order_size_usd = self._dynamic_position_size(signal)
-
-        # Apply regime size multiplier, then hard clamp to $10-$20 range
-        if self.regime:
-            order_size_usd *= self.regime.size_multiplier
-        order_size_usd = max(TRADE_MIN_USD, min(TRADE_MAX_USD, order_size_usd))
+        if conviction_size is not None and conviction_size > 0:
+            # ConvictionEngine already applied regime, safety rails, and hard caps
+            order_size_usd = conviction_size
+        else:
+            order_size_usd = self._dynamic_position_size(signal)
+            # Apply regime size multiplier, then hard clamp to $10-$20 range
+            if self.regime:
+                order_size_usd *= self.regime.size_multiplier
+            order_size_usd = max(TRADE_MIN_USD, min(TRADE_MAX_USD, order_size_usd))
         size = order_size_usd / signal.probability
         price = round(signal.probability, 2)
         # Clamp price to valid range

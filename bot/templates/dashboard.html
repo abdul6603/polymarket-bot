@@ -70,6 +70,20 @@
     </div>
     <div class="mt-6" id="garves-regime-badge"><span class="badge badge-info">Regime: --</span></div>
     <div class="section-spacer">
+      <h2 class="section-title" data-accent="garves">ConvictionEngine</h2>
+      <div class="grid-4" id="conviction-stats">
+        <div class="stat-card" data-accent="garves"><div class="stat-value" id="conv-rolling-wr">--</div><div class="stat-label">Rolling WR (20)</div></div>
+        <div class="stat-card" data-accent="garves"><div class="stat-value" id="conv-streak">--</div><div class="stat-label">Streak</div></div>
+        <div class="stat-card" data-accent="success"><div class="stat-value" id="conv-daily-pnl">--</div><div class="stat-label">Daily PnL</div></div>
+        <div class="stat-card" data-accent="garves"><div class="stat-value" id="conv-total-resolved">--</div><div class="stat-label">Total Resolved</div></div>
+      </div>
+      <div class="grid-3 mt-3" id="conv-asset-signals"></div>
+      <div class="mt-3">
+        <h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">Indicator Weights</h3>
+        <div class="glass-card"><table class="data-table"><thead><tr><th>Indicator</th><th>Base</th><th>Dynamic</th><th>Accuracy</th><th>Samples</th><th>Status</th></tr></thead><tbody id="conv-weights-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody></table></div>
+      </div>
+    </div>
+    <div class="section-spacer">
       <h2 class="section-title" data-accent="garves">Breakdowns</h2>
       <div class="grid-3" id="breakdowns">
         <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Asset</h3><table class="data-table"><thead><tr><th>Asset</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="bd-asset"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
