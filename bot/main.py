@@ -5,6 +5,7 @@ import logging
 import signal
 import sys
 import time
+from pathlib import Path
 
 from bot.binance_feed import BinanceFeed
 from bot.config import Config
@@ -76,6 +77,20 @@ class TradingBot:
         self._subscribed_tokens: set[str] = set()
         # Track when tokens were first subscribed (for warmup)
         self._subscribe_time: dict[str, float] = {}
+
+        # Agent Hub heartbeat
+        self._hub = None
+        try:
+            import sys as _sys
+            _sys.path.insert(0, str(Path.home() / ".agent-hub"))
+            from hub import AgentHub
+            self._hub = AgentHub("garves")
+            self._hub.register(capabilities=[
+                "trading", "signals", "conviction_engine",
+                "straddle", "multi_asset", "multi_timeframe",
+            ])
+        except Exception:
+            pass
         # Per-market cooldown: market_id -> last trade timestamp
         self._market_cooldown: dict[str, float] = {}
         self.COOLDOWN_SECONDS = 300  # 5 min cooldown after trading a market
@@ -332,6 +347,21 @@ class TradingBot:
         self.perf_tracker.check_resolutions()
         if self.perf_tracker.pending_count > 0:
             log.info("Performance tracker: %d trades pending resolution", self.perf_tracker.pending_count)
+
+        # Send heartbeat with live trading metrics
+        if self._hub:
+            try:
+                stats = self.perf_tracker.quick_stats() if hasattr(self.perf_tracker, 'quick_stats') else {}
+                self._hub.heartbeat(status="trading", metrics={
+                    "trades_this_tick": trades_this_tick,
+                    "open_positions": self.tracker.count,
+                    "exposure_usd": round(self.tracker.total_exposure, 2),
+                    "pending_trades": self.perf_tracker.pending_count,
+                    "regime": regime.label if regime else "unknown",
+                    "dry_run": self.cfg.dry_run,
+                })
+            except Exception:
+                pass
 
     async def _cleanup(self) -> None:
         log.info("Shutting down...")
