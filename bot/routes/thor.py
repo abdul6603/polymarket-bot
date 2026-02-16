@@ -525,15 +525,61 @@ def api_thor_submit():
         return jsonify({"error": str(e)}), 500
 
 
+def _apply_progress_row_style(ws, row_num, agent):
+    """Apply consistent styling to a progress sheet data row."""
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+
+    THIN_BORDER = Border(
+        left=Side(style="thin", color="D1D5DB"),
+        right=Side(style="thin", color="D1D5DB"),
+        top=Side(style="thin", color="D1D5DB"),
+        bottom=Side(style="thin", color="D1D5DB"),
+    )
+    AGENT_TEXT_COLORS = {
+        "Garves": "B8860B", "Soren": "7B2D8E", "Shelby": "2B4C9B",
+        "Atlas": "1E8C1E", "Lisa": "C71585", "Robotox": "CC3700",
+        "Thor": "008B8B", "Dashboard": "4A4A4A", "System": "555555",
+    }
+    fill = (PatternFill(start_color="F3F4F6", end_color="F3F4F6", fill_type="solid")
+            if row_num % 2 == 0
+            else PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid"))
+
+    for col in range(1, 9):
+        cell = ws.cell(row=row_num, column=col)
+        cell.fill = fill
+        cell.border = THIN_BORDER
+        cell.alignment = Alignment(
+            vertical="center",
+            wrap_text=(col == 7),
+            horizontal="center" if col in (1, 3, 5, 8) else "left",
+        )
+        if col == 4:
+            color = AGENT_TEXT_COLORS.get(agent, "333333")
+            cell.font = Font(name="Calibri", size=10, bold=True, color=color)
+        else:
+            cell.font = Font(name="Calibri", size=10)
+
+
+# Type mapping for Thor results
+_THOR_TYPE_MAP = {
+    "new feature": "Feature", "feature": "Feature", "bug fix": "Fix",
+    "fix": "Fix", "improvement": "Upgrade", "upgrade": "Upgrade",
+    "integration": "Integration",
+}
+
+
 @thor_bp.route("/api/thor/update-sheet", methods=["POST"])
 def api_thor_update_sheet():
-    """Scan recent Thor results and backfill any missing entries into the Excel progress sheet."""
+    """Scan recent Thor results and backfill any missing entries into the Excel progress sheet.
+
+    New 8-column layout: # | Date | Time | Agent | Type | Change | Description | Status
+    """
     try:
         import openpyxl
-        import shutil
         import subprocess
+        import re
+        from datetime import datetime
 
-        # Use data dir copy to avoid macOS TCC Desktop restrictions
         data_copy = THOR_DATA / "brotherhood_progress.xlsx"
 
         if not data_copy.exists():
@@ -542,11 +588,11 @@ def api_thor_update_sheet():
         wb = openpyxl.load_workbook(str(data_copy))
         ws = wb.active
 
-        # Collect existing feature names to avoid duplicates
+        # Collect existing Change titles (col 6) to avoid duplicates
         existing = set()
         for r in range(2, ws.max_row + 1):
-            feat = ws.cell(r, 4).value or ""
-            existing.add(feat.strip())
+            change = ws.cell(r, 6).value or ""
+            existing.add(change.strip())
 
         # Scan Thor completed results
         results_dir = THOR_DATA / "results"
@@ -564,31 +610,53 @@ def api_thor_update_sheet():
                 if task.get("status") != "completed":
                     continue
 
-                title = task.get("title", "")[:100]
-                if title.strip() in existing:
+                change_title = task.get("title", "")[:50]
+                if change_title.strip() in existing:
                     continue
 
                 agent = (task.get("agent") or "Thor").title()
-                desc = (result.get("summary") or task.get("description", ""))[:300]
-                files_written = result.get("files_written", {})
-                files_str = ", ".join(list(files_written.keys())[:5]) if isinstance(files_written, dict) else str(files_written)[:200]
-                created = task.get("created_at", time.time())
-                from datetime import datetime
-                date_str = datetime.fromtimestamp(created).strftime("%Y-%m-%d")
+                # Clean description: no code, no markdown, max 200 chars
+                desc = result.get("summary") or task.get("description", "")
+                desc = re.sub(r'#+\s+', '', desc)
+                desc = re.sub(r'\*{1,2}([^*]+)\*{1,2}', r'\1', desc)
+                desc = re.sub(r'```[\s\S]*?```', '', desc)
+                desc = desc.replace('`', '')
+                desc = re.sub(r'\s+', ' ', desc).strip()[:200]
 
-                ws.append([date_str, agent, "Improvement", title, desc[:300], files_str[:200], "Complete"])
-                existing.add(title.strip())
+                # Detect type
+                category = (task.get("category") or "improvement").lower()
+                change_type = _THOR_TYPE_MAP.get(category, "Upgrade")
+
+                created = task.get("created_at", time.time())
+                dt = datetime.fromtimestamp(created)
+
+                row_num = ws.max_row + 1
+                seq = row_num - 1
+
+                ws.cell(row=row_num, column=1, value=seq)
+                ws.cell(row=row_num, column=2, value=dt.strftime("%b %d, %Y"))
+                ws.cell(row=row_num, column=3, value=dt.strftime("%-I:%M %p"))
+                ws.cell(row=row_num, column=4, value=agent)
+                ws.cell(row=row_num, column=5, value=change_type)
+                ws.cell(row=row_num, column=6, value=change_title)
+                ws.cell(row=row_num, column=7, value=desc)
+                ws.cell(row=row_num, column=8, value="Done")
+
+                _apply_progress_row_style(ws, row_num, agent)
+                ws.auto_filter.ref = f"A1:H{row_num}"
+
+                existing.add(change_title.strip())
                 added += 1
             except Exception:
                 continue
 
         wb.save(str(data_copy))
 
-        # Copy back to Desktop via subprocess (bypasses TCC for child process)
+        # Copy to Desktop
         try:
             subprocess.run(["cp", str(data_copy), str(EXCEL_PATH)], timeout=5)
         except Exception:
-            pass  # Data dir copy is still updated
+            pass
 
         return jsonify({"status": "ok", "added": added, "total_rows": ws.max_row})
     except Exception as e:
