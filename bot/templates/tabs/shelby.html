@@ -1,6 +1,11 @@
 <!-- SHELBY -->
 <div class="tab-content" id="tab-shelby">
   <div id="intel-shelby" class="intel-meter" style="margin-bottom:12px;"></div>
+  <div class="agent-widget-row" id="shelby-widgets">
+    <button class="btn" onclick="openKPIModal(&apos;shelby&apos;)" style="font-size:0.72rem;">Performance KPIs</button>
+    <button class="btn" onclick="healthCheckAgent(&apos;shelby&apos;)" style="font-size:0.72rem;">Health Check</button>
+  </div>
+  <div class="health-inline" id="shelby-health-result"></div>
   <div class="grid-4">
     <div class="stat-card" data-accent="shelby"><div class="stat-value" id="shelby-tasks-active">--</div><div class="stat-label">Tasks In Progress</div></div>
     <div class="stat-card" data-accent="success"><div class="stat-value" id="shelby-tasks-done-today">--</div><div class="stat-label">Completed Today</div></div>
