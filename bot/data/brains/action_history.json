@@ -1,0 +1,89 @@
+{
+  "actions": [
+    {
+      "id": "act_1a0b99b6",
+      "action_id": "task_f0cdbe9e",
+      "title": "Atlas KB Bloated (500 obs) \u2014 Compress",
+      "title_hash": "atlas kb bloated (500 obs) \u2014 compress",
+      "agent": "atlas",
+      "source": "live_data",
+      "description": "Knowledge base has 500 observations (max 500). Run auto-summarization to compress old observations into learnings.",
+      "status": "accepted",
+      "accepted_at": "2026-02-16T13:06:31.248109-05:00",
+      "completed_at": null,
+      "outcome": null,
+      "outcome_score": null
+    },
+    {
+      "id": "act_b5a6cea3",
+      "action_id": "task_c42bb4fa",
+      "title": "Atlas: 26 Unapplied Learnings \u2014 Review",
+      "title_hash": "atlas: 26 unapplied learnings \u2014 review",
+      "agent": "atlas",
+      "source": "live_data",
+      "description": "26 validated learnings haven't been applied yet. Review and implement the most impactful ones.",
+      "status": "accepted",
+      "accepted_at": "2026-02-16T13:06:37.127012-05:00",
+      "completed_at": null,
+      "outcome": null,
+      "outcome_score": null
+    },
+    {
+      "id": "act_84660d76",
+      "action_id": "task_4aee2965",
+      "title": "Atlas Score Low (48) \u2014 Investigate",
+      "title_hash": "atlas score low (48) \u2014 investigate",
+      "agent": "atlas",
+      "source": "shelby",
+      "description": "Shelby rates Atlas at 48/100. Reason: underperforming. Investigate and fix root cause.",
+      "status": "accepted",
+      "accepted_at": "2026-02-16T13:06:52.476782-05:00",
+      "completed_at": null,
+      "outcome": null,
+      "outcome_score": null
+    },
+    {
+      "id": "act_88c13eb1",
+      "action_id": "task_91812c84",
+      "title": "Transition from JSON files to a more robust database system such as SQLite or Po",
+      "title_hash": "transition from json files to a more robust database system such as sqlite or po",
+      "agent": "system_wide",
+      "source": "atlas",
+      "description": "Transition from JSON files to a more robust database system such as SQLite or Po",
+      "status": "accepted",
+      "accepted_at": "2026-02-16T13:29:18.569787-05:00",
+      "completed_at": null,
+      "outcome": null,
+      "outcome_score": null
+    },
+    {
+      "id": "act_ba9da49e",
+      "action_id": "task_4b5b69c9",
+      "title": "23 learnings haven't been applied yet. Review and implement these insights.",
+      "title_hash": "23 learnings haven't been applied yet. review and implement these insights.",
+      "agent": "system_wide",
+      "source": "atlas",
+      "description": "23 learnings haven't been applied yet. Review and implement these insights.",
+      "status": "accepted",
+      "accepted_at": "2026-02-16T13:29:32.477236-05:00",
+      "completed_at": null,
+      "outcome": null,
+      "outcome_score": null
+    },
+    {
+      "id": "act_88d80ae9",
+      "action_id": "task_fa33131e",
+      "title": "Lisa Score Low (25) \u2014 Investigate",
+      "title_hash": "lisa score low (25) \u2014 investigate",
+      "agent": "lisa",
+      "source": "shelby",
+      "description": "Shelby rates Lisa at 25/100. Reason: underperforming. Investigate and fix root cause.",
+      "status": "accepted",
+      "accepted_at": "2026-02-16T13:32:55.243996-05:00",
+      "completed_at": null,
+      "outcome": null,
+      "outcome_score": null
+    }
+  ],
+  "learnings": []
+}

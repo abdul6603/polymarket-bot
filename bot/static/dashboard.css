@@ -313,8 +313,9 @@
   .agent-card:hover[data-agent="mercury"] { border-color:rgba(255,136,0,0.2); }
   .agent-card:hover[data-agent="nexus"] { border-color:rgba(0,204,255,0.2); }
   .agent-card:hover[data-agent="sentinel"] { border-color:rgba(0,255,68,0.2); }
-  .agent-card-header { display:flex; align-items:center; justify-content:space-between; }
+  .agent-card-header { display:flex; align-items:center; justify-content:space-between; gap:6px; }
   .agent-card-name { font-family:var(--font-mono); font-size:0.88rem; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; }
+  .brain-badge { display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:rgba(255,170,0,0.2); color:#ffaa00; font-size:0.65rem; font-weight:700; font-family:var(--font-mono); }
   .agent-card[data-agent="garves"] .agent-card-name { color:var(--agent-garves); }
   .agent-card[data-agent="soren"] .agent-card-name { color:var(--agent-soren); }
   .agent-card[data-agent="shelby"] .agent-card-name { color:var(--agent-shelby); }

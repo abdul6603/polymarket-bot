@@ -27,9 +27,22 @@ soren_bp = Blueprint("soren", __name__)
 
 def _do_generate(item_id: str, item: dict, mode: str) -> None:
     """Background thread: generate a reel from a queue item."""
+    import logging
     import tempfile
+    _log = logging.getLogger("soren")
     try:
         _generation_status[item_id] = {"status": "generating"}
+
+        # Read brain notes for Soren
+        try:
+            from bot.brain_reader import read_brain_notes
+            brain_notes = read_brain_notes("soren")
+            if brain_notes:
+                for note in brain_notes:
+                    _log.info("[BRAIN] %s: %s", note.get("topic", "?"), note.get("content", "")[:120])
+        except Exception:
+            pass
+
         # Strip hashtags -- only keep the actual caption text
         raw = item.get("content", "")
         # Remove everything from first hashtag onward

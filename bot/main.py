@@ -177,6 +177,13 @@ class TradingBot:
             resp = process_command(cmd, bot=self)
             log.info("[V2] Shelby command '%s' -> %s", cmd.get("action"), resp.get("action", "done"))
 
+        # Read brain notes from dashboard
+        from bot.brain_reader import read_brain_notes
+        brain_notes = read_brain_notes("garves")
+        if brain_notes:
+            for note in brain_notes:
+                log.info("[BRAIN] %s: %s", note.get("topic", "?"), note.get("content", "")[:120])
+
         # 0. Detect market regime (Fear & Greed based)
         regime = detect_regime()
         self.executor.regime = regime

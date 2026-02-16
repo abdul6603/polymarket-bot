@@ -21,6 +21,17 @@ mercury_bp = Blueprint("mercury", __name__)
 @mercury_bp.route("/api/mercury")
 def api_mercury():
     """Mercury social media manager status."""
+    import logging
+    _log = logging.getLogger("lisa")
+    try:
+        from bot.brain_reader import read_brain_notes
+        brain_notes = read_brain_notes("lisa")
+        if brain_notes:
+            for note in brain_notes:
+                _log.info("[BRAIN] %s: %s", note.get("topic", "?"), note.get("content", "")[:120])
+    except Exception:
+        pass
+
     posting_log = []
     if MERCURY_POSTING_LOG.exists():
         try:

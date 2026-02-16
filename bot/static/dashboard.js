@@ -25,10 +25,18 @@ function wrColor(wr) { return wr >= 50 ? 'var(--success)' : wr >= 40 ? 'var(--wa
 function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function pct(w, l) { var t = w + l; return t > 0 ? (w / t * 100).toFixed(1) + '%' : '--'; }
 
+var _brainCountsCache = {};
+function fetchBrainCounts() {
+  fetch('/api/brain/all').then(function(r){return r.json();}).then(function(d){
+    _brainCountsCache = d.agents || {};
+  }).catch(function(){});
+}
 function renderAgentGrid(overview) {
+  fetchBrainCounts();
   var g = overview.garves || {};
   var s = overview.soren || {};
   var sh = overview.shelby || {};
+  var brainAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',mercury:'lisa',sentinel:'robotox',thor:'thor'};
   var cards = [
     {id:'garves', stats:[['Win Rate',(g.win_rate||0)+'%'],['Trades',g.total_trades||0],['Pending',g.pending||0]], online:g.running},
     {id:'soren', stats:[['Queue',s.queue_pending||0],['Posted',s.total_posted||0]], online:true},
@@ -41,8 +49,13 @@ function renderAgentGrid(overview) {
   var html = '';
   for (var i = 0; i < cards.length; i++) {
     var c = cards[i];
+    var brainKey = brainAgentMap[c.id] || c.id;
+    var brainCount = _brainCountsCache[brainKey] || 0;
     html += '<div class="agent-card" data-agent="' + c.id + '" onclick="switchTab(&apos;' + c.id + '&apos;)">';
     html += '<div class="agent-card-header"><span class="agent-card-name">' + (AGENT_NAMES[c.id] || c.id.charAt(0).toUpperCase() + c.id.slice(1)) + '</span>';
+    if (brainCount > 0) {
+      html += '<span class="brain-badge" title="' + brainCount + ' brain note' + (brainCount > 1 ? 's' : '') + '">' + brainCount + '</span>';
+    }
     html += '<span class="status-dot ' + (c.online !== false ? 'online' : 'offline') + '"></span></div>';
     html += '<div class="agent-card-role">' + (AGENT_ROLES[c.id] || '') + '</div>';
     html += '<div class="agent-card-stats">';
