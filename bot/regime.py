@@ -38,15 +38,18 @@ _DEFAULT_REGIME = RegimeAdjustment(
 )
 
 REGIME_TABLE = {
+    # FIXED: extreme_fear was making trading EASIER (lower edge, lower consensus)
+    # but data shows 35.7% WR in extreme_fear — indicators are unreliable in panics.
+    # Now: trade LESS and require STRONGER signals during extreme fear.
     "extreme_fear": lambda fng: RegimeAdjustment(
         label="extreme_fear", fng_value=fng,
-        size_multiplier=1.5, edge_multiplier=0.7,
-        consensus_offset=-1, confidence_floor=0.20,
+        size_multiplier=0.7, edge_multiplier=1.3,
+        consensus_offset=1, confidence_floor=0.30,
     ),
     "fear": lambda fng: RegimeAdjustment(
         label="fear", fng_value=fng,
-        size_multiplier=1.2, edge_multiplier=0.85,
-        consensus_offset=0, confidence_floor=0.22,
+        size_multiplier=0.9, edge_multiplier=1.1,
+        consensus_offset=0, confidence_floor=0.25,
     ),
     "neutral": lambda fng: RegimeAdjustment(
         label="neutral", fng_value=fng,

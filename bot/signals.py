@@ -81,29 +81,35 @@ TF_WEIGHT_SCALE = {
 }
 
 MIN_CANDLES = 30
-MIN_CONSENSUS = 6  # at least 6 indicators must agree (>50%)
+MIN_CONSENSUS = 7  # at least 7 indicators must agree (data: 7+ = 62% WR, 5-6 = 15% WR)
 MIN_ATR_THRESHOLD = 0.00005  # skip if volatility below this (0.005% of price)
 MIN_CONFIDENCE = 0.25  # reject weak signals (avg was 0.178, most were losers)
 
 # Directional bias: UP predictions have 47.3% WR vs DOWN 63% — require higher confidence for UP
 UP_CONFIDENCE_PREMIUM = 0.08  # add 8% to confidence floor for UP bets
 
-# Time-of-day filter: hours 06-07 ET have 0-33% WR — dead zone
-AVOID_HOURS_ET = {6, 7}  # skip trading entirely during these hours
+# Time-of-day filter: block hours with <30% WR across 140+ trades
+# Good hours: 00,02,10,12,16,17 (79.5% WR combined)
+# Bad hours: 05 (0%), 18 (17%), 19 (29%), 20 (13%), 21 (0%), 22 (12%), 23 (22%)
+AVOID_HOURS_ET = {5, 6, 7, 18, 19, 20, 21, 22, 23}  # 9 dead hours
 
 # Timeframe-specific minimum edge — must exceed estimated fees
+# Data: 0-8% edge = 20% WR, 8-11% = 62.5% WR — 8% is the breakeven floor
 MIN_EDGE_BY_TF = {
-    "5m": 0.06,   # 6% — high bar for noisy 5m trades
-    "15m": 0.09,  # 9% — raised from 6% (15m was 50% WR = coin flip at 6%)
-    "1h": 0.03,   # 3% — must exceed 2% winner fee
-    "4h": 0.03,   # 3% — must exceed 2% winner fee
+    "5m": 0.08,   # 8% — raised from 6% (below 8% = 20% WR)
+    "15m": 0.08,  # 8% — raised from 9% regime-adjusted (0.7x was dropping to 6.3%)
+    "1h": 0.05,   # 5% — raised from 3%
+    "4h": 0.04,   # 4% — raised from 3%
 }
+
+# Hard floor — regime adjustments cannot lower edge below this
+MIN_EDGE_ABSOLUTE = 0.08  # 8% — never trade below this regardless of regime
 
 # Asset-specific edge premium — weaker assets need higher edge to trade
 ASSET_EDGE_PREMIUM = {
-    "bitcoin": 1.0,    # baseline
-    "ethereum": 1.0,   # baseline (best performer: 59% WR)
-    "solana": 1.3,     # +30% edge required (48.5% WR — underwater after fees)
+    "bitcoin": 1.0,    # baseline (33.9% WR — needs filtering not premium)
+    "ethereum": 0.9,   # slight discount (best performer: 41.3% WR)
+    "solana": 1.5,     # +50% edge required (31.6% WR — worst performer)
 }
 
 
@@ -288,8 +294,15 @@ class SignalEngine:
         up_count = 0
         down_count = 0
 
+        disabled = []
         for name, vote in active.items():
             base_w = dynamic_weights.get(name, 1.0)
+
+            # Skip indicators disabled by weight learner (accuracy < 40%)
+            if base_w <= 0:
+                disabled.append(name)
+                continue
+
             # Apply timeframe-specific weight scaling
             scale = tf_scale.get(name, 1.0)
             w = base_w * scale
@@ -303,6 +316,10 @@ class SignalEngine:
             else:
                 down_count += 1
 
+        if disabled:
+            log.info("[%s/%s] Disabled anti-signals (accuracy <40%%): %s",
+                     asset.upper(), timeframe, ", ".join(disabled))
+
         if weight_total == 0:
             return None
 
@@ -315,7 +332,7 @@ class SignalEngine:
 
         # Apply regime adjustment to consensus requirement
         effective_consensus = MIN_CONSENSUS + (regime.consensus_offset if regime else 0)
-        effective_consensus = max(3, effective_consensus)  # never below 3
+        effective_consensus = max(MIN_CONSENSUS, effective_consensus)  # never below MIN_CONSENSUS (7)
 
         if agree_count < effective_consensus:
             log.info(
@@ -424,7 +441,9 @@ class SignalEngine:
 
         # ── Timeframe-Specific Minimum Edge (regime-adjusted + asset premium) ──
         asset_premium = ASSET_EDGE_PREMIUM.get(asset, 1.0)
-        min_edge = MIN_EDGE_BY_TF.get(timeframe, 0.03) * (regime.edge_multiplier if regime else 1.0) * asset_premium
+        min_edge = MIN_EDGE_BY_TF.get(timeframe, 0.05) * (regime.edge_multiplier if regime else 1.0) * asset_premium
+        # Hard floor — regime cannot lower edge below absolute minimum
+        min_edge = max(min_edge, MIN_EDGE_ABSOLUTE)
         if consensus_edge < min_edge:
             log.info(
                 "[%s/%s] Edge too low: %.3f < %.3f (asset_premium=%.1fx)",

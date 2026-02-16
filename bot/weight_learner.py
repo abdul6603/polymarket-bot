@@ -67,10 +67,11 @@ def record_indicator_votes(trade_record, indicator_votes: dict) -> None:
 def get_dynamic_weights(base_weights: dict) -> dict:
     """Return adjusted weights based on historical indicator accuracy.
 
-    Rules (tightened Feb 15 — old thresholds let harmful indicators persist):
-    - >20 samples and <45% accuracy: reduce weight by 30%
-    - >20 samples and >55% accuracy: boost weight by 20%
-    - Clamp adjustments to [0.3x, 2.0x] of base weight
+    Rules (tightened Feb 16 — aggressive culling of anti-signals):
+    - >50 samples and <40% accuracy: DISABLE (weight=0) — actively harmful anti-signal
+    - >30 samples and <45% accuracy: reduce weight by 60%
+    - >30 samples and >55% accuracy: boost weight by 30%
+    - Clamp adjustments to [0.0x, 2.5x] of base weight
     """
     data = _load_accuracy()
     if not data:
@@ -84,25 +85,32 @@ def get_dynamic_weights(base_weights: dict) -> dict:
             continue
 
         accuracy = entry["accuracy"]
+        total = entry["total_votes"]
         new_w = base_w
 
-        if accuracy < 0.45:
-            new_w = base_w * 0.70  # reduce by 30%
-            log.info(
-                "Weight adjustment: %s accuracy=%.1f%% (%d samples) -> weight %.2f -> %.2f (reduced 30%%)",
-                name, accuracy * 100, entry["total_votes"], base_w, new_w,
+        if total >= 50 and accuracy < 0.40:
+            # Anti-signal: consistently wrong, disable entirely
+            new_w = 0.0
+            log.warning(
+                "Weight DISABLED: %s accuracy=%.1f%% (%d samples) — anti-signal, weight zeroed",
+                name, accuracy * 100, total,
             )
-        elif accuracy > 0.55:
-            new_w = base_w * 1.20  # boost by 20%
+        elif total >= 30 and accuracy < 0.45:
+            new_w = base_w * 0.40  # reduce by 60%
             log.info(
-                "Weight adjustment: %s accuracy=%.1f%% (%d samples) -> weight %.2f -> %.2f (boosted 20%%)",
-                name, accuracy * 100, entry["total_votes"], base_w, new_w,
+                "Weight reduced: %s accuracy=%.1f%% (%d samples) -> %.2f -> %.2f (-60%%)",
+                name, accuracy * 100, total, base_w, new_w,
+            )
+        elif total >= 30 and accuracy > 0.55:
+            new_w = base_w * 1.30  # boost by 30%
+            log.info(
+                "Weight boosted: %s accuracy=%.1f%% (%d samples) -> %.2f -> %.2f (+30%%)",
+                name, accuracy * 100, total, base_w, new_w,
             )
 
-        # Clamp to [0.3x, 2.0x] of base weight
-        min_w = base_w * 0.3
-        max_w = base_w * 2.0
-        new_w = max(min_w, min(max_w, new_w))
+        # Clamp to [0.0x, 2.5x] of base weight
+        max_w = base_w * 2.5
+        new_w = max(0.0, min(max_w, new_w))
 
         adjusted[name] = new_w
 
