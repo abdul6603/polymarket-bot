@@ -754,10 +754,45 @@ function renderAtlas(data) {
     _atlasUptimeInterval = setInterval(tickAtlasUptime, 1000);
     tickAtlasUptime();
   }
-  document.getElementById('atlas-observations').textContent = brain.observations || 0;
-  document.getElementById('atlas-learnings').textContent = brain.learnings || 0;
-  document.getElementById('atlas-improvements').textContent = brain.unapplied || 0;
-  document.getElementById('atlas-cycles').textContent = bg.cycles || 0;
+  // Live metrics cards
+  var lm = data.live_metrics || {};
+  var agentsFedEl = document.getElementById('atlas-agents-fed');
+  if (agentsFedEl) {
+    var fed = lm.agents_fed || 0;
+    var total = lm.agents_total || 7;
+    agentsFedEl.textContent = fed + '/' + total;
+    agentsFedEl.style.color = fed >= 5 ? 'var(--success)' : fed >= 3 ? 'var(--warning)' : 'var(--error)';
+  }
+  var kgEl = document.getElementById('atlas-knowledge-growth');
+  if (kgEl) {
+    var growth = lm.knowledge_growth || 0;
+    kgEl.textContent = '+' + growth + ' today';
+    kgEl.style.color = growth > 0 ? 'var(--success)' : 'var(--text-secondary)';
+  }
+  var anomEl = document.getElementById('atlas-anomalies');
+  if (anomEl) {
+    var anoms = lm.anomalies || 0;
+    anomEl.textContent = anoms;
+    anomEl.style.color = anoms > 0 ? 'var(--warning)' : 'var(--success)';
+  }
+  var ebEl = document.getElementById('atlas-event-bus');
+  if (ebEl) {
+    var evts = lm.event_bus_events || 0;
+    ebEl.textContent = evts + ' events';
+    ebEl.style.color = evts > 0 ? 'var(--success)' : 'var(--text-secondary)';
+  }
+  // Latest insight bar
+  var insightBar = document.getElementById('atlas-latest-insight');
+  var insightText = document.getElementById('atlas-insight-text');
+  if (insightBar && insightText && lm.latest_insight && lm.latest_insight.text) {
+    var li = lm.latest_insight;
+    var agentName = (AGENT_NAMES[li.agent] || li.agent || 'Atlas');
+    var confPct = Math.round((li.confidence || 0) * 100);
+    insightText.innerHTML = '<span style="color:' + (AGENT_COLORS[li.agent] || 'var(--agent-atlas)') + ';font-weight:600;">' + esc(agentName) + '</span> <span style="color:var(--text-muted);font-size:0.66rem;">(' + confPct + '% confidence)</span><br>' + esc(li.text);
+    insightBar.style.display = 'block';
+  } else if (insightBar) {
+    insightBar.style.display = 'none';
+  }
   // Learning badge — show per-agent breakdown
   var lBadge = document.getElementById('atlas-learning');
   if (lBadge && data.recent_learnings) {
@@ -781,6 +816,13 @@ function renderAtlas(data) {
     var qs = research.avg_quality_score || 0;
     qEl.textContent = qs > 0 ? qs + '/10' : '--';
     qEl.style.color = qs >= 8 ? 'var(--success)' : qs >= 6 ? 'var(--warning)' : qs > 0 ? 'var(--error)' : 'var(--text-secondary)';
+  }
+  // API Budget stat card
+  var apiBudgetEl = document.getElementById('atlas-api-budget');
+  if (apiBudgetEl && data.costs) {
+    var todayCalls = (data.costs.today_tavily || 0) + (data.costs.today_openai || 0);
+    apiBudgetEl.textContent = todayCalls + ' calls';
+    apiBudgetEl.style.color = todayCalls > 100 ? 'var(--warning)' : 'var(--success)';
   }
   // Cost panel
   var costEl = document.getElementById('atlas-cost-panel');

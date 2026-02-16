@@ -9,11 +9,16 @@
   <div class="health-inline" id="atlas-health-result"></div>
   <div class="grid-4">
     <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-uptime" style="font-size:1rem;">--</div><div class="stat-label">Uptime</div></div>
-    <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-observations">--</div><div class="stat-label">Observations</div></div>
-    <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-learnings">--</div><div class="stat-label">Lessons Learned</div></div>
-    <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-improvements">--</div><div class="stat-label">Improvements</div></div>
-    <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-cycles">--</div><div class="stat-label">Cycles</div></div>
+    <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-agents-fed">--</div><div class="stat-label">Agents Fed</div></div>
+    <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-knowledge-growth">--</div><div class="stat-label">Knowledge Growth (24h)</div></div>
+    <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-anomalies">--</div><div class="stat-label">Anomalies</div></div>
+    <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-api-budget">--</div><div class="stat-label">API Budget (today)</div></div>
     <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-quality-score">--</div><div class="stat-label">Research Quality</div></div>
+    <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-event-bus">--</div><div class="stat-label">Event Bus</div></div>
+  </div>
+  <div id="atlas-latest-insight" style="margin-top:8px;padding:10px 16px;background:var(--surface-secondary);border-radius:8px;border-left:3px solid var(--agent-atlas);font-family:var(--font-mono);font-size:0.76rem;display:none;">
+    <span style="color:var(--text-muted);font-size:0.66rem;text-transform:uppercase;letter-spacing:0.06em;">Latest Insight</span>
+    <div id="atlas-insight-text" style="margin-top:4px;color:var(--text-primary);"></div>
   </div>
   <div id="atlas-hierarchy" class="glass-card" style="margin-top:12px;margin-bottom:12px;"></div>
   <div id="atlas-bg-status" class="glass-card" style="margin-top:12px;margin-bottom:12px;"></div>
