@@ -1,0 +1,53 @@
+<!-- OVERVIEW TAB -->
+<div class="tab-content active" id="tab-overview">
+  <div id="team-intelligence" class="team-intel-panel"></div>
+  <div id="overview-atlas-countdown" style="margin-bottom:10px;"></div>
+  <h2 class="section-title">Agent Status</h2>
+  <div class="grid-auto" id="agent-grid"></div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="shelby">System Infrastructure</h2>
+    <div class="grid-4" id="infra-stats">
+      <div class="stat-card" data-accent="success"><div class="stat-value" id="infra-health">--</div><div class="stat-label">System Health</div></div>
+      <div class="stat-card" data-accent="shelby"><div class="stat-value" id="infra-agents-alive">--</div><div class="stat-label">Heartbeats</div></div>
+      <div class="stat-card" data-accent="atlas"><div class="stat-value" id="infra-broadcasts">--</div><div class="stat-label">Broadcasts</div></div>
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="infra-services">--</div><div class="stat-label">Services</div></div>
+    </div>
+    <div class="grid-2 mt-3">
+      <div class="glass-card">
+        <h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">Agent Heartbeats</h3>
+        <div id="infra-heartbeat-list" style="font-family:var(--font-mono);font-size:0.76rem;"><span class="text-muted">Loading heartbeats...</span></div>
+      </div>
+      <div class="glass-card">
+        <h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">Recent Broadcasts</h3>
+        <div id="infra-broadcast-list" style="font-family:var(--font-mono);font-size:0.76rem;max-height:200px;overflow-y:auto;"><span class="text-muted">Loading broadcasts...</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="garves">Indicator Accuracy</h2>
+    <div class="glass-card" id="indicator-accuracy"><table class="data-table"><thead><tr><th>Indicator</th><th>Accuracy</th><th>Signals</th><th>Correct</th><th>Weight</th></tr></thead><tbody id="indicator-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">Waiting for data...</td></tr></tbody></table></div>
+  </div>
+  <div class="section-spacer">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="section-title" data-accent="atlas">4-Hour Report</h2>
+      <button class="btn btn-primary" onclick="generate4hReport()">Generate Report</button>
+    </div>
+    <div class="report-container" id="report-4h-content">Click "Generate Report" to create one.</div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" style="color:#e0e0e0;">Claude (The Godfather) — Commands</h2>
+    <div class="glass-card"><div id="claude-commands" style="max-height:250px;overflow-y:auto;"><span class="text-muted">Loading commands...</span></div></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" style="color:#e0e0e0;">Claude (The Godfather) — Brain Notes</h2>
+    <div class="glass-card">
+      <div style="display:flex;gap:var(--space-2);margin-bottom:var(--space-2);">
+        <input type="text" class="input" id="claude-brain-topic" placeholder="Topic..." style="flex:1;font-size:0.76rem;padding:4px 8px;">
+        <select class="input" id="claude-brain-type" style="width:auto;font-size:0.72rem;padding:4px 6px;"><option value="note">Note</option><option value="command">Command</option><option value="memory">Memory</option></select>
+        <button class="btn btn-primary" onclick="addBrainNote('claude')" style="font-size:0.72rem;">Add</button>
+      </div>
+      <textarea class="input" id="claude-brain-content" placeholder="Knowledge, instructions, or notes for Claude..." style="width:100%;min-height:60px;font-size:0.76rem;padding:8px;resize:vertical;margin-bottom:var(--space-3);box-sizing:border-box;"></textarea>
+      <div id="claude-brain-list" style="max-height:300px;overflow-y:auto;"><div class="text-muted" style="text-align:center;padding:var(--space-4);">No brain notes yet.</div></div>
+    </div>
+  </div>
+</div>

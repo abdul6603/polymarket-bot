@@ -1,0 +1,93 @@
+<!-- GARVES SIM (Dry Run) -->
+<div class="tab-content" id="tab-garves">
+  <div id="intel-garves" class="intel-meter" style="margin-bottom:12px;"></div>
+  <div class="agent-widget-row" id="garves-widgets">
+    <div class="widget-badge" id="garves-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
+    <button class="btn" onclick="openKPIModal(&apos;garves&apos;)" style="font-size:0.72rem;">Performance KPIs</button>
+    <button class="btn" onclick="healthCheckAgent(&apos;garves&apos;)" style="font-size:0.72rem;">Health Check</button>
+  </div>
+  <div class="health-inline" id="garves-health-result"></div>
+  <div class="grid-6" id="stats-grid">
+    <div class="stat-card" data-accent="garves"><div class="stat-value" id="garves-winrate">--</div><div class="stat-label">Win Rate</div></div>
+    <div class="stat-card" data-accent="success"><div class="stat-value" id="garves-pnl">--</div><div class="stat-label">PnL</div></div>
+    <div class="stat-card" data-accent="garves"><div class="stat-value" id="garves-wins-losses">--</div><div class="stat-label">Wins / Losses</div></div>
+    <div class="stat-card" data-accent="garves"><div class="stat-value" id="garves-total">--</div><div class="stat-label">Total</div></div>
+    <div class="stat-card" data-accent="garves"><div class="stat-value" id="garves-resolved">--</div><div class="stat-label">Resolved</div></div>
+    <div class="stat-card" data-accent="warning"><div class="stat-value" id="garves-pending">--</div><div class="stat-label">Pending</div></div>
+  </div>
+  <div class="mt-6" id="garves-regime-badge"><span class="badge badge-info">Regime: --</span></div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="garves">ConvictionEngine</h2>
+    <div class="grid-4" id="conviction-stats">
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="conv-rolling-wr">--</div><div class="stat-label">Rolling WR (20)</div></div>
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="conv-streak">--</div><div class="stat-label">Streak</div></div>
+      <div class="stat-card" data-accent="success"><div class="stat-value" id="conv-daily-pnl">--</div><div class="stat-label">Daily PnL</div></div>
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="conv-total-resolved">--</div><div class="stat-label">Total Resolved</div></div>
+    </div>
+    <div class="grid-3 mt-3" id="conv-asset-signals"></div>
+    <div class="mt-3">
+      <h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">Indicator Weights</h3>
+      <div class="glass-card"><table class="data-table"><thead><tr><th>Indicator</th><th>Base</th><th>Dynamic</th><th>Accuracy</th><th>Samples</th><th>Status</th></tr></thead><tbody id="conv-weights-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody></table></div>
+    </div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="garves">Breakdowns</h2>
+    <div class="grid-3" id="breakdowns">
+      <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Asset</h3><table class="data-table"><thead><tr><th>Asset</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="bd-asset"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+      <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Timeframe</h3><table class="data-table"><thead><tr><th>TF</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="bd-tf"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+      <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Direction</h3><table class="data-table"><thead><tr><th>Dir</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="bd-dir"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+    </div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="warning">Pending Trades</h2>
+    <div class="glass-card"><table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Direction</th><th>Edge</th><th>Consensus</th><th>Status</th></tr></thead><tbody id="pending-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No pending trades</td></tr></tbody></table></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="garves">Resolved Trades</h2>
+    <div class="glass-card"><table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Direction</th><th>Edge</th><th>Result</th><th>PnL</th></tr></thead><tbody id="resolved-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No resolved trades</td></tr></tbody></table></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="garves">Daily Performance History</h2>
+    <div class="glass-card"><table class="data-table"><thead><tr><th>Date</th><th>Trades</th><th>W-L</th><th>Win Rate</th><th>PnL</th><th>Avg Edge</th><th>Regime</th><th>Issues</th></tr></thead><tbody id="daily-history-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No daily reports yet</td></tr></tbody></table></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="warning">Today's Mistake Analysis</h2>
+    <div id="daily-mistakes" class="flex flex-col gap-2"><div class="text-muted" style="padding:var(--space-4);">Loading analysis...</div></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="garves">Derivatives Intelligence</h2>
+    <div class="grid grid-3" id="deriv-cards">
+      <div class="glass-card" id="deriv-funding"><div class="stat-label">Funding Rates</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+      <div class="glass-card" id="deriv-liquidations"><div class="stat-label">Liquidations (5m)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+      <div class="glass-card" id="deriv-depth"><div class="stat-label">Spot Depth (Top 5)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+    </div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="garves">Live Log</h2>
+    <div class="log-feed" id="log-feed"><div class="log-line"><span class="log-time">--:--:--</span><span class="log-msg">Waiting for log data...</span></div></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="garves">News Sentiment</h2>
+    <div class="grid-3" id="garves-sentiment-grid"><div class="text-muted" style="padding:var(--space-4);grid-column:1/-1;text-align:center;">Loading sentiment data...</div></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="garves">Suggested Actions</h2>
+    <div id="garves-smart-actions" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"><span class="text-muted" style="font-size:0.76rem;">Loading...</span></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="garves">Commands &amp; Capabilities</h2>
+    <div class="glass-card"><div id="garves-commands" style="max-height:250px;overflow-y:auto;"><span class="text-muted">Loading commands...</span></div></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="garves">Brain Notes</h2>
+    <div class="glass-card">
+      <div style="display:flex;gap:var(--space-2);margin-bottom:var(--space-2);">
+        <input type="text" class="input" id="garves-brain-topic" placeholder="Topic..." style="flex:1;font-size:0.76rem;padding:4px 8px;">
+        <select class="input" id="garves-brain-type" style="width:auto;font-size:0.72rem;padding:4px 6px;"><option value="note">Note</option><option value="command">Command</option><option value="memory">Memory</option></select>
+        <button class="btn btn-primary" onclick="addBrainNote('garves')" style="font-size:0.72rem;">Add</button>
+      </div>
+      <textarea class="input" id="garves-brain-content" placeholder="Knowledge, instructions, or notes for Garves..." style="width:100%;min-height:60px;font-size:0.76rem;padding:8px;resize:vertical;margin-bottom:var(--space-3);box-sizing:border-box;"></textarea>
+      <div id="garves-brain-list" style="max-height:300px;overflow-y:auto;"><div class="text-muted" style="text-align:center;padding:var(--space-4);">No brain notes yet.</div></div>
+    </div>
+  </div>
+</div>

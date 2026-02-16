@@ -1,0 +1,114 @@
+<!-- LISA (Mercury) -->
+<div class="tab-content" id="tab-mercury">
+  <div id="intel-lisa" class="intel-meter" style="margin-bottom:12px;"></div>
+  <div class="agent-widget-row" id="mercury-widgets">
+    <div class="widget-badge" id="mercury-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
+    <button class="btn" onclick="openKPIModal(&apos;mercury&apos;)" style="font-size:0.72rem;">Performance KPIs</button>
+    <button class="btn" onclick="healthCheckAgent(&apos;mercury&apos;)" style="font-size:0.72rem;">Health Check</button>
+  </div>
+  <div class="health-inline" id="mercury-health-result"></div>
+  <div class="grid-4">
+    <div class="stat-card" data-accent="mercury"><div class="stat-value" id="mercury-outbox-stat">--</div><div class="stat-label">Outbox</div></div>
+    <div class="stat-card" data-accent="mercury"><div class="stat-value" id="mercury-total-posted">--</div><div class="stat-label">Posted</div></div>
+    <div class="stat-card" data-accent="mercury"><div class="stat-value" id="mercury-platforms-count">--</div><div class="stat-label">Platforms</div></div>
+    <div class="stat-card" data-accent="mercury"><div class="stat-value" id="mercury-review-avg">--</div><div class="stat-label">Avg Review</div></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="mercury">Brand Review Gate</h2>
+    <div class="glass-card">
+      <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-4);flex-wrap:wrap;">
+        <div id="mercury-review-stats" style="display:flex;gap:var(--space-4);font-size:0.76rem;font-family:var(--font-mono);align-items:center;">
+          <span class="text-muted">No reviews yet</span>
+        </div>
+      </div>
+      <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:var(--space-3);">Test any caption against Soren&apos;s brand voice:</div>
+      <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-3);flex-wrap:wrap;align-items:end;">
+        <div style="flex:1;min-width:200px;">
+          <textarea class="input" id="mercury-review-caption" rows="2" placeholder="Paste a caption to review..." style="width:100%;resize:vertical;font-family:var(--font-mono);font-size:0.78rem;"></textarea>
+        </div>
+        <div style="display:flex;gap:var(--space-2);flex-direction:column;">
+          <select class="input" id="mercury-review-platform" style="font-size:0.76rem;padding:4px 8px;">
+            <option value="instagram">Instagram</option>
+            <option value="tiktok">TikTok</option>
+            <option value="x">X</option>
+          </select>
+          <button class="btn btn-primary" onclick="mercuryReviewCaption()" style="white-space:nowrap;">Review Caption</button>
+        </div>
+      </div>
+      <div id="mercury-review-result" style="min-height:40px;font-family:var(--font-mono);font-size:0.76rem;"></div>
+    </div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="mercury">Outbox — Brand Check</h2>
+    <div class="glass-card" id="mercury-outbox-review"><div class="text-muted">No approved items in outbox.</div></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="mercury">Strategy Plan</h2>
+    <div class="glass-card" id="mercury-plan"><div class="text-muted">Loading plan...</div></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="mercury">Knowledge Base</h2>
+    <div class="flex flex-col gap-2" id="mercury-knowledge"><div class="text-muted">Loading knowledge...</div></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="mercury">Reply Intelligence</h2>
+    <div class="glass-card">
+      <div class="flex gap-2" style="margin-bottom:var(--space-4);">
+        <input type="text" class="input" id="mercury-reply-input" placeholder="Paste a comment to test reply..." />
+        <button class="btn btn-primary" onclick="mercuryTestReply()">Test</button>
+      </div>
+      <div class="report-container" id="mercury-reply-result" style="min-height:60px;">Enter a comment and click "Test" to see reply suggestion.</div>
+    </div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="mercury">Recent Posts</h2>
+    <div class="glass-card"><table class="data-table"><thead><tr><th>Time</th><th>Platform</th><th>Content</th><th>Score</th><th>Status</th></tr></thead><tbody id="mercury-posts-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No posts yet</td></tr></tbody></table></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="mercury">Go-Live Toggle</h2>
+    <div class="glass-card" id="lisa-golive-panel">
+      <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:var(--space-3);">Toggle platforms between dry-run and live posting:</div>
+      <div class="grid-3" id="lisa-golive-toggles"><div class="text-muted" style="text-align:center;">Loading...</div></div>
+    </div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="mercury">Comment Analyzer</h2>
+    <div class="glass-card">
+      <div class="grid-3" id="lisa-comment-stats" style="margin-bottom:var(--space-4);"><div class="text-muted" style="grid-column:1/-1;text-align:center;">No comment data yet</div></div>
+      <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-3);flex-wrap:wrap;align-items:end;">
+        <div style="flex:1;min-width:200px;">
+          <textarea class="input" id="lisa-comment-input" rows="2" placeholder="Paste a comment to analyze..." style="width:100%;resize:vertical;font-family:var(--font-mono);font-size:0.78rem;"></textarea>
+        </div>
+        <div style="display:flex;gap:var(--space-2);flex-direction:column;">
+          <select class="input" id="lisa-comment-platform" style="font-size:0.76rem;padding:4px 8px;">
+            <option value="instagram">Instagram</option>
+            <option value="tiktok">TikTok</option>
+            <option value="x">X</option>
+          </select>
+          <button class="btn btn-primary" onclick="lisaAnalyzeComment()">Analyze</button>
+        </div>
+      </div>
+      <div id="lisa-comment-result" style="min-height:40px;font-family:var(--font-mono);font-size:0.76rem;"></div>
+    </div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="lisa">Suggested Actions</h2>
+    <div id="lisa-smart-actions" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"><span class="text-muted" style="font-size:0.76rem;">Loading...</span></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="lisa">Commands &amp; Capabilities</h2>
+    <div class="glass-card"><div id="lisa-commands" style="max-height:250px;overflow-y:auto;"><span class="text-muted">Loading commands...</span></div></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="lisa">Brain Notes</h2>
+    <div class="glass-card">
+      <div style="display:flex;gap:var(--space-2);margin-bottom:var(--space-2);">
+        <input type="text" class="input" id="lisa-brain-topic" placeholder="Topic..." style="flex:1;font-size:0.76rem;padding:4px 8px;">
+        <select class="input" id="lisa-brain-type" style="width:auto;font-size:0.72rem;padding:4px 6px;"><option value="note">Note</option><option value="command">Command</option><option value="memory">Memory</option></select>
+        <button class="btn btn-primary" onclick="addBrainNote('lisa')" style="font-size:0.72rem;">Add</button>
+      </div>
+      <textarea class="input" id="lisa-brain-content" placeholder="Knowledge, instructions, or notes for Lisa..." style="width:100%;min-height:60px;font-size:0.76rem;padding:8px;resize:vertical;margin-bottom:var(--space-3);box-sizing:border-box;"></textarea>
+      <div id="lisa-brain-list" style="max-height:300px;overflow-y:auto;"><div class="text-muted" style="text-align:center;padding:var(--space-4);">No brain notes yet.</div></div>
+    </div>
+  </div>
+</div>

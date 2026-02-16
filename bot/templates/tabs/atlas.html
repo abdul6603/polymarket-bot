@@ -1,0 +1,67 @@
+<!-- ATLAS -->
+<div class="tab-content" id="tab-atlas">
+  <div id="intel-atlas" class="intel-meter" style="margin-bottom:12px;"></div>
+  <div class="agent-widget-row" id="atlas-widgets">
+    <div class="widget-badge" id="atlas-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
+    <button class="btn" onclick="openKPIModal(&apos;atlas&apos;)" style="font-size:0.72rem;">Performance KPIs</button>
+    <button class="btn" onclick="healthCheckAgent(&apos;atlas&apos;)" style="font-size:0.72rem;">Health Check</button>
+  </div>
+  <div class="health-inline" id="atlas-health-result"></div>
+  <div class="grid-4">
+    <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-uptime" style="font-size:1rem;">--</div><div class="stat-label">Uptime</div></div>
+    <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-observations">--</div><div class="stat-label">Observations</div></div>
+    <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-learnings">--</div><div class="stat-label">Lessons Learned</div></div>
+    <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-improvements">--</div><div class="stat-label">Improvements</div></div>
+    <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-cycles">--</div><div class="stat-label">Cycles</div></div>
+    <div class="stat-card" data-accent="atlas"><div class="stat-value" id="atlas-quality-score">--</div><div class="stat-label">Research Quality</div></div>
+  </div>
+  <div id="atlas-hierarchy" class="glass-card" style="margin-top:12px;margin-bottom:12px;"></div>
+  <div id="atlas-bg-status" class="glass-card" style="margin-top:12px;margin-bottom:12px;"></div>
+  <div id="atlas-cost-panel" style="margin-bottom:12px;padding:12px 16px;background:var(--surface-secondary);border-radius:8px;"></div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="atlas">Actions</h2>
+    <div class="btn-group">
+      <button class="btn btn-primary" onclick="atlasFullReport()">Full Report</button>
+      <button class="btn" onclick="atlasAnalyze('garves')" style="color:var(--agent-garves);">Analyze Garves</button>
+      <button class="btn" onclick="atlasAnalyze('soren')" style="color:var(--agent-soren);">Analyze Soren</button>
+      <button class="btn" onclick="atlasAnalyze('shelby')" style="color:var(--agent-shelby);">Analyze Shelby</button>
+      <button class="btn" onclick="atlasAnalyze('mercury')" style="color:var(--agent-mercury);">Analyze Lisa</button>
+      <button class="btn btn-warning" onclick="atlasSuggestImprovements()">Improvements</button>
+      <button class="btn" onclick="atlasAcknowledgeImprovements()" style="color:var(--text-secondary);">Dismiss All</button>
+      <button class="btn" onclick="atlasLiveResearch()" style="color:var(--agent-atlas);">Live Research</button>
+    </div>
+  </div>
+  <div id="atlas-live-research" style="display:none;margin-bottom:12px;padding:12px 16px;background:var(--surface-secondary);border-radius:8px;max-height:400px;overflow-y:auto;"></div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="atlas">Report / Analysis</h2>
+    <div class="report-container" id="atlas-report">Run an analysis or generate a report to see results here.</div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="atlas">Competitor Intel</h2>
+    <div class="glass-card" id="atlas-competitors"><div class="text-muted" style="text-align:center;padding:var(--space-6);">No competitor intel yet.</div></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="atlas">Trade Journal Analysis</h2>
+    <div class="glass-card" id="atlas-trade-analysis"><div class="text-muted" style="text-align:center;padding:var(--space-4);">No trade analysis yet.</div></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="atlas">Suggested Actions</h2>
+    <div id="atlas-smart-actions" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"><span class="text-muted" style="font-size:0.76rem;">Loading...</span></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="atlas">Commands &amp; Capabilities</h2>
+    <div class="glass-card"><div id="atlas-commands" style="max-height:250px;overflow-y:auto;"><span class="text-muted">Loading commands...</span></div></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="atlas">Brain Notes</h2>
+    <div class="glass-card">
+      <div style="display:flex;gap:var(--space-2);margin-bottom:var(--space-2);">
+        <input type="text" class="input" id="atlas-brain-topic" placeholder="Topic..." style="flex:1;font-size:0.76rem;padding:4px 8px;">
+        <select class="input" id="atlas-brain-type" style="width:auto;font-size:0.72rem;padding:4px 6px;"><option value="note">Note</option><option value="command">Command</option><option value="memory">Memory</option></select>
+        <button class="btn btn-primary" onclick="addBrainNote('atlas')" style="font-size:0.72rem;">Add</button>
+      </div>
+      <textarea class="input" id="atlas-brain-content" placeholder="Knowledge, instructions, or notes for Atlas..." style="width:100%;min-height:60px;font-size:0.76rem;padding:8px;resize:vertical;margin-bottom:var(--space-3);box-sizing:border-box;"></textarea>
+      <div id="atlas-brain-list" style="max-height:300px;overflow-y:auto;"><div class="text-muted" style="text-align:center;padding:var(--space-4);">No brain notes yet.</div></div>
+    </div>
+  </div>
+</div>

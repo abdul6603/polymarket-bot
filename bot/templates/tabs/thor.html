@@ -1,0 +1,81 @@
+<!-- THOR -->
+<div class="tab-content" id="tab-thor">
+  <div id="intel-thor" class="intel-meter" style="margin-bottom:12px;"></div>
+  <div class="agent-widget-row" id="thor-widgets">
+    <div class="widget-badge" id="thor-state"><span class="wb-label">State:</span> <span>--</span></div>
+    <div class="widget-badge" id="thor-model"><span class="wb-label">Model:</span> <span>--</span></div>
+    <button class="btn" onclick="openKPIModal('thor')" style="font-size:0.72rem;">Performance KPIs</button>
+    <button class="btn" onclick="healthCheckAgent('thor')" style="font-size:0.72rem;">Health Check</button>
+  </div>
+  <div class="health-inline" id="thor-health-result"></div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;">
+    <button class="btn" id="btn-update-sheet" onclick="thorUpdateSheet()" style="font-size:0.76rem;background:#ff6600;color:#000;font-weight:600;">Update Progress Sheet</button>
+    <button class="btn" id="btn-update-dash" onclick="thorUpdateDashboard()" style="font-size:0.76rem;background:#ff6600;color:#000;font-weight:600;">Update Dashboard</button>
+    <span id="thor-action-status" class="text-muted" style="font-size:0.72rem;align-self:center;"></span>
+  </div>
+  <div class="grid-6">
+    <div class="stat-card" data-accent="thor"><div class="stat-value" id="thor-queue-pending">0</div><div class="stat-label">Pending Tasks</div></div>
+    <div class="stat-card" data-accent="success"><div class="stat-value" id="thor-completed">0</div><div class="stat-label">Completed</div></div>
+    <div class="stat-card" data-accent="warning"><div class="stat-value" id="thor-failed">0</div><div class="stat-label">Failed</div></div>
+    <div class="stat-card" data-accent="thor"><div class="stat-value" id="thor-knowledge">0</div><div class="stat-label">Knowledge Entries</div></div>
+    <div class="stat-card" data-accent="thor"><div class="stat-value" id="thor-tokens">0</div><div class="stat-label">Tokens Used</div></div>
+    <div class="stat-card" data-accent="success"><div class="stat-value" id="thor-success-rate">--</div><div class="stat-label">Success Rate</div></div>
+  </div>
+  <div class="section-spacer">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
+      <h2 class="section-title" data-accent="thor" style="margin-bottom:0;">Smart Actions</h2>
+      <button class="btn" onclick="loadSmartActions()" style="font-size:0.72rem;">Refresh</button>
+    </div>
+    <div id="thor-smart-actions" style="display:flex;flex-wrap:wrap;gap:8px;">
+      <span class="text-muted">Loading live suggestions...</span>
+    </div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="thor">Submit Custom Task</h2>
+    <div class="glass-card">
+      <div style="display:flex;flex-direction:column;gap:var(--space-3);">
+        <input type="text" class="input" id="thor-custom-title" placeholder="Task title..." style="font-family:var(--font-mono);font-size:0.78rem;" />
+        <textarea class="input" id="thor-custom-desc" rows="3" placeholder="Describe what Thor should do..." style="width:100%;resize:vertical;font-family:var(--font-mono);font-size:0.78rem;"></textarea>
+        <div style="display:flex;gap:var(--space-3);align-items:center;">
+          <input type="text" class="input" id="thor-custom-files" placeholder="Target files (comma-separated)" style="flex:1;font-size:0.76rem;" />
+          <select class="input" id="thor-custom-priority" style="font-size:0.76rem;padding:4px 8px;">
+            <option value="normal">Normal</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+          </select>
+          <button class="btn btn-primary" onclick="thorSubmitCustomTask()">Submit Task</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="thor">Task Queue</h2>
+    <div class="glass-card"><table class="data-table"><thead><tr><th>ID</th><th>Title</th><th>Agent</th><th>Priority</th><th>Status</th></tr></thead><tbody id="thor-queue-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No tasks</td></tr></tbody></table></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="thor">Recent Results</h2>
+    <div class="glass-card"><table class="data-table"><thead><tr><th>Task</th><th>Model</th><th>Files</th><th>Test</th><th>Phrase</th></tr></thead><tbody id="thor-results-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No results yet</td></tr></tbody></table></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="thor">Activity Log</h2>
+    <div class="glass-card" style="max-height:300px;overflow-y:auto;">
+      <div id="thor-activity-log" style="font-family:monospace;font-size:0.75rem;padding:12px;color:var(--text-primary);">Waiting for data...</div>
+    </div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="thor">Commands &amp; Capabilities</h2>
+    <div class="glass-card"><div id="thor-commands" style="max-height:250px;overflow-y:auto;"><span class="text-muted">Loading commands...</span></div></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="thor">Brain Notes</h2>
+    <div class="glass-card">
+      <div style="display:flex;gap:var(--space-2);margin-bottom:var(--space-2);">
+        <input type="text" class="input" id="thor-brain-topic" placeholder="Topic..." style="flex:1;font-size:0.76rem;padding:4px 8px;">
+        <select class="input" id="thor-brain-type" style="width:auto;font-size:0.72rem;padding:4px 6px;"><option value="note">Note</option><option value="command">Command</option><option value="memory">Memory</option></select>
+        <button class="btn btn-primary" onclick="addBrainNote('thor')" style="font-size:0.72rem;">Add</button>
+      </div>
+      <textarea class="input" id="thor-brain-content" placeholder="Knowledge, instructions, or notes for Thor..." style="width:100%;min-height:60px;font-size:0.76rem;padding:8px;resize:vertical;margin-bottom:var(--space-3);box-sizing:border-box;"></textarea>
+      <div id="thor-brain-list" style="max-height:300px;overflow-y:auto;"><div class="text-muted" style="text-align:center;padding:var(--space-4);">No brain notes yet.</div></div>
+    </div>
+  </div>
+</div>
