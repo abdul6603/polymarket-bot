@@ -542,51 +542,121 @@ def api_atlas_hub_eval():
             except Exception:
                 pass
 
-        # Our system capabilities
+        # Our system capabilities — dynamically detected
+        features = [
+            "Cross-agent intelligence sharing via Atlas KB",
+            "Autonomous health monitoring and auto-fix (Robotox)",
+            "Proactive scheduling with 4 daily routines (Shelby)",
+            "Background research loop (45-min cycles, Tavily API)",
+            "Agent economics tracking",
+            "Task queue system (Thor)",
+            "A/B content testing (Soren)",
+            "Competitor intelligence gathering",
+            "Telegram notifications",
+            "Centralized dashboard with per-agent tabs",
+        ]
+
+        # Detect infrastructure that has been built
+        has_event_bus = (Path.home() / "shared" / "events.py").exists()
+        has_broadcast = (Path.home() / "shelby" / "core" / "broadcast.py").exists()
+        has_log_watcher = (Path.home() / "sentinel" / "core" / "log_watcher.py").exists()
+        has_dep_checker = (Path.home() / "sentinel" / "core" / "dep_checker.py").exists()
+        has_brain_system = (Path.home() / "polymarket-bot" / "bot" / "brain_reader.py").exists()
+
+        if has_event_bus:
+            features.append("Shared event bus — structured inter-agent coordination (blackboard architecture)")
+        if has_broadcast:
+            features.append("Brotherhood broadcast system for announcements")
+        if has_log_watcher:
+            features.append("Smart log watcher with 11 error patterns and auto-fix")
+        if has_dep_checker:
+            features.append("Dependency vulnerability scanning")
+        if has_brain_system:
+            features.append("Agent brain notes system for persistent knowledge")
+
         our_system = {
             "total_agents": 7,
             "agents": ["Garves (Trading)", "Soren (Content)", "Shelby (Commander)",
                        "Atlas (Research)", "Lisa (Social)", "Thor (Engineering)", "Robotox (Monitoring)"],
-            "features": [
-                "Cross-agent intelligence sharing via Atlas KB",
-                "Autonomous health monitoring and auto-fix (Robotox)",
-                "Proactive scheduling with 4 daily routines (Shelby)",
-                "Background research loop (45-min cycles, Tavily API)",
-                "Agent economics tracking",
-                "Task queue system (Thor)",
-                "A/B content testing (Soren)",
-                "Competitor intelligence gathering",
-                "Telegram notifications",
-                "Centralized dashboard with per-agent tabs",
-            ],
+            "features": features,
             "architecture": "Hierarchical: Owner > Claude > Shelby > Agents, Atlas cross-cuts",
         }
+
+        # Dynamic strengths — based on what exists
+        strengths = [
+            "Unified command center dashboard",
+            "Cross-agent knowledge sharing (Atlas feeds all)",
+            "Autonomous monitoring and self-healing (Robotox)",
+            "Hierarchical command structure with clear roles",
+            "Background continuous research and learning",
+        ]
+        if has_event_bus:
+            strengths.append("Shared event bus for real-time inter-agent coordination")
+        if has_log_watcher:
+            strengths.append("Intelligent log watching with autonomous fix escalation")
+
+        # Dynamic gaps — only list things that are ACTUALLY missing
+        gaps = []
+        if not has_event_bus:
+            gaps.append("No inter-agent direct messaging (agents go through Atlas/Shelby)")
+            gaps.append("Limited real-time collaboration between agents")
+        gaps.append("No ML-based anomaly detection (rule-based patterns only)")
+        gaps.append("No A/B testing framework for agent configurations")
+        gaps.append("No automated rollback on failed deployments")
+
+        # Pull gap insights from Atlas learnings
+        try:
+            kb_file = ATLAS_ROOT / "data" / "knowledge_base.json"
+            if kb_file.exists():
+                kb = json.loads(kb_file.read_text())
+                for learning in (kb.get("learnings", []))[-30:]:
+                    insight = learning.get("insight", "")
+                    conf = learning.get("confidence", 0)
+                    if conf >= 0.75 and any(kw in insight.lower() for kw in
+                                            ["needs", "bottleneck", "missing", "should", "improve", "low", "below"]):
+                        gap_text = insight[:120]
+                        if gap_text not in gaps:
+                            gaps.append(gap_text)
+        except Exception:
+            pass
+
+        # Dynamic recommendations — from Atlas improvements + learnings
+        recommendations = []
+        if not has_event_bus:
+            recommendations.append({"priority": "high", "recommendation": "Add inter-agent event bus for real-time coordination"})
+        recommendations.append({"priority": "medium", "recommendation": "Implement ML anomaly detection in Robotox log watcher"})
+        recommendations.append({"priority": "medium", "recommendation": "Add agent config versioning and rollback system"})
+
+        # Pull recommendations from Atlas improvements.json
+        try:
+            imp_file = ATLAS_ROOT / "data" / "improvements.json"
+            if imp_file.exists():
+                improvements = json.loads(imp_file.read_text())
+                rec_titles = {r["recommendation"][:60] for r in recommendations}
+                for agent_name, items in improvements.items():
+                    if not isinstance(items, list):
+                        continue
+                    for item in items[:2]:
+                        if not isinstance(item, dict):
+                            continue
+                        title = item.get("title", item.get("suggestion", ""))
+                        if title and title[:60] not in rec_titles:
+                            recommendations.append({
+                                "priority": item.get("priority", "normal"),
+                                "recommendation": f"[{agent_name.title()}] {title[:100]}",
+                            })
+                            rec_titles.add(title[:60])
+        except Exception:
+            pass
 
         # Build evaluation
         eval_result = {
             "our_system": our_system,
             "competitor_insights": comp.get("ai_agents", [])[:5],
             "research_insights": research_log,
-            "strengths": [
-                "Unified command center dashboard",
-                "Cross-agent knowledge sharing (Atlas feeds all)",
-                "Autonomous monitoring and self-healing (Robotox)",
-                "Hierarchical command structure with clear roles",
-                "Background continuous research and learning",
-            ],
-            "gaps": [
-                "No inter-agent direct messaging (agents go through Atlas/Shelby)",
-                "No ML-based anomaly detection (rule-based patterns only)",
-                "No A/B testing framework for agent configurations",
-                "No automated rollback on failed deployments",
-                "Limited real-time collaboration between agents",
-            ],
-            "recommendations": [
-                {"priority": "high", "recommendation": "Add inter-agent event bus for real-time coordination"},
-                {"priority": "medium", "recommendation": "Implement ML anomaly detection in Robotox log watcher"},
-                {"priority": "medium", "recommendation": "Add agent config versioning and rollback system"},
-                {"priority": "low", "recommendation": "Build agent performance benchmarking against industry metrics"},
-            ],
+            "strengths": strengths,
+            "gaps": gaps[:8],
+            "recommendations": recommendations[:8],
         }
         return jsonify(eval_result)
     except Exception as e:

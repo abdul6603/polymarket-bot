@@ -343,6 +343,38 @@ def _generate_smart_actions(agent_filter: str = "") -> list[dict]:
     except Exception:
         pass
 
+    # 5b. Atlas learnings → actionable insights (evolving knowledge)
+    try:
+        kb_file = ATLAS_DATA / "knowledge_base.json"
+        if kb_file.exists():
+            kb = json.loads(kb_file.read_text())
+            learnings = kb.get("learnings", [])
+            # Only high-confidence, actionable learnings that mention specific issues
+            action_keywords = ["needs", "should", "bottleneck", "declining", "failing",
+                               "low", "below", "improve", "fix", "broken", "stale"]
+            for learning in reversed(learnings[-50:]):
+                insight = learning.get("insight", "")
+                agent = learning.get("agent", "atlas")
+                conf = learning.get("confidence", 0)
+                if conf < 0.7 or not any(kw in insight.lower() for kw in action_keywords):
+                    continue
+                action_id = f"learning_{agent}_{hash(insight) % 10000}"
+                actions.append({
+                    "id": action_id,
+                    "title": insight[:80],
+                    "description": f"Atlas learned (confidence: {conf:.0%}): {insight}\n\n"
+                                   f"Evidence: {json.dumps(learning.get('evidence', {}), default=str)[:300]}",
+                    "agent": agent,
+                    "source": "atlas",
+                    "priority": "high" if conf >= 0.85 else "normal",
+                    "target_files": AGENT_FILE_MAP.get(agent, {}).get("key_files", []),
+                    "color": AGENT_COLORS.get(agent, "#22aa44"),
+                })
+                if len([a for a in actions if a["id"].startswith("learning_")]) >= 5:
+                    break
+    except Exception:
+        pass
+
     # 6. Shelby assessments → low-scoring agent actions
     try:
         assess_file = SHELBY_DATA / "agent_assessments.json"
