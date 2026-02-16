@@ -149,3 +149,135 @@ def api_commands_agent(agent: str):
         if a.get("agent_name", "").lower() == agent or a.get("agent_name") == target:
             return jsonify(a)
     return jsonify({"agent_name": agent, "commands": [], "error": "Agent not found"})
+
+
+# ══════════════════════════════════════════════
+# ACTION MEMORY — Learning Loop for Smart Actions
+# ══════════════════════════════════════════════
+ACTION_HISTORY_FILE = BRAIN_DIR / "action_history.json"
+
+
+def _load_action_history() -> dict:
+    if ACTION_HISTORY_FILE.exists():
+        try:
+            return json.loads(ACTION_HISTORY_FILE.read_text())
+        except Exception:
+            pass
+    return {"actions": [], "learnings": []}
+
+
+def _save_action_history(data: dict) -> None:
+    ACTION_HISTORY_FILE.write_text(json.dumps(data, indent=2, default=str))
+
+
+def _hash_action(title: str) -> str:
+    """Simple hash for deduplication."""
+    return title.strip().lower()[:80]
+
+
+@brain_bp.route("/api/actions/history")
+def api_action_history():
+    """Get action history with outcomes."""
+    data = _load_action_history()
+    agent = request.args.get("agent")
+    actions = data.get("actions", [])
+    if agent:
+        actions = [a for a in actions if a.get("agent") == agent]
+    return jsonify({
+        "actions": actions[-50:],
+        "learnings": data.get("learnings", [])[-20:],
+        "total_actions": len(data.get("actions", [])),
+        "total_learnings": len(data.get("learnings", [])),
+    })
+
+
+@brain_bp.route("/api/actions/accept", methods=["POST"])
+def api_action_accept():
+    """Record that an action was accepted/submitted to Thor."""
+    body = request.get_json(silent=True) or {}
+    action_id = body.get("action_id", "")
+    title = body.get("title", "")
+    agent = body.get("agent", "")
+    source = body.get("source", "")
+    description = body.get("description", "")
+
+    if not title:
+        return jsonify({"error": "title required"}), 400
+
+    data = _load_action_history()
+    entry = {
+        "id": f"act_{uuid.uuid4().hex[:8]}",
+        "action_id": action_id,
+        "title": title[:200],
+        "title_hash": _hash_action(title),
+        "agent": agent,
+        "source": source,
+        "description": description[:500],
+        "status": "accepted",
+        "accepted_at": datetime.now(ET).isoformat(),
+        "completed_at": None,
+        "outcome": None,
+        "outcome_score": None,
+    }
+    data["actions"].append(entry)
+    data["actions"] = data["actions"][-500:]
+    _save_action_history(data)
+    return jsonify({"success": True, "entry": entry})
+
+
+@brain_bp.route("/api/actions/complete", methods=["POST"])
+def api_action_complete():
+    """Record the outcome of a completed action."""
+    body = request.get_json(silent=True) or {}
+    action_entry_id = body.get("id", "")
+    outcome = body.get("outcome", "")  # "success", "partial", "failed"
+    outcome_notes = body.get("notes", "")
+    score = body.get("score", 0)  # -1 to 1 (bad to good)
+
+    data = _load_action_history()
+    found = False
+    for a in data["actions"]:
+        if a.get("id") == action_entry_id:
+            a["status"] = "completed"
+            a["completed_at"] = datetime.now(ET).isoformat()
+            a["outcome"] = outcome
+            a["outcome_notes"] = outcome_notes[:500]
+            a["outcome_score"] = score
+            found = True
+
+            # Auto-generate learning from outcome
+            if outcome in ("success", "failed"):
+                learning = {
+                    "id": f"learn_{uuid.uuid4().hex[:8]}",
+                    "from_action": a["title"],
+                    "agent": a["agent"],
+                    "source": a["source"],
+                    "outcome": outcome,
+                    "score": score,
+                    "insight": f"Action '{a['title'][:60]}' for {a['agent']} "
+                               f"{'worked well' if outcome == 'success' else 'did not help'}. "
+                               f"{outcome_notes[:200]}",
+                    "learned_at": datetime.now(ET).isoformat(),
+                }
+                data["learnings"].append(learning)
+                data["learnings"] = data["learnings"][-200:]
+            break
+
+    if not found:
+        return jsonify({"error": "Action not found"}), 404
+
+    _save_action_history(data)
+    return jsonify({"success": True})
+
+
+@brain_bp.route("/api/actions/completed-hashes")
+def api_action_completed_hashes():
+    """Return hashes of all completed/accepted actions for dedup."""
+    data = _load_action_history()
+    hashes = set()
+    for a in data.get("actions", []):
+        if a.get("status") in ("accepted", "completed"):
+            h = a.get("title_hash", "")
+            if h:
+                hashes.add(h)
+    return jsonify({"hashes": list(hashes)})

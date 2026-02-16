@@ -1908,6 +1908,7 @@ async function refresh() {
       loadNewsSentiment();
       loadBrainNotes('garves');
       loadCommandTable('garves');
+      loadAgentSmartActions('garves');
     } else if (currentTab === 'soren') {
       var resp = await fetch('/api/soren');
       renderSoren(await resp.json());
@@ -1915,6 +1916,7 @@ async function refresh() {
       loadSorenCompetitors();
       loadBrainNotes('soren');
       loadCommandTable('soren');
+      loadAgentSmartActions('soren');
     } else if (currentTab === 'shelby') {
       var resp = await fetch('/api/shelby');
       renderShelby(await resp.json());
@@ -1927,6 +1929,7 @@ async function refresh() {
       try { loadShelbyDecisions(); } catch(e) {}
       loadBrainNotes('shelby');
       loadCommandTable('shelby');
+      loadAgentSmartActions('shelby');
     } else if (currentTab === 'atlas') {
       var resp = await fetch('/api/atlas');
       var atlasData = await resp.json();
@@ -1942,6 +1945,7 @@ async function refresh() {
       loadTradeAnalysis();
       loadBrainNotes('atlas');
       loadCommandTable('atlas');
+      loadAgentSmartActions('atlas');
     } else if (currentTab === 'mercury') {
       var resp = await fetch('/api/mercury');
       renderMercury(await resp.json());
@@ -1952,6 +1956,7 @@ async function refresh() {
       loadLisaCommentStats();
       loadBrainNotes('lisa');
       loadCommandTable('lisa');
+      loadAgentSmartActions('lisa');
     } else if (currentTab === 'sentinel') {
       var resp = await fetch('/api/sentinel');
       renderSentinel(await resp.json());
@@ -1959,6 +1964,7 @@ async function refresh() {
       loadRobotoxDeps();
       loadBrainNotes('robotox');
       loadCommandTable('robotox');
+      loadAgentSmartActions('robotox');
     } else if (currentTab === 'thor') {
       loadThor();
       loadSmartActions();
@@ -2507,6 +2513,83 @@ async function loadThorResults() {
 }
 
 var _smartActionsCache = [];
+var _agentSmartActionsCache = {};
+
+async function loadAgentSmartActions(agent) {
+  var el = document.getElementById(agent + '-smart-actions');
+  if (!el) return;
+  try {
+    var resp = await fetch('/api/thor/smart-actions?agent=' + encodeURIComponent(agent));
+    var data = await resp.json();
+    var actions = data.actions || [];
+    _agentSmartActionsCache[agent] = actions;
+    if (actions.length === 0) {
+      el.innerHTML = '<span class="text-muted" style="font-size:0.76rem;">No suggestions right now — all good.</span>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < actions.length; i++) {
+      var a = actions[i];
+      var color = a.color || '#888';
+      var priorityBadge = '';
+      if (a.priority === 'critical') priorityBadge = '<span style="background:#ff0000;color:#fff;font-size:0.6rem;padding:1px 5px;border-radius:3px;margin-right:4px;">CRITICAL</span>';
+      else if (a.priority === 'high') priorityBadge = '<span style="background:rgba(255,100,0,0.3);color:#ff6644;font-size:0.6rem;padding:1px 5px;border-radius:3px;margin-right:4px;">HIGH</span>';
+      var sourceIcon = '';
+      if (a.source === 'atlas') sourceIcon = 'Atlas';
+      else if (a.source === 'robotox') sourceIcon = 'Robotox';
+      else if (a.source === 'shelby') sourceIcon = 'Shelby';
+      else if (a.source === 'live_data') sourceIcon = 'Live';
+      else if (a.source === 'thor') sourceIcon = 'Thor';
+      html += '<button class="btn" onclick="submitAgentSmartAction(\'' + agent + '\',' + i + ')" style="color:' + color + ';border-color:' + color + '33;font-size:0.74rem;padding:6px 12px;position:relative;">';
+      html += priorityBadge;
+      html += esc(a.title.substring(0, 50));
+      if (sourceIcon) html += ' <span style="font-size:0.6rem;opacity:0.6;margin-left:4px;">(' + sourceIcon + ')</span>';
+      html += '</button>';
+    }
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '<span class="text-muted" style="font-size:0.76rem;">Failed to load suggestions.</span>';
+  }
+}
+
+async function submitAgentSmartAction(agent, index) {
+  var actions = _agentSmartActionsCache[agent] || [];
+  var a = actions[index];
+  if (!a) return;
+  if (!confirm('Submit to Thor:\n\n' + a.title + '\n\n' + (a.description || '').substring(0, 200) + '...')) return;
+  try {
+    var resp = await fetch('/api/thor/quick-action', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        title: a.title,
+        description: a.description,
+        target_files: a.target_files || [],
+        agent: a.agent || agent,
+        priority: a.priority || 'normal',
+        source: a.source || 'smart-action'
+      })
+    });
+    var data = await resp.json();
+    if (data.error) { alert('Error: ' + data.error); return; }
+    // Record in action history for learning
+    fetch('/api/actions/accept', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        action_id: data.task_id || '',
+        title: a.title,
+        agent: a.agent || agent,
+        source: a.source || 'smart-action',
+        description: a.description || ''
+      })
+    }).catch(function(){});
+    showToast('Task submitted: ' + a.title, 'var(--agent-thor)');
+    loadAgentSmartActions(agent);
+  } catch(e) {
+    alert('Failed: ' + e.message);
+  }
+}
 
 async function loadSmartActions() {
   var el = document.getElementById('thor-smart-actions');
@@ -2563,9 +2646,22 @@ async function submitSmartAction(index) {
     });
     var data = await resp.json();
     if (data.error) { alert('Error: ' + data.error); return; }
+    // Record in action history for learning
+    fetch('/api/actions/accept', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        action_id: data.task_id || '',
+        title: a.title,
+        agent: a.agent || '',
+        source: a.source || 'smart-action',
+        description: a.description || ''
+      })
+    }).catch(function(){});
     showToast('Task submitted: ' + a.title, 'var(--agent-thor)');
     loadThorQueue();
     loadThor();
+    loadSmartActions();
   } catch(e) {
     alert('Failed: ' + e.message);
   }

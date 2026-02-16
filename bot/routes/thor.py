@@ -156,9 +156,39 @@ AGENT_FILE_MAP = {
 }
 
 
-def _generate_smart_actions() -> list[dict]:
-    """Generate dynamic quick actions from live agent data."""
+def _load_completed_hashes() -> set:
+    """Load hashes of already-accepted/completed actions to avoid re-suggesting."""
+    try:
+        history_file = Path(__file__).parent.parent / "data" / "brains" / "action_history.json"
+        if history_file.exists():
+            data = json.loads(history_file.read_text())
+            return {a.get("title_hash", "") for a in data.get("actions", [])
+                    if a.get("status") in ("accepted", "completed")}
+    except Exception:
+        pass
+    return set()
+
+
+def _load_action_learnings() -> list[dict]:
+    """Load learnings from past action outcomes."""
+    try:
+        history_file = Path(__file__).parent.parent / "data" / "brains" / "action_history.json"
+        if history_file.exists():
+            data = json.loads(history_file.read_text())
+            return data.get("learnings", [])
+    except Exception:
+        pass
+    return []
+
+
+def _generate_smart_actions(agent_filter: str = "") -> list[dict]:
+    """Generate dynamic quick actions from live agent data.
+
+    Args:
+        agent_filter: If set, only return actions for this specific agent.
+    """
     actions = []
+    completed_hashes = _load_completed_hashes()
 
     # 1. Atlas improvements → actionable tasks
     try:
@@ -385,6 +415,18 @@ def _generate_smart_actions() -> list[dict]:
     except Exception:
         pass
 
+    # Filter out already-completed/accepted actions
+    filtered = []
+    for a in actions:
+        title_hash = a.get("title", "").strip().lower()[:80]
+        if title_hash not in completed_hashes:
+            filtered.append(a)
+    actions = filtered
+
+    # Filter by agent if requested
+    if agent_filter:
+        actions = [a for a in actions if a.get("agent") == agent_filter]
+
     # Sort by priority (critical > high > normal > low)
     priority_order = {"critical": 0, "high": 1, "normal": 2, "low": 3}
     actions.sort(key=lambda a: priority_order.get(a.get("priority", "normal"), 2))
@@ -397,15 +439,22 @@ def _generate_smart_actions() -> list[dict]:
             seen.add(a["id"])
             unique.append(a)
 
-    return unique[:12]  # max 12 actions
+    return unique[:12]
 
 
 @thor_bp.route("/api/thor/smart-actions")
 def api_thor_smart_actions():
     """Generate dynamic quick actions from live agent data."""
     try:
-        actions = _generate_smart_actions()
-        return jsonify({"actions": actions, "count": len(actions), "generated_at": time.time()})
+        agent = request.args.get("agent", "")
+        actions = _generate_smart_actions(agent_filter=agent)
+        learnings = _load_action_learnings()[-5:]
+        return jsonify({
+            "actions": actions,
+            "count": len(actions),
+            "generated_at": time.time(),
+            "recent_learnings": learnings,
+        })
     except Exception as e:
         return jsonify({"actions": [], "error": str(e)})
 
