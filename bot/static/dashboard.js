@@ -2047,6 +2047,7 @@ async function refresh() {
       renderSentinel(await resp.json());
       loadAgentLearning('sentinel');
       loadRobotoxDeps();
+      loadLogWatcherAlerts();
       loadBrainNotes('robotox');
       loadCommandTable('robotox');
       loadAgentSmartActions('robotox');
@@ -3187,6 +3188,62 @@ async function robotoxDepCheck() {
     if (data.error) { el.innerHTML = '<span style="color:var(--error);">Error: ' + esc(data.error) + '</span>'; return; }
     loadRobotoxDeps();
   } catch(e) { el.innerHTML = '<span style="color:var(--error);">Failed: ' + esc(e.message) + '</span>'; }
+}
+
+// ══════════════════════════════════════════════
+// ROBOTOX: Log Watcher — Smart Pattern Detection
+// ══════════════════════════════════════════════
+async function loadLogWatcherAlerts() {
+  var patternsEl = document.getElementById('robotox-log-patterns');
+  var alertsEl = document.getElementById('robotox-log-alerts');
+  if (!patternsEl && !alertsEl) return;
+  try {
+    var resp = await fetch('/api/robotox/log-alerts');
+    var data = await resp.json();
+    if (data.error) return;
+
+    // Render pattern status badges
+    var patterns = data.patterns || [];
+    if (patternsEl && patterns.length > 0) {
+      var html = '';
+      for (var i = 0; i < patterns.length; i++) {
+        var p = patterns[i];
+        var color = p.severity === 'critical' ? 'var(--error)' : p.severity === 'warning' ? 'var(--warning)' : 'var(--text-muted)';
+        var bg = p.active_hits > 0 ? 'rgba(255,68,68,0.15)' : 'rgba(255,255,255,0.05)';
+        html += '<div style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:0.7rem;font-family:var(--font-mono);background:' + bg + ';border:1px solid rgba(255,255,255,0.08);">';
+        html += '<span style="width:6px;height:6px;border-radius:50%;background:' + (p.active_hits > 0 ? color : 'var(--text-muted)') + ';"></span>';
+        html += '<span style="color:' + (p.active_hits > 0 ? color : 'var(--text-secondary)') + ';">' + esc(p.title) + '</span>';
+        if (p.active_hits > 0) html += ' <span style="color:' + color + ';font-weight:600;">(' + p.active_hits + ')</span>';
+        html += '</div>';
+      }
+      patternsEl.innerHTML = html;
+    }
+
+    // Render recent alerts
+    var alerts = data.alerts || [];
+    if (alertsEl) {
+      if (alerts.length === 0) {
+        alertsEl.innerHTML = '<div class="text-muted" style="text-align:center;padding:var(--space-4);">No log alerts yet — all clear.</div>';
+      } else {
+        var html = '<table class="data-table"><thead><tr><th>Time</th><th>Agent</th><th>Issue</th><th>Hits</th><th>Action</th></tr></thead><tbody>';
+        var shown = alerts.slice(-15).reverse();
+        for (var i = 0; i < shown.length; i++) {
+          var a = shown[i];
+          var sevColor = a.severity === 'critical' ? 'var(--error)' : a.severity === 'warning' ? 'var(--warning)' : 'var(--text-secondary)';
+          var ts = (a.timestamp || '').substring(11, 19);
+          html += '<tr>';
+          html += '<td style="font-family:var(--font-mono);font-size:0.72rem;">' + esc(ts) + '</td>';
+          html += '<td style="color:' + sevColor + ';font-weight:600;">' + esc((a.agent||'').toUpperCase()) + '</td>';
+          html += '<td style="font-size:0.74rem;">' + esc(a.title || '') + '</td>';
+          html += '<td style="font-family:var(--font-mono);text-align:center;">' + (a.hit_count || 0) + 'x</td>';
+          html += '<td style="font-size:0.72rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(a.action || '') + '">' + esc(a.action || '') + '</td>';
+          html += '</tr>';
+        }
+        html += '</tbody></table>';
+        alertsEl.innerHTML = html;
+      }
+    }
+  } catch(e) { console.error('loadLogWatcherAlerts:', e); }
 }
 
 // ══════════════════════════════════════════════

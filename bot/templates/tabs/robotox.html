@@ -25,6 +25,17 @@
     <div class="report-container" id="sentinel-report" style="display:none;"></div>
   </div>
   <div class="section-spacer">
+    <h2 class="section-title" data-accent="sentinel">Log Watcher — Smart Pattern Detection</h2>
+    <div class="glass-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
+        <span class="text-muted" style="font-size:0.76rem;">Watches agent logs for errors, API failures, geo-blocks, connection drops</span>
+        <button class="btn" onclick="loadLogWatcherAlerts()" style="font-size:0.72rem;">Refresh</button>
+      </div>
+      <div id="robotox-log-patterns" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:var(--space-3);"></div>
+      <div id="robotox-log-alerts"><div class="text-muted" style="text-align:center;padding:var(--space-4);">No log alerts yet — all clear.</div></div>
+    </div>
+  </div>
+  <div class="section-spacer">
     <h2 class="section-title" data-accent="sentinel">Alerts</h2>
     <div class="feed-scroll" id="sentinel-alerts"><div class="feed-item"><span class="badge badge-success">OK</span> <span style="font-family:var(--font-mono);font-size:0.76rem;color:var(--text-secondary);margin-left:8px;">All systems nominal</span></div></div>
   </div>

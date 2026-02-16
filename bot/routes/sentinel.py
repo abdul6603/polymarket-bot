@@ -64,6 +64,20 @@ def api_sentinel_alerts():
         return jsonify({"error": str(e)})
 
 
+@sentinel_bp.route("/api/robotox/log-alerts")
+def api_robotox_log_alerts():
+    """Get recent log watcher alerts (smart pattern detection)."""
+    try:
+        from sentinel.sentinel import Sentinel
+        sentinel_agent = Sentinel()
+        return jsonify({
+            "alerts": sentinel_agent.get_log_watcher_alerts(),
+            "patterns": sentinel_agent.get_log_watcher_patterns(),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
 @sentinel_bp.route("/api/robotox/dependencies")
 def api_robotox_dependencies():
     """Get dependency version check report."""
