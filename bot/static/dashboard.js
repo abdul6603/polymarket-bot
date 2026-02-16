@@ -2,6 +2,7 @@ var currentTab = 'overview';
 var chatLoaded = false;
 var econPeriod = 'month';
 var _atlasBgCache = null;
+var _overviewCache = null;
 var AGENT_COLORS = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',mercury:'#ff8800',sentinel:'#00ff44'};
 var AGENT_INITIALS = {garves:'GA',soren:'SO',shelby:'SH',atlas:'AT',mercury:'LI',sentinel:'RO'};
 var AGENT_ROLES = {garves:'Trading Bot',soren:'Content Creator',shelby:'Team Leader',atlas:'Data Scientist',mercury:'Social Media',sentinel:'Health Monitor'};
@@ -1639,6 +1640,7 @@ async function refresh() {
     if (currentTab === 'overview') {
       var resp = await fetch('/api/overview');
       var data = await resp.json();
+      _overviewCache = data;
       renderAgentGrid(data);
       renderIndicatorAccuracy(data);
       // Fetch atlas bg status for countdown on overview
@@ -1648,6 +1650,8 @@ async function refresh() {
         _atlasBgCache = bgData;
         updateOverviewCountdown();
       } catch(e) {}
+      // Re-render intel cards with fresh overview data
+      if (_intelData) renderTeamIntelligence(_intelData);
     } else if (currentTab === 'garves') {
       var resp = await fetch('/api/trades');
       var data = await resp.json();
@@ -1711,6 +1715,43 @@ setInterval(refresh, 5000);
 // ── Intelligence Meters ──
 var _intelData = null;
 
+function agentQuickStatus(key) {
+  var o = _overviewCache || {};
+  var bg = _atlasBgCache || {};
+  var s = '<div class="agent-quick-status">';
+  if (key === 'atlas') {
+    if (!bg.running) { s += '<span class="aqs-offline">Offline</span>'; }
+    else {
+      var isWorking = bg.state !== 'running' && bg.state !== 'idle' && bg.state !== 'stopped';
+      if (isWorking) {
+        s += '<span class="aqs-dot aqs-dot-active"></span>' + esc(bg.state_label || bg.state);
+      } else if (bg.last_cycle && bg.cycle_minutes) {
+        var remain = new Date(bg.last_cycle).getTime() + bg.cycle_minutes * 60000 - Date.now();
+        if (remain > 0) {
+          s += '<span class="aqs-dim">Next:</span> ' + Math.floor(remain / 60000) + 'm ' + Math.floor((remain % 60000) / 1000) + 's';
+        } else { s += '<span class="aqs-dim">Starting...</span>'; }
+      } else { s += 'Cycle ' + (bg.cycles || 0); }
+    }
+  } else if (key === 'garves') {
+    var g = o.garves || {};
+    s += '<span class="aqs-dim">WR:</span>' + (g.win_rate || 0) + '% <span class="aqs-sep">&middot;</span> ' + (g.pending || 0) + ' open';
+  } else if (key === 'soren') {
+    var sr = o.soren || {};
+    s += (sr.queue_pending || 0) + ' queued <span class="aqs-sep">&middot;</span> ' + (sr.total_posted || 0) + ' posted';
+  } else if (key === 'shelby') {
+    var sh = o.shelby || {};
+    s += (sh.running ? '<span class="aqs-dot aqs-dot-online"></span>Online' : '<span class="aqs-offline">Offline</span>');
+  } else if (key === 'lisa') {
+    var m = o.mercury || {};
+    s += (m.total_posts || 0) + ' posts';
+    if (m.review_avg) s += ' <span class="aqs-sep">&middot;</span> ' + m.review_avg + '/10';
+  } else if (key === 'robotox') {
+    s += '<span class="aqs-dot aqs-dot-online"></span>Watching';
+  }
+  s += '</div>';
+  return s;
+}
+
 function renderTeamIntelligence(data) {
   var el = document.getElementById('team-intelligence');
   if (!el || !data || !data.team) return;
@@ -1769,6 +1810,7 @@ function renderTeamIntelligence(data) {
     html += '<div class="team-agent-name" style="color:' + ag.color + ';">' + ag.name + '</div>';
     html += '<div style="font-family:var(--font-mono);font-size:0.85rem;font-weight:700;color:' + ag.color + ';">' + score + '</div>';
     html += '<div class="team-agent-level" style="color:' + levelColor + ';">' + level + '</div>';
+    html += agentQuickStatus(ag.key);
     html += '</div>';
   }
   html += '</div>';

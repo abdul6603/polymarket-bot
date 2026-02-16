@@ -588,6 +588,34 @@
     font-weight: 600;
     margin-bottom: 1px;
   }
+  .agent-quick-status {
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid var(--glass-border);
+    font-size: 0.6rem;
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .aqs-dot {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    margin-right: 3px;
+    flex-shrink: 0;
+  }
+  .aqs-dot-online { background: var(--success); box-shadow: 0 0 6px var(--success); }
+  .aqs-dot-active { background: var(--agent-atlas); box-shadow: 0 0 6px var(--agent-atlas); animation: pulse-glow 1.5s ease-in-out infinite; }
+  .aqs-dim { color: var(--text-muted); }
+  .aqs-sep { color: var(--text-muted); opacity: 0.5; }
+  .aqs-offline { color: var(--error); }
   .team-agent-level {
     font-size: 0.55rem;
     margin-top: 2px;
