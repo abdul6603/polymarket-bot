@@ -1261,6 +1261,7 @@ def api_atlas_bg_status():
             "v2_onchain": "On-chain analysis",
             "generating_improvements": "Generating improvements",
             "summarizing_kb": "Summarizing knowledge base",
+            "learning": "Learning from patterns",
             "v2_report_delivery": "Delivering reports",
             "stopped": "Stopped",
         }
@@ -1277,6 +1278,8 @@ def api_atlas_bg_status():
             "unique_urls": research.get("seen_urls", 0) if isinstance(research.get("seen_urls"), int) else len(research.get("seen_urls", [])),
             "data_feed_active": data_feed.get("active", False),
             "data_feed_sources": data_feed.get("sources_count", 0),
+            "current_target": status.get("current_target", None),
+            "recent_learn_count": status.get("recent_learn_count", 0),
         })
     except Exception as e:
         return jsonify({"running": False, "state": "error", "error": str(e)[:200]})
