@@ -61,9 +61,13 @@ def api_brain_add(agent: str):
     topic = (body.get("topic") or "").strip()
     content = (body.get("content") or "").strip()
     tags = body.get("tags", [])
+    note_type = (body.get("type") or "note").strip().lower()
 
     if not topic or not content:
         return jsonify({"error": "Both topic and content are required"}), 400
+
+    if note_type not in ("note", "command", "memory"):
+        note_type = "note"
 
     if isinstance(tags, str):
         tags = [t.strip() for t in tags.split(",") if t.strip()]
@@ -72,6 +76,7 @@ def api_brain_add(agent: str):
         "id": f"note_{uuid.uuid4().hex[:8]}",
         "topic": topic[:200],
         "content": content[:5000],
+        "type": note_type,
         "tags": tags[:10],
         "created_at": datetime.now(ET).isoformat(),
         "source": "dashboard",

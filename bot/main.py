@@ -182,7 +182,7 @@ class TradingBot:
         brain_notes = read_brain_notes("garves")
         if brain_notes:
             for note in brain_notes:
-                log.info("[BRAIN] %s: %s", note.get("topic", "?"), note.get("content", "")[:120])
+                log.info("[BRAIN:%s] %s: %s", note.get("type", "note").upper(), note.get("topic", "?"), note.get("content", "")[:120])
 
         # 0. Detect market regime (Fear & Greed based)
         regime = detect_regime()

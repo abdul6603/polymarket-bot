@@ -3093,14 +3093,22 @@ async function loadBrainNotes(agent) {
       el.innerHTML = '<div class="text-muted" style="text-align:center;padding:var(--space-4);">No brain notes yet.</div>';
       return;
     }
+    var typeColors = {note: '#3b82f6', command: '#ef4444', memory: '#22c55e'};
+    var typeLabels = {note: 'NOTE', command: 'CMD', memory: 'MEM'};
     var html = '';
     for (var i = notes.length - 1; i >= 0; i--) {
       var n = notes[i];
       var ts = n.created_at ? n.created_at.substring(0, 16).replace('T', ' ') : '';
+      var ntype = n.type || 'note';
+      var tcolor = typeColors[ntype] || '#3b82f6';
+      var tlabel = typeLabels[ntype] || 'NOTE';
       var tags = (n.tags && n.tags.length > 0) ? n.tags.map(function(t) { return '<span style="background:rgba(255,255,255,0.08);padding:1px 6px;border-radius:4px;font-size:0.68rem;margin-right:4px;">' + esc(t) + '</span>'; }).join('') : '';
       html += '<div style="border-bottom:1px solid rgba(255,255,255,0.06);padding:8px 0;display:flex;justify-content:space-between;align-items:flex-start;">';
       html += '<div style="flex:1;">';
-      html += '<div style="font-weight:600;font-size:0.82rem;color:var(--text-primary);margin-bottom:2px;">' + esc(n.topic) + '</div>';
+      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">';
+      html += '<span style="background:' + tcolor + '22;color:' + tcolor + ';padding:1px 6px;border-radius:4px;font-size:0.62rem;font-weight:700;font-family:var(--font-mono);letter-spacing:0.05em;">' + tlabel + '</span>';
+      html += '<span style="font-weight:600;font-size:0.82rem;color:var(--text-primary);">' + esc(n.topic) + '</span>';
+      html += '</div>';
       html += '<div style="font-size:0.76rem;color:var(--text-secondary);white-space:pre-wrap;word-break:break-word;">' + esc(n.content) + '</div>';
       html += '<div style="margin-top:4px;font-size:0.68rem;color:var(--text-muted);">' + ts + ' ' + tags + '</div>';
       html += '</div>';
@@ -3116,20 +3124,23 @@ async function loadBrainNotes(agent) {
 async function addBrainNote(agent) {
   var topicEl = document.getElementById(agent + '-brain-topic');
   var contentEl = document.getElementById(agent + '-brain-content');
+  var typeEl = document.getElementById(agent + '-brain-type');
   if (!topicEl || !contentEl) return;
   var topic = topicEl.value.trim();
   var content = contentEl.value.trim();
+  var noteType = typeEl ? typeEl.value : 'note';
   if (!topic || !content) { alert('Both topic and content are required.'); return; }
   try {
     var resp = await fetch('/api/brain/' + agent, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({topic: topic, content: content})
+      body: JSON.stringify({topic: topic, content: content, type: noteType})
     });
     var data = await resp.json();
     if (data.error) { alert('Error: ' + data.error); return; }
     topicEl.value = '';
     contentEl.value = '';
+    if (typeEl) typeEl.value = 'note';
     loadBrainNotes(agent);
   } catch(e) { alert('Failed: ' + e.message); }
 }

@@ -39,7 +39,7 @@ def _do_generate(item_id: str, item: dict, mode: str) -> None:
             brain_notes = read_brain_notes("soren")
             if brain_notes:
                 for note in brain_notes:
-                    _log.info("[BRAIN] %s: %s", note.get("topic", "?"), note.get("content", "")[:120])
+                    _log.info("[BRAIN:%s] %s: %s", note.get("type", "note").upper(), note.get("topic", "?"), note.get("content", "")[:120])
         except Exception:
             pass
 

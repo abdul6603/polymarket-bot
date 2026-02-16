@@ -3,7 +3,12 @@
 Brain notes are stored by the dashboard at:
     ~/polymarket-bot/bot/data/brains/{agent}.json
 
-Each file has: {"agent": "name", "notes": [{"id", "topic", "content", "tags", "created_at", "source"}, ...]}
+Each file has: {"agent": "name", "notes": [{"id", "topic", "content", "type", "tags", "created_at", "source"}, ...]}
+
+Note types:
+    - "note": General info/instructions for the agent
+    - "command": Direct order to follow or execute
+    - "memory": Persistent context the agent should always remember
 
 Safe to call every tick — just reads a tiny JSON file, returns [] if missing.
 """
@@ -18,14 +23,24 @@ log = logging.getLogger(__name__)
 BRAIN_DIR = Path(__file__).parent / "data" / "brains"
 
 
-def read_brain_notes(agent: str) -> list[dict]:
-    """Read all brain notes for an agent. Returns list of note dicts, [] if none."""
+def read_brain_notes(agent: str, note_type: str | None = None) -> list[dict]:
+    """Read brain notes for an agent. Optionally filter by type.
+
+    Args:
+        agent: Agent name (garves, shelby, atlas, etc.)
+        note_type: Optional filter — "note", "command", or "memory". None returns all.
+
+    Returns list of note dicts, [] if none.
+    """
     brain_file = BRAIN_DIR / f"{agent}.json"
     if not brain_file.exists():
         return []
     try:
         data = json.loads(brain_file.read_text())
-        return data.get("notes", [])
+        notes = data.get("notes", [])
+        if note_type:
+            notes = [n for n in notes if n.get("type", "note") == note_type]
+        return notes
     except Exception:
         return []
 
@@ -35,17 +50,29 @@ def format_brain_context(agent: str) -> str:
 
     Returns empty string if no notes exist.
     Used by Shelby to inject brain notes into the GPT system prompt.
+    Groups by type so commands are clearly separated from memories and notes.
     """
     notes = read_brain_notes(agent)
     if not notes:
         return ""
 
-    lines = [f"BRAIN NOTES FROM JORDAN ({len(notes)} notes):"]
+    type_labels = {"command": "COMMANDS", "memory": "MEMORIES", "note": "NOTES"}
+    grouped: dict[str, list[dict]] = {}
     for note in notes:
-        topic = note.get("topic", "untitled")
-        content = note.get("content", "")
-        tags = note.get("tags", [])
-        tag_str = f" [{', '.join(tags)}]" if tags else ""
-        lines.append(f"- [{topic}]{tag_str}: {content}")
+        ntype = note.get("type", "note")
+        grouped.setdefault(ntype, []).append(note)
+
+    lines = [f"BRAIN NOTES FROM JORDAN ({len(notes)} total):"]
+
+    # Commands first (highest priority), then memories, then notes
+    for ntype in ("command", "memory", "note"):
+        group = grouped.get(ntype, [])
+        if not group:
+            continue
+        lines.append(f"\n{type_labels.get(ntype, 'OTHER')} ({len(group)}):")
+        for note in group:
+            topic = note.get("topic", "untitled")
+            content = note.get("content", "")
+            lines.append(f"  - [{topic}]: {content}")
 
     return "\n".join(lines)
