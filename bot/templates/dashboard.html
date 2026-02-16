@@ -13,7 +13,8 @@
 <nav class="sidebar">
   <div class="sidebar-brand">CC</div>
   <button class="sidebar-btn active" data-tab="overview" onclick="switchTab('overview')" title="Overview">Overview</button>
-  <button class="sidebar-btn" data-tab="garves" onclick="switchTab('garves')" title="Garves">Garves</button>
+  <button class="sidebar-btn" data-tab="garves-live" onclick="switchTab('garves-live')" title="Garves Live" style="color:#00ff88;">Garves $</button>
+  <button class="sidebar-btn" data-tab="garves" onclick="switchTab('garves')" title="Garves Sim">Garves Sim</button>
   <button class="sidebar-btn" data-tab="soren" onclick="switchTab('soren')" title="Soren">Soren</button>
   <button class="sidebar-btn" data-tab="shelby" onclick="switchTab('shelby')" title="Shelby">Shelby</button>
   <button class="sidebar-btn" data-tab="atlas" onclick="switchTab('atlas')" title="Atlas">Atlas</button>
@@ -87,7 +88,43 @@
     </div>
   </div>
 
-  <!-- GARVES -->
+  <!-- GARVES LIVE (Real Money) -->
+  <div class="tab-content" id="tab-garves-live">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+      <span style="background:#00ff88;color:#000;font-weight:700;padding:4px 12px;border-radius:6px;font-size:0.8rem;">LIVE TRADING</span>
+      <span class="text-muted" style="font-size:0.76rem;">Real money — $100 USDC bankroll</span>
+    </div>
+    <div class="grid-6" id="live-stats-grid">
+      <div class="stat-card" data-accent="success"><div class="stat-value" id="live-winrate">--</div><div class="stat-label">Win Rate</div></div>
+      <div class="stat-card" data-accent="success"><div class="stat-value" id="live-pnl">--</div><div class="stat-label">PnL</div></div>
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="live-wins-losses">--</div><div class="stat-label">Wins / Losses</div></div>
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="live-total">--</div><div class="stat-label">Total</div></div>
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="live-resolved">--</div><div class="stat-label">Resolved</div></div>
+      <div class="stat-card" data-accent="warning"><div class="stat-value" id="live-pending">--</div><div class="stat-label">Pending</div></div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="garves">Breakdowns</h2>
+      <div class="grid-3" id="live-breakdowns">
+        <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Asset</h3><table class="data-table"><thead><tr><th>Asset</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-asset"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+        <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Timeframe</h3><table class="data-table"><thead><tr><th>TF</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-tf"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+        <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Direction</h3><table class="data-table"><thead><tr><th>Dir</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-dir"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+      </div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="warning">Pending Trades</h2>
+      <div class="glass-card"><table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Direction</th><th>Edge</th><th>Consensus</th><th>Status</th></tr></thead><tbody id="live-pending-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No pending trades</td></tr></tbody></table></div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="garves">Resolved Trades</h2>
+      <div class="glass-card"><table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Direction</th><th>Edge</th><th>Result</th><th>PnL</th></tr></thead><tbody id="live-resolved-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No resolved trades yet — Garves is waiting for signals</td></tr></tbody></table></div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="garves">Live Log</h2>
+      <div class="log-feed" id="live-log-feed"><div class="log-line"><span class="log-time">--:--:--</span><span class="log-msg">Waiting for log data...</span></div></div>
+    </div>
+  </div>
+
+  <!-- GARVES SIM (Dry Run) -->
   <div class="tab-content" id="tab-garves">
     <div id="intel-garves" class="intel-meter" style="margin-bottom:12px;"></div>
     <div class="agent-widget-row" id="garves-widgets">

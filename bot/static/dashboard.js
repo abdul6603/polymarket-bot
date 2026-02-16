@@ -155,6 +155,68 @@ function renderResolvedTrades(trades) {
   el.innerHTML = html;
 }
 
+// === GARVES LIVE TAB RENDERERS ===
+function renderLiveStats(data) {
+  var s = data.summary || {};
+  document.getElementById('live-winrate').textContent = (s.win_rate || 0) + '%';
+  document.getElementById('live-winrate').style.color = wrColor(s.win_rate || 0);
+  document.getElementById('live-pnl').textContent = '$' + (s.pnl || 0).toFixed(2);
+  document.getElementById('live-pnl').style.color = (s.pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)';
+  document.getElementById('live-wins-losses').textContent = (s.wins || 0) + ' / ' + (s.losses || 0);
+  document.getElementById('live-total').textContent = s.total_trades || 0;
+  document.getElementById('live-resolved').textContent = s.resolved || 0;
+  document.getElementById('live-pending').textContent = s.pending || 0;
+}
+
+function renderLivePendingTrades(trades) {
+  var el = document.getElementById('live-pending-tbody');
+  if (!trades || trades.length === 0) { el.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No pending live trades</td></tr>'; return; }
+  var html = '';
+  for (var i = 0; i < trades.length; i++) {
+    var t = trades[i];
+    html += '<tr><td>' + esc(t.time) + '</td><td>' + esc(t.asset) + ' ' + esc(t.timeframe) + '</td>';
+    html += '<td style="color:' + (t.direction === 'UP' ? 'var(--success)' : 'var(--error)') + '">' + esc(t.direction) + '</td>';
+    html += '<td>' + ((t.edge||0)*100).toFixed(1) + '%</td>';
+    html += '<td>' + ((t.confidence||0)*100).toFixed(0) + '%</td>';
+    html += '<td><span class="badge badge-warning">Pending</span></td></tr>';
+  }
+  el.innerHTML = html;
+}
+
+function renderLiveResolvedTrades(trades) {
+  var el = document.getElementById('live-resolved-tbody');
+  if (!trades || trades.length === 0) { el.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No resolved live trades yet</td></tr>'; return; }
+  var html = '';
+  for (var i = 0; i < trades.length; i++) {
+    var t = trades[i];
+    var won = t.won;
+    html += '<tr><td>' + esc(t.time) + '</td><td>' + esc(t.asset) + ' ' + esc(t.timeframe) + '</td>';
+    html += '<td style="color:' + (t.direction === 'UP' ? 'var(--success)' : 'var(--error)') + '">' + esc(t.direction) + '</td>';
+    html += '<td>' + ((t.edge||0)*100).toFixed(1) + '%</td>';
+    html += '<td><span class="badge ' + (won ? 'badge-success' : 'badge-error') + '">' + (won ? 'WIN' : 'LOSS') + '</span></td>';
+    html += '<td>' + esc(t.outcome) + '</td></tr>';
+  }
+  el.innerHTML = html;
+}
+
+function renderLiveLogs(lines) {
+  var el = document.getElementById('live-log-feed');
+  if (!lines || lines.length === 0) return;
+  var html = '';
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i] || '';
+    var cls = '';
+    if (line.indexOf('ERROR') !== -1) cls = 'error';
+    else if (line.indexOf('WARNING') !== -1) cls = 'warning';
+    else if (line.indexOf('TRADE') !== -1 || line.indexOf('WIN') !== -1 || line.indexOf('LIVE') !== -1) cls = 'success';
+    var parts = line.split(' ');
+    var time = parts.length > 1 ? parts[0] + ' ' + parts[1] : '';
+    var msg = parts.slice(2).join(' ');
+    html += '<div class="log-line"><span class="log-time">' + esc(time) + '</span><span class="log-msg ' + cls + '">' + esc(msg) + '</span></div>';
+  }
+  el.innerHTML = html;
+}
+
 function renderLogs(lines) {
   var el = document.getElementById('log-feed');
   if (!lines || lines.length === 0) return;
@@ -1903,8 +1965,18 @@ async function refresh() {
       if (_intelData) renderTeamIntelligence(_intelData);
       loadBrainNotes('claude');
       loadCommandTable('claude');
+    } else if (currentTab === 'garves-live') {
+      var resp = await fetch('/api/trades/live');
+      var data = await resp.json();
+      renderLiveStats(data);
+      renderBreakdown('live-bd-asset', data.by_asset);
+      renderBreakdown('live-bd-tf', data.by_timeframe);
+      renderBreakdown('live-bd-dir', data.by_direction);
+      renderLivePendingTrades(data.pending_trades);
+      renderLiveResolvedTrades(data.recent_trades);
+      fetch('/api/logs').then(function(r){return r.json();}).then(function(d){renderLiveLogs(d.lines);}).catch(function(){});
     } else if (currentTab === 'garves') {
-      var resp = await fetch('/api/trades');
+      var resp = await fetch('/api/trades/sim');
       var data = await resp.json();
       renderGarvesStats(data);
       renderBreakdown('bd-asset', data.by_asset);

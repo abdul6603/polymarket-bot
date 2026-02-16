@@ -57,6 +57,9 @@ class TradeRecord:
     resolve_time: float = 0.0
     market_end_time: float = 0.0  # when the candle expires
 
+    # Live vs dry-run
+    dry_run: bool = True
+
 
 class PerformanceTracker:
     """Records every signal prediction and checks market resolution to compute win rate."""
@@ -130,6 +133,7 @@ class PerformanceTracker:
             regime_label=regime_label,
             regime_fng=regime_fng,
             signal_rationale=rationale,
+            dry_run=self.cfg.dry_run,
         )
         self._pending[trade_id] = rec
         self._append_to_file(rec)

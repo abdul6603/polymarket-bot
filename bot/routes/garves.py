@@ -141,6 +141,101 @@ def api_trades():
     })
 
 
+@garves_bp.route("/api/trades/live")
+def api_trades_live():
+    """Live (real money) trades only."""
+    all_trades = _load_trades()
+    trades = [t for t in all_trades if not t.get("dry_run", True)]
+    return _build_trades_response(trades)
+
+
+@garves_bp.route("/api/trades/sim")
+def api_trades_sim():
+    """Dry-run (simulation) trades only."""
+    all_trades = _load_trades()
+    trades = [t for t in all_trades if t.get("dry_run", True)]
+    return _build_trades_response(trades)
+
+
+def _build_trades_response(trades):
+    """Shared logic for building trades API response."""
+    now = time.time()
+    resolved = [t for t in trades if t.get("resolved")]
+    pending = [t for t in trades if not t.get("resolved")]
+    wins = [t for t in resolved if t.get("won")]
+    losses = [t for t in resolved if not t.get("won") and t.get("outcome") != "unknown"]
+    stale = [t for t in resolved if t.get("outcome") == "unknown"]
+    total_resolved = len(wins) + len(losses)
+    win_rate = (len(wins) / total_resolved * 100) if total_resolved > 0 else 0
+
+    stake = float(os.getenv("ORDER_SIZE_USD", "5.0"))
+    total_pnl = 0.0
+    for t in resolved:
+        if t.get("outcome") == "unknown":
+            continue
+        implied = t.get("implied_up_price", 0.5)
+        direction = t.get("direction", "up")
+        entry_price = implied if direction == "up" else (1 - implied)
+        if t.get("won"):
+            total_pnl += stake * (1 - entry_price) - stake * 0.02
+        else:
+            total_pnl += -stake * entry_price
+
+    by_asset, by_tf, by_dir = {}, {}, {}
+    for t in resolved:
+        if t.get("outcome") == "unknown":
+            continue
+        for key, bucket in [(t.get("asset", "unknown"), by_asset), (t.get("timeframe", "?"), by_tf), (t.get("direction", "?"), by_dir)]:
+            if key not in bucket:
+                bucket[key] = {"wins": 0, "losses": 0}
+            bucket[key]["wins" if t.get("won") else "losses"] += 1
+
+    def fmt_trade(t):
+        ts = t.get("timestamp", 0)
+        dt = datetime.fromtimestamp(ts, tz=ET)
+        return {
+            "trade_id": t.get("trade_id", ""),
+            "time": dt.strftime("%I:%M:%S %p"),
+            "asset": (t.get("asset", "")).upper(),
+            "timeframe": t.get("timeframe", ""),
+            "direction": (t.get("direction", "")).upper(),
+            "probability": t.get("probability", 0),
+            "edge": t.get("edge", 0),
+            "confidence": t.get("confidence", 0),
+            "implied_up": t.get("implied_up_price", 0),
+            "binance_price": t.get("binance_price", 0),
+            "resolved": t.get("resolved", False),
+            "outcome": (t.get("outcome", "")).upper(),
+            "won": t.get("won", False),
+            "question": t.get("question", ""),
+            "expires": datetime.fromtimestamp(
+                t.get("market_end_time", 0), tz=ET
+            ).strftime("%I:%M %p") if t.get("market_end_time") else "",
+        }
+
+    recent_resolved = sorted(resolved, key=lambda t: t.get("resolve_time", 0), reverse=True)[:20]
+    pending_sorted = sorted(pending, key=lambda t: t.get("market_end_time", 0))
+
+    return jsonify({
+        "summary": {
+            "total_trades": len(trades),
+            "resolved": total_resolved,
+            "pending": len(pending),
+            "stale": len(stale),
+            "wins": len(wins),
+            "losses": len(losses),
+            "win_rate": round(win_rate, 1),
+            "pnl": round(total_pnl, 2),
+        },
+        "by_asset": by_asset,
+        "by_timeframe": by_tf,
+        "by_direction": by_dir,
+        "recent_trades": [fmt_trade(t) for t in recent_resolved],
+        "pending_trades": [fmt_trade(t) for t in pending_sorted],
+        "timestamp": now,
+    })
+
+
 @garves_bp.route("/api/logs")
 def api_logs():
     lines = _load_recent_logs(40)
