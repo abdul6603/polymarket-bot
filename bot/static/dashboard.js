@@ -2691,26 +2691,30 @@ function healthBadge(h) {
 }
 
 async function loadInfrastructure() {
-  // System health
+  // Use system-health for both health status and agent counts
   try {
-    var resp2 = await fetch('/api/system-health');
-    var health = await resp2.json();
-    var el2 = document.getElementById('infra-health');
-    if (el2) {
-      var overall = (health.overall || 'unknown').toUpperCase();
-      var color = overall === 'HEALTHY' ? 'var(--success)' : overall === 'DEGRADED' ? 'var(--warning)' : 'var(--error)';
-      el2.innerHTML = '<span style="color:' + color + ';">' + overall + '</span>';
-    }
-  } catch(e) {}
-
-  // Active agents from heartbeats
-  try {
-    var resp = await fetch('/api/heartbeats');
+    var resp = await fetch('/api/system-health');
     var data = await resp.json();
     var hbs = data.heartbeats || {};
+    var reg = data.registry || {};
+
+    // Build combined agent list (heartbeats + registry, exclude dashboard)
+    var allAgents = {};
+    for (var k in reg) { if (k !== 'dashboard') allAgents[k] = {registered: true, healthy: false}; }
+    for (var k in hbs) { if (k !== 'dashboard') { if (!allAgents[k]) allAgents[k] = {registered: false, healthy: false}; allAgents[k].healthy = hbs[k].health === 'healthy'; } }
+    var total = Object.keys(allAgents).length;
     var alive = 0;
-    var total = Object.keys(hbs).length;
-    for (var k in hbs) { if (hbs[k].health === 'healthy') alive++; }
+    for (var k in allAgents) { if (allAgents[k].healthy) alive++; }
+
+    // System Health
+    var el2 = document.getElementById('infra-health');
+    if (el2) {
+      var healthLabel = alive === total ? 'HEALTHY' : alive >= Math.ceil(total/2) ? 'DEGRADED' : 'CRITICAL';
+      var color = healthLabel === 'HEALTHY' ? 'var(--success)' : healthLabel === 'DEGRADED' ? 'var(--warning)' : 'var(--error)';
+      el2.innerHTML = '<span style="color:' + color + ';">' + healthLabel + '</span>';
+    }
+
+    // Active Agents (exclude dashboard from count)
     var aaEl = document.getElementById('infra-active-agents');
     if (aaEl) {
       var aaColor = alive === total ? 'var(--success)' : alive > 0 ? 'var(--warning)' : 'var(--error)';
@@ -2726,17 +2730,26 @@ async function loadInfrastructure() {
     if (etEl) etEl.textContent = stData.total || 0;
   } catch(e) {}
 
-  // Errors (24h) from health check
+  // Errors (24h) from Robotox log alerts
   try {
-    var hResp = await fetch('/api/health');
-    var hData = await hResp.json();
+    var errResp = await fetch('/api/robotox/log-alerts');
+    var errData = await errResp.json();
+    var alerts = errData.alerts || [];
+    var now = Date.now();
+    var errCount = 0;
+    for (var i = 0; i < alerts.length; i++) {
+      var ts = new Date(alerts[i].timestamp || 0).getTime();
+      if (now - ts < 86400000) errCount++;
+    }
     var errEl = document.getElementById('infra-errors-today');
     if (errEl) {
-      var errCount = (hData.error || 0) + (hData.degraded || 0);
       var errColor = errCount === 0 ? 'var(--success)' : 'var(--error)';
       errEl.innerHTML = '<span style="color:' + errColor + ';">' + errCount + '</span>';
     }
-  } catch(e) {}
+  } catch(e) {
+    var errEl = document.getElementById('infra-errors-today');
+    if (errEl) errEl.innerHTML = '<span style="color:var(--success);">0</span>';
+  }
 
   // Agent Comms — event bus events in chat-like format
   loadAgentComms();
