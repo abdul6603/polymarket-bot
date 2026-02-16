@@ -12,14 +12,17 @@ from bot.indicators import (
     bollinger_bands,
     ema_crossover,
     fear_greed_index,
+    funding_rate_signal,
     get_params,
     heikin_ashi,
+    liquidation_cascade_signal,
     liquidity_signal,
     macd,
     momentum,
     order_flow_delta,
     price_divergence,
     rsi,
+    spot_depth_signal,
     temporal_arb,
     volume_spike,
     vwap,
@@ -66,18 +69,27 @@ WEIGHTS = {
     "volume_spike": 1.1,
     # News sentiment (24/7 RSS feed)
     "news": 0.8,
+    # Derivatives intelligence (Binance Futures)
+    "funding_rate": 1.3,
+    "liquidation": 1.5,
+    # Binance spot order book depth
+    "spot_depth": 1.0,
 }
 
 # Timeframe-dependent weight scaling
 # Short timeframes: order flow / arb matters more; long: TA matters more
 TF_WEIGHT_SCALE = {
     "5m":  {"order_flow": 1.8, "orderbook": 2.0, "temporal_arb": 2.5, "price_div": 2.0,
-            "rsi": 0.6, "macd": 0.6, "heikin_ashi": 0.5},
+            "rsi": 0.6, "macd": 0.6, "heikin_ashi": 0.5,
+            "spot_depth": 1.5, "liquidation": 1.8, "funding_rate": 0.5},
     "15m": {"order_flow": 1.5, "orderbook": 1.8, "temporal_arb": 2.0, "price_div": 1.5,
-            "rsi": 0.8, "macd": 0.9},
-    "1h":  {"order_flow": 1.0, "orderbook": 1.2, "rsi": 1.0, "macd": 1.1},
+            "rsi": 0.8, "macd": 0.9,
+            "spot_depth": 1.3, "liquidation": 1.5, "funding_rate": 0.8},
+    "1h":  {"order_flow": 1.0, "orderbook": 1.2, "rsi": 1.0, "macd": 1.1,
+            "funding_rate": 1.2, "liquidation": 1.0},
     "4h":  {"order_flow": 0.8, "orderbook": 0.8, "price_div": 0.7,
-            "rsi": 1.2, "macd": 1.3, "heikin_ashi": 1.3},
+            "rsi": 1.2, "macd": 1.3, "heikin_ashi": 1.3,
+            "funding_rate": 1.5, "liquidation": 0.8},
 }
 
 MIN_CANDLES = 30
@@ -162,6 +174,8 @@ class SignalEngine:
         implied_up_price: float | None = None,
         orderbook: object | None = None,
         regime: RegimeAdjustment | None = None,
+        derivatives_data: dict | None = None,
+        spot_depth: dict | None = None,
     ) -> Signal | None:
         """Generate a signal from the weighted ensemble of all indicators."""
 
@@ -277,6 +291,39 @@ class SignalEngine:
 
         # REMOVED: sentiment (Fear & Greed) — 47.6% accuracy (worse than random)
         # FnG is still used for regime detection, just not as a voting indicator
+
+        # ── Derivatives Intelligence (Binance Futures: funding rates + liquidations) ──
+        if derivatives_data:
+            # Funding rate signal
+            fr = derivatives_data.get("funding_rates", {}).get(asset, {})
+            if fr:
+                votes["funding_rate"] = funding_rate_signal(fr.get("rate", 0))
+            else:
+                votes["funding_rate"] = None
+
+            # Liquidation cascade signal
+            liq = derivatives_data.get("liquidations", {}).get(asset, {})
+            if liq:
+                votes["liquidation"] = liquidation_cascade_signal(
+                    long_liq_usd=liq.get("long_liq_usd_5m", 0),
+                    short_liq_usd=liq.get("short_liq_usd_5m", 0),
+                    cascade_detected=liq.get("cascade_detected", False),
+                    cascade_direction=liq.get("cascade_direction", ""),
+                )
+            else:
+                votes["liquidation"] = None
+        else:
+            votes["funding_rate"] = None
+            votes["liquidation"] = None
+
+        # ── Binance Spot Order Book Depth ──
+        if spot_depth:
+            votes["spot_depth"] = spot_depth_signal(
+                bids=spot_depth.get("bids", []),
+                asks=spot_depth.get("asks", []),
+            )
+        else:
+            votes["spot_depth"] = None
 
         # Filter to non-None votes
         active: dict[str, IndicatorVote] = {

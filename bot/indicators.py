@@ -446,3 +446,77 @@ def fear_greed_index() -> IndicatorVote | None:
     else:
         # Neutral zone (45-55) — no signal
         return None
+
+
+# ── Derivatives-Based Indicators ──
+
+def funding_rate_signal(rate: float) -> IndicatorVote | None:
+    """Funding rate contrarian signal from Binance Futures.
+
+    Positive funding = longs paying shorts = overleveraged long → bearish.
+    Negative funding = shorts paying longs = overleveraged short → bullish.
+    Neutral zone: |rate| < 0.0001 (0.01%) — no signal.
+    """
+    if abs(rate) < 0.0001:
+        return None
+
+    direction = "down" if rate > 0 else "up"
+    # Scale: 0.01% = low conf, 0.05% = medium, 0.1%+ = high
+    conf = min(abs(rate) * 5000, 1.0)
+    return IndicatorVote(direction=direction, confidence=conf, raw_value=rate * 10000)
+
+
+def liquidation_cascade_signal(
+    long_liq_usd: float,
+    short_liq_usd: float,
+    cascade_detected: bool,
+    cascade_direction: str,
+) -> IndicatorVote | None:
+    """Liquidation pressure signal from Binance Futures.
+
+    Heavy long liquidations (SELL) = bearish cascade (longs forced out).
+    Heavy short liquidations (BUY) = bullish squeeze (shorts squeezed).
+    Cascade events amplify confidence.
+    """
+    total = long_liq_usd + short_liq_usd
+    if total < 10000:  # less than $10K not meaningful
+        return None
+
+    if long_liq_usd > short_liq_usd:
+        direction = "down"
+        ratio = long_liq_usd / max(short_liq_usd, 1)
+    else:
+        direction = "up"
+        ratio = short_liq_usd / max(long_liq_usd, 1)
+
+    conf = min(ratio / 5.0, 0.8)
+    if cascade_detected:
+        conf = min(conf + 0.3, 1.0)
+
+    return IndicatorVote(direction=direction, confidence=conf, raw_value=total)
+
+
+def spot_depth_signal(bids: list, asks: list) -> IndicatorVote | None:
+    """Binance spot order book depth imbalance (top 5 levels).
+
+    Heavy bids vs asks → bullish/bearish pressure.
+    bids/asks format: [[price_str, qty_str], ...]
+    """
+    if not bids or not asks:
+        return None
+
+    bid_depth = sum(float(b[0]) * float(b[1]) for b in bids)
+    ask_depth = sum(float(a[0]) * float(a[1]) for a in asks)
+    total = bid_depth + ask_depth
+
+    if total == 0:
+        return None
+
+    imbalance = (bid_depth - ask_depth) / total
+    if abs(imbalance) < 0.05:  # less than 5% imbalance — noise
+        return None
+
+    direction = "up" if imbalance > 0 else "down"
+    conf = min(abs(imbalance) * 2, 1.0)
+
+    return IndicatorVote(direction=direction, confidence=conf, raw_value=imbalance * 100)

@@ -10,6 +10,7 @@ from pathlib import Path
 from bot.binance_feed import BinanceFeed
 from bot.config import Config
 from bot.conviction import ConvictionEngine
+from bot.derivatives_feed import DerivativesFeed
 from bot.http_session import get_session
 from bot.auth import build_client
 from bot.execution import Executor
@@ -70,6 +71,7 @@ class TradingBot:
             else:
                 log.warning("No private key configured")
 
+        self.derivatives_feed = DerivativesFeed(cfg)
         self.executor = Executor(cfg, self.client, self.tracker)
         self.conviction_engine = ConvictionEngine()
         self.straddle_engine = StraddleEngine(cfg, self.executor, self.tracker, self.price_cache)
@@ -116,8 +118,9 @@ class TradingBot:
         log.info("V2: emergency_stop, trade_journal, shelby_commands, trade_alerts")
         log.info("=" * 60)
 
-        # Start Binance real-time price feed + Polymarket WebSocket feed
+        # Start Binance real-time price feed + derivatives feed + Polymarket WebSocket feed
         await self.binance_feed.start()
+        await self.derivatives_feed.start()
         await self.feed.start()
 
         loop = asyncio.get_running_loop()
@@ -212,6 +215,22 @@ class TradingBot:
         # Expire stale conviction signals at the start of each tick
         self.conviction_engine.expire_stale_signals()
 
+        # Get derivatives intelligence (funding rates + liquidations)
+        deriv_status = self.derivatives_feed.get_status()
+        deriv_data = {
+            "funding_rates": deriv_status.get("funding_rates", {}),
+            "liquidations": deriv_status.get("liquidations", {}),
+        } if deriv_status.get("connected") else None
+
+        if deriv_data:
+            fr_count = len(deriv_data["funding_rates"])
+            liq_total = sum(
+                v.get("event_count", 0)
+                for v in deriv_data["liquidations"].values()
+            )
+            log.info("[DERIVATIVES] Funding rates: %d assets | Liquidation events: %d (5m window)",
+                     fr_count, liq_total)
+
         # 2. Evaluate each market for signals, trade the best ones
         trades_this_tick = 0
         for dm in ranked:
@@ -257,6 +276,9 @@ class TradingBot:
             orderbooks = self.feed.latest_orderbook
             ob = orderbooks.get(up_token)
 
+            # Get Binance spot depth for this asset
+            spot_depth = self.binance_feed.get_depth(asset)
+
             # Generate signal for this specific market
             sig = self.signal_engine.generate_signal(
                 up_token, down_token,
@@ -265,6 +287,8 @@ class TradingBot:
                 implied_up_price=implied_up,
                 orderbook=ob,
                 regime=regime,
+                derivatives_data=deriv_data,
+                spot_depth=spot_depth,
             )
             if not sig:
                 continue
@@ -357,6 +381,9 @@ class TradingBot:
         # Save candle data to disk for backtesting
         self.price_cache.save_candles()
 
+        # Save derivatives + depth state for dashboard
+        self._save_derivatives_state(deriv_data)
+
         # Check existing fills (+ expire dry-run positions)
         self.executor.check_fills()
 
@@ -380,10 +407,33 @@ class TradingBot:
             except Exception:
                 pass
 
+    def _save_derivatives_state(self, deriv_data: dict | None) -> None:
+        """Persist derivatives + depth state to disk for dashboard access."""
+        import json as _json
+        data_dir = Path(__file__).parent.parent / "data"
+        try:
+            # Derivatives state (funding rates + liquidations)
+            state = deriv_data or {"funding_rates": {}, "liquidations": {}}
+            state["connected"] = self.derivatives_feed._running and self.derivatives_feed._ws is not None
+            state["timestamp"] = time.time()
+            state_file = data_dir / "derivatives_state.json"
+            with open(state_file, "w") as f:
+                _json.dump(state, f)
+
+            # Spot depth summary
+            depth = self.binance_feed.get_depth_summary()
+            if depth:
+                depth_file = data_dir / "spot_depth.json"
+                with open(depth_file, "w") as f:
+                    _json.dump(depth, f)
+        except Exception:
+            pass
+
     async def _cleanup(self) -> None:
         log.info("Shutting down...")
         self.executor.cancel_all_open()
         await self.binance_feed.stop()
+        await self.derivatives_feed.stop()
         await self.feed.stop()
         log.info("Shutdown complete")
 

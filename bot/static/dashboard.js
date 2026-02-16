@@ -228,6 +228,92 @@ async function loadDailyReports() {
   }
 }
 
+async function loadDerivatives() {
+  try {
+    var resp = await fetch('/api/garves/derivatives');
+    var data = await resp.json();
+
+    // Funding rates card
+    var frEl = document.getElementById('deriv-funding');
+    if (frEl) {
+      var fr = data.funding_rates || {};
+      var assets = ['bitcoin', 'ethereum', 'solana'];
+      var frHtml = '<div class="stat-label">Funding Rates' +
+        (data.connected ? ' <span style="color:var(--success);">LIVE</span>' : ' <span style="color:var(--error);">OFFLINE</span>') +
+        '</div>';
+      for (var i = 0; i < assets.length; i++) {
+        var a = assets[i];
+        var r = fr[a];
+        if (r) {
+          var rate = (r.rate * 100).toFixed(4);
+          var rateColor = r.rate > 0 ? 'var(--error)' : r.rate < 0 ? 'var(--success)' : 'var(--text-secondary)';
+          var label = r.rate > 0 ? 'Longs pay' : r.rate < 0 ? 'Shorts pay' : 'Neutral';
+          frHtml += '<div style="display:flex;justify-content:space-between;padding:4px 8px;font-size:0.78rem;">';
+          frHtml += '<span style="text-transform:uppercase;font-weight:600;">' + a.slice(0,3) + '</span>';
+          frHtml += '<span style="color:' + rateColor + ';">' + rate + '% <span style="font-size:0.65rem;opacity:0.7;">(' + label + ')</span></span>';
+          frHtml += '</div>';
+        } else {
+          frHtml += '<div style="padding:4px 8px;font-size:0.78rem;color:var(--text-secondary);">' + a.slice(0,3).toUpperCase() + ': --</div>';
+        }
+      }
+      frEl.innerHTML = frHtml;
+    }
+
+    // Liquidations card
+    var liqEl = document.getElementById('deriv-liquidations');
+    if (liqEl) {
+      var liq = data.liquidations || {};
+      var liqHtml = '<div class="stat-label">Liquidations (5m)</div>';
+      for (var i = 0; i < assets.length; i++) {
+        var a = assets[i];
+        var l = liq[a];
+        if (l) {
+          var longUsd = (l.long_liq_usd_5m || 0);
+          var shortUsd = (l.short_liq_usd_5m || 0);
+          var cascade = l.cascade_detected;
+          var cascDir = l.cascade_direction || '';
+          liqHtml += '<div style="padding:4px 8px;font-size:0.78rem;">';
+          liqHtml += '<span style="text-transform:uppercase;font-weight:600;">' + a.slice(0,3) + '</span> ';
+          liqHtml += '<span style="color:var(--error);">L:$' + (longUsd/1000).toFixed(1) + 'K</span> ';
+          liqHtml += '<span style="color:var(--success);">S:$' + (shortUsd/1000).toFixed(1) + 'K</span>';
+          if (cascade) {
+            liqHtml += ' <span class="badge" style="background:var(--warning);color:#000;font-size:0.6rem;animation:pulse 1s infinite;">CASCADE ' + cascDir.toUpperCase() + '</span>';
+          }
+          liqHtml += ' <span style="font-size:0.65rem;opacity:0.6;">' + (l.event_count || 0) + ' events</span>';
+          liqHtml += '</div>';
+        }
+      }
+      liqEl.innerHTML = liqHtml;
+    }
+
+    // Spot depth card
+    var depthEl = document.getElementById('deriv-depth');
+    if (depthEl) {
+      var depth = data.spot_depth || {};
+      var dHtml = '<div class="stat-label">Spot Depth (Top 5)</div>';
+      for (var i = 0; i < assets.length; i++) {
+        var a = assets[i];
+        var d = depth[a];
+        if (d) {
+          var imb = d.imbalance || 0;
+          var imbColor = imb > 0.05 ? 'var(--success)' : imb < -0.05 ? 'var(--error)' : 'var(--text-secondary)';
+          var imbLabel = imb > 0.05 ? 'BID heavy' : imb < -0.05 ? 'ASK heavy' : 'Balanced';
+          dHtml += '<div style="display:flex;justify-content:space-between;padding:4px 8px;font-size:0.78rem;">';
+          dHtml += '<span style="text-transform:uppercase;font-weight:600;">' + a.slice(0,3) + '</span>';
+          dHtml += '<span style="color:' + imbColor + ';">' + (imb * 100).toFixed(1) + '% <span style="font-size:0.65rem;opacity:0.7;">(' + imbLabel + ')</span></span>';
+          dHtml += '</div>';
+          dHtml += '<div style="padding:0 8px 4px;font-size:0.65rem;color:var(--text-secondary);">';
+          dHtml += 'Bid: $' + (d.bid_depth_usd/1000).toFixed(1) + 'K | Ask: $' + (d.ask_depth_usd/1000).toFixed(1) + 'K | Spread: ' + d.spread_pct + '%';
+          dHtml += '</div>';
+        }
+      }
+      depthEl.innerHTML = dHtml;
+    }
+  } catch(e) {
+    console.error('derivatives error:', e);
+  }
+}
+
 async function loadConvictionData() {
   try {
     var resp = await fetch('/api/garves/conviction');
@@ -1796,6 +1882,7 @@ async function refresh() {
       loadRegimeBadge();
       loadConvictionData();
       loadDailyReports();
+      loadDerivatives();
       loadAgentLearning('garves');
     } else if (currentTab === 'soren') {
       var resp = await fetch('/api/soren');

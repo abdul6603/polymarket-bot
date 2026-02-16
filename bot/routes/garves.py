@@ -337,6 +337,32 @@ def api_garves_daily_today():
         return jsonify({"error": str(e)[:200]})
 
 
+@garves_bp.route("/api/garves/derivatives")
+def api_garves_derivatives():
+    """Live derivatives data: funding rates, liquidations, spot depth."""
+    result = {"funding_rates": {}, "liquidations": {}, "spot_depth": {}, "connected": False}
+    try:
+        from bot.derivatives_feed import DerivativesFeed
+        # Read from the shared state file if the bot is running
+        deriv_state_file = DATA_DIR / "derivatives_state.json"
+        if deriv_state_file.exists():
+            with open(deriv_state_file) as f:
+                result = json.load(f)
+    except Exception:
+        pass
+
+    # Also try spot depth from binance depth state
+    try:
+        depth_file = DATA_DIR / "spot_depth.json"
+        if depth_file.exists():
+            with open(depth_file) as f:
+                result["spot_depth"] = json.load(f)
+    except Exception:
+        pass
+
+    return jsonify(result)
+
+
 @garves_bp.route("/api/garves/broadcasts")
 def api_garves_broadcasts():
     """Process and acknowledge broadcasts for Garves."""

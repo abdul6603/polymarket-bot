@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
+from typing import Any
 
 import websockets
 from websockets.exceptions import ConnectionClosed
@@ -19,11 +21,16 @@ SYMBOL_MAP = {
     "solusdt": "solana",
 }
 
-STREAMS = "/".join(f"{s}@trade" for s in SYMBOL_MAP)
+# Trade streams (individual trades for price/candle building)
+TRADE_STREAMS = "/".join(f"{s}@trade" for s in SYMBOL_MAP)
+# Depth streams (top 5 order book levels, updated every 1s)
+DEPTH_STREAMS = "/".join(f"{s}@depth5@1000ms" for s in SYMBOL_MAP)
+# Combined streams
+STREAMS = f"{TRADE_STREAMS}/{DEPTH_STREAMS}"
 
 
 class BinanceFeed:
-    """Real-time trade feed from Binance public WebSocket (no API key needed)."""
+    """Real-time trade + order book feed from Binance public WebSocket."""
 
     def __init__(self, cfg: Config, price_cache: PriceCache):
         self.cfg = cfg
@@ -33,6 +40,9 @@ class BinanceFeed:
         self._task: asyncio.Task | None = None
         base = getattr(cfg, "binance_ws_url", "wss://stream.binance.us:9443")
         self._url = f"{base}/stream?streams={STREAMS}"
+
+        # Order book depth: asset -> {"bids": [[price, qty], ...], "asks": [...], "timestamp": float}
+        self.depth: dict[str, dict[str, Any]] = {}
 
     async def start(self) -> None:
         self._running = True
@@ -66,7 +76,7 @@ class BinanceFeed:
         log.info("Connecting to Binance WS: %s", self._url[:80])
         async with websockets.connect(self._url, ping_interval=20) as ws:
             self._ws = ws
-            log.info("Binance WebSocket connected")
+            log.info("Binance WebSocket connected (trade + depth5)")
             try:
                 async for raw in ws:
                     self._handle_message(raw)
@@ -79,11 +89,18 @@ class BinanceFeed:
         except json.JSONDecodeError:
             return
 
-        # Combined stream format: {"stream": "btcusdt@trade", "data": {...}}
+        stream = msg.get("stream", "")
         data = msg.get("data")
         if not data:
             return
 
+        if "@depth" in stream:
+            self._handle_depth(data, stream)
+        else:
+            self._handle_trade(data)
+
+    def _handle_trade(self, data: dict) -> None:
+        """Process individual trade tick."""
         symbol = (data.get("s") or "").lower()
         asset = SYMBOL_MAP.get(symbol)
         if not asset:
@@ -97,3 +114,56 @@ class BinanceFeed:
             return
 
         self._cache.update_tick(asset, price, volume, timestamp)
+
+    def _handle_depth(self, data: dict, stream: str) -> None:
+        """Process order book depth snapshot (top 5 levels)."""
+        # Stream name: "btcusdt@depth5@1000ms"
+        symbol = stream.split("@")[0]
+        asset = SYMBOL_MAP.get(symbol)
+        if not asset:
+            return
+
+        bids = data.get("bids", [])
+        asks = data.get("asks", [])
+
+        self.depth[asset] = {
+            "bids": bids,  # [[price_str, qty_str], ...]
+            "asks": asks,
+            "timestamp": time.time(),
+        }
+
+    def get_depth(self, asset: str) -> dict[str, Any] | None:
+        """Get latest order book depth for an asset."""
+        d = self.depth.get(asset)
+        if not d:
+            return None
+        # Stale check: depth older than 10s is useless
+        if time.time() - d["timestamp"] > 10:
+            return None
+        return d
+
+    def get_depth_summary(self) -> dict[str, dict]:
+        """Get depth summary for all assets (for dashboard)."""
+        now = time.time()
+        result = {}
+        for asset, d in self.depth.items():
+            age = now - d["timestamp"]
+            if age > 30:
+                continue
+            bids = d.get("bids", [])
+            asks = d.get("asks", [])
+            bid_depth_usd = sum(float(b[0]) * float(b[1]) for b in bids) if bids else 0
+            ask_depth_usd = sum(float(a[0]) * float(a[1]) for a in asks) if asks else 0
+            total = bid_depth_usd + ask_depth_usd
+            imbalance = (bid_depth_usd - ask_depth_usd) / total if total > 0 else 0
+            result[asset] = {
+                "bid_depth_usd": round(bid_depth_usd, 2),
+                "ask_depth_usd": round(ask_depth_usd, 2),
+                "imbalance": round(imbalance, 4),
+                "best_bid": float(bids[0][0]) if bids else 0,
+                "best_ask": float(asks[0][0]) if asks else 0,
+                "spread_pct": round((float(asks[0][0]) - float(bids[0][0])) / float(bids[0][0]) * 100, 4) if bids and asks else 0,
+                "levels": len(bids),
+                "age_s": round(age, 1),
+            }
+        return result
