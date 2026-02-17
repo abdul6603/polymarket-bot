@@ -188,8 +188,9 @@ class SignalEngine:
             return None
 
         # ── Time-of-Day Filter: skip dead zone hours (06-07 ET = 0-33% WR) ──
+        from datetime import datetime as _dt
         from zoneinfo import ZoneInfo
-        current_hour_et = datetime.now(ZoneInfo("America/New_York")).hour
+        current_hour_et = _dt.now(ZoneInfo("America/New_York")).hour
         if current_hour_et in AVOID_HOURS_ET:
             log.info("[%s/%s] Time-of-day filter: hour %d ET is in dead zone, skipping",
                      asset.upper(), timeframe, current_hour_et)
