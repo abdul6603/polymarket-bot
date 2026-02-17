@@ -17,6 +17,7 @@ def build_client(cfg: Config) -> ClobClient:
         key=cfg.private_key,
         chain_id=137,
         funder=cfg.funder_address if cfg.funder_address else None,
+        signature_type=2,  # POLY_GNOSIS_SAFE (Polymarket proxy wallet)
     )
 
     if cfg.clob_api_key:
