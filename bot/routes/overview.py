@@ -58,6 +58,29 @@ def _get_thor_overview() -> dict:
         return {"state": "offline", "pending": 0, "completed": 0}
 
 
+def _get_quant_overview() -> dict:
+    """Quick Quant status for overview grid."""
+    try:
+        status_file = DATA_DIR / "quant_status.json"
+        if status_file.exists():
+            data = json.loads(status_file.read_text())
+            results_file = DATA_DIR / "quant_results.json"
+            best_wr = 0
+            if results_file.exists():
+                rdata = json.loads(results_file.read_text())
+                top = rdata.get("top_results", [])
+                if top:
+                    best_wr = top[0].get("win_rate", 0)
+            return {
+                "running": data.get("running", False),
+                "total_combos_tested": data.get("total_combos_tested", 0),
+                "best_win_rate": best_wr,
+            }
+    except Exception:
+        pass
+    return {"running": False, "total_combos_tested": 0, "best_win_rate": 0}
+
+
 @overview_bp.route("/api/overview")
 def api_overview():
     """High-level status of all agents."""
@@ -167,6 +190,7 @@ def api_overview():
             "opportunities": viper_status.get("total_found", 0),
             "pushed": viper_status.get("pushed_to_shelby", 0),
         },
+        "quant": _get_quant_overview(),
     })
 
 

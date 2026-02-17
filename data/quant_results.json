@@ -1,0 +1,488 @@
+{
+  "baseline": {
+    "label": "live_current",
+    "score": 55.5,
+    "win_rate": 60.0,
+    "profit_factor": 1.5,
+    "total_signals": 80,
+    "wins": 48,
+    "losses": 32,
+    "params": {
+      "label": "live_current",
+      "min_consensus": 7,
+      "min_confidence": 0.25,
+      "up_confidence_premium": 0.08,
+      "min_edge_absolute": 0.08,
+      "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+    }
+  },
+  "top_results": [
+    {
+      "rank": 1,
+      "label": "weight_v171",
+      "score": 61.2,
+      "win_rate": 65.3,
+      "profit_factor": 1.88,
+      "total_signals": 75,
+      "wins": 49,
+      "losses": 26,
+      "max_consecutive_losses": 6,
+      "avg_edge": 11.83,
+      "avg_confidence": 60.8,
+      "params": {
+        "label": "weight_v171",
+        "min_consensus": 7,
+        "min_confidence": 0.25,
+        "up_confidence_premium": 0.08,
+        "min_edge_absolute": 0.08,
+        "weights_hash": "ema:0.6|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+      }
+    },
+    {
+      "rank": 2,
+      "label": "weight_v196",
+      "score": 61.2,
+      "win_rate": 65.3,
+      "profit_factor": 1.88,
+      "total_signals": 75,
+      "wins": 49,
+      "losses": 26,
+      "max_consecutive_losses": 6,
+      "avg_edge": 12.1,
+      "avg_confidence": 61.9,
+      "params": {
+        "label": "weight_v196",
+        "min_consensus": 7,
+        "min_confidence": 0.25,
+        "up_confidence_premium": 0.08,
+        "min_edge_absolute": 0.08,
+        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:0.6|momentum:0.6|news"
+      }
+    },
+    {
+      "rank": 3,
+      "label": "weight_v8",
+      "score": 59.3,
+      "win_rate": 63.6,
+      "profit_factor": 1.75,
+      "total_signals": 77,
+      "wins": 49,
+      "losses": 28,
+      "max_consecutive_losses": 7,
+      "avg_edge": 11.77,
+      "avg_confidence": 60.6,
+      "params": {
+        "label": "weight_v8",
+        "min_consensus": 7,
+        "min_confidence": 0.25,
+        "up_confidence_premium": 0.08,
+        "min_edge_absolute": 0.08,
+        "weights_hash": "ema:1.1|heikin_ashi:0.2|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+      }
+    },
+    {
+      "rank": 4,
+      "label": "weight_v13",
+      "score": 59.3,
+      "win_rate": 63.6,
+      "profit_factor": 1.75,
+      "total_signals": 77,
+      "wins": 49,
+      "losses": 28,
+      "max_consecutive_losses": 7,
+      "avg_edge": 11.81,
+      "avg_confidence": 60.8,
+      "params": {
+        "label": "weight_v13",
+        "min_consensus": 7,
+        "min_confidence": 0.25,
+        "up_confidence_premium": 0.08,
+        "min_edge_absolute": 0.08,
+        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+      }
+    },
+    {
+      "rank": 5,
+      "label": "weight_v141",
+      "score": 59.3,
+      "win_rate": 63.6,
+      "profit_factor": 1.75,
+      "total_signals": 77,
+      "wins": 49,
+      "losses": 28,
+      "max_consecutive_losses": 7,
+      "avg_edge": 11.82,
+      "avg_confidence": 60.8,
+      "params": {
+        "label": "weight_v141",
+        "min_consensus": 7,
+        "min_confidence": 0.25,
+        "up_confidence_premium": 0.08,
+        "min_edge_absolute": 0.08,
+        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.3|news"
+      }
+    },
+    {
+      "rank": 6,
+      "label": "weight_v142",
+      "score": 59.3,
+      "win_rate": 63.6,
+      "profit_factor": 1.75,
+      "total_signals": 77,
+      "wins": 49,
+      "losses": 28,
+      "max_consecutive_losses": 7,
+      "avg_edge": 11.81,
+      "avg_confidence": 60.8,
+      "params": {
+        "label": "weight_v142",
+        "min_consensus": 7,
+        "min_confidence": 0.25,
+        "up_confidence_premium": 0.08,
+        "min_edge_absolute": 0.08,
+        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+      }
+    },
+    {
+      "rank": 7,
+      "label": "weight_v167",
+      "score": 59.3,
+      "win_rate": 63.6,
+      "profit_factor": 1.75,
+      "total_signals": 77,
+      "wins": 49,
+      "losses": 28,
+      "max_consecutive_losses": 7,
+      "avg_edge": 11.81,
+      "avg_confidence": 60.8,
+      "params": {
+        "label": "weight_v167",
+        "min_consensus": 7,
+        "min_confidence": 0.25,
+        "up_confidence_premium": 0.08,
+        "min_edge_absolute": 0.08,
+        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+      }
+    },
+    {
+      "rank": 8,
+      "label": "weight_v192",
+      "score": 59.3,
+      "win_rate": 63.6,
+      "profit_factor": 1.75,
+      "total_signals": 77,
+      "wins": 49,
+      "losses": 28,
+      "max_consecutive_losses": 7,
+      "avg_edge": 11.81,
+      "avg_confidence": 60.8,
+      "params": {
+        "label": "weight_v192",
+        "min_consensus": 7,
+        "min_confidence": 0.25,
+        "up_confidence_premium": 0.08,
+        "min_edge_absolute": 0.08,
+        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+      }
+    },
+    {
+      "rank": 9,
+      "label": "weight_v215",
+      "score": 59.3,
+      "win_rate": 63.6,
+      "profit_factor": 1.75,
+      "total_signals": 77,
+      "wins": 49,
+      "losses": 28,
+      "max_consecutive_losses": 7,
+      "avg_edge": 11.83,
+      "avg_confidence": 60.9,
+      "params": {
+        "label": "weight_v215",
+        "min_consensus": 7,
+        "min_confidence": 0.25,
+        "up_confidence_premium": 0.08,
+        "min_edge_absolute": 0.08,
+        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+      }
+    },
+    {
+      "rank": 10,
+      "label": "weight_v216",
+      "score": 59.3,
+      "win_rate": 63.6,
+      "profit_factor": 1.75,
+      "total_signals": 77,
+      "wins": 49,
+      "losses": 28,
+      "max_consecutive_losses": 7,
+      "avg_edge": 11.82,
+      "avg_confidence": 60.8,
+      "params": {
+        "label": "weight_v216",
+        "min_consensus": 7,
+        "min_confidence": 0.25,
+        "up_confidence_premium": 0.08,
+        "min_edge_absolute": 0.08,
+        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+      }
+    },
+    {
+      "rank": 11,
+      "label": "weight_v217",
+      "score": 59.3,
+      "win_rate": 63.6,
+      "profit_factor": 1.75,
+      "total_signals": 77,
+      "wins": 49,
+      "losses": 28,
+      "max_consecutive_losses": 7,
+      "avg_edge": 11.81,
+      "avg_confidence": 60.8,
+      "params": {
+        "label": "weight_v217",
+        "min_consensus": 7,
+        "min_confidence": 0.25,
+        "up_confidence_premium": 0.08,
+        "min_edge_absolute": 0.08,
+        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+      }
+    },
+    {
+      "rank": 12,
+      "label": "weight_v218",
+      "score": 59.3,
+      "win_rate": 63.6,
+      "profit_factor": 1.75,
+      "total_signals": 77,
+      "wins": 49,
+      "losses": 28,
+      "max_consecutive_losses": 7,
+      "avg_edge": 11.8,
+      "avg_confidence": 60.7,
+      "params": {
+        "label": "weight_v218",
+        "min_consensus": 7,
+        "min_confidence": 0.25,
+        "up_confidence_premium": 0.08,
+        "min_edge_absolute": 0.08,
+        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+      }
+    },
+    {
+      "rank": 13,
+      "label": "weight_v219",
+      "score": 59.3,
+      "win_rate": 63.6,
+      "profit_factor": 1.75,
+      "total_signals": 77,
+      "wins": 49,
+      "losses": 28,
+      "max_consecutive_losses": 7,
+      "avg_edge": 11.79,
+      "avg_confidence": 60.7,
+      "params": {
+        "label": "weight_v219",
+        "min_consensus": 7,
+        "min_confidence": 0.25,
+        "up_confidence_premium": 0.08,
+        "min_edge_absolute": 0.08,
+        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+      }
+    },
+    {
+      "rank": 14,
+      "label": "weight_v191",
+      "score": 58.7,
+      "win_rate": 63.2,
+      "profit_factor": 1.71,
+      "total_signals": 76,
+      "wins": 48,
+      "losses": 28,
+      "max_consecutive_losses": 7,
+      "avg_edge": 12.03,
+      "avg_confidence": 61.7,
+      "params": {
+        "label": "weight_v191",
+        "min_consensus": 7,
+        "min_confidence": 0.25,
+        "up_confidence_premium": 0.08,
+        "min_edge_absolute": 0.08,
+        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:0.6|momentum:0.6|news"
+      }
+    },
+    {
+      "rank": 15,
+      "label": "weight_v195",
+      "score": 58.5,
+      "win_rate": 63.5,
+      "profit_factor": 1.74,
+      "total_signals": 63,
+      "wins": 40,
+      "losses": 23,
+      "max_consecutive_losses": 7,
+      "avg_edge": 12.19,
+      "avg_confidence": 62.4,
+      "params": {
+        "label": "weight_v195",
+        "min_consensus": 7,
+        "min_confidence": 0.25,
+        "up_confidence_premium": 0.08,
+        "min_edge_absolute": 0.08,
+        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|momentum:0.6|news:2.5|orde"
+      }
+    },
+    {
+      "rank": 16,
+      "label": "weight_v9",
+      "score": 58.4,
+      "win_rate": 62.8,
+      "profit_factor": 1.69,
+      "total_signals": 78,
+      "wins": 49,
+      "losses": 29,
+      "max_consecutive_losses": 7,
+      "avg_edge": 11.75,
+      "avg_confidence": 60.5,
+      "params": {
+        "label": "weight_v9",
+        "min_consensus": 7,
+        "min_confidence": 0.25,
+        "up_confidence_premium": 0.08,
+        "min_edge_absolute": 0.08,
+        "weights_hash": "ema:1.1|heikin_ashi:0.2|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+      }
+    },
+    {
+      "rank": 17,
+      "label": "weight_v14",
+      "score": 58.4,
+      "win_rate": 62.8,
+      "profit_factor": 1.69,
+      "total_signals": 78,
+      "wins": 49,
+      "losses": 29,
+      "max_consecutive_losses": 7,
+      "avg_edge": 11.78,
+      "avg_confidence": 60.7,
+      "params": {
+        "label": "weight_v14",
+        "min_consensus": 7,
+        "min_confidence": 0.25,
+        "up_confidence_premium": 0.08,
+        "min_edge_absolute": 0.08,
+        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+      }
+    },
+    {
+      "rank": 18,
+      "label": "weight_v18",
+      "score": 58.4,
+      "win_rate": 62.8,
+      "profit_factor": 1.69,
+      "total_signals": 78,
+      "wins": 49,
+      "losses": 29,
+      "max_consecutive_losses": 7,
+      "avg_edge": 11.8,
+      "avg_confidence": 60.7,
+      "params": {
+        "label": "weight_v18",
+        "min_consensus": 7,
+        "min_confidence": 0.25,
+        "up_confidence_premium": 0.08,
+        "min_edge_absolute": 0.08,
+        "weights_hash": "ema:1.1|heikin_ashi:0.8|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+      }
+    },
+    {
+      "rank": 19,
+      "label": "weight_v19",
+      "score": 58.4,
+      "win_rate": 62.8,
+      "profit_factor": 1.69,
+      "total_signals": 78,
+      "wins": 49,
+      "losses": 29,
+      "max_consecutive_losses": 7,
+      "avg_edge": 11.82,
+      "avg_confidence": 60.8,
+      "params": {
+        "label": "weight_v19",
+        "min_consensus": 7,
+        "min_confidence": 0.25,
+        "up_confidence_premium": 0.08,
+        "min_edge_absolute": 0.08,
+        "weights_hash": "ema:1.1|heikin_ashi:0.8|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+      }
+    },
+    {
+      "rank": 20,
+      "label": "weight_v143",
+      "score": 58.4,
+      "win_rate": 62.8,
+      "profit_factor": 1.69,
+      "total_signals": 78,
+      "wins": 49,
+      "losses": 29,
+      "max_consecutive_losses": 7,
+      "avg_edge": 11.76,
+      "avg_confidence": 60.6,
+      "params": {
+        "label": "weight_v143",
+        "min_consensus": 7,
+        "min_confidence": 0.25,
+        "up_confidence_premium": 0.08,
+        "min_edge_absolute": 0.08,
+        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.9|news"
+      }
+    }
+  ],
+  "sensitivity": {
+    "consensus": {
+      "7": {
+        "avg_win_rate": 59.4,
+        "avg_signals": 73.1,
+        "count": 300
+      },
+      "5": {
+        "avg_win_rate": 59.2,
+        "avg_signals": 77.2,
+        "count": 100
+      },
+      "6": {
+        "avg_win_rate": 59.4,
+        "avg_signals": 76.6,
+        "count": 100
+      }
+    },
+    "edge": {
+      "0.08": {
+        "avg_win_rate": 59.2,
+        "avg_signals": 74.6,
+        "count": 300
+      },
+      "0.05": {
+        "avg_win_rate": 59.7,
+        "avg_signals": 90.3,
+        "count": 60
+      },
+      "0.06": {
+        "avg_win_rate": 59.0,
+        "avg_signals": 88.1,
+        "count": 60
+      },
+      "0.10": {
+        "avg_win_rate": 61.2,
+        "avg_signals": 67.0,
+        "count": 40
+      },
+      "0.12": {
+        "avg_win_rate": 59.0,
+        "avg_signals": 39.0,
+        "count": 40
+      }
+    }
+  },
+  "updated": "2026-02-17 08:39 AM ET"
+}

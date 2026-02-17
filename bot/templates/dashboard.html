@@ -26,6 +26,7 @@
   <button class="sidebar-btn" data-tab="hawk-sim" onclick="switchTab('hawk-sim')" title="Hawk Sim" style="color:#FFD700;">Hawk Sim</button>
   <button class="sidebar-btn" data-tab="hawk" onclick="switchTab('hawk')" title="Hawk Live" style="color:#FFD700;">Hawk $</button>
   <button class="sidebar-btn" data-tab="viper" onclick="switchTab('viper')" title="Viper" style="color:#00ff88;">Viper</button>
+  <button class="sidebar-btn" data-tab="quant" onclick="switchTab('quant')" title="Quant" style="color:#00BFFF;">Quant</button>
   <div class="sidebar-spacer"></div>
 </nav>
 
@@ -33,7 +34,7 @@
   <header class="header">
     <div class="header-left">
       <h1 class="header-title">Command Center</h1>
-      <div class="header-subtitle"><span class="dot-online"></span> <span id="agents-online-count">11</span> Agents Online</div>
+      <div class="header-subtitle"><span class="dot-online"></span> <span id="agents-online-count">12</span> Agents Online</div>
     </div>
     <div class="header-right">Last update: <span id="last-update">--:--:--</span></div>
   </header>
@@ -50,6 +51,7 @@
   {% include 'tabs/hawk_sim.html' %}
   {% include 'tabs/hawk.html' %}
   {% include 'tabs/viper.html' %}
+  {% include 'tabs/quant.html' %}
   {% include 'tabs/system.html' %}
 
   <!-- Agent Chat Popup -->

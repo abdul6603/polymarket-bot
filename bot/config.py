@@ -52,5 +52,5 @@ HIERARCHY = {
     "godfather": "Claude",
     "commander": "Shelby",
     "my_role": "The Trader — BTC/ETH/SOL prediction markets on Polymarket",
-    "brothers": ["Atlas (The Scientist)", "Soren (The Thinker)", "Lisa (The Operator)", "Robotox (The Watchman)"],
+    "brothers": ["Atlas (The Scientist)", "Soren (The Thinker)", "Lisa (The Operator)", "Robotox (The Watchman)", "Quant (The Strategy Alchemist)"],
 }

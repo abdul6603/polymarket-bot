@@ -1,0 +1,140 @@
+<div id="tab-quant" class="tab-content">
+  <!-- Agent Badge Row -->
+  <div class="d-flex align-center gap-3 mb-4">
+    <div class="agent-card-initial" style="background:#00BFFF22;color:#00BFFF;font-size:1.1rem;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:10px;">QT</div>
+    <div>
+      <div style="font-weight:600;color:var(--text-primary);">Quant — The Strategy Alchemist</div>
+      <div class="text-muted" style="font-size:0.72rem;">Strategy Lab | Mode: <span id="quant-mode">Historical Replay</span> | Cycle: <span id="quant-cycle">--</span></div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+      <button class="btn btn-primary" onclick="quantTriggerRun()" id="quant-run-btn" style="font-size:0.72rem;padding:6px 14px;">Trigger Backtest</button>
+      <button class="btn" onclick="quantHealthCheck()" style="font-size:0.72rem;padding:6px 14px;">Health Check</button>
+    </div>
+  </div>
+
+  <!-- Progress bar (hidden by default) -->
+  <div id="quant-progress-bar" style="display:none;margin-bottom:16px;">
+    <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+      <span class="text-muted" style="font-size:0.7rem;" id="quant-progress-label">Running...</span>
+      <span class="text-muted" style="font-size:0.7rem;" id="quant-progress-pct">0%</span>
+    </div>
+    <div style="background:var(--card-bg);border-radius:4px;height:6px;overflow:hidden;">
+      <div id="quant-progress-fill" style="background:#00BFFF;height:100%;width:0%;transition:width 0.3s;border-radius:4px;"></div>
+    </div>
+    <div class="text-muted" style="font-size:0.65rem;margin-top:2px;" id="quant-progress-detail"></div>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="stat-grid" style="grid-template-columns:repeat(6,1fr);margin-bottom:20px;">
+    <div class="stat-card">
+      <div class="stat-label">Total Backtests</div>
+      <div class="stat-value" id="quant-total-combos" style="color:#00BFFF;">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Best WR Found</div>
+      <div class="stat-value" id="quant-best-wr" style="color:var(--success);">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Current Live WR</div>
+      <div class="stat-value" id="quant-baseline-wr" style="color:var(--warning);">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Improvement</div>
+      <div class="stat-value" id="quant-improvement">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Candles Loaded</div>
+      <div class="stat-value" id="quant-candles" style="color:var(--text-muted);">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Trades Loaded</div>
+      <div class="stat-value" id="quant-trades" style="color:var(--text-muted);">--</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+    <!-- Current vs Best Strategy -->
+    <div class="card">
+      <div class="card-header">Current vs Best Strategy</div>
+      <table class="table">
+        <thead><tr><th>Parameter</th><th>Current</th><th>Best</th><th>Delta</th></tr></thead>
+        <tbody id="quant-params-tbody">
+          <tr><td colspan="4" class="text-muted" style="text-align:center;padding:20px;">Run a backtest to see comparison</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="card">
+      <div class="card-header">Recommendations</div>
+      <div id="quant-recommendations" style="padding:12px;">
+        <div class="text-muted" style="text-align:center;padding:20px;">No recommendations yet</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Parameter Sensitivity -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+    <div class="card">
+      <div class="card-header">Consensus Sensitivity</div>
+      <table class="table">
+        <thead><tr><th>Min Consensus</th><th>Avg WR</th><th>Avg Signals</th><th>Combos</th></tr></thead>
+        <tbody id="quant-consensus-tbody">
+          <tr><td colspan="4" class="text-muted" style="text-align:center;">--</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-header">Edge Sensitivity</div>
+      <table class="table">
+        <thead><tr><th>Min Edge</th><th>Avg WR</th><th>Avg Signals</th><th>Combos</th></tr></thead>
+        <tbody id="quant-edge-tbody">
+          <tr><td colspan="4" class="text-muted" style="text-align:center;">--</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Top Backtest Results -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-header">Top Backtest Results</div>
+    <table class="table">
+      <thead><tr><th>#</th><th>Label</th><th>Score</th><th>Win Rate</th><th>PF</th><th>Signals</th><th>W/L</th><th>Avg Edge</th></tr></thead>
+      <tbody id="quant-results-tbody">
+        <tr><td colspan="8" class="text-muted" style="text-align:center;padding:20px;">No results yet — trigger a backtest</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Hawk Trade Review -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-header">Hawk Trade Review</div>
+    <div id="quant-hawk-review" style="padding:12px;">
+      <div class="text-muted" style="text-align:center;padding:20px;">No Hawk data available</div>
+    </div>
+  </div>
+
+  <!-- Knowledge & Memory -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+    <div class="card">
+      <div class="card-header">Brain Notes</div>
+      <div id="brain-notes-quant" style="padding:8px;">
+        <div class="text-muted" style="font-size:0.72rem;text-align:center;padding:12px;">No brain notes</div>
+      </div>
+      <div style="padding:8px;border-top:1px solid var(--border);">
+        <input id="brain-input-quant" class="input" placeholder="Add brain note..." style="font-size:0.72rem;" onkeydown="if(event.key==='Enter')saveBrainNote('quant')">
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">Chat with Quant</div>
+      <div style="padding:12px;text-align:center;">
+        <button class="btn" onclick="openAgentChat('quant')" style="font-size:0.72rem;">Open Chat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Last updated -->
+  <div class="text-muted" style="font-size:0.65rem;margin-top:12px;text-align:right;">
+    Last update: <span id="quant-last-update">--</span>
+  </div>
+</div>

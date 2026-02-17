@@ -1,0 +1,16 @@
+{
+  "recommendations": [
+    {
+      "param": "WEIGHTS",
+      "current": "current_weights",
+      "suggested": "optimized_weights",
+      "impact": "Weight rebalancing improves WR by 5.3pp",
+      "reasoning": "Weight optimization found better signal combination",
+      "confidence": "medium"
+    }
+  ],
+  "best_win_rate": 65.3,
+  "baseline_win_rate": 60.0,
+  "improvement": 5.3,
+  "updated": "2026-02-17 08:39 AM ET"
+}

@@ -3,10 +3,10 @@ var chatLoaded = false;
 var econPeriod = 'month';
 var _atlasBgCache = null;
 var _overviewCache = null;
-var AGENT_COLORS = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',mercury:'#ff8800',sentinel:'#00ff44',thor:'#ff6600',hawk:'#FFD700',viper:'#00ff88'};
-var AGENT_INITIALS = {garves:'GA',soren:'SO',shelby:'SH',atlas:'AT',mercury:'LI',sentinel:'RO',thor:'TH',hawk:'HK',viper:'VP'};
-var AGENT_ROLES = {garves:'Trading Bot',soren:'Content Creator',shelby:'Team Leader',atlas:'Data Scientist',mercury:'Social Media',sentinel:'Health Monitor',thor:'Coding Lieutenant',hawk:'Market Predator',viper:'Opportunity Hunter'};
-var AGENT_NAMES = {garves:'Garves',soren:'Soren',shelby:'Shelby',atlas:'Atlas',mercury:'Lisa',sentinel:'Robotox',thor:'Thor',hawk:'Hawk',viper:'Viper'};
+var AGENT_COLORS = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',mercury:'#ff8800',sentinel:'#00ff44',thor:'#ff6600',hawk:'#FFD700',viper:'#00ff88',quant:'#00BFFF'};
+var AGENT_INITIALS = {garves:'GA',soren:'SO',shelby:'SH',atlas:'AT',mercury:'LI',sentinel:'RO',thor:'TH',hawk:'HK',viper:'VP',quant:'QT'};
+var AGENT_ROLES = {garves:'Trading Bot',soren:'Content Creator',shelby:'Team Leader',atlas:'Data Scientist',mercury:'Social Media',sentinel:'Health Monitor',thor:'Coding Lieutenant',hawk:'Market Predator',viper:'Opportunity Hunter',quant:'Strategy Lab'};
+var AGENT_NAMES = {garves:'Garves',soren:'Soren',shelby:'Shelby',atlas:'Atlas',mercury:'Lisa',sentinel:'Robotox',thor:'Thor',hawk:'Hawk',viper:'Viper',quant:'Quant'};
 var AGENT_AVATARS = {soren:'/static/soren_profile.png'};
 
 function switchTab(tab) {
@@ -37,7 +37,7 @@ function renderAgentGrid(overview) {
   var g = overview.garves || {};
   var s = overview.soren || {};
   var sh = overview.shelby || {};
-  var brainAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',mercury:'lisa',sentinel:'robotox',thor:'thor',hawk:'hawk',viper:'viper'};
+  var brainAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',mercury:'lisa',sentinel:'robotox',thor:'thor',hawk:'hawk',viper:'viper',quant:'quant'};
   var cards = [
     {id:'garves', stats:[['Win Rate',(g.win_rate||0)+'%'],['Trades',g.total_trades||0],['Pending',g.pending||0]], online:g.running},
     {id:'soren', stats:[['Queue',s.queue_pending||0],['Posted',s.total_posted||0]], online:true},
@@ -47,7 +47,8 @@ function renderAgentGrid(overview) {
     {id:'sentinel', stats:[['Role','Monitor']], online:true},
     {id:'thor', stats:[['Tasks',(overview.thor||{}).completed||0],['Queue',(overview.thor||{}).pending||0]], online:(overview.thor||{}).state !== 'offline'},
     {id:'hawk', stats:[['Win Rate',((overview.hawk||{}).win_rate||0)+'%'],['Open',(overview.hawk||{}).open_bets||0]], online:(overview.hawk||{}).running},
-    {id:'viper', stats:[['Found',(overview.viper||{}).opportunities||0],['Pushed',(overview.viper||{}).pushed||0]], online:(overview.viper||{}).running}
+    {id:'viper', stats:[['Found',(overview.viper||{}).opportunities||0],['Pushed',(overview.viper||{}).pushed||0]], online:(overview.viper||{}).running},
+    {id:'quant', stats:[['Best WR',((overview.quant||{}).best_win_rate||0)+'%'],['Combos',(overview.quant||{}).total_combos_tested||0]], online:(overview.quant||{}).running}
   ];
   var html = '';
   for (var i = 0; i < cards.length; i++) {
@@ -178,16 +179,36 @@ function renderLiveStats(data) {
   document.getElementById('live-pending').textContent = s.pending || 0;
 }
 
+function renderLiveBalance(data) {
+  var portEl = document.getElementById('live-portfolio');
+  var cashEl = document.getElementById('live-cash');
+  var pnlEl = document.getElementById('live-real-pnl');
+  if (!portEl) return;
+  portEl.textContent = '$' + (data.portfolio || 0).toFixed(2);
+  portEl.style.color = 'var(--success)';
+  cashEl.textContent = '$' + (data.cash || 0).toFixed(2);
+  cashEl.style.color = 'var(--success)';
+  var pnl = data.pnl || 0;
+  pnlEl.textContent = (pnl >= 0 ? '+$' : '-$') + Math.abs(pnl).toFixed(2);
+  pnlEl.style.color = pnl >= 0 ? 'var(--success)' : 'var(--error)';
+}
+
 function renderLivePendingTrades(trades) {
   var el = document.getElementById('live-pending-tbody');
-  if (!trades || trades.length === 0) { el.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No pending live trades</td></tr>'; return; }
+  if (!trades || trades.length === 0) { el.innerHTML = '<tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No pending live trades</td></tr>'; return; }
   var html = '';
   for (var i = 0; i < trades.length; i++) {
     var t = trades[i];
+    var tleft = t.time_left || '--';
+    var tleftSec = t.time_left_sec || 0;
+    var tleftColor = tleftSec < 120 ? 'var(--error)' : tleftSec < 600 ? 'var(--warning)' : 'var(--text-muted)';
+    var potProfit = t.est_pnl || 0;
     html += '<tr><td>' + esc(t.time) + '</td><td>' + esc(t.asset) + ' ' + esc(t.timeframe) + '</td>';
     html += '<td style="color:' + (t.direction === 'UP' ? 'var(--success)' : 'var(--error)') + '">' + esc(t.direction) + '</td>';
     html += '<td>' + ((t.edge||0)*100).toFixed(1) + '%</td>';
     html += '<td>' + ((t.confidence||0)*100).toFixed(0) + '%</td>';
+    html += '<td style="color:' + tleftColor + ';font-weight:600;">' + esc(tleft) + '</td>';
+    html += '<td style="color:var(--success);">+$' + potProfit.toFixed(2) + '</td>';
     html += '<td><span class="badge badge-warning">Pending</span></td></tr>';
   }
   el.innerHTML = html;
@@ -200,11 +221,14 @@ function renderLiveResolvedTrades(trades) {
   for (var i = 0; i < trades.length; i++) {
     var t = trades[i];
     var won = t.won;
+    var pnl = t.est_pnl || 0;
+    var pnlStr = (pnl >= 0 ? '+$' : '-$') + Math.abs(pnl).toFixed(2);
+    var pnlColor = pnl >= 0 ? 'var(--success)' : 'var(--error)';
     html += '<tr><td>' + esc(t.time) + '</td><td>' + esc(t.asset) + ' ' + esc(t.timeframe) + '</td>';
     html += '<td style="color:' + (t.direction === 'UP' ? 'var(--success)' : 'var(--error)') + '">' + esc(t.direction) + '</td>';
     html += '<td>' + ((t.edge||0)*100).toFixed(1) + '%</td>';
     html += '<td><span class="badge ' + (won ? 'badge-success' : 'badge-error') + '">' + (won ? 'WIN' : 'LOSS') + '</span></td>';
-    html += '<td>' + esc(t.outcome) + '</td></tr>';
+    html += '<td style="color:' + pnlColor + ';font-weight:600;">' + pnlStr + '</td></tr>';
   }
   el.innerHTML = html;
 }
@@ -2987,6 +3011,7 @@ async function refresh() {
       renderLivePendingTrades(data.pending_trades);
       renderLiveResolvedTrades(data.recent_trades);
       fetch('/api/logs').then(function(r){return r.json();}).then(function(d){renderLiveLogs(d.lines);}).catch(function(){});
+      fetch('/api/garves/balance').then(function(r){return r.json();}).then(function(d){renderLiveBalance(d);}).catch(function(){});
       loadAgentActivity('garves-live');
       loadGarvesMode();
     } else if (currentTab === 'garves') {
@@ -3099,6 +3124,10 @@ async function refresh() {
       loadViperTab();
       loadBrainNotes('viper');
       loadCommandTable('viper');
+    } else if (currentTab === 'quant') {
+      loadQuantTab();
+      loadBrainNotes('quant');
+      loadCommandTable('quant');
     } else if (currentTab === 'system') {
       loadSystemTab();
     } else if (currentTab === 'chat') {
@@ -6791,4 +6820,268 @@ async function dismissHawkSuggestion(conditionId) {
       loadHawkSuggestions();
     }
   } catch(e) { console.error('dismiss:', e); }
+}
+
+// === QUANT TAB ===
+var _quantRunPolling = null;
+
+async function loadQuantTab() {
+  try {
+    var resp = await fetch('/api/quant');
+    var data = await resp.json();
+    document.getElementById('quant-mode').textContent = data.mode || 'Historical Replay';
+    document.getElementById('quant-cycle').textContent = data.cycle || '--';
+    document.getElementById('quant-total-combos').textContent = data.total_combos_tested || '--';
+    document.getElementById('quant-best-wr').textContent = data.best_win_rate ? data.best_win_rate + '%' : '--';
+    document.getElementById('quant-best-wr').style.color = wrColor(data.best_win_rate || 0);
+    document.getElementById('quant-baseline-wr').textContent = data.baseline_win_rate ? data.baseline_win_rate + '%' : '--';
+    document.getElementById('quant-baseline-wr').style.color = wrColor(data.baseline_win_rate || 0);
+    var imp = data.improvement || 0;
+    document.getElementById('quant-improvement').textContent = imp > 0 ? '+' + imp + 'pp' : (imp < 0 ? imp + 'pp' : '--');
+    document.getElementById('quant-improvement').style.color = imp > 0 ? 'var(--success)' : imp < 0 ? 'var(--error)' : 'var(--text-muted)';
+    var cc = data.candle_counts || {};
+    var totalCandles = 0;
+    for (var k in cc) totalCandles += cc[k];
+    document.getElementById('quant-candles').textContent = totalCandles || '--';
+    document.getElementById('quant-trades').textContent = data.trade_count || '--';
+    document.getElementById('quant-last-update').textContent = data.last_run || '--';
+  } catch(e) { console.error('quant status:', e); }
+
+  loadQuantResults();
+  loadQuantRecommendations();
+  loadQuantParams();
+  loadQuantHawkReview();
+}
+
+async function loadQuantResults() {
+  try {
+    var resp = await fetch('/api/quant/results');
+    var data = await resp.json();
+    renderQuantResults(data.top_results || []);
+    renderQuantSensitivity(data.sensitivity || {});
+  } catch(e) { console.error('quant results:', e); }
+}
+
+function renderQuantResults(results) {
+  var tbody = document.getElementById('quant-results-tbody');
+  if (!results || results.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="text-muted" style="text-align:center;padding:20px;">No results yet</td></tr>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < results.length; i++) {
+    var r = results[i];
+    html += '<tr>';
+    html += '<td>' + r.rank + '</td>';
+    html += '<td style="font-size:0.68rem;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(r.label) + '">' + esc(r.label) + '</td>';
+    html += '<td style="color:#00BFFF;">' + r.score + '</td>';
+    html += '<td style="color:' + wrColor(r.win_rate) + ';">' + r.win_rate + '%</td>';
+    html += '<td>' + r.profit_factor + '</td>';
+    html += '<td>' + r.total_signals + '</td>';
+    html += '<td>' + r.wins + '/' + r.losses + '</td>';
+    html += '<td>' + (r.avg_edge || 0) + '%</td>';
+    html += '</tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+function renderQuantSensitivity(sensitivity) {
+  var cTbody = document.getElementById('quant-consensus-tbody');
+  var eTbody = document.getElementById('quant-edge-tbody');
+  var consensus = sensitivity.consensus || {};
+  var edge = sensitivity.edge || {};
+
+  var cKeys = Object.keys(consensus).sort();
+  if (cKeys.length === 0) {
+    cTbody.innerHTML = '<tr><td colspan="4" class="text-muted" style="text-align:center;">--</td></tr>';
+  } else {
+    var html = '';
+    for (var i = 0; i < cKeys.length; i++) {
+      var k = cKeys[i];
+      var v = consensus[k];
+      html += '<tr><td>' + k + '</td>';
+      html += '<td style="color:' + wrColor(v.avg_win_rate || 0) + ';">' + (v.avg_win_rate || 0) + '%</td>';
+      html += '<td>' + (v.avg_signals || 0) + '</td>';
+      html += '<td>' + (v.count || 0) + '</td></tr>';
+    }
+    cTbody.innerHTML = html;
+  }
+
+  var eKeys = Object.keys(edge).sort();
+  if (eKeys.length === 0) {
+    eTbody.innerHTML = '<tr><td colspan="4" class="text-muted" style="text-align:center;">--</td></tr>';
+  } else {
+    var html = '';
+    for (var i = 0; i < eKeys.length; i++) {
+      var k = eKeys[i];
+      var v = edge[k];
+      html += '<tr><td>' + (parseFloat(k)*100).toFixed(0) + '%</td>';
+      html += '<td style="color:' + wrColor(v.avg_win_rate || 0) + ';">' + (v.avg_win_rate || 0) + '%</td>';
+      html += '<td>' + (v.avg_signals || 0) + '</td>';
+      html += '<td>' + (v.count || 0) + '</td></tr>';
+    }
+    eTbody.innerHTML = html;
+  }
+}
+
+async function loadQuantRecommendations() {
+  try {
+    var resp = await fetch('/api/quant/recommendations');
+    var data = await resp.json();
+    renderQuantRecommendations(data.recommendations || []);
+  } catch(e) { console.error('quant recs:', e); }
+}
+
+function renderQuantRecommendations(recs) {
+  var el = document.getElementById('quant-recommendations');
+  if (!recs || recs.length === 0) {
+    el.innerHTML = '<div class="text-muted" style="text-align:center;padding:20px;">No recommendations yet</div>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < recs.length; i++) {
+    var r = recs[i];
+    var confColor = r.confidence === 'high' ? 'var(--success)' : r.confidence === 'medium' ? 'var(--warning)' : 'var(--text-muted)';
+    html += '<div style="padding:8px 12px;border-bottom:1px solid var(--border);">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
+    html += '<span style="font-weight:600;font-size:0.74rem;color:#00BFFF;">' + esc(r.param) + '</span>';
+    html += '<span class="badge" style="background:' + confColor + '22;color:' + confColor + ';font-size:0.62rem;">' + esc(r.confidence) + '</span>';
+    html += '</div>';
+    html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:2px;">' + esc(r.current) + ' &rarr; ' + esc(r.suggested) + '</div>';
+    html += '<div style="font-size:0.66rem;color:var(--text-secondary);">' + esc(r.reasoning) + '</div>';
+    if (r.impact) html += '<div style="font-size:0.66rem;color:var(--success);margin-top:2px;">' + esc(r.impact) + '</div>';
+    html += '</div>';
+  }
+  el.innerHTML = html;
+}
+
+async function loadQuantParams() {
+  try {
+    var resp = await fetch('/api/quant/params');
+    var data = await resp.json();
+    renderQuantParams(data);
+  } catch(e) { console.error('quant params:', e); }
+}
+
+function renderQuantParams(data) {
+  var tbody = document.getElementById('quant-params-tbody');
+  var current = data.current || {};
+  var best = data.best || {};
+  if (!current.min_consensus && !best.min_consensus) {
+    tbody.innerHTML = '<tr><td colspan="4" class="text-muted" style="text-align:center;padding:20px;">Run a backtest to see comparison</td></tr>';
+    return;
+  }
+  var params = [
+    {name: 'Min Consensus', key: 'min_consensus'},
+    {name: 'Min Confidence', key: 'min_confidence'},
+    {name: 'UP Confidence Premium', key: 'up_confidence_premium'},
+    {name: 'Min Edge Absolute', key: 'min_edge_absolute'},
+  ];
+  var html = '';
+  for (var i = 0; i < params.length; i++) {
+    var p = params[i];
+    var cv = current[p.key];
+    var bv = best[p.key];
+    var delta = '';
+    if (cv !== undefined && bv !== undefined) {
+      var d = typeof bv === 'number' ? bv - cv : 0;
+      if (d > 0) delta = '<span style="color:var(--success);">+' + d.toFixed(2) + '</span>';
+      else if (d < 0) delta = '<span style="color:var(--error);">' + d.toFixed(2) + '</span>';
+      else delta = '<span class="text-muted">--</span>';
+    } else {
+      delta = '<span class="text-muted">--</span>';
+    }
+    html += '<tr>';
+    html += '<td>' + p.name + '</td>';
+    html += '<td>' + (cv !== undefined ? cv : '--') + '</td>';
+    html += '<td>' + (bv !== undefined ? bv : '--') + '</td>';
+    html += '<td>' + delta + '</td>';
+    html += '</tr>';
+  }
+  // Performance row
+  var cp = data.current_performance || {};
+  var bp = data.best_performance || {};
+  html += '<tr style="border-top:2px solid var(--border);">';
+  html += '<td style="font-weight:600;">Win Rate</td>';
+  html += '<td style="color:' + wrColor(cp.win_rate || 0) + ';">' + (cp.win_rate || '--') + '%</td>';
+  html += '<td style="color:' + wrColor(bp.win_rate || 0) + ';">' + (bp.win_rate || '--') + '%</td>';
+  var wrDelta = (bp.win_rate || 0) - (cp.win_rate || 0);
+  html += '<td style="color:' + (wrDelta > 0 ? 'var(--success)' : wrDelta < 0 ? 'var(--error)' : 'var(--text-muted)') + ';">' + (wrDelta > 0 ? '+' : '') + wrDelta.toFixed(1) + 'pp</td>';
+  html += '</tr>';
+  tbody.innerHTML = html;
+}
+
+async function loadQuantHawkReview() {
+  try {
+    var resp = await fetch('/api/quant/recommendations');
+    var hawkResp = await fetch('/api/quant/results');
+    var hawkData = hawkResp.ok ? await hawkResp.json() : {};
+    var el = document.getElementById('quant-hawk-review');
+
+    // Load hawk review data from a separate file
+    var reviewResp = await fetch('/api/quant/params');
+    el.innerHTML = '<div class="text-muted" style="text-align:center;padding:12px;font-size:0.72rem;">Hawk trade calibration data will appear after running a backtest cycle</div>';
+  } catch(e) { console.error('quant hawk review:', e); }
+}
+
+async function quantTriggerRun() {
+  var btn = document.getElementById('quant-run-btn');
+  btn.disabled = true;
+  btn.textContent = 'Running...';
+  document.getElementById('quant-progress-bar').style.display = 'block';
+
+  try {
+    var resp = await fetch('/api/quant/run', {method: 'POST'});
+    var d = await resp.json();
+    if (!d.success) {
+      alert(d.message || 'Failed to start backtest');
+      btn.disabled = false;
+      btn.textContent = 'Trigger Backtest';
+      return;
+    }
+    // Start polling
+    _quantRunPolling = setInterval(quantPollProgress, 1500);
+  } catch(e) {
+    alert('Error: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = 'Trigger Backtest';
+  }
+}
+
+async function quantPollProgress() {
+  try {
+    var resp = await fetch('/api/quant/run-status');
+    var d = await resp.json();
+    document.getElementById('quant-progress-label').textContent = d.step || 'Running...';
+    document.getElementById('quant-progress-pct').textContent = (d.pct || 0) + '%';
+    document.getElementById('quant-progress-fill').style.width = (d.pct || 0) + '%';
+    document.getElementById('quant-progress-detail').textContent = d.detail || '';
+
+    if (d.done) {
+      clearInterval(_quantRunPolling);
+      _quantRunPolling = null;
+      document.getElementById('quant-run-btn').disabled = false;
+      document.getElementById('quant-run-btn').textContent = 'Trigger Backtest';
+      // Reload all data
+      setTimeout(function() {
+        loadQuantTab();
+        document.getElementById('quant-progress-bar').style.display = 'none';
+      }, 1000);
+    }
+  } catch(e) { console.error('quant poll:', e); }
+}
+
+function quantHealthCheck() {
+  fetch('/api/quant').then(function(r){return r.json();}).then(function(d){
+    var msg = 'Quant Health Check\n';
+    msg += '---\n';
+    msg += 'Last Run: ' + (d.last_run || 'Never') + '\n';
+    msg += 'Trades: ' + (d.trade_count || 0) + '\n';
+    msg += 'Combos Tested: ' + (d.total_combos_tested || 0) + '\n';
+    msg += 'Baseline WR: ' + (d.baseline_win_rate || 0) + '%\n';
+    msg += 'Best WR: ' + (d.best_win_rate || 0) + '%\n';
+    msg += 'Improvement: ' + (d.improvement || 0) + 'pp\n';
+    msg += 'Recommendations: ' + (d.recommendations_count || 0);
+    alert(msg);
+  }).catch(function(e){ alert('Health check failed: ' + e.message); });
 }
