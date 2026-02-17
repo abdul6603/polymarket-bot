@@ -974,9 +974,9 @@ function renderAtlas(data) {
   var agentsFedEl = document.getElementById('atlas-agents-fed');
   if (agentsFedEl) {
     var fed = lm.agents_fed || 0;
-    var total = lm.agents_total || 7;
+    var total = lm.agents_total || 9;
     agentsFedEl.textContent = fed + '/' + total;
-    agentsFedEl.style.color = fed >= 5 ? 'var(--success)' : fed >= 3 ? 'var(--warning)' : 'var(--error)';
+    agentsFedEl.style.color = fed >= 7 ? 'var(--success)' : fed >= 4 ? 'var(--warning)' : 'var(--error)';
   }
   var kgEl = document.getElementById('atlas-knowledge-growth');
   if (kgEl) {
