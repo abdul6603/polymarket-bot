@@ -132,71 +132,106 @@ def api_hawk_approve():
     if not target:
         return jsonify({"success": False, "error": "Suggestion not found"}), 404
 
-    # Execute trade via HawkExecutor
+    # Determine mode
+    import os
+    is_dry = True
+    if MODE_FILE.exists():
+        try:
+            is_dry = json.loads(MODE_FILE.read_text()).get("dry_run", True)
+        except Exception:
+            pass
+    else:
+        is_dry = os.getenv("HAWK_DRY_RUN", "true").lower() in ("true", "1", "yes")
+
     try:
-        from hawk.config import HawkConfig
-        from hawk.scanner import HawkMarket
-        from hawk.analyst import ProbabilityEstimate
-        from hawk.edge import TradeOpportunity
-        from hawk.executor import HawkExecutor
-        from hawk.tracker import HawkTracker
+        if is_dry:
+            # Dry-run: record paper trade directly (no CLOB client needed)
+            order_id = f"hawk-dry-{condition_id[:8]}-{int(time.time())}"
+            entry_price = target.get("market_price", 0.5)
+            if target["direction"] == "no":
+                entry_price = 1 - entry_price
 
-        cfg = HawkConfig()
-        tracker = HawkTracker()
+            trade_record = {
+                "order_id": order_id,
+                "condition_id": condition_id,
+                "token_id": target.get("token_id", ""),
+                "question": target.get("question", ""),
+                "category": target.get("category", "other"),
+                "direction": target["direction"],
+                "size_usd": target.get("position_size", 10),
+                "entry_price": round(entry_price, 4),
+                "edge": target.get("edge", 0),
+                "estimated_prob": target.get("estimated_prob", 0.5),
+                "reasoning": target.get("reasoning", "")[:200],
+                "tier": target.get("tier", "SPECULATIVE"),
+                "score": target.get("score", 0),
+                "dry_run": True,
+                "resolved": False,
+                "time_str": datetime.now(ET).strftime("%Y-%m-%d %H:%M"),
+                "timestamp": time.time(),
+            }
+            DATA_DIR.mkdir(exist_ok=True)
+            with open(TRADES_FILE, "a") as f:
+                f.write(json.dumps(trade_record) + "\n")
+            log.info("Hawk paper trade approved: %s %s | %s", target["direction"].upper(), condition_id[:12], target.get("question", "")[:60])
+        else:
+            # Live mode: use executor with CLOB client
+            from hawk.config import HawkConfig
+            from hawk.scanner import HawkMarket
+            from hawk.analyst import ProbabilityEstimate
+            from hawk.edge import TradeOpportunity
+            from hawk.executor import HawkExecutor
+            from hawk.tracker import HawkTracker
 
-        # Build CLOB client if live
-        client = None
-        if not cfg.dry_run:
+            cfg = HawkConfig()
+            tracker = HawkTracker()
+            client = None
             try:
                 from bot.auth import build_client
                 from bot.config import Config
-                garves_cfg = Config()
-                client = build_client(garves_cfg)
+                client = build_client(Config())
             except Exception:
                 log.warning("Could not init CLOB client for approve")
 
-        executor = HawkExecutor(cfg, client, tracker)
+            executor = HawkExecutor(cfg, client, tracker)
+            market = HawkMarket(
+                condition_id=target["condition_id"],
+                question=target["question"],
+                category=target.get("category", "other"),
+                volume=target.get("volume", 0),
+                liquidity=0,
+                tokens=[
+                    {"outcome": target["direction"], "price": str(target.get("market_price", 0.5)),
+                     "token_id": target.get("token_id", "")},
+                ],
+                end_date=target.get("end_date", ""),
+                event_title=target.get("event_title", ""),
+            )
+            estimate = ProbabilityEstimate(
+                market_id=target["condition_id"],
+                estimated_prob=target.get("estimated_prob", 0.5),
+                confidence=target.get("confidence", 0.5),
+                reasoning=target.get("reasoning", ""),
+            )
+            opp = TradeOpportunity(
+                market=market,
+                estimate=estimate,
+                edge=target.get("edge", 0),
+                direction=target["direction"],
+                token_id=target.get("token_id", ""),
+                kelly_fraction=target.get("position_size", 10) / cfg.bankroll_usd,
+                position_size_usd=target.get("position_size", 10),
+                expected_value=target.get("expected_value", 0),
+            )
+            order_id = executor.place_order(opp)
+            if not order_id:
+                return jsonify({"success": False, "error": "Order placement failed"}), 500
 
-        # Reconstruct TradeOpportunity from suggestion data
-        market = HawkMarket(
-            condition_id=target["condition_id"],
-            question=target["question"],
-            category=target.get("category", "other"),
-            volume=target.get("volume", 0),
-            liquidity=0,
-            tokens=[
-                {"outcome": target["direction"], "price": str(target.get("market_price", 0.5)),
-                 "token_id": target.get("token_id", "")},
-            ],
-            end_date=target.get("end_date", ""),
-            event_title=target.get("event_title", ""),
-        )
-        estimate = ProbabilityEstimate(
-            market_id=target["condition_id"],
-            estimated_prob=target.get("estimated_prob", 0.5),
-            confidence=target.get("confidence", 0.5),
-            reasoning=target.get("reasoning", ""),
-        )
-        opp = TradeOpportunity(
-            market=market,
-            estimate=estimate,
-            edge=target.get("edge", 0),
-            direction=target["direction"],
-            token_id=target.get("token_id", ""),
-            kelly_fraction=target.get("position_size", 10) / cfg.bankroll_usd,
-            position_size_usd=target.get("position_size", 10),
-            expected_value=target.get("expected_value", 0),
-        )
-
-        order_id = executor.place_order(opp)
-        if order_id:
-            # Remove from suggestions
-            remaining = [s for s in suggestions if s.get("condition_id") != condition_id]
-            sdata["suggestions"] = remaining
-            SUGGESTIONS_FILE.write_text(json.dumps(sdata, indent=2))
-            return jsonify({"success": True, "order_id": order_id, "mode": "dry_run" if cfg.dry_run else "live"})
-        else:
-            return jsonify({"success": False, "error": "Order placement failed"}), 500
+        # Remove from suggestions
+        remaining = [s for s in suggestions if s.get("condition_id") != condition_id]
+        sdata["suggestions"] = remaining
+        SUGGESTIONS_FILE.write_text(json.dumps(sdata, indent=2))
+        return jsonify({"success": True, "order_id": order_id, "mode": "dry_run" if is_dry else "live"})
     except Exception as e:
         log.exception("Failed to approve hawk trade")
         return jsonify({"success": False, "error": str(e)[:200]}), 500
