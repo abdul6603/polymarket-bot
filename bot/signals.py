@@ -44,25 +44,26 @@ PROB_CLAMP = {
 }
 
 # Indicator weights for the ensemble
-# Updated based on 164-trade accuracy data (Feb 17):
-#   TOP TIER: news (81%), volume_spike (80%), liquidation (74%)
-#   MID TIER: temporal_arb (60%), price_div (57%), macd (57%), ema (56%)
-#   LOW TIER: momentum (55%), heikin_ashi (53%), order_flow (52%), spot_depth (55%)
-#   HARMFUL:  bollinger (44%), rsi (40%), funding_rate (0%) — below coin flip
+# Updated by Quant backtest (Feb 17, 127 trades):
+#   Baseline 60.0% WR → Optimized 65.3% WR (+5.3pp)
+#   Changes: ema 1.1→0.6, order_flow 0.5→1.0, news 2.5→1.0
+#   news demoted: only 3/11 correct in recent trades (27.3%)
+#   ema demoted: 55.2% accuracy, marginal contributor
+#   order_flow promoted: doubled weight based on weight_v171 sweep
 WEIGHTS = {
     # TOP TIER — proven edge (>70% accuracy)
-    "news": 2.5,
     "volume_spike": 2.5,
     "liquidation": 2.0,
     # MID TIER — above coin flip (55-60%)
     "temporal_arb": 1.8,
     "price_div": 1.4,
     "macd": 1.1,
-    "ema": 1.1,
+    "order_flow": 1.0,  # Quant: 0.5→1.0 (weight_v171)
+    "news": 1.0,         # Quant: 2.5→1.0 (27.3% recent accuracy, 11 votes)
     # LOW TIER — marginal (50-55%)
     "momentum": 0.6,
+    "ema": 0.6,           # Quant: 1.1→0.6 (weight_v171)
     "heikin_ashi": 0.5,
-    "order_flow": 0.5,
     "spot_depth": 0.5,
     "orderbook": 0.5,
     "liquidity": 0.4,
