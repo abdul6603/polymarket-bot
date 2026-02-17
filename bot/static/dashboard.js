@@ -4664,6 +4664,81 @@ async function loadSystemTab() {
     console.error('System tab load error:', e);
   }
 
+  // Codebase stats
+  try {
+    var csResp = await fetch('/api/system/codebase-stats');
+    var cs = await csResp.json();
+
+    var cfEl = document.getElementById('sys-code-files');
+    if (cfEl) cfEl.textContent = (cs.total_files || 0).toLocaleString();
+
+    var clEl = document.getElementById('sys-code-lines');
+    if (clEl) clEl.textContent = (cs.total_lines || 0).toLocaleString();
+
+    var csizeEl = document.getElementById('sys-code-size');
+    if (csizeEl) csizeEl.textContent = cs.size_formatted || '--';
+
+    var cpEl = document.getElementById('sys-code-projects');
+    if (cpEl) cpEl.textContent = Object.keys(cs.by_project || {}).length;
+
+    var topExts = cs.top_extensions || [];
+    var teEl = document.getElementById('sys-code-top-ext');
+    if (teEl && topExts.length) teEl.textContent = topExts[0].ext;
+
+    var pyEl = document.getElementById('sys-code-py-lines');
+    if (pyEl) {
+      var pyLines = 0;
+      for (var te = 0; te < topExts.length; te++) {
+        if (topExts[te].ext === '.py') { pyLines = topExts[te].lines; break; }
+      }
+      pyEl.textContent = pyLines.toLocaleString();
+    }
+
+    var cbEl = document.getElementById('sys-code-breakdown');
+    if (cbEl && cs.by_project) {
+      var cbHtml = '';
+      var projects = Object.keys(cs.by_project);
+      for (var cp = 0; cp < projects.length; cp++) {
+        var pkey = projects[cp];
+        var proj = cs.by_project[pkey];
+        var pctOfTotal = cs.total_lines > 0 ? Math.round(proj.lines / cs.total_lines * 100) : 0;
+        var barW = Math.max(pctOfTotal, 1);
+        var pColor = AGENT_COLORS[pkey] || AGENT_COLORS[proj.label.toLowerCase().split('/')[0]] || '#888';
+        cbHtml += '<div style="margin-bottom:8px;">';
+        cbHtml += '<div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:2px;">';
+        cbHtml += '<span style="color:' + pColor + ';font-weight:600;">' + esc(proj.label) + ' <span class="text-muted" style="font-weight:400;">(' + pkey + '/)</span></span>';
+        cbHtml += '<span class="text-muted">' + proj.files + ' files | ' + proj.lines.toLocaleString() + ' lines | ' + proj.size_kb + ' KB</span>';
+        cbHtml += '</div>';
+        cbHtml += '<div style="width:100%;height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">';
+        cbHtml += '<div style="width:' + barW + '%;height:100%;background:' + pColor + ';border-radius:3px;transition:width 0.5s ease;"></div>';
+        cbHtml += '</div></div>';
+      }
+      // Extension breakdown
+      if (topExts.length) {
+        cbHtml += '<div style="margin-top:10px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.06);">';
+        cbHtml += '<span class="text-muted" style="font-size:0.68rem;">BY LANGUAGE</span>';
+        var extColors = {'.py': '#3572A5', '.html': '#e34c26', '.js': '#f1e05a', '.css': '#563d7c', '.json': '#292929', '.md': '#083fa1', '.sh': '#89e051'};
+        for (var ex = 0; ex < topExts.length; ex++) {
+          var extItem = topExts[ex];
+          var extPct = cs.total_lines > 0 ? Math.round(extItem.lines / cs.total_lines * 100) : 0;
+          var eColor = extColors[extItem.ext] || '#888';
+          cbHtml += '<div style="display:flex;align-items:center;gap:8px;padding:2px 0;font-size:0.72rem;">';
+          cbHtml += '<span style="width:8px;height:8px;border-radius:50%;background:' + eColor + ';display:inline-block;"></span>';
+          cbHtml += '<span style="width:50px;">' + esc(extItem.ext) + '</span>';
+          cbHtml += '<div style="flex:1;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;">';
+          cbHtml += '<div style="width:' + Math.max(extPct, 1) + '%;height:100%;background:' + eColor + ';border-radius:2px;"></div>';
+          cbHtml += '</div>';
+          cbHtml += '<span class="text-muted" style="width:80px;text-align:right;">' + extItem.lines.toLocaleString() + ' (' + extPct + '%)</span>';
+          cbHtml += '</div>';
+        }
+        cbHtml += '</div>';
+      }
+      cbEl.innerHTML = cbHtml;
+    }
+  } catch(e) {
+    console.error('Codebase stats error:', e);
+  }
+
   // Also load event feed in system tab
   try {
     var evResp = await fetch('/api/events?limit=20');

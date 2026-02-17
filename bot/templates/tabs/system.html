@@ -9,6 +9,21 @@
     <div class="stat-card" data-accent="soren"><div class="stat-value" id="sys-ports">--</div><div class="stat-label">Open Ports</div></div>
   </div>
 
+  <div class="section-spacer" style="margin-top:12px;">
+    <h2 class="section-title" data-accent="soren">Brotherhood Codebase</h2>
+    <div class="grid-6">
+      <div class="stat-card" data-accent="soren"><div class="stat-value" id="sys-code-files">--</div><div class="stat-label">Total Files</div></div>
+      <div class="stat-card" data-accent="thor"><div class="stat-value" id="sys-code-lines">--</div><div class="stat-label">Lines of Code</div></div>
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="sys-code-size">--</div><div class="stat-label">Total Size</div></div>
+      <div class="stat-card" data-accent="atlas"><div class="stat-value" id="sys-code-projects">--</div><div class="stat-label">Projects</div></div>
+      <div class="stat-card" data-accent="shelby"><div class="stat-value" id="sys-code-top-ext">--</div><div class="stat-label">Top Language</div></div>
+      <div class="stat-card" data-accent="error"><div class="stat-value" id="sys-code-py-lines">--</div><div class="stat-label">Python Lines</div></div>
+    </div>
+    <div class="glass-card" style="margin-top:8px;">
+      <div id="sys-code-breakdown" style="font-family:var(--font-mono);font-size:0.76rem;"><span class="text-muted">Loading...</span></div>
+    </div>
+  </div>
+
   <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;" id="sys-action-buttons">
     <button class="btn" onclick="sysAction('restart-dashboard')" style="font-size:0.74rem;">Restart Dashboard</button>
     <button class="btn" onclick="sysAction('restart-shelby')" style="font-size:0.74rem;" title="Stops and restarts the Shelby LaunchAgent (scheduler + task manager)">Restart Shelby</button>

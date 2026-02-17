@@ -260,6 +260,91 @@ def _get_recent_errors() -> list:
         return []
 
 
+BROTHERHOOD_DIRS = {
+    "polymarket-bot": "Garves/Hawk/Viper/Dashboard",
+    "shelby": "Shelby",
+    "atlas": "Atlas",
+    "sentinel": "Robotox",
+    "mercury": "Lisa",
+    "thor": "Thor",
+    "soren-content": "Soren",
+    "shared": "Shared",
+}
+
+CODE_EXTENSIONS = {".py", ".html", ".js", ".css", ".json", ".sh", ".yml", ".yaml", ".toml", ".cfg", ".md"}
+SKIP_DIRS = {"__pycache__", ".venv", "venv", "node_modules", ".git", ".mypy_cache", ".pytest_cache", "egg-info"}
+
+
+def _get_codebase_stats() -> dict:
+    """Scan all Brotherhood directories for file count, lines, and size."""
+    home = Path.home()
+    total_files = 0
+    total_lines = 0
+    total_bytes = 0
+    by_project = {}
+    by_ext = {}
+
+    for dirname, label in BROTHERHOOD_DIRS.items():
+        proj_dir = home / dirname
+        if not proj_dir.is_dir():
+            continue
+        proj_files = 0
+        proj_lines = 0
+        proj_bytes = 0
+        for root, dirs, files in os.walk(proj_dir):
+            # Prune skipped directories in-place
+            dirs[:] = [d for d in dirs if d not in SKIP_DIRS and not d.startswith(".")]
+            for fname in files:
+                fpath = Path(root) / fname
+                ext = fpath.suffix.lower()
+                if ext not in CODE_EXTENSIONS:
+                    continue
+                try:
+                    size = fpath.stat().st_size
+                    if size > 2_000_000:  # skip files > 2MB
+                        continue
+                    proj_files += 1
+                    proj_bytes += size
+                    lines = fpath.read_text(errors="replace").count("\n")
+                    proj_lines += lines
+                    by_ext[ext] = by_ext.get(ext, 0) + lines
+                except Exception:
+                    continue
+        total_files += proj_files
+        total_lines += proj_lines
+        total_bytes += proj_bytes
+        by_project[dirname] = {
+            "label": label,
+            "files": proj_files,
+            "lines": proj_lines,
+            "size_kb": round(proj_bytes / 1024, 1),
+        }
+
+    # Format total size
+    if total_bytes >= 1024 * 1024:
+        size_str = f"{total_bytes / (1024 * 1024):.1f} MB"
+    else:
+        size_str = f"{total_bytes / 1024:.1f} KB"
+
+    # Top extensions
+    top_ext = sorted(by_ext.items(), key=lambda x: -x[1])[:6]
+
+    return {
+        "total_files": total_files,
+        "total_lines": total_lines,
+        "total_bytes": total_bytes,
+        "size_formatted": size_str,
+        "by_project": by_project,
+        "top_extensions": [{"ext": e, "lines": l} for e, l in top_ext],
+    }
+
+
+@system_bp.route("/api/system/codebase-stats")
+def api_codebase_stats():
+    """Codebase statistics across all Brotherhood projects."""
+    return jsonify(_get_codebase_stats())
+
+
 @system_bp.route("/api/system/metrics")
 def api_system_metrics():
     """Full system metrics snapshot."""
