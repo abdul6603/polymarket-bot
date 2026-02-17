@@ -47,9 +47,10 @@ def _summarize(text: str, max_len: int = 500) -> str:
 
 # Each entry: (keywords_regex, action_function_name)
 _ROBOTOX_ACTIONS = [
-    (re.compile(r"\b(scan|health|check|monitor)\b", re.I), "robotox_health_scan"),
-    (re.compile(r"\b(bug|lint|code.?scan)\b", re.I), "robotox_bug_scan"),
+    # Order matters — more specific patterns first
+    (re.compile(r"\b(bugs?|lint|code.?scan)\b", re.I), "robotox_bug_scan"),
     (re.compile(r"\b(dep|dependency|version)\b", re.I), "robotox_dep_check"),
+    (re.compile(r"\b(scan|health|check|monitor)\b", re.I), "robotox_health_scan"),
 ]
 
 _ATLAS_ACTIONS = [
@@ -108,22 +109,60 @@ def _exec_robotox_health_scan() -> str:
     return _summarize(str(result))
 
 
-def _exec_robotox_bug_scan() -> str:
-    """Run Robotox quick bug scan."""
-    from bot.routes.sentinel import _get_sentinel
-    s = _get_sentinel()
-    result = s.quick_bug_scan()
-    if isinstance(result, dict):
-        total = result.get("total_issues", result.get("total", 0))
-        issues = result.get("issues", [])
-        if not total and not issues:
-            return "Bug scan complete. No issues found."
-        summary = f"Bug scan found {total} issue(s)."
-        for iss in (issues[:5] if isinstance(issues, list) else []):
-            if isinstance(iss, dict):
-                summary += f"\n- [{iss.get('severity', '?')}] {iss.get('file', '')}: {iss.get('message', '')[:60]}"
-        return _summarize(summary)
-    return _summarize(str(result))
+def _exec_robotox_bug_scan_detailed() -> tuple[str, list[dict]]:
+    """Run Robotox detailed bug scan. Returns (summary, issues_list).
+
+    Uses the scanner directly to get file paths, line numbers, and messages
+    so chains can pass actionable details to Thor.
+    """
+    from sentinel.core.scanner import BugScanner
+    scanner = BugScanner()
+
+    all_issues = []
+    agent_counts = {}
+    from sentinel.core.scanner import SCAN_ROOTS
+    for agent_id, root in SCAN_ROOTS.items():
+        if not root.exists():
+            continue
+        count = 0
+        for py_file in root.rglob("*.py"):
+            parts = py_file.parts
+            if any(skip in parts for skip in ("__pycache__", ".venv", "venv", ".git")):
+                continue
+            try:
+                content = py_file.read_text(errors="replace")
+                file_issues = scanner._scan_file(py_file, content)
+                for iss in file_issues:
+                    iss["agent"] = agent_id
+                all_issues.extend(file_issues)
+                count += len(file_issues)
+            except Exception:
+                pass
+        agent_counts[agent_id] = count
+
+    total = len(all_issues)
+    if not total:
+        return "Bug scan complete. No issues found.", []
+
+    # Build summary
+    summary = f"Bug scan found {total} issue(s) across {len(agent_counts)} project(s)."
+    # Count by severity
+    by_sev = {}
+    for iss in all_issues:
+        sev = iss.get("severity", "info")
+        by_sev[sev] = by_sev.get(sev, 0) + 1
+    if by_sev:
+        summary += " " + ", ".join(f"{v} {k}" for k, v in sorted(by_sev.items()))
+    # Show top issues
+    fixable = [i for i in all_issues if i.get("severity") in ("critical", "warning")]
+    for iss in fixable[:5]:
+        f_short = str(iss.get("file", ""))
+        # Shorten path for readability
+        if "/Users/" in f_short:
+            f_short = "~/" + f_short.split("/Users/abdallaalhamdan/", 1)[-1]
+        summary += f"\n- [{iss['severity']}] {f_short}:{iss.get('line', '?')} — {iss.get('message', '')[:60]}"
+
+    return _summarize(summary), all_issues
 
 
 def _exec_robotox_dep_check() -> str:
@@ -294,11 +333,112 @@ def _wait_for_thor_result(thor_task_id: str, shelby_task_id: int, timeout: int =
     _update_task(shelby_task_id, notes=f"Submitted to Thor as {thor_task_id}. Still running (timed out waiting for result).")
 
 
+# ── Chains — automatic follow-up tasks ──
+
+def _create_and_dispatch(title: str, agent: str, notes: str = None) -> dict | None:
+    """Create a Shelby task and dispatch it. Returns the new task dict or None."""
+    try:
+        from core.tasks import add_task
+        task = add_task(title=title, agent=agent, notes=notes, benefit=3)
+        dispatched = dispatch_task(task)
+        action = "dispatched" if dispatched else "created (no auto-dispatch match)"
+        print(f"[chain] {action}: '{title}' → {agent} (task #{task['id']})")
+        return task
+    except Exception as e:
+        print(f"[chain] Failed to create follow-up task: {e}")
+        return None
+
+
+def _chain_bug_scan(shelby_task_id: int, issues: list[dict]) -> dict | None:
+    """After a bug scan, if fixable issues exist, create a Thor task to fix them."""
+    fixable = [i for i in issues if i.get("severity") in ("critical", "warning")]
+    if not fixable:
+        return None
+
+    # Build a detailed description for Thor
+    target_files = []
+    lines = []
+    for iss in fixable[:15]:  # Cap at 15 to keep description reasonable
+        f_path = str(iss.get("file", ""))
+        if f_path and f_path not in target_files:
+            target_files.append(f_path)
+        f_short = f_path
+        if "/Users/" in f_short:
+            f_short = "~/" + f_short.split("/Users/abdallaalhamdan/", 1)[-1]
+        lines.append(f"- [{iss['severity']}] {f_short}:{iss.get('line', '?')} — {iss.get('message', '')[:80]}")
+
+    description = (
+        f"Robotox bug scan found {len(fixable)} fixable issue(s). "
+        f"Fix the critical and warning issues below:\n"
+        + "\n".join(lines)
+    )
+
+    # Create Thor task with detailed info — submit directly to Thor's queue
+    # so it gets the target_files for context
+    try:
+        from thor.core.task_queue import CodingTask, TaskQueue
+        from thor.config import ThorConfig
+        cfg = ThorConfig()
+        queue = TaskQueue(cfg.tasks_dir, cfg.results_dir)
+
+        thor_task = CodingTask(
+            title=f"Fix {len(fixable)} bug(s) from Robotox scan",
+            description=description,
+            target_files=target_files[:10],
+            context_files=[],
+            agent="",
+            priority="high" if any(i["severity"] == "critical" for i in fixable) else "normal",
+            assigned_by="shelby-dispatcher-chain",
+        )
+        thor_task_id = queue.submit(thor_task)
+
+        # Create the Shelby tracking task
+        from core.tasks import add_task
+        shelby_thor_task = add_task(
+            title=f"Fix {len(fixable)} bug(s) from scan",
+            agent="thor",
+            notes=f"Chained from task #{shelby_task_id}. Submitted to Thor as {thor_task_id}.",
+            benefit=3,
+        )
+        # Update it to in_progress and start the feedback loop
+        _update_task(shelby_thor_task["id"], status="in_progress",
+                     notes=f"Chained from task #{shelby_task_id}. Submitted to Thor as {thor_task_id}. Waiting for result...")
+
+        # Also note the chain on the original scan task
+        _update_task(shelby_task_id,
+                     notes=_get_current_notes(shelby_task_id) + f"\n→ Chained: Thor task #{shelby_thor_task['id']} created to fix {len(fixable)} issue(s).")
+
+        # Start feedback loop for the Thor task
+        threading.Thread(
+            target=_wait_for_thor_result,
+            args=(thor_task_id, shelby_thor_task["id"]),
+            daemon=True,
+            name=f"chain-thor-{thor_task_id}",
+        ).start()
+
+        print(f"[chain] Bug scan #{shelby_task_id} → Thor task #{shelby_thor_task['id']} ({thor_task_id}), {len(fixable)} issues")
+        return shelby_thor_task
+    except Exception as e:
+        print(f"[chain] Failed to create Thor follow-up: {e}")
+        traceback.print_exc()
+        return None
+
+
+def _get_current_notes(task_id: int) -> str:
+    """Read current notes from a task."""
+    try:
+        from core.tasks import get_task
+        t = get_task(task_id)
+        return (t.get("notes") or "") if t else ""
+    except Exception:
+        return ""
+
+
 # ── Dispatch map ──
 
 _ACTION_MAP = {
     "robotox_health_scan": _exec_robotox_health_scan,
-    "robotox_bug_scan": _exec_robotox_bug_scan,
+    # robotox_bug_scan handled specially in _dispatch_thread (chain support)
     "robotox_dep_check": _exec_robotox_dep_check,
     "atlas_full_report": _exec_atlas_full_report,
     "atlas_improvements": _exec_atlas_improvements,
@@ -320,6 +460,14 @@ def _dispatch_thread(task_dict: dict, action: str):
             _update_task(task_id, status="in_progress", notes=result_text)
             # Poll until Thor finishes and update Shelby task to done
             _wait_for_thor_result(thor_task_id, task_id)
+        elif action == "robotox_bug_scan":
+            # Detailed bug scan with chain support
+            result_text, issues = _exec_robotox_bug_scan_detailed()
+            _update_task(task_id, status="done", notes=result_text)
+            # Chain: if fixable issues found, auto-create Thor task
+            fixable = [i for i in issues if i.get("severity") in ("critical", "warning")]
+            if fixable:
+                _chain_bug_scan(task_id, issues)
         else:
             executor = _ACTION_MAP.get(action)
             if not executor:
