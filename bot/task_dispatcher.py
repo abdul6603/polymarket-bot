@@ -210,8 +210,8 @@ def _exec_atlas_soren_deep() -> str:
     return _summarize(str(result))
 
 
-def _exec_thor_coding_task(task_dict: dict) -> str:
-    """Submit a coding task to Thor's queue."""
+def _exec_thor_coding_task(task_dict: dict) -> tuple[str, str]:
+    """Submit a coding task to Thor's queue. Returns (message, thor_task_id)."""
     from thor.core.task_queue import CodingTask, TaskQueue
     from thor.config import ThorConfig
     cfg = ThorConfig()
@@ -227,8 +227,71 @@ def _exec_thor_coding_task(task_dict: dict) -> str:
         priority="normal",
         assigned_by="shelby-dispatcher",
     )
-    task_id = queue.submit(task)
-    return f"Submitted to Thor as task {task_id}. Thor will pick it up shortly."
+    thor_task_id = queue.submit(task)
+    return f"Submitted to Thor as task {thor_task_id}. Thor will pick it up shortly.", thor_task_id
+
+
+def _wait_for_thor_result(thor_task_id: str, shelby_task_id: int, timeout: int = 600):
+    """Poll Thor's task file until it completes, then update the Shelby task.
+
+    Polls every 5 seconds for up to `timeout` seconds (default 10 min).
+    """
+    import time
+    from thor.config import ThorConfig
+    cfg = ThorConfig()
+    task_file = Path(cfg.tasks_dir) / f"{thor_task_id}.json"
+    results_dir = Path(cfg.results_dir)
+
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        time.sleep(5)
+        try:
+            if not task_file.exists():
+                continue
+            with open(task_file) as f:
+                thor_task = json.load(f)
+            status = thor_task.get("status", "")
+            if status not in ("completed", "failed"):
+                continue
+
+            # Thor finished — read the result
+            result_id = thor_task.get("result_id", "")
+            if status == "failed":
+                error = thor_task.get("error", "Unknown error")
+                _update_task(shelby_task_id, status="done",
+                             notes=f"Thor failed: {_summarize(error, 400)}")
+                print(f"[dispatcher] Thor task {thor_task_id} failed for Shelby #{shelby_task_id}")
+                return
+
+            if result_id:
+                result_file = results_dir / f"{result_id}.json"
+                if result_file.exists():
+                    with open(result_file) as f:
+                        result = json.load(f)
+                    summary = result.get("summary", "")
+                    model = result.get("model_used", "")
+                    files_written = result.get("files_written", {})
+                    file_count = len(files_written)
+                    notes = f"Thor completed ({model})."
+                    if file_count:
+                        notes += f" {file_count} file(s) modified."
+                    if summary:
+                        notes += f"\n{_summarize(summary, 400)}"
+                    _update_task(shelby_task_id, status="done", notes=notes)
+                    print(f"[dispatcher] Thor task {thor_task_id} done → Shelby #{shelby_task_id} updated")
+                    return
+
+            # Completed but no result file yet — mark done with basic info
+            _update_task(shelby_task_id, status="done",
+                         notes=f"Thor completed task {thor_task_id}.")
+            return
+
+        except Exception as e:
+            print(f"[dispatcher] Error polling Thor {thor_task_id}: {e}")
+            continue
+
+    # Timeout
+    _update_task(shelby_task_id, notes=f"Submitted to Thor as {thor_task_id}. Still running (timed out waiting for result).")
 
 
 # ── Dispatch map ──
@@ -253,9 +316,10 @@ def _dispatch_thread(task_dict: dict, action: str):
         _update_task(task_id, status="in_progress", notes=f"Dispatching to {agent}...")
 
         if action == "thor_coding_task":
-            result_text = _exec_thor_coding_task(task_dict)
-            # Thor tasks stay in_progress — Thor updates its own results
+            result_text, thor_task_id = _exec_thor_coding_task(task_dict)
             _update_task(task_id, status="in_progress", notes=result_text)
+            # Poll until Thor finishes and update Shelby task to done
+            _wait_for_thor_result(thor_task_id, task_id)
         else:
             executor = _ACTION_MAP.get(action)
             if not executor:
