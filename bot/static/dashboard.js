@@ -6077,6 +6077,13 @@ async function loadViperTab() {
     var sorenData = await sorenResp.json();
     renderViperSorenMetrics(sorenData);
   } catch(e) {}
+
+  // Soren opportunity feed
+  try {
+    var sorenOppResp = await fetch('/api/viper/soren-opportunities');
+    var sorenOppData = await sorenOppResp.json();
+    renderSorenOpportunities(sorenOppData);
+  } catch(e) {}
 }
 
 function renderViperIntel(items) {
@@ -6173,6 +6180,64 @@ function renderViperSorenMetrics(data) {
   html += '<div style="background:rgba(255,255,255,0.04);border-radius:6px;padding:10px 14px;"><div style="font-size:0.72rem;color:var(--text-muted);">Brand Ready</div><div style="font-size:1.1rem;font-weight:700;">' + (data.brand_ready ? 'Yes' : 'Not yet') + '</div></div>';
   html += '</div>';
   el.innerHTML = html;
+}
+
+function renderSorenOpportunities(data) {
+  var badges = document.getElementById('soren-opp-badges');
+  var tbody = document.getElementById('soren-opp-tbody');
+  if (!badges || !tbody) return;
+
+  var opps = data.opportunities || [];
+  var types = data.types || {};
+  var updated = data.updated || 0;
+
+  // Badges
+  var bh = '';
+  bh += '<div class="widget-badge"><span class="wb-label">Total:</span> <span style="color:#cc66ff;font-weight:700;">' + opps.length + '</span></div>';
+  var typeColors = {brand_deal:'#FFD700', affiliate:'#00ff88', trending_content:'#ff6b6b', collab:'#8B5CF6', ad_revenue:'#00d4ff'};
+  var typeLabels = {brand_deal:'Brand Deals', affiliate:'Affiliate', trending_content:'Trends', collab:'Collabs', ad_revenue:'Ad Revenue'};
+  var typeKeys = Object.keys(types);
+  for (var i = 0; i < typeKeys.length; i++) {
+    var tk = typeKeys[i];
+    var tc = typeColors[tk] || '#888';
+    bh += '<div class="widget-badge"><span class="wb-label">' + (typeLabels[tk] || tk) + ':</span> <span style="color:' + tc + ';">' + types[tk] + '</span></div>';
+  }
+  if (updated > 0) {
+    var age = Math.round((Date.now() / 1000 - updated) / 60);
+    bh += '<div class="widget-badge"><span class="wb-label">Updated:</span> <span style="color:var(--text-muted);">' + age + 'm ago</span></div>';
+  }
+  badges.innerHTML = bh;
+
+  // Table
+  if (opps.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No Soren opportunities yet — trigger a scan</td></tr>';
+    return;
+  }
+
+  var html = '';
+  for (var j = 0; j < Math.min(opps.length, 20); j++) {
+    var o = opps[j];
+    var typeColor = typeColors[o.type] || '#888';
+    var typeLabel = typeLabels[o.type] || o.type;
+    var fitColor = o.fit_score >= 60 ? 'var(--success)' : o.fit_score >= 35 ? 'var(--warning)' : 'var(--text-muted)';
+    var urgColor = o.urgency === 'high' ? 'var(--error)' : o.urgency === 'medium' ? 'var(--warning)' : 'var(--text-muted)';
+
+    html += '<tr>';
+    html += '<td><span class="badge" style="background:rgba(255,255,255,0.06);color:' + typeColor + ';font-size:0.64rem;">' + esc(typeLabel) + '</span></td>';
+    html += '<td style="max-width:220px;"><div style="font-size:0.74rem;line-height:1.3;white-space:normal;">' + esc((o.title || '').substring(0, 80)) + '</div>';
+    if (o.url) {
+      var domain = '';
+      try { domain = new URL(o.url).hostname.replace('www.',''); } catch(e){}
+      html += '<a href="' + esc(o.url) + '" target="_blank" style="font-size:0.58rem;color:#8B5CF6;text-decoration:none;">&#x1F517; ' + esc(domain || 'Link') + '</a>';
+    }
+    html += '</td>';
+    html += '<td style="color:' + fitColor + ';font-weight:600;font-size:0.8rem;">' + (o.fit_score || 0) + '</td>';
+    html += '<td style="font-size:0.72rem;color:var(--text-secondary);">' + esc(o.estimated_value || '--') + '</td>';
+    html += '<td style="color:' + urgColor + ';font-weight:600;font-size:0.72rem;">' + esc((o.urgency || 'low').toUpperCase()) + '</td>';
+    html += '<td style="font-size:0.68rem;color:var(--text-muted);max-width:140px;white-space:normal;">' + esc(o.action || '') + '</td>';
+    html += '</tr>';
+  }
+  tbody.innerHTML = html;
 }
 
 function _viperUpdateProgress(data) {

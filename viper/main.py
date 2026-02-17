@@ -139,6 +139,20 @@ def run_single_scan(cfg: ViperConfig, cycle: int = 0) -> dict:
     matched = update_market_context()
     result["matched"] = matched
 
+    # 5. Soren opportunity scout (every 6th cycle = ~30min, or cycle=0 for API trigger)
+    run_soren = (cycle == 0) or (cycle % 6 == 1)
+    if run_soren:
+        try:
+            from viper.soren_scout import scout_soren_opportunities
+            soren_opps = scout_soren_opportunities(cfg.tavily_api_key)
+            result["soren_opportunities"] = len(soren_opps)
+            log.info("Soren scout: %d opportunities found", len(soren_opps))
+        except Exception:
+            log.exception("Soren scout failed")
+            result["soren_opportunities"] = 0
+    else:
+        result["soren_opportunities"] = -1  # -1 = skipped this cycle
+
     return result
 
 
@@ -196,6 +210,7 @@ class ViperBot:
                     log.info("Total estimated monthly API cost: $%.2f", cost_data.get("total_monthly", 0))
 
                 # Save status
+                soren_count = result.get("soren_opportunities", -1)
                 _save_status({
                     "running": True,
                     "mode": "intelligence",
@@ -209,6 +224,7 @@ class ViperBot:
                     "briefing_active": result.get("briefing_active", False),
                     "briefed_markets": result.get("briefed_markets", 0),
                     "tavily_ran": result.get("tavily_ran", False),
+                    "soren_opportunities": soren_count if soren_count >= 0 else None,
                 })
 
             except Exception:

@@ -18,6 +18,7 @@ COSTS_FILE = DATA_DIR / "viper_costs.json"
 STATUS_FILE = DATA_DIR / "viper_status.json"
 INTEL_FILE = DATA_DIR / "viper_intel.json"
 BRIEFING_FILE = DATA_DIR / "hawk_briefing.json"
+SOREN_OPPS_FILE = DATA_DIR / "soren_opportunities.json"
 
 _scan_lock = threading.Lock()
 _scan_running = False
@@ -105,6 +106,18 @@ def api_viper_soren_metrics():
         return jsonify({"followers": 0, "engagement_rate": 0, "estimated_cpm": 0, "brand_ready": False, "error": str(e)[:200]})
 
 
+@viper_bp.route("/api/viper/soren-opportunities")
+def api_viper_soren_opportunities():
+    """Soren opportunity feed — brand deals, affiliates, trending content."""
+    if SOREN_OPPS_FILE.exists():
+        try:
+            data = json.loads(SOREN_OPPS_FILE.read_text())
+            return jsonify(data)
+        except Exception:
+            pass
+    return jsonify({"opportunities": [], "count": 0, "updated": 0, "types": {}})
+
+
 @viper_bp.route("/api/viper/scan-status")
 def api_viper_scan_status():
     """Poll scan progress."""
@@ -134,9 +147,11 @@ def api_viper_scan():
 
             intel_count = result.get("intel_count", 0)
             matched = result.get("matched", 0)
+            soren_count = result.get("soren_opportunities", 0)
+            soren_note = f" | {soren_count} Soren opps" if soren_count and soren_count > 0 else ""
             _set_progress(
                 "Scan complete",
-                f"Found {intel_count} intel items | {matched} market matches",
+                f"Found {intel_count} intel items | {matched} market matches{soren_note}",
                 100,
                 done=True,
             )
