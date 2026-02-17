@@ -3439,6 +3439,12 @@ switchTab = function(tab) {
       renderIntelMeter('intel-' + activeAgent, activeAgent, _intelData[activeAgent]);
     }
   }
+  // Viper auto-refresh: start when on viper tab, stop when leaving
+  if (tab === 'viper') {
+    viperStartAutoRefresh();
+  } else {
+    viperStopAutoRefresh();
+  }
 };
 
 // Load on startup + every 30s
@@ -6022,6 +6028,71 @@ async function hawkSimResolve() {
 // VIPER TAB — 24/7 Intelligence Engine
 // ══════════════════════════════════════
 var _viperScanPoller = null;
+var _viperAutoTimer = null;
+var _viperNextRefresh = 0;
+var _viperCountdownTimer = null;
+
+function viperStartAutoRefresh() {
+  viperStopAutoRefresh();
+  _viperNextRefresh = Date.now() + 600000; // 10 minutes
+  _viperAutoTimer = setInterval(function() {
+    loadViperTab();
+    _viperNextRefresh = Date.now() + 600000;
+  }, 600000);
+  _viperCountdownTimer = setInterval(viperUpdateCountdown, 1000);
+  viperUpdateCountdown();
+}
+
+function viperStopAutoRefresh() {
+  if (_viperAutoTimer) { clearInterval(_viperAutoTimer); _viperAutoTimer = null; }
+  if (_viperCountdownTimer) { clearInterval(_viperCountdownTimer); _viperCountdownTimer = null; }
+}
+
+function viperUpdateCountdown() {
+  var badge = document.getElementById('viper-auto-timer');
+  if (!badge) return;
+  var remaining = Math.max(0, _viperNextRefresh - Date.now());
+  var mins = Math.floor(remaining / 60000);
+  var secs = Math.floor((remaining % 60000) / 1000);
+  badge.textContent = 'Auto: ' + mins + 'm ' + (secs < 10 ? '0' : '') + secs + 's';
+}
+
+function viperRefreshNow() {
+  loadViperTab();
+  _viperNextRefresh = Date.now() + 600000;
+  viperUpdateCountdown();
+}
+
+function viperGetCostProfit(type, estimatedValue) {
+  var cost = '--';
+  var profit = '--';
+  switch(type) {
+    case 'brand_deal':
+      cost = '$0 (free)';
+      profit = estimatedValue || '--';
+      break;
+    case 'affiliate':
+      cost = '$0 (free)';
+      profit = estimatedValue || '--';
+      break;
+    case 'trending_content':
+      cost = 'Time only';
+      profit = 'Organic reach';
+      break;
+    case 'collab':
+      cost = 'Content trade';
+      profit = estimatedValue || '--';
+      break;
+    case 'ad_revenue':
+      cost = '$0 (free)';
+      profit = estimatedValue || '--';
+      break;
+    default:
+      cost = '--';
+      profit = estimatedValue || '--';
+  }
+  return {cost: cost, profit: profit};
+}
 
 async function loadViperTab() {
   try {
@@ -6089,7 +6160,11 @@ async function loadViperTab() {
 function renderViperIntel(items) {
   var el = document.getElementById('viper-intel-tbody');
   if (!el) return;
-  if (items.length === 0) { el.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No intelligence yet — hit Trigger Scan</td></tr>'; return; }
+  if (!items || items.length === 0) {
+    var lastScan = document.getElementById('viper-cycle') ? document.getElementById('viper-cycle').textContent : '0';
+    el.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No intelligence collected yet' + (lastScan !== '0' ? ' (last scan: cycle ' + esc(lastScan) + ')' : '') + '</td></tr>';
+    return;
+  }
   var html = '';
   var srcColors = {tavily:'#8B5CF6', reddit:'#FF4500', polymarket:'#00d4ff'};
   var srcIcons = {tavily:'&#x1F4F0;', reddit:'&#x1F4AC;', polymarket:'&#x1F4CA;'};
@@ -6172,13 +6247,89 @@ function renderViperCosts(data) {
 function renderViperSorenMetrics(data) {
   var el = document.getElementById('viper-soren-metrics');
   if (!el) return;
-  if (!data || !data.followers) { el.innerHTML = '<div class="text-muted" style="padding:12px;">No Soren metrics available yet.</div>'; return; }
-  var html = '<div style="display:flex;gap:12px;flex-wrap:wrap;">';
-  html += '<div style="background:rgba(255,255,255,0.04);border-radius:6px;padding:10px 14px;"><div style="font-size:0.72rem;color:var(--text-muted);">Followers</div><div style="font-size:1.1rem;font-weight:700;">' + (data.followers || 0) + '</div></div>';
-  html += '<div style="background:rgba(255,255,255,0.04);border-radius:6px;padding:10px 14px;"><div style="font-size:0.72rem;color:var(--text-muted);">Engagement</div><div style="font-size:1.1rem;font-weight:700;">' + ((data.engagement_rate || 0) * 100).toFixed(1) + '%</div></div>';
-  html += '<div style="background:rgba(255,255,255,0.04);border-radius:6px;padding:10px 14px;"><div style="font-size:0.72rem;color:var(--text-muted);">Est. CPM</div><div style="font-size:1.1rem;font-weight:700;color:var(--success);">$' + (data.estimated_cpm || 0).toFixed(2) + '</div></div>';
-  html += '<div style="background:rgba(255,255,255,0.04);border-radius:6px;padding:10px 14px;"><div style="font-size:0.72rem;color:var(--text-muted);">Brand Ready</div><div style="font-size:1.1rem;font-weight:700;">' + (data.brand_ready ? 'Yes' : 'Not yet') + '</div></div>';
+  if (data === null || data === undefined || data.followers === undefined) {
+    el.innerHTML = '<div class="text-muted" style="padding:12px;">No Soren metrics available yet.</div>';
+    return;
+  }
+
+  var followers = data.followers || 0;
+  var engRate = data.engagement_rate || 0;
+  var cpm = data.estimated_cpm || 0;
+  var growthRate = data.growth_rate || 0;
+  var brandReady = data.brand_ready;
+  var brandOpps = data.brand_opportunities || [];
+
+  // Milestone progress
+  var milestone = followers < 1000 ? 1000 : followers < 10000 ? 10000 : 100000;
+  var milestoneLabel = milestone >= 100000 ? '100K' : milestone >= 10000 ? '10K' : '1K';
+  var milestonePct = Math.min(100, Math.round((followers / milestone) * 100));
+
+  var html = '';
+  // Row 1: Metrics grid
+  html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:14px;">';
+
+  // Followers with progress bar
+  html += '<div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:12px 14px;">';
+  html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px;">Followers</div>';
+  html += '<div style="font-size:1.2rem;font-weight:700;">' + followers.toLocaleString() + '</div>';
+  html += '<div style="margin-top:6px;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">';
+  html += '<div style="height:100%;width:' + milestonePct + '%;background:linear-gradient(90deg,#cc66ff,#8B5CF6);border-radius:2px;"></div></div>';
+  html += '<div style="font-size:0.58rem;color:var(--text-muted);margin-top:3px;">' + milestonePct + '% to ' + milestoneLabel + '</div>';
   html += '</div>';
+
+  // Engagement Rate
+  html += '<div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:12px 14px;">';
+  html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px;">Engagement</div>';
+  html += '<div style="font-size:1.2rem;font-weight:700;">' + (engRate * 100).toFixed(1) + '%</div>';
+  var engColor = engRate >= 0.05 ? 'var(--success)' : engRate >= 0.02 ? 'var(--warning)' : 'var(--text-muted)';
+  var engLabel = engRate >= 0.05 ? 'Excellent' : engRate >= 0.02 ? 'Good' : 'Building';
+  html += '<div style="font-size:0.62rem;color:' + engColor + ';margin-top:4px;">' + engLabel + '</div>';
+  html += '</div>';
+
+  // Est. CPM
+  html += '<div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:12px 14px;">';
+  html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px;">Est. CPM</div>';
+  html += '<div style="font-size:1.2rem;font-weight:700;color:var(--success);">$' + cpm.toFixed(2) + '</div>';
+  if (growthRate > 0) {
+    html += '<div style="font-size:0.62rem;color:var(--success);margin-top:4px;">+' + growthRate.toFixed(1) + '% growth</div>';
+  } else {
+    html += '<div style="font-size:0.62rem;color:var(--text-muted);margin-top:4px;">No growth data yet</div>';
+  }
+  html += '</div>';
+
+  // Brand Ready
+  html += '<div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:12px 14px;">';
+  html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px;">Brand Ready</div>';
+  var brandColor = brandReady ? 'var(--success)' : 'var(--warning)';
+  var brandLabel = brandReady ? 'Yes' : 'Not yet';
+  html += '<div style="font-size:1.2rem;font-weight:700;color:' + brandColor + ';">' + brandLabel + '</div>';
+  html += '<div style="font-size:0.62rem;color:var(--text-muted);margin-top:4px;">' + brandOpps.length + ' opportunities</div>';
+  html += '</div>';
+
+  html += '</div>';
+
+  // Row 2: Brand Opportunities
+  if (brandOpps.length > 0) {
+    html += '<div style="margin-top:4px;">';
+    html += '<div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:8px;font-weight:600;">Growth Opportunities</div>';
+    html += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
+    for (var i = 0; i < brandOpps.length; i++) {
+      var bo = brandOpps[i];
+      var readyIcon = bo.ready ? '&#x2705;' : '&#x1F512;';
+      var bgStyle = bo.ready ? 'rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.2)' : 'rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)';
+      html += '<div style="background:' + bgStyle + ';border-radius:6px;padding:8px 12px;flex:1;min-width:140px;">';
+      html += '<div style="font-size:0.72rem;font-weight:600;">' + readyIcon + ' ' + esc(bo.platform || bo.name || 'Opportunity') + '</div>';
+      if (bo.requirement) html += '<div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;">' + esc(bo.requirement) + '</div>';
+      if (bo.potential_value) html += '<div style="font-size:0.64rem;color:#cc66ff;margin-top:2px;">' + esc(bo.potential_value) + '</div>';
+      html += '</div>';
+    }
+    html += '</div></div>';
+  }
+
+  // Last updated timestamp
+  var tsEl = document.getElementById('viper-metrics-updated');
+  if (tsEl) tsEl.textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+
   el.innerHTML = html;
 }
 
@@ -6210,17 +6361,18 @@ function renderSorenOpportunities(data) {
 
   // Table
   if (opps.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No Soren opportunities yet — trigger a scan</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No Soren opportunities yet — trigger a scan</td></tr>';
     return;
   }
 
   var html = '';
-  for (var j = 0; j < Math.min(opps.length, 20); j++) {
+  for (var j = 0; j < Math.min(opps.length, 25); j++) {
     var o = opps[j];
     var typeColor = typeColors[o.type] || '#888';
     var typeLabel = typeLabels[o.type] || o.type;
     var fitColor = o.fit_score >= 60 ? 'var(--success)' : o.fit_score >= 35 ? 'var(--warning)' : 'var(--text-muted)';
     var urgColor = o.urgency === 'high' ? 'var(--error)' : o.urgency === 'medium' ? 'var(--warning)' : 'var(--text-muted)';
+    var cp = viperGetCostProfit(o.type, o.estimated_value);
 
     html += '<tr>';
     html += '<td><span class="badge" style="background:rgba(255,255,255,0.06);color:' + typeColor + ';font-size:0.64rem;">' + esc(typeLabel) + '</span></td>';
@@ -6233,6 +6385,8 @@ function renderSorenOpportunities(data) {
     html += '</td>';
     html += '<td style="color:' + fitColor + ';font-weight:600;font-size:0.8rem;">' + (o.fit_score || 0) + '</td>';
     html += '<td style="font-size:0.72rem;color:var(--text-secondary);">' + esc(o.estimated_value || '--') + '</td>';
+    html += '<td style="font-size:0.68rem;color:var(--text-muted);">' + esc(cp.cost) + '</td>';
+    html += '<td style="font-size:0.68rem;color:#cc66ff;font-weight:600;">' + esc(cp.profit) + '</td>';
     html += '<td style="color:' + urgColor + ';font-weight:600;font-size:0.72rem;">' + esc((o.urgency || 'low').toUpperCase()) + '</td>';
     html += '<td style="font-size:0.68rem;color:var(--text-muted);max-width:140px;white-space:normal;">' + esc(o.action || '') + '</td>';
     html += '</tr>';

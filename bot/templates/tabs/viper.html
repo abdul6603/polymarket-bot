@@ -4,6 +4,8 @@
     <div class="widget-badge"><span class="wb-label">Agent:</span> <span style="color:#00ff88;font-weight:700;">Viper</span></div>
     <div class="widget-badge"><span class="wb-label">Role:</span> <span>24/7 Intelligence Engine</span></div>
     <div class="widget-badge" id="viper-mode-badge"><span class="wb-label">Mode:</span> <span style="color:#00ff88;">Intelligence</span></div>
+    <div class="widget-badge" style="background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.15);"><span id="viper-auto-timer" style="color:#00ff88;font-size:0.7rem;font-weight:600;">Auto: 10m 00s</span></div>
+    <button class="btn" onclick="viperRefreshNow()" style="font-size:0.72rem;background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.3);font-weight:600;">Refresh Data</button>
     <button class="btn" id="viper-scan-btn" onclick="viperTriggerScan()" style="font-size:0.72rem;background:#00ff88;color:#000;font-weight:700;">Trigger Scan</button>
     <button class="btn" onclick="healthCheckAgent('viper')" style="font-size:0.72rem;">Health Check</button>
   </div>
@@ -46,14 +48,15 @@
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;" id="soren-opp-badges"></div>
     <div class="glass-card">
       <table class="data-table">
-        <thead><tr><th>Type</th><th>Opportunity</th><th>Fit</th><th>Value</th><th>Urgency</th><th>Action</th></tr></thead>
-        <tbody id="soren-opp-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No Soren opportunities yet — trigger a scan</td></tr></tbody>
+        <thead><tr><th>Type</th><th>Opportunity</th><th>Fit</th><th>Value</th><th>Est. Cost</th><th>Est. Profit</th><th>Urgency</th><th>Action</th></tr></thead>
+        <tbody id="soren-opp-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No Soren opportunities yet — trigger a scan</td></tr></tbody>
       </table>
     </div>
   </div>
   <div class="section-spacer">
     <h2 class="section-title" style="color:#00ff88;">Soren Metrics</h2>
     <div class="glass-card" id="viper-soren-metrics"><div class="text-muted" style="text-align:center;padding:12px;">Waiting for Soren metrics...</div></div>
+    <div id="viper-metrics-updated" style="font-size:0.62rem;color:var(--text-muted);margin-top:6px;text-align:right;"></div>
   </div>
   <div class="section-spacer">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
