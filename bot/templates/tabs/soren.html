@@ -4,24 +4,9 @@
   <div class="agent-widget-row" id="soren-widgets">
     <div class="widget-badge" id="soren-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
     <button class="btn" onclick="healthCheckAgent(&apos;soren&apos;)" style="font-size:0.72rem;">Health Check</button>
-    <button class="btn" onclick="toggleInlineChat(&apos;soren&apos;)" style="font-size:0.72rem;color:var(--agent-soren);">Chat</button>
+    <button class="agent-chat-trigger" onclick="openAgentChat(&apos;soren&apos;)" style="font-size:0.72rem;color:var(--agent-soren);">Chat</button>
   </div>
   <div class="health-inline" id="soren-health-result"></div>
-
-  <!-- Inline Chat -->
-  <div id="soren-inline-chat" class="glass-card" style="display:none;margin-bottom:12px;border-left:3px solid var(--agent-soren);">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-      <span style="font-size:0.72rem;color:var(--agent-soren);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Chat with Soren</span>
-      <button onclick="toggleInlineChat(&apos;soren&apos;)" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.9rem;">&times;</button>
-    </div>
-    <div id="soren-inline-chat-msgs" style="max-height:200px;overflow-y:auto;margin-bottom:8px;font-family:var(--font-mono);font-size:0.74rem;">
-      <div class="text-muted" style="text-align:center;padding:12px;">Send a message to Soren...</div>
-    </div>
-    <div style="display:flex;gap:6px;">
-      <input type="text" class="input" id="soren-inline-chat-input" placeholder="Ask Soren anything..." onkeydown="if(event.key==='Enter')sendInlineChat(&apos;soren&apos;)" style="flex:1;font-size:0.76rem;padding:5px 10px;">
-      <button class="btn btn-primary" onclick="sendInlineChat(&apos;soren&apos;)" style="font-size:0.72rem;padding:5px 12px;">Send</button>
-    </div>
-  </div>
 
   <!-- Stats Row -->
   <div class="grid-4" id="soren-stats">

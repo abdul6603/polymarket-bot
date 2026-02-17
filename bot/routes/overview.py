@@ -818,10 +818,123 @@ def api_intelligence():
     except Exception:
         result["thor"] = {"dimensions": {}, "overall": 0, "title": "The Engineer"}
 
+    # -- HAWK -- The Market Predator --
+    try:
+        hawk_intel = {"dimensions": {}, "overall": 0, "title": "The Market Predator"}
+        hawk_trades_file = DATA_DIR / "hawk_trades.jsonl"
+        hawk_opps_file = DATA_DIR / "hawk_opportunities.json"
+        hawk_status_file = DATA_DIR / "hawk_status.json"
+
+        hawk_trades = []
+        if hawk_trades_file.exists():
+            with open(hawk_trades_file) as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        hawk_trades.append(json.loads(line))
+
+        hawk_resolved = [t for t in hawk_trades if t.get("resolved")]
+        hawk_wins = sum(1 for t in hawk_resolved if t.get("won"))
+        hawk_wr = (hawk_wins / len(hawk_resolved) * 100) if hawk_resolved else 0
+        hawk_cats = set(t.get("category", "") for t in hawk_trades if t.get("category"))
+
+        hawk_opps = []
+        if hawk_opps_file.exists():
+            try:
+                with open(hawk_opps_file) as f:
+                    hawk_opps = json.loads(f.read()).get("opportunities", [])
+            except Exception:
+                pass
+
+        # 1. Market Scanning — categories covered + opportunities found
+        scanning = min(100, len(hawk_cats) * 12 + len(hawk_opps) * 3 + 15)
+        hawk_intel["dimensions"]["Market Scanning"] = scanning
+
+        # 2. Edge Detection — average edge quality
+        hawk_edges = [t.get("edge", 0) for t in hawk_trades if t.get("edge")]
+        avg_edge = sum(hawk_edges) / len(hawk_edges) if hawk_edges else 0
+        edge_detect = min(100, int(avg_edge * 300) + 20)
+        hawk_intel["dimensions"]["Edge Detection"] = edge_detect
+
+        # 3. Win Rate — trading accuracy
+        accuracy = min(100, int(hawk_wr * 1.2)) if hawk_resolved else 15
+        hawk_intel["dimensions"]["Accuracy"] = accuracy
+
+        # 4. Experience — total trades + resolved
+        experience = min(100, len(hawk_trades) * 2 + len(hawk_resolved) * 3 + 5)
+        hawk_intel["dimensions"]["Experience"] = experience
+
+        # 5. Category Breadth — how many market categories covered
+        breadth = min(100, len(hawk_cats) * 15 + 20)
+        hawk_intel["dimensions"]["Category Breadth"] = breadth
+
+        scores = list(hawk_intel["dimensions"].values())
+        hawk_intel["overall"] = int(sum(scores) / len(scores)) if scores else 0
+        result["hawk"] = hawk_intel
+    except Exception:
+        result["hawk"] = {"dimensions": {}, "overall": 0, "title": "The Market Predator"}
+
+    # -- VIPER -- The Opportunity Hunter --
+    try:
+        viper_intel = {"dimensions": {}, "overall": 0, "title": "The Opportunity Hunter"}
+        viper_opps_file = DATA_DIR / "viper_opportunities.json"
+        viper_costs_file = DATA_DIR / "viper_costs.json"
+        viper_status_file = DATA_DIR / "viper_status.json"
+
+        viper_status = {}
+        if viper_status_file.exists():
+            try:
+                viper_status = json.loads(viper_status_file.read_text())
+            except Exception:
+                pass
+
+        viper_opps = []
+        if viper_opps_file.exists():
+            try:
+                viper_opps = json.loads(viper_opps_file.read_text()).get("opportunities", [])
+            except Exception:
+                pass
+
+        viper_costs = []
+        if viper_costs_file.exists():
+            try:
+                viper_costs = json.loads(viper_costs_file.read_text()).get("costs", [])
+            except Exception:
+                pass
+
+        # 1. Opportunity Discovery — opportunities found
+        discovery = min(100, len(viper_opps) * 5 + 15)
+        viper_intel["dimensions"]["Discovery"] = discovery
+
+        # 2. Cost Intelligence — API cost tracking
+        cost_intel = min(100, len(viper_costs) * 10 + 20)
+        viper_intel["dimensions"]["Cost Intelligence"] = cost_intel
+
+        # 3. Revenue Potential — estimated value of opportunities
+        total_value = sum(o.get("value", 0) for o in viper_opps)
+        revenue = min(100, int(total_value / 10) + 15) if total_value else 15
+        viper_intel["dimensions"]["Revenue Potential"] = revenue
+
+        # 4. Push Rate — opportunities pushed to Shelby
+        pushed = viper_status.get("pushed_to_shelby", 0)
+        push_rate = min(100, pushed * 8 + 10)
+        viper_intel["dimensions"]["Push Rate"] = push_rate
+
+        # 5. Monetization IQ — Soren metrics awareness
+        has_soren_metrics = (DATA_DIR / "viper_soren_metrics.json").exists() or viper_status.get("soren_metrics_ready", False)
+        monetization = 30 + (30 if has_soren_metrics else 0) + min(40, len(viper_opps) * 3)
+        viper_intel["dimensions"]["Monetization IQ"] = min(100, monetization)
+
+        scores = list(viper_intel["dimensions"].values())
+        viper_intel["overall"] = int(sum(scores) / len(scores)) if scores else 0
+        result["viper"] = viper_intel
+    except Exception:
+        result["viper"] = {"dimensions": {}, "overall": 0, "title": "The Opportunity Hunter"}
+
     # -- TEAM -- Collective Intelligence --
     try:
         team = {"dimensions": {}, "overall": 0, "title": "Brotherhood"}
-        agents = ["garves", "soren", "atlas", "shelby", "lisa", "robotox", "thor"]
+        agents = ["garves", "soren", "atlas", "shelby", "lisa", "robotox", "thor", "hawk", "viper"]
         agent_scores = {a: result.get(a, {}).get("overall", 0) for a in agents}
 
         # 1. Collective Knowledge
@@ -832,9 +945,11 @@ def api_intelligence():
         lisa_plat = result.get("lisa", {}).get("dimensions", {}).get("Platform Knowledge", 0)
         robotox_cov = result.get("robotox", {}).get("dimensions", {}).get("Coverage", 0)
         thor_know = result.get("thor", {}).get("dimensions", {}).get("Knowledge Depth", 0)
-        collective_knowledge = int((atlas_depth * 0.25 + garves_know * 0.18 + soren_brand * 0.12 +
-                                    shelby_aware * 0.13 + lisa_plat * 0.1 + robotox_cov * 0.1 +
-                                    thor_know * 0.12))
+        hawk_scan = result.get("hawk", {}).get("dimensions", {}).get("Market Scanning", 0)
+        viper_disc = result.get("viper", {}).get("dimensions", {}).get("Discovery", 0)
+        collective_knowledge = int((atlas_depth * 0.20 + garves_know * 0.15 + soren_brand * 0.10 +
+                                    shelby_aware * 0.10 + lisa_plat * 0.08 + robotox_cov * 0.08 +
+                                    thor_know * 0.10 + hawk_scan * 0.10 + viper_disc * 0.09))
         team["dimensions"]["Collective Knowledge"] = min(100, collective_knowledge)
 
         # 2. Coordination
@@ -852,7 +967,9 @@ def api_intelligence():
         lisa_disc = result.get("lisa", {}).get("dimensions", {}).get("Posting Discipline", 0)
         robotox_det = result.get("robotox", {}).get("dimensions", {}).get("Detection", 0)
         thor_exec = result.get("thor", {}).get("dimensions", {}).get("Task Execution", 0)
-        performance = int((garves_acc + soren_prod + atlas_quality + shelby_task + lisa_disc + robotox_det + thor_exec) / 7)
+        hawk_acc = result.get("hawk", {}).get("dimensions", {}).get("Accuracy", 0)
+        viper_rev = result.get("viper", {}).get("dimensions", {}).get("Revenue Potential", 0)
+        performance = int((garves_acc + soren_prod + atlas_quality + shelby_task + lisa_disc + robotox_det + thor_exec + hawk_acc + viper_rev) / 9)
         team["dimensions"]["Performance"] = min(100, performance)
 
         # 4. Autonomy
@@ -870,8 +987,10 @@ def api_intelligence():
         lisa_strat = result.get("lisa", {}).get("dimensions", {}).get("Strategy Depth", 0)
         shelby_dec = result.get("shelby", {}).get("dimensions", {}).get("Decision Quality", 0)
         thor_coverage = result.get("thor", {}).get("dimensions", {}).get("System Coverage", 0)
-        adaptability = int((garves_adapt * 0.25 + soren_trend * 0.15 + lisa_strat * 0.15 +
-                            shelby_dec * 0.25 + thor_coverage * 0.2))
+        hawk_breadth = result.get("hawk", {}).get("dimensions", {}).get("Category Breadth", 0)
+        viper_monetize = result.get("viper", {}).get("dimensions", {}).get("Monetization IQ", 0)
+        adaptability = int((garves_adapt * 0.18 + soren_trend * 0.12 + lisa_strat * 0.12 +
+                            shelby_dec * 0.18 + thor_coverage * 0.15 + hawk_breadth * 0.13 + viper_monetize * 0.12))
         team["dimensions"]["Adaptability"] = min(100, adaptability)
 
         team_scores = list(team["dimensions"].values())

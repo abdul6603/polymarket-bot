@@ -11,10 +11,10 @@
 
   <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;" id="sys-action-buttons">
     <button class="btn" onclick="sysAction('restart-dashboard')" style="font-size:0.74rem;">Restart Dashboard</button>
-    <button class="btn" onclick="sysAction('restart-shelby')" style="font-size:0.74rem;">Restart Shelby</button>
-    <button class="btn" onclick="sysAction('restart-thor')" style="font-size:0.74rem;">Restart Thor</button>
-    <button class="btn" onclick="sysAction('force-atlas-cycle')" style="font-size:0.74rem;">Force Atlas Cycle</button>
-    <button class="btn" onclick="sysAction('flush-events')" style="font-size:0.74rem;">Flush Event Bus</button>
+    <button class="btn" onclick="sysAction('restart-shelby')" style="font-size:0.74rem;" title="Stops and restarts the Shelby LaunchAgent (scheduler + task manager)">Restart Shelby</button>
+    <button class="btn" onclick="sysAction('restart-thor')" style="font-size:0.74rem;" title="Stops and restarts the Thor LaunchAgent (coding agent task runner)">Restart Thor</button>
+    <button class="btn" onclick="sysAction('force-atlas-cycle')" style="font-size:0.74rem;" title="Triggers an immediate Atlas research cycle instead of waiting for the 45-min timer">Force Atlas Cycle</button>
+    <button class="btn" onclick="sysAction('flush-events')" style="font-size:0.74rem;" title="Clears all events from the shared event bus (events.jsonl). Resets agent cursors.">Flush Event Bus</button>
     <button class="btn" onclick="loadSystemTab()" style="font-size:0.74rem;">Refresh All</button>
   </div>
   <div id="sys-action-result" style="font-size:0.72rem;font-family:var(--font-mono);color:var(--text-secondary);min-height:18px;margin-bottom:8px;"></div>

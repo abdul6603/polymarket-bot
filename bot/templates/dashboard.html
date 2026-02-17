@@ -13,26 +13,25 @@
 <nav class="sidebar">
   <div class="sidebar-brand">CC</div>
   <button class="sidebar-btn active" data-tab="overview" onclick="switchTab('overview')" title="Overview">Overview</button>
+  <button class="sidebar-btn" data-tab="system" onclick="switchTab('system')" title="System" style="color:#aaaaaa;">System</button>
   <button class="sidebar-btn" data-tab="garves-live" onclick="switchTab('garves-live')" title="Garves Live" style="color:#00ff88;">Garves $</button>
-  <button class="sidebar-btn" data-tab="garves" onclick="switchTab('garves')" title="Garves Sim">Garves Sim</button>
-  <button class="sidebar-btn" data-tab="soren" onclick="switchTab('soren')" title="Soren">Soren</button>
-  <button class="sidebar-btn" data-tab="shelby" onclick="switchTab('shelby')" title="Shelby">Shelby</button>
-  <button class="sidebar-btn" data-tab="atlas" onclick="switchTab('atlas')" title="Atlas">Atlas</button>
-  <button class="sidebar-btn" data-tab="mercury" onclick="switchTab('mercury')" title="Lisa">Lisa</button>
-  <button class="sidebar-btn" data-tab="sentinel" onclick="switchTab('sentinel')" title="Robotox">Robotox</button>
-  <button class="sidebar-btn" data-tab="thor" onclick="switchTab('thor')" title="Thor">Thor</button>
+  <button class="sidebar-btn" data-tab="garves" onclick="switchTab('garves')" title="Garves Sim" style="color:#00d4ff;">Garves Sim</button>
+  <button class="sidebar-btn" data-tab="soren" onclick="switchTab('soren')" title="Soren" style="color:#cc66ff;">Soren</button>
+  <button class="sidebar-btn" data-tab="shelby" onclick="switchTab('shelby')" title="Shelby" style="color:#ffaa00;">Shelby</button>
+  <button class="sidebar-btn" data-tab="atlas" onclick="switchTab('atlas')" title="Atlas" style="color:#22aa44;">Atlas</button>
+  <button class="sidebar-btn" data-tab="mercury" onclick="switchTab('mercury')" title="Lisa" style="color:#ff8800;">Lisa</button>
+  <button class="sidebar-btn" data-tab="sentinel" onclick="switchTab('sentinel')" title="Robotox" style="color:#00ff44;">Robotox</button>
+  <button class="sidebar-btn" data-tab="thor" onclick="switchTab('thor')" title="Thor" style="color:#ff6600;">Thor</button>
   <button class="sidebar-btn" data-tab="hawk" onclick="switchTab('hawk')" title="Hawk" style="color:#FFD700;">Hawk</button>
   <button class="sidebar-btn" data-tab="viper" onclick="switchTab('viper')" title="Viper" style="color:#00ff88;">Viper</button>
   <div class="sidebar-spacer"></div>
-  <button class="sidebar-btn" data-tab="system" onclick="switchTab('system')" title="System">System</button>
-  <button class="sidebar-btn" data-tab="chat" onclick="switchTab('chat')" title="Chat">Chat</button>
 </nav>
 
 <main class="main">
   <header class="header">
     <div class="header-left">
       <h1 class="header-title">Command Center</h1>
-      <div class="header-subtitle"><span class="dot-online"></span> 9 Agents Online</div>
+      <div class="header-subtitle"><span class="dot-online"></span> <span id="agents-online-count">11</span> Agents Online</div>
     </div>
     <div class="header-right">Last update: <span id="last-update">--:--:--</span></div>
   </header>
@@ -49,7 +48,6 @@
   {% include 'tabs/hawk.html' %}
   {% include 'tabs/viper.html' %}
   {% include 'tabs/system.html' %}
-  {% include 'tabs/chat.html' %}
 
   <!-- Agent Chat Popup -->
   <div id="agent-chat-popup" class="agent-chat-popup" style="display:none;">

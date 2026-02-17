@@ -2949,6 +2949,12 @@ function agentQuickStatus(key) {
   } else if (key === 'thor') {
     var th = o.thor || {};
     s += (th.pending || 0) + ' pending <span class="aqs-sep">&middot;</span> ' + (th.completed || 0) + ' done';
+  } else if (key === 'hawk') {
+    var hk = o.hawk || {};
+    s += '<span class="aqs-dim">WR:</span>' + (hk.win_rate || 0) + '% <span class="aqs-sep">&middot;</span> ' + (hk.open_bets || 0) + ' open';
+  } else if (key === 'viper') {
+    var vp = o.viper || {};
+    s += (vp.opportunities || 0) + ' found <span class="aqs-sep">&middot;</span> ' + (vp.pushed || 0) + ' pushed';
   }
   s += '</div>';
   return s;
@@ -2992,6 +2998,8 @@ function renderTeamIntelligence(data) {
     {key:'lisa',   name:'Lisa',    color:'#ff8800'},
     {key:'robotox',name:'Robotox', color:'#00ff44'},
     {key:'thor',   name:'Thor',    color:'#ff6600'},
+    {key:'hawk',   name:'Hawk',    color:'#FFD700'},
+    {key:'viper',  name:'Viper',   color:'#00ff88'},
   ];
 
   html += '<div class="team-agents-row">';
@@ -3020,8 +3028,8 @@ function renderTeamIntelligence(data) {
 
   el.innerHTML = html;
 }
-var _intelAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',mercury:'lisa',sentinel:'robotox',thor:'thor'};
-var _intelColors = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',robotox:'#00ff44',thor:'#ff6600'};
+var _intelAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',mercury:'lisa',sentinel:'robotox',thor:'thor',hawk:'hawk',viper:'viper'};
+var _intelColors = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',robotox:'#00ff44',thor:'#ff6600',hawk:'#FFD700',viper:'#00ff88'};
 
 function radarSVG(size, values, labels, color) {
   var cx = size / 2, cy = size / 2;
@@ -4361,7 +4369,7 @@ async function deleteBrainNote(agent, noteId) {
 // ── Shared Event Bus ──
 
 var EVENT_SEVERITY_COLORS = {info: 'var(--text-secondary)', warning: 'var(--warning)', critical: 'var(--error)', error: 'var(--error)'};
-var EVENT_AGENT_COLORS = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',robotox:'#00ff44',thor:'#ff6600'};
+var EVENT_AGENT_COLORS = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',robotox:'#00ff44',thor:'#ff6600',hawk:'#FFD700',viper:'#00ff88'};
 
 function eventTimeAgo(ts) {
   if (!ts) return '';

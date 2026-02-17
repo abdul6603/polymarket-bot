@@ -4,24 +4,9 @@
   <div class="agent-widget-row" id="mercury-widgets">
     <div class="widget-badge" id="mercury-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
     <button class="btn" onclick="healthCheckAgent(&apos;mercury&apos;)" style="font-size:0.72rem;">Health Check</button>
-    <button class="btn" onclick="toggleInlineChat(&apos;lisa&apos;)" style="font-size:0.72rem;color:var(--agent-mercury);">Chat</button>
+    <button class="agent-chat-trigger" onclick="openAgentChat(&apos;mercury&apos;)" style="font-size:0.72rem;color:var(--agent-mercury);">Chat</button>
   </div>
   <div class="health-inline" id="mercury-health-result"></div>
-
-  <!-- Inline Chat -->
-  <div id="lisa-inline-chat" class="glass-card" style="display:none;margin-bottom:12px;border-left:3px solid var(--agent-mercury);">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-      <span style="font-size:0.72rem;color:var(--agent-mercury);font-weight:600;text-transform:uppercase;letter-spacing:0.06em;">Chat with Lisa</span>
-      <button onclick="toggleInlineChat(&apos;lisa&apos;)" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.9rem;">&times;</button>
-    </div>
-    <div id="lisa-inline-chat-msgs" style="max-height:200px;overflow-y:auto;margin-bottom:8px;font-family:var(--font-mono);font-size:0.74rem;">
-      <div class="text-muted" style="text-align:center;padding:12px;">Send a message to Lisa...</div>
-    </div>
-    <div style="display:flex;gap:6px;">
-      <input type="text" class="input" id="lisa-inline-chat-input" placeholder="Ask Lisa anything..." onkeydown="if(event.key==='Enter')sendInlineChat(&apos;lisa&apos;)" style="flex:1;font-size:0.76rem;padding:5px 10px;">
-      <button class="btn btn-primary" onclick="sendInlineChat(&apos;lisa&apos;)" style="font-size:0.72rem;padding:5px 12px;">Send</button>
-    </div>
-  </div>
 
   <!-- Workflow Status -->
   <div class="glass-card" style="margin-bottom:12px;padding:10px 14px;">
