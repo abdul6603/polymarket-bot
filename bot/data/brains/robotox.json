@@ -1,1 +1,25 @@
-{"agent": "robotox", "notes": []}
+{
+  "agent": "robotox",
+  "notes": [
+    {
+      "id": "note_ecbbe414",
+      "topic": "Autonomous Issue Protocol",
+      "content": "ALWAYS: 1) Watch agent logs every scan cycle for error patterns (403 geo-block, API failures, WS drops, exceptions). 2) When pattern threshold hit, alert Jordan via Shelby Telegram with FULL context: what happened, what it means, what to do. 3) Attempt auto-fix (restart, clear cache, clear port). 4) If code fix needed, submit task to Thor queue. 5) Report resolution. NEVER wait for Jordan to ask.",
+      "type": "command",
+      "tags": [],
+      "created_at": "2026-02-16T16:14:59.118674-05:00",
+      "source": "dashboard",
+      "response": "Acknowledged, Jordan. I will implement the Autonomous Issue Protocol as specified. I will monitor agent logs for error patterns during each scan cycle, alert you via Shelby Telegram upon reaching the threshold, attempt auto-fixes, submit any necessary code fixes to the Thor queue, and report resolutions without waiting for your prompt."
+    },
+    {
+      "id": "note_939903be",
+      "topic": "Known Issues \u2014 Garves",
+      "content": "Garves geo-block (403): Polymarket CLOB API blocks POST /order from restricted regions. Fix: NordVPN connected to Qatar. GET requests (market discovery) work without VPN. Garves log is at /tmp/garves.log (NOT data/bot.log). When 403 detected 2+ times in 2 min, alert Jordan immediately.",
+      "type": "memory",
+      "tags": [],
+      "created_at": "2026-02-16T16:15:02.573519-05:00",
+      "source": "dashboard",
+      "response": "I've stored the information regarding the Garves geo-block issue, including the specifics of the Polymarket CLOB API restrictions and the fix using NordVPN. I will also ensure to alert you immediately if a 403 error is detected 2 or more times within 2 minutes."
+    }
+  ]
+}
