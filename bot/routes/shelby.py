@@ -723,7 +723,7 @@ def api_shelby_system():
 def api_shelby_decisions():
     """Shelby decision memory — recent decisions and stats."""
     try:
-        sys.path.insert(0, str(SHELBY_ROOT_DIR))
+        # Path already added via bot.shared.ensure_path
         from core.decisions import DecisionMemory
         dm = DecisionMemory()
         tag = request.args.get("tag")
@@ -737,4 +737,4 @@ def api_shelby_decisions():
             decisions = dm.list_recent(n=limit)
         return jsonify({"decisions": decisions, "stats": dm.stats()})
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500

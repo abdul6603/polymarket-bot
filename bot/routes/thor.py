@@ -95,7 +95,7 @@ def api_thor_queue():
                     pass
         return jsonify({"tasks": tasks[:50]})
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify({"error": str(e)}), 500
 
 
 @thor_bp.route("/api/thor/results")
@@ -116,7 +116,7 @@ def api_thor_results():
                     pass
         return jsonify({"results": results[:20]})
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify({"error": str(e)}), 500
 
 
 @thor_bp.route("/api/thor/activity")
@@ -129,7 +129,7 @@ def api_thor_activity():
             return jsonify({"activities": activities[-30:]})
         return jsonify({"activities": []})
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify({"error": str(e)}), 500
 
 
 @thor_bp.route("/api/thor/costs")
@@ -177,7 +177,7 @@ def api_thor_costs():
             "recent_calls": recent_calls[-10:],
         })
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @thor_bp.route("/api/thor/review")
@@ -188,7 +188,7 @@ def api_thor_review():
         cr = CodeReviewer(THOR_DATA)
         return jsonify(cr.get_stats())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @thor_bp.route("/api/thor/codebase-index")
@@ -208,7 +208,7 @@ def api_thor_codebase_index():
             "stale": ci.is_stale(),
         })
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @thor_bp.route("/api/thor/codebase-index/build", methods=["POST"])
@@ -220,7 +220,7 @@ def api_thor_codebase_index_build():
         stats = ci.build()
         return jsonify({"status": "built", "stats": stats})
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @thor_bp.route("/api/thor/codebase-index/search")
@@ -231,7 +231,7 @@ def api_thor_codebase_search():
     agent = request.args.get("agent", "")
     search_type = request.args.get("type", "function")
     if not query:
-        return jsonify({"error": "Missing query parameter 'q'"})
+        return jsonify({"error": "Missing query parameter 'q'"}), 400
     try:
         from thor.core.codebase_index import CodebaseIndex
         ci = CodebaseIndex(THOR_DATA)
@@ -241,7 +241,7 @@ def api_thor_codebase_search():
             results = ci.search_functions(query, agent)
         return jsonify({"results": results, "count": len(results)})
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @thor_bp.route("/api/thor/progress")
@@ -255,7 +255,7 @@ def api_thor_progress():
             "stats": pt.get_stats(),
         })
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @thor_bp.route("/api/thor/reflexion")
@@ -266,7 +266,7 @@ def api_thor_reflexion():
         rm = ReflexionMemory(THOR_DATA)
         return jsonify(rm.get_stats())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @thor_bp.route("/api/thor/cache")
@@ -277,7 +277,7 @@ def api_thor_cache():
         rc = ResponseCache(THOR_DATA)
         return jsonify(rc.get_stats())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 ATLAS_DATA = Path.home() / "atlas" / "data"
@@ -678,7 +678,7 @@ def api_thor_quick_action():
         task_id = queue.submit(task)
         return jsonify({"task_id": task_id, "status": "submitted", "title": title})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": str(e)}), 500, 500
 
 
 @thor_bp.route("/api/thor/submit", methods=["POST"])
@@ -709,7 +709,7 @@ def api_thor_submit():
         task_id = queue.submit(task)
         return jsonify({"task_id": task_id, "status": "submitted"})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": str(e)}), 500, 500
 
 
 def _apply_progress_row_style(ws, row_num, agent):
@@ -848,7 +848,7 @@ def api_thor_update_sheet():
         return jsonify({"status": "ok", "added": added, "total_rows": ws.max_row})
     except Exception as e:
         log.exception("Failed to update sheet")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": str(e)}), 500, 500
 
 
 @thor_bp.route("/api/thor/update-dashboard", methods=["POST"])
@@ -883,4 +883,4 @@ def api_thor_update_dashboard():
         task_id = queue.submit(task)
         return jsonify({"task_id": task_id, "status": "submitted", "message": "Thor will update the dashboard"})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": str(e)}), 500, 500

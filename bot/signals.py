@@ -25,7 +25,6 @@ from bot.indicators import (
     spot_depth_signal,
     temporal_arb,
     volume_spike,
-    vwap,
 )
 from bot.news_feed import get_news_feed
 from bot.price_cache import PriceCache
@@ -163,7 +162,6 @@ class SignalEngine:
         self._cache = price_cache
         # Cross-timeframe signal cache: (asset, timeframe) -> (direction, timestamp)
         self._signal_history: dict[tuple[str, str], tuple[str, float]] = {}
-        self._CROSS_TF_MAX_AGE = 600  # 10 min — 15m signal must be recent
 
     def generate_signal(
         self,
@@ -512,22 +510,6 @@ class SignalEngine:
         if consensus_edge > 0:
             import time as _time
             now_ts = _time.time()
-
-            # ── Cross-Timeframe Validation ──
-            # 5m signals must agree with most recent 15m signal for the same asset.
-            # Prevents noise-driven 5m trades that contradict the broader trend.
-            if timeframe == "5m":
-                key_15m = (asset, "15m")
-                cached = self._signal_history.get(key_15m)
-                if cached is not None:
-                    cached_dir, cached_ts = cached
-                    age = now_ts - cached_ts
-                    if age < self._CROSS_TF_MAX_AGE and cached_dir != consensus_dir:
-                        log.info(
-                            "[%s/5m] Cross-TF filter: 5m=%s but 15m=%s (%.0fs ago), SKIPPING",
-                            asset.upper(), consensus_dir.upper(), cached_dir.upper(), age,
-                        )
-                        return None
 
             # Cache this signal direction for cross-TF lookups
             self._signal_history[(asset, timeframe)] = (consensus_dir, now_ts)

@@ -6,8 +6,7 @@ from pathlib import Path
 
 from flask import Blueprint, jsonify, request
 
-# Add agent hub to path
-sys.path.insert(0, str(Path.home() / ".agent-hub"))
+# Agent hub path added via bot.shared.ensure_path at import time
 
 infra_bp = Blueprint("infra", __name__)
 
@@ -69,7 +68,7 @@ def api_hub_config():
         config = AgentHub.get_config()
         return jsonify(config)
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @infra_bp.route("/api/health")
@@ -193,7 +192,7 @@ def api_agent_logs(agent_name: str):
 def api_events():
     """Query the shared event bus with optional filters."""
     try:
-        sys.path.insert(0, str(Path.home()))
+        # Path already added via bot.shared.ensure_path
         from shared.events import get_events
 
         since_id = request.args.get("since_id")
@@ -218,7 +217,7 @@ def api_events():
 def api_events_stats():
     """Get event bus statistics."""
     try:
-        sys.path.insert(0, str(Path.home()))
+        # Path already added via bot.shared.ensure_path
         from shared.events import get_stats
         return jsonify(get_stats())
     except Exception as e:

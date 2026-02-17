@@ -23,8 +23,13 @@ function switchTab(tab) {
 }
 
 function wrColor(wr) { return wr >= 50 ? 'var(--success)' : wr >= 40 ? 'var(--warning)' : 'var(--error)'; }
-function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function pct(w, l) { var t = w + l; return t > 0 ? (w / t * 100).toFixed(1) + '%' : '--'; }
+async function safeFetch(url, opts) {
+  var resp = await fetch(url, opts);
+  if (!resp.ok) { console.warn('API error', resp.status, url); return null; }
+  return resp.json();
+}
 
 var _brainCountsCache = {};
 function fetchBrainCounts() {
@@ -3158,7 +3163,7 @@ async function refresh() {
 }
 
 refresh();
-setInterval(refresh, 5000);
+setInterval(refresh, 15000);
 
 // ── Intelligence Meters ──
 var _intelData = null;

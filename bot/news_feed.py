@@ -14,7 +14,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from typing import Optional
 
-import requests
+from bot.http_session import get_session
 
 log = logging.getLogger(__name__)
 
@@ -154,7 +154,8 @@ class CryptoNewsFeed:
         headlines = []
         for feed_url in FEEDS:
             try:
-                resp = requests.get(feed_url, timeout=10, headers={
+                session = get_session()
+                resp = session.get(feed_url, timeout=10, headers={
                     "User-Agent": "Garves/2.0 CryptoBot"
                 })
                 if resp.status_code != 200:

@@ -510,7 +510,7 @@ def api_garves_conviction():
             },
         })
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @garves_bp.route("/api/garves/daily-reports")
@@ -521,7 +521,7 @@ def api_garves_daily_reports():
         reports = get_daily_reports(limit=30)
         return jsonify({"reports": reports})
     except Exception as e:
-        return jsonify({"reports": [], "error": str(e)[:200]})
+        return jsonify({"reports": [], "error": str(e)[:200]}), 500
 
 
 @garves_bp.route("/api/garves/daily-report/today")
@@ -532,7 +532,7 @@ def api_garves_daily_today():
         report = generate_daily_report()
         return jsonify(report)
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @garves_bp.route("/api/garves/derivatives")
@@ -565,7 +565,7 @@ def api_garves_derivatives():
 def api_garves_broadcasts():
     """Process and acknowledge broadcasts for Garves."""
     try:
-        sys.path.insert(0, str(SHELBY_ROOT_DIR))
+        # Path already added via bot.shared.ensure_path
         from core.broadcast import get_unread_broadcasts, acknowledge_broadcast
 
         garves_data = DATA_DIR
@@ -575,7 +575,7 @@ def api_garves_broadcasts():
 
         return jsonify({"processed": len(unread), "agent": "garves"})
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @garves_bp.route("/api/garves/news-sentiment")
@@ -589,7 +589,7 @@ def api_garves_news_sentiment():
             return jsonify(latest)
         return jsonify({"assets": {}, "scanned_at": None, "message": "No sentiment data yet"})
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 BALANCE_CACHE_FILE = DATA_DIR / "polymarket_balance.json"

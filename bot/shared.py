@@ -42,8 +42,20 @@ SHELBY_TELEGRAM_CONFIG = SHELBY_ROOT_DIR / "data" / "telegram_config.json"
 HAWK_ROOT = Path(__file__).parent.parent / "hawk"
 VIPER_ROOT = Path(__file__).parent.parent / "viper"
 
-# Add Atlas to path
-sys.path.insert(0, str(ATLAS_ROOT.parent))
+# Add paths once (prevent sys.path pollution from repeated inserts)
+_ADDED_PATHS: set[str] = set()
+
+def ensure_path(p: str | Path) -> None:
+    """Add a path to sys.path if not already there."""
+    s = str(p)
+    if s not in _ADDED_PATHS and s not in sys.path:
+        sys.path.insert(0, s)
+        _ADDED_PATHS.add(s)
+
+ensure_path(ATLAS_ROOT.parent)
+ensure_path(SHELBY_ROOT_DIR)
+ensure_path(Path.home())
+ensure_path(Path.home() / ".agent-hub")
 
 
 # ── Timezone (DST-aware: UTC-5 in winter, UTC-4 in summer) ──
@@ -65,7 +77,8 @@ _DEFAULT_ASSESSMENTS = {
 # ── In-memory shared state ──
 
 _generation_status: dict[str, dict] = {}  # item_id -> {status, video_path, error}
-_chat_history: list[dict] = []  # [{role, agent, content, timestamp}]
+_chat_history: list[dict] = []  # [{role, agent, content, timestamp}] — capped at 200 entries
+_CHAT_HISTORY_MAX = 200
 
 # Caches used by shelby system route (mutable dicts shared with blueprint)
 _system_cache: dict = {"data": None, "ts": 0}

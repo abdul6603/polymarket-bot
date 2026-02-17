@@ -9,6 +9,7 @@ from flask import Blueprint, jsonify, request
 from bot.shared import (
     ET,
     _chat_history,
+    _CHAT_HISTORY_MAX,
     _AGENT_PROMPTS,
 )
 
@@ -26,6 +27,9 @@ def api_chat():
     timestamp = datetime.now(ET).isoformat()
 
     _chat_history.append({"role": "user", "agent": "you", "content": user_msg, "timestamp": timestamp})
+    # Prevent unbounded memory growth
+    if len(_chat_history) > _CHAT_HISTORY_MAX:
+        del _chat_history[:len(_chat_history) - _CHAT_HISTORY_MAX]
 
     api_key = os.getenv("OPENAI_API_KEY", "")
     if not api_key:

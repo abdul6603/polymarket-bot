@@ -14,7 +14,7 @@ import threading
 from pathlib import Path
 
 from dotenv import load_dotenv
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 
 try:
     from flask_socketio import SocketIO, emit
@@ -77,10 +77,14 @@ if HAS_SOCKETIO:
 
 
 @app.after_request
-def add_no_cache(response):
-    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
+def add_cache_headers(response):
+    # Only disable caching for API responses, allow browser caching for static assets
+    if request.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    elif request.path.startswith("/static/"):
+        response.headers["Cache-Control"] = "public, max-age=60"
     return response
 
 

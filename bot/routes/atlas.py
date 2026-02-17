@@ -39,7 +39,7 @@ def api_atlas_report():
         report = atlas.api_full_report()
         return jsonify(report)
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500
+        return jsonify({"error": str(e)[:200]}), 500, 500
 
 
 @atlas_bp.route("/api/atlas/garves")
@@ -51,7 +51,7 @@ def api_atlas_garves():
     try:
         return jsonify(atlas.api_garves_deep())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500
+        return jsonify({"error": str(e)[:200]}), 500, 500
 
 
 @atlas_bp.route("/api/atlas/soren")
@@ -63,7 +63,7 @@ def api_atlas_soren():
     try:
         return jsonify(atlas.api_soren_deep())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500
+        return jsonify({"error": str(e)[:200]}), 500, 500
 
 
 @atlas_bp.route("/api/atlas/live-research")
@@ -71,7 +71,7 @@ def api_atlas_live_research():
     """What Atlas is currently researching -- recent URLs, sources, insights."""
     atlas = get_atlas()
     if not atlas:
-        return jsonify({"error": "Atlas not available", "articles": []})
+        return jsonify({"error": "Atlas not available", "articles": []}), 503
     try:
         stats = atlas.researcher.get_research_stats()
         articles = []
@@ -91,7 +91,7 @@ def api_atlas_live_research():
             "articles": articles,
         })
     except Exception as e:
-        return jsonify({"error": str(e)[:200], "articles": []})
+        return jsonify({"error": str(e)[:200], "articles": []}), 500
 
 
 @atlas_bp.route("/api/atlas/experiments")
@@ -103,7 +103,7 @@ def api_atlas_experiments():
     try:
         return jsonify(atlas.api_experiments())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500
+        return jsonify({"error": str(e)[:200]}), 500, 500
 
 
 @atlas_bp.route("/api/atlas/knowledge")
@@ -115,7 +115,7 @@ def api_atlas_knowledge():
     try:
         return jsonify(atlas.api_knowledge())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500
+        return jsonify({"error": str(e)[:200]}), 500, 500
 
 
 @atlas_bp.route("/api/atlas/shelby")
@@ -127,7 +127,7 @@ def api_atlas_shelby():
     try:
         return jsonify(atlas.api_shelby_deep())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500
+        return jsonify({"error": str(e)[:200]}), 500, 500
 
 
 @atlas_bp.route("/api/atlas/mercury")
@@ -139,7 +139,7 @@ def api_atlas_mercury():
     try:
         return jsonify(atlas.api_mercury_deep())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500
+        return jsonify({"error": str(e)[:200]}), 500, 500
 
 
 @atlas_bp.route("/api/atlas/thor")
@@ -151,7 +151,7 @@ def api_atlas_thor():
     try:
         return jsonify(atlas.api_thor_deep())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500
+        return jsonify({"error": str(e)[:200]}), 500, 500
 
 
 @atlas_bp.route("/api/atlas/robotox")
@@ -163,7 +163,7 @@ def api_atlas_robotox():
     try:
         return jsonify(atlas.api_robotox_deep())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500
+        return jsonify({"error": str(e)[:200]}), 500, 500
 
 
 @atlas_bp.route("/api/atlas/improvements", methods=["POST"])
@@ -175,7 +175,7 @@ def api_atlas_improvements():
     try:
         return jsonify(atlas.api_improvements())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500
+        return jsonify({"error": str(e)[:200]}), 500, 500
 
 
 @atlas_bp.route("/api/atlas/improvements/acknowledge", methods=["POST"])
@@ -195,7 +195,7 @@ def api_atlas_acknowledge():
         count = atlas.improvements.acknowledge(all_suggestions)
         return jsonify({"acknowledged": count, "total_dismissed": len(atlas.improvements._acknowledged)})
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500
+        return jsonify({"error": str(e)[:200]}), 500, 500
 
 
 @atlas_bp.route("/api/atlas/costs")
@@ -274,7 +274,7 @@ def api_atlas_costs():
             "daily": daily,
         })
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/kb-health")
@@ -285,7 +285,7 @@ def api_atlas_kb_health():
         kb = KnowledgeBase()
         return jsonify(kb.get_kb_health())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/kb-consolidate", methods=["POST"])
@@ -296,7 +296,7 @@ def api_atlas_kb_consolidate():
         kb = KnowledgeBase()
         return jsonify(kb.consolidate())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/kb-contradictions")
@@ -307,7 +307,7 @@ def api_atlas_kb_contradictions():
         kb = KnowledgeBase()
         return jsonify({"contradictions": kb.detect_contradictions()})
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/kb-weighted")
@@ -320,7 +320,7 @@ def api_atlas_kb_weighted():
         kb = KnowledgeBase()
         return jsonify({"learnings": kb.get_weighted_learnings(agent=agent)})
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/summarize", methods=["POST"])
@@ -332,7 +332,7 @@ def api_atlas_summarize():
     try:
         return jsonify(atlas.api_summarize_kb())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500
+        return jsonify({"error": str(e)[:200]}), 500, 500
 
 
 @atlas_bp.route("/api/atlas/background/status")
@@ -396,7 +396,7 @@ def api_atlas_bg_start():
     try:
         return jsonify(atlas.api_start_background())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500
+        return jsonify({"error": str(e)[:200]}), 500, 500
 
 
 @atlas_bp.route("/api/atlas/background/stop", methods=["POST"])
@@ -408,7 +408,7 @@ def api_atlas_bg_stop():
     try:
         return jsonify(atlas.api_stop_background())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500
+        return jsonify({"error": str(e)[:200]}), 500, 500
 
 
 @atlas_bp.route("/api/atlas/competitors")
@@ -421,7 +421,7 @@ def api_atlas_competitors():
             data = json.load(f)
         return jsonify(data)
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/learning/<agent>")
@@ -473,7 +473,7 @@ def api_atlas_trade_analysis():
             return jsonify(latest)
         return jsonify({"message": "No trade analysis yet", "analyzed_at": None})
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/infra-eval")
@@ -525,7 +525,7 @@ def api_atlas_infra_eval():
             })
         return jsonify(infra)
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500
+        return jsonify({"error": str(e)[:200]}), 500, 500
 
 
 @atlas_bp.route("/api/atlas/thoughts")
@@ -556,7 +556,7 @@ def api_atlas_thoughts():
             "recent_research": research_log,
         })
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500
+        return jsonify({"error": str(e)[:200]}), 500, 500
 
 
 @atlas_bp.route("/api/atlas/hub-eval")
@@ -707,7 +707,7 @@ def api_atlas_hub_eval():
         }
         return jsonify(eval_result)
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500
+        return jsonify({"error": str(e)[:200]}), 500, 500
 
 
 @atlas_bp.route("/api/atlas/suggest-agent")
@@ -764,4 +764,4 @@ def api_atlas_suggest_agent():
                        else f"Atlas has identified {len(suggested_agents)} potential new agent(s).",
         })
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500
+        return jsonify({"error": str(e)[:200]}), 500, 500

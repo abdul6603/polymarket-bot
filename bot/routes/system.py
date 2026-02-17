@@ -342,10 +342,19 @@ def _get_codebase_stats() -> dict:
     }
 
 
+_codebase_stats_cache = {"data": None, "ts": 0}
+
 @system_bp.route("/api/system/codebase-stats")
 def api_codebase_stats():
-    """Codebase statistics across all Brotherhood projects."""
-    return jsonify(_get_codebase_stats())
+    """Codebase statistics across all Brotherhood projects (cached 5 min)."""
+    import time as _t
+    now = _t.time()
+    if _codebase_stats_cache["data"] and now - _codebase_stats_cache["ts"] < 300:
+        return jsonify(_codebase_stats_cache["data"])
+    stats = _get_codebase_stats()
+    _codebase_stats_cache["data"] = stats
+    _codebase_stats_cache["ts"] = now
+    return jsonify(stats)
 
 
 @system_bp.route("/api/system/metrics")

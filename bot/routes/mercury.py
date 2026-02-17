@@ -101,7 +101,7 @@ def api_mercury_plan():
         brain = MercuryBrain()
         return jsonify(brain.get_dashboard_data())
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify({"error": str(e)}), 500
 
 
 @mercury_bp.route("/api/mercury/knowledge")
@@ -112,7 +112,7 @@ def api_mercury_knowledge():
         brain = MercuryBrain()
         return jsonify(brain.get_knowledge())
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify({"error": str(e)}), 500
 
 
 @mercury_bp.route("/api/mercury/reply", methods=["POST"])
@@ -124,7 +124,7 @@ def api_mercury_reply():
         comment = request.json.get("comment", "")
         return jsonify(brain.get_reply_suggestion(comment))
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify({"error": str(e)}), 500
 
 
 @mercury_bp.route("/api/mercury/review", methods=["POST"])
@@ -141,7 +141,7 @@ def api_mercury_review():
         result = reviewer.review(item, platform)
         return jsonify(result)
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify({"error": str(e)}), 500
 
 
 @mercury_bp.route("/api/mercury/review/<item_id>", methods=["POST"])
@@ -153,18 +153,18 @@ def api_mercury_review_item(item_id):
         platform = (request.json or {}).get("platform", "instagram")
         # Load the item from queue
         if not SOREN_QUEUE_FILE.exists():
-            return jsonify({"error": "Queue file not found"})
+            return jsonify({"error": "Queue file not found"}), 404
         with open(SOREN_QUEUE_FILE) as f:
             queue = json.load(f)
         item = next((q for q in queue if q.get("id") == item_id), None)
         if not item:
-            return jsonify({"error": f"Item {item_id} not found"})
+            return jsonify({"error": f"Item {item_id} not found"}), 404
         result = reviewer.review(item, platform)
         result["item_id"] = item_id
         result["caption_preview"] = (item.get("caption") or item.get("content", ""))[:100]
         return jsonify(result)
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify({"error": str(e)}), 500
 
 
 @mercury_bp.route("/api/lisa/go-live", methods=["POST"])
@@ -200,7 +200,7 @@ def api_lisa_go_live():
         save_live_config(config)
         return jsonify({"status": "ok", "platform": platform, "live": enable, "config": config})
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @mercury_bp.route("/api/lisa/live-config")
@@ -210,7 +210,7 @@ def api_lisa_live_config():
         from mercury.core.publisher import _load_live_config
         return jsonify(_load_live_config())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @mercury_bp.route("/api/lisa/comments")
@@ -226,7 +226,7 @@ def api_lisa_comments():
             "stats": analyzer.stats(),
         })
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @mercury_bp.route("/api/lisa/comment/analyze", methods=["POST"])
@@ -246,7 +246,7 @@ def api_lisa_comment_analyze():
         result = analyzer.analyze_comment(comment, platform, post_id)
         return jsonify(result)
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @mercury_bp.route("/api/lisa/comment/<comment_id>/status", methods=["POST"])
@@ -262,7 +262,7 @@ def api_lisa_comment_status(comment_id: str):
         ok = analyzer.update_status(comment_id, status)
         return jsonify({"ok": ok, "comment_id": comment_id, "status": status})
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @mercury_bp.route("/api/lisa/pipeline/run", methods=["POST"])
@@ -275,7 +275,7 @@ def api_lisa_pipeline_run():
         result = pipeline.review_pending(platform=platform)
         return jsonify(result)
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @mercury_bp.route("/api/lisa/pipeline/stats")
@@ -286,7 +286,7 @@ def api_lisa_pipeline_stats():
         pipeline = ContentPipeline()
         return jsonify(pipeline.get_stats())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @mercury_bp.route("/api/lisa/pipeline/approve/<item_id>", methods=["POST"])
@@ -299,7 +299,7 @@ def api_lisa_pipeline_approve(item_id):
         result = pipeline.approve_item(item_id, platform)
         return jsonify(result)
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @mercury_bp.route("/api/lisa/pipeline/reject/<item_id>", methods=["POST"])
@@ -312,7 +312,7 @@ def api_lisa_pipeline_reject(item_id):
         result = pipeline.reject_item(item_id, reason)
         return jsonify(result)
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @mercury_bp.route("/api/lisa/rate", methods=["POST"])
@@ -329,7 +329,7 @@ def api_lisa_rate():
         result = rater.rate(item, platform)
         return jsonify(result.to_dict())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @mercury_bp.route("/api/lisa/write", methods=["POST"])
@@ -361,7 +361,7 @@ def api_lisa_write():
 
         return jsonify({"type": write_type, "text": text, "topic": topic, "platform": platform})
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @mercury_bp.route("/api/lisa/timing")
@@ -372,7 +372,7 @@ def api_lisa_timing():
         scheduler = PostingScheduler()
         return jsonify(scheduler.get_timing_data())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @mercury_bp.route("/api/lisa/optimal-slot", methods=["POST"])
@@ -389,7 +389,7 @@ def api_lisa_optimal_slot():
         )
         return jsonify(slot)
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @mercury_bp.route("/api/lisa/jordan-queue")
@@ -401,7 +401,7 @@ def api_lisa_jordan_queue():
         items = pipeline.get_jordan_queue()
         return jsonify({"items": items, "count": len(items)})
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @mercury_bp.route("/api/lisa/jordan-approve/<item_id>", methods=["POST"])
@@ -414,7 +414,7 @@ def api_lisa_jordan_approve(item_id):
         result = pipeline.jordan_approve(item_id, platform)
         return jsonify(result)
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @mercury_bp.route("/api/lisa/posting-schedule")
@@ -426,14 +426,14 @@ def api_lisa_posting_schedule():
         schedule = pipeline.get_posting_schedule()
         return jsonify({"schedule": schedule, "count": len(schedule)})
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @mercury_bp.route("/api/lisa/broadcasts")
 def api_lisa_broadcasts():
     """Process and acknowledge broadcasts for Lisa."""
     try:
-        sys.path.insert(0, str(SHELBY_ROOT_DIR))
+        # Path already added via bot.shared.ensure_path
         from core.broadcast import get_unread_broadcasts, acknowledge_broadcast
 
         lisa_data = MERCURY_ROOT / "data"
@@ -443,4 +443,4 @@ def api_lisa_broadcasts():
 
         return jsonify({"processed": len(unread), "agent": "lisa"})
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500

@@ -1032,7 +1032,7 @@ def api_intelligence():
 def api_broadcasts():
     """Recent broadcasts with acknowledgment status."""
     try:
-        sys.path.insert(0, str(SHELBY_ROOT_DIR))
+        # Path already added via bot.shared.ensure_path
         from core.broadcast import get_recent_broadcasts, check_acknowledgments
 
         broadcasts = get_recent_broadcasts(limit=15)
@@ -1052,4 +1052,4 @@ def api_broadcasts():
             })
         return jsonify({"broadcasts": result})
     except Exception as e:
-        return jsonify({"error": str(e)[:200], "broadcasts": []})
+        return jsonify({"error": str(e)[:200], "broadcasts": []}), 500

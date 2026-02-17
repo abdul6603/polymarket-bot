@@ -490,7 +490,7 @@ def api_soren_broadcasts():
 
         return jsonify({"processed": len(unread), "agent": "soren"})
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @soren_bp.route("/api/soren/competitors")
@@ -504,4 +504,4 @@ def api_soren_competitors():
             return jsonify(latest)
         return jsonify({"competitors": [], "scanned_at": None, "message": "No competitor data yet"})
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500

@@ -26,7 +26,7 @@ def api_sentinel():
     try:
         return jsonify(_get_sentinel().get_status())
     except Exception as e:
-        return jsonify({"status": "offline", "error": str(e)})
+        return jsonify({"status": "offline", "error": str(e)}), 500
 
 
 @sentinel_bp.route("/api/sentinel/scan", methods=["POST"])
@@ -40,7 +40,7 @@ def api_sentinel_scan():
     except Exception as e:
         import traceback
         traceback.print_exc()
-        return jsonify({"error": str(e)[:500]})
+        return jsonify({"error": str(e)[:500]}), 500
 
 
 @sentinel_bp.route("/api/sentinel/bugs")
@@ -49,7 +49,7 @@ def api_sentinel_bugs():
     try:
         return jsonify(_get_sentinel().quick_bug_scan())
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify({"error": str(e)}), 500
 
 
 @sentinel_bp.route("/api/sentinel/fixes")
@@ -58,7 +58,7 @@ def api_sentinel_fixes():
     try:
         return jsonify({"fixes": _get_sentinel().get_fix_history()})
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify({"error": str(e)}), 500
 
 
 @sentinel_bp.route("/api/sentinel/alerts")
@@ -67,7 +67,7 @@ def api_sentinel_alerts():
     try:
         return jsonify({"alerts": _get_sentinel().get_alerts()})
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify({"error": str(e)}), 500
 
 
 @sentinel_bp.route("/api/robotox/log-alerts")
@@ -80,7 +80,7 @@ def api_robotox_log_alerts():
             "patterns": s.get_log_watcher_patterns(),
         })
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @sentinel_bp.route("/api/robotox/perf")
@@ -93,7 +93,7 @@ def api_robotox_perf():
             "baselines": s.get_perf_baselines(),
         })
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @sentinel_bp.route("/api/robotox/dep-health")
@@ -103,7 +103,7 @@ def api_robotox_dep_health():
         s = _get_sentinel()
         return jsonify(s.get_dep_health())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @sentinel_bp.route("/api/robotox/dep-health/check", methods=["POST"])
@@ -113,22 +113,20 @@ def api_robotox_dep_health_check():
         s = _get_sentinel()
         return jsonify(s.check_dep_health())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @sentinel_bp.route("/api/robotox/intel-feed")
 def api_robotox_intel_feed():
     """Get the shared intelligence feed."""
     try:
-        import sys
-        sys.path.insert(0, str(Path.home()))
         from shared.intelligence_feed import get_all, get_stats
         return jsonify({
             "items": get_all(limit=30),
             "stats": get_stats(),
         })
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @sentinel_bp.route("/api/robotox/deploy-watches")
@@ -141,7 +139,7 @@ def api_robotox_deploy_watches():
             "rollback_history": s.get_rollback_history(),
         })
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @sentinel_bp.route("/api/robotox/correlator")
@@ -151,7 +149,7 @@ def api_robotox_correlator():
         s = _get_sentinel()
         return jsonify(s.get_correlator_stats())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @sentinel_bp.route("/api/robotox/dependencies")
@@ -162,7 +160,7 @@ def api_robotox_dependencies():
         checker = DependencyChecker()
         return jsonify(checker.get_latest())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @sentinel_bp.route("/api/robotox/dependencies/check", methods=["POST"])
@@ -173,4 +171,4 @@ def api_robotox_dep_check():
         checker = DependencyChecker()
         return jsonify(checker.full_check())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]})
+        return jsonify({"error": str(e)[:200]}), 500
