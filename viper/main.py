@@ -69,13 +69,52 @@ def _save_costs(costs: dict) -> None:
         log.exception("Failed to save Viper costs")
 
 
-def run_single_scan(cfg: ViperConfig) -> dict:
-    """Run a single intelligence scan cycle. Used by both the main loop and the API trigger."""
-    result = {"intel_count": 0, "matched": 0, "sources": {}}
+def run_single_scan(cfg: ViperConfig, cycle: int = 0) -> dict:
+    """Run a single intelligence scan cycle. Used by both the main loop and the API trigger.
 
-    # 1. Scan all sources
-    intel_items = scan_all(cfg.tavily_api_key, cfg.clob_host)
+    Tavily runs every cycle when triggered from API, but only every 3rd cycle
+    in the main loop (to save Tavily credits). Reddit + Polymarket always run.
+    cycle=0 means "run everything" (API trigger).
+    """
+    result = {"intel_count": 0, "matched": 0, "sources": {}, "briefing_active": False}
+
+    # Check if Hawk briefing exists
+    briefing_file = DATA_DIR / "hawk_briefing.json"
+    if briefing_file.exists():
+        try:
+            import json as _json
+            bf = _json.loads(briefing_file.read_text())
+            import time as _time
+            age = _time.time() - bf.get("generated_at", 0)
+            result["briefing_active"] = age < 7200
+            result["briefed_markets"] = bf.get("briefed_markets", 0)
+        except Exception:
+            pass
+
+    # Determine if Tavily should run this cycle
+    # cycle=0 → always run (API trigger), otherwise every 3rd cycle
+    run_tavily = (cycle == 0) or (cycle % 3 == 1)
+
+    # 1. Scan sources (Tavily conditionally, Reddit+Polymarket always)
+    if run_tavily:
+        intel_items = scan_all(cfg.tavily_api_key, cfg.clob_host)
+    else:
+        # Skip Tavily, only free sources
+        from viper.scanner import scan_polymarket_activity, scan_reddit_predictions
+        intel_items = []
+        seen_ids: set[str] = set()
+        for item in scan_polymarket_activity(cfg.clob_host):
+            if item.id not in seen_ids:
+                seen_ids.add(item.id)
+                intel_items.append(item)
+        for item in scan_reddit_predictions():
+            if item.id not in seen_ids:
+                seen_ids.add(item.id)
+                intel_items.append(item)
+        log.info("Tavily skipped this cycle (cycle %d, runs every 3rd)", cycle)
+
     result["intel_count"] = len(intel_items)
+    result["tavily_ran"] = run_tavily
 
     # Count by source
     for item in intel_items:
@@ -137,13 +176,16 @@ class ViperBot:
                     latest = notes[-1]
                     log.info("Brain note: [%s] %s", latest.get("topic", "?"), latest.get("content", "")[:100])
 
-                # Run the scan
-                result = run_single_scan(self.cfg)
+                # Run the scan (pass cycle for Tavily throttling)
+                result = run_single_scan(self.cfg, cycle=self.cycle)
                 self.total_intel += result.get("new_items", 0)
                 self.total_matched += result.get("matched", 0)
 
-                log.info("Cycle %d: %d items scanned, %d new, %d market matches",
-                         self.cycle, result["intel_count"], result.get("new_items", 0), result["matched"])
+                tavily_note = " (Tavily: ON)" if result.get("tavily_ran") else " (Tavily: skipped)"
+                briefing_note = f" | Briefing: {result.get('briefed_markets', 0)} markets" if result.get("briefing_active") else ""
+                log.info("Cycle %d: %d items scanned, %d new, %d market matches%s%s",
+                         self.cycle, result["intel_count"], result.get("new_items", 0),
+                         result["matched"], tavily_note, briefing_note)
                 log.info("Sources: %s", result.get("sources", {}))
 
                 # Cost audit (every 12 cycles = every hour)
@@ -164,6 +206,9 @@ class ViperBot:
                     "last_scan_new": result.get("new_items", 0),
                     "last_scan_matched": result["matched"],
                     "sources": result.get("sources", {}),
+                    "briefing_active": result.get("briefing_active", False),
+                    "briefed_markets": result.get("briefed_markets", 0),
+                    "tavily_ran": result.get("tavily_ran", False),
                 })
 
             except Exception:

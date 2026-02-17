@@ -16,6 +16,7 @@ from hawk.executor import HawkExecutor
 from hawk.tracker import HawkTracker
 from hawk.risk import HawkRiskManager
 from hawk.resolver import resolve_paper_trades
+from hawk.briefing import generate_briefing
 
 log = logging.getLogger(__name__)
 
@@ -179,6 +180,7 @@ class HawkBot:
                     opp_data.append({
                         "question": o.market.question[:200],
                         "category": o.market.category,
+                        "condition_id": o.market.condition_id,
                         "market_price": _get_yes_price(o.market),
                         "estimated_prob": o.estimate.estimated_prob,
                         "edge": o.edge,
@@ -188,6 +190,12 @@ class HawkBot:
                         "reasoning": o.estimate.reasoning[:200],
                     })
                 _save_opportunities(opp_data)
+
+                # Generate briefing for Viper — targeted intel queries
+                try:
+                    generate_briefing(opp_data, self.cycle)
+                except Exception:
+                    log.exception("Failed to generate Hawk briefing")
 
                 # 6. Execute trades
                 if self.executor:

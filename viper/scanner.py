@@ -18,27 +18,99 @@ log = logging.getLogger(__name__)
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 
+# ─── Hawk Briefing Integration ────────────────────────────────────────
+
+BRIEFING_FILE = DATA_DIR / "hawk_briefing.json"
+
+
+def _load_hawk_queries() -> list[dict]:
+    """Read Hawk briefing and return targeted queries with condition_id linkage.
+
+    Returns list of {"query": str, "condition_id": str, "priority": int}.
+    """
+    if not BRIEFING_FILE.exists():
+        return []
+    try:
+        briefing = json.loads(BRIEFING_FILE.read_text())
+        age = time.time() - briefing.get("generated_at", 0)
+        if age > 7200:  # 2 hours stale threshold
+            log.info("Hawk briefing stale (%.0f min), skipping targeted queries", age / 60)
+            return []
+
+        queries = []
+        for market in briefing.get("markets", []):
+            cid = market.get("condition_id", "")
+            priority = market.get("priority", 99)
+            for q in market.get("search_queries", []):
+                queries.append({"query": q, "condition_id": cid, "priority": priority})
+
+        # Sort by priority, limit to avoid budget blow
+        queries.sort(key=lambda x: x["priority"])
+        log.info("Loaded %d targeted queries from Hawk briefing", len(queries))
+        return queries
+    except Exception:
+        log.exception("Failed to load Hawk briefing queries")
+        return []
+
+
 # ─── Tavily (real-time web search) ────────────────────────────────────
 
-def scan_tavily(api_key: str, queries: list[str] | None = None) -> list[IntelItem]:
-    """Use Tavily API for real-time news search on prediction-market-relevant topics."""
+_FALLBACK_QUERIES = [
+    "breaking news politics today",
+    "sports results scores today",
+]
+
+
+def scan_tavily(api_key: str, queries: list[str] | None = None, use_briefing: bool = True) -> list[IntelItem]:
+    """Use Tavily API for targeted news search driven by Hawk briefing.
+
+    Priority: Hawk briefing queries first (pre-linked to markets),
+    then fallback to generic queries only if briefing is empty/stale.
+    Budget: max 4 queries per cycle to stay within 12k/month Tavily limit.
+    """
     if not api_key:
         log.warning("No Tavily API key — skipping Tavily scan")
         return []
 
-    default_queries = [
-        "breaking news politics today",
-        "sports results scores today",
-        "crypto regulation news today",
-        "prediction market polymarket trending",
-        "major event happening today breaking",
-        "election polls latest results",
-    ]
-    queries = queries or default_queries
     session = get_session()
     items: list[IntelItem] = []
+    max_queries = 4  # Budget: 4 queries/cycle
 
-    for query in queries:
+    # Build query plan: briefing-targeted first, then generic fallback
+    query_plan: list[dict] = []  # {"query": str, "condition_id": str|None}
+
+    if use_briefing:
+        hawk_queries = _load_hawk_queries()
+        # Take top 4 targeted queries (highest priority markets)
+        seen_cids: set[str] = set()
+        for hq in hawk_queries:
+            if len(query_plan) >= max_queries:
+                break
+            # One query per market to maximize coverage
+            cid = hq["condition_id"]
+            if cid in seen_cids:
+                continue
+            seen_cids.add(cid)
+            query_plan.append({"query": hq["query"], "condition_id": cid})
+    else:
+        hawk_queries = []
+
+    # Fallback: if no briefing or <2 targeted queries, add generic ones
+    if len(query_plan) < 2:
+        fallback = queries or _FALLBACK_QUERIES
+        for q in fallback:
+            if len(query_plan) >= max_queries:
+                break
+            query_plan.append({"query": q, "condition_id": None})
+
+    targeted_count = sum(1 for q in query_plan if q["condition_id"])
+    log.info("Tavily query plan: %d targeted + %d generic = %d total",
+             targeted_count, len(query_plan) - targeted_count, len(query_plan))
+
+    for qp in query_plan:
+        query = qp["query"]
+        linked_cid = qp["condition_id"]
+
         try:
             resp = session.post(
                 "https://api.tavily.com/search",
@@ -66,10 +138,12 @@ def scan_tavily(api_key: str, queries: list[str] | None = None) -> list[IntelIte
                 if not title:
                     continue
 
-                # Extract relevance tags from content
                 tags = _extract_tags(title + " " + content)
                 category = _categorize_intel(title + " " + content)
                 sentiment = _estimate_sentiment(title + " " + content)
+
+                # Pre-link to market if this was a targeted query
+                matched = [linked_cid] if linked_cid else []
 
                 items.append(IntelItem(
                     id=make_intel_id("tavily", title),
@@ -79,15 +153,17 @@ def scan_tavily(api_key: str, queries: list[str] | None = None) -> list[IntelIte
                     url=url,
                     relevance_tags=tags,
                     sentiment=sentiment,
-                    confidence=0.7,
+                    confidence=0.8 if linked_cid else 0.7,
                     timestamp=time.time(),
                     category=category,
+                    matched_markets=matched,
                 ))
 
         except Exception:
             log.exception("Tavily search failed for: %s", query[:40])
 
-    log.info("Tavily scan: %d intel items from %d queries", len(items), len(queries))
+    log.info("Tavily scan: %d intel items from %d queries (%d targeted)",
+             len(items), len(query_plan), targeted_count)
     return items
 
 

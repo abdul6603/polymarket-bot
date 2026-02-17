@@ -17,6 +17,7 @@ OPPS_FILE = DATA_DIR / "viper_opportunities.json"
 COSTS_FILE = DATA_DIR / "viper_costs.json"
 STATUS_FILE = DATA_DIR / "viper_status.json"
 INTEL_FILE = DATA_DIR / "viper_intel.json"
+BRIEFING_FILE = DATA_DIR / "hawk_briefing.json"
 
 _scan_lock = threading.Lock()
 _scan_running = False
@@ -39,9 +40,22 @@ def _load_status() -> dict:
 
 @viper_bp.route("/api/viper")
 def api_viper():
-    """Full Viper status."""
+    """Full Viper status with Hawk briefing info."""
     status = _load_status()
-    return jsonify({"summary": status, "status": status})
+
+    # Add briefing info
+    briefing_info = {"active": False, "age_minutes": None, "briefed_markets": 0}
+    if BRIEFING_FILE.exists():
+        try:
+            bf = json.loads(BRIEFING_FILE.read_text())
+            age = time.time() - bf.get("generated_at", 0)
+            briefing_info["active"] = age < 7200
+            briefing_info["age_minutes"] = round(age / 60, 1)
+            briefing_info["briefed_markets"] = bf.get("briefed_markets", 0)
+        except Exception:
+            pass
+
+    return jsonify({"summary": status, "status": status, "hawk_briefing": briefing_info})
 
 
 @viper_bp.route("/api/viper/opportunities")

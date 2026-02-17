@@ -1,71 +1,70 @@
-"""Market Matcher — match Viper intel items to active Polymarket markets.
+"""Market Matcher — entity-based matching of Viper intel to Hawk markets.
 
-Reads intel items, fuzzy-matches them to markets Hawk is watching,
-and writes per-market context to data/viper_market_context.json for Hawk.
+Uses Hawk briefing entities for strict matching:
+  Tier 1: Pre-linked items (from targeted Tavily queries) -> score 1.0
+  Tier 2: Entity match — intel text must contain >=35% of market entities
+
+Replaces the old word-overlap approach that matched garbage.
 """
 from __future__ import annotations
 
 import json
 import logging
-import re
 import time
 from pathlib import Path
 
-from viper.intel import IntelItem, load_intel, save_market_context
+from viper.intel import load_intel, save_market_context
 
 log = logging.getLogger(__name__)
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 HAWK_OPPS_FILE = DATA_DIR / "hawk_opportunities.json"
+BRIEFING_FILE = DATA_DIR / "hawk_briefing.json"
 
-# Maximum intel items per market to keep context focused
 MAX_CONTEXT_PER_MARKET = 8
+ENTITY_MATCH_THRESHOLD = 0.35  # Must match >=35% of entities
 
 
-def _normalize(text: str) -> set[str]:
-    """Extract meaningful words from text for matching."""
-    words = set(re.findall(r'\b[a-z]{3,}\b', text.lower()))
-    # Remove common stop words
-    stop = {"the", "and", "for", "are", "but", "not", "you", "all", "can", "had",
-            "her", "was", "one", "our", "out", "has", "have", "will", "this", "that",
-            "with", "from", "they", "been", "said", "each", "which", "their", "what",
-            "about", "would", "there", "when", "make", "like", "time", "very", "your",
-            "just", "than", "them", "some", "could", "other", "into", "more"}
-    return words - stop
+def _load_briefing_entities() -> dict[str, list[str]]:
+    """Load entities per condition_id from hawk_briefing.json.
+
+    Returns {condition_id: [entity1, entity2, ...]}
+    """
+    if not BRIEFING_FILE.exists():
+        return {}
+    try:
+        briefing = json.loads(BRIEFING_FILE.read_text())
+        age = time.time() - briefing.get("generated_at", 0)
+        if age > 7200:
+            return {}
+        result = {}
+        for m in briefing.get("markets", []):
+            cid = m.get("condition_id", "")
+            entities = m.get("entities", [])
+            if cid and entities:
+                result[cid] = entities
+        return result
+    except Exception:
+        return {}
 
 
-def match_score(intel_text: str, market_question: str) -> float:
-    """Score how well an intel item matches a market question. 0 to 1."""
-    intel_words = _normalize(intel_text)
-    market_words = _normalize(market_question)
-
-    if not intel_words or not market_words:
+def _entity_match_score(intel_text: str, entities: list[str]) -> float:
+    """Score how many entities appear in the intel text. Returns 0.0 to 1.0."""
+    if not entities:
         return 0.0
-
-    # Jaccard-like overlap score
-    overlap = intel_words & market_words
-    if not overlap:
-        return 0.0
-
-    # Weight by how much of the market question is covered
-    coverage = len(overlap) / len(market_words)
-    # Also consider how specific the match is (not too many unrelated words)
-    specificity = len(overlap) / max(len(intel_words), 1)
-
-    return min(1.0, (coverage * 0.7 + specificity * 0.3))
+    text_lower = intel_text.lower()
+    matches = sum(1 for e in entities if e.lower() in text_lower)
+    return matches / len(entities)
 
 
 def build_market_context(intel_items: list[dict], markets: list[dict] | None = None) -> dict[str, list[dict]]:
-    """Match intel items to markets and build per-market context.
+    """Match intel items to markets using entity-based strict matching.
 
-    Args:
-        intel_items: List of intel dicts from viper_intel.json
-        markets: Optional list of market dicts. If None, reads from hawk_opportunities.json
+    Tier 1: Pre-linked items (from targeted Tavily) -> auto match, score 1.0
+    Tier 2: Entity match — intel must contain >=35% of market entities
 
-    Returns:
-        {condition_id: [matched_intel_items]} dict
+    Returns {condition_id: [matched_intel_items]}
     """
-    # Load markets if not provided
     if markets is None:
         markets = _load_hawk_markets()
 
@@ -73,41 +72,40 @@ def build_market_context(intel_items: list[dict], markets: list[dict] | None = N
         log.info("No markets to match intel against")
         return {}
 
+    # Load entities from briefing for tier 2 matching
+    briefing_entities = _load_briefing_entities()
+
     context: dict[str, list[dict]] = {}
     matches_found = 0
+    pre_linked = 0
+    entity_matched = 0
 
     for market in markets:
         question = market.get("question", "")
         cid = market.get("condition_id", market.get("market_id", ""))
-        category = market.get("category", "")
 
         if not question or not cid:
             continue
 
-        matched: list[tuple[float, dict]] = []
+        matched: list[tuple[float, dict, str]] = []  # (score, intel, match_type)
+        entities = briefing_entities.get(cid, [])
 
         for intel in intel_items:
-            # Skip if intel is already directly matched to this market
+            # Tier 1: Pre-linked (from targeted Tavily query)
             if cid in intel.get("matched_markets", []):
-                matched.append((1.0, intel))
+                matched.append((1.0, intel, "pre_linked"))
+                pre_linked += 1
                 continue
 
-            # Check tag overlap first (fast path)
-            intel_tags = set(intel.get("relevance_tags", []))
-            if not intel_tags:
-                continue
+            # Tier 2: Entity match — check if intel mentions enough entities
+            if entities:
+                intel_text = intel.get("headline", "") + " " + intel.get("summary", "")
+                score = _entity_match_score(intel_text, entities)
+                if score >= ENTITY_MATCH_THRESHOLD:
+                    matched.append((score, intel, "entity"))
+                    entity_matched += 1
 
-            # Category match bonus
-            category_bonus = 0.15 if intel.get("category") == category else 0.0
-
-            # Text matching
-            intel_text = intel.get("headline", "") + " " + intel.get("summary", "")
-            score = match_score(intel_text, question) + category_bonus
-
-            if score >= 0.15:  # minimum relevance threshold
-                matched.append((score, intel))
-
-        # Sort by relevance score and keep top N
+        # Sort by score and keep top N
         matched.sort(key=lambda x: x[0], reverse=True)
         if matched:
             context[cid] = [
@@ -115,16 +113,19 @@ def build_market_context(intel_items: list[dict], markets: list[dict] | None = N
                     "headline": m.get("headline", "")[:200],
                     "summary": m.get("summary", "")[:300],
                     "source": m.get("source", ""),
+                    "url": m.get("url", ""),
                     "sentiment": m.get("sentiment", 0),
                     "confidence": m.get("confidence", 0.5),
                     "relevance": round(score, 3),
+                    "match_type": match_type,
                     "timestamp": m.get("timestamp", 0),
                 }
-                for score, m in matched[:MAX_CONTEXT_PER_MARKET]
+                for score, m, match_type in matched[:MAX_CONTEXT_PER_MARKET]
             ]
             matches_found += len(context[cid])
 
-    log.info("Market context: %d markets matched, %d total intel links", len(context), matches_found)
+    log.info("Market context: %d markets, %d links (%d pre-linked, %d entity-matched)",
+             len(context), matches_found, pre_linked, entity_matched)
     return context
 
 
@@ -143,7 +144,6 @@ def update_market_context() -> int:
 def _load_hawk_markets() -> list[dict]:
     """Load markets from Hawk's opportunities file."""
     if not HAWK_OPPS_FILE.exists():
-        # Try loading from hawk_status.json or scanning fresh
         return []
     try:
         data = json.loads(HAWK_OPPS_FILE.read_text())

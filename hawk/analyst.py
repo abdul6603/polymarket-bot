@@ -77,9 +77,13 @@ def _get_viper_context(market: HawkMarket) -> str:
             headline = item.get("headline", "")
             summary = item.get("summary", "")[:200]
             source = item.get("source", "")
+            url = item.get("url", "")
+            match_type = item.get("match_type", "unknown")
             sentiment = item.get("sentiment", 0)
             sent_label = "positive" if sentiment > 0.2 else "negative" if sentiment < -0.2 else "neutral"
-            lines.append(f"- [{source}] {headline}: {summary} (sentiment: {sent_label})")
+            url_note = f" | {url}" if url else ""
+            match_note = f" [{match_type}]" if match_type != "unknown" else ""
+            lines.append(f"- [{source}]{match_note} {headline}: {summary} (sentiment: {sent_label}){url_note}")
 
         if lines:
             return "\n\nREAL-TIME INTELLIGENCE (from Viper scanner):\n" + "\n".join(lines)

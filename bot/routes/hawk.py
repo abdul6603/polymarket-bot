@@ -17,6 +17,8 @@ DATA_DIR = Path(__file__).parent.parent.parent / "data"
 TRADES_FILE = DATA_DIR / "hawk_trades.jsonl"
 OPPS_FILE = DATA_DIR / "hawk_opportunities.json"
 STATUS_FILE = DATA_DIR / "hawk_status.json"
+BRIEFING_FILE = DATA_DIR / "hawk_briefing.json"
+MARKET_CONTEXT_FILE = DATA_DIR / "viper_market_context.json"
 ET = timezone(timedelta(hours=-5))
 
 _scan_lock = threading.Lock()
@@ -279,6 +281,13 @@ def api_hawk_scan():
                 "analyzed": len(target_markets),
             }, indent=2))
 
+            # Generate briefing for Viper — targeted intel queries
+            try:
+                from hawk.briefing import generate_briefing
+                generate_briefing(opp_data)
+            except Exception:
+                log.exception("Failed to generate Hawk briefing from dashboard scan")
+
             total_ev = sum(o["expected_value"] for o in opp_data)
             _set_progress(
                 "Scan complete",
@@ -396,3 +405,66 @@ def api_hawk_sim():
         "open_positions": [_trim(t) for t in open_pos[-20:]],
         "recent_resolved": [_trim(t) for t in recent],
     })
+
+
+@hawk_bp.route("/api/hawk/intel-sync")
+def api_hawk_intel_sync():
+    """Hawk-Viper intel sync status — briefing + matched context."""
+    result = {
+        "briefing": None,
+        "context": None,
+        "sync_active": False,
+    }
+
+    # Load briefing
+    if BRIEFING_FILE.exists():
+        try:
+            briefing = json.loads(BRIEFING_FILE.read_text())
+            age = time.time() - briefing.get("generated_at", 0)
+            result["briefing"] = {
+                "generated_at": briefing.get("generated_at", 0),
+                "age_minutes": round(age / 60, 1),
+                "stale": age > 7200,
+                "briefed_markets": briefing.get("briefed_markets", 0),
+                "cycle": briefing.get("cycle", 0),
+                "markets": briefing.get("markets", []),
+            }
+        except Exception:
+            pass
+
+    # Load market context from Viper
+    if MARKET_CONTEXT_FILE.exists():
+        try:
+            ctx = json.loads(MARKET_CONTEXT_FILE.read_text())
+            total_links = sum(len(v) for v in ctx.values())
+            markets_with_intel = len(ctx)
+            # Enrich: show which briefed markets have intel
+            market_intel = []
+            if result["briefing"]:
+                for m in result["briefing"]["markets"]:
+                    cid = m.get("condition_id", "")
+                    intel_items = ctx.get(cid, [])
+                    market_intel.append({
+                        "question": m.get("question", "")[:120],
+                        "condition_id": cid,
+                        "priority": m.get("priority", 0),
+                        "entities": m.get("entities", []),
+                        "intel_count": len(intel_items),
+                        "intel_items": intel_items[:3],  # Top 3 per market
+                    })
+            result["context"] = {
+                "markets_with_intel": markets_with_intel,
+                "total_links": total_links,
+                "market_intel": market_intel,
+            }
+        except Exception:
+            pass
+
+    result["sync_active"] = (
+        result["briefing"] is not None
+        and not result["briefing"].get("stale", True)
+        and result["context"] is not None
+        and result["context"].get("total_links", 0) > 0
+    )
+
+    return jsonify(result)

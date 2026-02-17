@@ -5399,6 +5399,74 @@ async function loadHawkTab() {
     var histData = await histResp.json();
     renderHawkHistory(histData.trades || []);
   } catch(e) {}
+
+  // Intel Sync (Hawk <-> Viper)
+  try {
+    var syncResp = await fetch('/api/hawk/intel-sync');
+    var syncData = await syncResp.json();
+    renderHawkIntelSync(syncData);
+  } catch(e) {}
+}
+
+function renderHawkIntelSync(data) {
+  var section = document.getElementById('hawk-intel-sync-section');
+  var badges = document.getElementById('hawk-intel-badges');
+  var tbody = document.getElementById('hawk-intel-tbody');
+  if (!section || !badges || !tbody) return;
+
+  var bf = data.briefing;
+  var ctx = data.context;
+
+  if (!bf) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+
+  // Badges
+  var bh = '';
+  var syncColor = data.sync_active ? '#00ff88' : 'var(--warning)';
+  var syncLabel = data.sync_active ? 'SYNCED' : 'STALE';
+  bh += '<div class="widget-badge"><span class="wb-label">Status:</span> <span style="color:' + syncColor + ';font-weight:700;">' + syncLabel + '</span></div>';
+  bh += '<div class="widget-badge"><span class="wb-label">Briefed:</span> <span style="color:#FFD700;">' + (bf.briefed_markets || 0) + ' markets</span></div>';
+  if (ctx) {
+    bh += '<div class="widget-badge"><span class="wb-label">Intel Links:</span> <span style="color:#00ff88;">' + (ctx.total_links || 0) + '</span></div>';
+    bh += '<div class="widget-badge"><span class="wb-label">Markets w/ Intel:</span> <span>' + (ctx.markets_with_intel || 0) + '</span></div>';
+  }
+  bh += '<div class="widget-badge"><span class="wb-label">Age:</span> <span style="color:' + (bf.stale ? 'var(--error)' : 'var(--text-muted)') + ';">' + (bf.age_minutes || 0).toFixed(0) + 'm</span></div>';
+  badges.innerHTML = bh;
+
+  // Per-market intel table
+  if (!ctx || !ctx.market_intel || ctx.market_intel.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" class="text-muted" style="text-align:center;padding:16px;">Briefing active but no intel matched yet. Trigger a Viper scan.</td></tr>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < ctx.market_intel.length; i++) {
+    var mi = ctx.market_intel[i];
+    var entStr = (mi.entities || []).slice(0, 3).join(', ');
+    if (mi.intel_count === 0) {
+      html += '<tr>';
+      html += '<td style="max-width:200px;"><div style="font-size:0.74rem;line-height:1.3;white-space:normal;">' + esc(mi.question) + '</div><div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;">' + esc(entStr) + '</div></td>';
+      html += '<td colspan="3" class="text-muted" style="font-size:0.72rem;">No intel yet</td>';
+      html += '</tr>';
+      continue;
+    }
+    for (var j = 0; j < mi.intel_items.length; j++) {
+      var it = mi.intel_items[j];
+      var typeColor = it.match_type === 'pre_linked' ? '#00ff88' : '#FFD700';
+      var typeLabel = it.match_type === 'pre_linked' ? 'Targeted' : 'Entity';
+      html += '<tr>';
+      if (j === 0) {
+        html += '<td rowspan="' + mi.intel_items.length + '" style="max-width:200px;vertical-align:top;"><div style="font-size:0.74rem;line-height:1.3;white-space:normal;">' + esc(mi.question) + '</div><div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;">' + esc(entStr) + '</div></td>';
+      }
+      html += '<td style="max-width:220px;"><div style="font-size:0.72rem;line-height:1.3;white-space:normal;">' + esc((it.headline || '').substring(0, 80)) + '</div></td>';
+      html += '<td><span class="badge" style="background:rgba(0,255,136,0.1);color:' + typeColor + ';font-size:0.64rem;">' + typeLabel + '</span></td>';
+      html += '<td style="font-size:0.68rem;color:var(--text-muted);">' + esc(it.source || '') + '</td>';
+      html += '</tr>';
+    }
+  }
+  tbody.innerHTML = html;
 }
 
 function renderHawkScanSummary(data) {
@@ -5965,6 +6033,28 @@ async function loadViperTab() {
     var srcCount = s.sources ? Object.keys(s.sources).length : 0;
     document.getElementById('viper-sources').textContent = srcCount || 3;
     document.getElementById('viper-cycle').textContent = s.cycle || 0;
+
+    // Hawk Briefing badges
+    var hb = d.hawk_briefing;
+    var briefSec = document.getElementById('viper-hawk-briefing');
+    var briefBadges = document.getElementById('viper-briefing-badges');
+    if (briefSec && briefBadges && hb) {
+      briefSec.style.display = 'block';
+      var bb = '';
+      var modeColor = hb.active ? '#00ff88' : 'var(--text-muted)';
+      var modeLabel = hb.active ? 'TARGETED' : 'GENERIC';
+      bb += '<div class="widget-badge"><span class="wb-label">Hawk Briefing:</span> <span style="color:' + modeColor + ';font-weight:700;">' + modeLabel + '</span></div>';
+      bb += '<div class="widget-badge"><span class="wb-label">Briefed Markets:</span> <span style="color:#FFD700;">' + (hb.briefed_markets || 0) + '</span></div>';
+      if (hb.age_minutes !== null) {
+        var ageColor = hb.age_minutes > 120 ? 'var(--error)' : hb.age_minutes > 60 ? 'var(--warning)' : 'var(--text-muted)';
+        bb += '<div class="widget-badge"><span class="wb-label">Briefing Age:</span> <span style="color:' + ageColor + ';">' + Math.round(hb.age_minutes) + 'm</span></div>';
+      }
+      if (s.tavily_ran !== undefined) {
+        var tavColor = s.tavily_ran ? '#00ff88' : 'var(--text-muted)';
+        bb += '<div class="widget-badge"><span class="wb-label">Tavily:</span> <span style="color:' + tavColor + ';">' + (s.tavily_ran ? 'RAN' : 'SKIPPED') + '</span></div>';
+      }
+      briefBadges.innerHTML = bb;
+    }
   } catch(e) { console.error('viper status:', e); }
 
   // Intelligence feed
