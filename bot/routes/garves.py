@@ -137,6 +137,35 @@ def api_trades():
     def fmt_trade(t):
         ts = t.get("timestamp", 0)
         dt = datetime.fromtimestamp(ts, tz=ET)
+        end_ts = t.get("market_end_time", 0)
+        time_left = ""
+        time_left_sec = 0
+        if end_ts:
+            remaining = end_ts - now
+            time_left_sec = remaining
+            if remaining > 0:
+                mins = int(remaining // 60)
+                secs = int(remaining % 60)
+                if mins >= 60:
+                    hrs = mins // 60
+                    mins = mins % 60
+                    time_left = f"{hrs}h {mins}m"
+                else:
+                    time_left = f"{mins}m {secs}s"
+            else:
+                time_left = "Expired"
+        implied = t.get("implied_up_price", 0.5)
+        direction = t.get("direction", "up")
+        entry_price = implied if direction == "up" else (1 - implied)
+        if t.get("resolved"):
+            if t.get("outcome") == "unknown":
+                est_pnl = 0.0
+            elif t.get("won"):
+                est_pnl = stake * (1 - entry_price) - stake * 0.02
+            else:
+                est_pnl = -stake * entry_price
+        else:
+            est_pnl = stake * (1 - entry_price) - stake * 0.02
         return {
             "trade_id": t.get("trade_id", ""),
             "time": dt.strftime("%I:%M:%S %p"),
@@ -153,8 +182,11 @@ def api_trades():
             "won": t.get("won", False),
             "question": t.get("question", ""),
             "expires": datetime.fromtimestamp(
-                t.get("market_end_time", 0), tz=ET
-            ).strftime("%I:%M %p") if t.get("market_end_time") else "",
+                end_ts, tz=ET
+            ).strftime("%I:%M %p") if end_ts else "",
+            "time_left": time_left,
+            "time_left_sec": time_left_sec,
+            "est_pnl": round(est_pnl, 2),
         }
 
     recent_resolved = sorted(resolved, key=lambda t: t.get("resolve_time", 0), reverse=True)[:20]
@@ -232,6 +264,35 @@ def _build_trades_response(trades):
     def fmt_trade(t):
         ts = t.get("timestamp", 0)
         dt = datetime.fromtimestamp(ts, tz=ET)
+        end_ts = t.get("market_end_time", 0)
+        time_left = ""
+        time_left_sec = 0
+        if end_ts:
+            remaining = end_ts - now
+            time_left_sec = remaining
+            if remaining > 0:
+                mins = int(remaining // 60)
+                secs = int(remaining % 60)
+                if mins >= 60:
+                    hrs = mins // 60
+                    mins = mins % 60
+                    time_left = f"{hrs}h {mins}m"
+                else:
+                    time_left = f"{mins}m {secs}s"
+            else:
+                time_left = "Expired"
+        implied = t.get("implied_up_price", 0.5)
+        direction = t.get("direction", "up")
+        entry_price = implied if direction == "up" else (1 - implied)
+        if t.get("resolved"):
+            if t.get("outcome") == "unknown":
+                est_pnl = 0.0
+            elif t.get("won"):
+                est_pnl = stake * (1 - entry_price) - stake * 0.02
+            else:
+                est_pnl = -stake * entry_price
+        else:
+            est_pnl = stake * (1 - entry_price) - stake * 0.02
         return {
             "trade_id": t.get("trade_id", ""),
             "time": dt.strftime("%I:%M:%S %p"),
@@ -248,8 +309,11 @@ def _build_trades_response(trades):
             "won": t.get("won", False),
             "question": t.get("question", ""),
             "expires": datetime.fromtimestamp(
-                t.get("market_end_time", 0), tz=ET
-            ).strftime("%I:%M %p") if t.get("market_end_time") else "",
+                end_ts, tz=ET
+            ).strftime("%I:%M %p") if end_ts else "",
+            "time_left": time_left,
+            "time_left_sec": time_left_sec,
+            "est_pnl": round(est_pnl, 2),
         }
 
     recent_resolved = sorted(resolved, key=lambda t: t.get("resolve_time", 0), reverse=True)[:20]
@@ -526,3 +590,112 @@ def api_garves_news_sentiment():
         return jsonify({"assets": {}, "scanned_at": None, "message": "No sentiment data yet"})
     except Exception as e:
         return jsonify({"error": str(e)[:200]})
+
+
+BALANCE_CACHE_FILE = DATA_DIR / "polymarket_balance.json"
+BALANCE_CACHE_TTL = 60  # seconds
+POLYMARKET_WALLET = os.getenv("FUNDER_ADDRESS", "0x7CA4C1122aED3a226fEE08C38F329Ddf2Fb7817E")
+USDC_E_CONTRACT = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"
+POLYGON_RPC = "https://polygon-rpc.com"
+
+
+def _fetch_usdc_balance(wallet: str) -> float:
+    """Query on-chain USDC.e balance via Polygon RPC."""
+    import urllib.request
+    padded = "000000000000000000000000" + wallet[2:].lower()
+    payload = json.dumps({
+        "jsonrpc": "2.0", "method": "eth_call",
+        "params": [{"to": USDC_E_CONTRACT, "data": "0x70a08231" + padded}, "latest"],
+        "id": 1,
+    })
+    req = urllib.request.Request(POLYGON_RPC, data=payload.encode(),
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        data = json.loads(resp.read().decode())
+    return int(data.get("result", "0x0"), 16) / 1e6
+
+
+def _fetch_position_value(wallet: str) -> float:
+    """Get open position value from Polymarket data API."""
+    import urllib.request
+    url = f"https://data-api.polymarket.com/value?user={wallet.lower()}"
+    req = urllib.request.Request(url, headers={"User-Agent": "Garves/1.0"})
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        data = json.loads(resp.read().decode())
+    if isinstance(data, list) and data:
+        return float(data[0].get("value", 0))
+    return 0.0
+
+
+@garves_bp.route("/api/garves/balance")
+def api_garves_balance():
+    """Live Polymarket portfolio balance — on-chain USDC + position value."""
+    # Check cache first
+    if BALANCE_CACHE_FILE.exists():
+        try:
+            cached = json.loads(BALANCE_CACHE_FILE.read_text())
+            if time.time() - cached.get("fetched_at", 0) < BALANCE_CACHE_TTL:
+                return jsonify(cached)
+        except Exception:
+            pass
+
+    bankroll = 250.0
+    result = {"portfolio": 0.0, "cash": 0.0, "positions_value": 0.0,
+              "pnl": 0.0, "bankroll": bankroll, "live": False, "error": None}
+
+    wallet = POLYMARKET_WALLET
+    errors = []
+
+    # 1. On-chain USDC.e balance (cash)
+    try:
+        cash = _fetch_usdc_balance(wallet)
+        result["cash"] = round(cash, 2)
+        result["live"] = True
+    except Exception as e:
+        errors.append(f"USDC: {str(e)[:80]}")
+
+    # 2. Open position value from data API
+    try:
+        pos_val = _fetch_position_value(wallet)
+        result["positions_value"] = round(pos_val, 2)
+        result["live"] = True
+    except Exception as e:
+        errors.append(f"Positions: {str(e)[:80]}")
+
+    # 3. Compute portfolio and PnL
+    if result["live"]:
+        result["portfolio"] = round(result["cash"] + result["positions_value"], 2)
+        result["pnl"] = round(result["portfolio"] - bankroll, 2)
+    else:
+        # Fallback: estimate from trade records
+        trades = _load_trades()
+        live_trades = [t for t in trades if not t.get("dry_run", True)]
+        stake = float(os.getenv("ORDER_SIZE_USD", "5.0"))
+        pnl, in_play = 0.0, 0.0
+        for t in live_trades:
+            implied = t.get("implied_up_price", 0.5)
+            d = t.get("direction", "up")
+            ep = implied if d == "up" else (1 - implied)
+            if t.get("resolved"):
+                if t.get("outcome") == "unknown":
+                    continue
+                if t.get("won"):
+                    pnl += stake * (1 - ep) - stake * 0.02
+                else:
+                    pnl -= stake * ep
+            else:
+                in_play += stake
+        result["portfolio"] = round(bankroll + pnl, 2)
+        result["cash"] = round(bankroll + pnl - in_play, 2)
+        result["pnl"] = round(pnl, 2)
+
+    if errors:
+        result["error"] = "; ".join(errors)
+
+    result["fetched_at"] = time.time()
+    try:
+        BALANCE_CACHE_FILE.write_text(json.dumps(result, indent=2))
+    except Exception:
+        pass
+
+    return jsonify(result)

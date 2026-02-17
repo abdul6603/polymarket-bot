@@ -191,6 +191,10 @@ function renderLiveBalance(data) {
   var pnl = data.pnl || 0;
   pnlEl.textContent = (pnl >= 0 ? '+$' : '-$') + Math.abs(pnl).toFixed(2);
   pnlEl.style.color = pnl >= 0 ? 'var(--success)' : 'var(--error)';
+  // Show live indicator if data is from chain
+  if (data.live) {
+    portEl.parentElement.querySelector('.stat-label').innerHTML = 'Portfolio <span style="color:var(--success);font-size:0.6rem;">LIVE</span>';
+  }
 }
 
 function renderLivePendingTrades(trades) {
