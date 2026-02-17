@@ -2,31 +2,133 @@
 <div class="tab-content" id="tab-shelby">
   <div id="intel-shelby" class="intel-meter" style="margin-bottom:12px;"></div>
   <div class="agent-widget-row" id="shelby-widgets">
-    <button class="btn" onclick="healthCheckAgent(&apos;shelby&apos;)" style="font-size:0.72rem;">Health Check</button>
-  </div>
-  <div class="health-inline" id="shelby-health-result"></div>
-  <div class="grid-4">
-    <div class="stat-card" data-accent="shelby"><div class="stat-value" id="shelby-tasks-active">--</div><div class="stat-label">Tasks In Progress</div></div>
-    <div class="stat-card" data-accent="success"><div class="stat-value" id="shelby-tasks-done-today">--</div><div class="stat-label">Completed Today</div></div>
-    <div class="stat-card" data-accent="atlas"><div class="stat-value" id="shelby-next-routine">--</div><div class="stat-label">Next Routine</div></div>
-    <div class="stat-card" data-accent="warning"><div class="stat-value" id="shelby-pending-alerts">--</div><div class="stat-label">Pending Alerts</div></div>
-  </div>
-  <div style="display:flex;align-items:center;gap:8px;margin:8px 0 12px;flex-wrap:wrap;">
-    <div class="telegram-status" style="background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.15);">
-      <span class="telegram-dot" id="telegram-dot" style="background:var(--success);"></span>
-      <span id="telegram-status-text" style="color:var(--success);">TG Bot V2 (PTB Async)</span>
-    </div>
-    <button class="btn btn-primary" onclick="exportAgentReport()" style="font-size:0.74rem;">Download Report</button>
+    <button class="btn" onclick="healthCheckAgent('shelby')" style="font-size:0.72rem;">Health Check</button>
+    <button class="btn btn-primary" onclick="reprioritizeTasks()" style="font-size:0.72rem;">Recalculate Priorities</button>
+    <button class="btn" onclick="exportAgentReport()" style="font-size:0.74rem;">Download Report</button>
     <button class="agent-chat-trigger" onclick="openAgentChat('shelby')">&#x1F4AC; Chat with Shelby</button>
   </div>
-  <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-shelby);">
-    <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Agent Activity</h3>
-    <div id="shelby-activity-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:150px;overflow-y:auto;"><span class="text-muted">Waiting for activity...</span></div>
+  <div class="health-inline" id="shelby-health-result"></div>
+
+  <!-- Stat Cards -->
+  <div class="grid-4">
+    <div class="stat-card" data-accent="danger"><div class="stat-value" id="shelby-high-priority">--</div><div class="stat-label">High Priority</div></div>
+    <div class="stat-card" data-accent="shelby"><div class="stat-value" id="shelby-tasks-pending">--</div><div class="stat-label">Pending</div></div>
+    <div class="stat-card" data-accent="success"><div class="stat-value" id="shelby-tasks-done-today">--</div><div class="stat-label">Completed Today</div></div>
+    <div class="stat-card" data-accent="atlas"><div class="stat-value" id="shelby-next-due">--</div><div class="stat-label">Next Due</div></div>
   </div>
+
+  <!-- Quick Add Form -->
+  <div class="glass-card" style="margin:12px 0;border-left:3px solid var(--agent-shelby);padding:12px 16px;">
+    <h3 style="font-size:0.76rem;margin:0 0 8px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Quick Add Task</h3>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end;">
+      <input type="text" class="input" id="shelby-add-title" placeholder="Task title..." style="flex:2;min-width:200px;font-size:0.78rem;padding:6px 10px;">
+      <select class="input" id="shelby-add-agent" style="flex:0.8;font-size:0.76rem;padding:6px 8px;">
+        <option value="">Agent</option>
+        <option value="garves">Garves</option>
+        <option value="soren">Soren</option>
+        <option value="lisa">Lisa</option>
+        <option value="atlas">Atlas</option>
+        <option value="robotox">Robotox</option>
+        <option value="thor">Thor</option>
+        <option value="shelby">Shelby</option>
+        <option value="hawk">Hawk</option>
+        <option value="viper">Viper</option>
+        <option value="jordan">Jordan</option>
+      </select>
+      <select class="input" id="shelby-add-category" style="flex:0.8;font-size:0.76rem;padding:6px 8px;">
+        <option value="">Category</option>
+        <option value="infrastructure">Infrastructure</option>
+        <option value="integration">Integration</option>
+        <option value="content">Content</option>
+        <option value="trading">Trading</option>
+        <option value="research">Research</option>
+        <option value="ops">Ops</option>
+      </select>
+      <div style="display:flex;gap:2px;align-items:center;">
+        <span style="font-size:0.68rem;color:var(--text-muted);margin-right:2px;">Diff:</span>
+        <button class="btn shelby-diff-btn active" data-val="1" onclick="setShelbyDiff(1,this)" style="padding:3px 8px;font-size:0.72rem;">1</button>
+        <button class="btn shelby-diff-btn" data-val="2" onclick="setShelbyDiff(2,this)" style="padding:3px 8px;font-size:0.72rem;">2</button>
+        <button class="btn shelby-diff-btn" data-val="3" onclick="setShelbyDiff(3,this)" style="padding:3px 8px;font-size:0.72rem;">3</button>
+      </div>
+      <div style="display:flex;gap:2px;align-items:center;">
+        <span style="font-size:0.68rem;color:var(--text-muted);margin-right:2px;">Benefit:</span>
+        <button class="btn shelby-ben-btn" data-val="1" onclick="setShelbyBen(1,this)" style="padding:3px 8px;font-size:0.72rem;">1</button>
+        <button class="btn shelby-ben-btn" data-val="2" onclick="setShelbyBen(2,this)" style="padding:3px 8px;font-size:0.72rem;">2</button>
+        <button class="btn shelby-ben-btn active" data-val="3" onclick="setShelbyBen(3,this)" style="padding:3px 8px;font-size:0.72rem;">3</button>
+      </div>
+      <input type="date" class="input" id="shelby-add-due" style="flex:0.7;font-size:0.76rem;padding:6px 8px;">
+      <button class="btn btn-success" onclick="addShelbyTask()" style="padding:6px 16px;font-size:0.76rem;">Add Task</button>
+    </div>
+    <input type="hidden" id="shelby-add-diff" value="1">
+    <input type="hidden" id="shelby-add-ben" value="3">
+  </div>
+
+  <!-- Filter Bar -->
+  <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:8px 0 12px;">
+    <select class="input" id="shelby-filter-agent" onchange="filterShelbyTasks()" style="font-size:0.74rem;padding:5px 8px;">
+      <option value="">All Agents</option>
+      <option value="garves">Garves</option>
+      <option value="soren">Soren</option>
+      <option value="lisa">Lisa</option>
+      <option value="atlas">Atlas</option>
+      <option value="robotox">Robotox</option>
+      <option value="thor">Thor</option>
+      <option value="shelby">Shelby</option>
+      <option value="hawk">Hawk</option>
+      <option value="viper">Viper</option>
+      <option value="jordan">Jordan</option>
+    </select>
+    <select class="input" id="shelby-filter-category" onchange="filterShelbyTasks()" style="font-size:0.74rem;padding:5px 8px;">
+      <option value="">All Categories</option>
+      <option value="infrastructure">Infrastructure</option>
+      <option value="integration">Integration</option>
+      <option value="content">Content</option>
+      <option value="trading">Trading</option>
+      <option value="research">Research</option>
+      <option value="ops">Ops</option>
+    </select>
+    <select class="input" id="shelby-filter-status" onchange="filterShelbyTasks()" style="font-size:0.74rem;padding:5px 8px;">
+      <option value="">All Status</option>
+      <option value="pending">Pending</option>
+      <option value="in_progress">In Progress</option>
+      <option value="done">Done</option>
+    </select>
+    <select class="input" id="shelby-filter-sort" onchange="filterShelbyTasks()" style="font-size:0.74rem;padding:5px 8px;">
+      <option value="priority">Sort: Priority</option>
+      <option value="due">Sort: Due Date</option>
+      <option value="difficulty">Sort: Difficulty</option>
+      <option value="created">Sort: Created</option>
+    </select>
+    <span id="shelby-task-count" style="font-size:0.72rem;color:var(--text-muted);margin-left:auto;"></span>
+  </div>
+
+  <!-- Prioritized Task Table -->
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="shelby">Agent Tasks &amp; Progress</h2>
-    <div class="flex flex-col gap-3" id="shelby-agent-tasks"><div class="text-muted" style="padding:var(--space-4);">Loading tasks...</div></div>
+    <h2 class="section-title" data-accent="shelby">Prioritized Tasks</h2>
+    <div class="glass-card" style="overflow-x:auto;">
+      <table class="task-table" id="shelby-task-table" style="width:100%;border-collapse:collapse;font-size:0.76rem;">
+        <thead>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.08);text-align:left;">
+            <th style="padding:8px 6px;color:var(--text-muted);font-weight:600;font-size:0.7rem;">#</th>
+            <th style="padding:8px 6px;color:var(--text-muted);font-weight:600;font-size:0.7rem;">PRI</th>
+            <th style="padding:8px 6px;color:var(--text-muted);font-weight:600;font-size:0.7rem;">Task</th>
+            <th style="padding:8px 6px;color:var(--text-muted);font-weight:600;font-size:0.7rem;">Agent</th>
+            <th style="padding:8px 6px;color:var(--text-muted);font-weight:600;font-size:0.7rem;">Category</th>
+            <th style="padding:8px 6px;color:var(--text-muted);font-weight:600;font-size:0.7rem;">Diff</th>
+            <th style="padding:8px 6px;color:var(--text-muted);font-weight:600;font-size:0.7rem;">Benefit</th>
+            <th style="padding:8px 6px;color:var(--text-muted);font-weight:600;font-size:0.7rem;">Due</th>
+            <th style="padding:8px 6px;color:var(--text-muted);font-weight:600;font-size:0.7rem;">Status</th>
+            <th style="padding:8px 6px;color:var(--text-muted);font-weight:600;font-size:0.7rem;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="shelby-task-tbody">
+          <tr><td colspan="10" class="text-muted" style="padding:16px;text-align:center;">Loading tasks...</td></tr>
+        </tbody>
+      </table>
+    </div>
   </div>
+
+  <!-- Schedule + Assessments + Economics (unchanged sections) -->
   <div class="section-spacer">
     <h2 class="section-title" data-accent="shelby">Daily Schedule</h2>
     <div class="flex flex-col gap-2" id="shelby-schedule"><div class="text-muted" style="padding:var(--space-4);">Loading schedule...</div></div>
@@ -39,10 +141,10 @@
     <div class="flex items-center justify-between mb-4">
       <h2 class="section-title" data-accent="shelby">Agent Economics</h2>
       <div class="btn-group">
-        <button class="btn" onclick="setEconPeriod(&apos;today&apos;)">Today</button>
-        <button class="btn" onclick="setEconPeriod(&apos;week&apos;)">Week</button>
-        <button class="btn btn-primary" onclick="setEconPeriod(&apos;month&apos;)">Month</button>
-        <button class="btn" onclick="setEconPeriod(&apos;all_time&apos;)">All</button>
+        <button class="btn" onclick="setEconPeriod('today')">Today</button>
+        <button class="btn" onclick="setEconPeriod('week')">Week</button>
+        <button class="btn btn-primary" onclick="setEconPeriod('month')">Month</button>
+        <button class="btn" onclick="setEconPeriod('all_time')">All</button>
       </div>
     </div>
     <div class="glass-card" id="shelby-economics"><div class="text-muted" style="text-align:center;padding:var(--space-6);">Loading economics...</div></div>

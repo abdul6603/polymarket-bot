@@ -568,62 +568,179 @@ function closeModal() {
   modal.classList.remove('active');
 }
 
+// ── Shelby Task V2: state ──
+var _shelbyAllTasks = [];
+
 function renderShelby(data) {
   var tasks = data.tasks || [];
-  var tasksActive = 0;
-  var tasksDoneToday = 0;
+  _shelbyAllTasks = tasks;
   var todayStr = new Date().toISOString().substring(0, 10);
-  var agentNames = ['garves','soren','atlas','mercury','sentinel'];
+
+  // Stat cards
+  var highPri = 0, pending = 0, doneToday = 0;
+  var nextDue = null;
   for (var i = 0; i < tasks.length; i++) {
-    var st = tasks[i].status || '';
-    if (st === 'in_progress') tasksActive++;
-    if ((st === 'done' || st === 'completed') && (tasks[i].completed_at || tasks[i].updated_at || '').substring(0, 10) === todayStr) tasksDoneToday++;
+    var t = tasks[i];
+    var st = t.status || '';
+    if (st !== 'done' && (t.priority || 0) > 70) highPri++;
+    if (st === 'pending') pending++;
+    if (st === 'done' && (t.completed || '').substring(0, 10) === todayStr) doneToday++;
+    if (st !== 'done' && t.due && (!nextDue || t.due < nextDue)) nextDue = t.due;
   }
-  document.getElementById('shelby-tasks-active').textContent = tasksActive;
-  document.getElementById('shelby-tasks-done-today').textContent = tasksDoneToday;
-  // Pending alerts = tasks_pending from API
-  document.getElementById('shelby-pending-alerts').textContent = data.tasks_pending || 0;
-  // Render agent task cards
-  var el = document.getElementById('shelby-agent-tasks');
+  var hpEl = document.getElementById('shelby-high-priority');
+  if (hpEl) hpEl.textContent = highPri;
+  var pEl = document.getElementById('shelby-tasks-pending');
+  if (pEl) pEl.textContent = pending;
+  var dtEl = document.getElementById('shelby-tasks-done-today');
+  if (dtEl) dtEl.textContent = doneToday;
+  var ndEl = document.getElementById('shelby-next-due');
+  if (ndEl) ndEl.textContent = nextDue ? nextDue.substring(5) : 'None';
+
+  filterShelbyTasks();
+}
+
+function filterShelbyTasks() {
+  var tasks = _shelbyAllTasks.slice();
+  var fAgent = document.getElementById('shelby-filter-agent');
+  var fCat = document.getElementById('shelby-filter-category');
+  var fStatus = document.getElementById('shelby-filter-status');
+  var fSort = document.getElementById('shelby-filter-sort');
+  var agentVal = fAgent ? fAgent.value : '';
+  var catVal = fCat ? fCat.value : '';
+  var statusVal = fStatus ? fStatus.value : '';
+  var sortVal = fSort ? fSort.value : 'priority';
+
+  if (agentVal) tasks = tasks.filter(function(t) { return (t.agent || '') === agentVal; });
+  if (catVal) tasks = tasks.filter(function(t) { return (t.category || '') === catVal; });
+  if (statusVal) tasks = tasks.filter(function(t) { return (t.status || '') === statusVal; });
+
+  if (sortVal === 'priority') tasks.sort(function(a, b) { return (b.priority || 0) - (a.priority || 0); });
+  else if (sortVal === 'due') tasks.sort(function(a, b) { return (a.due || 'zzzz').localeCompare(b.due || 'zzzz'); });
+  else if (sortVal === 'difficulty') tasks.sort(function(a, b) { return (a.difficulty || 2) - (b.difficulty || 2); });
+  else if (sortVal === 'created') tasks.sort(function(a, b) { return (b.created || '').localeCompare(a.created || ''); });
+
+  renderShelbyTaskTable(tasks);
+  var cEl = document.getElementById('shelby-task-count');
+  if (cEl) cEl.textContent = tasks.length + ' tasks shown';
+}
+
+function renderShelbyTaskTable(tasks) {
+  var tbody = document.getElementById('shelby-task-tbody');
+  if (!tbody) return;
+  if (tasks.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="10" class="text-muted" style="padding:16px;text-align:center;">No tasks match filters.</td></tr>';
+    return;
+  }
   var html = '';
-  for (var a = 0; a < agentNames.length; a++) {
-    var name = agentNames[a];
-    var agentTasks = [];
-    for (var i = 0; i < tasks.length; i++) {
-      var assignee = (tasks[i].agent || tasks[i].assigned_to || '').toLowerCase();
-      if (assignee === name) agentTasks.push(tasks[i]);
-    }
-    var done = 0; var total = agentTasks.length;
-    for (var i = 0; i < agentTasks.length; i++) {
-      if (agentTasks[i].status === 'done' || agentTasks[i].status === 'completed') done++;
-    }
-    var pct = total > 0 ? Math.round(done / total * 100) : 0;
-    var color = AGENT_COLORS[name] || 'var(--text)';
-    html += '<div class="glass-card" style="padding:var(--space-4) var(--space-5);margin-bottom:var(--space-2);">';
-    html += '<div class="flex items-center justify-between mb-4">';
-    var displayName = name === 'mercury' ? 'Lisa' : name === 'sentinel' ? 'Robotox' : name.charAt(0).toUpperCase() + name.slice(1);
-    html += '<span style="font-family:var(--font-mono);font-size:0.82rem;font-weight:600;color:' + color + ';">' + displayName + '</span>';
-    html += '<span class="badge badge-neutral">' + done + '/' + total + ' done</span></div>';
-    html += '<div class="progress-bar"><div class="progress-fill" style="width:' + pct + '%;background:' + color + ';"></div></div>';
-    if (agentTasks.length > 0) {
-      html += '<div style="margin-top:var(--space-3);">';
-      for (var i = 0; i < agentTasks.length && i < 3; i++) {
-        var t = agentTasks[i];
-        var st = t.status || 'pending';
-        var dotCls = st === 'done' || st === 'completed' ? 'online' : st === 'in_progress' ? 'idle' : 'offline';
-        html += '<div class="task-item" style="margin-bottom:2px;"><span class="status-dot ' + dotCls + '"></span>';
-        html += '<span class="task-item-text">' + esc(t.title || t.description || 'Task') + '</span></div>';
-      }
-      html += '</div>';
-    }
-    html += '<div class="inline-task-input" id="task-input-' + name + '">';
-    html += '<input type="text" class="input" id="task-text-' + name + '" placeholder="New task..." style="flex:1;" />';
-    html += '<button class="btn btn-success" onclick="submitAgentTask(&apos;' + name + '&apos;)">Add</button>';
-    html += '</div>';
-    html += '<button class="btn" style="margin-top:var(--space-2);font-size:0.7rem;" onclick="toggleTaskInput(&apos;' + name + '&apos;)">+ Add Task</button>';
-    html += '</div>';
+  var catColors = {infrastructure:'#00d4ff',integration:'#a78bfa',content:'#f59e0b',trading:'#10b981',research:'#6366f1',ops:'#94a3b8'};
+  var diffLabels = {1:'Easy',2:'Med',3:'Hard'};
+  var diffColors = {1:'#10b981',2:'#f59e0b',3:'#ef4444'};
+  var benLabels = {1:'Low',2:'Med',3:'High'};
+  var benColors = {1:'#94a3b8',2:'#f59e0b',3:'#10b981'};
+  var statusNext = {pending:'in_progress',in_progress:'done',done:'pending'};
+
+  for (var i = 0; i < tasks.length; i++) {
+    var t = tasks[i];
+    var pri = t.priority || 0;
+    var priColor = pri > 80 ? '#ef4444' : pri > 50 ? '#f59e0b' : '#94a3b8';
+    var diff = t.difficulty || 2;
+    var ben = t.benefit || 2;
+    var cat = t.category || 'ops';
+    var agent = t.agent || '';
+    var agentDisplay = agent ? (AGENT_NAMES[agent] || agent.charAt(0).toUpperCase() + agent.slice(1)) : '-';
+    var agentColor = agent ? (AGENT_COLORS[agent] || 'var(--text)') : 'var(--text-muted)';
+    var st = t.status || 'pending';
+    var stLabel = st === 'in_progress' ? 'In Prog' : st.charAt(0).toUpperCase() + st.slice(1);
+    var stColor = st === 'done' ? '#10b981' : st === 'in_progress' ? '#f59e0b' : '#94a3b8';
+    var dueStr = t.due ? t.due.substring(0, 10) : '-';
+    var rowOpacity = st === 'done' ? 'opacity:0.5;' : '';
+
+    html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);' + rowOpacity + '">';
+    html += '<td style="padding:6px;">' + t.id + '</td>';
+    html += '<td style="padding:6px;"><span style="background:' + priColor + ';color:#000;padding:2px 6px;border-radius:4px;font-weight:700;font-size:0.72rem;">' + pri + '</span></td>';
+    html += '<td style="padding:6px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(t.title || '') + '">' + esc(t.title || '') + '</td>';
+    html += '<td style="padding:6px;"><span style="color:' + agentColor + ';font-weight:600;">' + esc(agentDisplay) + '</span></td>';
+    html += '<td style="padding:6px;"><span style="background:' + (catColors[cat] || '#94a3b8') + '22;color:' + (catColors[cat] || '#94a3b8') + ';padding:1px 6px;border-radius:3px;font-size:0.7rem;">' + esc(cat) + '</span></td>';
+    html += '<td style="padding:6px;"><span style="color:' + diffColors[diff] + ';font-weight:600;">' + diffLabels[diff] + '</span></td>';
+    html += '<td style="padding:6px;"><span style="color:' + benColors[ben] + ';font-weight:600;">' + benLabels[ben] + '</span></td>';
+    html += '<td style="padding:6px;font-size:0.72rem;">' + esc(dueStr) + '</td>';
+    html += '<td style="padding:6px;"><span style="cursor:pointer;background:' + stColor + '22;color:' + stColor + ';padding:2px 8px;border-radius:3px;font-size:0.7rem;font-weight:600;" onclick="updateShelbyTaskStatus(' + t.id + ',\'' + (statusNext[st] || 'pending') + '\')">' + stLabel + '</span></td>';
+    html += '<td style="padding:6px;white-space:nowrap;">';
+    html += '<button class="btn" style="padding:2px 6px;font-size:0.68rem;margin-right:3px;" onclick="deleteShelbyTask(' + t.id + ')">Del</button>';
+    html += '</td>';
+    html += '</tr>';
   }
-  el.innerHTML = html;
+  tbody.innerHTML = html;
+}
+
+// ── Shelby Task V2: CRUD ──
+
+function setShelbyDiff(val, btn) {
+  document.getElementById('shelby-add-diff').value = val;
+  document.querySelectorAll('.shelby-diff-btn').forEach(function(b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+}
+
+function setShelbyBen(val, btn) {
+  document.getElementById('shelby-add-ben').value = val;
+  document.querySelectorAll('.shelby-ben-btn').forEach(function(b) { b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+}
+
+async function addShelbyTask() {
+  var title = document.getElementById('shelby-add-title').value.trim();
+  if (!title) return;
+  var body = {
+    title: title,
+    agent: document.getElementById('shelby-add-agent').value || undefined,
+    category: document.getElementById('shelby-add-category').value || undefined,
+    difficulty: parseInt(document.getElementById('shelby-add-diff').value) || 2,
+    benefit: parseInt(document.getElementById('shelby-add-ben').value) || 2,
+    due: document.getElementById('shelby-add-due').value || undefined
+  };
+  try {
+    var resp = await fetch('/api/shelby/tasks', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    var data = await resp.json();
+    if (data.success) {
+      document.getElementById('shelby-add-title').value = '';
+      document.getElementById('shelby-add-due').value = '';
+      var sr = await fetch('/api/shelby');
+      renderShelby(await sr.json());
+    } else {
+      alert('Error: ' + (data.error || 'Unknown'));
+    }
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+async function updateShelbyTaskStatus(id, newStatus) {
+  try {
+    var resp = await fetch('/api/shelby/tasks/' + id, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status: newStatus})});
+    var data = await resp.json();
+    if (data.success) {
+      var sr = await fetch('/api/shelby');
+      renderShelby(await sr.json());
+    }
+  } catch (e) { console.error(e); }
+}
+
+async function deleteShelbyTask(id) {
+  if (!confirm('Delete task #' + id + '?')) return;
+  try {
+    var resp = await fetch('/api/shelby/tasks/' + id, {method:'DELETE'});
+    var data = await resp.json();
+    if (data.success) {
+      var sr = await fetch('/api/shelby');
+      renderShelby(await sr.json());
+    }
+  } catch (e) { console.error(e); }
+}
+
+async function reprioritizeTasks() {
+  try {
+    await fetch('/api/shelby/tasks/prioritize', {method:'POST'});
+    var sr = await fetch('/api/shelby');
+    renderShelby(await sr.json());
+  } catch (e) { console.error(e); }
 }
 
 async function loadSchedule() {
@@ -2516,16 +2633,21 @@ async function submitAgentTask(agent) {
   var text = input ? input.value.trim() : '';
   if (!text) return;
   try {
-    var resp = await fetch('/api/shelby', {method:'GET'});
+    var resp = await fetch('/api/shelby/tasks', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({title: text, agent: agent})
+    });
     var data = await resp.json();
-    var tasks = data.tasks || [];
-    tasks.push({title: text, agent: agent, status: 'pending', created: new Date().toISOString()});
-    // We cannot POST to /api/shelby to add tasks unless there is an endpoint,
-    // so write directly by informing the user
-    input.value = '';
-    var el = document.getElementById('task-input-' + agent);
-    if (el) el.classList.remove('visible');
-    alert('Task "' + text + '" queued for ' + (AGENT_NAMES[agent] || agent.charAt(0).toUpperCase() + agent.slice(1)) + '. (Save to tasks.json manually or via Shelby.)');
+    if (data.success) {
+      input.value = '';
+      var el = document.getElementById('task-input-' + agent);
+      if (el) el.classList.remove('visible');
+      var sr = await fetch('/api/shelby');
+      renderShelby(await sr.json());
+    } else {
+      alert('Error: ' + (data.error || 'Unknown'));
+    }
   } catch (e) { alert('Error: ' + e.message); }
 }
 
