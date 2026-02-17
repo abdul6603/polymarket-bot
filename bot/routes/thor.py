@@ -179,6 +179,20 @@ def api_thor_costs():
         return jsonify({"error": str(e)[:200]})
 
 
+@thor_bp.route("/api/thor/progress")
+def api_thor_progress():
+    """Thor's task progress tracker — active tasks + stats."""
+    try:
+        from thor.core.progress import ProgressTracker
+        pt = ProgressTracker(THOR_DATA)
+        return jsonify({
+            "active": pt.get_all_active(),
+            "stats": pt.get_stats(),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
 @thor_bp.route("/api/thor/reflexion")
 def api_thor_reflexion():
     """Thor's reflexion stats — self-debugging memory."""

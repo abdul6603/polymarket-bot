@@ -316,7 +316,15 @@
   .agent-card:hover[data-agent="mercury"] { border-color:rgba(255,136,0,0.2); }
   .agent-card:hover[data-agent="nexus"] { border-color:rgba(0,204,255,0.2); }
   .agent-card:hover[data-agent="sentinel"] { border-color:rgba(0,255,68,0.2); }
+  .agent-card[data-agent="hawk"]::before { background:var(--agent-hawk); }
+  .agent-card[data-agent="viper"]::before { background:var(--agent-viper); }
+  .agent-card:hover[data-agent="hawk"] { border-color:rgba(255,215,0,0.2); }
+  .agent-card:hover[data-agent="viper"] { border-color:rgba(0,255,136,0.2); }
+  .agent-card[data-agent="hawk"] .agent-card-name { color:var(--agent-hawk); }
+  .agent-card[data-agent="viper"] .agent-card-name { color:var(--agent-viper); }
   .agent-card-header { display:flex; align-items:center; justify-content:space-between; gap:6px; }
+  .agent-card-avatar { width:30px; height:30px; border-radius:50%; flex-shrink:0; object-fit:cover; border:2px solid rgba(255,255,255,0.1); }
+  .agent-card-initial { width:30px; height:30px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:0.62rem; font-weight:700; letter-spacing:0.04em; border:2px solid rgba(255,255,255,0.1); }
   .agent-card-name { font-family:var(--font-mono); font-size:0.88rem; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; }
   .brain-badge { display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:rgba(255,170,0,0.2); color:#ffaa00; font-size:0.65rem; font-weight:700; font-family:var(--font-mono); }
   .agent-card[data-agent="garves"] .agent-card-name { color:var(--agent-garves); }

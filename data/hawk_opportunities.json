@@ -1,52 +1,15 @@
 {
   "opportunities": [
     {
-      "question": "Will Anthropic have the best AI model at the end of February 2026?",
-      "category": "culture",
-      "market_price": 0.6625,
-      "estimated_prob": 0.4,
-      "edge": 0.26249999999999996,
-      "direction": "no",
-      "position_size": 24.76415094339622,
-      "expected_value": 6.500589622641507,
-      "reasoning": "Recency bias likely inflates Anthropic's chances; competition from other major AI labs and rapid industry advancements make dominance uncertain.",
-      "condition_id": "0xcbf9e16f0ad8bef39c3860dda598df8c4906f737bbed4dc1c65f7e0c07675ab3"
-    },
-    {
-      "question": "Will the next Prime Minister of Hungary be Viktor Orb\u00e1n?",
-      "category": "other",
-      "market_price": 0.395,
-      "estimated_prob": 0.65,
-      "edge": 0.255,
-      "direction": "yes",
-      "position_size": 25.0,
-      "expected_value": 6.375,
-      "reasoning": "The market may be underestimating Orb\u00e1n's strong political influence and control over Hungarian politics, which has historically favored his re-election despite recent challenges.",
-      "condition_id": "0x5ec80dc407457301f282a2b44341947afc700dfaa7923d14c8894e04bc63b03f"
-    },
-    {
       "question": "Will Shai Gilgeous-Alexander win the 2025\u20132026 NBA MVP?",
       "category": "sports",
-      "market_price": 0.595,
+      "market_price": 0.605,
       "estimated_prob": 0.35,
-      "edge": 0.245,
+      "edge": 0.255,
       "direction": "no",
       "position_size": 25.0,
-      "expected_value": 6.125,
-      "reasoning": "The market is likely overestimating due to recency bias from his recent performance, ignoring the base rate of competition and variability in MVP selection.",
-      "condition_id": "0x281565cae359040475640be8bc20f4efe15245fe0251805fd338fb1a3e45ffae"
-    },
-    {
-      "question": "Will the next Prime Minister of Hungary be P\u00e9ter Magyar?",
-      "category": "other",
-      "market_price": 0.575,
-      "estimated_prob": 0.35,
-      "edge": 0.22500000000000003,
-      "direction": "no",
-      "position_size": 24.45652173913044,
-      "expected_value": 5.50271739130435,
-      "reasoning": "The market may be overestimating P\u00e9ter Magyar's chances due to narrative bias and recent media coverage, without sufficient consideration of the political landscape and base rates of incumbency advant",
-      "condition_id": "0x1480b819d03d4b6388d70e848b0384adf38c38d955cb783cdbcf6d4a436dee14"
+      "expected_value": 6.375,
+      "reasoning": "Recency bias likely inflates market price; MVP awards are highly competitive with many contenders each year, and current price overestimates certainty."
     },
     {
       "question": "US strikes Iran by June 30, 2026?",
@@ -57,56 +20,62 @@
       "direction": "no",
       "position_size": 25.0,
       "expected_value": 5.374999999999999,
-      "reasoning": "The market likely overestimates the probability due to recency bias from heightened tensions, while historical base rates for direct US military action against Iran remain low.",
-      "condition_id": "0x797d586ad45522306490b0cc9b2f21bdf957f3843476fae99f3bcc2cec83b74b"
+      "reasoning": "The market likely overestimates the probability due to recency bias from recent geopolitical tensions, but historically, direct military action by the US against Iran is rare."
     },
     {
       "question": "Will J.D. Vance win the 2028 Republican presidential nomination?",
       "category": "politics",
-      "market_price": 0.462,
+      "market_price": 0.4625,
       "estimated_prob": 0.25,
-      "edge": 0.21199999999999997,
+      "edge": 0.21250000000000002,
       "direction": "no",
       "position_size": 25.0,
-      "expected_value": 5.299999999999999,
-      "reasoning": "The market likely overestimates Vance's chances due to recency bias from his recent Senate win, while ignoring the historical difficulty for first-term senators to secure presidential nominations.",
-      "condition_id": "0x18b1c135d0a40c5894da9412e77311827d9caf16cf4cd6591b247a34730af919"
-    },
-    {
-      "question": "MegaETH market cap (FDV) >$1B one day after launch?",
-      "category": "crypto_event",
-      "market_price": 0.54,
-      "estimated_prob": 0.35,
-      "edge": 0.19,
-      "direction": "no",
-      "position_size": 21.99074074074074,
-      "expected_value": 4.1782407407407405,
-      "reasoning": "Recency bias likely inflates expectations due to recent crypto hype, but base rates for new token launches achieving $1B FDV are low.",
-      "condition_id": "0x940f01421649348b09dbf72bfd90788b9513ee56d9a0e7532c45ecda1ecfc6b4"
+      "expected_value": 5.312500000000001,
+      "reasoning": "The market likely overestimates Vance's chances due to recency bias and narrative bias, given his current prominence, but lacks evidence of broad national appeal or established political infrastructur"
     },
     {
       "question": "Will the Oklahoma City Thunder win the 2026 NBA Finals?",
       "category": "sports",
       "market_price": 0.355,
-      "estimated_prob": 0.2,
-      "edge": 0.15500000000000003,
+      "estimated_prob": 0.15,
+      "edge": 0.20499999999999996,
       "direction": "no",
       "position_size": 25.0,
-      "expected_value": 3.875000000000001,
-      "reasoning": "The market likely overestimates based on recent performance improvements, but base rates for any team winning the NBA Finals are low, and future roster changes and competition are uncertain.",
-      "condition_id": "0x22e7b5e35423e76842dd3a5e1a21d13793811080d5e7b2896d0c001bd5e97d54"
+      "expected_value": 5.124999999999999,
+      "reasoning": "The market likely overestimates the Thunder's chances due to recency bias and narrative bias, as their young roster shows potential but lacks the proven track record and experience necessary to win an"
+    },
+    {
+      "question": "Will the next Prime Minister of Hungary be Viktor Orb\u00e1n?",
+      "category": "other",
+      "market_price": 0.395,
+      "estimated_prob": 0.6,
+      "edge": 0.20499999999999996,
+      "direction": "yes",
+      "position_size": 21.177685950413217,
+      "expected_value": 4.341425619834709,
+      "reasoning": "The market may be underestimating Orb\u00e1n's incumbency advantage and political influence in Hungary, likely due to recency bias from any recent political events, but without significant opposition or ch"
+    },
+    {
+      "question": "Will Anthropic have the best AI model at the end of February 2026?",
+      "category": "culture",
+      "market_price": 0.6645,
+      "estimated_prob": 0.45,
+      "edge": 0.21450000000000002,
+      "direction": "no",
+      "position_size": 20.174943566591423,
+      "expected_value": 4.327525395033861,
+      "reasoning": "The market likely overestimates Anthropic's chances due to recency bias and narrative bias, ignoring potential regulatory risks and competition."
     },
     {
       "question": "Will Fl\u00e1vio Bolsonaro win the 2026 Brazilian presidential election?",
       "category": "politics",
-      "market_price": 0.2935,
+      "market_price": 0.2965,
       "estimated_prob": 0.15,
-      "edge": 0.14349999999999996,
+      "edge": 0.14649999999999996,
       "direction": "no",
       "position_size": 25.0,
-      "expected_value": 3.587499999999999,
-      "reasoning": "The market may be overestimating Fl\u00e1vio Bolsonaro's chances due to recency bias from his family's political prominence, but historical base rates for political dynasties succeeding in Brazil suggest a",
-      "condition_id": "0x1a01bf78f56a507fcb666d564d8c8b91b0750679163ed6e96746102c9b7d285d"
+      "expected_value": 3.662499999999999,
+      "reasoning": "The market may be overestimating Fl\u00e1vio Bolsonaro's chances due to recency bias from his family's political prominence, but lacks strong evidence of his individual electability in 2026."
     },
     {
       "question": "Israel strikes Iran by March 31, 2026?",
@@ -117,8 +86,7 @@
       "direction": "no",
       "position_size": 25.0,
       "expected_value": 3.375,
-      "reasoning": "The market may be overestimating the likelihood due to recency bias from current geopolitical tensions, but historically, direct military action of this scale is rare and often avoided through diploma",
-      "condition_id": "0x28f1e9218bcd41ced05faf3c03f026721d87712556bf2828337551f03cae0a01"
+      "reasoning": "The market may be overestimating the likelihood due to narrative bias around geopolitical tensions, but historical base rates for direct military action remain low."
     },
     {
       "question": "Khamenei out as Supreme Leader of Iran by June 30?",
@@ -129,8 +97,7 @@
       "direction": "no",
       "position_size": 25.0,
       "expected_value": 3.125,
-      "reasoning": "The market likely overweights recent health rumors (recency bias) and underestimates the stability of Khamenei's regime, which historically shows resilience to leadership changes.",
-      "condition_id": "0x2e94bb8dd09931d12e6e656fe4fe6ceb3922bc3d6eab864bb6cd24773cf67269"
+      "reasoning": "Despite political tensions and external pressures, there is no substantial evidence or recent developments indicating an imminent change in Iran's leadership, suggesting the market may be overestimati"
     },
     {
       "question": "Will Luiz In\u00e1cio Lula da Silva win the 2026 Brazilian presidential election?",
@@ -141,44 +108,7 @@
       "direction": "no",
       "position_size": 19.18316831683169,
       "expected_value": 2.9733910891089126,
-      "reasoning": "The market likely suffers from recency bias, overestimating Lula's chances based on his recent victory, while underestimating the volatility and unpredictability of political landscapes over a three-y",
-      "condition_id": "0xdf8e2dc5860027decbe6164555c3c1c9645c3bd33e16b9dc57ca87125047d4a8"
-    },
-    {
-      "question": "Will Canada win the Men's Ice Hockey gold medal at the 2026 Winter Olympics?",
-      "category": "sports",
-      "market_price": 0.565,
-      "estimated_prob": 0.42,
-      "edge": 0.14500000000000007,
-      "direction": "no",
-      "position_size": 16.039823008849563,
-      "expected_value": 2.325774336283188,
-      "reasoning": "Recency bias inflates Canada's chances due to past success, but competition from other strong teams like the USA, Russia, and Sweden is significant, and the market may overestimate Canada's current te",
-      "condition_id": "0x06b611865074cab0ee2991b62be17149ea4912e9cbde167639f2ee882ce28428"
-    },
-    {
-      "question": "Will Bitcoin reach $75,000 in February?",
-      "category": "crypto_event",
-      "market_price": 0.365,
-      "estimated_prob": 0.25,
-      "edge": 0.11499999999999999,
-      "direction": "no",
-      "position_size": 19.691780821917803,
-      "expected_value": 2.264554794520547,
-      "reasoning": "Recency bias may be inflating expectations due to recent price surges, but historical volatility and resistance levels suggest a lower probability.",
-      "condition_id": "0xddcfd0baea9146bf38a67b32d9115e65784d881308f1799b531d9f237e271c2f"
-    },
-    {
-      "question": "Opinion FDV above $500M one day after launch?",
-      "category": "other",
-      "market_price": 0.482,
-      "estimated_prob": 0.35,
-      "edge": 0.132,
-      "direction": "no",
-      "position_size": 17.116182572614107,
-      "expected_value": 2.259336099585062,
-      "reasoning": "Recency bias likely inflates expectations due to recent high-profile launches; base rates for new tokens sustaining high valuations are lower.",
-      "condition_id": "0xc2a5288cfb90005abfbf15b5c5fd963a891a1f41373c9f52797e10a6274de37f"
+      "reasoning": "Recency bias likely inflates Lula's chances due to his recent win; Brazilian elections are historically volatile and Lula's age and potential political shifts reduce his likelihood of winning in 2026."
     },
     {
       "question": "Billionaire one-time wealth tax passes in California election 2026?",
@@ -189,8 +119,7 @@
       "direction": "no",
       "position_size": 18.48591549295774,
       "expected_value": 1.9410211267605624,
-      "reasoning": "Recency bias from recent tax proposals may inflate probability, but historical base rates show low success for such measures in California.",
-      "condition_id": "0x9345d5142a67f5541264c96515496affee02580f1c572680759eac9fd2a1588a"
+      "reasoning": "California's history of progressive taxation measures suggests potential support, but the market may overestimate passage due to recency bias from recent tax discussions without considering the strong"
     },
     {
       "question": "Will Gavin Newsom win the 2028 US Presidential Election?",
@@ -201,20 +130,40 @@
       "direction": "no",
       "position_size": 25.0,
       "expected_value": 1.8125000000000002,
-      "reasoning": "The market may be overestimating Newsom's chances due to recency bias from his current political visibility, but the long time horizon and numerous potential candidates reduce his likelihood significa",
-      "condition_id": "0x4567b275e6b667a6217f5cb4f06a797d3a1eaf1d0281fb5bc8c75e2046ae7e57"
+      "reasoning": "The market may be overestimating Newsom's chances due to narrative bias and recent media attention, while ignoring the low base rate of any individual becoming president."
     },
     {
-      "question": "MegaETH market cap (FDV) >$2B one day after launch?",
-      "category": "crypto_event",
-      "market_price": 0.16,
-      "estimated_prob": 0.3,
-      "edge": 0.13999999999999999,
+      "question": "Opinion FDV above $500M one day after launch?",
+      "category": "other",
+      "market_price": 0.48,
+      "estimated_prob": 0.6,
+      "edge": 0.12,
       "direction": "yes",
-      "position_size": 10.416666666666666,
-      "expected_value": 1.458333333333333,
-      "reasoning": "The market likely underestimates the potential for hype and speculative trading in the crypto space, especially given the high volume indicating significant interest and the tendency for new crypto la",
-      "condition_id": "0xfc6260666d020a912a87d9000eff5116d2adfb8c30aba543427a4c1f1411f1a0"
+      "position_size": 14.42307692307692,
+      "expected_value": 1.7307692307692304,
+      "reasoning": "Recency bias likely underestimates the potential for a post-launch surge in valuation, especially given the cyclical nature of crypto markets and positive sentiment."
+    },
+    {
+      "question": "Will the next Prime Minister of Hungary be P\u00e9ter Magyar?",
+      "category": "other",
+      "market_price": 0.575,
+      "estimated_prob": 0.45,
+      "edge": 0.12500000000000006,
+      "direction": "no",
+      "position_size": 13.586956521739136,
+      "expected_value": 1.6983695652173927,
+      "reasoning": "The market may be influenced by recency bias or narrative bias, but without specific recent events favoring P\u00e9ter Magyar, the probability should be lower."
+    },
+    {
+      "question": "Will Bitcoin reach $75,000 in February?",
+      "category": "crypto_event",
+      "market_price": 0.345,
+      "estimated_prob": 0.25,
+      "edge": 0.09499999999999997,
+      "direction": "no",
+      "position_size": 17.210144927536223,
+      "expected_value": 1.6349637681159408,
+      "reasoning": "Recent market sentiment is mixed with no strong bullish indicators, and recency bias may inflate expectations based on past volatility."
     },
     {
       "question": "Will Arsenal win the 2025\u201326 English Premier League?",
@@ -225,8 +174,7 @@
       "direction": "no",
       "position_size": 11.574074074074069,
       "expected_value": 1.446759259259258,
-      "reasoning": "The market likely exhibits recency bias due to Arsenal's recent strong performances, but the base rate of winning a competitive league like the EPL is lower, especially considering potential changes i",
-      "condition_id": "0xcba24842ceac7a40d2a8b9adde1f4407999b6505193b9fd68156ae76fbffa706"
+      "reasoning": "Market likely overestimates Arsenal's chances due to recent strong performances, ignoring the inherent unpredictability and competition in the Premier League."
     },
     {
       "question": "Will Nikola Jokic win the 2025\u20132026 NBA MVP?",
@@ -237,8 +185,18 @@
       "direction": "no",
       "position_size": 18.382352941176492,
       "expected_value": 1.3786764705882382,
-      "reasoning": "Recency bias likely inflates Jokic's chances due to recent MVP wins, while base rates show MVPs rarely win multiple times in a short span; market may also overestimate his continued dominance given po",
-      "condition_id": "0xf2fb4784ceb4d41ce23703da426700f710320ec5b711b6e3784bdaac24d94c23"
+      "reasoning": "Recency bias likely inflates Jokic's chances due to his recent performances, but MVP awards are highly competitive and unpredictable over such a long horizon."
+    },
+    {
+      "question": "Will Canada win the Men's Ice Hockey gold medal at the 2026 Winter Olympics?",
+      "category": "sports",
+      "market_price": 0.555,
+      "estimated_prob": 0.45,
+      "edge": 0.10500000000000004,
+      "direction": "no",
+      "position_size": 11.82432432432433,
+      "expected_value": 1.241554054054055,
+      "reasoning": "Recency bias likely inflates Canada's chances based on past successes, but other strong teams and variability in sports outcomes suggest a lower true probability."
     },
     {
       "question": "Will Spain win the 2026 FIFA World Cup?",
@@ -249,8 +207,51 @@
       "direction": "no",
       "position_size": 22.177419354838733,
       "expected_value": 1.2197580645161314,
-      "reasoning": "Recency bias inflates Spain's chances due to recent performances, but historically, winning the World Cup is challenging, and many strong teams compete.",
-      "condition_id": "0x7976b8dbacf9077eb1453a62bcefd6ab2df199acd28aad276ff0d920d6992892"
+      "reasoning": "The current market price may be influenced by recency bias or narrative bias, but historically, the probability of any single team winning the World Cup is lower than 16% given the number of strong co"
+    },
+    {
+      "question": "Will Lens win the 2025\u201326 French Ligue 1?",
+      "category": "other",
+      "market_price": 0.1515,
+      "estimated_prob": 0.1,
+      "edge": 0.05149999999999999,
+      "direction": "no",
+      "position_size": 21.245874587458736,
+      "expected_value": 1.0941625412541247,
+      "reasoning": "The market is likely overestimating Lens's chances due to recency bias from any recent successes, while historically, they are not a dominant team in Ligue 1."
+    },
+    {
+      "question": "MegaETH market cap (FDV) >$1B one day after launch?",
+      "category": "crypto_event",
+      "market_price": 0.54,
+      "estimated_prob": 0.45,
+      "edge": 0.09000000000000002,
+      "direction": "no",
+      "position_size": 10.416666666666666,
+      "expected_value": 0.9375000000000002,
+      "reasoning": "Recency bias may inflate expectations due to recent crypto launches; base rates for new tokens achieving $1B FDV are low."
+    },
+    {
+      "question": "Trump out as President before 2027?",
+      "category": "politics",
+      "market_price": 0.155,
+      "estimated_prob": 0.25,
+      "edge": 0.095,
+      "direction": "yes",
+      "position_size": 7.026627218934912,
+      "expected_value": 0.6675295857988167,
+      "reasoning": "The market may be underestimating the possibility due to recency bias and narrative bias, as Trump's legal challenges and political volatility could lead to unexpected outcomes before 2027."
+    },
+    {
+      "question": "MegaETH market cap (FDV) >$2B one day after launch?",
+      "category": "crypto_event",
+      "market_price": 0.165,
+      "estimated_prob": 0.25,
+      "edge": 0.08499999999999999,
+      "direction": "yes",
+      "position_size": 6.362275449101796,
+      "expected_value": 0.5407934131736526,
+      "reasoning": "The market may be underestimating the potential for a speculative surge in a new crypto launch, especially given the high volume and recent trends in prediction markets."
     },
     {
       "question": "Will Bayern Munich win the 2025\u201326 Champions League?",
@@ -261,20 +262,7 @@
       "direction": "yes",
       "position_size": 6.362275449101796,
       "expected_value": 0.5407934131736526,
-      "reasoning": "Recency bias likely underestimates Bayern's historical strength and consistent performance in the Champions League.",
-      "condition_id": "0x852fcfca1dfa1372b768aa6df2269d20564378bb6fe9c64bba3bc040370c1efd"
-    },
-    {
-      "question": "Will Google have the best AI model at the end of February 2026?",
-      "category": "culture",
-      "market_price": 0.28,
-      "estimated_prob": 0.35,
-      "edge": 0.06999999999999995,
-      "direction": "yes",
-      "position_size": 6.076388888888884,
-      "expected_value": 0.4253472222222216,
-      "reasoning": "The market may be underestimating Google's resources and recent advancements in AI, while also potentially neglecting the competitive landscape changes over the next few years.",
-      "condition_id": "0x6995678ed5f481941cc4de37512cfe77b1b20e6fd9ba35e284360061d2687d8f"
+      "reasoning": "Bayern Munich is historically a strong team with a high base rate of success in the Champions League, and the current market price likely underestimates their potential due to recency bias and narrati"
     },
     {
       "question": "Will Manchester City win the 2025\u201326 English Premier League?",
@@ -285,9 +273,19 @@
       "direction": "yes",
       "position_size": 5.681818181818182,
       "expected_value": 0.3693181818181818,
-      "reasoning": "Recency bias may undervalue Manchester City's consistent performance and resources, suggesting a higher probability than the market price reflects.",
-      "condition_id": "0xfb1835b887c33862f5749c619e612d1244ab6e66115f0ef43d373485dc3a1573"
+      "reasoning": "Manchester City has a strong track record and financial resources, suggesting a higher probability than the market price reflects, possibly due to recency bias or anchoring."
+    },
+    {
+      "question": "Will Google have the best AI model at the end of February 2026?",
+      "category": "culture",
+      "market_price": 0.285,
+      "estimated_prob": 0.35,
+      "edge": 0.065,
+      "direction": "yes",
+      "position_size": 5.681818181818182,
+      "expected_value": 0.3693181818181818,
+      "reasoning": "Google's significant resources and history of AI innovation suggest a higher probability than the market price, but competition remains strong."
     }
   ],
-  "updated": 1771293500.493654
+  "updated": 1771302112.903691
 }

@@ -115,7 +115,7 @@ def api_hawk_history():
 
 @hawk_bp.route("/api/hawk/categories")
 def api_hawk_categories():
-    """Category WR heatmap data."""
+    """Category heatmap — from resolved trades + live opportunity breakdown."""
     trades = _load_trades()
     resolved = [t for t in trades if t.get("resolved")]
     cats: dict[str, dict] = {}
@@ -128,7 +128,44 @@ def api_hawk_categories():
         else:
             cats[cat]["losses"] += 1
         cats[cat]["pnl"] = round(cats[cat]["pnl"] + t.get("pnl", 0), 2)
-    return jsonify({"categories": cats})
+
+    # Also build opportunity-based category stats from latest scan
+    opp_cats: dict[str, dict] = {}
+    if OPPS_FILE.exists():
+        try:
+            data = json.loads(OPPS_FILE.read_text())
+            for o in data.get("opportunities", []):
+                cat = o.get("category", "other")
+                if cat not in opp_cats:
+                    opp_cats[cat] = {"count": 0, "total_edge": 0.0, "total_ev": 0.0,
+                                     "avg_edge": 0.0, "potential_30": 0.0}
+                opp_cats[cat]["count"] += 1
+                opp_cats[cat]["total_edge"] += o.get("edge", 0)
+                opp_cats[cat]["total_ev"] += o.get("expected_value", 0)
+                # $30 profit: buy at market price on the side Hawk picks
+                mp = o.get("market_price", 0.5)
+                ep = o.get("estimated_prob", 0.5)
+                direction = o.get("direction", "no")
+                if direction == "yes":
+                    buy_price = mp
+                    win_prob = ep
+                else:
+                    buy_price = 1 - mp
+                    win_prob = 1 - ep
+                if buy_price > 0:
+                    shares = 30.0 / buy_price
+                    profit = (shares * 1.0) - 30.0  # payout $1/share
+                    opp_cats[cat]["potential_30"] += round(profit * win_prob, 2)
+            for cat in opp_cats:
+                c = opp_cats[cat]
+                c["avg_edge"] = round(c["total_edge"] / c["count"] * 100, 1) if c["count"] else 0
+                c["total_ev"] = round(c["total_ev"], 2)
+                c["total_edge"] = round(c["total_edge"] * 100, 1)
+                c["potential_30"] = round(c["potential_30"], 2)
+        except Exception:
+            pass
+
+    return jsonify({"categories": cats, "opp_categories": opp_cats})
 
 
 @hawk_bp.route("/api/hawk/scan-status")
@@ -227,6 +264,8 @@ def api_hawk_scan():
                     "reasoning": o.estimate.reasoning[:200],
                     "condition_id": o.market.condition_id,
                     "volume": o.market.volume,
+                    "end_date": o.market.end_date,
+                    "event_title": o.market.event_title,
                 })
 
             OPPS_FILE.parent.mkdir(exist_ok=True)

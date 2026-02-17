@@ -1,0 +1,4405 @@
+{
+  "items": [
+    {
+      "id": "232848df0148120e",
+      "source": "tavily",
+      "headline": "Breaking News, Latest News and Videos | CNN",
+      "summary": "View the latest news and breaking news today for U.S., world, weather, entertainment, politics and health at CNN.com.",
+      "url": "https://www.cnn.com/",
+      "relevance_tags": [
+        "ai",
+        "weather"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291986.915263,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {}
+    },
+    {
+      "id": "fab45eec1b3cac60",
+      "source": "tavily",
+      "headline": "Fox News - Breaking News Updates | Latest News Headlines | Photos ...",
+      "summary": "Breaking News, Latest News and Current News from FOXNews.com. Breaking news and video. Latest Current News: U.S., World, Entertainment, Health, Business, Technology, Politics, Sports.",
+      "url": "https://www.foxnews.com/?msockid=075184f482496cc423d093f783406d51",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291986.915395,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {}
+    },
+    {
+      "id": "58fec687dca6ac26",
+      "source": "tavily",
+      "headline": "News : U.S. and World News Headlines : NPR",
+      "summary": "3 days ago \u00b7 NPR news, audio, and podcasts. Coverage of breaking stories, national and world news, politics, business, science, technology, and extended coverage of major national and world events.",
+      "url": "https://www.npr.org/sections/news/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291986.915498,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {}
+    },
+    {
+      "id": "ee02d98ecbd7c5a7",
+      "source": "tavily",
+      "headline": "US | Yahoo News - Latest News & Headlines",
+      "summary": "The latest news and headlines from Yahoo News. Get breaking news stories and in-depth coverage with videos and photos.",
+      "url": "https://www.yahoo.com/news/us/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291986.91557,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {}
+    },
+    {
+      "id": "1209fbee0b2290b8",
+      "source": "tavily",
+      "headline": "Associated Press News: Breaking News, Latest Headlines and Videos \u2026",
+      "summary": "Read the latest headlines, breaking news, and videos at APNews.com, the definitive source for independent journalism from every corner of the globe.",
+      "url": "https://apnews.com/",
+      "relevance_tags": [
+        "defi"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291986.915678,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "6f68029ca3c29d7c",
+      "source": "tavily",
+      "headline": "BBC News - Breaking news, video and the latest top stories from the \u2026",
+      "summary": "Visit BBC News for the latest news, breaking news, video, audio and analysis. BBC News provides trusted World, U.S. and U.K. news as well as local and regional perspectives.",
+      "url": "https://www.bbc.com/news",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291986.915785,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {}
+    },
+    {
+      "id": "51e6e62c6bbe7718",
+      "source": "tavily",
+      "headline": "ABC News - Breaking News, Latest News and Videos",
+      "summary": "Your trusted source for breaking news, analysis, exclusive interviews, headlines, and videos at ABCNews.com",
+      "url": "https://abcnews.com/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291986.915854,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {}
+    },
+    {
+      "id": "035f9a72763284f3",
+      "source": "tavily",
+      "headline": "Breaking News | 6ABC WPVI News Feed - 6abc Philadelphia",
+      "summary": "Read real-time breaking news as it develops with the 6ABC News Feed. Stay up-to-date with local news as well as U.S. and world news stories.",
+      "url": "https://6abc.com/news/",
+      "relevance_tags": [],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771291986.9159439,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {}
+    },
+    {
+      "id": "9c1fcdb7e4bda4b4",
+      "source": "tavily",
+      "headline": "Today's Top Sports Scores and Games (All Sports) - FOX Sports",
+      "summary": "1. United States. A. Kim. -23 ; 2. Spain. J. Rahm. -20 ; T3. United States. P. Uihlein. -17 ; T3. England. T. Hatton. -17.",
+      "url": "https://www.foxsports.com/scores",
+      "relevance_tags": [
+        "game",
+        "score",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291988.2698429,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "d5fd82832db00f0c",
+      "source": "tavily",
+      "headline": "LiveScore: Live Football Scores, Fixtures & Results",
+      "summary": "Get Live Football Scores and Real-Time Football Results with LiveScore! We cover all Countries, Leagues and Competitions in unbeatable detail. Click Now!",
+      "url": "https://www.livescore.com/en/",
+      "relevance_tags": [
+        "football",
+        "score",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291988.2700338,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "74d1a2a4e298c598",
+      "source": "tavily",
+      "headline": "MLB Scores: Scoreboard, Results and Highlights",
+      "summary": "Yankees. NYY. 0 - 0. 1:05 PM ET. Watch on: Gotham, MASN. Orioles ; Royals. KC. 0 - 0. 3:05 PM ET. Rangers ; White Sox. CWS. 0 - 0. 3:05 PM ET. Watch on: MARQ.",
+      "url": "https://www.mlb.com/scores",
+      "relevance_tags": [
+        "mlb",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291988.270169,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "3bfc6a5ab8ed60a3",
+      "source": "tavily",
+      "headline": "All Sports Scoreboard - Yahoo Sports",
+      "summary": "Olympics \u00b7 Fantasy \u00b7 Fantasy baseball \u00b7 News \u00b7 Fantasy football \u00b7 Best ball \u00b7 Pro Pick 'Em \u00b7 College Pick 'Em \u00b7 Fantasy hockey \u00b7 Fantasy basketball",
+      "url": "https://sports.yahoo.com/scoreboard/",
+      "relevance_tags": [
+        "football",
+        "basketball",
+        "baseball",
+        "hockey",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291988.270432,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "9363cfed41337101",
+      "source": "tavily",
+      "headline": "theScore.com: Sports News | NFL NHL MLB NBA & more",
+      "summary": "In-depth stats & matchup coverage; Lightning fast scores and news alerts; Videos & news of 30+ leagues. Download the app.",
+      "url": "https://www.thescore.com/",
+      "relevance_tags": [
+        "nba",
+        "nfl",
+        "mlb",
+        "nhl",
+        "match",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291988.270565,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "4e7624ee9d218573",
+      "source": "tavily",
+      "headline": "theScore: Sports News & Scores - Apps on Google Play",
+      "summary": "theScore brings you news, scores, stats and videos from NFL Football, NBA Basketball, NCAA Basketball, MLB Baseball, NCAA Football, NHL Hockey, WNBA Basketball.",
+      "url": "https://play.google.com/store/apps/details?id=com.fivemobile.thescore&hl=en_US",
+      "relevance_tags": [
+        "nba",
+        "nfl",
+        "mlb",
+        "nhl",
+        "football",
+        "basketball",
+        "baseball",
+        "hockey",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291988.2707021,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "c42ba1ee8c46f701",
+      "source": "tavily",
+      "headline": "Scores | Michigan High School Athletic Association",
+      "summary": "Today's Schedule. Boys \u00b7 Girls. Brackets. Boys \u00b7 Girls. Assignments. Boys \u00b7 Girls. Rankings. Boys \u00b7 Girls. MPR. Boys \u00b7 Girls. Past Champions. Boys \u00b7 Girls",
+      "url": "https://www.mhsaa.com/scores",
+      "relevance_tags": [
+        "score"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771291988.27086,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "55882d92ec3cf616",
+      "source": "tavily",
+      "headline": "Live NFL Scores 2025",
+      "summary": "The official scoreboard of the NFL including live scoring and real-time highlights.",
+      "url": "https://www.nfl.com/scores",
+      "relevance_tags": [
+        "nfl",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291988.2709508,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "4b3db55bb1f0856c",
+      "source": "tavily",
+      "headline": "Regulation News - CryptoSlate",
+      "summary": "New crypto ban targets Russia rails but one chokepoint decides whether flows die or just relocate offshore. If stablecoin issuers block redemption and the EU",
+      "url": "https://cryptoslate.com/regulation/",
+      "relevance_tags": [
+        "crypto",
+        "eth",
+        "regulation",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291989.7967832,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "30658fbc98edc881",
+      "source": "tavily",
+      "headline": "Crypto World: latest crypto news and digital currency updates - CNBC",
+      "summary": "CNBC Crypto World delivers the latest crypto news ... President Trump touts progress on crypto regulation at the World Economic Forum: CNBC Crypto World.",
+      "url": "https://www.cnbc.com/cryptoworld/",
+      "relevance_tags": [
+        "trump",
+        "president",
+        "crypto",
+        "regulation"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291989.796875,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "9aa8a7880642c615",
+      "source": "tavily",
+      "headline": "Digital Asset Regulation: Latest News and Insights - The Block",
+      "summary": "Read the latest news about regulation of digital assets and companies that work in the cryptocurrency space.",
+      "url": "https://www.theblock.co/category/regulation",
+      "relevance_tags": [
+        "crypto",
+        "regulation"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291989.79694,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "56f363b7e86dea2e",
+      "source": "tavily",
+      "headline": "Bessent says Congress should pass crypto regulation bill this spring",
+      "summary": "U.S. Treasury Secretary Scott Bessent said on Friday that it was important for Congress to pass a bill to create federal rules for digital",
+      "url": "https://www.reuters.com/sustainability/boards-policy-regulation/bessent-says-congress-should-pass-crypto-regulation-bill-this-spring-2026-02-13/",
+      "relevance_tags": [
+        "congress",
+        "crypto",
+        "sec",
+        "regulation",
+        "ai",
+        "fed"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291989.797013,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "ad18d6b03bfa6c4a",
+      "source": "tavily",
+      "headline": "Why are Ethereum, XRP, Solana and Dogecoin prices down today ...",
+      "summary": "Regulatory uncertainty linked to the CLARITY Act, Federal Reserve policy expectations, and profit-taking activity pushed crypto prices lower.",
+      "url": "https://m.economictimes.com/news/international/us/why-are-ethereum-xrp-solana-and-dogecoin-prices-down-today-and-will-crypto-market-bounce-back-or-continue-to-fall-crypto-drop-analysts-insights-market-outlook-explained-heres-what-should-investors-do-now/articleshow/128422332.cms",
+      "relevance_tags": [
+        "policy",
+        "ethereum",
+        "crypto",
+        "eth",
+        "sol",
+        "ai",
+        "fed"
+      ],
+      "sentiment": -1.0,
+      "confidence": 0.7,
+      "timestamp": 1771291989.79709,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "616990d926ff8c06",
+      "source": "tavily",
+      "headline": "Fenwick Crypto Review",
+      "summary": "With federal crypto enforcement shifting, regulators in states like New York and California are intensifying crypto oversight and targeting digital asset firms",
+      "url": "https://www.fenwick.com/crypto-review",
+      "relevance_tags": [
+        "crypto",
+        "fed"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291989.797153,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "bac1a9515fa711e1",
+      "source": "tavily",
+      "headline": "Latest Regulation News - Digital Assets - Forbes",
+      "summary": "Latest Regulation News \u00b7 Amid State Clashes, Prediction Markets Watch CFTC Intervene In Court \u00b7 Stablecoins Beyond The Hype: Lack Of Credit Protection For Holders.",
+      "url": "https://www.forbes.com/digital-assets/news/regulation/",
+      "relevance_tags": [
+        "regulation",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291989.79723,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "3ec57f6b309390ab",
+      "source": "tavily",
+      "headline": "Crypto Task Force - SEC.gov",
+      "summary": "Latest Filings ... The Crypto Task Force collaborates with Commission staff and the public to help chart a new approach to the regulation of crypto assets.",
+      "url": "https://www.sec.gov/featured-topics/crypto-task-force",
+      "relevance_tags": [
+        "crypto",
+        "sec",
+        "regulation"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291989.797295,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "04caa320900b82ae",
+      "source": "tavily",
+      "headline": "Polymarket Prediction Markets | TrendSpider Store",
+      "summary": "# Polymarket Prediction Markets. The Polymarket indicator suite pulls live prediction market data directly into TrendSpider, surfacing the events driving the most attention and showing where traders and bettors are putting their money. Track crowd sentiment and whale bets in real time, compare market odds to price action, and uncover emerging narratives that could spark major moves. Polymarket Trending 24hr pulls live odds from the top 20 prediction markets on Polymarket, ranked by 24-hour trading volume, directly into your TrendSpider account. Polymarket Total Volume pulls live odds from the ",
+      "url": "https://trendspider.com/trading-tools-store/collection/polymarket/?post_type=indicator",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291991.33411,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {}
+    },
+    {
+      "id": "fe75b85becf18e8b",
+      "source": "tavily",
+      "headline": "All Predictions & Real-Time Odds | Polymarket",
+      "summary": "Polymarket is the world's largest prediction market, where you can stay informed and profit from your knowledge by trading on things related to breaking news, politics, sports, elections, crypto, finance, tech, culture, including topics like All. Polymarket currently hosts 6671 active markets for All that lets you track or trade on predictions like \"Who will Trump nominate as Fed Chair?\". Whether you are tracking widely debated events or niche outcomes, the platform aggregates real-time odds based on over $3.1B in trading volume, providing a comprehensive view of fan and investor sentiment. It",
+      "url": "https://polymarket.com/predictions/all",
+      "relevance_tags": [
+        "trump",
+        "election",
+        "crypto",
+        "eth",
+        "ai",
+        "fed",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291991.334594,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "48f52b8abf11cce3",
+      "source": "tavily",
+      "headline": "Prediction Markets Predictions & Real-Time Odds - Polymarket",
+      "summary": "Polymarket currently hosts 9 active markets for Prediction Markets that lets you track or trade on predictions like \"Which companies will be acquired before 2027?\". Robinhood launches prediction market through MIAXdx by March 31? Polymarket is the world's largest prediction market, where you can stay informed and profit from your knowledge by trading on things related to breaking news, politics, sports, elections, crypto, finance, tech, culture, including topics like Prediction Markets. Unlike polls or punditry, Polymarket shows you real-time odds on Prediction Markets predictions backed by fi",
+      "url": "https://polymarket.com/predictions/prediction-markets",
+      "relevance_tags": [
+        "election",
+        "crypto",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291991.335031,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "7f33a44ea2487671",
+      "source": "tavily",
+      "headline": "Why are prediction markets like Polymarket suddenly so hot? - Reddit",
+      "summary": "# Why are prediction markets like Polymarket suddenly so hot? Maybe prediction markets aren\u2019t really about predicting the future - they\u2019re about pricing uncertainty. Lately, I\u2019ve become more convinced that prediction markets might be that answer. Why are prediction markets heating up again? Once probability exists, it needs a price - and that requires a market. 2. Media is starting to treat prediction markets as real-time sentiment indicators They\u2019re often faster than polls and more transparent than expert opinions. As a result, the user base is changing too: From spectators \u2192 participants Fro",
+      "url": "https://www.reddit.com/r/btc/comments/1qptab9/why_are_prediction_markets_like_polymarket/",
+      "relevance_tags": [
+        "ai",
+        "market"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771291991.3356538,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {}
+    },
+    {
+      "id": "059180e10f570e1a",
+      "source": "tavily",
+      "headline": "Polymarket",
+      "summary": "Founded in 2020 by Shayne Coplan, Polymarket is a prediction market that allows users to gain/lose on the outcome of world events. Polymarket blocked access to United States customers from 2022 to December 2, 2025, following a settlement with the Commodity Futures Trading Commission, which accused the company of running an unregistered derivatives-trading platform. Polymarket has at some point been banned in a number of countries that regulate gambling and sports betting, including France, Singapore, Switzerland, Poland, and the United States. On November 26, 2024, the Swiss Gambling Superviso",
+      "url": "https://en.wikipedia.org/wiki/Polymarket",
+      "relevance_tags": [
+        "ai",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291991.3361971,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {}
+    },
+    {
+      "id": "eb7ac3fdf193f59f",
+      "source": "tavily",
+      "headline": "What is Polymarket? A guide to decentralized prediction markets",
+      "summary": "Learn about Polymarket: How it works, what makes it popular, the events you can trade, and broader prediction market context. Polymarket is a decentralized prediction market platform built on blockchain technology. Just connect to a leading crypto wallet like MetaMask to begin placing prediction market trades via Polymarket. You can start trading MetaMask Prediction Markets via Polymarket right from your phone. With MetaMask Prediction Market trading via Polymarket, you can use any EVM token on any network to fund your prediction market account on mobile. ## Events you can trade on Polymarket.",
+      "url": "https://metamask.io/news/what-is-polymarket-guide-to-decentralized-prediction-markets",
+      "relevance_tags": [
+        "crypto",
+        "blockchain",
+        "token",
+        "ai",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291991.33677,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "21ff3dcae003cf98",
+      "source": "tavily",
+      "headline": "'Another way to gamble money': booming prediction markets prompt ...",
+      "summary": "\u201cA prediction market is another way to gamble money that\u2019s framed in a way that looks like good investments,\u201d said Azra, an economics student at the University of North Carolina at Chapel Hill who has been using the markets for five months. Unlike sports betting, where professional athletes who typically decide the outcome of bets are more often than not banned from placing bets themselves, prediction markets in politics allow users to gamble on elections their votes can help decide. \u201cThe buying and selling of futures contracts via prediction markets carries substantially similar levels of ris",
+      "url": "https://www.theguardian.com/us-news/2026/feb/12/prediction-markets-polymarket-kalshi-online-gambling",
+      "relevance_tags": [
+        "election",
+        "vote",
+        "ai",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291991.337301,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "d90f5674e93fe902",
+      "source": "tavily",
+      "headline": "Betting on Prediction Markets Is Their Job. They Make Millions.",
+      "summary": "# Betting on Prediction Markets Is Their Job. They Make Millions. Both Kalshi and Polymarket, the two big prediction market platforms, were offering yes-or-no-style \u201cmention markets\u201d asking users to bet on whether the president would say more than a dozen words and phrases, among them \u201chottest,\u201d \u201cbig beautiful bill,\u201d \u201cradical left/far left\u201d and \u201crigged election/stolen election.\u201d. In 2024, traders on Polymarket bet more than $3.6 billion on the outcome of the Trump-Harris election \u2014 at close of voting on Election Day, prediction markets favored Trump, while polling averages showed Vice Presiden",
+      "url": "https://www.nytimes.com/2026/01/22/business/prediction-markets-polymarket-kalshi.html",
+      "relevance_tags": [
+        "trump",
+        "election",
+        "president",
+        "eth",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291991.3378,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "8ef09e2f93aa9071",
+      "source": "tavily",
+      "headline": "USA TODAY - Breaking News and Latest News Today",
+      "summary": "'Pure chaos.' 2 killed, 3 wounded in shooting at high school hockey game \u00b7 Robert Duvall, 'Apocalypse Now' and 'Godfather' icon, dies at 95 \u00b7 Police 'getting",
+      "url": "https://www.usatoday.com/",
+      "relevance_tags": [
+        "hockey",
+        "game"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771291992.6721401,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "28853b029b080987",
+      "source": "tavily",
+      "headline": "Fox News - Breaking News Updates | Latest News Headlines ...",
+      "summary": "Latest Breaking News Today from Fox News \u00b7 FBI official gives update on DNA from glove in Nancy Guthrie case \u00b7 California leader signs foreign agreements as Trump",
+      "url": "https://www.foxnews.com/",
+      "relevance_tags": [
+        "trump"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291992.67227,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "b65cca509ac4fbff",
+      "source": "tavily",
+      "headline": "CBS News | Breaking news, top stories & today's latest headlines",
+      "summary": "CBS News offers breaking news coverage of today's top headlines. Stay informed on the biggest new stories with our balanced, trustworthy reporting.",
+      "url": "https://www.cbsnews.com/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291992.672368,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {}
+    },
+    {
+      "id": "16757d70fa6d5f20",
+      "source": "tavily",
+      "headline": "World news - breaking news, video, headlines and opinion | CNN",
+      "summary": "Israeli TV producer of award-winning show 'Tehran' found dead in Athens hotel room \u00b7 Amazon delivery van gets stuck after following GPS onto 'dangerous' mudflats.",
+      "url": "https://www.cnn.com/world",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291992.67248,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {}
+    },
+    {
+      "id": "34f8af057ef0eca3",
+      "source": "tavily",
+      "headline": "U.S. and World News Headlines : NPR",
+      "summary": "February 16, 2026 \u2022 President Trump banned transgender people from the military during his first term. Transgender troops speak up as they're forced out. Listen",
+      "url": "https://www.npr.org/sections/news/",
+      "relevance_tags": [
+        "trump",
+        "president"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771291992.6725929,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "dc3718569554dda7",
+      "source": "tavily",
+      "headline": "NBC News - Breaking Headlines and Video Reports on World, U.S. ...",
+      "summary": "Team USA's Abbey Murphy scored a top shelf goal to ignite an offensive scoring spree in the semifinal round against Sweden at the 2026 Milan Cortina Olympics.",
+      "url": "https://www.nbcnews.com/",
+      "relevance_tags": [
+        "score",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291992.672698,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "750daa4fafb564e9",
+      "source": "tavily",
+      "headline": "World News: International Headlines, Breaking Reports and Video",
+      "summary": "Former Israeli prime minister apologies for yearslong friendship with Epstein \u00b7 The world's largest aircraft carrier USS Gerald R Ford.",
+      "url": "https://www.nbcnews.com/world",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291992.672797,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {}
+    },
+    {
+      "id": "cea67359b4132f46",
+      "source": "tavily",
+      "headline": "Latest U.S. News | Top headlines from the USA - Reuters",
+      "summary": "21 hours ago. Trump says federal government to step in to 'protect' Potomac river amid sewage leak ; 21 hours ago. Guthrie family not suspects in Arizona",
+      "url": "https://www.reuters.com/world/us/",
+      "relevance_tags": [
+        "trump",
+        "fed"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291992.672894,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "76ca78d27d96a501",
+      "source": "tavily",
+      "headline": "RealClearPolling: 2025 Latest Election Polls",
+      "summary": "Explore up-to-date 2025 election polls on RealClearPolling. Gain valuable insights into the evolving political landscape and stay ahead of the latest",
+      "url": "https://www.realclearpolling.com/",
+      "relevance_tags": [
+        "election",
+        "ai"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771291994.1416278,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "30ec54937fa80dcf",
+      "source": "tavily",
+      "headline": "Latest Polls 2025, 2026, 2028",
+      "summary": "Stay up to date on all the latest 2025, 2026, 2028 election and state of the union polls. Gain valuable insights into the evolving political landscape and",
+      "url": "https://www.realclearpolling.com/latest-polls",
+      "relevance_tags": [
+        "election",
+        "ai"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771291994.141838,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "81a9239a9667a45b",
+      "source": "tavily",
+      "headline": "Poll Results | Quinnipiac University Poll",
+      "summary": "Quinnipiac University Poll's list of recent and past poll results for political races, state and national elections, and issues of public concern.",
+      "url": "https://poll.qu.edu/poll-results",
+      "relevance_tags": [
+        "election"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291994.142022,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "a18e65a52d8ed9a4",
+      "source": "tavily",
+      "headline": "Latest U.S. opinion polls",
+      "summary": "Reuters/Ipsos Poll. Washington, DC, December 17, 2025 \u2013 The cost of living remains the top issue for Americans when it comes to the 2026",
+      "url": "https://www.ipsos.com/en-us/latest-us-opinion-polls",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291994.142123,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {}
+    },
+    {
+      "id": "2733e5316eb78030",
+      "source": "tavily",
+      "headline": "Fox News Polls & Official Poll Results",
+      "summary": "Check out the latest polls on Fox News. See results for political polls, gain valuable insights into public opinion, and stay ahead with in-depth analyses",
+      "url": "https://www.foxnews.com/official-polls",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771291994.142219,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {}
+    },
+    {
+      "id": "99736cd37a99de2f",
+      "source": "tavily",
+      "headline": "CBS News Polls",
+      "summary": "CBS News poll: 1 year in, Americans call for more inflation focus from Trump. Most Republicans feel Trump has done more than expected, while others have views",
+      "url": "https://www.cbsnews.com/feature/cbs-news-polls/",
+      "relevance_tags": [
+        "trump",
+        "republican",
+        "nfl",
+        "inflation"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291994.142307,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "a3d8404d95b5becc",
+      "source": "tavily",
+      "headline": "President Trump Approval Rating: Latest Polls",
+      "summary": "Presidential approval polls. Polls from \u201cselect pollsters\u201d meet certain criteria for reliability and are shown with",
+      "url": "https://www.nytimes.com/interactive/polls/donald-trump-approval-rating-polls.html",
+      "relevance_tags": [
+        "trump",
+        "president",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291994.142399,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "da71ba3970cb5389",
+      "source": "tavily",
+      "headline": "CNN Polls | CNN Politics",
+      "summary": "News and analysis on CNN polling on politics, President Donald Trump, Congress and the economy.",
+      "url": "https://www.cnn.com/polling",
+      "relevance_tags": [
+        "trump",
+        "congress",
+        "president"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771291994.142486,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "0281b17fdea3664f",
+      "source": "reddit/r/sportsbook",
+      "headline": "Missouri Sportsbooks Megathread",
+      "summary": "## Missouri Sportsbooks and Sports Betting Mobile App Sign-Up Bonus Codes &amp; Promos (Launch Discussion)\n\n**Missouri (St. Louis &amp; Kansas City) officially launched sports betting on December 1, 2025 at 12:01 AM CST.**  \nNew users can now sign up and claim **official launch bonuses**. All promotions below are **updated to match the master promotion list exactly**.\n\n---\n\n### Missouri Sportsbook",
+      "url": "https://reddit.com/r/sportsbook/comments/1pb2f0d/missouri_sportsbooks_megathread/",
+      "relevance_tags": [
+        "match",
+        "ai"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.525,
+      "timestamp": 1771291996.878336,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {
+        "score": 25,
+        "comments": 67,
+        "sub": "sportsbook"
+      }
+    },
+    {
+      "id": "7a9ed9b3c1e5a39a",
+      "source": "reddit/r/sportsbook",
+      "headline": "Pick of the Day - 2/17/26 (Tuesday)",
+      "summary": "Free Reddit Pick of the Day\n\n* Post **ONE** pick. No side picks in comments. You can provide a link to your other picks in the other daily threads.\n* **TWO** leg parlays and teasers are **allowed**. Must stay within odds requirements. \n* Must be between -200 and +200 (1.5 and 3.0) odds.\n* Bet size should be between 1 and 5 units. No \"100 unit locks\"\n* Provide a write up on why this is your Pick of",
+      "url": "https://reddit.com/r/sportsbook/comments/1r6npwh/pick_of_the_day_21726_tuesday/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.522,
+      "timestamp": 1771291996.8787022,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {
+        "score": 22,
+        "comments": 81,
+        "sub": "sportsbook"
+      }
+    },
+    {
+      "id": "694133edf9d40b71",
+      "source": "reddit/r/sportsbook",
+      "headline": "Genesis Invitational 2026 (GOLF)",
+      "summary": "Back to back weeks with the 54 hole leader and nothing to show for it is brutal. I strongly considered taking a few weeks off, but I didn\u2019t want to let you fine people down. So here we go - Players now head to Riviera County Club for the final event of the west coast swing, the Genesis Invitational. See comment below for full breakdown.",
+      "url": "https://reddit.com/r/sportsbook/comments/1r67vpj/genesis_invitational_2026_golf/",
+      "relevance_tags": [],
+      "sentiment": -1.0,
+      "confidence": 0.541,
+      "timestamp": 1771291996.879049,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 41,
+        "comments": 62,
+        "sub": "sportsbook"
+      }
+    },
+    {
+      "id": "468a142e8525d066",
+      "source": "reddit/r/sportsbook",
+      "headline": "Small College Baseball Loophole found with MGM, possibly others?",
+      "summary": "In College baseball, most games have a Mercy Rule. If a team is winning by ten or more after the 7th or 8th inning, the game is ended based on the Mercy Rule. MGM considers these as \u201cno contest\u201d and the wager is cancelled because it did not go the full 9 inning. \n\nIf you bet a team, example Oklahoma -3 (or the opponent +3) and they mercy rule a team after seven innings, you do not win (or lose) yo",
+      "url": "https://reddit.com/r/sportsbook/comments/1r6c27g/small_college_baseball_loophole_found_with_mgm/",
+      "relevance_tags": [
+        "baseball",
+        "game"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.519,
+      "timestamp": 1771291996.879447,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {
+        "score": 19,
+        "comments": 22,
+        "sub": "sportsbook"
+      }
+    },
+    {
+      "id": "cbc5b12ba338343a",
+      "source": "reddit/r/sportsbook",
+      "headline": "Pick of the Day - 2/16/26 (Monday)",
+      "summary": "Free Reddit Pick of the Day\n\n* Post **ONE** pick. No side picks in comments. You can provide a link to your other picks in the other daily threads.\n* **TWO** leg parlays and teasers are **allowed**. Must stay within odds requirements. \n* Must be between -200 and +200 (1.5 and 3.0) odds.\n* Bet size should be between 1 and 5 units. No \"100 unit locks\"\n* Provide a write up on why this is your Pick of",
+      "url": "https://reddit.com/r/sportsbook/comments/1r5sou5/pick_of_the_day_21626_monday/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.58,
+      "timestamp": 1771291996.879789,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {
+        "score": 80,
+        "comments": 610,
+        "sub": "sportsbook"
+      }
+    },
+    {
+      "id": "32a0e777f641a68a",
+      "source": "reddit/r/sportsbook",
+      "headline": "NCAABB College Basketball Betting and Picks - 2/16/26 (Monday)",
+      "summary": "NCAABB College Basketball Betting Picks and College Basketball Sports Betting Odds for Monday, February 16, 2026\n\n\n|Time (ET)| Teams | ML | Spread | Total |\n|:-:|:-:|:-:|:-:|:-:|\n|2/16|SE Louisiana|[+110](https://sportsbook.link/)|[+2.0 -115](https://sportsbook.link/)|[o137.0 -105](https://sportsbook.link/)|\n|2:00 PM|East Texas A&amp;M|[-130](https://sportsbook.link/)|[-2.0 -105](https://sportsboo",
+      "url": "https://reddit.com/r/sportsbook/comments/1r5zo2s/ncaabb_college_basketball_betting_and_picks_21626/",
+      "relevance_tags": [
+        "basketball"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.53,
+      "timestamp": 1771291996.880121,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {
+        "score": 30,
+        "comments": 538,
+        "sub": "sportsbook"
+      }
+    },
+    {
+      "id": "54c88df2079446ae",
+      "source": "reddit/r/politics",
+      "headline": "Billionaire Trump Donor Closing U.S. Plant and Moving Work to China",
+      "summary": "Score: 19264, Comments: 566",
+      "url": "https://reddit.com/r/politics/comments/1r6kgku/billionaire_trump_donor_closing_us_plant_and/",
+      "relevance_tags": [
+        "trump",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771291997.4584231,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 19264,
+        "comments": 566,
+        "sub": "politics"
+      }
+    },
+    {
+      "id": "9fa8e3c42f50ba01",
+      "source": "reddit/r/politics",
+      "headline": "Republicans Are Suddenly Very, Very Worried About Holding the Senate",
+      "summary": "Score: 5409, Comments: 398",
+      "url": "https://reddit.com/r/politics/comments/1r6pq4l/republicans_are_suddenly_very_very_worried_about/",
+      "relevance_tags": [
+        "senate",
+        "republican"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771291997.458551,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 5409,
+        "comments": 398,
+        "sub": "politics"
+      }
+    },
+    {
+      "id": "b80d1df5d40456ef",
+      "source": "reddit/r/politics",
+      "headline": "Bondi Spying on Congressional Epstein Searches Should be a Major Scandal",
+      "summary": "Score: 8199, Comments: 120",
+      "url": "https://reddit.com/r/politics/comments/1r6i04h/bondi_spying_on_congressional_epstein_searches/",
+      "relevance_tags": [
+        "congress"
+      ],
+      "sentiment": -1.0,
+      "confidence": 0.8,
+      "timestamp": 1771291997.458675,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 8199,
+        "comments": 120,
+        "sub": "politics"
+      }
+    },
+    {
+      "id": "76e98294dd5dcc88",
+      "source": "reddit/r/politics",
+      "headline": "911 call describes woman screaming to ICE agents that she\u2019s a U.S. citizen",
+      "summary": "Score: 4251, Comments: 140",
+      "url": "https://reddit.com/r/politics/comments/1r6kyrh/911_call_describes_woman_screaming_to_ice_agents/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771291997.458821,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 4251,
+        "comments": 140,
+        "sub": "politics"
+      }
+    },
+    {
+      "id": "83fc23d0dcd7fa31",
+      "source": "reddit/r/politics",
+      "headline": "Conservative leader calls MAGA a \"rotting carcass\" that has already lost the culture war",
+      "summary": "Score: 10607, Comments: 344",
+      "url": "https://reddit.com/r/politics/comments/1r6dyt8/conservative_leader_calls_maga_a_rotting_carcass/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771291997.4589381,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 10607,
+        "comments": 344,
+        "sub": "politics"
+      }
+    },
+    {
+      "id": "e0d823d0bb793ee2",
+      "source": "reddit/r/politics",
+      "headline": "Bondi Blasted After Adding Elvis and Marilyn Monroe to Epstein List",
+      "summary": "Score: 8775, Comments: 412",
+      "url": "https://reddit.com/r/politics/comments/1r6elt6/bondi_blasted_after_adding_elvis_and_marilyn/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771291997.459039,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 8775,
+        "comments": 412,
+        "sub": "politics"
+      }
+    },
+    {
+      "id": "9c82da2abd92c157",
+      "source": "reddit/r/politics",
+      "headline": "George W. Bush Subtly Trashes Trump in Presidents Day Message",
+      "summary": "Score: 15252, Comments: 1077",
+      "url": "https://reddit.com/r/politics/comments/1r6bm0x/george_w_bush_subtly_trashes_trump_in_presidents/",
+      "relevance_tags": [
+        "trump",
+        "president"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771291997.459145,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 15252,
+        "comments": 1077,
+        "sub": "politics"
+      }
+    },
+    {
+      "id": "5dc2991b37d044bb",
+      "source": "reddit/r/politics",
+      "headline": "New Evidence Torpedoes Pam Bondi\u2019s Claim About Trump and Epstein | A DOJ slideshow suggests that the FBI spoke with an Epstein victim who accused President Trump of assault.",
+      "summary": "Score: 12497, Comments: 201",
+      "url": "https://reddit.com/r/politics/comments/1r6c6c1/new_evidence_torpedoes_pam_bondis_claim_about/",
+      "relevance_tags": [
+        "trump",
+        "president",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771291997.459384,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 12497,
+        "comments": 201,
+        "sub": "politics"
+      }
+    },
+    {
+      "id": "dd879a622c103586",
+      "source": "reddit/r/politics",
+      "headline": "Judge quotes Orwell\u2019s 1984 as she orders Trump to restore slavery exhibits in Philadelphia",
+      "summary": "Score: 4493, Comments: 59",
+      "url": "https://reddit.com/r/politics/comments/1r6jd02/judge_quotes_orwells_1984_as_she_orders_trump_to/",
+      "relevance_tags": [
+        "trump"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771291997.459529,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 4493,
+        "comments": 59,
+        "sub": "politics"
+      }
+    },
+    {
+      "id": "1a0a8de6f1429ff4",
+      "source": "reddit/r/politics",
+      "headline": "Olympics turn political as US athletes speak out against Trump",
+      "summary": "Score: 18250, Comments: 588",
+      "url": "https://reddit.com/r/politics/comments/1r68ein/olympics_turn_political_as_us_athletes_speak_out/",
+      "relevance_tags": [
+        "trump",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771291997.459635,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 18250,
+        "comments": 588,
+        "sub": "politics"
+      }
+    },
+    {
+      "id": "07207aa5e78526d0",
+      "source": "reddit/r/politics",
+      "headline": "Janet Mills launches ad hitting Susan Collins as 'always concerned, but never courageous' in key Maine Senate contest",
+      "summary": "Score: 4272, Comments: 276",
+      "url": "https://reddit.com/r/politics/comments/1r6grh3/janet_mills_launches_ad_hitting_susan_collins_as/",
+      "relevance_tags": [
+        "senate",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771291997.4597719,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 4272,
+        "comments": 276,
+        "sub": "politics"
+      }
+    },
+    {
+      "id": "aeaaa34263375b48",
+      "source": "reddit/r/politics",
+      "headline": "Hakeem Jeffries Plays Dumb on Abolish ICE: \u201cI Don\u2019t Understand\u201d - Democratic leaders are refusing to answer a direct question about the future of ICE.",
+      "summary": "Score: 3425, Comments: 463",
+      "url": "https://reddit.com/r/politics/comments/1r6iljv/hakeem_jeffries_plays_dumb_on_abolish_ice_i_dont/",
+      "relevance_tags": [
+        "democrat"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771291997.4599512,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 3425,
+        "comments": 463,
+        "sub": "politics"
+      }
+    },
+    {
+      "id": "a4403d6a3c08f281",
+      "source": "reddit/r/politics",
+      "headline": "Kansas Mayor Who Voted for Trump as Noncitizen Faces Felony Charges",
+      "summary": "Score: 1910, Comments: 71",
+      "url": "https://reddit.com/r/politics/comments/1r6l3mr/kansas_mayor_who_voted_for_trump_as_noncitizen/",
+      "relevance_tags": [
+        "trump",
+        "vote"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771291997.4600582,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 1910,
+        "comments": 71,
+        "sub": "politics"
+      }
+    },
+    {
+      "id": "3c1b108baec544ae",
+      "source": "reddit/r/politics",
+      "headline": "Judge Orders Trump Admin to Restore Slavery Exhibits It Took Down",
+      "summary": "Score: 2048, Comments: 36",
+      "url": "https://reddit.com/r/politics/comments/1r6jwwt/judge_orders_trump_admin_to_restore_slavery/",
+      "relevance_tags": [
+        "trump"
+      ],
+      "sentiment": -1.0,
+      "confidence": 0.8,
+      "timestamp": 1771291997.460167,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 2048,
+        "comments": 36,
+        "sub": "politics"
+      }
+    },
+    {
+      "id": "0c0c5f952173db71",
+      "source": "reddit/r/politics",
+      "headline": "Epstein sympathized with Kavanaugh during supreme court confirmation, emails show",
+      "summary": "Score: 6136, Comments: 171",
+      "url": "https://reddit.com/r/politics/comments/1r6a51a/epstein_sympathized_with_kavanaugh_during_supreme/",
+      "relevance_tags": [
+        "supreme court",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771291997.4602802,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 6136,
+        "comments": 171,
+        "sub": "politics"
+      }
+    },
+    {
+      "id": "f56d12e2b0972298",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Weekly Earnings Thread 2/16 - 2/20",
+      "summary": "Score: 204, Comments: 275",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r3xxhx/weekly_earnings_thread_216_220/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.704,
+      "timestamp": 1771291998.3229299,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 204,
+        "comments": 275,
+        "sub": "wallstreetbets"
+      }
+    },
+    {
+      "id": "4699996f1bdc89a2",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "What Are Your Moves Tomorrow, February 17, 2026",
+      "summary": "This post contains content not supported on old Reddit. [Click here to view the full post](https://sh.reddit.com/r/wallstreetbets/comments/1r6lptj)",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r6lptj/what_are_your_moves_tomorrow_february_17_2026/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.638,
+      "timestamp": 1771291998.323158,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {
+        "score": 138,
+        "comments": 2538,
+        "sub": "wallstreetbets"
+      }
+    },
+    {
+      "id": "c976f6873e4aa786",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Pentagon threatens to label Anthropic AI a \"supply chain risk\"",
+      "summary": "Score: 1672, Comments: 176",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r6iyqd/pentagon_threatens_to_label_anthropic_ai_a_supply/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771291998.3232698,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {
+        "score": 1672,
+        "comments": 176,
+        "sub": "wallstreetbets"
+      }
+    },
+    {
+      "id": "3f325335df829151",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Western Digital says 2026 HDD capacity 100% sold out, hyperscaler AI data center cloud 89% of revenue, consumer 5%, long term deals to 2028",
+      "summary": "Source: [https://wccftech.com/western-digital-has-no-more-hdd-capacity-left-out/](https://wccftech.com/western-digital-has-no-more-hdd-capacity-left-out/)\n\n&gt;HDD capacity from one of the world's largest manufacturers has started to run dry, according to Western Digital's CEO, as major LTAs have been signed out.\n\n&gt;Western Digital's Consumer Share Drops to 5%, as Enterprise Demand Gobbles Up th",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r69rqb/western_digital_says_2026_hdd_capacity_100_sold/",
+      "relevance_tags": [
+        "sol",
+        "ai"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.8,
+      "timestamp": 1771291998.323686,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 2326,
+        "comments": 283,
+        "sub": "wallstreetbets"
+      }
+    },
+    {
+      "id": "7483f00bf7f19247",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "US 2025 jobs numbers revised down by over 1 million",
+      "summary": "Score: 24307, Comments: 1502",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r5pdcs/us_2025_jobs_numbers_revised_down_by_over_1/",
+      "relevance_tags": [
+        "jobs"
+      ],
+      "sentiment": -1.0,
+      "confidence": 0.8,
+      "timestamp": 1771291998.323796,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {
+        "score": 24307,
+        "comments": 1502,
+        "sub": "wallstreetbets"
+      }
+    },
+    {
+      "id": "90926fdf6f66c443",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "SpaceX and xAI to Compete in Pentagon Contest for Autonomous Drone Tech",
+      "summary": "Score: 122, Comments: 33",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r6i5cm/spacex_and_xai_to_compete_in_pentagon_contest_for/",
+      "relevance_tags": [
+        "ai",
+        "spacex"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.622,
+      "timestamp": 1771291998.32391,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {
+        "score": 122,
+        "comments": 33,
+        "sub": "wallstreetbets"
+      }
+    },
+    {
+      "id": "85c21e5b4dfbc01d",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "$ZIM play and I didn't even know about the buyout rumour lmao",
+      "summary": "https://preview.redd.it/8l3j0kpu1vjg1.png?width=1512&amp;format=png&amp;auto=webp&amp;s=4107cc41791685b2fd778569025942a355e3538d\n\nGuys wtf. My regarded ass entered ZIM calls on Friday. 500 x 24C expiring in Feb 27th to potentially get exposure in ruling decision against tariffs.\n\nLittle did i know, it seems we got something potentially bigger coming up. Potential buyout rumour. German market opene",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r69zr6/zim_play_and_i_didnt_even_know_about_the_buyout/",
+      "relevance_tags": [
+        "eth",
+        "ai",
+        "market",
+        "tariff"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.709,
+      "timestamp": 1771291998.3242428,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {
+        "score": 209,
+        "comments": 95,
+        "sub": "wallstreetbets"
+      }
+    },
+    {
+      "id": "bc83de556e001f69",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "[WSB Version] $NVDA Q4 Earnings Analysis &amp; Positions",
+      "summary": "**TL;DR at the bottom--This is the WSB version; if you are more sophisticated, disregard**\n\n# Positions:\n\n[Current Positions Showing 200 Shares and 1 $185 Call](https://preview.redd.it/boyn81kq2yjg1.jpg?width=1179&amp;format=pjpg&amp;auto=webp&amp;s=98f821fe575bb47e79c55330d6cbccf398911b21)\n\nThe plan is simple. This will be the quarter that $NVDA actually surges when the company reports outstandin",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r6qc24/wsb_version_nvda_q4_earnings_analysis_positions/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.525,
+      "timestamp": 1771291998.324571,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 25,
+        "comments": 29,
+        "sub": "wallstreetbets"
+      }
+    },
+    {
+      "id": "68c1ad96e0362407",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Analyzing historical drops: is it actually reliable?",
+      "summary": "Hi everyone,\n\nI\u2019m a software engineer with a passion for finance and statistics, and I\u2019m currently working on a small personal project. I\u2019d like to get some feedback from the community to understand how valuable this approach could be in real trading/investing.\n\nIn short: I\u2019m analyzing all the significant single\u2011day drops of a stock (e.g., -6%, -7%, -10%) and measuring how the price behaved in the",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r6hgqp/analyzing_historical_drops_is_it_actually_reliable/",
+      "relevance_tags": [
+        "stock"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.554,
+      "timestamp": 1771291998.3249652,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {
+        "score": 54,
+        "comments": 85,
+        "sub": "wallstreetbets"
+      }
+    },
+    {
+      "id": "bcdc99cf4cc24cd6",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Warner Bros reconsiders Paramount $108B sale after revised offer covers $2.8B Netflix breakup fee",
+      "summary": "Source: [https://finance.yahoo.com/news/warner-bros-weighs-reopening-sale-195058251.html](https://finance.yahoo.com/news/warner-bros-weighs-reopening-sale-195058251.html)\n\n&gt;Warner Bros Discovery is considering reopening sale talks with rival Hollywood studio Paramount Skydance after receiving its \u200chostile suitor's most recent amended offer, Bloomberg News reported on \u200cSunday, citing people with",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r5p75k/warner_bros_reconsiders_paramount_108b_sale_after/",
+      "relevance_tags": [
+        "etf"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771291998.325359,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 3090,
+        "comments": 323,
+        "sub": "wallstreetbets"
+      }
+    },
+    {
+      "id": "4800fd0632e8d6ae",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Daily Discussion Thread for February 16, 2026",
+      "summary": "This post contains content not supported on old Reddit. [Click here to view the full post](https://sh.reddit.com/r/wallstreetbets/comments/1r67u06)",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r67u06/daily_discussion_thread_for_february_16_2026/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.677,
+      "timestamp": 1771291998.3255491,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {
+        "score": 177,
+        "comments": 3639,
+        "sub": "wallstreetbets"
+      }
+    },
+    {
+      "id": "b75ec42eb0df0701",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Sandisk Earning forecast",
+      "summary": "https://preview.redd.it/3i6kgur9rtjg1.png?width=856&amp;format=png&amp;auto=webp&amp;s=7ba065f13a048ee1b68140270f08209902874d2e\n\nThe increase in ASP is really unbelievable.\n\nDiscipline - Sandisk has been selling basically the same amount of bits for the last several quarters. It can sell more but choose not to \n\nStarting in 2027, HBF revenue could be extremely significant, but it's still too early",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r65d2s/sandisk_earning_forecast/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.681,
+      "timestamp": 1771291998.32586,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 181,
+        "comments": 93,
+        "sub": "wallstreetbets"
+      }
+    },
+    {
+      "id": "4dcd3abbd409d011",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "What is WSB take on quantum?  Is this a playable event in our lifetime?",
+      "summary": "I don\u2019t know jack shit about quantum computing. There are many stonks out there on it.  Is this a tendie printer waiting in the wings if I\u2019m willing to buy this shit now and wait until til 2040?   QC will upend all cryptography and encryption right?  It will destabilize crypto coins, no?  How is this not the next internet? ",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r61r8w/what_is_wsb_take_on_quantum_is_this_a_playable/",
+      "relevance_tags": [
+        "crypto",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.759,
+      "timestamp": 1771291998.3261251,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 259,
+        "comments": 213,
+        "sub": "wallstreetbets"
+      }
+    },
+    {
+      "id": "c069ebde4762d3c0",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "YouTuber Logan Paul purchased this NFT for $635,000 in 2021 - Today, it's worth $155",
+      "summary": "Score: 1427, Comments: 209",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r6flmh/youtuber_logan_paul_purchased_this_nft_for_635000/",
+      "relevance_tags": [
+        "nft",
+        "youtube"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771291999.166073,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 1427,
+        "comments": 209,
+        "sub": "cryptocurrency"
+      }
+    },
+    {
+      "id": "6a146590a7c7165f",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "Harvard Cuts Bitcoin Holdings by 21%, Opens $87M Ethereum Position",
+      "summary": "Score: 513, Comments: 74",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r6l0bu/harvard_cuts_bitcoin_holdings_by_21_opens_87m/",
+      "relevance_tags": [
+        "bitcoin",
+        "ethereum",
+        "eth"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771291999.166246,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 513,
+        "comments": 74,
+        "sub": "cryptocurrency"
+      }
+    },
+    {
+      "id": "2bb258d3deeb25ac",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "Same Story, different Cycle",
+      "summary": "Score: 653, Comments: 49",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r6gn9q/same_story_different_cycle/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771291999.166332,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 653,
+        "comments": 49,
+        "sub": "cryptocurrency"
+      }
+    },
+    {
+      "id": "511e0b0d321ad5f9",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "Steak 'n Shake attributes sales increase to accepting Bitcoin payments",
+      "summary": "Score: 270, Comments: 62",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r6ktil/steak_n_shake_attributes_sales_increase_to/",
+      "relevance_tags": [
+        "bitcoin"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.77,
+      "timestamp": 1771291999.166445,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 270,
+        "comments": 62,
+        "sub": "cryptocurrency"
+      }
+    },
+    {
+      "id": "83ac9b30bae8ba18",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "XRP reserves on Binance are collapsing",
+      "summary": "Score: 410, Comments: 92",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r67au5/xrp_reserves_on_binance_are_collapsing/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771291999.166532,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 410,
+        "comments": 92,
+        "sub": "cryptocurrency"
+      }
+    },
+    {
+      "id": "8729595d15fc1127",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "I understand thinking crypto is over in 2014, again in 2018, again in 2022, but at this point saying \"it's over\" after it's dumped and then pumped cyclically is dimwitted",
+      "summary": "No one knew the first time around in 2014, say what you will but by this time in 2026 it's clear that crypto is cyclical and that above all, long-term holders win if you time your exit during the cycle peak. \n\n\n\nIt's not over, it's merely a cycle low. I think regardless in that wall street cheat sheet we're in Depression now. A few more will be rinshed out selling the beginning of the bull when ET",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r6m9jl/i_understand_thinking_crypto_is_over_in_2014/",
+      "relevance_tags": [
+        "crypto",
+        "ai"
+      ],
+      "sentiment": 0.33,
+      "confidence": 0.53,
+      "timestamp": 1771291999.1669939,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 30,
+        "comments": 28,
+        "sub": "cryptocurrency"
+      }
+    },
+    {
+      "id": "ab2ce2c7477b10bc",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "Bitcoin\u2019s slide may signal broader market trouble and a U.S. recession, Mike McGlone says",
+      "summary": "Score: 65, Comments: 39",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r6d1gi/bitcoins_slide_may_signal_broader_market_trouble/",
+      "relevance_tags": [
+        "bitcoin",
+        "recession",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.565,
+      "timestamp": 1771291999.167149,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {
+        "score": 65,
+        "comments": 39,
+        "sub": "cryptocurrency"
+      }
+    },
+    {
+      "id": "ce8d97ef7253ee6c",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "X(Twitter) Goes Down Again - Thousands Report Feed &amp; Login Issues, Cryptobros won't be happy",
+      "summary": "Score: 87, Comments: 48",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r6ahyc/xtwitter_goes_down_again_thousands_report_feed/",
+      "relevance_tags": [
+        "crypto",
+        "ai"
+      ],
+      "sentiment": -1.0,
+      "confidence": 0.587,
+      "timestamp": 1771291999.1672819,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 87,
+        "comments": 48,
+        "sub": "cryptocurrency"
+      }
+    },
+    {
+      "id": "3dcdc1bc18309f6f",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "Security risks of holding a large amount of USDT long-term?",
+      "summary": "I\u2019m considering holding a significant amount of USDT long term and want to understand the real risks beyond price volatility.\n\nMy concerns are:\n\n\u2013 Risk of issuer freezing funds\n\n\u2013 Exchange account freezes\n\n\u2013 Wallet security and self-custody risks\n\n\u2013 Smart contract risks depending on the chain\n\nFor people experienced with large holdings:\n\n\u2013 What are the biggest real-world risks?\n\n\u2013 What storage set",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r6b9g4/security_risks_of_holding_a_large_amount_of_usdt/",
+      "relevance_tags": [
+        "sec",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.531,
+      "timestamp": 1771291999.167661,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 31,
+        "comments": 51,
+        "sub": "cryptocurrency"
+      }
+    },
+    {
+      "id": "ad84407ff02daebe",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "Others on Valentine's Day vs Me",
+      "summary": "Score: 824, Comments: 28",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r5maj5/others_on_valentines_day_vs_me/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771291999.167758,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 824,
+        "comments": 28,
+        "sub": "cryptocurrency"
+      }
+    },
+    {
+      "id": "495c4657ec6ab7be",
+      "source": "tavily",
+      "headline": "Latest and breaking political news today - POLITICO",
+      "summary": "Texas Republicans bet on continuing to win over Latino voters. Then Trump began his aggressive deportation campaign. Saturday, February 14, 2026.",
+      "url": "https://www.politico.com/politics",
+      "relevance_tags": [
+        "trump",
+        "republican",
+        "vote",
+        "ai"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771292203.351308,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "e012d471b609973d",
+      "source": "tavily",
+      "headline": "Politics: Latest & Breaking US Political News | AP News",
+      "summary": "Read breaking political news today from The Associated Press. Get the updates from AP News so you won't miss the latest in US political news.",
+      "url": "https://apnews.com/politics",
+      "relevance_tags": [],
+      "sentiment": -1.0,
+      "confidence": 0.7,
+      "timestamp": 1771292203.3514051,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {}
+    },
+    {
+      "id": "211a3ef5dd4b2140",
+      "source": "tavily",
+      "headline": "Axios - Breaking news, U.S. news and politics, and local news",
+      "summary": "Nancy Pelosi is retiring from Congress, but she has more campaigns in mind. Among them: Boost Gavin Newsom as a potential contender for the White House in 2028.",
+      "url": "https://www.axios.com/",
+      "relevance_tags": [
+        "congress",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292203.35149,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "85edaa795160f8db",
+      "source": "tavily",
+      "headline": "Breaking Political News, Video & Analysis-ABC News",
+      "summary": "Trump says he'll announce $5 billion in donations from members of his Board of Peace. Members will also provide personnel for a stabilization force in Gaza,",
+      "url": "https://abcnews.com/Politics",
+      "relevance_tags": [
+        "trump"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292203.35157,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "6e7f1feb00c91018",
+      "source": "tavily",
+      "headline": "Politics | Latest News & Updates - BBC",
+      "summary": "Labour face tough fight in Gorton and Denton by-election. Labour is in a tough fight with Reform UK and the Greens in previously safe seat Gorton and Denton.",
+      "url": "https://www.bbc.com/news/politics",
+      "relevance_tags": [
+        "election"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292203.351645,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "bd9e493dfee21d8c",
+      "source": "tavily",
+      "headline": "Politics News: Latest on Trump Administration, Congress, Elections ...",
+      "summary": "President Donald Trump's pick for a top State Department post is facing bipartisan opposition over past remarks about Israel and the Holocaust.",
+      "url": "https://www.nbcnews.com/politics",
+      "relevance_tags": [
+        "trump",
+        "election",
+        "congress",
+        "president",
+        "partisan"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292203.3517241,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "34d4bae5715bd22d",
+      "source": "tavily",
+      "headline": "Politics, Policy, Political News - POLITICO",
+      "summary": "RFK Jr.'s allies are trying to free anti-vaccine doctors to speak their minds \u00b7 San Francisco teachers reach deal with district, ending 4-day strike \u00b7 Newsom to",
+      "url": "https://www.politico.com/",
+      "relevance_tags": [
+        "policy"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292203.351806,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "9839f52797bbb3bf",
+      "source": "tavily",
+      "headline": "Politics | PBS News",
+      "summary": "Politics \u00b7 House Minority Leader Jeffries Holds Press Conference \u00b7 Democrats pushing to 'get ICE under control' with DHS shutdown, Jeffries says ; Politics",
+      "url": "https://www.pbs.org/newshour/politics",
+      "relevance_tags": [
+        "democrat"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292203.3518772,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "0921bf1a504f3ff8",
+      "source": "tavily",
+      "headline": "Sport results today - Football, rugby, cricket scores",
+      "summary": "Results ; The Emirates FA Cup \u00b7 4th Round \u00b7 Grimsby Town. 0. 1 ; Serie A \u00b7 Matchday 25. Udinese. 1. 2 ; La Liga \u00b7 Matchday 24. Real Oviedo. 1. 2.",
+      "url": "https://www.tntsports.co.uk/score-center.shtml",
+      "relevance_tags": [
+        "football",
+        "match",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292205.6406798,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "7f7f91a023ae61ee",
+      "source": "tavily",
+      "headline": "Today's Top Sports Scores and Games (All Sports)",
+      "summary": "1. United States. A. Kim. -23 ; 2. Spain. J. Rahm. -20 ; T3. United States. P. Uihlein. -17 ; T3. England. T. Hatton. -17.",
+      "url": "https://www.foxsports.com/scores",
+      "relevance_tags": [
+        "game",
+        "score",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292205.640865,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "ec84ffb3e4be4c16",
+      "source": "tavily",
+      "headline": "365Scores: Football Live Scores, Fixtures, Table & Standings",
+      "summary": "Football live scores by 365Scores, covering over 1,000 competitions with all today's matches of top competitions including FA Cup, UEFA Champions League and MLS",
+      "url": "https://www.365scores.com/",
+      "relevance_tags": [
+        "football",
+        "match",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292205.641064,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "66a0246626862023",
+      "source": "tavily",
+      "headline": "Scores & Fixtures - Football - BBC Sport",
+      "summary": "All the football fixtures, latest results & live scores for all leagues and competitions on BBC Sport, including the Premier League,",
+      "url": "https://www.bbc.com/sport/football/scores-fixtures",
+      "relevance_tags": [
+        "football",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292205.64123,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "7101e06f58acfc79",
+      "source": "tavily",
+      "headline": "BeSoccer Livescore: all today's live soccer scores",
+      "summary": "Get all the latest soccer livescores 24 on BeSoccer\u26bd. You will be able to see all today's live Premier League football scores and from all competitions in the",
+      "url": "https://www.besoccer.com/",
+      "relevance_tags": [
+        "soccer",
+        "football",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292205.641473,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "b5c24ed6e602c9f5",
+      "source": "tavily",
+      "headline": "Live soccer scores, tennis, basketball and 30+ other sports",
+      "summary": "Livesport.com: Fast and accurate live scores from soccer, tennis, basketball, baseball, hockey and many other sports. Livescore, results, statistics.",
+      "url": "https://www.livesport.com/en/",
+      "relevance_tags": [
+        "soccer",
+        "basketball",
+        "baseball",
+        "hockey",
+        "tennis",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292205.641672,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "ffed27d8233bc90f",
+      "source": "tavily",
+      "headline": "Flashscore.com: Football Live Scores, Latest Football Results",
+      "summary": "Football live scores page on Flashscore.com offers all the latest football results from more than 1000+ football leagues all around the world including EPL,",
+      "url": "https://www.flashscore.com/",
+      "relevance_tags": [
+        "football",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292205.641786,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "f8970e7b0dedcc31",
+      "source": "tavily",
+      "headline": "FotMob - Football Live Scores",
+      "summary": "All leagues ; Real Oviedo. FT. 1 - 2 \u00b7 Athletic Club ; Rayo Vallecano. FT. 3 - 0 \u00b7 Atletico Madrid ; Levante. FT. 0 - 2 \u00b7 Valencia.",
+      "url": "https://www.fotmob.com/",
+      "relevance_tags": [
+        "football",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292205.642085,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "9e81d44d8e887aee",
+      "source": "tavily",
+      "headline": "Fenwick Crypto: Regulation News & Updates",
+      "summary": "With federal crypto enforcement shifting, regulators in states like New York and California are intensifying crypto oversight and targeting digital asset firms",
+      "url": "https://www.fenwick.com/crypto-review",
+      "relevance_tags": [
+        "crypto",
+        "regulation",
+        "fed"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292207.114177,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "6c3ec6b66c1da04b",
+      "source": "tavily",
+      "headline": "Crypto World: latest crypto news and digital currency updates",
+      "summary": "CNBC Crypto World delivers the latest crypto news ... President Trump touts progress on crypto regulation at the World Economic Forum: CNBC Crypto World.",
+      "url": "https://www.cnbc.com/cryptoworld/",
+      "relevance_tags": [
+        "trump",
+        "president",
+        "crypto",
+        "regulation"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292207.11428,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "2df796dad993eee8",
+      "source": "tavily",
+      "headline": "Crypto Regulation News",
+      "summary": "CFTC's 35-seat crypto \u201cwar room\u201d changes the SEC fight \u2014 here's what's at stake. CFTC just named Coinbase, Ripple, Uniswap, Solana and Chainlink leaders to its",
+      "url": "https://cryptoslate.com/regulation/",
+      "relevance_tags": [
+        "nba",
+        "crypto",
+        "sol",
+        "sec",
+        "regulation",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292207.114377,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "509f572933384211",
+      "source": "tavily",
+      "headline": "BSV Association MiCA recognition, co-authors EU crypto regulation",
+      "summary": "BSV Association secures MiCA recognition, co-authors white paper to help shape Europe's crypto regulation. 16 February 2026. By Press Releases.",
+      "url": "https://coingeek.com/bsv-association-secures-mica-recognition-co-authors-white-paper-to-help-shape-europe-crypto-regulation/",
+      "relevance_tags": [
+        "crypto",
+        "sec",
+        "regulation"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292207.114461,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "a4815724331bb257",
+      "source": "tavily",
+      "headline": "Regulation - CoinDesk",
+      "summary": "Commodity Futures Trading Commission Chairman Mike Selig signals an intent to set crypto policy into formal rules that would be hard to reverse down the road.",
+      "url": "https://www.coindesk.com/tag/regulation",
+      "relevance_tags": [
+        "policy",
+        "crypto",
+        "regulation",
+        "ai"
+      ],
+      "sentiment": -1.0,
+      "confidence": 0.7,
+      "timestamp": 1771292207.114553,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "acfc4567d613bea0",
+      "source": "tavily",
+      "headline": "Regulatory Uncertainty Continues for Crypto-Asset Service Providers",
+      "summary": "With both the First Act and the Second Act vetoed, Poland is back to square one when it comes to the regulation of crypto-assets. It should be",
+      "url": "https://www.twobirds.com/en/insights/2026/poland/the-micar-impasse-in-poland-regulatory-uncertainty-continues-for-crypto-asset-service-providers",
+      "relevance_tags": [
+        "crypto",
+        "sec",
+        "regulation",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292207.114707,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "b0daf0813ef67f0a",
+      "source": "tavily",
+      "headline": "Latest Regulation News | Forbes Digital Assets",
+      "summary": "Latest Regulation News \u00b7 Amid State Clashes, Prediction Markets Watch CFTC Intervene In Court \u00b7 Stablecoins Beyond The Hype: Lack Of Credit Protection For Holders.",
+      "url": "https://www.forbes.com/digital-assets/news/regulation/",
+      "relevance_tags": [
+        "regulation",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292207.114785,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "4619ab62bd33cead",
+      "source": "tavily",
+      "headline": "CNN: Breaking News, Latest News and Videos",
+      "summary": "View the latest news and breaking news today for U.S., world, weather, entertainment, politics and health at CNN.com.",
+      "url": "https://www.cnn.com/",
+      "relevance_tags": [
+        "ai",
+        "weather"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292209.743412,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {}
+    },
+    {
+      "id": "9434842d2bac2432",
+      "source": "tavily",
+      "headline": "The Washington Post - Breaking news and latest headlines, U.S. ...",
+      "summary": "Breaking news, live coverage, investigations, analysis, video, photos and opinions from The Washington Post. Subscribe for the latest on U.S. and",
+      "url": "https://www.washingtonpost.com/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292209.743797,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {}
+    },
+    {
+      "id": "17fd1879ab3d95a3",
+      "source": "tavily",
+      "headline": "RealClearPolling: 2025 Latest Election Polls and Political Insights",
+      "summary": "Explore up-to-date 2025 election polls on RealClearPolling. Gain valuable insights into the evolving political landscape and stay ahead of the latest",
+      "url": "https://www.realclearpolling.com/",
+      "relevance_tags": [
+        "election",
+        "ai"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771292211.2561789,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "f51fe5c944d3dca3",
+      "source": "tavily",
+      "headline": "Latest Polls 2025, 2026, 2028 | RealClearPolling",
+      "summary": "Stay up to date on all the latest 2025, 2026, 2028 election and state of the union polls. Gain valuable insights into the evolving political landscape and",
+      "url": "https://www.realclearpolling.com/latest-polls",
+      "relevance_tags": [
+        "election",
+        "ai"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771292211.2562618,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "4d10c072dabe779c",
+      "source": "tavily",
+      "headline": "Latest U.S. opinion polls | Ipsos",
+      "summary": "Reuters/Ipsos Poll. Washington, DC, December 17, 2025 \u2013 The cost of living remains the top issue for Americans when it comes to the 2026",
+      "url": "https://www.ipsos.com/en-us/latest-us-opinion-polls",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292211.256337,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {}
+    },
+    {
+      "id": "baeb63472578ec3b",
+      "source": "tavily",
+      "headline": "U.S. Elections News | Top Headlines, Latest Polls & Analysis | Reuters",
+      "summary": "U.S. President Donald Trump said on Friday that he would seek to impose voter identification requirements for the November midterm elections whether",
+      "url": "https://www.reuters.com/world/us/elections/",
+      "relevance_tags": [
+        "trump",
+        "election",
+        "president",
+        "vote",
+        "eth",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292211.2564118,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "5e08ea8addcd4825",
+      "source": "tavily",
+      "headline": "Election News, Polls and Results - 270toWin.com",
+      "summary": "This Tuesday we are following the Oklahoma City mayoral election, and three legislative special elections. Mayor. Oklahoma City. Polls close at 8:00 PM",
+      "url": "https://www.270towin.com/news/",
+      "relevance_tags": [
+        "election"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292211.25648,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "1d2b0b72b58f8cb5",
+      "source": "tavily",
+      "headline": "Fox News Poll",
+      "summary": "Check out the latest polls on Fox News. See results for political polls, gain valuable insights into public opinion, and stay ahead with in-depth analyses",
+      "url": "https://www.foxnews.com/official-polls",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771292211.256543,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {}
+    },
+    {
+      "id": "5c8289fc6cd4beb0",
+      "source": "tavily",
+      "headline": "President Trump Approval Rating: Latest Polls - The New York Times",
+      "summary": "Presidential approval polls. Polls from \u201cselect pollsters\u201d meet certain criteria for reliability and are shown with",
+      "url": "https://www.nytimes.com/interactive/polls/donald-trump-approval-rating-polls.html",
+      "relevance_tags": [
+        "trump",
+        "president",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771292211.256617,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "adb9a642fc1522dc",
+      "source": "tavily",
+      "headline": "Politics - AP News",
+      "summary": "Read breaking political news today from The Associated Press. Get the updates from AP News so you won't miss the latest in US political news.",
+      "url": "https://apnews.com/politics",
+      "relevance_tags": [],
+      "sentiment": -1.0,
+      "confidence": 0.7,
+      "timestamp": 1771293545.4651608,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {}
+    },
+    {
+      "id": "799901524cf867e7",
+      "source": "tavily",
+      "headline": "Politics - CNN",
+      "summary": "More politics news. Justice Department lists hundreds of prominent people named in Epstein files in letter to Congress \u00b7 Jeffries goes all in on gerrymandering",
+      "url": "https://www.cnn.com/politics",
+      "relevance_tags": [
+        "congress"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771293545.465504,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "fc8b7739fb8c149a",
+      "source": "tavily",
+      "headline": "Soccer Live Scores, Latest Soccer Results | Flashscore",
+      "summary": "Soccer live scores page on Flashscore offers all the latest soccer results from more than 1000+ soccer leagues all around the world including MLS, Liga MX,",
+      "url": "https://www.flashscoreusa.com/",
+      "relevance_tags": [
+        "soccer",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771293546.793927,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "e7e62351a0673de6",
+      "source": "tavily",
+      "headline": "All Sports Scoreboard",
+      "summary": "Olympics \u00b7 Fantasy \u00b7 Fantasy baseball \u00b7 News \u00b7 Fantasy football \u00b7 Best ball \u00b7 Pro Pick 'Em \u00b7 College Pick 'Em \u00b7 Fantasy hockey \u00b7 Fantasy basketball",
+      "url": "https://sports.yahoo.com/scoreboard/",
+      "relevance_tags": [
+        "football",
+        "basketball",
+        "baseball",
+        "hockey",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771293546.794126,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "17b2e4518c35ad5b",
+      "source": "tavily",
+      "headline": "CBS Sports - News, Live Scores, Schedules, Fantasy Games ...",
+      "summary": "CBS Sports features live scoring, news, stats, and player info for NFL football, MLB baseball, NBA basketball, NHL hockey, college basketball and football.",
+      "url": "https://www.cbssports.com/",
+      "relevance_tags": [
+        "nba",
+        "nfl",
+        "mlb",
+        "nhl",
+        "football",
+        "basketball",
+        "baseball",
+        "hockey",
+        "game",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771293546.794198,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "492f451ee05566cf",
+      "source": "tavily",
+      "headline": "Regulation | CoinDesk",
+      "summary": "Commodity Futures Trading Commission Chairman Mike Selig signals an intent to set crypto policy into formal rules that would be hard to reverse down the road.",
+      "url": "https://www.coindesk.com/tag/regulation",
+      "relevance_tags": [
+        "policy",
+        "crypto",
+        "regulation",
+        "ai"
+      ],
+      "sentiment": -1.0,
+      "confidence": 0.7,
+      "timestamp": 1771293548.178189,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "c0466edb1004f4ad",
+      "source": "tavily",
+      "headline": "Nexo Brings Crypto Business Back to US - PYMNTS.com",
+      "summary": "The company announced in a new release Monday (Feb. 16) that this return is being carried out in collaboration with \u201cregulated partners,\u201d",
+      "url": "https://www.pymnts.com/cryptocurrency/2026/nexo-brings-crypto-business-back-to-us/",
+      "relevance_tags": [
+        "crypto"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771293548.1789281,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "76074430b8020f8c",
+      "source": "tavily",
+      "headline": "U.S. News | Latest National News, Videos & Photos - ABC News",
+      "summary": "2 killed, several injured in 'targeted' shooting at ice skating rink: Police. In 1 day ; Judge orders administration to restore slavery exhibit at President's",
+      "url": "https://abcnews.com/us",
+      "relevance_tags": [
+        "president"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771293550.1147048,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "fa5d95e5a1a1009c",
+      "source": "tavily",
+      "headline": "January 2026 National Poll: Democrats Start Midterm Election Year ...",
+      "summary": "Looking ahead to the November 2026 Midterm Elections, 48% support the Democratic candidate on the generic congressional ballot and 42% plan on",
+      "url": "https://emersoncollegepolling.com/january-2026-national-poll/",
+      "relevance_tags": [
+        "election",
+        "congress",
+        "democrat",
+        "ballot"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771293552.1554089,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "09da03a54a606978",
+      "source": "tavily",
+      "headline": "Prior Elections - California Secretary of State",
+      "summary": "Prior Statewide Elections \u00b7 Statewide Election Results \u00b7 Special Elections \u00b7 County, City, School District & Ballot Measure Election Results",
+      "url": "https://www.sos.ca.gov/elections/prior-elections",
+      "relevance_tags": [
+        "election",
+        "ballot",
+        "sec"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771293552.155665,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "3fbfd77a467036b3",
+      "source": "reddit/r/politics",
+      "headline": "Donald Trump Is\u00a0Really\u00a0Racist",
+      "summary": "Score: 1240, Comments: 119",
+      "url": "https://reddit.com/r/politics/comments/1r6ob7q/donald_trump_is_really_racist/",
+      "relevance_tags": [
+        "trump"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771293556.053859,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 1240,
+        "comments": 119,
+        "sub": "politics"
+      }
+    },
+    {
+      "id": "543020684275f9b0",
+      "source": "tavily",
+      "headline": "MS NOW - Breaking News and News Today | Latest News",
+      "summary": "Trump publicly condemns Israel's president for the Trumpiest of reasons \u00b7 Steve Benen ; 'Clown show': Obama addresses Trump's racist video depicting him and his",
+      "url": "https://www.ms.now/",
+      "relevance_tags": [
+        "trump",
+        "president"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771295514.6697779,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "0dec6f4d2cd08cb7",
+      "source": "tavily",
+      "headline": "U.S. Politics - The New York Times",
+      "summary": "After First Big Overseas Trip, Ocasio-Cortez Expresses Frustrations \u00b7 Judge Orders Trump Administration to Restore Displays About Slavery at Washington's House.",
+      "url": "https://www.nytimes.com/section/politics",
+      "relevance_tags": [
+        "trump"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771295514.669913,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "3bfe629e71b8e934",
+      "source": "tavily",
+      "headline": "Flashscore.ca: NHL, NBA, NFL, MLB, MLS, Canadian Premier ...",
+      "summary": "Follow NHL scores, results and standings and all your favourite sports live on Flashscore! You can find all today's top events scores on Flashscore.ca homepage.",
+      "url": "https://www.flashscore.ca/",
+      "relevance_tags": [
+        "nba",
+        "nfl",
+        "mlb",
+        "nhl",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771295515.679287,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "f213c905a3f9daf3",
+      "source": "tavily",
+      "headline": "Sofascore: Live Sports Scores - Apps on Google Play",
+      "summary": "Sofascore provides live sports scores, detailed statistics, and the most complete sports data coverage anywhere. Whether you follow NBA, NFL, NCAA, MLB,",
+      "url": "https://play.google.com/store/apps/details?id=com.sofascore.results&hl=en",
+      "relevance_tags": [
+        "nba",
+        "nfl",
+        "mlb",
+        "score",
+        "eth",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771295515.679488,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "8d99fcfb18544999",
+      "source": "tavily",
+      "headline": "CBS Sports - News, Live Scores, Schedules, Fantasy Games, Video ...",
+      "summary": "CBS Sports features live scoring, news, stats, and player info for NFL football, MLB baseball, NBA basketball, NHL hockey, college basketball and football.",
+      "url": "https://www.cbssports.com/",
+      "relevance_tags": [
+        "nba",
+        "nfl",
+        "mlb",
+        "nhl",
+        "football",
+        "basketball",
+        "baseball",
+        "hockey",
+        "game",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771295515.679717,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "e4705f9c7b83148c",
+      "source": "tavily",
+      "headline": "TSN",
+      "summary": "... Scores \u00b7 Schedule \u00b7 Standings \u00b7 Leaders \u00b7 Statistics \u00b7 Teams \u00b7 Injuries \u00b7 Tradecentre ... Results \u00b7 Schedule \u00b7 RaceCentre \u00b7 F1 on TSN \u00b7 Standings. Motorsports.",
+      "url": "https://www.tsn.ca/scores/",
+      "relevance_tags": [
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771295515.679795,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "f201f9583aea9ab0",
+      "source": "tavily",
+      "headline": "Regulation News",
+      "summary": "New crypto ban targets Russia rails but one chokepoint decides whether flows die or just relocate offshore. If stablecoin issuers block redemption and the EU",
+      "url": "https://cryptoslate.com/regulation/",
+      "relevance_tags": [
+        "crypto",
+        "eth",
+        "regulation",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771295517.0684018,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "10e3fa8d49acd17c",
+      "source": "tavily",
+      "headline": "Regulation",
+      "summary": "Commodity Futures Trading Commission Chairman Mike Selig signals an intent to set crypto policy into formal rules that would be hard to reverse down the road.",
+      "url": "https://www.coindesk.com/tag/regulation",
+      "relevance_tags": [
+        "policy",
+        "crypto",
+        "regulation",
+        "ai"
+      ],
+      "sentiment": -1.0,
+      "confidence": 0.7,
+      "timestamp": 1771295517.06868,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "a252bfb389b18dff",
+      "source": "tavily",
+      "headline": "Trending Markets - Polymarket",
+      "summary": "Polymarket currently hosts 19 active markets for Trending Markets that lets you track or trade on predictions like \"Will the election be called on Nov 5? As of today, the most active market is \"Will Biden finish his term?,\" where the crowd is currently assigning a 100% chance to Yes. These odds update in real-time as new information emerges and users trade, offering a dynamic snapshot of what the market believes will happen compared to traditional bookmaker odds. Each polymarket is a yes/no question, like \"Trump ends Ukraine war in first 90 days?\". Polymarket is the world's largest prediction ",
+      "url": "https://polymarket.com/predictions/trending-markets",
+      "relevance_tags": [
+        "trump",
+        "biden",
+        "election",
+        "ai",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771295518.576451,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "810ff9562a6b4912",
+      "source": "tavily",
+      "headline": "Market Trends - Polymarket",
+      "summary": "Polymarket currently hosts 2 active markets for Market Trends that lets you track or trade on predictions like \"Price of Portal one week after launch?\". Polymarket is the world's largest prediction market, where you can stay informed and profit from your knowledge by trading on things related to breaking news, politics, sports, elections, crypto, finance, tech, culture, including topics like Market Trends. As of today, the most active market is \"Price of Portal one week after launch?,\" where the crowd is currently assigning a 100% chance to <$2.50. Unlike polls or punditry, Polymarket shows yo",
+      "url": "https://polymarket.com/predictions/market-trends",
+      "relevance_tags": [
+        "election",
+        "crypto",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771295518.577665,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "549e2b90a5f9985b",
+      "source": "tavily",
+      "headline": "Prediction Markets Cool to $5.3B After Super Bowl Surge as 6 ...",
+      "summary": "Super Bowl Fuels Kalshi to Record $2.8B Week as Prediction Markets Hold Near $6.3B. Kalshi, Polymarket Break Records in $5.9B Week for Prediction Markets. Combined weekly notional volume across top prediction market platforms dropped to **$5.3 billion** for the full week following the Super Bowl, a modest dip considering the current concentration of sports volume across the industry. Kalshi and Polymarket combined for **$4.3 billion** in volume in the week ending Feb. 15, according to DeFi Rate\u2019s prediction market tracker, which aggregates real-time data across both platforms. On Kalshi, enter",
+      "url": "https://defirate.com/news/prediction-markets-cool-to-5-3b-after-super-bowl-6-month-growth-hits-13x/",
+      "relevance_tags": [
+        "super bowl",
+        "defi",
+        "market"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771295518.578968,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "a86f65af271cd290",
+      "source": "tavily",
+      "headline": "Prediction Markets Are Sucking Huge Numbers of Young People ...",
+      "summary": "Now, the rise of prediction markets like Polymarket and Kalshi to bet on almost any conceivable outcome, ranging from presidential elections to military interventions to celebrity dramas to the return of our lord and savior Jesus Christ. \u201cI wouldn\u2019t describe it as gambling\u201d but a \u201cmix of betting and options trading,\u201d 21-year-old Yadin Eldar, a Florida State University student who\u2019s been betting on prediction markets since 2019, told *The Guardian*. Another survey from this January showed that millennials and Gen Z were more aware of specific prediction markets like Polymarket and Kalshi than o",
+      "url": "https://uk.finance.yahoo.com/news/prediction-markets-sucking-huge-numbers-150000167.html",
+      "relevance_tags": [
+        "election",
+        "president",
+        "celebrity",
+        "market"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771295518.5795588,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "7d9676e0c8dbf921",
+      "source": "tavily",
+      "headline": "World News: International Headlines, Breaking Reports ...",
+      "summary": "Congress \u00b7 Republican congressman's anti-Muslim remark prompts calls for his resignation ; Middle East Conflict \u00b7 Israeli airstrikes kill 9 in Gaza, including",
+      "url": "https://www.nbcnews.com/world",
+      "relevance_tags": [
+        "congress",
+        "republican",
+        "nfl",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771295520.038063,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "6fbadc146d366722",
+      "source": "tavily",
+      "headline": "The Washington Post - Breaking news and latest headlines ...",
+      "summary": "As the Trump administration heads into nuclear talks with Tehran after a government crackdown killed thousands, widespread outrage has not abated, Iranians say.",
+      "url": "https://www.washingtonpost.com/",
+      "relevance_tags": [
+        "trump"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771295520.0381901,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "664b014b49f7fbdc",
+      "source": "tavily",
+      "headline": "NBC News - Breaking Headlines and Video Reports on World ...",
+      "summary": "Team USA's Abbey Murphy scored a top shelf goal to ignite an offensive scoring spree in the semifinal round against Sweden at the 2026 Milan Cortina Olympics.",
+      "url": "https://www.nbcnews.com/",
+      "relevance_tags": [
+        "score",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771295520.038387,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "709e3d151e4c2f20",
+      "source": "tavily",
+      "headline": "Latest U.S. News | Top headlines from the USA",
+      "summary": "29 mins ago. New Mexico approves comprehensive probe of Epstein's Zorro Ranch \u00b7 3 hours ago. US judge tells National Park Service to reinstall Philadelphia",
+      "url": "https://www.reuters.com/world/us/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771295520.038492,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {}
+    },
+    {
+      "id": "960db9c0087b1fa5",
+      "source": "tavily",
+      "headline": "CBS New York - Breaking News, Sports, Weather, Traffic ...",
+      "summary": "Nurses at 2 NYC hospital systems return to work after strike \u00b7 NYC nurses strike poised to end at 2 of 3 hospital systems \u00b7 Thousands impacted by Mount Sinai,",
+      "url": "https://www.cbsnews.com/newyork/",
+      "relevance_tags": [
+        "ai",
+        "weather"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771295520.0388741,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {}
+    },
+    {
+      "id": "d1efabaa2197595c",
+      "source": "tavily",
+      "headline": "NBC 4 New York \u2013 NY local news, breaking news, weather",
+      "summary": "Authorities responding to reported shooting in Rhode Island \u00b7 Injured seabird desperately pecks at hospital door for help \u00b7 Remembering the celebrities and public",
+      "url": "https://www.nbcnewyork.com/",
+      "relevance_tags": [
+        "weather"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771295520.03905,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {}
+    },
+    {
+      "id": "a01296b785bbfe94",
+      "source": "tavily",
+      "headline": "U.S. Elections News | Top Headlines, Latest Polls & Analysis",
+      "summary": "U.S. President Donald Trump said on Friday that he would seek to impose voter identification requirements for the November midterm elections whether",
+      "url": "https://www.reuters.com/world/us/elections/",
+      "relevance_tags": [
+        "trump",
+        "election",
+        "president",
+        "vote",
+        "eth",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771295521.880673,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "fb9be305e45ee485",
+      "source": "tavily",
+      "headline": "Election Results | VoteIdaho.Gov",
+      "summary": "Find the latest Idaho election results on VoteIdaho.gov. Access official vote counts, detailed breakdowns by district, and historical election data.",
+      "url": "https://voteidaho.gov/election-results/",
+      "relevance_tags": [
+        "election",
+        "vote",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771295521.8808079,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "2409e0a7b0f71008",
+      "source": "reddit/r/sportsbook",
+      "headline": "College Baseball O/U game total voided bet",
+      "summary": "Title says it all - took under 15.5 when the score was 1-8 OK. OK scored a homer score went 1-11. Game ended 2-12. The bet was voided, I wasn\u2019t watching the game but it looks like it ended early? I know if I bet under 13.5 DK would have taken my money which I almost took before the HR that put OK up 11-1. Only $20 but hey that\u2019s some breakfast. \n\nOnly thing I can think of is that the game did not ",
+      "url": "https://reddit.com/r/sportsbook/comments/1r68tli/college_baseball_ou_game_total_voided_bet/",
+      "relevance_tags": [
+        "baseball",
+        "game",
+        "score"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.504,
+      "timestamp": 1771295524.734142,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {
+        "score": 4,
+        "comments": 21,
+        "sub": "sportsbook"
+      }
+    },
+    {
+      "id": "8b510d11d9842a47",
+      "source": "reddit/r/politics",
+      "headline": "The Worst President Ever",
+      "summary": "Score: 1497, Comments: 65",
+      "url": "https://reddit.com/r/politics/comments/1r6rw6j/the_worst_president_ever/",
+      "relevance_tags": [
+        "president"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771295525.4300601,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 1497,
+        "comments": 65,
+        "sub": "politics"
+      }
+    },
+    {
+      "id": "a73b50be69107b7b",
+      "source": "reddit/r/politics",
+      "headline": "You Know What? Maybe the Time Is Right for an AOC Presidential Bid",
+      "summary": "Score: 1094, Comments: 473",
+      "url": "https://reddit.com/r/politics/comments/1r6rnjt/you_know_what_maybe_the_time_is_right_for_an_aoc/",
+      "relevance_tags": [
+        "president"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771295525.43038,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 1094,
+        "comments": 473,
+        "sub": "politics"
+      }
+    },
+    {
+      "id": "037516b6ef59c5b9",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Dalio\u2019s Bridgewater invests $253 million in NVDA",
+      "summary": "https://stocks.apple.com/AXaABk3b5QT-bKfZrhbuqyQ\n\nInvestment made in 12/25 but disclosure made after Friday close. ",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r6s8t7/dalios_bridgewater_invests_253_million_in_nvda/",
+      "relevance_tags": [
+        "stock"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.542,
+      "timestamp": 1771295526.2897909,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {
+        "score": 42,
+        "comments": 21,
+        "sub": "wallstreetbets"
+      }
+    },
+    {
+      "id": "9dca6baefa69054e",
+      "source": "tavily",
+      "headline": "US politics | The Guardian",
+      "summary": "Trump news at a glance: Ukraine must reach a deal with Russia 'fast', says president before trilateral talks \u00b7 Anderson Cooper to leave 60 Minutes amid turmoil",
+      "url": "https://www.theguardian.com/us-news/us-politics",
+      "relevance_tags": [
+        "trump",
+        "president",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771299094.293801,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "e22725dc59d0cc8f",
+      "source": "tavily",
+      "headline": "Livesport.com - Live soccer scores, tennis, basketball and 30+ other ...",
+      "summary": "Livesport.com - fast and accurate live scores from soccer, tennis, basketball, baseball and many other sports. Livescore, results, standings, statistics.",
+      "url": "https://www.livesport.com/",
+      "relevance_tags": [
+        "soccer",
+        "basketball",
+        "baseball",
+        "tennis",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771299095.811282,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "d28b6e407402137f",
+      "source": "tavily",
+      "headline": "BlackRock confirms partnership with Ripple! This Speech Is a Game ...",
+      "summary": "After years of evolving crypto regulation, financial innovation, and ... new vision for the integration of traditional finance and blockchain",
+      "url": "https://www.youtube.com/watch?v=cQ3VyD1YfXE",
+      "relevance_tags": [
+        "game",
+        "crypto",
+        "blockchain",
+        "regulation",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771299097.544568,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "5daa604863df788e",
+      "source": "tavily",
+      "headline": "Crypto Regulation Hub | Davis Polk",
+      "summary": "This resource center contains links to congressional proposals related to the regulation of crypto assets and other helpful materials.",
+      "url": "https://www.davispolk.com/insights/resource-centers/crypto-regulation-hub",
+      "relevance_tags": [
+        "congress",
+        "crypto",
+        "regulation",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771299097.544848,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "117c15aa5f57c39d",
+      "source": "tavily",
+      "headline": "Prediction Market Polymarkets",
+      "summary": "# Prediction Market predictions & odds. Will BTC hit $50,000 by Jan 31? Will BTC hit $50,000 by Jan 31? Will ETH hit $2,500 in February? Will ETH hit $2,500 in February? Will Ethereum hit $4k today? Will Ethereum hit $4k today? ### What is Polymarket? ### What types of Prediction Market prediction markets can I trade on Polymarket? ### How do Prediction Market markets work on Polymarket? ### What is the current top Prediction Market prediction? ### Why use Polymarket for Prediction Market predictions? ### How accurate are Polymarket's Prediction Market odds? ### Can I track Prediction Market p",
+      "url": "https://polymarket.com/predictions/prediction-market",
+      "relevance_tags": [
+        "ethereum",
+        "btc",
+        "eth",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771299099.3500469,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "87ebc24f37c49115",
+      "source": "tavily",
+      "headline": "Polymarket - Wikipedia",
+      "summary": "Founded in 2020 by Shayne Coplan, Polymarket is a prediction market that allows users to gain/lose on the outcome of world events. Polymarket blocked access to United States customers from 2022 to December 2, 2025, following a settlement with the Commodity Futures Trading Commission, which accused the company of running an unregistered derivatives-trading platform. Polymarket has at some point been banned in a number of countries that regulate gambling and sports betting, including France, Singapore, Switzerland, Poland, and the United States. On November 26, 2024, the Swiss Gambling Superviso",
+      "url": "https://en.wikipedia.org/wiki/Polymarket",
+      "relevance_tags": [
+        "ai",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771299099.36204,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {}
+    },
+    {
+      "id": "3ddfbc0a88e1aa7c",
+      "source": "tavily",
+      "headline": "Polymarket | The World's Largest Prediction Market\u2122",
+      "summary": "# Polymarket | The World's Largest Prediction Market\u2122. ## Fed decision in March? ## What price will Bitcoin hit in February? ## BTC 5 Minute Up or Down. ## US strikes Iran by...? ## Will Logan Paul\u2019s PSA 10 Pok\u00e9mon Illustrator Sale Price be over $4 million? \u00b7La Liga\u00b7 8:00 PM. ## S&P 500 (SPX) Opens Up or Down on February 17? ## 2026 Winter Olympics: Most Gold Medals. ## Who visited Epstein's Island? ## NFL Champion 2027. ## Oscars 2026: Best Picture Winner. ## Which company has the best AI model end of February? ## Starmer out by...?",
+      "url": "https://polymarket.com/",
+      "relevance_tags": [
+        "nfl",
+        "winner",
+        "bitcoin",
+        "btc",
+        "oscar",
+        "ai",
+        "fed",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771299099.362299,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "7722a115a4b1498a",
+      "source": "tavily",
+      "headline": "Associated Press News: Breaking News, Latest Headlines and ...",
+      "summary": "North Korea opens a housing district for families of its soldiers killed in Russia-Ukraine war \u00b7 Abduction of Mexican mine workers raises doubts over touted",
+      "url": "https://apnews.com/",
+      "relevance_tags": [
+        "sol",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771299100.975195,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "daec9cd878ae858a",
+      "source": "tavily",
+      "headline": "U.S. News and National Top Stories - NPR",
+      "summary": "February 16, 2026 \u2022 Tyler Reddick won \"The Great American Race\" on Sunday with a last-lap pass at Daytona International Speedway that sent Jordan into a frantic",
+      "url": "https://www.npr.org/sections/national/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771299100.975403,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {}
+    },
+    {
+      "id": "3c736c260b397ebf",
+      "source": "tavily",
+      "headline": "2026 Elections - AP News",
+      "summary": "Stay up to date on the latest 2026 Elections news coverage from AP News.",
+      "url": "https://apnews.com/hub/elections",
+      "relevance_tags": [
+        "election"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771299102.778953,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "e12add0e07104d67",
+      "source": "tavily",
+      "headline": "270toWin - 2028 Presidential Election Interactive Map",
+      "summary": "Create your own forecast for the 2028 presidential election.",
+      "url": "https://www.270towin.com/",
+      "relevance_tags": [
+        "election",
+        "president"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771299102.779059,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "0d0c359c5ed9e477",
+      "source": "reddit/r/politics",
+      "headline": "New Mexico Approves Comprehensive Probe of Epstein\u2019s Zorro Ranch",
+      "summary": "Score: 1338, Comments: 45",
+      "url": "https://reddit.com/r/politics/comments/1r6r8zj/new_mexico_approves_comprehensive_probe_of/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771299110.75003,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 1338,
+        "comments": 45,
+        "sub": "politics"
+      }
+    },
+    {
+      "id": "01655dbf9087bfa9",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Many consumer electronics manufacturers 'will go bankrupt' by the end of 2026 thanks to the RAMpocalypse, Phison CEO reportedly says",
+      "summary": "Score: 536, Comments: 67",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r6ud2g/many_consumer_electronics_manufacturers_will_go/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771299111.899582,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 536,
+        "comments": 67,
+        "sub": "wallstreetbets"
+      }
+    },
+    {
+      "id": "20374ed3878c4704",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Bank of America (BAC) just traded 17.76 on Schwab\u2019s 24hr session",
+      "summary": "Classic error by someone.   I logged on and saw BAC was 17.75@17.76.    I thought, \u201cMaybe they just split 3 for 1\u201d, and I started looking for the split news.   \n\nAnd lo and behold it traded there for 2 shares.  ",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r6tymg/bank_of_america_bac_just_traded_1776_on_schwabs/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.621,
+      "timestamp": 1771299111.8999,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 121,
+        "comments": 49,
+        "sub": "wallstreetbets"
+      }
+    },
+    {
+      "id": "bf1635744bd268fb",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "President Trump Says Crypto Market Structure Bill Will Pass Soon",
+      "summary": "Score: 52, Comments: 28",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r6sji6/president_trump_says_crypto_market_structure_bill/",
+      "relevance_tags": [
+        "trump",
+        "president",
+        "crypto",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.552,
+      "timestamp": 1771299112.883452,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 52,
+        "comments": 28,
+        "sub": "cryptocurrency"
+      }
+    },
+    {
+      "id": "190f4b1e58306698",
+      "source": "tavily",
+      "headline": "Latest & Breaking US Political News",
+      "summary": "Read breaking political news today from The Associated Press. Get the updates from AP News so you won't miss the latest in US political news.",
+      "url": "https://apnews.com/politics",
+      "relevance_tags": [],
+      "sentiment": -1.0,
+      "confidence": 0.7,
+      "timestamp": 1771300255.804543,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {}
+    },
+    {
+      "id": "56eee41f5f23fa21",
+      "source": "tavily",
+      "headline": "Latest and breaking political news today",
+      "summary": "Republicans worry shutdown will overshadow Trump's State of the Union ... President Donald Trump's Feb. 24 address to Congress is set to collide",
+      "url": "https://www.politico.com/politics",
+      "relevance_tags": [
+        "trump",
+        "congress",
+        "republican",
+        "president"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771300255.804689,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "1cb5ef8af783deff",
+      "source": "tavily",
+      "headline": "Politics",
+      "summary": "More politics news. Justice Department lists hundreds of prominent people named in Epstein files in letter to Congress \u00b7 Jeffries goes all in on gerrymandering",
+      "url": "https://www.cnn.com/politics",
+      "relevance_tags": [
+        "congress"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771300255.805096,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "ada749281b17f189",
+      "source": "tavily",
+      "headline": "Politics News: Latest on Trump Administration, Congress ...",
+      "summary": "President Donald Trump's pick for a top State Department post is facing bipartisan opposition over past remarks about Israel and the Holocaust.",
+      "url": "https://www.nbcnews.com/politics",
+      "relevance_tags": [
+        "trump",
+        "congress",
+        "president",
+        "partisan"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771300255.8051898,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "8b82f607d74cc0b7",
+      "source": "tavily",
+      "headline": "US politics",
+      "summary": "Trump news at a glance: Ukraine must reach a deal with Russia 'fast', says president before trilateral talks \u00b7 Anderson Cooper to leave 60 Minutes amid turmoil",
+      "url": "https://www.theguardian.com/us-news/us-politics",
+      "relevance_tags": [
+        "trump",
+        "president",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771300255.805322,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "60c59de9a78314ef",
+      "source": "tavily",
+      "headline": "A new regime for cryptoasset regulation - Financial Conduct Authority",
+      "summary": "In October 2023, the Treasury published detailed proposals for the creation of a financial services regulatory regime for cryptoassets.",
+      "url": "https://www.fca.org.uk/firms/new-regime-cryptoasset-regulation",
+      "relevance_tags": [
+        "crypto",
+        "regulation",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771300260.281902,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "ec8967163ec3061d",
+      "source": "tavily",
+      "headline": "US Crypto Policy Tracker Regulatory Developments",
+      "summary": "Follow below for the latest regulatory developments related to blockchain, cryptocurrencies, and digital assets from agencies and other regulatory bodies.",
+      "url": "https://www.lw.com/en/us-crypto-policy-tracker/regulatory-developments",
+      "relevance_tags": [
+        "policy",
+        "crypto",
+        "blockchain",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771300260.282758,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "1d6bb12f24765c7d",
+      "source": "tavily",
+      "headline": "Election Year Presidential Preference Polling and Voting Outcome",
+      "summary": "Year, Nominees, Final Average, Election Results, Deviation*. 2024, Kamala Harris, 48.7, 48.4, -0.3. Donald Trump, 48.6, 49.9, +1.3.",
+      "url": "https://www.presidency.ucsb.edu/statistics/data/election-year-presidential-preferences",
+      "relevance_tags": [
+        "trump",
+        "election",
+        "president"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771300265.665181,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "45a9a34396f6209d",
+      "source": "tavily",
+      "headline": "2025 Election Results: Live : NPR",
+      "summary": "View interactive maps and live results for key U.S. elections in New Jersey, Virginia, California, New York City and Colorado.",
+      "url": "https://apps.npr.org/2025-election-results/",
+      "relevance_tags": [
+        "election"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771300265.665236,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "bfdc3498c0b05274",
+      "source": "reddit/r/politics",
+      "headline": "Senator Mark Kelly says he will 'seriously consider' running for president",
+      "summary": "Score: 1626, Comments: 295",
+      "url": "https://reddit.com/r/politics/comments/1r6uhm3/senator_mark_kelly_says_he_will_seriously/",
+      "relevance_tags": [
+        "president"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771300271.7326589,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 1626,
+        "comments": 295,
+        "sub": "politics"
+      }
+    },
+    {
+      "id": "af3f4e30d9a81d0e",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Wendy's $7K Options Position",
+      "summary": "Trump is bringing down the immigration numbers. The food service industry is reliant on immigrant labor. The reduction in the labor supply will put an upward pressure on wages, which means less lower profits. There is an iconic company that is well positioned to resist this wage inflation, because its prestige and dynamic corporate culture make it the employer of choice for members of this subredd",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r6ssv8/wendys_7k_options_position/",
+      "relevance_tags": [
+        "trump",
+        "nfl",
+        "inflation"
+      ],
+      "sentiment": -1.0,
+      "confidence": 0.518,
+      "timestamp": 1771300272.84394,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 18,
+        "comments": 22,
+        "sub": "wallstreetbets"
+      }
+    },
+    {
+      "id": "6e1f5f216721d23f",
+      "source": "tavily",
+      "headline": "U.S. Politics",
+      "summary": "After First Big Overseas Trip, Ocasio-Cortez Expresses Frustrations \u00b7 Judge Orders Trump Administration to Restore Displays About Slavery at Washington's House.",
+      "url": "https://www.nytimes.com/section/politics",
+      "relevance_tags": [
+        "trump"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771300577.117455,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "ab3870e1871f1c69",
+      "source": "tavily",
+      "headline": "Livesport.com - Live soccer scores, tennis, basketball and 30+ ...",
+      "summary": "Livesport.com - fast and accurate live scores from soccer, tennis, basketball, baseball and many other sports. Livescore, results, standings, statistics.",
+      "url": "https://www.livesport.com/",
+      "relevance_tags": [
+        "soccer",
+        "basketball",
+        "baseball",
+        "tennis",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771300579.237161,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "8937cdb00f1a04ba",
+      "source": "tavily",
+      "headline": "World News | Latest Top Stories - Reuters",
+      "summary": "World \u00b7 2 hours ago. Nigeria says 100 more U.S. military personnel arrive to tackle Islamists \u00b7 US launches airstrike on ISIS militants in Nigeria \u00b7 38 mins ago.",
+      "url": "https://www.reuters.com/world/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771300583.095145,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {}
+    },
+    {
+      "id": "e529b32eedcef20a",
+      "source": "tavily",
+      "headline": "Latest Poll - The Texas Politics Project",
+      "summary": "The University of Texas/Texas Politics Project survey of 1200 registered voters was conducted from December 9 to 16, 2025 and has an overall margin of error of",
+      "url": "https://texaspolitics.utexas.edu/latest-poll",
+      "relevance_tags": [
+        "vote"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771300584.703664,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "f2a20d4b25f57d33",
+      "source": "tavily",
+      "headline": "Cryptocurrency News | Today's Latest Stories",
+      "summary": "Sustainabilitycategory\u00b7 February 13, 2026. Bessent says Congress should pass crypto regulation bill this spring. U.S. Treasury Secretary Scott Bessent said on",
+      "url": "https://www.reuters.com/markets/cryptocurrency/",
+      "relevance_tags": [
+        "congress",
+        "crypto",
+        "sec",
+        "regulation",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771300899.6074219,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "6c8ac976fd5c58b4",
+      "source": "tavily",
+      "headline": "Crypto: Regulation",
+      "summary": "Regulation ; February 11, 2026 \u00b7 UK's Digital Bonds to Be Issued Using HSBC Blockchain Platform \u00b7 HSBC, Lloyds, Standard Chartered & Barclays Banks Ahead Earnings.",
+      "url": "https://www.bloomberg.com/crypto/regulation",
+      "relevance_tags": [
+        "crypto",
+        "blockchain",
+        "regulation",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771300899.6075032,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "44ea82c90028c91b",
+      "source": "tavily",
+      "headline": "US crypto regulation stalls as lawmakers warn of falling behind ...",
+      "summary": "The Senate Banking Committee canceled a scheduled meeting last Thursday to write a bill establishing marketplace rules for cryptocurrency and",
+      "url": "https://www.foxbusiness.com/politics/us-crypto-regulation-stalls-lawmakers-warn-falling-behind-global-competitors-years",
+      "relevance_tags": [
+        "senate",
+        "crypto",
+        "regulation",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771300899.6081269,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "4d77574e5b9b0c89",
+      "source": "tavily",
+      "headline": "All Predictions & Real-Time Odds - Polymarket",
+      "summary": "Polymarket is the world's largest prediction market, where you can stay informed and profit from your knowledge by trading on things related to breaking news, politics, sports, elections, crypto, finance, tech, culture, including topics like All. Polymarket currently hosts 6671 active markets for All that lets you track or trade on predictions like \"Who will Trump nominate as Fed Chair?\". Whether you are tracking widely debated events or niche outcomes, the platform aggregates real-time odds based on over $3.1B in trading volume, providing a comprehensive view of fan and investor sentiment. It",
+      "url": "https://polymarket.com/predictions/all",
+      "relevance_tags": [
+        "trump",
+        "election",
+        "crypto",
+        "eth",
+        "ai",
+        "fed",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771300901.360084,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "5a3707397770940c",
+      "source": "tavily",
+      "headline": "Polymarket Analytics \u2013 Prediction Market Data, Analytics, and ...",
+      "summary": "# Polymarket Data & Analytics. The global prediction market analytics platform to view every trader, market, position, and trade. ### Market Activity. ### Trader Activity. Polymarket Analytics is powered by Goldsky's data infrastructure, enabling us to update our data every 5 minutes. ## Market Prices. Live prices for all active prediction markets. Get deep insights into prediction markets with our comprehensive suite of analytics tools. Discover and follow the most successful traders on Polymarket. ### Search Markets. Search across thousands of prediction markets with our powerful search engi",
+      "url": "https://polymarketanalytics.com/",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771300901.360595,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {}
+    },
+    {
+      "id": "2abb6b7d82bed2f5",
+      "source": "tavily",
+      "headline": "KTLA | Los Angeles and Southern California News",
+      "summary": "Six Flags closes as another storm hits SoCal \u00b7 6 hours ago ; Disneyland to play key role in buildup to Super Bowl \u2026 \u00b7 4 days ago ; Disneyland launches daily Opera",
+      "url": "https://ktla.com/",
+      "relevance_tags": [
+        "super bowl",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771300902.950964,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "18e68567d09c3092",
+      "source": "tavily",
+      "headline": "CoinDesk: Bitcoin, Ethereum, XRP, Crypto News and Price Data",
+      "summary": "Crypto mining can help energy volatility, Paradigm responds to policy onslaught \u00b7 Animoca Brands clears major regulatory hurdle with new Dubai license \u00b7 OKX",
+      "url": "https://www.coindesk.com/",
+      "relevance_tags": [
+        "policy",
+        "bitcoin",
+        "ethereum",
+        "crypto",
+        "eth",
+        "mining",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771301220.773922,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "7bd694ff8f63e965",
+      "source": "tavily",
+      "headline": "Crypto Predictions & Real-Time Odds | Polymarket",
+      "summary": "Polymarket currently hosts 1259 active markets for Crypto that lets you track or trade on predictions like \"What price will Ethereum hit in February?\". It's a free way to track market sentiment on major outcomes like \"What price will Bitcoin hit in February?\" without ever needing to place a trade. What price will Bitcoin hit February 9-15? What price will Ethereum hit February 9-15? What price will Ethereum hit in February? For multi-outcome events, like \"What price will Bitcoin hit in February?,\" you simply trade on the specific outcome you think will win. As of today, the most active market ",
+      "url": "https://polymarket.com/predictions/crypto",
+      "relevance_tags": [
+        "bitcoin",
+        "ethereum",
+        "crypto",
+        "eth",
+        "market"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771301223.197244,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "1fa0f16dccb6a66f",
+      "source": "tavily",
+      "headline": "Canada Predictions & Real-Time Odds - Polymarket",
+      "summary": "Polymarket currently hosts 21 active markets for Canada that lets you track or trade on predictions like \"Bank of Canada decision in March?\". Each polymarket is a yes/no question, like \"Will a province schedule a referendum to leave Canada before 2027?\". Polymarket is the world's largest prediction market, where you can stay informed and profit from your knowledge by trading on things related to breaking news, politics, sports, elections, crypto, finance, tech, culture, including topics like Canada. Unlike polls or punditry, Polymarket shows you real-time odds on Canada predictions backed by f",
+      "url": "https://polymarket.com/predictions/canada",
+      "relevance_tags": [
+        "election",
+        "crypto",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771301223.197763,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "29b8d654169636c6",
+      "source": "tavily",
+      "headline": "Happening Now \u2013 Canada and World News Today - CTV News",
+      "summary": "Expectations are low for the latest U.S.-brokered talks between Russia and Ukraine \u00b7 Vatican expands visitor experience at St. \u00b7 Oldham wins gold, Sarault claims",
+      "url": "https://www.ctvnews.ca/happening-now/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": -1.0,
+      "confidence": 0.7,
+      "timestamp": 1771301224.4803042,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {}
+    },
+    {
+      "id": "1fb901aae82f766a",
+      "source": "tavily",
+      "headline": "World news: Latest news, breaking news, today's news stories from ...",
+      "summary": "Bobsledder Elana Meyers Taylor, 41, wins gold in 5th Olympic appearance \u00b7 Canada's Megan Oldham takes gold in freestyle big air, Eileen Gu takes silver \u00b7 21-year-",
+      "url": "https://www.cbsnews.com/world/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771301224.4804149,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {}
+    },
+    {
+      "id": "02a29081eb7c0448",
+      "source": "tavily",
+      "headline": "Breaking World News - International Headlines - Global News",
+      "summary": "Austria files terrorism charges in plot to attack Taylor Swift show. World. 8 hours ; Ottawa expects Ukrainian emergency visa holders to return after war ends.",
+      "url": "https://globalnews.ca/world/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771301224.480751,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {}
+    },
+    {
+      "id": "eacea2efcbd15dba",
+      "source": "tavily",
+      "headline": "CBC News - Latest Canada, World, Entertainment and Business News",
+      "summary": "Trump says regime change 'seems' to be 'best thing that could happen' for Iran \u00b7 Mexico probing whether B.C. mining company was responsible in kidnapping of its",
+      "url": "https://www.cbc.ca/news",
+      "relevance_tags": [
+        "trump",
+        "eth",
+        "mining",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771301224.480989,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "e6605568d5d3d41f",
+      "source": "tavily",
+      "headline": "U SPORTS Men's Basketball Results",
+      "summary": "U SPORTS Men's Basketball Results. List Days Calendar Month. Event Type. All Types, Conference, Division, Exhibition, Postseason.",
+      "url": "https://en.usports.ca/sports/mbkb/composite",
+      "relevance_tags": [
+        "basketball"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771301538.967346,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "e5f8bb2450d5c557",
+      "source": "tavily",
+      "headline": "Soccer Scores - 2025 Season",
+      "summary": "Live scores for all soccer major league games on ESPN. Includes box scores, video highlights, play breakdowns and updated odds.",
+      "url": "https://www.espn.com/soccer/scoreboard",
+      "relevance_tags": [
+        "soccer",
+        "game",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771301538.9673972,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "822c3f230abef804",
+      "source": "tavily",
+      "headline": "Breaking News from CBS2 - CBS New York",
+      "summary": "3 women randomly attacked in Brooklyn, suspect arrested, police say. A man was arrested Saturday after allegedly randomly attacking two women and a teenager",
+      "url": "https://www.cbsnews.com/newyork/local-news/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771301542.6523871,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {}
+    },
+    {
+      "id": "15b4c6a33111c59d",
+      "source": "tavily",
+      "headline": "New York Post \u2013 Breaking News, Top Headlines, Photos & Videos",
+      "summary": "Your source for breaking news, photos, and videos about New York, sports, business, entertainment, opinion, real estate, culture, fashion, and more.",
+      "url": "https://nypost.com/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771301542.652469,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {}
+    },
+    {
+      "id": "fdb441207e8b5896",
+      "source": "tavily",
+      "headline": "The New York Times - Breaking News, US News, World News and ...",
+      "summary": "Live news, investigations, opinion, photos and video by the journalists of The New York Times from more than 150 countries around the world.",
+      "url": "https://www.nytimes.com/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771301542.65253,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {}
+    },
+    {
+      "id": "911336cbb6b35c80",
+      "source": "tavily",
+      "headline": "National Poll - Fair Vote Canada",
+      "summary": "A poll of 1510 Canadians in September, 2019, to ask their opinions about proportional representation and Trudeau's broken promise on electoral reform.",
+      "url": "https://www.fairvote.ca/poll/",
+      "relevance_tags": [
+        "vote",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771301544.321738,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "40f89155553a7ddb",
+      "source": "tavily",
+      "headline": "Poll Tracker | CBC News",
+      "summary": "If an election were held today, who would win? The CBC News Poll Tracker is your guide to following the polls. Get the latest numbers and",
+      "url": "https://newsinteractives.cbc.ca/elections/poll-tracker/canada/",
+      "relevance_tags": [
+        "election"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771301544.3218932,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "0c9bfbd4f0eed337",
+      "source": "tavily",
+      "headline": "Canada Election 2025 - Breaking News, Map, Polls & Live Results",
+      "summary": "View the top election stories, surveys from CTV News' official pollster Nik Nanos and a live interactive results map as Canada votes on April 28,",
+      "url": "https://www.ctvnews.ca/federal-election-2025/",
+      "relevance_tags": [
+        "election",
+        "vote"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771301544.3220649,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "a9659247029a0f29",
+      "source": "tavily",
+      "headline": "Live results and maps from the 2025 federal election",
+      "summary": "Elections Canada has also issued more than 1.2 million special ballots to Canadian voters who applied for the mail-in option since the opening of the early",
+      "url": "https://www.theglobeandmail.com/politics/federal-election/2025-results/",
+      "relevance_tags": [
+        "election",
+        "vote",
+        "ballot",
+        "ai",
+        "fed"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771301544.322237,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "be7f06ee0ea31fc8",
+      "source": "tavily",
+      "headline": "Results Overview",
+      "summary": "Use the Data Explorer to search Ontario's election results. You can filter data by year, political party, electoral district and candidate.",
+      "url": "https://results.elections.on.ca/",
+      "relevance_tags": [
+        "election"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771301544.3223732,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "496c72ede8032508",
+      "source": "tavily",
+      "headline": "Welcome to 338Canada",
+      "summary": "338Canada is a statistical model of electoral projections based on opinion polls, electoral history, and demographic data. ... Access latest polling Quick links",
+      "url": "https://338canada.com/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771301544.322517,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {}
+    },
+    {
+      "id": "ceeb3b311c81c51f",
+      "source": "tavily",
+      "headline": "Electoral Districts - Election Night Results",
+      "summary": "Election results by electoral district, for federal elections in Canada.",
+      "url": "https://enr.elections.ca/ElectoralDistricts.aspx",
+      "relevance_tags": [
+        "election",
+        "fed"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771301544.322648,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "19342bb3e60f2f8d",
+      "source": "tavily",
+      "headline": "Massachusetts High School Sports Scores and Schedules",
+      "summary": "Schedule / Scoreboard. Choose a sport to see upcoming and past games and results. Boys. Baseball \u00b7 Basketball \u00b7 Cross-Country.",
+      "url": "https://highschoolsports.masslive.com/scores",
+      "relevance_tags": [
+        "basketball",
+        "baseball",
+        "game",
+        "score"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771301866.1531498,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "c6ad29d2aacd14c3",
+      "source": "tavily",
+      "headline": "Crypto: Regulation - Bloomberg.com",
+      "summary": "Regulation ; February 11, 2026 \u00b7 UK's Digital Bonds to Be Issued Using HSBC Blockchain Platform \u00b7 HSBC, Lloyds, Standard Chartered & Barclays Banks Ahead Earnings.",
+      "url": "https://www.bloomberg.com/crypto/regulation",
+      "relevance_tags": [
+        "crypto",
+        "blockchain",
+        "regulation",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771301867.650053,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "51cd95c072126df2",
+      "source": "tavily",
+      "headline": "Bessent Says Crypto Firms Are Sabotaging Best Chance for Rules",
+      "summary": "Treasury Secretary Scott Bessent said Friday (Feb. 13) that the crypto industry should support the CLARITY Act and help get it passed as",
+      "url": "https://www.pymnts.com/cryptocurrency/2026/bessent-says-crypto-firms-are-sabotaging-best-chance-for-rules/",
+      "relevance_tags": [
+        "crypto",
+        "sec",
+        "ai"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771301867.650526,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "6c14022fd0c6d8d2",
+      "source": "tavily",
+      "headline": "RealClearPolling: 2025 Latest Election Polls and Political ...",
+      "summary": "Explore up-to-date 2025 election polls on RealClearPolling. Gain valuable insights into the evolving political landscape and stay ahead of the latest",
+      "url": "https://www.realclearpolling.com/",
+      "relevance_tags": [
+        "election",
+        "ai"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771301875.585582,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "ba65e5236f7c75b7",
+      "source": "tavily",
+      "headline": "Polling for United States presidential elections",
+      "summary": "Gallup was the first polling organization to conduct accurate opinion polling for United States presidential elections. Gallup polling has often been",
+      "url": "https://en.wikipedia.org/wiki/Polling_for_United_States_presidential_elections",
+      "relevance_tags": [
+        "election",
+        "president"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771301875.585911,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "530c0282219a1428",
+      "source": "tavily",
+      "headline": "Cook Political Report | Non-Partisan Political Analysis for US ...",
+      "summary": "The Cook Political Report with Amy Walter is an independent, non-partisan newsletter that analyzes state, federal and presidential elections, and American",
+      "url": "https://www.cookpolitical.com/",
+      "relevance_tags": [
+        "election",
+        "president",
+        "partisan",
+        "fed"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771301875.5860229,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "954e861f08a98c90",
+      "source": "tavily",
+      "headline": "Russia Processes $650M in Crypto Daily as New Regulations ...",
+      "summary": "Russia's crypto market processes $130B annually as officials push new laws to regulate trading and bring exchanges under domestic control.",
+      "url": "https://coinpedia.org/news/russia-processes-650m-in-crypto-daily-as-new-regulations-advance/",
+      "relevance_tags": [
+        "crypto",
+        "regulation",
+        "ai",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771302189.392256,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "eac65c9b389a3d4c",
+      "source": "tavily",
+      "headline": "Election results, 2025 - Ballotpedia",
+      "summary": "Democrats increased their majorities in both chambers. On The Ballot Episode 230: Democratic Wave? 2025 Election Takeaways on Polling Misses, Redistricting, and",
+      "url": "https://ballotpedia.org/Election_results,_2025",
+      "relevance_tags": [
+        "election",
+        "democrat",
+        "ballot"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771302193.278775,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "b72edfe0d524a599",
+      "source": "tavily",
+      "headline": "Election Results - NCSBE",
+      "summary": "The Election Results Dashboard is where you can view live election results on election night, or explore results from previous elections.",
+      "url": "https://www.ncsbe.gov/results-data/election-results",
+      "relevance_tags": [
+        "election"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771302193.2788281,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "5a281692581ceeb7",
+      "source": "tavily",
+      "headline": "Elon University Poll",
+      "summary": "Most Recent Polls. December 17, 2025: North Carolina poll on K-12 education in partnership with the Elon University Dr. Jo Watts Williams School of",
+      "url": "https://www.elon.edu/u/elon-poll/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771302193.278881,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {}
+    },
+    {
+      "id": "33860a73091c5fae",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "PDT rule will not be removed on February 28th, instead SEC wants to consider it until March 14th now.",
+      "summary": "Last year news said that FINDRA proposed to abolish the PDT rule. PDT rule means you have to have at least $25000 to daytrade when you have been flagged as violating the PDT rule.\n\nSeveral weeks ago news said that the proposal will be determined by SEC by Feb. 28th since the proceedings have to end within 45 days of proposal.\n\nAccording to the [old document](https://www.federalregister.gov/documen",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r6vdqb/pdt_rule_will_not_be_removed_on_february_28th/",
+      "relevance_tags": [
+        "sec",
+        "ai",
+        "fed"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.542,
+      "timestamp": 1771302201.455036,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 42,
+        "comments": 22,
+        "sub": "wallstreetbets"
+      }
+    },
+    {
+      "id": "f331b325d4c7e90b",
+      "source": "tavily",
+      "headline": "Politics | Latest News & Updates",
+      "summary": "Labour face tough fight in Gorton and Denton by-election. Labour is in a tough fight with Reform UK and the Greens in previously safe seat Gorton and Denton.",
+      "url": "https://www.bbc.com/news/politics",
+      "relevance_tags": [
+        "election"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771302505.3576782,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "1e846b7dca6f02c4",
+      "source": "tavily",
+      "headline": "CBS Sacramento - Breaking News, Sports, First Alert Weather ...",
+      "summary": "Placer County's Sip Into Spring wine tasting event is this weekend. This weekend, Placer County is hosting its annual Sip Into Spring event, offering free or",
+      "url": "https://www.cbsnews.com/sacramento/",
+      "relevance_tags": [
+        "weather"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771302510.680139,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {}
+    },
+    {
+      "id": "e15ec36bcaf6f46c",
+      "source": "tavily",
+      "headline": "Election News, Polls and Results - 270toWin",
+      "summary": "This Tuesday we are following the Oklahoma City mayoral election, and three legislative special elections. Mayor. Oklahoma City. Polls close at 8:00 PM",
+      "url": "https://www.270towin.com/news/",
+      "relevance_tags": [
+        "election"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771302512.593256,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "a40df0c51c1dffa6",
+      "source": "tavily",
+      "headline": "Ohio Election Results and Data - Ohio Secretary of State",
+      "summary": "Detailed data tools designed to help users track daily absentee and early voting trends, historical election results, and voter registration data.",
+      "url": "https://www.ohiosos.gov/elections/election-results-and-data/",
+      "relevance_tags": [
+        "election",
+        "vote",
+        "sec",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771302512.593584,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "586dbacfe2309ff7",
+      "source": "tavily",
+      "headline": "2025 Crypto Regulatory Round-Up - Chainalysis",
+      "summary": "We look at the key crypto regulatory changes in 2025: global trends, regional developments, and what to look for in 2026.",
+      "url": "https://www.chainalysis.com/blog/2025-crypto-regulatory-round-up/",
+      "relevance_tags": [
+        "crypto",
+        "ai"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771302826.1025531,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "95dff4db5f5f2887",
+      "source": "tavily",
+      "headline": "Crypto regulation vote in limbo: Here's what to know - YouTube",
+      "summary": "CNBC's Emily Wilkins joins 'Squawk on the Street' with the latest in crypto news. For access to live and exclusive video from CNBC subscribe",
+      "url": "https://www.youtube.com/watch?v=Z3fCVKVEw_M",
+      "relevance_tags": [
+        "vote",
+        "crypto",
+        "regulation",
+        "youtube"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771302826.102686,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "20786919d97372c6",
+      "source": "tavily",
+      "headline": "Associated Press News: Breaking News, Latest Headlines ...",
+      "summary": "North Korea opens a housing district for families of its soldiers killed in Russia-Ukraine war \u00b7 Abduction of Mexican mine workers raises doubts over touted",
+      "url": "https://apnews.com/",
+      "relevance_tags": [
+        "sol",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771302828.4799192,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "7e3af7f989ef9460",
+      "source": "tavily",
+      "headline": "World news - breaking news, video, headlines and opinion",
+      "summary": "Austria files charges against suspect over planned 2024 Taylor Swift attack \u00b7 Israeli TV producer of award-winning show 'Tehran' found dead in Athens hotel room.",
+      "url": "https://www.cnn.com/world",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771302828.479989,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {}
+    },
+    {
+      "id": "0744b68ce0e1b37d",
+      "source": "tavily",
+      "headline": "CBS News | Breaking news, top stories & today's latest ...",
+      "summary": "The Daily Report \u00b7 Searches for colorectal cancer info on rise \u00b7 Potential 2028 contenders travel to Munich \u00b7 Former FBI official on Nancy Guthrie case \u00b7 Canada",
+      "url": "https://www.cbsnews.com/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771302828.480082,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {}
+    },
+    {
+      "id": "c422e3956b92d12c",
+      "source": "tavily",
+      "headline": "Punchbowl News - Breaking news, US politics, Congress news",
+      "summary": "The latest news from the Capitol and leadership in Congress. Punchbowl News follows investigations, policies, hearings and more in Washington.",
+      "url": "https://punchbowl.news/",
+      "relevance_tags": [
+        "congress"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771303142.073486,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "4e398c5b758acdd6",
+      "source": "tavily",
+      "headline": "College Sports Scoreboards - ESPN",
+      "summary": "Visit ESPN to view College Sports Scoreboards for men's and women's baseball/softball, ice hockey, lacrosse, soccer, volleyball, water polo and field",
+      "url": "https://www.espn.com/college-sports/scoreboard",
+      "relevance_tags": [
+        "soccer",
+        "baseball",
+        "hockey",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771303143.786596,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "2583ed8d89f21965",
+      "source": "tavily",
+      "headline": "Polymarket | The World's Largest Prediction Market",
+      "summary": "# Polymarket | The World's Largest Prediction Market\u2122. ## Fed decision in March? ## What price will Bitcoin hit in February? ## BTC 5 Minute Up or Down. ## US strikes Iran by...? ## Will Logan Paul\u2019s PSA 10 Pok\u00e9mon Illustrator Sale Price be over $4 million? \u00b7La Liga\u00b7 8:00 PM. ## S&P 500 (SPX) Opens Up or Down on February 17? ## 2026 Winter Olympics: Most Gold Medals. ## Who visited Epstein's Island? ## NFL Champion 2027. ## Oscars 2026: Best Picture Winner. ## Which company has the best AI model end of February? ## Starmer out by...?",
+      "url": "https://polymarket.com/",
+      "relevance_tags": [
+        "nfl",
+        "winner",
+        "bitcoin",
+        "btc",
+        "oscar",
+        "ai",
+        "fed",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771303147.6890519,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {}
+    },
+    {
+      "id": "38d9f343381a626d",
+      "source": "tavily",
+      "headline": "Associated Press News: Breaking News, Latest Headlines",
+      "summary": "North Korea opens a housing district for families of its soldiers killed in Russia-Ukraine war \u00b7 Abduction of Mexican mine workers raises doubts over touted",
+      "url": "https://apnews.com/",
+      "relevance_tags": [
+        "sol",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771303149.204375,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "051c0c32c8d395b9",
+      "source": "tavily",
+      "headline": "News Headlines | 9news.com",
+      "summary": "Child killed in hit-and-run crash in Erie, police say \u00b7 Police said the crash happened around 4:40 p.m. Sunday in the neighborhood northeast of Mountain View",
+      "url": "https://www.9news.com/news",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": -1.0,
+      "confidence": 0.7,
+      "timestamp": 1771303149.205958,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {}
+    },
+    {
+      "id": "9cf6d68c3638fd4a",
+      "source": "tavily",
+      "headline": "2025 Election Results: Live",
+      "summary": "View interactive maps and live results for key U.S. elections in New Jersey, Virginia, California, New York City and Colorado.",
+      "url": "https://apps.npr.org/2025-election-results/",
+      "relevance_tags": [
+        "election"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771303150.964864,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "473b3f53342e2bc1",
+      "source": "tavily",
+      "headline": "Pennsylvania Elections - Summary Results",
+      "summary": "Election Results. Home; Reports. Reporting Center; Election Feed. Elections. {{yearset.year}}. {{electionTypes.type}}. {{election.ElectionName}}. Counties. A-B.",
+      "url": "https://www.electionreturns.pa.gov/",
+      "relevance_tags": [
+        "election",
+        "mma"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771303150.9651258,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "a4633ed9c8798b5b",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "The \"Black Box\" Subnet is Here: ICP Enters the Era of Confidential Computing",
+      "summary": "Proposal 140407 has passed, creating the first TEE-enabled subnet. Here is why \"hardware-rooted trust\" is the missing link for enterprise adoption.\n\nThe News\n\n A massive fundamental upgrade just went live on the Internet Computer.\n\nProposal 140407 has successfully executed, creating the network's first TEE-enabled subnet. Starting with a cluster of 7 nodes, this subnet represents a transition from",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r6n2gh/the_black_box_subnet_is_here_icp_enters_the_era/",
+      "relevance_tags": [],
+      "sentiment": 1.0,
+      "confidence": 0.548,
+      "timestamp": 1771303158.790327,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 48,
+        "comments": 20,
+        "sub": "cryptocurrency"
+      }
+    }
+  ],
+  "count": 242,
+  "updated": 1771303158.797394
+}

@@ -1,0 +1,14 @@
+{
+  "total_trades": 8,
+  "resolved": 0,
+  "wins": 0,
+  "losses": 0,
+  "win_rate": 0,
+  "pnl": 0,
+  "open_positions": 8,
+  "total_exposure": 192.1,
+  "daily_pnl": 0,
+  "running": true,
+  "cycle": 2,
+  "last_update": "2026-02-16T23:22:00.001628-05:00"
+}

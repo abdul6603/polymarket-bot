@@ -46,27 +46,9 @@
     <div class="glass-card" id="hawk-category-heatmap"><div class="text-muted" style="text-align:center;padding:12px;">Waiting for category data...</div></div>
   </div>
   <div class="section-spacer">
-    <h2 class="section-title" style="color:#FFD700;">Live Opportunities</h2>
-    <div class="glass-card" style="overflow-x:auto;">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th style="width:30px;">#</th>
-            <th>Question</th>
-            <th>Type</th>
-            <th>Hawk's Pick</th>
-            <th>Crowd Says</th>
-            <th>Hawk Says</th>
-            <th>Mispriced By</th>
-            <th>Bet Size</th>
-            <th>Exp. Profit</th>
-          </tr>
-        </thead>
-        <tbody id="hawk-opp-tbody">
-          <tr><td colspan="9" class="text-muted" style="text-align:center;padding:24px;">No opportunities found yet — hit Trigger Scan</td></tr>
-        </tbody>
-      </table>
-    </div>
+    <h2 class="section-title" style="color:#FFD700;">Live Opportunities <span id="hawk-opp-total-label" style="font-size:0.72rem;color:var(--text-muted);font-weight:400;margin-left:8px;"></span></h2>
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;" id="hawk-cat-filter-pills"></div>
+    <div id="hawk-opp-groups"></div>
   </div>
   <!-- Reasoning panel (shown when clicking a row) -->
   <div id="hawk-reasoning-panel" style="display:none;margin-top:-8px;margin-bottom:16px;">
