@@ -30,8 +30,10 @@ def write_status(cycle: int, baseline: BacktestResult, total_combos: int,
         "total_combos_tested": total_combos,
         "baseline_win_rate": round(baseline.win_rate, 1),
         "baseline_signals": baseline.total_signals,
+        "baseline_avg_edge": round(baseline.avg_edge * 100, 2),
         "trade_count": trade_count,
         "candle_counts": candle_counts,
+        "filter_reasons": baseline.filter_reasons,
         "mode": "historical_replay",
     }
     DATA_DIR.mkdir(exist_ok=True)
@@ -57,6 +59,7 @@ def write_results(baseline: BacktestResult,
             "max_consecutive_losses": r.max_consecutive_losses,
             "avg_edge": round(r.avg_edge * 100, 2),
             "avg_confidence": round(r.avg_confidence * 100, 1),
+            "filter_reasons": r.filter_reasons,
             "params": r.params,
         })
 
@@ -98,6 +101,8 @@ def write_results(baseline: BacktestResult,
         "total_signals": baseline.total_signals,
         "wins": baseline.wins,
         "losses": baseline.losses,
+        "avg_edge": round(baseline.avg_edge * 100, 2),
+        "filter_reasons": baseline.filter_reasons,
         "params": baseline.params,
     }
 
@@ -155,27 +160,54 @@ def write_recommendations(baseline: BacktestResult,
                 "confidence": "high" if best_result.total_signals >= 40 else "medium",
             })
 
-        if bestp.get("weights_hash") != bp.get("weights_hash"):
+        if bestp.get("min_confidence") != bp.get("min_confidence"):
             recommendations.append({
-                "param": "WEIGHTS",
-                "current": "current_weights",
-                "suggested": "optimized_weights",
-                "impact": f"Weight rebalancing improves WR by {best_result.win_rate - baseline_wr:.1f}pp",
-                "reasoning": "Weight optimization found better signal combination",
+                "param": "MIN_CONFIDENCE",
+                "current": bp.get("min_confidence"),
+                "suggested": bestp.get("min_confidence"),
+                "impact": f"Confidence floor adjustment",
+                "reasoning": f"Confidence of {bestp.get('min_confidence')} "
+                           f"with WR={best_result.win_rate:.1f}%",
+                "confidence": "high" if best_result.total_signals >= 40 else "medium",
+            })
+
+        if bestp.get("up_confidence_premium") != bp.get("up_confidence_premium"):
+            recommendations.append({
+                "param": "UP_CONFIDENCE_PREMIUM",
+                "current": bp.get("up_confidence_premium"),
+                "suggested": bestp.get("up_confidence_premium"),
+                "impact": f"UP direction premium adjustment",
+                "reasoning": f"UP premium of {bestp.get('up_confidence_premium')} "
+                           f"optimizes directional bias filter",
                 "confidence": "medium",
             })
 
-    # General observations
-    if baseline.total_signals < 20:
-        recommendations.append({
-            "param": "DATA",
-            "current": baseline.total_signals,
-            "suggested": "more_trades_needed",
-            "impact": "Insufficient data for reliable backtesting",
-            "reasoning": f"Only {baseline.total_signals} qualifying trades. "
-                       f"Need 20+ for statistical significance.",
-            "confidence": "high",
-        })
+        # Weight comparison with exact values
+        best_weights = bestp.get("weights", {})
+        current_weights = bp.get("weights", {})
+        weight_changes = []
+        for ind in set(list(best_weights.keys()) + list(current_weights.keys())):
+            curr_w = current_weights.get(ind, 0)
+            best_w = best_weights.get(ind, 0)
+            if abs(curr_w - best_w) > 0.05:
+                weight_changes.append({
+                    "indicator": ind,
+                    "current": round(curr_w, 3),
+                    "suggested": round(best_w, 3),
+                    "change": f"{'+' if best_w > curr_w else ''}{best_w - curr_w:.2f}",
+                })
+
+        if weight_changes:
+            recommendations.append({
+                "param": "WEIGHTS",
+                "current": current_weights,
+                "suggested": best_weights,
+                "changes": weight_changes,
+                "impact": f"Weight rebalancing improves WR by {best_result.win_rate - baseline_wr:.1f}pp",
+                "reasoning": f"Specific indicator weight changes based on "
+                           f"{best_result.total_signals} trade replay",
+                "confidence": "medium",
+            })
 
     # Indicator observations
     if baseline.indicator_contributions:
@@ -192,11 +224,42 @@ def write_recommendations(baseline: BacktestResult,
                     "confidence": "high" if votes >= 30 else "medium",
                 })
 
+    # Regime breakdown observations
+    if baseline.signals_by_regime:
+        for regime_label, stats in baseline.signals_by_regime.items():
+            w = stats.get("wins", 0)
+            l = stats.get("losses", 0)
+            total = w + l
+            if total >= 5:
+                wr = w / total * 100
+                if wr < 40:
+                    recommendations.append({
+                        "param": f"REGIME_{regime_label.upper()}",
+                        "current": f"{wr:.0f}% WR ({total} trades)",
+                        "suggested": "tighten_filters",
+                        "impact": f"Poor performance in {regime_label} regime",
+                        "reasoning": f"{regime_label} regime has {wr:.0f}% WR across {total} trades",
+                        "confidence": "medium" if total >= 10 else "low",
+                    })
+
+    # General data sufficiency
+    if baseline.total_signals < 20:
+        recommendations.append({
+            "param": "DATA",
+            "current": baseline.total_signals,
+            "suggested": "more_trades_needed",
+            "impact": "Insufficient data for reliable backtesting",
+            "reasoning": f"Only {baseline.total_signals} qualifying trades. "
+                       f"Need 20+ for statistical significance.",
+            "confidence": "high",
+        })
+
     output = {
         "recommendations": recommendations,
         "best_win_rate": round(best_result.win_rate, 1) if scored else 0,
         "baseline_win_rate": round(baseline_wr, 1),
         "improvement": round(best_result.win_rate - baseline_wr, 1) if scored else 0,
+        "best_params": best_result.params if scored else {},
         "updated": _now_et(),
     }
     (DATA_DIR / "quant_recommendations.json").write_text(json.dumps(output, indent=2))
@@ -251,6 +314,8 @@ def publish_events(baseline: BacktestResult,
                 "best_wr": best.win_rate,
                 "combos_tested": len(scored),
                 "best_label": best.label,
+                "baseline_avg_edge": round(baseline.avg_edge * 100, 2),
+                "filter_reasons": baseline.filter_reasons,
             },
         )
 

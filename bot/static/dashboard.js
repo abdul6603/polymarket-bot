@@ -6840,21 +6840,21 @@ async function loadQuantTab() {
     document.getElementById('quant-best-wr').style.color = wrColor(data.best_win_rate || 0);
     document.getElementById('quant-baseline-wr').textContent = data.baseline_win_rate ? data.baseline_win_rate + '%' : '--';
     document.getElementById('quant-baseline-wr').style.color = wrColor(data.baseline_win_rate || 0);
-    var imp = data.improvement || 0;
-    document.getElementById('quant-improvement').textContent = imp > 0 ? '+' + imp + 'pp' : (imp < 0 ? imp + 'pp' : '--');
-    document.getElementById('quant-improvement').style.color = imp > 0 ? 'var(--success)' : imp < 0 ? 'var(--error)' : 'var(--text-muted)';
-    var cc = data.candle_counts || {};
-    var totalCandles = 0;
-    for (var k in cc) totalCandles += cc[k];
-    document.getElementById('quant-candles').textContent = totalCandles || '--';
     document.getElementById('quant-trades').textContent = data.trade_count || '--';
+    document.getElementById('quant-avg-edge').textContent = data.baseline_avg_edge ? data.baseline_avg_edge + '%' : '--';
     document.getElementById('quant-last-update').textContent = data.last_run || '--';
+    var fr = data.filter_reasons || {};
+    var totalFiltered = 0;
+    for (var k in fr) totalFiltered += fr[k];
+    document.getElementById('quant-filtered').textContent = totalFiltered || '--';
   } catch(e) { console.error('quant status:', e); }
 
   loadQuantResults();
   loadQuantRecommendations();
   loadQuantParams();
   loadQuantHawkReview();
+  loadQuantWalkForward();
+  loadQuantAnalytics();
 }
 
 async function loadQuantResults() {
@@ -7026,6 +7026,150 @@ async function loadQuantHawkReview() {
     var reviewResp = await fetch('/api/quant/params');
     el.innerHTML = '<div class="text-muted" style="text-align:center;padding:12px;font-size:0.72rem;">Hawk trade calibration data will appear after running a backtest cycle</div>';
   } catch(e) { console.error('quant hawk review:', e); }
+}
+
+async function loadQuantWalkForward() {
+  try {
+    var resp = await fetch('/api/quant/walk-forward');
+    var data = await resp.json();
+    var wf = data.walk_forward || {};
+    var ci = data.confidence_interval || {};
+
+    // Update stat cards
+    if (ci.ci_lower !== undefined) {
+      document.getElementById('quant-ci').textContent = '[' + ci.ci_lower + '%, ' + ci.ci_upper + '%]';
+    }
+    if (wf.test_win_rate !== undefined) {
+      document.getElementById('quant-wf-oos').textContent = wf.test_win_rate + '%';
+      document.getElementById('quant-wf-oos').style.color = wrColor(wf.test_win_rate);
+    }
+    if (wf.overfit_drop !== undefined) {
+      var od = wf.overfit_drop;
+      document.getElementById('quant-overfit').textContent = od + 'pp';
+      document.getElementById('quant-overfit').style.color = od > 15 ? 'var(--error)' : od > 5 ? 'var(--warning)' : 'var(--success)';
+    }
+
+    // Walk-forward fold table
+    var folds = wf.fold_results || [];
+    var tbody = document.getElementById('quant-wf-tbody');
+    if (folds.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:20px;">Run a backtest to see walk-forward results</td></tr>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < folds.length; i++) {
+      var f = folds[i];
+      html += '<tr>';
+      html += '<td>Fold ' + f.fold + '</td>';
+      html += '<td>' + f.train_size + ' (' + f.train_signals + ' sig)</td>';
+      html += '<td style="color:' + wrColor(f.train_wr) + ';">' + f.train_wr + '%</td>';
+      html += '<td>' + f.test_size + ' (' + f.test_signals + ' sig)</td>';
+      html += '<td style="color:' + wrColor(f.test_wr) + ';">' + f.test_wr + '%</td>';
+      html += '</tr>';
+    }
+    // Summary row
+    html += '<tr style="border-top:2px solid var(--border);font-weight:600;">';
+    html += '<td>Average</td>';
+    html += '<td>--</td>';
+    html += '<td style="color:' + wrColor(wf.train_win_rate) + ';">' + wf.train_win_rate + '%</td>';
+    html += '<td>--</td>';
+    html += '<td style="color:' + wrColor(wf.test_win_rate) + ';">' + wf.test_win_rate + '%</td>';
+    html += '</tr>';
+    tbody.innerHTML = html;
+  } catch(e) { console.error('quant walk-forward:', e); }
+}
+
+async function loadQuantAnalytics() {
+  try {
+    var resp = await fetch('/api/quant/analytics');
+    var data = await resp.json();
+    var kelly = data.kelly || {};
+    var diversity = data.diversity || {};
+    var decay = data.decay || {};
+
+    // Stat cards
+    if (kelly.half_kelly_pct !== undefined) {
+      document.getElementById('quant-kelly').textContent = '$' + kelly.recommended_usd + ' (' + kelly.half_kelly_pct + '%)';
+    }
+    if (diversity.diversity_score !== undefined) {
+      var ds = diversity.diversity_score;
+      document.getElementById('quant-diversity').textContent = ds + '/100';
+      document.getElementById('quant-diversity').style.color = ds >= 70 ? 'var(--success)' : ds >= 40 ? 'var(--warning)' : 'var(--error)';
+    }
+    if (decay.trend_direction !== undefined) {
+      var td = decay.trend_direction;
+      var decayEl = document.getElementById('quant-decay-status');
+      decayEl.textContent = td.charAt(0).toUpperCase() + td.slice(1);
+      decayEl.style.color = td === 'improving' ? 'var(--success)' : td === 'stable' ? 'var(--warning)' : 'var(--error)';
+    }
+    document.getElementById('quant-optimizer').textContent = 'Optuna';
+
+    // Analytics detail panel (Kelly + Decay)
+    var detailEl = document.getElementById('quant-analytics-detail');
+    var html = '';
+
+    // Kelly section
+    html += '<div style="margin-bottom:16px;">';
+    html += '<div style="font-weight:600;font-size:0.74rem;color:#00BFFF;margin-bottom:8px;">Kelly Position Sizing</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.7rem;">';
+    html += '<div class="text-muted">Full Kelly:</div><div>' + (kelly.full_kelly_pct || 0) + '% ($' + ((kelly.full_kelly_pct || 0) * (kelly.bankroll || 250) / 100).toFixed(0) + ')</div>';
+    html += '<div class="text-muted">Half Kelly (recommended):</div><div style="color:var(--success);font-weight:600;">$' + (kelly.recommended_usd || 0) + '</div>';
+    html += '<div class="text-muted">Quarter Kelly (conservative):</div><div>$' + ((kelly.quarter_kelly_pct || 0) * (kelly.bankroll || 250) / 100).toFixed(0) + '</div>';
+    html += '<div class="text-muted">Current trade size:</div><div>$' + (kelly.current_size_usd || 10) + '</div>';
+    html += '</div></div>';
+
+    // Decay section
+    html += '<div>';
+    html += '<div style="font-weight:600;font-size:0.74rem;color:' + (decay.is_decaying ? 'var(--error)' : 'var(--success)') + ';margin-bottom:8px;">Strategy Health</div>';
+    html += '<div style="font-size:0.7rem;">';
+    html += '<div style="margin-bottom:4px;"><span class="text-muted">Rolling WR:</span> ' + (decay.current_rolling_wr || 0) + '% (peak: ' + (decay.peak_rolling_wr || 0) + '%)</div>';
+    html += '<div style="margin-bottom:4px;"><span class="text-muted">Alert:</span> <span style="color:' + (decay.is_decaying ? 'var(--error)' : 'var(--text-primary)') + ';">' + esc(decay.alert_message || 'No data') + '</span></div>';
+    html += '</div></div>';
+
+    detailEl.innerHTML = html;
+
+    // Diversity detail
+    var divEl = document.getElementById('quant-diversity-detail');
+    var dhtml = '';
+    dhtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">';
+
+    // Redundant pairs
+    var pairs = diversity.redundant_pairs || [];
+    dhtml += '<div>';
+    dhtml += '<div style="font-weight:600;font-size:0.74rem;color:var(--error);margin-bottom:8px;">Redundant Pairs (' + pairs.length + ')</div>';
+    if (pairs.length === 0) {
+      dhtml += '<div class="text-muted" style="font-size:0.7rem;">No redundant pairs detected</div>';
+    } else {
+      for (var i = 0; i < Math.min(pairs.length, 8); i++) {
+        var p = pairs[i];
+        dhtml += '<div style="font-size:0.68rem;padding:3px 0;border-bottom:1px solid var(--border);">';
+        dhtml += '<span style="color:var(--error);">' + esc(p.indicator_a) + '</span>';
+        dhtml += ' <span class="text-muted">&harr;</span> ';
+        dhtml += '<span style="color:var(--error);">' + esc(p.indicator_b) + '</span>';
+        dhtml += '<span style="float:right;color:var(--warning);">' + p.agreement + '%</span>';
+        dhtml += '</div>';
+      }
+    }
+    dhtml += '</div>';
+
+    // Independent indicators
+    var indep = diversity.independent_indicators || [];
+    dhtml += '<div>';
+    dhtml += '<div style="font-weight:600;font-size:0.74rem;color:var(--success);margin-bottom:8px;">Independent (' + indep.length + ')</div>';
+    dhtml += '<div style="font-size:0.7rem;color:var(--text-secondary);">Avg pairwise agreement: ' + (diversity.avg_agreement || 0) + '%</div>';
+    if (indep.length > 0) {
+      dhtml += '<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;">';
+      for (var i = 0; i < indep.length; i++) {
+        dhtml += '<span class="badge" style="background:var(--success)22;color:var(--success);font-size:0.62rem;">' + esc(indep[i]) + '</span>';
+      }
+      dhtml += '</div>';
+    }
+    dhtml += '</div>';
+
+    dhtml += '</div>';
+    divEl.innerHTML = dhtml;
+
+  } catch(e) { console.error('quant analytics:', e); }
 }
 
 async function quantTriggerRun() {

@@ -4,7 +4,7 @@
     <div class="agent-card-initial" style="background:#00BFFF22;color:#00BFFF;font-size:1.1rem;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:10px;">QT</div>
     <div>
       <div style="font-weight:600;color:var(--text-primary);">Quant — The Strategy Alchemist</div>
-      <div class="text-muted" style="font-size:0.72rem;">Strategy Lab | Mode: <span id="quant-mode">Historical Replay</span> | Cycle: <span id="quant-cycle">--</span></div>
+      <div class="text-muted" style="font-size:0.72rem;">Strategy Lab | Mode: <span id="quant-mode">Historical Replay</span> | Cycle: <span id="quant-cycle">--</span> | Optimizer: <span id="quant-optimizer" style="color:#00BFFF;">--</span></div>
     </div>
     <div style="margin-left:auto;display:flex;gap:8px;">
       <button class="btn btn-primary" onclick="quantTriggerRun()" id="quant-run-btn" style="font-size:0.72rem;padding:6px 14px;">Trigger Backtest</button>
@@ -24,10 +24,10 @@
     <div class="text-muted" style="font-size:0.65rem;margin-top:2px;" id="quant-progress-detail"></div>
   </div>
 
-  <!-- Stat Cards -->
-  <div class="stat-grid" style="grid-template-columns:repeat(6,1fr);margin-bottom:20px;">
+  <!-- Stat Cards Row 1: Core metrics -->
+  <div class="stat-grid" style="grid-template-columns:repeat(6,1fr);margin-bottom:12px;">
     <div class="stat-card">
-      <div class="stat-label">Total Backtests</div>
+      <div class="stat-label">Combos Tested</div>
       <div class="stat-value" id="quant-total-combos" style="color:#00BFFF;">--</div>
     </div>
     <div class="stat-card">
@@ -39,19 +39,70 @@
       <div class="stat-value" id="quant-baseline-wr" style="color:var(--warning);">--</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Improvement</div>
-      <div class="stat-value" id="quant-improvement">--</div>
+      <div class="stat-label">95% CI</div>
+      <div class="stat-value" id="quant-ci" style="color:#00BFFF;font-size:0.85rem;">--</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Candles Loaded</div>
-      <div class="stat-value" id="quant-candles" style="color:var(--text-muted);">--</div>
+      <div class="stat-label">Walk-Fwd OOS WR</div>
+      <div class="stat-value" id="quant-wf-oos" style="color:var(--warning);">--</div>
     </div>
+    <div class="stat-card">
+      <div class="stat-label">Overfit Drop</div>
+      <div class="stat-value" id="quant-overfit">--</div>
+    </div>
+  </div>
+
+  <!-- Stat Cards Row 2: Analytics -->
+  <div class="stat-grid" style="grid-template-columns:repeat(6,1fr);margin-bottom:20px;">
     <div class="stat-card">
       <div class="stat-label">Trades Loaded</div>
       <div class="stat-value" id="quant-trades" style="color:var(--text-muted);">--</div>
     </div>
+    <div class="stat-card">
+      <div class="stat-label">Avg Edge</div>
+      <div class="stat-value" id="quant-avg-edge" style="color:var(--success);">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Kelly (Half)</div>
+      <div class="stat-value" id="quant-kelly" style="color:#00BFFF;">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Diversity Score</div>
+      <div class="stat-value" id="quant-diversity" style="color:var(--success);">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Strategy Health</div>
+      <div class="stat-value" id="quant-decay-status" style="font-size:0.85rem;">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Filter Losses</div>
+      <div class="stat-value" id="quant-filtered" style="color:var(--text-muted);">--</div>
+    </div>
   </div>
 
+  <!-- Row: Walk-Forward + Kelly -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
+    <!-- Walk-Forward Results -->
+    <div class="card">
+      <div class="card-header">Walk-Forward Validation</div>
+      <table class="table">
+        <thead><tr><th>Fold</th><th>Train Size</th><th>Train WR</th><th>Test Size</th><th>Test WR</th></tr></thead>
+        <tbody id="quant-wf-tbody">
+          <tr><td colspan="5" class="text-muted" style="text-align:center;padding:20px;">Run a backtest to see walk-forward results</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Kelly + Decay -->
+    <div class="card">
+      <div class="card-header">Position Sizing & Strategy Health</div>
+      <div id="quant-analytics-detail" style="padding:12px;">
+        <div class="text-muted" style="text-align:center;padding:20px;">No analytics data yet</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row: Current vs Best + Recommendations -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
     <!-- Current vs Best Strategy -->
     <div class="card">
@@ -70,6 +121,14 @@
       <div id="quant-recommendations" style="padding:12px;">
         <div class="text-muted" style="text-align:center;padding:20px;">No recommendations yet</div>
       </div>
+    </div>
+  </div>
+
+  <!-- Indicator Diversity -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-header">Indicator Diversity Analysis</div>
+    <div id="quant-diversity-detail" style="padding:12px;">
+      <div class="text-muted" style="text-align:center;padding:20px;">No diversity data yet</div>
     </div>
   </div>
 

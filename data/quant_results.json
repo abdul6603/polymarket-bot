@@ -1,488 +1,995 @@
 {
   "baseline": {
     "label": "live_current",
-    "score": 55.5,
-    "win_rate": 60.0,
-    "profit_factor": 1.5,
-    "total_signals": 80,
-    "wins": 48,
-    "losses": 32,
+    "score": 59.0,
+    "win_rate": 55.7,
+    "profit_factor": 1.31,
+    "total_signals": 79,
+    "wins": 44,
+    "losses": 35,
+    "avg_edge": 20.65,
+    "filter_reasons": {
+      "edge_too_low": 5,
+      "consensus": 41,
+      "market_safety": 2
+    },
     "params": {
       "label": "live_current",
       "min_consensus": 7,
       "min_confidence": 0.25,
       "up_confidence_premium": 0.08,
       "min_edge_absolute": 0.08,
-      "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+      "asset_edge_premiums": {
+        "bitcoin": 1.0,
+        "ethereum": 0.9,
+        "solana": 1.5
+      },
+      "use_regime": true,
+      "use_market_safety": true,
+      "weights": {
+        "volume_spike": 2.5,
+        "liquidation": 2.0,
+        "temporal_arb": 1.8,
+        "price_div": 1.4,
+        "macd": 1.1,
+        "order_flow": 1.0,
+        "news": 1.0,
+        "momentum": 0.6,
+        "ema": 0.6,
+        "heikin_ashi": 0.5,
+        "spot_depth": 0.5,
+        "orderbook": 0.5,
+        "liquidity": 0.4
+      }
     }
   },
   "top_results": [
     {
       "rank": 1,
-      "label": "weight_v171",
-      "score": 61.2,
-      "win_rate": 65.3,
-      "profit_factor": 1.88,
-      "total_signals": 75,
-      "wins": 49,
-      "losses": 26,
-      "max_consecutive_losses": 6,
-      "avg_edge": 11.83,
-      "avg_confidence": 60.8,
+      "label": "optuna_t189",
+      "score": 70.6,
+      "win_rate": 70.7,
+      "profit_factor": 2.44,
+      "total_signals": 41,
+      "wins": 29,
+      "losses": 12,
+      "max_consecutive_losses": 5,
+      "avg_edge": 23.62,
+      "avg_confidence": 91.8,
+      "filter_reasons": {
+        "edge_too_low": 38,
+        "consensus": 46,
+        "market_safety": 2
+      },
       "params": {
-        "label": "weight_v171",
+        "label": "optuna_t189",
         "min_consensus": 7,
-        "min_confidence": 0.25,
-        "up_confidence_premium": 0.08,
-        "min_edge_absolute": 0.08,
-        "weights_hash": "ema:0.6|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+        "min_confidence": 0.30000000000000004,
+        "up_confidence_premium": 0.06,
+        "min_edge_absolute": 0.16,
+        "asset_edge_premiums": {
+          "bitcoin": 1.0,
+          "ethereum": 0.9,
+          "solana": 1.5
+        },
+        "use_regime": true,
+        "use_market_safety": true,
+        "weights": {
+          "volume_spike": 6.875,
+          "liquidation": 2.0,
+          "temporal_arb": 1.8,
+          "price_div": 1.4,
+          "macd": 3.025,
+          "order_flow": 2.0,
+          "momentum": 1.8,
+          "ema": 0.45,
+          "heikin_ashi": 1.5,
+          "orderbook": 0.5,
+          "liquidity": 0.4
+        }
       }
     },
     {
       "rank": 2,
-      "label": "weight_v196",
-      "score": 61.2,
-      "win_rate": 65.3,
-      "profit_factor": 1.88,
-      "total_signals": 75,
-      "wins": 49,
-      "losses": 26,
-      "max_consecutive_losses": 6,
-      "avg_edge": 12.1,
-      "avg_confidence": 61.9,
+      "label": "optuna_t191",
+      "score": 70.6,
+      "win_rate": 70.7,
+      "profit_factor": 2.44,
+      "total_signals": 41,
+      "wins": 29,
+      "losses": 12,
+      "max_consecutive_losses": 5,
+      "avg_edge": 23.62,
+      "avg_confidence": 91.8,
+      "filter_reasons": {
+        "edge_too_low": 38,
+        "consensus": 46,
+        "market_safety": 2
+      },
       "params": {
-        "label": "weight_v196",
+        "label": "optuna_t191",
         "min_consensus": 7,
-        "min_confidence": 0.25,
-        "up_confidence_premium": 0.08,
-        "min_edge_absolute": 0.08,
-        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:0.6|momentum:0.6|news"
+        "min_confidence": 0.30000000000000004,
+        "up_confidence_premium": 0.06,
+        "min_edge_absolute": 0.16,
+        "asset_edge_premiums": {
+          "bitcoin": 1.0,
+          "ethereum": 0.9,
+          "solana": 1.5
+        },
+        "use_regime": true,
+        "use_market_safety": true,
+        "weights": {
+          "volume_spike": 6.875,
+          "liquidation": 2.0,
+          "temporal_arb": 1.8,
+          "price_div": 1.4,
+          "macd": 3.025,
+          "order_flow": 2.0,
+          "momentum": 1.8,
+          "ema": 0.45,
+          "heikin_ashi": 1.5,
+          "orderbook": 0.5,
+          "liquidity": 0.4
+        }
       }
     },
     {
       "rank": 3,
-      "label": "weight_v8",
-      "score": 59.3,
-      "win_rate": 63.6,
-      "profit_factor": 1.75,
-      "total_signals": 77,
-      "wins": 49,
-      "losses": 28,
-      "max_consecutive_losses": 7,
-      "avg_edge": 11.77,
-      "avg_confidence": 60.6,
+      "label": "optuna_t192",
+      "score": 70.6,
+      "win_rate": 70.7,
+      "profit_factor": 2.44,
+      "total_signals": 41,
+      "wins": 29,
+      "losses": 12,
+      "max_consecutive_losses": 5,
+      "avg_edge": 23.62,
+      "avg_confidence": 91.8,
+      "filter_reasons": {
+        "edge_too_low": 38,
+        "consensus": 46,
+        "market_safety": 2
+      },
       "params": {
-        "label": "weight_v8",
+        "label": "optuna_t192",
         "min_consensus": 7,
-        "min_confidence": 0.25,
-        "up_confidence_premium": 0.08,
-        "min_edge_absolute": 0.08,
-        "weights_hash": "ema:1.1|heikin_ashi:0.2|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+        "min_confidence": 0.30000000000000004,
+        "up_confidence_premium": 0.06,
+        "min_edge_absolute": 0.16,
+        "asset_edge_premiums": {
+          "bitcoin": 1.0,
+          "ethereum": 0.9,
+          "solana": 1.5
+        },
+        "use_regime": true,
+        "use_market_safety": true,
+        "weights": {
+          "volume_spike": 6.875,
+          "liquidation": 2.0,
+          "temporal_arb": 1.8,
+          "price_div": 1.4,
+          "macd": 3.025,
+          "order_flow": 2.0,
+          "momentum": 1.8,
+          "ema": 0.45,
+          "heikin_ashi": 1.5,
+          "orderbook": 0.5,
+          "liquidity": 0.4
+        }
       }
     },
     {
       "rank": 4,
-      "label": "weight_v13",
-      "score": 59.3,
-      "win_rate": 63.6,
-      "profit_factor": 1.75,
-      "total_signals": 77,
-      "wins": 49,
-      "losses": 28,
-      "max_consecutive_losses": 7,
-      "avg_edge": 11.81,
-      "avg_confidence": 60.8,
+      "label": "optuna_t193",
+      "score": 70.6,
+      "win_rate": 70.7,
+      "profit_factor": 2.44,
+      "total_signals": 41,
+      "wins": 29,
+      "losses": 12,
+      "max_consecutive_losses": 5,
+      "avg_edge": 23.62,
+      "avg_confidence": 91.8,
+      "filter_reasons": {
+        "edge_too_low": 38,
+        "consensus": 46,
+        "market_safety": 2
+      },
       "params": {
-        "label": "weight_v13",
+        "label": "optuna_t193",
         "min_consensus": 7,
-        "min_confidence": 0.25,
-        "up_confidence_premium": 0.08,
-        "min_edge_absolute": 0.08,
-        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+        "min_confidence": 0.30000000000000004,
+        "up_confidence_premium": 0.06,
+        "min_edge_absolute": 0.16,
+        "asset_edge_premiums": {
+          "bitcoin": 1.0,
+          "ethereum": 0.9,
+          "solana": 1.5
+        },
+        "use_regime": true,
+        "use_market_safety": true,
+        "weights": {
+          "volume_spike": 6.875,
+          "liquidation": 2.0,
+          "temporal_arb": 1.8,
+          "price_div": 1.4,
+          "macd": 3.025,
+          "order_flow": 2.0,
+          "momentum": 1.8,
+          "ema": 0.45,
+          "heikin_ashi": 1.5,
+          "orderbook": 0.5,
+          "liquidity": 0.4
+        }
       }
     },
     {
       "rank": 5,
-      "label": "weight_v141",
-      "score": 59.3,
-      "win_rate": 63.6,
-      "profit_factor": 1.75,
-      "total_signals": 77,
-      "wins": 49,
-      "losses": 28,
-      "max_consecutive_losses": 7,
-      "avg_edge": 11.82,
-      "avg_confidence": 60.8,
+      "label": "optuna_t194",
+      "score": 70.6,
+      "win_rate": 70.7,
+      "profit_factor": 2.44,
+      "total_signals": 41,
+      "wins": 29,
+      "losses": 12,
+      "max_consecutive_losses": 5,
+      "avg_edge": 23.62,
+      "avg_confidence": 91.8,
+      "filter_reasons": {
+        "edge_too_low": 38,
+        "consensus": 46,
+        "market_safety": 2
+      },
       "params": {
-        "label": "weight_v141",
+        "label": "optuna_t194",
         "min_consensus": 7,
-        "min_confidence": 0.25,
-        "up_confidence_premium": 0.08,
-        "min_edge_absolute": 0.08,
-        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.3|news"
+        "min_confidence": 0.30000000000000004,
+        "up_confidence_premium": 0.06,
+        "min_edge_absolute": 0.16,
+        "asset_edge_premiums": {
+          "bitcoin": 1.0,
+          "ethereum": 0.9,
+          "solana": 1.5
+        },
+        "use_regime": true,
+        "use_market_safety": true,
+        "weights": {
+          "volume_spike": 6.875,
+          "liquidation": 2.0,
+          "temporal_arb": 1.8,
+          "price_div": 1.4,
+          "macd": 3.025,
+          "order_flow": 2.0,
+          "momentum": 1.8,
+          "ema": 0.45,
+          "heikin_ashi": 1.5,
+          "orderbook": 0.5,
+          "liquidity": 0.4
+        }
       }
     },
     {
       "rank": 6,
-      "label": "weight_v142",
-      "score": 59.3,
-      "win_rate": 63.6,
-      "profit_factor": 1.75,
-      "total_signals": 77,
-      "wins": 49,
-      "losses": 28,
-      "max_consecutive_losses": 7,
-      "avg_edge": 11.81,
-      "avg_confidence": 60.8,
+      "label": "optuna_t195",
+      "score": 70.6,
+      "win_rate": 70.7,
+      "profit_factor": 2.44,
+      "total_signals": 41,
+      "wins": 29,
+      "losses": 12,
+      "max_consecutive_losses": 5,
+      "avg_edge": 23.62,
+      "avg_confidence": 91.8,
+      "filter_reasons": {
+        "edge_too_low": 38,
+        "consensus": 46,
+        "market_safety": 2
+      },
       "params": {
-        "label": "weight_v142",
+        "label": "optuna_t195",
         "min_consensus": 7,
-        "min_confidence": 0.25,
-        "up_confidence_premium": 0.08,
-        "min_edge_absolute": 0.08,
-        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+        "min_confidence": 0.30000000000000004,
+        "up_confidence_premium": 0.06,
+        "min_edge_absolute": 0.16,
+        "asset_edge_premiums": {
+          "bitcoin": 1.0,
+          "ethereum": 0.9,
+          "solana": 1.5
+        },
+        "use_regime": true,
+        "use_market_safety": true,
+        "weights": {
+          "volume_spike": 6.875,
+          "liquidation": 2.0,
+          "temporal_arb": 1.8,
+          "price_div": 1.4,
+          "macd": 3.025,
+          "order_flow": 2.0,
+          "momentum": 1.8,
+          "ema": 0.45,
+          "heikin_ashi": 1.5,
+          "orderbook": 0.5,
+          "liquidity": 0.4
+        }
       }
     },
     {
       "rank": 7,
-      "label": "weight_v167",
-      "score": 59.3,
-      "win_rate": 63.6,
-      "profit_factor": 1.75,
-      "total_signals": 77,
-      "wins": 49,
-      "losses": 28,
-      "max_consecutive_losses": 7,
-      "avg_edge": 11.81,
-      "avg_confidence": 60.8,
+      "label": "optuna_t197",
+      "score": 70.6,
+      "win_rate": 70.7,
+      "profit_factor": 2.44,
+      "total_signals": 41,
+      "wins": 29,
+      "losses": 12,
+      "max_consecutive_losses": 5,
+      "avg_edge": 23.62,
+      "avg_confidence": 91.8,
+      "filter_reasons": {
+        "edge_too_low": 38,
+        "consensus": 46,
+        "market_safety": 2
+      },
       "params": {
-        "label": "weight_v167",
+        "label": "optuna_t197",
         "min_consensus": 7,
-        "min_confidence": 0.25,
-        "up_confidence_premium": 0.08,
-        "min_edge_absolute": 0.08,
-        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+        "min_confidence": 0.30000000000000004,
+        "up_confidence_premium": 0.06,
+        "min_edge_absolute": 0.16,
+        "asset_edge_premiums": {
+          "bitcoin": 1.0,
+          "ethereum": 0.9,
+          "solana": 1.5
+        },
+        "use_regime": true,
+        "use_market_safety": true,
+        "weights": {
+          "volume_spike": 6.875,
+          "liquidation": 2.0,
+          "temporal_arb": 1.8,
+          "price_div": 1.4,
+          "macd": 3.025,
+          "order_flow": 2.0,
+          "momentum": 1.8,
+          "ema": 0.45,
+          "heikin_ashi": 1.5,
+          "orderbook": 0.5,
+          "liquidity": 0.4
+        }
       }
     },
     {
       "rank": 8,
-      "label": "weight_v192",
-      "score": 59.3,
-      "win_rate": 63.6,
-      "profit_factor": 1.75,
-      "total_signals": 77,
-      "wins": 49,
-      "losses": 28,
-      "max_consecutive_losses": 7,
-      "avg_edge": 11.81,
-      "avg_confidence": 60.8,
+      "label": "optuna_t198",
+      "score": 70.6,
+      "win_rate": 70.7,
+      "profit_factor": 2.44,
+      "total_signals": 41,
+      "wins": 29,
+      "losses": 12,
+      "max_consecutive_losses": 5,
+      "avg_edge": 23.62,
+      "avg_confidence": 91.8,
+      "filter_reasons": {
+        "edge_too_low": 38,
+        "consensus": 46,
+        "market_safety": 2
+      },
       "params": {
-        "label": "weight_v192",
+        "label": "optuna_t198",
         "min_consensus": 7,
-        "min_confidence": 0.25,
-        "up_confidence_premium": 0.08,
-        "min_edge_absolute": 0.08,
-        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+        "min_confidence": 0.30000000000000004,
+        "up_confidence_premium": 0.06,
+        "min_edge_absolute": 0.16,
+        "asset_edge_premiums": {
+          "bitcoin": 1.0,
+          "ethereum": 0.9,
+          "solana": 1.5
+        },
+        "use_regime": true,
+        "use_market_safety": true,
+        "weights": {
+          "volume_spike": 6.875,
+          "liquidation": 2.0,
+          "temporal_arb": 1.8,
+          "price_div": 1.4,
+          "macd": 3.025,
+          "order_flow": 2.0,
+          "momentum": 1.8,
+          "ema": 0.45,
+          "heikin_ashi": 1.5,
+          "orderbook": 0.5,
+          "liquidity": 0.4
+        }
       }
     },
     {
       "rank": 9,
-      "label": "weight_v215",
-      "score": 59.3,
-      "win_rate": 63.6,
-      "profit_factor": 1.75,
-      "total_signals": 77,
-      "wins": 49,
-      "losses": 28,
-      "max_consecutive_losses": 7,
-      "avg_edge": 11.83,
-      "avg_confidence": 60.9,
+      "label": "optuna_t160",
+      "score": 69.3,
+      "win_rate": 69.0,
+      "profit_factor": 2.33,
+      "total_signals": 42,
+      "wins": 29,
+      "losses": 13,
+      "max_consecutive_losses": 5,
+      "avg_edge": 23.55,
+      "avg_confidence": 91.7,
+      "filter_reasons": {
+        "edge_too_low": 37,
+        "consensus": 46,
+        "market_safety": 2
+      },
       "params": {
-        "label": "weight_v215",
+        "label": "optuna_t160",
         "min_consensus": 7,
-        "min_confidence": 0.25,
-        "up_confidence_premium": 0.08,
-        "min_edge_absolute": 0.08,
-        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+        "min_confidence": 0.30000000000000004,
+        "up_confidence_premium": 0.06,
+        "min_edge_absolute": 0.16,
+        "asset_edge_premiums": {
+          "bitcoin": 1.0,
+          "ethereum": 0.9,
+          "solana": 1.5
+        },
+        "use_regime": true,
+        "use_market_safety": true,
+        "weights": {
+          "volume_spike": 7.5,
+          "liquidation": 2.0,
+          "temporal_arb": 1.8,
+          "price_div": 1.4,
+          "macd": 2.75,
+          "order_flow": 3.0,
+          "momentum": 1.8,
+          "ema": 0.45,
+          "heikin_ashi": 1.5,
+          "orderbook": 0.5,
+          "liquidity": 0.4
+        }
       }
     },
     {
       "rank": 10,
-      "label": "weight_v216",
-      "score": 59.3,
-      "win_rate": 63.6,
-      "profit_factor": 1.75,
-      "total_signals": 77,
-      "wins": 49,
-      "losses": 28,
-      "max_consecutive_losses": 7,
-      "avg_edge": 11.82,
-      "avg_confidence": 60.8,
+      "label": "optuna_t161",
+      "score": 69.3,
+      "win_rate": 69.0,
+      "profit_factor": 2.33,
+      "total_signals": 42,
+      "wins": 29,
+      "losses": 13,
+      "max_consecutive_losses": 5,
+      "avg_edge": 23.55,
+      "avg_confidence": 91.7,
+      "filter_reasons": {
+        "edge_too_low": 37,
+        "consensus": 46,
+        "market_safety": 2
+      },
       "params": {
-        "label": "weight_v216",
+        "label": "optuna_t161",
         "min_consensus": 7,
-        "min_confidence": 0.25,
-        "up_confidence_premium": 0.08,
-        "min_edge_absolute": 0.08,
-        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+        "min_confidence": 0.30000000000000004,
+        "up_confidence_premium": 0.06,
+        "min_edge_absolute": 0.16,
+        "asset_edge_premiums": {
+          "bitcoin": 1.0,
+          "ethereum": 0.9,
+          "solana": 1.5
+        },
+        "use_regime": true,
+        "use_market_safety": true,
+        "weights": {
+          "volume_spike": 7.5,
+          "liquidation": 2.0,
+          "temporal_arb": 1.8,
+          "price_div": 1.4,
+          "macd": 2.75,
+          "order_flow": 3.0,
+          "momentum": 1.8,
+          "ema": 0.45,
+          "heikin_ashi": 1.5,
+          "orderbook": 0.5,
+          "liquidity": 0.4
+        }
       }
     },
     {
       "rank": 11,
-      "label": "weight_v217",
-      "score": 59.3,
-      "win_rate": 63.6,
-      "profit_factor": 1.75,
-      "total_signals": 77,
-      "wins": 49,
-      "losses": 28,
-      "max_consecutive_losses": 7,
-      "avg_edge": 11.81,
-      "avg_confidence": 60.8,
+      "label": "optuna_t162",
+      "score": 69.3,
+      "win_rate": 69.0,
+      "profit_factor": 2.33,
+      "total_signals": 42,
+      "wins": 29,
+      "losses": 13,
+      "max_consecutive_losses": 5,
+      "avg_edge": 23.55,
+      "avg_confidence": 91.7,
+      "filter_reasons": {
+        "edge_too_low": 37,
+        "consensus": 46,
+        "market_safety": 2
+      },
       "params": {
-        "label": "weight_v217",
+        "label": "optuna_t162",
         "min_consensus": 7,
-        "min_confidence": 0.25,
-        "up_confidence_premium": 0.08,
-        "min_edge_absolute": 0.08,
-        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+        "min_confidence": 0.30000000000000004,
+        "up_confidence_premium": 0.06,
+        "min_edge_absolute": 0.16,
+        "asset_edge_premiums": {
+          "bitcoin": 1.0,
+          "ethereum": 0.9,
+          "solana": 1.5
+        },
+        "use_regime": true,
+        "use_market_safety": true,
+        "weights": {
+          "volume_spike": 7.5,
+          "liquidation": 2.0,
+          "temporal_arb": 1.8,
+          "price_div": 1.4,
+          "macd": 2.75,
+          "order_flow": 3.0,
+          "momentum": 1.8,
+          "ema": 0.45,
+          "heikin_ashi": 1.5,
+          "orderbook": 0.5,
+          "liquidity": 0.4
+        }
       }
     },
     {
       "rank": 12,
-      "label": "weight_v218",
-      "score": 59.3,
-      "win_rate": 63.6,
-      "profit_factor": 1.75,
-      "total_signals": 77,
-      "wins": 49,
-      "losses": 28,
-      "max_consecutive_losses": 7,
-      "avg_edge": 11.8,
-      "avg_confidence": 60.7,
+      "label": "optuna_t163",
+      "score": 69.3,
+      "win_rate": 69.0,
+      "profit_factor": 2.33,
+      "total_signals": 42,
+      "wins": 29,
+      "losses": 13,
+      "max_consecutive_losses": 5,
+      "avg_edge": 23.55,
+      "avg_confidence": 91.7,
+      "filter_reasons": {
+        "edge_too_low": 37,
+        "consensus": 46,
+        "market_safety": 2
+      },
       "params": {
-        "label": "weight_v218",
+        "label": "optuna_t163",
         "min_consensus": 7,
-        "min_confidence": 0.25,
-        "up_confidence_premium": 0.08,
-        "min_edge_absolute": 0.08,
-        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+        "min_confidence": 0.30000000000000004,
+        "up_confidence_premium": 0.06,
+        "min_edge_absolute": 0.16,
+        "asset_edge_premiums": {
+          "bitcoin": 1.0,
+          "ethereum": 0.9,
+          "solana": 1.5
+        },
+        "use_regime": true,
+        "use_market_safety": true,
+        "weights": {
+          "volume_spike": 7.5,
+          "liquidation": 2.0,
+          "temporal_arb": 1.8,
+          "price_div": 1.4,
+          "macd": 2.75,
+          "order_flow": 3.0,
+          "momentum": 1.8,
+          "ema": 0.45,
+          "heikin_ashi": 1.5,
+          "orderbook": 0.5,
+          "liquidity": 0.4
+        }
       }
     },
     {
       "rank": 13,
-      "label": "weight_v219",
-      "score": 59.3,
-      "win_rate": 63.6,
-      "profit_factor": 1.75,
-      "total_signals": 77,
-      "wins": 49,
-      "losses": 28,
-      "max_consecutive_losses": 7,
-      "avg_edge": 11.79,
-      "avg_confidence": 60.7,
+      "label": "optuna_t184",
+      "score": 69.3,
+      "win_rate": 69.0,
+      "profit_factor": 2.33,
+      "total_signals": 42,
+      "wins": 29,
+      "losses": 13,
+      "max_consecutive_losses": 5,
+      "avg_edge": 23.55,
+      "avg_confidence": 91.7,
+      "filter_reasons": {
+        "edge_too_low": 37,
+        "consensus": 46,
+        "market_safety": 2
+      },
       "params": {
-        "label": "weight_v219",
+        "label": "optuna_t184",
         "min_consensus": 7,
-        "min_confidence": 0.25,
-        "up_confidence_premium": 0.08,
-        "min_edge_absolute": 0.08,
-        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+        "min_confidence": 0.30000000000000004,
+        "up_confidence_premium": 0.06,
+        "min_edge_absolute": 0.16,
+        "asset_edge_premiums": {
+          "bitcoin": 1.0,
+          "ethereum": 0.9,
+          "solana": 1.5
+        },
+        "use_regime": true,
+        "use_market_safety": true,
+        "weights": {
+          "volume_spike": 7.5,
+          "liquidation": 2.0,
+          "temporal_arb": 1.8,
+          "price_div": 1.4,
+          "macd": 2.75,
+          "order_flow": 3.0,
+          "momentum": 1.8,
+          "ema": 0.45,
+          "heikin_ashi": 1.5,
+          "orderbook": 0.5,
+          "liquidity": 0.4
+        }
       }
     },
     {
       "rank": 14,
-      "label": "weight_v191",
-      "score": 58.7,
-      "win_rate": 63.2,
-      "profit_factor": 1.71,
-      "total_signals": 76,
-      "wins": 48,
-      "losses": 28,
-      "max_consecutive_losses": 7,
-      "avg_edge": 12.03,
-      "avg_confidence": 61.7,
+      "label": "optuna_t144",
+      "score": 69.3,
+      "win_rate": 69.0,
+      "profit_factor": 2.33,
+      "total_signals": 42,
+      "wins": 29,
+      "losses": 13,
+      "max_consecutive_losses": 5,
+      "avg_edge": 23.54,
+      "avg_confidence": 91.7,
+      "filter_reasons": {
+        "edge_too_low": 37,
+        "consensus": 46,
+        "market_safety": 2
+      },
       "params": {
-        "label": "weight_v191",
+        "label": "optuna_t144",
         "min_consensus": 7,
-        "min_confidence": 0.25,
-        "up_confidence_premium": 0.08,
-        "min_edge_absolute": 0.08,
-        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:0.6|momentum:0.6|news"
+        "min_confidence": 0.30000000000000004,
+        "up_confidence_premium": 0.06,
+        "min_edge_absolute": 0.16,
+        "asset_edge_premiums": {
+          "bitcoin": 1.0,
+          "ethereum": 0.9,
+          "solana": 1.5
+        },
+        "use_regime": true,
+        "use_market_safety": true,
+        "weights": {
+          "volume_spike": 6.875,
+          "liquidation": 2.0,
+          "temporal_arb": 1.8,
+          "price_div": 1.4,
+          "macd": 2.75,
+          "order_flow": 3.0,
+          "momentum": 1.8,
+          "ema": 0.45,
+          "heikin_ashi": 1.5,
+          "orderbook": 0.5,
+          "liquidity": 0.4
+        }
       }
     },
     {
       "rank": 15,
-      "label": "weight_v195",
-      "score": 58.5,
-      "win_rate": 63.5,
-      "profit_factor": 1.74,
-      "total_signals": 63,
-      "wins": 40,
-      "losses": 23,
-      "max_consecutive_losses": 7,
-      "avg_edge": 12.19,
-      "avg_confidence": 62.4,
+      "label": "optuna_t146",
+      "score": 69.3,
+      "win_rate": 69.0,
+      "profit_factor": 2.33,
+      "total_signals": 42,
+      "wins": 29,
+      "losses": 13,
+      "max_consecutive_losses": 5,
+      "avg_edge": 23.54,
+      "avg_confidence": 91.7,
+      "filter_reasons": {
+        "edge_too_low": 37,
+        "consensus": 46,
+        "market_safety": 2
+      },
       "params": {
-        "label": "weight_v195",
+        "label": "optuna_t146",
         "min_consensus": 7,
-        "min_confidence": 0.25,
-        "up_confidence_premium": 0.08,
-        "min_edge_absolute": 0.08,
-        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|momentum:0.6|news:2.5|orde"
+        "min_confidence": 0.30000000000000004,
+        "up_confidence_premium": 0.06,
+        "min_edge_absolute": 0.16,
+        "asset_edge_premiums": {
+          "bitcoin": 1.0,
+          "ethereum": 0.9,
+          "solana": 1.5
+        },
+        "use_regime": true,
+        "use_market_safety": true,
+        "weights": {
+          "volume_spike": 6.875,
+          "liquidation": 2.0,
+          "temporal_arb": 1.8,
+          "price_div": 1.4,
+          "macd": 2.75,
+          "order_flow": 3.0,
+          "momentum": 1.8,
+          "ema": 0.45,
+          "heikin_ashi": 1.5,
+          "orderbook": 0.5,
+          "liquidity": 0.4
+        }
       }
     },
     {
       "rank": 16,
-      "label": "weight_v9",
-      "score": 58.4,
-      "win_rate": 62.8,
-      "profit_factor": 1.69,
-      "total_signals": 78,
-      "wins": 49,
-      "losses": 29,
-      "max_consecutive_losses": 7,
-      "avg_edge": 11.75,
-      "avg_confidence": 60.5,
+      "label": "optuna_t147",
+      "score": 69.3,
+      "win_rate": 69.0,
+      "profit_factor": 2.33,
+      "total_signals": 42,
+      "wins": 29,
+      "losses": 13,
+      "max_consecutive_losses": 5,
+      "avg_edge": 23.54,
+      "avg_confidence": 91.7,
+      "filter_reasons": {
+        "edge_too_low": 37,
+        "consensus": 46,
+        "market_safety": 2
+      },
       "params": {
-        "label": "weight_v9",
+        "label": "optuna_t147",
         "min_consensus": 7,
-        "min_confidence": 0.25,
-        "up_confidence_premium": 0.08,
-        "min_edge_absolute": 0.08,
-        "weights_hash": "ema:1.1|heikin_ashi:0.2|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+        "min_confidence": 0.30000000000000004,
+        "up_confidence_premium": 0.06,
+        "min_edge_absolute": 0.16,
+        "asset_edge_premiums": {
+          "bitcoin": 1.0,
+          "ethereum": 0.9,
+          "solana": 1.5
+        },
+        "use_regime": true,
+        "use_market_safety": true,
+        "weights": {
+          "volume_spike": 6.875,
+          "liquidation": 2.0,
+          "temporal_arb": 1.8,
+          "price_div": 1.4,
+          "macd": 2.75,
+          "order_flow": 3.0,
+          "momentum": 1.8,
+          "ema": 0.45,
+          "heikin_ashi": 1.5,
+          "orderbook": 0.5,
+          "liquidity": 0.4
+        }
       }
     },
     {
       "rank": 17,
-      "label": "weight_v14",
-      "score": 58.4,
-      "win_rate": 62.8,
-      "profit_factor": 1.69,
-      "total_signals": 78,
-      "wins": 49,
-      "losses": 29,
-      "max_consecutive_losses": 7,
-      "avg_edge": 11.78,
-      "avg_confidence": 60.7,
+      "label": "optuna_t151",
+      "score": 69.3,
+      "win_rate": 69.0,
+      "profit_factor": 2.33,
+      "total_signals": 42,
+      "wins": 29,
+      "losses": 13,
+      "max_consecutive_losses": 5,
+      "avg_edge": 23.54,
+      "avg_confidence": 91.7,
+      "filter_reasons": {
+        "edge_too_low": 37,
+        "consensus": 46,
+        "market_safety": 2
+      },
       "params": {
-        "label": "weight_v14",
+        "label": "optuna_t151",
         "min_consensus": 7,
-        "min_confidence": 0.25,
-        "up_confidence_premium": 0.08,
-        "min_edge_absolute": 0.08,
-        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+        "min_confidence": 0.30000000000000004,
+        "up_confidence_premium": 0.06,
+        "min_edge_absolute": 0.16,
+        "asset_edge_premiums": {
+          "bitcoin": 1.0,
+          "ethereum": 0.9,
+          "solana": 1.5
+        },
+        "use_regime": true,
+        "use_market_safety": true,
+        "weights": {
+          "volume_spike": 6.875,
+          "liquidation": 2.0,
+          "temporal_arb": 1.8,
+          "price_div": 1.4,
+          "macd": 2.75,
+          "order_flow": 3.0,
+          "momentum": 1.8,
+          "ema": 0.45,
+          "heikin_ashi": 1.5,
+          "orderbook": 0.5,
+          "liquidity": 0.4
+        }
       }
     },
     {
       "rank": 18,
-      "label": "weight_v18",
-      "score": 58.4,
-      "win_rate": 62.8,
-      "profit_factor": 1.69,
-      "total_signals": 78,
-      "wins": 49,
-      "losses": 29,
-      "max_consecutive_losses": 7,
-      "avg_edge": 11.8,
-      "avg_confidence": 60.7,
+      "label": "optuna_t152",
+      "score": 69.3,
+      "win_rate": 69.0,
+      "profit_factor": 2.33,
+      "total_signals": 42,
+      "wins": 29,
+      "losses": 13,
+      "max_consecutive_losses": 5,
+      "avg_edge": 23.54,
+      "avg_confidence": 91.7,
+      "filter_reasons": {
+        "edge_too_low": 37,
+        "consensus": 46,
+        "market_safety": 2
+      },
       "params": {
-        "label": "weight_v18",
+        "label": "optuna_t152",
         "min_consensus": 7,
-        "min_confidence": 0.25,
-        "up_confidence_premium": 0.08,
-        "min_edge_absolute": 0.08,
-        "weights_hash": "ema:1.1|heikin_ashi:0.8|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+        "min_confidence": 0.30000000000000004,
+        "up_confidence_premium": 0.06,
+        "min_edge_absolute": 0.16,
+        "asset_edge_premiums": {
+          "bitcoin": 1.0,
+          "ethereum": 0.9,
+          "solana": 1.5
+        },
+        "use_regime": true,
+        "use_market_safety": true,
+        "weights": {
+          "volume_spike": 6.875,
+          "liquidation": 2.0,
+          "temporal_arb": 1.8,
+          "price_div": 1.4,
+          "macd": 2.75,
+          "order_flow": 3.0,
+          "momentum": 1.8,
+          "ema": 0.45,
+          "heikin_ashi": 1.5,
+          "orderbook": 0.5,
+          "liquidity": 0.4
+        }
       }
     },
     {
       "rank": 19,
-      "label": "weight_v19",
-      "score": 58.4,
-      "win_rate": 62.8,
-      "profit_factor": 1.69,
-      "total_signals": 78,
-      "wins": 49,
-      "losses": 29,
-      "max_consecutive_losses": 7,
-      "avg_edge": 11.82,
-      "avg_confidence": 60.8,
+      "label": "optuna_t153",
+      "score": 69.3,
+      "win_rate": 69.0,
+      "profit_factor": 2.33,
+      "total_signals": 42,
+      "wins": 29,
+      "losses": 13,
+      "max_consecutive_losses": 5,
+      "avg_edge": 23.54,
+      "avg_confidence": 91.7,
+      "filter_reasons": {
+        "edge_too_low": 37,
+        "consensus": 46,
+        "market_safety": 2
+      },
       "params": {
-        "label": "weight_v19",
+        "label": "optuna_t153",
         "min_consensus": 7,
-        "min_confidence": 0.25,
-        "up_confidence_premium": 0.08,
-        "min_edge_absolute": 0.08,
-        "weights_hash": "ema:1.1|heikin_ashi:0.8|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.6|news"
+        "min_confidence": 0.30000000000000004,
+        "up_confidence_premium": 0.06,
+        "min_edge_absolute": 0.16,
+        "asset_edge_premiums": {
+          "bitcoin": 1.0,
+          "ethereum": 0.9,
+          "solana": 1.5
+        },
+        "use_regime": true,
+        "use_market_safety": true,
+        "weights": {
+          "volume_spike": 6.875,
+          "liquidation": 2.0,
+          "temporal_arb": 1.8,
+          "price_div": 1.4,
+          "macd": 2.75,
+          "order_flow": 3.0,
+          "momentum": 1.8,
+          "ema": 0.45,
+          "heikin_ashi": 1.5,
+          "orderbook": 0.5,
+          "liquidity": 0.4
+        }
       }
     },
     {
       "rank": 20,
-      "label": "weight_v143",
-      "score": 58.4,
-      "win_rate": 62.8,
-      "profit_factor": 1.69,
-      "total_signals": 78,
-      "wins": 49,
-      "losses": 29,
-      "max_consecutive_losses": 7,
-      "avg_edge": 11.76,
-      "avg_confidence": 60.6,
+      "label": "optuna_t154",
+      "score": 69.3,
+      "win_rate": 69.0,
+      "profit_factor": 2.33,
+      "total_signals": 42,
+      "wins": 29,
+      "losses": 13,
+      "max_consecutive_losses": 5,
+      "avg_edge": 23.54,
+      "avg_confidence": 91.7,
+      "filter_reasons": {
+        "edge_too_low": 37,
+        "consensus": 46,
+        "market_safety": 2
+      },
       "params": {
-        "label": "weight_v143",
+        "label": "optuna_t154",
         "min_consensus": 7,
-        "min_confidence": 0.25,
-        "up_confidence_premium": 0.08,
-        "min_edge_absolute": 0.08,
-        "weights_hash": "ema:1.1|heikin_ashi:0.5|liquidation:2.0|liquidity:0.4|macd:1.1|momentum:0.9|news"
+        "min_confidence": 0.30000000000000004,
+        "up_confidence_premium": 0.06,
+        "min_edge_absolute": 0.16,
+        "asset_edge_premiums": {
+          "bitcoin": 1.0,
+          "ethereum": 0.9,
+          "solana": 1.5
+        },
+        "use_regime": true,
+        "use_market_safety": true,
+        "weights": {
+          "volume_spike": 6.875,
+          "liquidation": 2.0,
+          "temporal_arb": 1.8,
+          "price_div": 1.4,
+          "macd": 2.75,
+          "order_flow": 3.0,
+          "momentum": 1.8,
+          "ema": 0.45,
+          "heikin_ashi": 1.5,
+          "orderbook": 0.5,
+          "liquidity": 0.4
+        }
       }
     }
   ],
   "sensitivity": {
     "consensus": {
       "7": {
-        "avg_win_rate": 59.4,
-        "avg_signals": 73.1,
-        "count": 300
+        "avg_win_rate": 65.1,
+        "avg_signals": 49.9,
+        "count": 172
       },
-      "5": {
-        "avg_win_rate": 59.2,
-        "avg_signals": 77.2,
-        "count": 100
+      "8": {
+        "avg_win_rate": 57.4,
+        "avg_signals": 41.3,
+        "count": 14
       },
-      "6": {
-        "avg_win_rate": 59.4,
-        "avg_signals": 76.6,
-        "count": 100
+      "9": {
+        "avg_win_rate": 55.3,
+        "avg_signals": 15.7,
+        "count": 6
       }
     },
     "edge": {
-      "0.08": {
-        "avg_win_rate": 59.2,
-        "avg_signals": 74.6,
-        "count": 300
-      },
-      "0.05": {
-        "avg_win_rate": 59.7,
-        "avg_signals": 90.3,
-        "count": 60
-      },
-      "0.06": {
-        "avg_win_rate": 59.0,
-        "avg_signals": 88.1,
-        "count": 60
-      },
-      "0.10": {
-        "avg_win_rate": 61.2,
-        "avg_signals": 67.0,
-        "count": 40
+      "0.16": {
+        "avg_win_rate": 67.0,
+        "avg_signals": 41.0,
+        "count": 114
       },
       "0.12": {
-        "avg_win_rate": 59.0,
-        "avg_signals": 39.0,
-        "count": 40
+        "avg_win_rate": 61.8,
+        "avg_signals": 62.2,
+        "count": 45
+      },
+      "0.14": {
+        "avg_win_rate": 58.5,
+        "avg_signals": 45.0,
+        "count": 17
+      },
+      "0.10": {
+        "avg_win_rate": 56.8,
+        "avg_signals": 56.8,
+        "count": 11
+      },
+      "0.08": {
+        "avg_win_rate": 57.1,
+        "avg_signals": 76.8,
+        "count": 5
       }
     }
   },
-  "updated": "2026-02-17 08:39 AM ET"
+  "updated": "2026-02-17 09:31 AM ET"
 }

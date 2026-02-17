@@ -10,10 +10,15 @@ from quant.config import QuantConfig
 from quant.data_loader import load_all_candles, load_all_trades, load_indicator_accuracy
 from quant.backtester import replay_historical_trades, backtest_candle_indicators
 from quant.optimizer import run_optimization, get_live_params
+from quant.walk_forward import (
+    walk_forward_validation, bootstrap_confidence_interval,
+    optuna_full_optimization, HAS_OPTUNA,
+)
 from quant.reporter import (
     write_status, write_results, write_recommendations,
     write_hawk_review, publish_events,
 )
+from quant.analytics import compute_kelly, analyze_indicator_diversity, detect_strategy_decay
 from quant.scorer import score_result
 
 log = logging.getLogger(__name__)
@@ -36,9 +41,9 @@ class QuantBot:
             datefmt="%H:%M:%S",
         )
         log.info("Quant — The Strategy Alchemist starting up")
-        log.info("Config: cycle=%dm, max_combos=%d, min_trades=%d",
+        log.info("Config: cycle=%dm, max_combos=%d, min_trades=%d, optuna=%s",
                  self.cfg.cycle_minutes, self.cfg.max_combinations,
-                 self.cfg.min_trades_for_significance)
+                 self.cfg.min_trades_for_significance, HAS_OPTUNA)
 
         while True:
             self.cycle += 1
@@ -67,31 +72,58 @@ class QuantBot:
             log.warning("Only %d trades — need %d for significance. Running baseline only.",
                         len(trades), self.cfg.min_trades_for_significance)
 
-        # 2. Run optimization (baseline + parameter sweep)
-        baseline, scored = run_optimization(
+        # 2. Run optimization (Optuna if available, else grid)
+        if HAS_OPTUNA:
+            baseline, scored = optuna_full_optimization(
+                trades=trades,
+                n_trials=self.cfg.max_combinations,
+                min_trades=self.cfg.min_trades_for_significance,
+            )
+        else:
+            baseline, scored = run_optimization(
+                trades=trades,
+                max_combinations=self.cfg.max_combinations,
+                min_trades=self.cfg.min_trades_for_significance,
+            )
+
+        # 3. Bootstrap CI on baseline
+        baseline_ci = bootstrap_confidence_interval(baseline.wins, baseline.losses)
+        log.info("Baseline CI: %.1f%% [%.1f%%, %.1f%%] ±%.1f%%",
+                 baseline_ci.point_estimate, baseline_ci.ci_lower,
+                 baseline_ci.ci_upper, baseline_ci.margin_of_error)
+
+        # 4. Walk-forward validation (3 folds for small datasets, 5 for large)
+        n_folds = 5 if len(trades) >= 100 else 3
+        wf_result = walk_forward_validation(
             trades=trades,
-            max_combinations=self.cfg.max_combinations,
-            min_trades=self.cfg.min_trades_for_significance,
+            n_folds=n_folds,
+            max_optuna_trials=50,
+            min_trades_per_fold=10,
         )
 
-        # 3. Load Hawk trades for calibration review
+        # 5. Load Hawk trades for calibration review
         hawk_trades = self._load_hawk_trades()
 
-        # 4. Write all reports
+        # 6. Write all reports
         write_status(self.cycle, baseline, len(scored), len(trades), candle_counts)
         write_results(baseline, scored)
         write_recommendations(baseline, scored)
+        _write_walk_forward(wf_result, baseline_ci)
+        _write_analytics(trades, baseline)
         if self.cfg.hawk_review:
             write_hawk_review(hawk_trades)
 
-        # 5. Publish to event bus
+        # 7. Publish to event bus
         publish_events(baseline, scored)
 
-        # 6. Log summary
+        # 8. Log summary
         best_wr = scored[0][1].win_rate if scored and scored[0][1].total_signals >= 20 else 0
         log.info("=== Cycle %d complete ===", self.cycle)
-        log.info("Baseline: WR=%.1f%% (%d signals)", baseline.win_rate, baseline.total_signals)
-        log.info("Best found: WR=%.1f%% | Combos tested: %d", best_wr, len(scored))
+        log.info("Baseline: WR=%.1f%% (%d signals) CI=[%.1f%%, %.1f%%]",
+                 baseline.win_rate, baseline.total_signals,
+                 baseline_ci.ci_lower, baseline_ci.ci_upper)
+        log.info("Best found: WR=%.1f%% | Walk-forward OOS: %.1f%% (overfit=%.1fpp)",
+                 best_wr, wf_result.test_win_rate, wf_result.overfit_drop)
 
     def _load_hawk_trades(self) -> list[dict]:
         """Load Hawk trades for calibration review."""
@@ -110,6 +142,79 @@ class QuantBot:
         return trades
 
 
+def _write_analytics(trades: list[dict], baseline: BacktestResult):
+    """Write Kelly, diversity, and decay analysis to JSON."""
+    from quant.reporter import _now_et
+
+    kelly = compute_kelly(baseline.wins, baseline.losses, baseline.avg_edge)
+    diversity = analyze_indicator_diversity(trades)
+    decay = detect_strategy_decay(trades)
+
+    output = {
+        "kelly": {
+            "win_rate": kelly.win_rate,
+            "avg_win_return": kelly.avg_win_return,
+            "full_kelly_pct": kelly.full_kelly,
+            "half_kelly_pct": kelly.half_kelly,
+            "quarter_kelly_pct": kelly.quarter_kelly,
+            "recommended_usd": kelly.recommended_usd,
+            "current_size_usd": kelly.current_size_usd,
+            "bankroll": kelly.bankroll,
+        },
+        "diversity": {
+            "n_indicators": diversity.n_indicators,
+            "avg_agreement": diversity.avg_pairwise_agreement,
+            "diversity_score": diversity.diversity_score,
+            "redundant_pairs": diversity.redundant_pairs[:10],
+            "independent_indicators": diversity.independent_indicators,
+        },
+        "decay": {
+            "is_decaying": decay.is_decaying,
+            "trend_direction": decay.trend_direction,
+            "current_rolling_wr": decay.current_rolling_wr,
+            "peak_rolling_wr": decay.peak_rolling_wr,
+            "decay_amount": decay.decay_amount,
+            "rolling_window": decay.rolling_window,
+            "alert_message": decay.alert_message,
+            "rolling_history": decay.rolling_history[-30:],  # last 30 points
+        },
+        "updated": _now_et(),
+    }
+    DATA_DIR.mkdir(exist_ok=True)
+    (DATA_DIR / "quant_analytics.json").write_text(json.dumps(output, indent=2))
+    log.info("Wrote quant_analytics.json (Kelly=$%.2f, diversity=%.0f, decay=%s)",
+             kelly.recommended_usd, diversity.diversity_score, decay.trend_direction)
+
+
+def _write_walk_forward(wf: walk_forward_validation.__class__, ci: bootstrap_confidence_interval.__class__):
+    """Write walk-forward + CI results to JSON."""
+    from quant.walk_forward import WalkForwardResult, BootstrapCI
+    from quant.reporter import _now_et
+
+    output = {
+        "walk_forward": {
+            "train_win_rate": wf.train_win_rate,
+            "test_win_rate": wf.test_win_rate,
+            "overfit_drop": wf.overfit_drop,
+            "n_folds": wf.n_folds,
+            "fold_results": wf.fold_results,
+            "elapsed_seconds": round(wf.elapsed_seconds, 2),
+        },
+        "confidence_interval": {
+            "point_estimate": ci.point_estimate,
+            "ci_lower": ci.ci_lower,
+            "ci_upper": ci.ci_upper,
+            "margin_of_error": ci.margin_of_error,
+            "ci_level": ci.ci_level,
+            "n_trades": ci.n_trades,
+        },
+        "updated": _now_et(),
+    }
+    DATA_DIR.mkdir(exist_ok=True)
+    (DATA_DIR / "quant_walk_forward.json").write_text(json.dumps(output, indent=2))
+    log.info("Wrote quant_walk_forward.json")
+
+
 def run_single_backtest(progress_callback=None) -> dict:
     """Run a single backtest cycle (called from dashboard API).
 
@@ -118,11 +223,32 @@ def run_single_backtest(progress_callback=None) -> dict:
     trades = load_all_trades()
     candles = load_all_candles()
 
-    baseline, scored = run_optimization(
+    # Use Optuna if available, else grid
+    if HAS_OPTUNA:
+        baseline, scored = optuna_full_optimization(
+            trades=trades,
+            n_trials=200,
+            min_trades=20,
+            progress_callback=progress_callback,
+        )
+    else:
+        baseline, scored = run_optimization(
+            trades=trades,
+            max_combinations=500,
+            min_trades=20,
+            progress_callback=progress_callback,
+        )
+
+    # Bootstrap CI
+    baseline_ci = bootstrap_confidence_interval(baseline.wins, baseline.losses)
+
+    # Walk-forward (quick: 3 folds, 50 trials)
+    n_folds = 5 if len(trades) >= 100 else 3
+    wf_result = walk_forward_validation(
         trades=trades,
-        max_combinations=500,
-        min_trades=20,
-        progress_callback=progress_callback,
+        n_folds=n_folds,
+        max_optuna_trials=50,
+        min_trades_per_fold=10,
     )
 
     # Write reports
@@ -130,6 +256,8 @@ def run_single_backtest(progress_callback=None) -> dict:
     write_status(0, baseline, len(scored), len(trades), candle_counts)
     write_results(baseline, scored)
     write_recommendations(baseline, scored)
+    _write_walk_forward(wf_result, baseline_ci)
+    _write_analytics(trades, baseline)
 
     # Hawk review
     hawk_file = DATA_DIR / "hawk_trades.jsonl"
@@ -153,4 +281,15 @@ def run_single_backtest(progress_callback=None) -> dict:
         "best_wr": round(best.win_rate, 1),
         "combos_tested": len(scored),
         "trades_used": len(trades),
+        "baseline_ci": {
+            "lower": baseline_ci.ci_lower,
+            "upper": baseline_ci.ci_upper,
+            "margin": baseline_ci.margin_of_error,
+        },
+        "walk_forward": {
+            "train_wr": wf_result.train_win_rate,
+            "test_wr": wf_result.test_win_rate,
+            "overfit_drop": wf_result.overfit_drop,
+        },
+        "optimizer": "optuna" if HAS_OPTUNA else "grid",
     }

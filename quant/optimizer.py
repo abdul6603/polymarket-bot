@@ -8,7 +8,7 @@ from dataclasses import replace
 
 from bot.signals import WEIGHTS, TF_WEIGHT_SCALE, PROB_CLAMP
 from bot.signals import MIN_CONSENSUS, MIN_CONFIDENCE, UP_CONFIDENCE_PREMIUM
-from bot.signals import MIN_EDGE_ABSOLUTE, MIN_EDGE_BY_TF
+from bot.signals import MIN_EDGE_ABSOLUTE, MIN_EDGE_BY_TF, ASSET_EDGE_PREMIUM
 
 from quant.backtester import BacktestParams, BacktestResult, replay_historical_trades
 from quant.scorer import score_result
@@ -26,6 +26,7 @@ def get_live_params() -> BacktestParams:
         up_confidence_premium=UP_CONFIDENCE_PREMIUM,
         min_edge_absolute=MIN_EDGE_ABSOLUTE,
         min_edge_by_tf=dict(MIN_EDGE_BY_TF),
+        asset_edge_premiums=dict(ASSET_EDGE_PREMIUM),
         prob_clamp={tf: clamp for tf, clamp in PROB_CLAMP.items()},
         label="live_current",
     )
@@ -72,10 +73,17 @@ def generate_weight_grid(base_weights: dict[str, float]) -> list[dict[str, float
 
 
 def generate_threshold_grid() -> list[dict]:
-    """Generate threshold parameter combinations to sweep."""
-    consensus_range = [5, 6, 7, 8, 9]
-    edge_range = [0.05, 0.06, 0.08, 0.10, 0.12]
-    confidence_range = [0.15, 0.20, 0.25, 0.30, 0.35]
+    """Generate threshold parameter combinations to sweep.
+
+    Only tests values at or above live minimums to avoid impossible combos.
+    Live floors: consensus=7, edge=0.08, confidence=0.25.
+    """
+    # Only test values >= live minimum (consensus < 7 is impossible in live)
+    consensus_range = [7, 8, 9, 10]
+    # Edge values at or above the hard floor
+    edge_range = [0.08, 0.10, 0.12, 0.14]
+    # Confidence at or above the live minimum
+    confidence_range = [0.20, 0.25, 0.30, 0.35]
     up_premium_range = [0.00, 0.04, 0.08, 0.12]
 
     grids = []
@@ -111,8 +119,9 @@ def run_optimization(
     live_params = get_live_params()
     baseline = replay_historical_trades(trades, live_params)
     baseline_score = score_result(baseline, min_trades)
-    log.info("Baseline: WR=%.1f%%, signals=%d, score=%.1f",
-             baseline.win_rate, baseline.total_signals, baseline_score)
+    log.info("Baseline: WR=%.1f%%, signals=%d, score=%.1f, avg_edge=%.2f%%",
+             baseline.win_rate, baseline.total_signals, baseline_score,
+             baseline.avg_edge * 100)
 
     if progress_callback:
         progress_callback("Baseline tested", f"WR={baseline.win_rate:.1f}%", 15)
@@ -138,6 +147,7 @@ def run_optimization(
             up_confidence_premium=live_params.up_confidence_premium,
             min_edge_absolute=live_params.min_edge_absolute,
             min_edge_by_tf=live_params.min_edge_by_tf,
+            asset_edge_premiums=live_params.asset_edge_premiums,
             prob_clamp=live_params.prob_clamp,
             label=f"weight_v{i}",
         )
@@ -154,6 +164,7 @@ def run_optimization(
             min_edge_absolute=tg["min_edge_absolute"],
             min_edge_by_tf={tf: max(tg["min_edge_absolute"], v)
                            for tf, v in MIN_EDGE_BY_TF.items()},
+            asset_edge_premiums=live_params.asset_edge_premiums,
             prob_clamp=live_params.prob_clamp,
             label=f"thresh_c{tg['min_consensus']}_e{tg['min_edge_absolute']:.2f}_"
                   f"conf{tg['min_confidence']:.2f}_up{tg['up_confidence_premium']:.2f}",

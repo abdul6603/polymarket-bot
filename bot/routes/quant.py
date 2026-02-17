@@ -17,6 +17,8 @@ STATUS_FILE = DATA_DIR / "quant_status.json"
 RESULTS_FILE = DATA_DIR / "quant_results.json"
 RECS_FILE = DATA_DIR / "quant_recommendations.json"
 HAWK_REVIEW_FILE = DATA_DIR / "quant_hawk_review.json"
+WF_FILE = DATA_DIR / "quant_walk_forward.json"
+ANALYTICS_FILE = DATA_DIR / "quant_analytics.json"
 
 _run_lock = threading.Lock()
 _run_running = False
@@ -60,6 +62,8 @@ def api_quant_status():
         "best_win_rate": best.get("win_rate", 0),
         "improvement": recs.get("improvement", 0),
         "baseline_signals": baseline.get("total_signals", 0),
+        "baseline_avg_edge": status.get("baseline_avg_edge", 0),
+        "filter_reasons": status.get("filter_reasons", {}),
         "best_signals": best.get("total_signals", 0),
         "recommendations_count": len(recs.get("recommendations", [])),
     })
@@ -119,6 +123,20 @@ def api_quant_params():
         },
         "updated": results.get("updated", ""),
     })
+
+
+@quant_bp.route("/api/quant/analytics")
+def api_quant_analytics():
+    """Kelly sizing, indicator diversity, strategy decay."""
+    data = _load_json(ANALYTICS_FILE)
+    return jsonify(data or {"kelly": {}, "diversity": {}, "decay": {}, "updated": ""})
+
+
+@quant_bp.route("/api/quant/walk-forward")
+def api_quant_walk_forward():
+    """Walk-forward validation results + bootstrap confidence intervals."""
+    data = _load_json(WF_FILE)
+    return jsonify(data or {"walk_forward": {}, "confidence_interval": {}, "updated": ""})
 
 
 @quant_bp.route("/api/quant/run", methods=["POST"])
