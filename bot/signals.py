@@ -58,13 +58,13 @@ WEIGHTS = {
     "temporal_arb": 1.8,
     "price_div": 1.4,
     "macd": 1.1,
-    "order_flow": 1.0,  # Quant: 0.5→1.0 (weight_v171)
+    "order_flow": 2.0,  # Quant V2: 1.0→2.0 (60.2% accuracy, weight_v220)
     "news": 1.0,         # Quant: 2.5→1.0 (27.3% recent accuracy, 11 votes)
     # LOW TIER — marginal (50-55%)
     "momentum": 0.6,
     "ema": 0.6,           # Quant: 1.1→0.6 (weight_v171)
     "heikin_ashi": 0.5,
-    "spot_depth": 0.5,
+    "spot_depth": 0.0,  # Quant V2: disabled (insufficient data, weight_v220)
     "orderbook": 0.5,
     "liquidity": 0.4,
     # DISABLED — below coin flip (harmful)
