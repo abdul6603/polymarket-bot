@@ -322,8 +322,8 @@ def api_agent_kpis(agent):
             kpis["platform_distribution"] = platform_dist
     elif agent == "sentinel":
         try:
-            from sentinel.sentinel import Sentinel
-            s = Sentinel()
+            from bot.routes.sentinel import _get_sentinel
+            s = _get_sentinel()
             status = s.get_status()
             kpis = {
                 "agents_online": status.get("agents_online", 0),

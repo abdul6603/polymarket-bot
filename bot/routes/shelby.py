@@ -14,6 +14,11 @@ from pathlib import Path
 
 from flask import Blueprint, Response, jsonify, request
 
+# Add shelby to path for core.tasks imports
+_SHELBY_DIR = Path("/Users/abdallaalhamdan/shelby")
+if str(_SHELBY_DIR) not in sys.path:
+    sys.path.insert(0, str(_SHELBY_DIR))
+
 from bot.shared import (
     _load_trades,
     ET,
@@ -47,17 +52,28 @@ def api_shelby():
     except Exception:
         pass
 
-    # Tasks
-    tasks = []
-    if SHELBY_TASKS_FILE.exists():
-        try:
-            with open(SHELBY_TASKS_FILE) as f:
-                tasks = json.load(f)
-        except Exception:
-            pass
+    # Tasks — load via core.tasks for migration + priority sorting
+    try:
+        from core.tasks import list_tasks as _list_tasks, prioritize_all, _load_tasks, _migrate_task
+        all_tasks = _load_tasks()
+        for t in all_tasks:
+            _migrate_task(t)
+        # Sort by priority desc
+        all_tasks.sort(key=lambda t: t.get("priority", 0), reverse=True)
+        tasks = all_tasks
+    except Exception:
+        tasks = []
+        if SHELBY_TASKS_FILE.exists():
+            try:
+                with open(SHELBY_TASKS_FILE) as f:
+                    tasks = json.load(f)
+            except Exception:
+                pass
 
     tasks_pending = sum(1 for t in tasks if t.get("status") == "pending")
+    tasks_in_progress = sum(1 for t in tasks if t.get("status") == "in_progress")
     tasks_done = sum(1 for t in tasks if t.get("status") in ("done", "completed"))
+    tasks_high_priority = sum(1 for t in tasks if t.get("priority", 0) > 70 and t.get("status") != "done")
 
     # User profile / preferences
     profile = {}
@@ -82,16 +98,88 @@ def api_shelby():
 
     return jsonify({
         "running": shelby_running,
-        "tasks": tasks[:30],
+        "tasks": tasks[:50],
         "tasks_total": len(tasks),
         "tasks_pending": tasks_pending,
+        "tasks_in_progress": tasks_in_progress,
         "tasks_done": tasks_done,
+        "tasks_high_priority": tasks_high_priority,
         "profile": profile,
         "profile_keys": len(profile),
         "conversation_total": len(conversations),
         "user_messages": user_msgs,
         "assistant_messages": assistant_msgs,
     })
+
+
+@shelby_bp.route("/api/shelby/tasks", methods=["POST"])
+def api_shelby_tasks_create():
+    """Create a new task with full V2 schema."""
+    data = request.get_json()
+    if not data or not data.get("title"):
+        return jsonify({"error": "title is required"}), 400
+    try:
+        from core.tasks import add_task
+        task = add_task(
+            title=data["title"],
+            due=data.get("due"),
+            agent=data.get("agent"),
+            category=data.get("category"),
+            difficulty=int(data.get("difficulty", 2)),
+            benefit=int(data.get("benefit", 2)),
+            tags=data.get("tags"),
+            notes=data.get("notes"),
+        )
+        return jsonify({"success": True, "task": task})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@shelby_bp.route("/api/shelby/tasks/<int:task_id>", methods=["PUT"])
+def api_shelby_tasks_update(task_id):
+    """Update task fields."""
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No data provided"}), 400
+    try:
+        from core.tasks import update_task
+        fields = {}
+        for key in ("title", "due", "agent", "category", "difficulty", "benefit", "tags", "notes", "status"):
+            if key in data:
+                val = data[key]
+                if key in ("difficulty", "benefit") and val is not None:
+                    val = int(val)
+                fields[key] = val
+        task = update_task(task_id, **fields)
+        if not task:
+            return jsonify({"error": f"Task #{task_id} not found"}), 404
+        return jsonify({"success": True, "task": task})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@shelby_bp.route("/api/shelby/tasks/<int:task_id>", methods=["DELETE"])
+def api_shelby_tasks_delete(task_id):
+    """Delete a task."""
+    try:
+        from core.tasks import delete_task
+        ok = delete_task(task_id)
+        if not ok:
+            return jsonify({"error": f"Task #{task_id} not found"}), 404
+        return jsonify({"success": True, "deleted": task_id})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@shelby_bp.route("/api/shelby/tasks/prioritize", methods=["POST"])
+def api_shelby_tasks_prioritize():
+    """Recalculate all task priorities."""
+    try:
+        from core.tasks import prioritize_all
+        tasks = prioritize_all()
+        return jsonify({"success": True, "total": len(tasks)})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @shelby_bp.route("/api/shelby/brief")
@@ -415,8 +503,8 @@ def api_shelby_activity_brief():
     # Robotox: last scan info
     sentinel_info = "idle"
     try:
-        from sentinel.sentinel import Sentinel
-        s = Sentinel()
+        from bot.routes.sentinel import _get_sentinel
+        s = _get_sentinel()
         status = s.get_status()
         sentinel_info = "online" if status.get("agents_online", 0) > 0 else "idle"
     except Exception:

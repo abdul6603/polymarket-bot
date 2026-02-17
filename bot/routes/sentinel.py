@@ -5,14 +5,24 @@ from flask import Blueprint, jsonify
 
 sentinel_bp = Blueprint("sentinel", __name__)
 
+# Singleton — preserve restart counters and log watcher state across API calls
+_sentinel_instance = None
+
+
+def _get_sentinel():
+    """Get or create the singleton Sentinel instance."""
+    global _sentinel_instance
+    if _sentinel_instance is None:
+        from sentinel.sentinel import Sentinel
+        _sentinel_instance = Sentinel()
+    return _sentinel_instance
+
 
 @sentinel_bp.route("/api/sentinel")
 def api_sentinel():
     """Robotox health monitor status."""
     try:
-        from sentinel.sentinel import Sentinel
-        sentinel_agent = Sentinel()
-        return jsonify(sentinel_agent.get_status())
+        return jsonify(_get_sentinel().get_status())
     except Exception as e:
         return jsonify({"status": "offline", "error": str(e)})
 
@@ -35,9 +45,7 @@ def api_sentinel_scan():
 def api_sentinel_bugs():
     """Get bug scan results."""
     try:
-        from sentinel.sentinel import Sentinel
-        sentinel_agent = Sentinel()
-        return jsonify(sentinel_agent.quick_bug_scan())
+        return jsonify(_get_sentinel().quick_bug_scan())
     except Exception as e:
         return jsonify({"error": str(e)})
 
@@ -46,9 +54,7 @@ def api_sentinel_bugs():
 def api_sentinel_fixes():
     """Get fix history."""
     try:
-        from sentinel.sentinel import Sentinel
-        sentinel_agent = Sentinel()
-        return jsonify({"fixes": sentinel_agent.get_fix_history()})
+        return jsonify({"fixes": _get_sentinel().get_fix_history()})
     except Exception as e:
         return jsonify({"error": str(e)})
 
@@ -57,9 +63,7 @@ def api_sentinel_fixes():
 def api_sentinel_alerts():
     """Get alerts."""
     try:
-        from sentinel.sentinel import Sentinel
-        sentinel_agent = Sentinel()
-        return jsonify({"alerts": sentinel_agent.get_alerts()})
+        return jsonify({"alerts": _get_sentinel().get_alerts()})
     except Exception as e:
         return jsonify({"error": str(e)})
 
@@ -68,11 +72,10 @@ def api_sentinel_alerts():
 def api_robotox_log_alerts():
     """Get recent log watcher alerts (smart pattern detection)."""
     try:
-        from sentinel.sentinel import Sentinel
-        sentinel_agent = Sentinel()
+        s = _get_sentinel()
         return jsonify({
-            "alerts": sentinel_agent.get_log_watcher_alerts(),
-            "patterns": sentinel_agent.get_log_watcher_patterns(),
+            "alerts": s.get_log_watcher_alerts(),
+            "patterns": s.get_log_watcher_patterns(),
         })
     except Exception as e:
         return jsonify({"error": str(e)[:200]})

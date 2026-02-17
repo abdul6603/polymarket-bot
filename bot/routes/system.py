@@ -23,7 +23,9 @@ AGENT_PROCESS_MAP = {
     "shelby": {"pattern": "shelby", "launch_agent": None},
     "atlas": {"pattern": "atlas", "launch_agent": None},
     "thor": {"pattern": "thor", "launch_agent": None},
-    "robotox": {"pattern": "sentinel", "launch_agent": "com.robotox.sentinel"},
+    "robotox": {"pattern": "sentinel", "launch_agent": "com.robotox.agent"},
+    "hawk": {"pattern": "hawk", "launch_agent": "com.hawk.agent"},
+    "viper": {"pattern": "viper", "launch_agent": "com.viper.agent"},
 }
 
 WATCHED_PORTS = {
@@ -192,8 +194,8 @@ def _get_listening_ports() -> list:
 
 BROTHERHOOD_LABELS = {
     "com.commandcenter.dashboard", "com.garves.bot",
-    "com.robotox.sentinel", "com.shelby.assistant",
-    "com.thor.agent",
+    "com.robotox.agent", "com.shelby.assistant",
+    "com.thor.agent", "com.hawk.agent", "com.viper.agent",
 }
 
 
