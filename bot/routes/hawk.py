@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import logging
 import threading
+import time
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
@@ -20,6 +21,12 @@ ET = timezone(timedelta(hours=-5))
 
 _scan_lock = threading.Lock()
 _scan_running = False
+_scan_progress = {"step": "", "detail": "", "pct": 0, "done": False, "ts": 0}
+
+
+def _set_progress(step: str, detail: str = "", pct: int = 0, done: bool = False):
+    global _scan_progress
+    _scan_progress = {"step": step, "detail": detail, "pct": pct, "done": done, "ts": time.time()}
 
 
 def _load_trades() -> list[dict]:
@@ -124,6 +131,12 @@ def api_hawk_categories():
     return jsonify({"categories": cats})
 
 
+@hawk_bp.route("/api/hawk/scan-status")
+def api_hawk_scan_status():
+    """Poll scan progress."""
+    return jsonify({"scanning": _scan_running, **_scan_progress})
+
+
 @hawk_bp.route("/api/hawk/scan", methods=["POST"])
 def api_hawk_scan():
     """Trigger immediate market scan + analysis in background thread."""
@@ -140,18 +153,19 @@ def api_hawk_scan():
             from hawk.scanner import scan_all_markets
             from hawk.analyst import batch_analyze
             from hawk.edge import calculate_edge, rank_opportunities
-            import time
 
             cfg = HawkConfig()
-            log.info("Hawk scan triggered via dashboard")
+            _set_progress("Scanning Polymarket...", "Fetching active markets from Gamma API", 10)
 
             # 1. Scan markets
             markets = scan_all_markets(cfg)
             if not markets:
-                log.info("Hawk scan: no markets found")
+                _set_progress("No markets found", "", 100, done=True)
                 return
 
-            # 2. Filter contested markets (12-88% YES price) — skip penny bets
+            _set_progress("Filtering markets", f"Found {len(markets)} total markets, filtering contested...", 25)
+
+            # 2. Filter contested markets (12-88% YES price)
             contested = []
             for m in markets:
                 yes_price = 0.5
@@ -165,13 +179,19 @@ def api_hawk_scan():
                 if 0.12 <= yes_price <= 0.88:
                     contested.append(m)
 
-            # Sort by volume, skip top 5 (most efficient), take mid-tier
             contested.sort(key=lambda m: m.volume, reverse=True)
             target_markets = contested[5:35] if len(contested) > 35 else contested
-            log.info("Contested markets: %d, analyzing %d", len(contested), len(target_markets))
+
+            _set_progress(
+                "GPT-4o analysis",
+                f"Analyzing {len(target_markets)} contested markets with AI...",
+                40,
+            )
 
             # 3. Analyze with GPT-4o
             estimates = batch_analyze(cfg, target_markets, max_concurrent=5)
+
+            _set_progress("Calculating edges", f"Got {len(estimates)} estimates, finding mispriced markets...", 80)
 
             # 4. Calculate edges
             opportunities = []
@@ -183,8 +203,9 @@ def api_hawk_scan():
                     if opp:
                         opportunities.append(opp)
 
-            # 5. Rank and save
             ranked = rank_opportunities(opportunities)
+
+            # 5. Save
             opp_data = []
             for o in ranked:
                 yes_price = 0.5
@@ -205,22 +226,36 @@ def api_hawk_scan():
                     "expected_value": o.expected_value,
                     "reasoning": o.estimate.reasoning[:200],
                     "condition_id": o.market.condition_id,
+                    "volume": o.market.volume,
                 })
 
             OPPS_FILE.parent.mkdir(exist_ok=True)
             OPPS_FILE.write_text(json.dumps({
                 "opportunities": opp_data,
                 "updated": time.time(),
+                "total_scanned": len(markets),
+                "contested": len(contested),
+                "analyzed": len(target_markets),
             }, indent=2))
+
+            total_ev = sum(o["expected_value"] for o in opp_data)
+            _set_progress(
+                "Scan complete",
+                f"Found {len(opp_data)} opportunities | ${total_ev:.2f} total EV",
+                100,
+                done=True,
+            )
             log.info("Hawk scan complete: %d opportunities with edge", len(opp_data))
 
-        except Exception:
+        except Exception as e:
             log.exception("Triggered Hawk scan failed")
+            _set_progress("Scan failed", str(e)[:200], 0, done=True)
         finally:
             _scan_running = False
 
     with _scan_lock:
+        _set_progress("Starting scan...", "Initializing", 5)
         thread = threading.Thread(target=_run_scan, daemon=True)
         thread.start()
 
-    return jsonify({"success": True, "message": "Market scan + GPT-4o analysis running — results in ~30 seconds"})
+    return jsonify({"success": True, "message": "Scan started"})

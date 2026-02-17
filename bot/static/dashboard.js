@@ -4723,6 +4723,9 @@ async function atlasEventBus() {
 // ══════════════════════════════════════
 // HAWK TAB — Market Predator
 // ══════════════════════════════════════
+var _hawkScanPoller = null;
+var _hawkOppsCache = [];
+
 async function loadHawkTab() {
   try {
     var resp = await fetch('/api/hawk');
@@ -4750,7 +4753,9 @@ async function loadHawkTab() {
   try {
     var oppResp = await fetch('/api/hawk/opportunities');
     var oppData = await oppResp.json();
-    renderHawkOpportunities(oppData.opportunities || []);
+    _hawkOppsCache = oppData.opportunities || [];
+    renderHawkOpportunities(_hawkOppsCache);
+    renderHawkScanSummary(oppData);
   } catch(e) {}
 
   // Positions
@@ -4766,6 +4771,26 @@ async function loadHawkTab() {
     var histData = await histResp.json();
     renderHawkHistory(histData.trades || []);
   } catch(e) {}
+}
+
+function renderHawkScanSummary(data) {
+  var el = document.getElementById('hawk-scan-summary');
+  if (!el) return;
+  var opps = data.opportunities || [];
+  if (opps.length === 0 && !data.updated) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  var setEl = function(id, val) { var e = document.getElementById(id); if(e) e.textContent = val; };
+  setEl('hawk-total-scanned', data.total_scanned || '?');
+  setEl('hawk-contested', data.contested || '?');
+  setEl('hawk-analyzed', data.analyzed || '?');
+  setEl('hawk-opp-count', opps.length);
+  var totalEv = 0;
+  for (var i = 0; i < opps.length; i++) totalEv += (opps[i].expected_value || 0);
+  setEl('hawk-total-ev', '$' + totalEv.toFixed(2));
+  if (data.updated) {
+    var d = new Date(data.updated * 1000);
+    setEl('hawk-last-scan', d.toLocaleTimeString('en-US', {hour:'numeric',minute:'2-digit',hour12:true}));
+  }
 }
 
 function renderHawkCategories(cats) {
@@ -4793,20 +4818,41 @@ function renderHawkCategories(cats) {
 function renderHawkOpportunities(opps) {
   var el = document.getElementById('hawk-opp-tbody');
   if (!el) return;
-  if (opps.length === 0) { el.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No opportunities found yet</td></tr>'; return; }
+  if (opps.length === 0) { el.innerHTML = '<tr><td colspan="9" class="text-muted" style="text-align:center;padding:24px;">No opportunities found yet — hit Trigger Scan</td></tr>'; return; }
   var html = '';
-  for (var i = 0; i < Math.min(opps.length, 20); i++) {
+  for (var i = 0; i < Math.min(opps.length, 30); i++) {
     var o = opps[i];
-    var edgeColor = (o.edge || 0) >= 0.15 ? 'var(--success)' : (o.edge || 0) >= 0.10 ? 'var(--warning)' : 'var(--text)';
-    html += '<tr>';
-    html += '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(o.question || '') + '">' + esc((o.question || '').substring(0, 50)) + '</td>';
-    html += '<td><span class="badge" style="background:rgba(255,255,255,0.08);">' + esc(o.category || '?') + '</span></td>';
-    html += '<td>' + ((o.market_price || 0) * 100).toFixed(0) + '%</td>';
-    html += '<td>' + ((o.estimated_prob || 0) * 100).toFixed(0) + '%</td>';
-    html += '<td style="color:' + edgeColor + ';font-weight:600;">' + ((o.edge || 0) * 100).toFixed(1) + '%</td>';
+    var edgePct = (o.edge || 0) * 100;
+    var edgeColor = edgePct >= 20 ? '#00ff88' : edgePct >= 10 ? '#FFD700' : edgePct >= 5 ? 'var(--text)' : 'var(--text-muted)';
+    var dirColor = o.direction === 'yes' ? '#00ff88' : '#ff6666';
+    var dirArrow = o.direction === 'yes' ? '\u25B2' : '\u25BC';
+    var dirLabel = o.direction === 'yes' ? 'YES' : 'NO';
+    var catColors = {politics:'#4488ff',sports:'#ff8844',crypto_event:'#FFD700',culture:'#cc66ff',other:'#888'};
+    var catColor = catColors[o.category] || '#888';
+    html += '<tr style="cursor:pointer;" onclick="showHawkReasoning(' + i + ')">';
+    html += '<td style="color:var(--text-muted);font-size:0.72rem;">' + (i+1) + '</td>';
+    html += '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.76rem;" title="' + esc(o.question || '') + '">' + esc((o.question || '').substring(0, 55)) + '</td>';
+    html += '<td><span style="color:' + catColor + ';font-size:0.68rem;font-weight:600;text-transform:uppercase;">' + esc(o.category || '?') + '</span></td>';
+    html += '<td style="color:' + dirColor + ';font-weight:700;font-size:0.78rem;">' + dirArrow + ' ' + dirLabel + '</td>';
+    html += '<td style="font-family:var(--font-mono);font-size:0.76rem;">' + ((o.market_price || 0) * 100).toFixed(0) + '%</td>';
+    html += '<td style="font-family:var(--font-mono);font-size:0.76rem;">' + ((o.estimated_prob || 0) * 100).toFixed(0) + '%</td>';
+    html += '<td style="color:' + edgeColor + ';font-weight:700;font-family:var(--font-mono);font-size:0.78rem;">' + edgePct.toFixed(1) + '%</td>';
+    html += '<td style="font-family:var(--font-mono);font-size:0.76rem;">$' + (o.position_size || 0).toFixed(0) + '</td>';
+    html += '<td style="font-family:var(--font-mono);font-size:0.76rem;color:var(--success);font-weight:600;">$' + (o.expected_value || 0).toFixed(2) + '</td>';
     html += '</tr>';
   }
   el.innerHTML = html;
+}
+
+function showHawkReasoning(idx) {
+  var panel = document.getElementById('hawk-reasoning-panel');
+  if (!panel || !_hawkOppsCache[idx]) return;
+  var o = _hawkOppsCache[idx];
+  var dirArrow = o.direction === 'yes' ? '\u25B2 YES' : '\u25BC NO';
+  document.getElementById('hawk-reasoning-market').textContent = dirArrow + ' | Edge: ' + ((o.edge||0)*100).toFixed(1) + '% | ' + (o.question || '');
+  document.getElementById('hawk-reasoning-text').textContent = o.reasoning || 'No reasoning available';
+  panel.style.display = 'block';
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
 }
 
 function renderHawkPositions(positions) {
@@ -4846,23 +4892,75 @@ function renderHawkHistory(trades) {
   el.innerHTML = html;
 }
 
+function _hawkUpdateProgress(data) {
+  var prog = document.getElementById('hawk-scan-progress');
+  if (!prog) return;
+  prog.style.display = 'block';
+  var step = document.getElementById('hawk-scan-step');
+  var bar = document.getElementById('hawk-scan-bar');
+  var pct = document.getElementById('hawk-scan-pct');
+  var detail = document.getElementById('hawk-scan-detail');
+  if (step) step.textContent = data.step || 'Working...';
+  if (bar) bar.style.width = (data.pct || 0) + '%';
+  if (pct) pct.textContent = (data.pct || 0) + '%';
+  if (detail) detail.textContent = data.detail || '';
+}
+
 async function hawkTriggerScan() {
   var btn = document.getElementById('hawk-scan-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Scanning...'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Scanning...'; btn.style.opacity = '0.6'; }
+
+  // Show progress bar immediately
+  _hawkUpdateProgress({step: 'Starting scan...', detail: 'Initializing', pct: 5});
+
   try {
     var resp = await fetch('/api/hawk/scan', {method:'POST'});
     var d = await resp.json();
-    if (d.success) {
-      // Wait for background scan + GPT analysis then reload
-      setTimeout(function(){ loadHawkTab(); }, 30000);
+    if (!d.success) {
+      _hawkUpdateProgress({step: d.message || 'Failed', detail: '', pct: 0});
+      if (btn) { btn.disabled = false; btn.textContent = 'Trigger Scan'; btn.style.opacity = '1'; }
+      return;
     }
-  } catch(e) { console.error('hawk scan:', e); }
-  if (btn) { setTimeout(function(){ btn.disabled = false; btn.textContent = 'Trigger Scan'; }, 35000); }
+
+    // Poll scan progress every 2 seconds
+    if (_hawkScanPoller) clearInterval(_hawkScanPoller);
+    _hawkScanPoller = setInterval(async function() {
+      try {
+        var sr = await fetch('/api/hawk/scan-status');
+        var sd = await sr.json();
+        _hawkUpdateProgress(sd);
+
+        if (sd.done || !sd.scanning) {
+          clearInterval(_hawkScanPoller);
+          _hawkScanPoller = null;
+
+          // Reload tab data after scan completes
+          await loadHawkTab();
+
+          // Reset button
+          if (btn) { btn.disabled = false; btn.textContent = 'Trigger Scan'; btn.style.opacity = '1'; }
+
+          // Hide progress after 5 seconds
+          setTimeout(function() {
+            var prog = document.getElementById('hawk-scan-progress');
+            if (prog) prog.style.display = 'none';
+          }, 5000);
+        }
+      } catch(e) { console.error('hawk poll:', e); }
+    }, 2000);
+
+  } catch(e) {
+    console.error('hawk scan:', e);
+    _hawkUpdateProgress({step: 'Error: ' + e.message, detail: '', pct: 0});
+    if (btn) { btn.disabled = false; btn.textContent = 'Trigger Scan'; btn.style.opacity = '1'; }
+  }
 }
 
 // ══════════════════════════════════════
 // VIPER TAB — 24/7 Intelligence Engine
 // ══════════════════════════════════════
+var _viperScanPoller = null;
+
 async function loadViperTab() {
   try {
     var resp = await fetch('/api/viper');
@@ -4900,7 +4998,7 @@ async function loadViperTab() {
 function renderViperIntel(items) {
   var el = document.getElementById('viper-intel-tbody');
   if (!el) return;
-  if (items.length === 0) { el.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No intelligence yet — trigger a scan</td></tr>'; return; }
+  if (items.length === 0) { el.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No intelligence yet — hit Trigger Scan</td></tr>'; return; }
   var html = '';
   for (var i = 0; i < Math.min(items.length, 25); i++) {
     var item = items[i];
@@ -4979,16 +5077,58 @@ function renderViperSorenMetrics(data) {
   el.innerHTML = html;
 }
 
+function _viperUpdateProgress(data) {
+  var prog = document.getElementById('viper-scan-progress');
+  if (!prog) return;
+  prog.style.display = 'block';
+  var step = document.getElementById('viper-scan-step');
+  var bar = document.getElementById('viper-scan-bar');
+  var pct = document.getElementById('viper-scan-pct');
+  var detail = document.getElementById('viper-scan-detail');
+  if (step) step.textContent = data.step || 'Working...';
+  if (bar) bar.style.width = (data.pct || 0) + '%';
+  if (pct) pct.textContent = (data.pct || 0) + '%';
+  if (detail) detail.textContent = data.detail || '';
+}
+
 async function viperTriggerScan() {
   var btn = document.getElementById('viper-scan-btn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Scanning...'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Scanning...'; btn.style.opacity = '0.6'; }
+
+  _viperUpdateProgress({step: 'Starting scan...', detail: 'Initializing intelligence sources', pct: 5});
+
   try {
     var resp = await fetch('/api/viper/scan', {method:'POST'});
     var d = await resp.json();
-    if (d.success) {
-      // Wait for background scan to complete then reload
-      setTimeout(function(){ loadViperTab(); }, 15000);
+    if (!d.success) {
+      _viperUpdateProgress({step: d.message || 'Failed', detail: '', pct: 0});
+      if (btn) { btn.disabled = false; btn.textContent = 'Trigger Scan'; btn.style.opacity = '1'; }
+      return;
     }
-  } catch(e) { console.error('viper scan:', e); }
-  if (btn) { setTimeout(function(){ btn.disabled = false; btn.textContent = 'Trigger Scan'; }, 18000); }
+
+    if (_viperScanPoller) clearInterval(_viperScanPoller);
+    _viperScanPoller = setInterval(async function() {
+      try {
+        var sr = await fetch('/api/viper/scan-status');
+        var sd = await sr.json();
+        _viperUpdateProgress(sd);
+
+        if (sd.done || !sd.scanning) {
+          clearInterval(_viperScanPoller);
+          _viperScanPoller = null;
+          await loadViperTab();
+          if (btn) { btn.disabled = false; btn.textContent = 'Trigger Scan'; btn.style.opacity = '1'; }
+          setTimeout(function() {
+            var prog = document.getElementById('viper-scan-progress');
+            if (prog) prog.style.display = 'none';
+          }, 5000);
+        }
+      } catch(e) { console.error('viper poll:', e); }
+    }, 2000);
+
+  } catch(e) {
+    console.error('viper scan:', e);
+    _viperUpdateProgress({step: 'Error: ' + e.message, detail: '', pct: 0});
+    if (btn) { btn.disabled = false; btn.textContent = 'Trigger Scan'; btn.style.opacity = '1'; }
+  }
 }

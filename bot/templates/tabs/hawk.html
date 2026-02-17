@@ -3,10 +3,24 @@
   <div class="agent-widget-row">
     <div class="widget-badge"><span class="wb-label">Agent:</span> <span style="color:#FFD700;font-weight:700;">Hawk</span></div>
     <div class="widget-badge"><span class="wb-label">Role:</span> <span>Market Predator</span></div>
-    <button class="btn" id="hawk-scan-btn" onclick="hawkTriggerScan()" style="font-size:0.72rem;background:#FFD700;color:#000;">Trigger Scan</button>
+    <div class="widget-badge" id="hawk-mode-badge"><span class="wb-label">Mode:</span> <span id="hawk-mode-label" style="color:#FFD700;">Live</span></div>
+    <button class="btn" id="hawk-scan-btn" onclick="hawkTriggerScan()" style="font-size:0.72rem;background:#FFD700;color:#000;font-weight:700;">Trigger Scan</button>
     <button class="btn" onclick="healthCheckAgent('hawk')" style="font-size:0.72rem;">Health Check</button>
   </div>
   <div class="health-inline" id="hawk-health-result"></div>
+  <!-- Scan Progress Bar -->
+  <div id="hawk-scan-progress" style="display:none;margin:10px 0;">
+    <div style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.25);border-radius:8px;padding:12px 16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span id="hawk-scan-step" style="font-weight:600;color:#FFD700;font-size:0.82rem;">Starting scan...</span>
+        <span id="hawk-scan-pct" style="font-size:0.72rem;color:var(--text-muted);">0%</span>
+      </div>
+      <div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">
+        <div id="hawk-scan-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#FFD700,#ffaa00);border-radius:3px;transition:width 0.5s ease;"></div>
+      </div>
+      <div id="hawk-scan-detail" style="font-size:0.7rem;color:var(--text-muted);margin-top:6px;"></div>
+    </div>
+  </div>
   <div id="intel-hawk" class="intel-meter" style="margin-bottom:12px;"></div>
   <div class="grid-6">
     <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-winrate" style="color:#FFD700;">--</div><div class="stat-label">Win Rate</div></div>
@@ -16,13 +30,56 @@
     <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-resolved">0</div><div class="stat-label">Resolved</div></div>
     <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-daily-pnl">$0.00</div><div class="stat-label">Daily P&amp;L</div></div>
   </div>
+  <!-- Scan Summary -->
+  <div id="hawk-scan-summary" style="display:none;margin-bottom:12px;">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <div class="widget-badge"><span class="wb-label">Scanned:</span> <span id="hawk-total-scanned">0</span></div>
+      <div class="widget-badge"><span class="wb-label">Contested:</span> <span id="hawk-contested">0</span></div>
+      <div class="widget-badge"><span class="wb-label">Analyzed:</span> <span id="hawk-analyzed">0</span></div>
+      <div class="widget-badge"><span class="wb-label">Opportunities:</span> <span id="hawk-opp-count" style="color:#FFD700;font-weight:700;">0</span></div>
+      <div class="widget-badge"><span class="wb-label">Total EV:</span> <span id="hawk-total-ev" style="color:var(--success);font-weight:700;">$0</span></div>
+      <div class="widget-badge"><span class="wb-label">Last Scan:</span> <span id="hawk-last-scan" style="color:var(--text-muted);">--</span></div>
+    </div>
+  </div>
   <div class="section-spacer">
     <h2 class="section-title" style="color:#FFD700;">Category Heatmap</h2>
     <div class="glass-card" id="hawk-category-heatmap"><div class="text-muted" style="text-align:center;padding:12px;">Waiting for category data...</div></div>
   </div>
   <div class="section-spacer">
     <h2 class="section-title" style="color:#FFD700;">Live Opportunities</h2>
-    <div class="glass-card"><table class="data-table"><thead><tr><th>Market</th><th>Category</th><th>Market Price</th><th>Est. Prob</th><th>Edge</th></tr></thead><tbody id="hawk-opp-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No opportunities found yet</td></tr></tbody></table></div>
+    <div class="glass-card" style="overflow-x:auto;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width:30px;">#</th>
+            <th>Market</th>
+            <th>Cat</th>
+            <th>Dir</th>
+            <th>Market</th>
+            <th>GPT-4o</th>
+            <th>Edge</th>
+            <th>Bet</th>
+            <th>EV</th>
+          </tr>
+        </thead>
+        <tbody id="hawk-opp-tbody">
+          <tr><td colspan="9" class="text-muted" style="text-align:center;padding:24px;">No opportunities found yet — hit Trigger Scan</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <!-- Reasoning panel (shown when clicking a row) -->
+  <div id="hawk-reasoning-panel" style="display:none;margin-top:-8px;margin-bottom:16px;">
+    <div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);border-radius:8px;padding:14px 18px;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:4px;">GPT-4o REASONING</div>
+          <div id="hawk-reasoning-market" style="font-weight:600;color:#FFD700;font-size:0.82rem;margin-bottom:6px;"></div>
+          <div id="hawk-reasoning-text" style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5;"></div>
+        </div>
+        <button onclick="document.getElementById('hawk-reasoning-panel').style.display='none'" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;padding:0 4px;">x</button>
+      </div>
+    </div>
   </div>
   <div class="section-spacer">
     <h2 class="section-title" style="color:#FFD700;">Open Positions</h2>

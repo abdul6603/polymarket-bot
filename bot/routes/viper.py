@@ -20,6 +20,12 @@ INTEL_FILE = DATA_DIR / "viper_intel.json"
 
 _scan_lock = threading.Lock()
 _scan_running = False
+_scan_progress = {"step": "", "detail": "", "pct": 0, "done": False, "ts": 0}
+
+
+def _set_progress(step: str, detail: str = "", pct: int = 0, done: bool = False):
+    global _scan_progress
+    _scan_progress = {"step": step, "detail": detail, "pct": pct, "done": done, "ts": time.time()}
 
 
 def _load_status() -> dict:
@@ -85,6 +91,12 @@ def api_viper_soren_metrics():
         return jsonify({"followers": 0, "engagement_rate": 0, "estimated_cpm": 0, "brand_ready": False, "error": str(e)[:200]})
 
 
+@viper_bp.route("/api/viper/scan-status")
+def api_viper_scan_status():
+    """Poll scan progress."""
+    return jsonify({"scanning": _scan_running, **_scan_progress})
+
+
 @viper_bp.route("/api/viper/scan", methods=["POST"])
 def api_viper_scan():
     """Trigger immediate intelligence scan in background thread."""
@@ -97,18 +109,34 @@ def api_viper_scan():
         global _scan_running
         try:
             _scan_running = True
+            _set_progress("Scanning sources...", "Fetching news, Reddit, market activity", 15)
+
             from viper.config import ViperConfig
             from viper.main import run_single_scan
             cfg = ViperConfig()
+
+            _set_progress("Running intelligence scan", "Tavily news + Reddit + Polymarket activity", 40)
             result = run_single_scan(cfg)
-            log.info("Viper scan triggered: %d items, %d matched", result.get("intel_count", 0), result.get("matched", 0))
-        except Exception:
+
+            intel_count = result.get("intel_count", 0)
+            matched = result.get("matched", 0)
+            _set_progress(
+                "Scan complete",
+                f"Found {intel_count} intel items | {matched} market matches",
+                100,
+                done=True,
+            )
+            log.info("Viper scan triggered: %d items, %d matched", intel_count, matched)
+
+        except Exception as e:
             log.exception("Triggered Viper scan failed")
+            _set_progress("Scan failed", str(e)[:200], 0, done=True)
         finally:
             _scan_running = False
 
     with _scan_lock:
+        _set_progress("Starting scan...", "Initializing intelligence sources", 5)
         thread = threading.Thread(target=_run_scan, daemon=True)
         thread.start()
 
-    return jsonify({"success": True, "message": "Intelligence scan running — results in ~15 seconds"})
+    return jsonify({"success": True, "message": "Scan started"})

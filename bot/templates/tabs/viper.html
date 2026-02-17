@@ -4,10 +4,23 @@
     <div class="widget-badge"><span class="wb-label">Agent:</span> <span style="color:#00ff88;font-weight:700;">Viper</span></div>
     <div class="widget-badge"><span class="wb-label">Role:</span> <span>24/7 Intelligence Engine</span></div>
     <div class="widget-badge" id="viper-mode-badge"><span class="wb-label">Mode:</span> <span style="color:#00ff88;">Intelligence</span></div>
-    <button class="btn" id="viper-scan-btn" onclick="viperTriggerScan()" style="font-size:0.72rem;background:#00ff88;color:#000;">Trigger Scan</button>
+    <button class="btn" id="viper-scan-btn" onclick="viperTriggerScan()" style="font-size:0.72rem;background:#00ff88;color:#000;font-weight:700;">Trigger Scan</button>
     <button class="btn" onclick="healthCheckAgent('viper')" style="font-size:0.72rem;">Health Check</button>
   </div>
   <div class="health-inline" id="viper-health-result"></div>
+  <!-- Scan Progress Bar -->
+  <div id="viper-scan-progress" style="display:none;margin:10px 0;">
+    <div style="background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.25);border-radius:8px;padding:12px 16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span id="viper-scan-step" style="font-weight:600;color:#00ff88;font-size:0.82rem;">Starting scan...</span>
+        <span id="viper-scan-pct" style="font-size:0.72rem;color:var(--text-muted);">0%</span>
+      </div>
+      <div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">
+        <div id="viper-scan-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#00ff88,#00cc66);border-radius:3px;transition:width 0.5s ease;"></div>
+      </div>
+      <div id="viper-scan-detail" style="font-size:0.7rem;color:var(--text-muted);margin-top:6px;"></div>
+    </div>
+  </div>
   <div id="intel-viper" class="intel-meter" style="margin-bottom:12px;"></div>
   <div class="grid-4">
     <div class="stat-card" data-accent="viper"><div class="stat-value" id="viper-intel-count">0</div><div class="stat-label">Intel Items</div></div>
@@ -17,7 +30,7 @@
   </div>
   <div class="section-spacer">
     <h2 class="section-title" style="color:#00ff88;">Live Intelligence Feed</h2>
-    <div class="glass-card"><table class="data-table"><thead><tr><th>Source</th><th>Headline</th><th>Category</th><th>Sentiment</th><th>Score</th></tr></thead><tbody id="viper-intel-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No intelligence yet — trigger a scan</td></tr></tbody></table></div>
+    <div class="glass-card"><table class="data-table"><thead><tr><th>Source</th><th>Headline</th><th>Category</th><th>Sentiment</th><th>Score</th></tr></thead><tbody id="viper-intel-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No intelligence yet — hit Trigger Scan</td></tr></tbody></table></div>
   </div>
   <div class="section-spacer">
     <h2 class="section-title" style="color:#00ff88;">Live Cost Audit</h2>
