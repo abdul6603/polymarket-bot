@@ -38,8 +38,9 @@ TRADES_FILE = DATA_DIR / "trades.jsonl"
 # Conviction maps to these tiers with smooth interpolation within each band.
 SIZE_TIERS = {
     # (min_conviction, max_conviction): (min_usd, max_usd)
-    (0, 30):   (0.0, 0.0),      # DON'T TRADE — insufficient evidence
-    (30, 50):  (8.0, 12.0),     # Small — tentative signal
+    (0, 15):   (0.0, 0.0),      # DON'T TRADE — truly insufficient evidence
+    (15, 30):  (6.0, 8.0),     # Micro — marginal but viable trade
+    (30, 50):  (8.0, 12.0),    # Small — tentative signal
     (50, 70):  (12.0, 20.0),    # Standard — solid consensus
     (70, 85):  (20.0, 28.0),    # Increased — strong multi-factor alignment
     (85, 100): (28.0, 35.0),    # Maximum conviction — nearly everything aligns
@@ -49,11 +50,11 @@ SIZE_TIERS = {
 ABSOLUTE_MAX_PER_TRADE = 35.0       # Never exceed $35 per trade
 ABSOLUTE_MAX_DAILY_LOSS = 50.0      # Stop trading if daily loss hits $50
 LOSING_STREAK_THRESHOLD = 3         # Scale down after 3 consecutive losses
-LOSING_STREAK_PENALTY = 0.6         # Multiply conviction by 0.6 during losing streak
+LOSING_STREAK_PENALTY = 0.75        # Multiply conviction by 0.75 during losing streak (0.6 was too crushing)
 MIN_ROLLING_WR_THRESHOLD = 0.45     # Scale down if rolling WR < 45%
 LOW_WR_PENALTY = 0.7                # Multiply conviction by 0.7 if WR < 45%
 ROLLING_WR_WINDOW = 20              # Check last 20 resolved trades
-EXTREME_FEAR_PENALTY = 0.75         # Scale conviction down in extreme_fear regime
+EXTREME_FEAR_PENALTY = 0.90         # Reduced 0.75→0.90: live data shows 70% WR in extreme_fear, mild penalty only
 
 # ── Conviction Component Weights ──
 # Each evidence layer contributes a weighted score to the total.
@@ -79,7 +80,7 @@ OKAY_HOURS_ET = {1, 3, 4, 8, 9, 11, 13, 14, 15}
 BAD_HOURS_ET = {5, 6, 7, 18, 19, 20, 21, 22, 23}
 
 # ── All Assets Aligned Mode thresholds ──
-ALL_ALIGNED_MIN_CONSENSUS = 7       # Each asset must have 7+ indicators agreeing
+ALL_ALIGNED_MIN_CONSENSUS = 4       # Each asset must have 4+ non-disabled indicators agreeing
 ALL_ALIGNED_MIN_ASSETS = 3          # 3 of 4 assets must agree
 ALL_ALIGNED_SIZE = 35.0             # Max size when all-aligned fires
 
@@ -212,12 +213,12 @@ class ConvictionEngine:
         consensus_ratio = (
             asset_snapshot.consensus_count / max(asset_snapshot.total_indicators, 1)
         )
-        # Scale: 54% consensus (7/13) = ~40% of points, 100% = 100%
-        # Normalize so 7/13 = 0.4, 10/13 = 0.77, 13/13 = 1.0
-        min_ratio = 7.0 / 13.0  # ~0.538
+        # Proportional scoring: 70% agreement = baseline, 100% = full points
+        # Now uses active (non-disabled) indicators only in snapshot
+        min_ratio = 0.60  # 60% agreement is minimum (proportional consensus floor)
         normalized_consensus = max(0, (consensus_ratio - min_ratio) / (1.0 - min_ratio))
-        # Also factor in raw count — 10 agreeing is stronger than 7
-        raw_count_bonus = max(0, (asset_snapshot.consensus_count - 7)) / 6.0  # 0 at 7, 1.0 at 13
+        # Raw count bonus: 4 agreeing is decent, 8+ is strong (scaled for 4-12 typical range)
+        raw_count_bonus = max(0, (asset_snapshot.consensus_count - 4)) / 8.0  # 0 at 4, 1.0 at 12
         consensus_score = (normalized_consensus * 0.6 + raw_count_bonus * 0.4)
         consensus_score = min(consensus_score, 1.0)
         components["consensus_ratio"] = consensus_score * COMPONENT_WEIGHTS["consensus_ratio"]
@@ -658,7 +659,7 @@ class ConvictionEngine:
 
         Uses smooth linear interpolation within each tier band.
         """
-        if score < 30:
+        if score < 15:
             return 0.0  # Don't trade
 
         for (lo, hi), (min_usd, max_usd) in SIZE_TIERS.items():
@@ -673,8 +674,10 @@ class ConvictionEngine:
     @staticmethod
     def _get_tier_label(score: float) -> str:
         """Human-readable tier label."""
-        if score < 30:
+        if score < 15:
             return "no_trade"
+        elif score < 30:
+            return "micro"
         elif score < 50:
             return "small"
         elif score < 70:

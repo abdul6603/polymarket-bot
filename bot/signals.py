@@ -58,13 +58,13 @@ WEIGHTS = {
     "temporal_arb": 1.8,
     "price_div": 1.4,
     "macd": 1.1,
-    "order_flow": 2.0,  # Quant V2: 1.0→2.0 (60.2% accuracy, weight_v220)
-    "news": 1.0,         # Quant: 2.5→1.0 (27.3% recent accuracy, 11 votes)
+    "order_flow": 3.0,  # Quant V3: 2.0→3.0 (57.8% accuracy, every top-20 config used 4.0, stepping to 3.0)
+    "news": 0.0,         # DISABLED: 47.1% accuracy = below coin flip. Atlas+Quant+Bottleneck all agree
     # LOW TIER — marginal (50-55%)
-    "momentum": 0.6,
+    "momentum": 1.0,    # Quant V3: 0.6→1.0 (59.9% accuracy, #1 config uses 1.2, stepping to 1.0)
     "ema": 0.6,           # Quant: 1.1→0.6 (weight_v171)
     "heikin_ashi": 0.5,
-    "spot_depth": 0.0,  # Quant V2: disabled (insufficient data, weight_v220)
+    "spot_depth": 0.6,  # Re-enabled: 63.0% accuracy on 54 votes (was wrongly disabled for "insufficient data")
     "orderbook": 0.5,
     "liquidity": 0.4,
     # DISABLED — below coin flip (harmful)
@@ -94,12 +94,14 @@ TF_WEIGHT_SCALE = {
 }
 
 MIN_CANDLES = 30
-MIN_CONSENSUS = 7  # at least 7 indicators must agree (data: 7+ = 62% WR, 5-6 = 15% WR)
+CONSENSUS_RATIO = 0.70  # 70% of active (non-disabled) indicators must agree
+CONSENSUS_FLOOR = 3     # never require fewer than 3 agreements
+MIN_CONSENSUS = CONSENSUS_FLOOR  # backward compat for backtest/quant (absolute floor)
 MIN_ATR_THRESHOLD = 0.00005  # skip if volatility below this (0.005% of price)
 MIN_CONFIDENCE = 0.25  # reject weak signals (avg was 0.178, most were losers)
 
 # Directional bias: UP predictions have 47.3% WR vs DOWN 63% — require higher confidence for UP
-UP_CONFIDENCE_PREMIUM = 0.05  # add 5% to confidence floor for UP bets (reduced from 8%)
+UP_CONFIDENCE_PREMIUM = 0.02  # reduced 5%→2%: live data shows UP=70.8% WR vs DOWN=68.8% — UP outperforms, don't penalize
 
 # Time-of-day filter: block hours with <30% WR across 140+ trades
 # Good hours: 00,02,10,12,16,17 (79.5% WR combined)
@@ -127,7 +129,7 @@ MIN_RR_RATIO = 0.8  # reject signals where R:R < 0.8 (too skewed against us)
 ASSET_EDGE_PREMIUM = {
     "bitcoin": 1.0,    # baseline (33.9% WR — needs filtering not premium)
     "ethereum": 0.9,   # slight discount (best performer: 41.3% WR)
-    "solana": 1.5,     # +50% edge required (31.6% WR — worst performer)
+    "solana": 1.2,     # reduced 1.5→1.2: old 31.6% WR data stale, 1.5x was blocking most SOL signals
     "xrp": 1.0,        # baseline — no data yet, start neutral
 }
 
@@ -384,20 +386,23 @@ class SignalEngine:
 
         score = weighted_sum / weight_total  # -1 to +1
 
-        # ── Consensus Filter ──
+        # ── Consensus Filter (proportional) ──
         majority_dir = "up" if up_count >= down_count else "down"
         agree_count = max(up_count, down_count)
+        active_count = up_count + down_count  # non-disabled indicators only
         total_indicators = len(active)
 
-        # Apply regime adjustment to consensus requirement
-        effective_consensus = MIN_CONSENSUS + (regime.consensus_offset if regime else 0)
-        effective_consensus = max(MIN_CONSENSUS, effective_consensus)  # never below MIN_CONSENSUS (7)
+        # Proportional consensus: 70% of active indicators must agree, floor of 3
+        effective_consensus = max(CONSENSUS_FLOOR, int(active_count * CONSENSUS_RATIO))
+        effective_consensus = min(effective_consensus, active_count)  # can't require more than available
+        if regime and regime.consensus_offset:
+            effective_consensus += regime.consensus_offset
 
         if agree_count < effective_consensus:
             log.info(
-                "[%s/%s] Consensus filter: %d/%d agree on %s (need %d%s), skipping",
-                asset.upper(), timeframe, agree_count, total_indicators,
-                majority_dir, effective_consensus,
+                "[%s/%s] Consensus filter: %d/%d agree on %s (need %d of %d active%s), skipping",
+                asset.upper(), timeframe, agree_count, active_count,
+                majority_dir, effective_consensus, active_count,
                 f" regime={regime.label}" if regime else "",
             )
             return None
@@ -409,8 +414,8 @@ class SignalEngine:
             trend_dir = "up" if short_trend > long_trend else "down"
 
             if majority_dir != trend_dir:
-                # Going against the trend — require 70% of indicators to agree
-                anti_trend_min = max(MIN_CONSENSUS + 2, int(total_indicators * 0.7))
+                # Going against the trend — require 80% of active indicators to agree
+                anti_trend_min = max(effective_consensus + 1, int(active_count * 0.80))
                 if agree_count < anti_trend_min:
                     log.info(
                         "[%s/%s] Anti-trend filter: signal=%s but trend=%s, need %d/%d (have %d)",
@@ -481,7 +486,7 @@ class SignalEngine:
             if consensus_dir != market_dir and market_strength > 0.15:
                 # Our indicators disagree with a strong market lean (>65%)
                 # Require much higher consensus to go against the market
-                contrarian_min = max(MIN_CONSENSUS + 2, int(total_indicators * 0.75))
+                contrarian_min = max(effective_consensus + 1, int(active_count * 0.80))
                 if agree_count < contrarian_min:
                     log.info(
                         "[%s/%s] Market safety filter: consensus=%s but market=%s (%.0f%%), "

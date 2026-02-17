@@ -94,11 +94,11 @@ def api_quant_params():
     # Load current live params
     try:
         from bot.signals import (
-            WEIGHTS, MIN_CONSENSUS, MIN_CONFIDENCE,
+            WEIGHTS, CONSENSUS_RATIO, CONSENSUS_FLOOR, MIN_CONFIDENCE,
             UP_CONFIDENCE_PREMIUM, MIN_EDGE_ABSOLUTE, MIN_EDGE_BY_TF,
         )
         current = {
-            "min_consensus": MIN_CONSENSUS,
+            "min_consensus": f"{CONSENSUS_RATIO:.0%} (floor={CONSENSUS_FLOOR})",
             "min_confidence": MIN_CONFIDENCE,
             "up_confidence_premium": UP_CONFIDENCE_PREMIUM,
             "min_edge_absolute": MIN_EDGE_ABSOLUTE,

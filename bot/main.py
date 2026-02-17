@@ -371,14 +371,19 @@ class TradingBot:
 
             # ── ConvictionEngine: register signal + score conviction ──
             votes = sig.indicator_votes or {}
-            up_count = sum(1 for d in votes.values() if d == "up")
-            down_count = sum(1 for d in votes.values() if d == "down")
+            # Filter out disabled indicators (weight=0) for accurate conviction scoring
+            from bot.weight_learner import get_dynamic_weights
+            from bot.signals import WEIGHTS
+            dw = get_dynamic_weights(WEIGHTS)
+            active_votes = {k: v for k, v in votes.items() if dw.get(k, 1.0) > 0}
+            up_count = sum(1 for d in active_votes.values() if d == "up")
+            down_count = sum(1 for d in active_votes.values() if d == "down")
             snapshot = ConvictionEngine.build_snapshot(
                 signal=sig,
-                indicator_votes=votes,
+                indicator_votes=active_votes,
                 up_count=up_count,
                 down_count=down_count,
-                total_indicators=len(votes),
+                total_indicators=len(active_votes),
             )
             self.conviction_engine.register_signal(snapshot)
             self.conviction_engine.register_timeframe_signal(asset, timeframe, sig.direction)

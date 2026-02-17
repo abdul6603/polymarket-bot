@@ -510,12 +510,14 @@ def api_garves_conviction():
             "engine_status": status,
             "indicator_weights": weight_info,
             "size_tiers": {
-                "0-29": "$0 (no trade)",
+                "0-14": "$0 (no trade)",
+                "15-29": "$6-8 (micro)",
                 "30-49": "$8-12 (small)",
                 "50-69": "$12-20 (standard)",
                 "70-84": "$20-28 (increased)",
                 "85-100": "$28-35 (max conviction)",
             },
+            "consensus_model": "proportional 70% of active indicators, floor=3",
             "bankroll": bankroll_status,
         })
     except Exception as e:
