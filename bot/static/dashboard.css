@@ -3,7 +3,7 @@
     --agent-soren: #cc66ff;
     --agent-shelby: #ffaa00;
     --agent-atlas: #22cc55;
-    --agent-mercury: #ff8800;
+    --agent-lisa: #ff8800;
     --agent-nexus: #00ccff;
     --agent-sentinel: #00ff44;
     --agent-thor: #ff6600;
@@ -115,7 +115,7 @@
   .sidebar-btn[data-tab="soren"].active { color:var(--agent-soren); box-shadow:inset 3px 0 0 var(--agent-soren); }
   .sidebar-btn[data-tab="shelby"].active { color:var(--agent-shelby); box-shadow:inset 3px 0 0 var(--agent-shelby); }
   .sidebar-btn[data-tab="atlas"].active { color:var(--agent-atlas); box-shadow:inset 3px 0 0 var(--agent-atlas); }
-  .sidebar-btn[data-tab="mercury"].active { color:var(--agent-mercury); box-shadow:inset 3px 0 0 var(--agent-mercury); }
+  .sidebar-btn[data-tab="lisa"].active { color:var(--agent-lisa); box-shadow:inset 3px 0 0 var(--agent-lisa); }
   .sidebar-btn[data-tab="sentinel"].active { color:var(--agent-sentinel); box-shadow:inset 3px 0 0 var(--agent-sentinel); }
   .sidebar-btn[data-tab="thor"].active { color:var(--agent-thor); box-shadow:inset 3px 0 0 var(--agent-thor); }
   .sidebar-btn[data-tab="system"].active { color:var(--agent-shelby); box-shadow:inset 3px 0 0 var(--agent-shelby); }
@@ -177,7 +177,7 @@
   .stat-card[data-accent="soren"] { border-left-color:var(--agent-soren); }
   .stat-card[data-accent="shelby"] { border-left-color:var(--agent-shelby); }
   .stat-card[data-accent="atlas"] { border-left-color:var(--agent-atlas); }
-  .stat-card[data-accent="mercury"] { border-left-color:var(--agent-mercury); }
+  .stat-card[data-accent="lisa"] { border-left-color:var(--agent-lisa); }
   .stat-card[data-accent="nexus"] { border-left-color:var(--agent-nexus); }
   .stat-card[data-accent="sentinel"] { border-left-color:var(--agent-sentinel); }
   .stat-card[data-accent="thor"] { border-left-color:var(--agent-thor); }
@@ -211,7 +211,7 @@
   .section-title[data-accent="soren"]::before { background:var(--agent-soren); }
   .section-title[data-accent="shelby"]::before { background:var(--agent-shelby); }
   .section-title[data-accent="atlas"]::before { background:var(--agent-atlas); }
-  .section-title[data-accent="mercury"]::before { background:var(--agent-mercury); }
+  .section-title[data-accent="lisa"]::before { background:var(--agent-lisa); }
   .section-title[data-accent="nexus"]::before { background:var(--agent-nexus); }
   .section-title[data-accent="sentinel"]::before { background:var(--agent-sentinel); }
   .section-title[data-accent="thor"]::before { background:var(--agent-thor); }
@@ -329,7 +329,7 @@
   .agent-card[data-agent="soren"]::before { background:var(--agent-soren); }
   .agent-card[data-agent="shelby"]::before { background:var(--agent-shelby); }
   .agent-card[data-agent="atlas"]::before { background:var(--agent-atlas); }
-  .agent-card[data-agent="mercury"]::before { background:var(--agent-mercury); }
+  .agent-card[data-agent="lisa"]::before { background:var(--agent-lisa); }
   .agent-card[data-agent="nexus"]::before { background:var(--agent-nexus); }
   .agent-card[data-agent="sentinel"]::before { background:var(--agent-sentinel); }
   .agent-card[data-agent="thor"]::before { background:var(--agent-thor); }
@@ -337,7 +337,7 @@
   .agent-card:hover[data-agent="soren"] { border-color:rgba(204,102,255,0.2); }
   .agent-card:hover[data-agent="shelby"] { border-color:rgba(255,170,0,0.2); }
   .agent-card:hover[data-agent="atlas"] { border-color:rgba(34,170,68,0.2); }
-  .agent-card:hover[data-agent="mercury"] { border-color:rgba(255,136,0,0.2); }
+  .agent-card:hover[data-agent="lisa"] { border-color:rgba(255,136,0,0.2); }
   .agent-card:hover[data-agent="nexus"] { border-color:rgba(0,204,255,0.2); }
   .agent-card:hover[data-agent="sentinel"] { border-color:rgba(0,255,68,0.2); }
   .agent-card[data-agent="hawk"]::before { background:var(--agent-hawk); }
@@ -361,7 +361,7 @@
   .agent-card[data-agent="soren"] .agent-card-name { color:var(--agent-soren); }
   .agent-card[data-agent="shelby"] .agent-card-name { color:var(--agent-shelby); }
   .agent-card[data-agent="atlas"] .agent-card-name { color:var(--agent-atlas); }
-  .agent-card[data-agent="mercury"] .agent-card-name { color:var(--agent-mercury); }
+  .agent-card[data-agent="lisa"] .agent-card-name { color:var(--agent-lisa); }
   .agent-card[data-agent="nexus"] .agent-card-name { color:var(--agent-nexus); }
   .agent-card[data-agent="sentinel"] .agent-card-name { color:var(--agent-sentinel); }
   .agent-card[data-agent="thor"] .agent-card-name { color:var(--agent-thor); }
@@ -869,9 +869,9 @@
   .atlas-cmd-card[data-color="gold"]  { border-left-color:var(--agent-shelby); }
   .atlas-cmd-card[data-color="gold"]:hover  { box-shadow:0 6px 28px rgba(255,170,0,0.12); border-color:rgba(255,170,0,0.25); }
   .atlas-cmd-card[data-color="gold"]  .cmd-title { color:var(--agent-shelby); }
-  .atlas-cmd-card[data-color="orange"]  { border-left-color:var(--agent-mercury); }
+  .atlas-cmd-card[data-color="orange"]  { border-left-color:var(--agent-lisa); }
   .atlas-cmd-card[data-color="orange"]:hover  { box-shadow:0 6px 28px rgba(255,136,0,0.12); border-color:rgba(255,136,0,0.25); }
-  .atlas-cmd-card[data-color="orange"]  .cmd-title { color:var(--agent-mercury); }
+  .atlas-cmd-card[data-color="orange"]  .cmd-title { color:var(--agent-lisa); }
   .atlas-cmd-card[data-color="thor"]  { border-left-color:var(--agent-thor); }
   .atlas-cmd-card[data-color="thor"]:hover  { box-shadow:0 6px 28px rgba(255,102,0,0.12); border-color:rgba(255,102,0,0.25); }
   .atlas-cmd-card[data-color="thor"]  .cmd-title { color:var(--agent-thor); }

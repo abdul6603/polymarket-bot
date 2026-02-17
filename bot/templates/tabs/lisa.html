@@ -1,20 +1,20 @@
 <!-- LISA — The Operator -->
-<div class="tab-content" id="tab-mercury">
+<div class="tab-content" id="tab-lisa">
   <div id="intel-lisa" class="intel-meter" style="margin-bottom:12px;"></div>
-  <div class="agent-widget-row" id="mercury-widgets">
-    <div class="widget-badge" id="mercury-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
-    <button class="btn" onclick="healthCheckAgent(&apos;mercury&apos;)" style="font-size:0.72rem;">Health Check</button>
-    <button class="agent-chat-trigger" onclick="openAgentChat(&apos;mercury&apos;)" style="font-size:0.72rem;color:var(--agent-mercury);">Chat</button>
+  <div class="agent-widget-row" id="lisa-widgets">
+    <div class="widget-badge" id="lisa-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
+    <button class="btn" onclick="healthCheckAgent(&apos;lisa&apos;)" style="font-size:0.72rem;">Health Check</button>
+    <button class="agent-chat-trigger" onclick="openAgentChat(&apos;lisa&apos;)" style="font-size:0.72rem;color:var(--agent-lisa);">Chat</button>
   </div>
-  <div class="health-inline" id="mercury-health-result"></div>
+  <div class="health-inline" id="lisa-health-result"></div>
 
   <!-- Workflow Status -->
   <div class="glass-card" style="margin-bottom:12px;padding:10px 14px;">
     <div style="display:flex;align-items:center;gap:12px;font-family:var(--font-mono);font-size:0.72rem;flex-wrap:wrap;">
-      <span style="color:var(--agent-mercury);font-weight:600;">WORKFLOW</span>
+      <span style="color:var(--agent-lisa);font-weight:600;">WORKFLOW</span>
       <span style="color:var(--agent-soren);">Soren generates</span>
       <span style="color:var(--text-muted);">&rarr;</span>
-      <span style="color:var(--agent-mercury);">Lisa evaluates &amp; rates</span>
+      <span style="color:var(--agent-lisa);">Lisa evaluates &amp; rates</span>
       <span style="color:var(--text-muted);">&rarr;</span>
       <span style="color:#ffaa00;">Jordan approves</span>
       <span style="color:var(--text-muted);">&rarr;</span>
@@ -23,21 +23,21 @@
   </div>
 
   <!-- Agent Activity -->
-  <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-mercury);">
+  <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-lisa);">
     <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Agent Activity</h3>
     <div id="lisa-activity-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:150px;overflow-y:auto;"><span class="text-muted">Waiting for activity...</span></div>
   </div>
 
   <!-- Stats Row -->
   <div class="grid-4">
-    <div class="stat-card" data-accent="mercury"><div class="stat-value" id="mercury-outbox-stat">--</div><div class="stat-label">Outbox</div></div>
-    <div class="stat-card" data-accent="mercury"><div class="stat-value" id="mercury-total-posted">--</div><div class="stat-label">Posted</div></div>
-    <div class="stat-card" data-accent="mercury"><div class="stat-value" id="mercury-platforms-count">--</div><div class="stat-label">Platforms</div></div>
-    <div class="stat-card" data-accent="mercury"><div class="stat-value" id="mercury-review-avg">--</div><div class="stat-label">Avg Quality</div></div>
+    <div class="stat-card" data-accent="lisa"><div class="stat-value" id="lisa-outbox-stat">--</div><div class="stat-label">Outbox</div></div>
+    <div class="stat-card" data-accent="lisa"><div class="stat-value" id="lisa-total-posted">--</div><div class="stat-label">Posted</div></div>
+    <div class="stat-card" data-accent="lisa"><div class="stat-value" id="lisa-platforms-count">--</div><div class="stat-label">Platforms</div></div>
+    <div class="stat-card" data-accent="lisa"><div class="stat-value" id="lisa-review-avg">--</div><div class="stat-label">Avg Quality</div></div>
   </div>
 
   <!-- Embedded Chat -->
-  <div class="glass-card" style="margin:12px 0;border-left:3px solid var(--agent-mercury);">
+  <div class="glass-card" style="margin:12px 0;border-left:3px solid var(--agent-lisa);">
     <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Chat with Lisa <span class="text-muted" style="font-weight:400;font-size:0.65rem;margin-left:4px;">Test social media vibes</span></h3>
     <div id="lisa-mini-chat-messages" style="font-family:var(--font-mono);font-size:0.74rem;max-height:150px;overflow-y:auto;margin-bottom:8px;"><span class="text-muted">Start a conversation...</span></div>
     <div style="display:flex;gap:6px;">
@@ -66,13 +66,13 @@
 
   <!-- Content Pipeline Panel -->
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="mercury">Content Pipeline</h2>
+    <h2 class="section-title" data-accent="lisa">Content Pipeline</h2>
     <div class="glass-card">
       <div class="grid-4" style="margin-bottom:var(--space-4);">
-        <div class="stat-card" data-accent="mercury" style="border-left:3px solid #22aa44;"><div class="stat-value" id="pipeline-approved">--</div><div class="stat-label">Reviewed &amp; Passed</div></div>
-        <div class="stat-card" data-accent="mercury" style="border-left:3px solid #ffaa00;"><div class="stat-value" id="pipeline-review">--</div><div class="stat-label">Awaiting Review</div></div>
-        <div class="stat-card" data-accent="mercury" style="border-left:3px solid #ff8800;"><div class="stat-value" id="pipeline-work">--</div><div class="stat-label">Revisions Needed</div></div>
-        <div class="stat-card" data-accent="mercury" style="border-left:3px solid #ff4444;"><div class="stat-value" id="pipeline-rejected">--</div><div class="stat-label">Rejected</div></div>
+        <div class="stat-card" data-accent="lisa" style="border-left:3px solid #22aa44;"><div class="stat-value" id="pipeline-approved">--</div><div class="stat-label">Reviewed &amp; Passed</div></div>
+        <div class="stat-card" data-accent="lisa" style="border-left:3px solid #ffaa00;"><div class="stat-value" id="pipeline-review">--</div><div class="stat-label">Awaiting Review</div></div>
+        <div class="stat-card" data-accent="lisa" style="border-left:3px solid #ff8800;"><div class="stat-value" id="pipeline-work">--</div><div class="stat-label">Revisions Needed</div></div>
+        <div class="stat-card" data-accent="lisa" style="border-left:3px solid #ff4444;"><div class="stat-value" id="pipeline-rejected">--</div><div class="stat-label">Rejected</div></div>
       </div>
       <div style="display:flex;gap:var(--space-3);align-items:center;margin-bottom:var(--space-3);">
         <button class="btn btn-primary" onclick="runPipeline()" id="pipeline-run-btn">Run Pipeline</button>
@@ -85,7 +85,7 @@
 
   <!-- Content Rating -->
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="mercury">Content Rating</h2>
+    <h2 class="section-title" data-accent="lisa">Content Rating</h2>
     <div class="glass-card">
       <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-3);flex-wrap:wrap;align-items:end;">
         <div style="flex:1;min-width:200px;">
@@ -106,7 +106,7 @@
 
   <!-- Writing Studio -->
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="mercury">Writing Studio</h2>
+    <h2 class="section-title" data-accent="lisa">Writing Studio</h2>
     <div class="glass-card">
       <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-3);flex-wrap:wrap;align-items:end;">
         <select class="input" id="write-type" style="font-size:0.76rem;padding:4px 8px;width:120px;" onchange="toggleWriteFields()">
@@ -129,7 +129,7 @@
 
   <!-- Platform Timing Map -->
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="mercury">Platform Timing Intelligence</h2>
+    <h2 class="section-title" data-accent="lisa">Platform Timing Intelligence</h2>
     <div class="glass-card" id="timing-panel">
       <div class="text-muted">Loading timing data...</div>
     </div>
@@ -137,7 +137,7 @@
 
   <!-- Algorithm Intelligence -->
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="mercury">Algorithm Intelligence</h2>
+    <h2 class="section-title" data-accent="lisa">Algorithm Intelligence</h2>
     <div class="glass-card" id="algorithm-panel">
       <div class="text-muted">Loading algorithm data...</div>
     </div>
@@ -145,46 +145,46 @@
 
   <!-- Brand Review Gate -->
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="mercury">Brand Review Gate</h2>
+    <h2 class="section-title" data-accent="lisa">Brand Review Gate</h2>
     <div class="glass-card">
       <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-4);flex-wrap:wrap;">
-        <div id="mercury-review-stats" style="display:flex;gap:var(--space-4);font-size:0.76rem;font-family:var(--font-mono);align-items:center;">
+        <div id="lisa-review-stats" style="display:flex;gap:var(--space-4);font-size:0.76rem;font-family:var(--font-mono);align-items:center;">
           <span class="text-muted">No reviews yet</span>
         </div>
       </div>
       <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:var(--space-3);">Test any caption against Soren&apos;s brand voice:</div>
       <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-3);flex-wrap:wrap;align-items:end;">
         <div style="flex:1;min-width:200px;">
-          <textarea class="input" id="mercury-review-caption" rows="2" placeholder="Paste a caption to review..." style="width:100%;resize:vertical;font-family:var(--font-mono);font-size:0.78rem;"></textarea>
+          <textarea class="input" id="lisa-review-caption" rows="2" placeholder="Paste a caption to review..." style="width:100%;resize:vertical;font-family:var(--font-mono);font-size:0.78rem;"></textarea>
         </div>
         <div style="display:flex;gap:var(--space-2);flex-direction:column;">
-          <select class="input" id="mercury-review-platform" style="font-size:0.76rem;padding:4px 8px;">
+          <select class="input" id="lisa-review-platform" style="font-size:0.76rem;padding:4px 8px;">
             <option value="instagram">Instagram</option>
             <option value="tiktok">TikTok</option>
             <option value="x">X</option>
           </select>
-          <button class="btn btn-primary" onclick="mercuryReviewCaption()" style="white-space:nowrap;">Review Caption</button>
+          <button class="btn btn-primary" onclick="lisaReviewCaption()" style="white-space:nowrap;">Review Caption</button>
         </div>
       </div>
-      <div id="mercury-review-result" style="min-height:40px;font-family:var(--font-mono);font-size:0.76rem;"></div>
+      <div id="lisa-review-result" style="min-height:40px;font-family:var(--font-mono);font-size:0.76rem;"></div>
     </div>
   </div>
 
   <!-- Outbox — Brand Check -->
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="mercury">Outbox — Brand Check</h2>
-    <div class="glass-card" id="mercury-outbox-review"><div class="text-muted">No approved items in outbox.</div></div>
+    <h2 class="section-title" data-accent="lisa">Outbox — Brand Check</h2>
+    <div class="glass-card" id="lisa-outbox-review"><div class="text-muted">No approved items in outbox.</div></div>
   </div>
 
   <!-- Recent Posts -->
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="mercury">Recent Posts</h2>
-    <div class="glass-card"><table class="data-table"><thead><tr><th>Time</th><th>Platform</th><th>Content</th><th>Score</th><th>Status</th></tr></thead><tbody id="mercury-posts-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No posts yet</td></tr></tbody></table></div>
+    <h2 class="section-title" data-accent="lisa">Recent Posts</h2>
+    <div class="glass-card"><table class="data-table"><thead><tr><th>Time</th><th>Platform</th><th>Content</th><th>Score</th><th>Status</th></tr></thead><tbody id="lisa-posts-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No posts yet</td></tr></tbody></table></div>
   </div>
 
   <!-- Go-Live Toggle -->
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="mercury">Go-Live Toggle</h2>
+    <h2 class="section-title" data-accent="lisa">Go-Live Toggle</h2>
     <div class="glass-card" id="lisa-golive-panel">
       <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:var(--space-3);">Toggle platforms between dry-run and live posting:</div>
       <div id="lisa-platform-status" style="display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap;"></div>
@@ -194,19 +194,19 @@
 
   <!-- Reply Intelligence -->
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="mercury">Reply Intelligence</h2>
+    <h2 class="section-title" data-accent="lisa">Reply Intelligence</h2>
     <div class="glass-card">
       <div class="flex gap-2" style="margin-bottom:var(--space-4);">
-        <input type="text" class="input" id="mercury-reply-input" placeholder="Paste a comment to test reply..." />
-        <button class="btn btn-primary" onclick="mercuryTestReply()">Test</button>
+        <input type="text" class="input" id="lisa-reply-input" placeholder="Paste a comment to test reply..." />
+        <button class="btn btn-primary" onclick="lisaTestReply()">Test</button>
       </div>
-      <div class="report-container" id="mercury-reply-result" style="min-height:60px;">Enter a comment and click "Test" to see reply suggestion.</div>
+      <div class="report-container" id="lisa-reply-result" style="min-height:60px;">Enter a comment and click "Test" to see reply suggestion.</div>
     </div>
   </div>
 
   <!-- Comment Analyzer -->
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="mercury">Comment Analyzer</h2>
+    <h2 class="section-title" data-accent="lisa">Comment Analyzer</h2>
     <div class="glass-card">
       <div class="grid-3" id="lisa-comment-stats" style="margin-bottom:var(--space-4);"><div class="text-muted" style="grid-column:1/-1;text-align:center;">No comment data yet</div></div>
       <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-3);flex-wrap:wrap;align-items:end;">
@@ -228,14 +228,14 @@
 
   <!-- Strategy Plan -->
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="mercury">Strategy Plan</h2>
-    <div class="glass-card" id="mercury-plan"><div class="text-muted">Loading plan...</div></div>
+    <h2 class="section-title" data-accent="lisa">Strategy Plan</h2>
+    <div class="glass-card" id="lisa-plan"><div class="text-muted">Loading plan...</div></div>
   </div>
 
   <!-- Knowledge Base -->
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="mercury">Knowledge Base</h2>
-    <div class="flex flex-col gap-2" id="mercury-knowledge"><div class="text-muted">Loading knowledge...</div></div>
+    <h2 class="section-title" data-accent="lisa">Knowledge Base</h2>
+    <div class="flex flex-col gap-2" id="lisa-knowledge"><div class="text-muted">Loading knowledge...</div></div>
   </div>
 
   <!-- Suggested Actions -->

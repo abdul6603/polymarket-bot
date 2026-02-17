@@ -1,4 +1,4 @@
-"""Mercury/Lisa (social media) routes: /api/mercury/*"""
+"""Lisa (social media) routes: /api/lisa/*"""
 from __future__ import annotations
 
 import json
@@ -18,9 +18,9 @@ from bot.shared import (
 mercury_bp = Blueprint("mercury", __name__)
 
 
-@mercury_bp.route("/api/mercury")
+@mercury_bp.route("/api/lisa")
 def api_mercury():
-    """Mercury social media manager status."""
+    """Lisa social media manager status."""
     import logging
     _log = logging.getLogger("lisa")
     try:
@@ -96,9 +96,9 @@ def api_mercury():
     })
 
 
-@mercury_bp.route("/api/mercury/plan")
+@mercury_bp.route("/api/lisa/plan")
 def api_mercury_plan():
-    """Mercury evolving plan and knowledge dashboard data."""
+    """Lisa evolving plan and knowledge dashboard data."""
     try:
         from mercury.core.brain import MercuryBrain
         brain = MercuryBrain()
@@ -107,9 +107,9 @@ def api_mercury_plan():
         return jsonify({"error": str(e)}), 500
 
 
-@mercury_bp.route("/api/mercury/knowledge")
+@mercury_bp.route("/api/lisa/knowledge")
 def api_mercury_knowledge():
-    """Mercury full knowledge base."""
+    """Lisa full knowledge base."""
     try:
         from mercury.core.brain import MercuryBrain
         brain = MercuryBrain()
@@ -118,7 +118,7 @@ def api_mercury_knowledge():
         return jsonify({"error": str(e)}), 500
 
 
-@mercury_bp.route("/api/mercury/reply", methods=["POST"])
+@mercury_bp.route("/api/lisa/reply", methods=["POST"])
 def api_mercury_reply():
     """Get reply suggestion for a comment."""
     try:
@@ -130,7 +130,7 @@ def api_mercury_reply():
         return jsonify({"error": str(e)}), 500
 
 
-@mercury_bp.route("/api/mercury/review", methods=["POST"])
+@mercury_bp.route("/api/lisa/review", methods=["POST"])
 def api_mercury_review():
     """Brand review a caption against Soren's voice."""
     try:
@@ -147,7 +147,7 @@ def api_mercury_review():
         return jsonify({"error": str(e)}), 500
 
 
-@mercury_bp.route("/api/mercury/review/<item_id>", methods=["POST"])
+@mercury_bp.route("/api/lisa/review/<item_id>", methods=["POST"])
 def api_mercury_review_item(item_id):
     """Brand review a specific outbox item by ID."""
     try:

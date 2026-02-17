@@ -69,7 +69,7 @@ _DEFAULT_ASSESSMENTS = {
     "garves": {"score": 65, "trend": "up", "opinion": "Solid execution. Signal quality improving with new indicators."},
     "soren": {"score": 75, "trend": "stable", "opinion": "Content pipeline flowing well. Pillar mix is balanced."},
     "atlas": {"score": 80, "trend": "up", "opinion": "Background loop running consistently. Knowledge base growing."},
-    "mercury": {"score": 65, "trend": "up", "opinion": "Brand review gate active. Every post scored against Soren's voice before publishing."},
+    "lisa": {"score": 65, "trend": "up", "opinion": "Brand review gate active. Every post scored against Soren's voice before publishing."},
     "robotox": {"score": 85, "trend": "stable", "opinion": "Watchman never sleeps. Auto-fix success rate high."},
 }
 
@@ -136,8 +136,8 @@ _AGENT_PROMPTS = {
         "Example: 'I ran 3 research cycles overnight. Found that BTC 15m markets have a 3% taker fee the team missed. "
         "Already flagged it to Claude. Also found a trending TikTok format Soren should try — sending him the data.'"
     ),
-    "mercury": (
-        "You are Lisa, The Operator (codename Mercury V2). You are methodical, schedule-obsessed, "
+    "lisa": (
+        "You are Lisa, The Operator. You are methodical, schedule-obsessed, "
         "and platform-aware to an obsessive degree. Calm, precise, always on time. Clean, efficient sentences. "
         "HIERARCHY: Jordan (Owner) → Claude (Godfather) → Shelby (Commander) → Soren → you. Atlas feeds you intel. "
         "You report to Soren — he creates the content, you distribute it optimally. "

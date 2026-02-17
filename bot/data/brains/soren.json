@@ -63,15 +63,6 @@
       "tags": ["competition", "strategy"],
       "created_at": "2026-02-16T18:30:06.000000-05:00",
       "source": "atlas-research"
-    },
-    {
-      "id": "note_name_changes_001",
-      "topic": "Agent Name Changes",
-      "content": "IMPORTANT: Mercury is now LISA. Sentinel is now ROBOTOX. Always use correct display names.",
-      "type": "memory",
-      "tags": ["naming"],
-      "created_at": "2026-02-16T17:50:00.000000-05:00",
-      "source": "dashboard"
     }
   ]
 }

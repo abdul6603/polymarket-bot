@@ -3,10 +3,10 @@ var chatLoaded = false;
 var econPeriod = 'month';
 var _atlasBgCache = null;
 var _overviewCache = null;
-var AGENT_COLORS = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',mercury:'#ff8800',sentinel:'#00ff44',thor:'#ff6600',hawk:'#FFD700',viper:'#00ff88',quant:'#00BFFF'};
-var AGENT_INITIALS = {garves:'GA',soren:'SO',shelby:'SH',atlas:'AT',mercury:'LI',sentinel:'RO',thor:'TH',hawk:'HK',viper:'VP',quant:'QT'};
-var AGENT_ROLES = {garves:'Trading Bot',soren:'Content Creator',shelby:'Team Leader',atlas:'Data Scientist',mercury:'Social Media',sentinel:'Health Monitor',thor:'Coding Lieutenant',hawk:'Market Predator',viper:'Opportunity Hunter',quant:'Strategy Lab'};
-var AGENT_NAMES = {garves:'Garves',soren:'Soren',shelby:'Shelby',atlas:'Atlas',mercury:'Lisa',sentinel:'Robotox',thor:'Thor',hawk:'Hawk',viper:'Viper',quant:'Quant'};
+var AGENT_COLORS = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',sentinel:'#00ff44',thor:'#ff6600',hawk:'#FFD700',viper:'#00ff88',quant:'#00BFFF'};
+var AGENT_INITIALS = {garves:'GA',soren:'SO',shelby:'SH',atlas:'AT',lisa:'LI',sentinel:'RO',thor:'TH',hawk:'HK',viper:'VP',quant:'QT'};
+var AGENT_ROLES = {garves:'Trading Bot',soren:'Content Creator',shelby:'Team Leader',atlas:'Data Scientist',lisa:'Social Media',sentinel:'Health Monitor',thor:'Coding Lieutenant',hawk:'Market Predator',viper:'Opportunity Hunter',quant:'Strategy Lab'};
+var AGENT_NAMES = {garves:'Garves',soren:'Soren',shelby:'Shelby',atlas:'Atlas',lisa:'Lisa',sentinel:'Robotox',thor:'Thor',hawk:'Hawk',viper:'Viper',quant:'Quant'};
 var AGENT_AVATARS = {soren:'/static/soren_profile.png'};
 
 function switchTab(tab) {
@@ -42,13 +42,13 @@ function renderAgentGrid(overview) {
   var g = overview.garves || {};
   var s = overview.soren || {};
   var sh = overview.shelby || {};
-  var brainAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',mercury:'lisa',sentinel:'robotox',thor:'thor',hawk:'hawk',viper:'viper',quant:'quant'};
+  var brainAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',lisa:'lisa',sentinel:'robotox',thor:'thor',hawk:'hawk',viper:'viper',quant:'quant'};
   var cards = [
     {id:'garves', stats:[['Win Rate',(g.win_rate||0)+'%'],['Trades',g.total_trades||0],['Pending',g.pending||0]], online:g.running},
     {id:'soren', stats:[['Queue',s.queue_pending||0],['Posted',s.total_posted||0]], online:true},
     {id:'shelby', stats:[['Status',sh.running?'Online':'Offline']], online:sh.running},
     {id:'atlas', stats:[['Status','Active']], online:true},
-    {id:'mercury', stats:[['Posts',(overview.mercury||{}).total_posts||0],['Review Avg',(overview.mercury||{}).review_avg ? (overview.mercury.review_avg+'/10') : '--']], online:true},
+    {id:'lisa', stats:[['Posts',(overview.lisa||{}).total_posts||0],['Review Avg',(overview.lisa||{}).review_avg ? (overview.lisa.review_avg+'/10') : '--']], online:true},
     {id:'sentinel', stats:[['Role','Monitor']], online:true},
     {id:'thor', stats:[['Tasks',(overview.thor||{}).completed||0],['Queue',(overview.thor||{}).pending||0]], online:(overview.thor||{}).state !== 'offline'},
     {id:'hawk', stats:[['Win Rate',((overview.hawk||{}).win_rate||0)+'%'],['Open',(overview.hawk||{}).open_bets||0]], online:(overview.hawk||{}).running},
@@ -566,7 +566,7 @@ async function sorenBrandCheck(itemId, btn) {
   btn.textContent = 'Reviewing...';
   btn.disabled = true;
   try {
-    var resp = await fetch('/api/mercury/review/' + encodeURIComponent(itemId), {
+    var resp = await fetch('/api/lisa/review/' + encodeURIComponent(itemId), {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({platform: 'instagram'})
     });
@@ -585,7 +585,7 @@ async function sorenBrandCheck(itemId, btn) {
         detail.className = 'brand-review-detail';
         detail.style.cssText = 'font-size:0.72rem;color:var(--text-muted);padding:var(--space-2) var(--space-4);border-left:2px solid ' + color + ';margin-top:var(--space-2);';
         var dtxt = data.issues.join(' | ');
-        if (data.suggested_fix) dtxt += '<br><span style="color:var(--agent-mercury);">Fix:</span> ' + esc(data.suggested_fix);
+        if (data.suggested_fix) dtxt += '<br><span style="color:var(--agent-lisa);">Fix:</span> ' + esc(data.suggested_fix);
         detail.innerHTML = dtxt;
         parent.appendChild(detail);
       }
@@ -908,14 +908,14 @@ async function loadEconomics() {
     var data = await resp.json();
     var el = document.getElementById('shelby-economics');
     var agents = data.agents || {};
-    var agentNames = ['garves','soren','atlas','mercury','sentinel'];
+    var agentNames = ['garves','soren','atlas','lisa','sentinel'];
     var html = '<div class="econ-row" style="font-weight:600;color:var(--text-muted);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;">';
     html += '<span style="flex:1;">Agent</span><span style="width:100px;text-align:right;">Cost</span><span style="width:100px;text-align:right;">Revenue</span><span style="width:100px;text-align:right;">Net</span></div>';
     for (var i = 0; i < agentNames.length; i++) {
       var name = agentNames[i];
       var a = agents[name] || {costs:0,revenue:0};
       var net = (a.revenue || 0) - (a.costs || 0);
-      var dn = name === 'mercury' ? 'Lisa' : name === 'sentinel' ? 'Robotox' : name.charAt(0).toUpperCase() + name.slice(1);
+      var dn = name === 'lisa' ? 'Lisa' : name === 'sentinel' ? 'Robotox' : name.charAt(0).toUpperCase() + name.slice(1);
       html += '<div class="econ-row"><span style="flex:1;color:' + (AGENT_COLORS[name]||'var(--text)') + ';font-weight:500;">' + dn + '</span>';
       html += '<span style="width:100px;text-align:right;color:var(--error);">$' + (a.costs||0).toFixed(2) + '</span>';
       html += '<span style="width:100px;text-align:right;color:var(--success);">$' + (a.revenue||0).toFixed(2) + '</span>';
@@ -1302,7 +1302,7 @@ async function atlasLiveResearch() {
     if (articles.length === 0) {
       html += '<div style="color:var(--text-secondary);">No research yet this session. Atlas researches every 45 min.</div>';
     } else {
-      var agentColors = {garves:'var(--agent-garves)',soren:'var(--agent-soren)',shelby:'var(--agent-shelby)',lisa:'var(--agent-mercury)',atlas:'var(--agent-atlas)'};
+      var agentColors = {garves:'var(--agent-garves)',soren:'var(--agent-soren)',shelby:'var(--agent-shelby)',lisa:'var(--agent-lisa)',atlas:'var(--agent-atlas)'};
       articles.forEach(function(a) {
         var agentName = {garves:'Garves',soren:'Soren',shelby:'Shelby',lisa:'Lisa',atlas:'Atlas'}[a.agent] || a.agent;
         var color = agentColors[a.agent] || 'var(--text-primary)';
@@ -1394,10 +1394,10 @@ function atlasPriorityBadge(p) {
   return '<span class="' + cls + '">' + esc(lvl) + '</span>';
 }
 function atlasAgentColor(agent) {
-  return {garves:'var(--agent-garves)',soren:'var(--agent-soren)',shelby:'var(--agent-shelby)',mercury:'var(--agent-mercury)',lisa:'var(--agent-mercury)',atlas:'var(--agent-atlas)',thor:'var(--agent-thor)',robotox:'var(--agent-sentinel)',sentinel:'var(--agent-sentinel)'}[agent] || 'var(--text-secondary)';
+  return {garves:'var(--agent-garves)',soren:'var(--agent-soren)',shelby:'var(--agent-shelby)',lisa:'var(--agent-lisa)',atlas:'var(--agent-atlas)',thor:'var(--agent-thor)',robotox:'var(--agent-sentinel)',sentinel:'var(--agent-sentinel)'}[agent] || 'var(--text-secondary)';
 }
 function atlasAgentLabel(agent) {
-  return {garves:'Garves',soren:'Soren',shelby:'Shelby',mercury:'Lisa',lisa:'Lisa',atlas:'Atlas',thor:'Thor',robotox:'Robotox',sentinel:'Robotox'}[agent] || agent;
+  return {garves:'Garves',soren:'Soren',shelby:'Shelby',lisa:'Lisa',atlas:'Atlas',thor:'Thor',robotox:'Robotox',sentinel:'Robotox'}[agent] || agent;
 }
 function atlasKvRows(obj) {
   var html = '';
@@ -1428,7 +1428,7 @@ async function atlasFullReport() {
       }
       html += atlasSection('Cross-Agent Insights', 'var(--agent-atlas)', body);
     }
-    var agents = ['garves','soren','shelby','mercury'];
+    var agents = ['garves','soren','shelby','lisa'];
     for (var a = 0; a < agents.length; a++) {
       var name = agents[a];
       var section = data[name];
@@ -1533,7 +1533,7 @@ async function atlasSuggestImprovements() {
     if (data.error) { el.innerHTML = '<div class="atlas-report-section"><div class="section-body" style="color:var(--error);">' + esc(data.error) + '</div></div>'; return; }
     var html = '<div class="atlas-report-header" style="border-left-color:var(--warning);">Improvement Scan</div>';
     var count = 0;
-    var agents = ['garves','soren','shelby','mercury'];
+    var agents = ['garves','soren','shelby','lisa'];
     for (var a = 0; a < agents.length; a++) {
       var name = agents[a];
       var items = data[name];
@@ -1839,23 +1839,23 @@ async function loadCompetitorIntel() {
   } catch (e) {}
 }
 
-function mercuryScoreBadge(score) {
+function lisaScoreBadge(score) {
   if (score === null || score === undefined || score === -1) return '<span class="text-muted">--</span>';
   var color = score >= 7 ? '#22aa44' : score >= 4 ? '#ffaa00' : '#ff4444';
   var label = score >= 7 ? 'PASS' : score >= 4 ? 'WARN' : 'FAIL';
   return '<span style="color:' + color + ';font-weight:600;font-size:0.74rem;">' + score + '/10 ' + label + '</span>';
 }
 
-function renderMercury(data) {
-  document.getElementById('mercury-outbox-stat').textContent = data.outbox_count || 0;
-  document.getElementById('mercury-total-posted').textContent = data.total_posts || 0;
+function renderLisa(data) {
+  document.getElementById('lisa-outbox-stat').textContent = data.outbox_count || 0;
+  document.getElementById('lisa-total-posted').textContent = data.total_posts || 0;
   var platforms = data.platforms || {};
-  document.getElementById('mercury-platforms-count').textContent = Object.keys(platforms).length || 0;
+  document.getElementById('lisa-platforms-count').textContent = Object.keys(platforms).length || 0;
 
   // Review stats
   var rs = data.review_stats || {};
-  var avgEl = document.getElementById('mercury-review-avg');
-  var statsEl = document.getElementById('mercury-review-stats');
+  var avgEl = document.getElementById('lisa-review-avg');
+  var statsEl = document.getElementById('lisa-review-stats');
   if (rs.total_reviewed) {
     avgEl.textContent = rs.avg_score + '/10';
     avgEl.style.color = rs.avg_score >= 7 ? '#22aa44' : rs.avg_score >= 4 ? '#ffaa00' : '#ff4444';
@@ -1871,7 +1871,7 @@ function renderMercury(data) {
 
   // Outbox with review buttons
   var outbox = data.outbox || [];
-  var obEl = document.getElementById('mercury-outbox-review');
+  var obEl = document.getElementById('lisa-outbox-review');
   if (outbox.length === 0) {
     obEl.innerHTML = '<div class="text-muted">No approved items in outbox.</div>';
   } else {
@@ -1883,7 +1883,7 @@ function renderMercury(data) {
       obHtml += '<tr><td style="white-space:nowrap;">' + esc(item.pillar || '--') + '</td>';
       obHtml += '<td style="font-size:0.74rem;">' + esc(cap) + '</td>';
       obHtml += '<td style="white-space:nowrap;"><span id="ob-review-' + esc(iid) + '">';
-      obHtml += '<button class="btn" style="font-size:0.7rem;padding:2px 8px;" onclick="mercuryReviewItem(&apos;' + esc(iid) + '&apos;)">Review</button>';
+      obHtml += '<button class="btn" style="font-size:0.7rem;padding:2px 8px;" onclick="lisaReviewItem(&apos;' + esc(iid) + '&apos;)">Review</button>';
       obHtml += '</span></td></tr>';
     }
     obHtml += '</tbody></table>';
@@ -1892,7 +1892,7 @@ function renderMercury(data) {
 
   // Recent posts with score column
   var posts = data.recent_posts || [];
-  var tbody = document.getElementById('mercury-posts-tbody');
+  var tbody = document.getElementById('lisa-posts-tbody');
   if (posts.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No posts yet</td></tr>'; return; }
   var html = '';
   for (var i = 0; i < posts.length && i < 15; i++) {
@@ -1901,28 +1901,28 @@ function renderMercury(data) {
     html += '<tr><td style="white-space:nowrap;font-size:0.72rem;">' + esc(timeStr) + '</td>';
     html += '<td>' + esc(p.platform || '--') + '</td>';
     html += '<td style="font-size:0.74rem;">' + esc((p.caption || p.content || '').substring(0,60)) + '</td>';
-    html += '<td>' + mercuryScoreBadge(p.review_score !== undefined ? p.review_score : null) + '</td>';
+    html += '<td>' + lisaScoreBadge(p.review_score !== undefined ? p.review_score : null) + '</td>';
     html += '<td><span class="badge badge-success">' + esc(p.status || 'posted') + '</span></td></tr>';
   }
   tbody.innerHTML = html;
 }
 
-async function mercuryReviewCaption() {
-  var textarea = document.getElementById('mercury-review-caption');
-  var platform = document.getElementById('mercury-review-platform').value;
-  var resultEl = document.getElementById('mercury-review-result');
+async function lisaReviewCaption() {
+  var textarea = document.getElementById('lisa-review-caption');
+  var platform = document.getElementById('lisa-review-platform').value;
+  var resultEl = document.getElementById('lisa-review-result');
   var caption = textarea.value.trim();
   if (!caption) { resultEl.innerHTML = '<span class="text-muted">Enter a caption to review.</span>'; return; }
   resultEl.innerHTML = '<span class="text-muted">Reviewing...</span>';
   try {
-    var resp = await fetch('/api/mercury/review', {
+    var resp = await fetch('/api/lisa/review', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({caption: caption, platform: platform})
     });
     var data = await resp.json();
     if (data.error) { resultEl.innerHTML = '<span style="color:#ff4444;">Error: ' + esc(data.error) + '</span>'; return; }
     var html = '<div style="padding:var(--space-3);border-left:3px solid ' + (data.score >= 7 ? '#22aa44' : data.score >= 4 ? '#ffaa00' : '#ff4444') + ';margin-bottom:var(--space-3);">';
-    html += '<div style="margin-bottom:var(--space-2);">' + mercuryScoreBadge(data.score) + '</div>';
+    html += '<div style="margin-bottom:var(--space-2);">' + lisaScoreBadge(data.score) + '</div>';
     if (data.issues && data.issues.length > 0) {
       html += '<div style="color:var(--text-secondary);font-size:0.74rem;margin-bottom:var(--space-2);">Issues:</div>';
       for (var i = 0; i < data.issues.length; i++) {
@@ -1931,7 +1931,7 @@ async function mercuryReviewCaption() {
     }
     if (data.suggested_fix) {
       html += '<div style="margin-top:var(--space-3);padding:var(--space-3);background:rgba(255,136,0,0.08);border-radius:var(--radius-sm);font-size:0.74rem;">';
-      html += '<div style="color:var(--agent-mercury);font-weight:600;margin-bottom:var(--space-1);">Suggested Fix:</div>';
+      html += '<div style="color:var(--agent-lisa);font-weight:600;margin-bottom:var(--space-1);">Suggested Fix:</div>';
       html += '<div style="color:var(--text-secondary);">' + esc(data.suggested_fix) + '</div></div>';
     }
     html += '</div>';
@@ -1939,18 +1939,18 @@ async function mercuryReviewCaption() {
   } catch (e) { resultEl.innerHTML = '<span style="color:#ff4444;">Error: ' + esc(e.message) + '</span>'; }
 }
 
-async function mercuryReviewItem(itemId) {
+async function lisaReviewItem(itemId) {
   var spanEl = document.getElementById('ob-review-' + itemId);
   if (!spanEl) return;
   spanEl.innerHTML = '<span class="text-muted">Reviewing...</span>';
   try {
-    var resp = await fetch('/api/mercury/review/' + encodeURIComponent(itemId), {
+    var resp = await fetch('/api/lisa/review/' + encodeURIComponent(itemId), {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({platform: 'instagram'})
     });
     var data = await resp.json();
     if (data.error) { spanEl.innerHTML = '<span style="color:#ff4444;font-size:0.72rem;">' + esc(data.error) + '</span>'; return; }
-    var html = mercuryScoreBadge(data.score);
+    var html = lisaScoreBadge(data.score);
     if (data.issues && data.issues.length > 0) {
       html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;">' + esc(data.issues.join(', ')) + '</div>';
     }
@@ -1968,15 +1968,15 @@ async function lisaMiniChat() {
   // Show user message
   if (messages.querySelector('.text-muted')) messages.innerHTML = '';
   messages.innerHTML += '<div style="margin-bottom:6px;"><span style="color:var(--text-muted);font-size:0.68rem;">You:</span> <span style="font-size:0.74rem;">' + esc(text) + '</span></div>';
-  messages.innerHTML += '<div id="lisa-mini-typing" style="color:var(--agent-mercury);font-size:0.72rem;">Lisa is typing...</div>';
+  messages.innerHTML += '<div id="lisa-mini-typing" style="color:var(--agent-lisa);font-size:0.72rem;">Lisa is typing...</div>';
   messages.scrollTop = messages.scrollHeight;
   try {
-    var resp = await fetch('/api/chat/agent/mercury', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text})});
+    var resp = await fetch('/api/chat/agent/lisa', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text})});
     var data = await resp.json();
     var typing = document.getElementById('lisa-mini-typing');
     if (typing) typing.remove();
     var reply = data.content || data.reply || data.response || 'No response';
-    messages.innerHTML += '<div style="margin-bottom:6px;"><span style="color:var(--agent-mercury);font-size:0.68rem;">Lisa:</span> <span style="font-size:0.74rem;">' + esc(reply) + '</span></div>';
+    messages.innerHTML += '<div style="margin-bottom:6px;"><span style="color:var(--agent-lisa);font-size:0.68rem;">Lisa:</span> <span style="font-size:0.74rem;">' + esc(reply) + '</span></div>';
     messages.scrollTop = messages.scrollHeight;
   } catch(e) {
     var typing = document.getElementById('lisa-mini-typing');
@@ -2006,21 +2006,21 @@ async function loadLisaPlatformStatus() {
   } catch(e) { el.innerHTML = ''; }
 }
 
-async function loadMercuryPlan() {
+async function loadLisaPlan() {
   try {
-    var resp = await fetch('/api/mercury/plan');
+    var resp = await fetch('/api/lisa/plan');
     var data = await resp.json();
-    var el = document.getElementById('mercury-plan');
+    var el = document.getElementById('lisa-plan');
     if (data.error) { el.innerHTML = '<div class="text-muted">' + esc(data.error) + '</div>'; return; }
     var plan = data.plan || {};
     var phases = plan.phases || [];
     var html = '<div style="font-family:var(--font-mono);font-size:0.78rem;">';
-    html += '<div style="color:var(--agent-mercury);font-weight:600;margin-bottom:var(--space-4);">Current Phase: ' + esc(plan.current_phase || '?') + '</div>';
+    html += '<div style="color:var(--agent-lisa);font-weight:600;margin-bottom:var(--space-4);">Current Phase: ' + esc(plan.current_phase || '?') + '</div>';
     for (var i = 0; i < phases.length; i++) {
       var ph = phases[i];
       var isCurrent = ph.name === plan.current_phase;
-      html += '<div style="padding:var(--space-3);margin-bottom:var(--space-2);border-left:2px solid ' + (isCurrent ? 'var(--agent-mercury)' : 'var(--border)') + ';padding-left:var(--space-4);">';
-      html += '<div style="font-weight:600;color:' + (isCurrent ? 'var(--agent-mercury)' : 'var(--text-muted)') + ';">' + esc(ph.name || 'Phase ' + (i+1)) + '</div>';
+      html += '<div style="padding:var(--space-3);margin-bottom:var(--space-2);border-left:2px solid ' + (isCurrent ? 'var(--agent-lisa)' : 'var(--border)') + ';padding-left:var(--space-4);">';
+      html += '<div style="font-weight:600;color:' + (isCurrent ? 'var(--agent-lisa)' : 'var(--text-muted)') + ';">' + esc(ph.name || 'Phase ' + (i+1)) + '</div>';
       if (ph.goals) {
         var goals = ph.goals;
         if (typeof goals === 'object' && !Array.isArray(goals)) goals = Object.values(goals);
@@ -2046,11 +2046,11 @@ async function loadMercuryPlan() {
   } catch (e) {}
 }
 
-async function loadMercuryKnowledge() {
+async function loadLisaKnowledge() {
   try {
-    var resp = await fetch('/api/mercury/knowledge');
+    var resp = await fetch('/api/lisa/knowledge');
     var data = await resp.json();
-    var el = document.getElementById('mercury-knowledge');
+    var el = document.getElementById('lisa-knowledge');
     if (data.error) { el.innerHTML = '<div class="text-muted">' + esc(data.error) + '</div>'; return; }
     var sections = Object.keys(data);
     if (sections.length === 0) { el.innerHTML = '<div class="text-muted">No knowledge data.</div>'; return; }
@@ -2072,14 +2072,14 @@ async function loadMercuryKnowledge() {
   } catch (e) {}
 }
 
-async function mercuryTestReply() {
-  var input = document.getElementById('mercury-reply-input');
-  var result = document.getElementById('mercury-reply-result');
+async function lisaTestReply() {
+  var input = document.getElementById('lisa-reply-input');
+  var result = document.getElementById('lisa-reply-result');
   var comment = input.value.trim();
   if (!comment) return;
   result.textContent = 'Thinking...';
   try {
-    var resp = await fetch('/api/mercury/reply', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({comment:comment})});
+    var resp = await fetch('/api/lisa/reply', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({comment:comment})});
     var data = await resp.json();
     if (data.error) { result.textContent = 'Error: ' + data.error; return; }
     var txt = 'Category: ' + (data.category||'?') + '\\n';
@@ -2189,7 +2189,7 @@ async function rateContent() {
       for (var i=0;i<data.issues.length;i++) html += '<div style="font-size:0.7rem;color:var(--text-secondary);padding-left:8px;">- ' + esc(data.issues[i]) + '</div>';
     }
     if (data.suggested_improvements && data.suggested_improvements.length > 0) {
-      html += '<div style="font-size:0.72rem;color:var(--agent-mercury);margin-top:6px;">Suggestions:</div>';
+      html += '<div style="font-size:0.72rem;color:var(--agent-lisa);margin-top:6px;">Suggestions:</div>';
       for (var i=0;i<data.suggested_improvements.length;i++) html += '<div style="font-size:0.7rem;color:var(--text-secondary);padding-left:8px;">- ' + esc(data.suggested_improvements[i]) + '</div>';
     }
     html += '</div>';
@@ -2213,9 +2213,9 @@ async function generateWrite() {
     var data = await resp.json();
     if (data.error) { resultEl.innerHTML = '<span style="color:#ff4444;">' + esc(data.error) + '</span>'; return; }
     if (data.tweets) {
-      var html = '<div style="color:var(--agent-mercury);font-weight:600;margin-bottom:8px;">X Thread (' + data.tweets.length + ' tweets)</div>';
+      var html = '<div style="color:var(--agent-lisa);font-weight:600;margin-bottom:8px;">X Thread (' + data.tweets.length + ' tweets)</div>';
       for (var i=0;i<data.tweets.length;i++) {
-        html += '<div style="padding:8px 12px;margin-bottom:6px;background:rgba(255,136,0,0.05);border-left:2px solid var(--agent-mercury);border-radius:4px;font-size:0.76rem;">' + esc(data.tweets[i]) + '</div>';
+        html += '<div style="padding:8px 12px;margin-bottom:6px;background:rgba(255,136,0,0.05);border-left:2px solid var(--agent-lisa);border-radius:4px;font-size:0.76rem;">' + esc(data.tweets[i]) + '</div>';
       }
       resultEl.innerHTML = html;
     } else {
@@ -2237,8 +2237,8 @@ async function loadTimingPanel() {
     for (var p=0;p<platforms.length;p++) {
       var plat = platforms[p];
       var pd = data[plat];
-      html += '<div style="margin-bottom:12px;padding:8px 12px;border-left:2px solid var(--agent-mercury);border-radius:4px;">';
-      html += '<div style="font-weight:600;font-size:0.78rem;color:var(--agent-mercury);margin-bottom:4px;">' + (platIcons[plat]||plat) + '</div>';
+      html += '<div style="margin-bottom:12px;padding:8px 12px;border-left:2px solid var(--agent-lisa);border-radius:4px;">';
+      html += '<div style="font-weight:600;font-size:0.78rem;color:var(--agent-lisa);margin-bottom:4px;">' + (platIcons[plat]||plat) + '</div>';
       var windows = pd.peak_windows || [];
       for (var w=0;w<windows.length;w++) {
         var win = windows[w];
@@ -2262,7 +2262,7 @@ async function loadTimingPanel() {
 
 async function loadAlgorithmPanel() {
   try {
-    var resp = await fetch('/api/mercury/knowledge');
+    var resp = await fetch('/api/lisa/knowledge');
     var data = await resp.json();
     var el = document.getElementById('algorithm-panel');
     if (data.error) { el.innerHTML = '<div class="text-muted">' + esc(data.error) + '</div>'; return; }
@@ -2282,20 +2282,20 @@ async function loadAlgorithmPanel() {
       // Signals
       var signals = pd.algorithm_signals || [];
       if (signals.length > 0) {
-        html += '<div style="color:var(--agent-mercury);margin-bottom:4px;">Algorithm Signals:</div>';
+        html += '<div style="color:var(--agent-lisa);margin-bottom:4px;">Algorithm Signals:</div>';
         for (var s=0;s<signals.length;s++) html += '<div style="color:var(--text-secondary);padding-left:8px;">- ' + esc(signals[s]) + '</div>';
       }
       // Key rules
       var rules = pd.key_rules || [];
       if (rules.length > 0) {
-        html += '<div style="color:var(--agent-mercury);margin-top:6px;margin-bottom:4px;">Key Rules:</div>';
+        html += '<div style="color:var(--agent-lisa);margin-top:6px;margin-bottom:4px;">Key Rules:</div>';
         for (var r=0;r<rules.length;r++) html += '<div style="color:var(--text-secondary);padding-left:8px;">- ' + esc(rules[r]) + '</div>';
       }
       // Weights
       var weights = aw[plat] || {};
       var wk = Object.keys(weights);
       if (wk.length > 0) {
-        html += '<div style="color:var(--agent-mercury);margin-top:6px;margin-bottom:4px;">Signal Weights:</div>';
+        html += '<div style="color:var(--agent-lisa);margin-top:6px;margin-bottom:4px;">Signal Weights:</div>';
         for (var wi=0;wi<wk.length;wi++) {
           html += '<div style="color:var(--text-muted);padding-left:8px;">' + esc(wk[wi]) + ': <span style="color:var(--text-primary);">' + esc(String(weights[wk[wi]])) + '</span></div>';
         }
@@ -2327,7 +2327,7 @@ async function sendInlineChat(agent) {
   if (!msg) return;
   inputEl.value = '';
   // Map agent name to API key
-  var apiAgent = agent === 'lisa' ? 'mercury' : agent;
+  var apiAgent = agent;
   var agentColor = AGENT_COLORS[apiAgent] || '#888';
   var agentName = AGENT_NAMES[apiAgent] || agent;
   // Clear placeholder
@@ -2444,7 +2444,7 @@ function renderSorenQueue(items) {
     } else if (status === 'approved' || status === 'generated') {
       html += '<button class="btn btn-primary" onclick="sorenPreview(\'' + id + '\')" style="font-size:0.7rem;">Preview</button>';
       html += '<button class="btn" onclick="sorenDownload(\'' + id + '\')" style="font-size:0.7rem;">Download</button>';
-      html += '<button class="btn" style="font-size:0.7rem;color:var(--agent-mercury);" onclick="sorenBrandCheck(\'' + id + '\',this)">Brand Check</button>';
+      html += '<button class="btn" style="font-size:0.7rem;color:var(--agent-lisa);" onclick="sorenBrandCheck(\'' + id + '\',this)">Brand Check</button>';
     } else if (status === 'lisa_approved' || status === 'needs_review') {
       html += '<span style="font-size:0.68rem;color:#ffaa00;">Awaiting Jordan approval</span>';
     } else if (status === 'jordan_approved') {
@@ -2570,7 +2570,7 @@ async function loadJordanQueue() {
       }
       // Suggested time
       if (item.suggested_time) {
-        html += '<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:6px;">Suggested: <span style="color:var(--agent-mercury);">' + esc(item.suggested_time.replace('T', ' ')) + '</span>';
+        html += '<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:6px;">Suggested: <span style="color:var(--agent-lisa);">' + esc(item.suggested_time.replace('T', ' ')) + '</span>';
         if (item.suggested_reason) html += ' — ' + esc(item.suggested_reason);
         html += '</div>';
       }
@@ -2888,8 +2888,8 @@ async function loadActivityBrief() {
     var at = data.atlas || {};
     html += '<div class="activity-item"><span class="activity-agent" style="color:var(--agent-atlas);">Atlas</span>';
     html += '<span class="activity-text">State: ' + esc(at.state || 'idle') + ' | Cycles: ' + (at.cycles || 0) + '</span></div>';
-    var m = data.mercury || {};
-    html += '<div class="activity-item"><span class="activity-agent" style="color:var(--agent-mercury);">Lisa</span>';
+    var m = data.lisa || {};
+    html += '<div class="activity-item"><span class="activity-agent" style="color:var(--agent-lisa);">Lisa</span>';
     var mTxt = (m.posts_30m || 0) + ' posts in last 30 min';
     if (m.review_avg !== null && m.review_avg !== undefined) mTxt += ' | Review avg: ' + m.review_avg + '/10 (' + (m.reviews_total||0) + ' reviewed)';
     html += '<span class="activity-text">' + mTxt + '</span></div>';
@@ -2959,7 +2959,7 @@ async function loadAssessments() {
       var scoreColor = (a.score || 0) >= 70 ? 'var(--success)' : (a.score || 0) >= 50 ? 'var(--warning)' : 'var(--error)';
       html += '<div class="assessment-card">';
       html += '<div class="assessment-header">';
-      var dn = name === 'mercury' ? 'Lisa' : name === 'sentinel' ? 'Robotox' : name.charAt(0).toUpperCase() + name.slice(1);
+      var dn = name === 'lisa' ? 'Lisa' : name === 'sentinel' ? 'Robotox' : name.charAt(0).toUpperCase() + name.slice(1);
       html += '<span class="assessment-name" style="color:' + color + ';">' + dn + '</span>';
       html += '<span class="assessment-score" style="color:' + scoreColor + ';">' + (a.score || 0) + '<span class="trend-arrow ' + trendClass + '">' + trendSymbol + '</span></span>';
       html += '</div>';
@@ -3180,23 +3180,23 @@ async function refresh() {
       loadAgentActivity('atlas');
       loadAtlasKBHealth();
       loadAtlasCompetitorSummary();
-    } else if (currentTab === 'mercury') {
-      var resp = await fetch('/api/mercury');
-      renderMercury(await resp.json());
+    } else if (currentTab === 'lisa') {
+      var resp = await fetch('/api/lisa');
+      renderLisa(await resp.json());
       loadJordanQueue();
       loadPostingSchedule();
-      loadMercuryPlan();
-      loadMercuryKnowledge();
+      loadLisaPlan();
+      loadLisaKnowledge();
       loadPipelineStats();
       loadTimingPanel();
       loadAlgorithmPanel();
-      loadAgentLearning('mercury');
+      loadAgentLearning('lisa');
       loadLisaGoLive();
       loadLisaPlatformStatus();
       loadLisaCommentStats();
       loadCommandTable('lisa');
       loadAgentSmartActions('lisa');
-      loadAgentActivity('mercury');
+      loadAgentActivity('lisa');
     } else if (currentTab === 'sentinel') {
       var resp = await fetch('/api/sentinel');
       renderSentinel(await resp.json());
@@ -3288,7 +3288,7 @@ function agentQuickStatus(key) {
     var sh = o.shelby || {};
     s += (sh.running ? '<span class="aqs-dot aqs-dot-online"></span>Online' : '<span class="aqs-offline">Offline</span>');
   } else if (key === 'lisa') {
-    var m = o.mercury || {};
+    var m = o.lisa || {};
     s += (m.total_posts || 0) + ' posts';
     if (m.review_avg) s += ' <span class="aqs-sep">&middot;</span> ' + m.review_avg + '/10';
   } else if (key === 'robotox') {
@@ -3360,7 +3360,7 @@ function renderTeamIntelligence(data) {
     var level = score >= 90 ? 'GENIUS' : score >= 75 ? 'EXPERT' : score >= 60 ? 'SKILLED' : score >= 40 ? 'LEARNING' : 'NOVICE';
     var levelColor = score >= 75 ? 'var(--success)' : score >= 50 ? ag.color : score >= 30 ? 'var(--warning)' : 'var(--error)';
 
-    var tabKey = ag.key === 'lisa' ? 'mercury' : ag.key === 'robotox' ? 'sentinel' : ag.key;
+    var tabKey = ag.key === 'lisa' ? 'lisa' : ag.key === 'robotox' ? 'sentinel' : ag.key;
     html += '<div class="team-agent-card" onclick="switchTab(\'' + tabKey + '\')" style="cursor:pointer;">';
     if (agDimValues.length > 0) {
       html += '<div style="margin:0 auto 2px;">' + radarSVG(68, agDimValues, null, ag.color) + '</div>';
@@ -3375,7 +3375,7 @@ function renderTeamIntelligence(data) {
 
   el.innerHTML = html;
 }
-var _intelAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',mercury:'lisa',sentinel:'robotox',thor:'thor',hawk:'hawk',viper:'viper'};
+var _intelAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',lisa:'lisa',sentinel:'robotox',thor:'thor',hawk:'hawk',viper:'viper'};
 var _intelColors = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',robotox:'#00ff44',thor:'#ff6600',hawk:'#FFD700',viper:'#00ff88'};
 
 function radarSVG(size, values, labels, color) {
@@ -3485,7 +3485,7 @@ function intelLivePanel(agentKey, color) {
     var sh = o.shelby || {};
     h += '<div class="ilp-row"><span class="ilp-label">Status</span><span class="ilp-val" style="color:' + (sh.running ? 'var(--success)' : 'var(--error)') + ';">' + (sh.running ? 'Online' : 'Offline') + '</span></div>';
   } else if (agentKey === 'lisa') {
-    var m = o.mercury || {};
+    var m = o.lisa || {};
     h += '<div class="ilp-row"><span class="ilp-label">Posts</span><span class="ilp-val">' + (m.total_posts || 0) + '</span></div>';
     if (m.review_avg) h += '<div class="ilp-row"><span class="ilp-label">Review Avg</span><span class="ilp-val">' + m.review_avg + '/10</span></div>';
   } else if (agentKey === 'robotox') {
@@ -4501,7 +4501,7 @@ async function loadLisaCommentStats() {
       return;
     }
     var html = '';
-    html += '<div class="stat-card" data-accent="mercury" style="padding:8px;"><div class="stat-value" style="font-size:1rem;">' + (stats.total || 0) + '</div><div class="stat-label">Analyzed</div></div>';
+    html += '<div class="stat-card" data-accent="lisa" style="padding:8px;"><div class="stat-value" style="font-size:1rem;">' + (stats.total || 0) + '</div><div class="stat-label">Analyzed</div></div>';
     html += '<div class="stat-card" data-accent="success" style="padding:8px;"><div class="stat-value" style="font-size:1rem;">' + (stats.positive || 0) + '</div><div class="stat-label">Positive</div></div>';
     html += '<div class="stat-card" data-accent="error" style="padding:8px;"><div class="stat-value" style="font-size:1rem;">' + (stats.negative || 0) + '</div><div class="stat-label">Negative</div></div>';
     el.innerHTML = html;
@@ -5197,7 +5197,7 @@ var _agentActivityMap = {
   'soren': {agent: 'soren', id: 'soren-activity-feed'},
   'shelby': {agent: 'shelby', id: 'shelby-activity-feed'},
   'atlas': {agent: 'atlas', id: 'atlas-activity-feed'},
-  'mercury': {agent: 'lisa', id: 'lisa-activity-feed'},
+  'lisa': {agent: 'lisa', id: 'lisa-activity-feed'},
   'sentinel': {agent: 'robotox', id: 'robotox-activity-feed'},
   'thor': {agent: 'thor', id: 'thor-activity-feed'},
 };

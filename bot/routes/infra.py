@@ -119,14 +119,14 @@ def api_health_agent(agent_name: str):
     from pathlib import Path
     import json
 
-    name_map = {"lisa": "mercury", "robotox": "sentinel"}
+    name_map = {"robotox": "sentinel"}
     lookup = name_map.get(agent_name, agent_name)
 
     path_map = {
         "garves": Path.home() / "polymarket-bot" / "data" / "health.json",
         "shelby": Path.home() / "shelby" / "data" / "health.json",
         "atlas": Path.home() / "atlas" / "data" / "health.json",
-        "mercury": Path.home() / "mercury" / "data" / "health.json",
+        "lisa": Path.home() / "mercury" / "data" / "health.json",
         "sentinel": Path.home() / "sentinel" / "data" / "health.json",
         "thor": Path.home() / "thor" / "data" / "health.json",
         "soren": Path.home() / "soren-content" / "data" / "health.json",

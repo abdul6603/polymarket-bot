@@ -90,7 +90,7 @@ def api_chat_agent(agent_name: str):
     timestamp = datetime.now(ET).isoformat()
 
     # Map display names to prompt keys
-    name_map = {"lisa": "mercury", "robotox": "sentinel"}
+    name_map = {"robotox": "sentinel"}
     prompt_key = name_map.get(agent_name, agent_name)
 
     system_prompt = _AGENT_PROMPTS.get(prompt_key)

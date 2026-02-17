@@ -268,7 +268,7 @@ BROTHERHOOD_DIRS = {
     "shelby": "Shelby",
     "atlas": "Atlas",
     "sentinel": "Robotox",
-    "mercury": "Lisa",
+    "lisa": "Lisa",
     "thor": "Thor",
     "soren-content": "Soren",
     "shared": "Shared",

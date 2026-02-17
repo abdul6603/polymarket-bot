@@ -322,7 +322,7 @@ def api_shelby_brief():
             "active_tasks": len(active_tasks),
             "tasks": [{"title": t.get("title",""), "due": t.get("due",""), "status": t.get("status","")} for t in active_tasks[:10]],
         },
-        "mercury": mercury_brief,
+        "lisa": mercury_brief,
         "approvals_needed": len(soren_awaiting),
     })
 
@@ -558,7 +558,7 @@ def api_shelby_activity_brief():
         "garves": {"trades_30m": len(recent_trades), "wins": garves_wins, "losses": garves_losses},
         "soren": {"pending": soren_pending, "generated": soren_generated},
         "atlas": {"state": atlas_state, "cycles": atlas_cycles},
-        "mercury": {"posts_30m": mercury_recent, "review_avg": mercury_review_avg, "reviews_total": mercury_review_total},
+        "lisa": {"posts_30m": mercury_recent, "review_avg": mercury_review_avg, "reviews_total": mercury_review_total},
         "sentinel": {"status": sentinel_info},
     })
 

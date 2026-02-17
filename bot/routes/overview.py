@@ -176,7 +176,7 @@ def api_overview():
         "shelby": {
             "running": shelby_running,
         },
-        "mercury": {
+        "lisa": {
             "total_posts": mercury_total_posts,
             "review_avg": mercury_review_avg,
         },
@@ -305,7 +305,7 @@ def api_agent_kpis(agent):
             "improvements": improvements,
             "obs_per_cycle": round(obs / max(1, cycles), 1),
         }
-    elif agent == "mercury":
+    elif agent == "lisa":
         total_posts = 0
         review_kpis = {}
         if MERCURY_POSTING_LOG.exists():

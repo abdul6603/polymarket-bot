@@ -130,9 +130,9 @@ def api_atlas_shelby():
         return jsonify({"error": str(e)[:200]}), 500, 500
 
 
-@atlas_bp.route("/api/atlas/mercury")
+@atlas_bp.route("/api/atlas/lisa")
 def api_atlas_mercury():
-    """Atlas deep analysis of Mercury."""
+    """Atlas deep analysis of Lisa."""
     atlas = get_atlas()
     if not atlas:
         return jsonify({"error": "Atlas not available"}), 503
