@@ -1783,6 +1783,220 @@ async function mercuryTestReply() {
   } catch (e) { result.textContent = 'Error: ' + e.message; }
 }
 
+// ── Pipeline, Rating, Writing, Timing, Algorithm panels ──
+
+async function runPipeline() {
+  var btn = document.getElementById('pipeline-run-btn');
+  var resultEl = document.getElementById('pipeline-results');
+  btn.disabled = true;
+  btn.textContent = 'Running...';
+  resultEl.innerHTML = '<span class="text-muted">Processing pending items...</span>';
+  try {
+    var resp = await fetch('/api/lisa/pipeline/run', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({platform:'instagram'})});
+    var data = await resp.json();
+    if (data.error) { resultEl.innerHTML = '<span style="color:#ff4444;">' + esc(data.error) + '</span>'; return; }
+    var html = '<div style="margin-bottom:6px;">Processed: <strong>' + (data.processed||0) + '</strong> items</div>';
+    if (data.auto_approved && data.auto_approved.length > 0) {
+      html += '<div style="color:#22aa44;margin-bottom:4px;">Auto-approved: ' + data.auto_approved.length + '</div>';
+      for (var i=0;i<data.auto_approved.length;i++) {
+        var a = data.auto_approved[i];
+        html += '<div style="padding-left:12px;font-size:0.72rem;color:var(--text-secondary);">' + esc(a.caption_preview) + ' (' + a.score + '/100)</div>';
+      }
+    }
+    if (data.manual_review && data.manual_review.length > 0) {
+      html += '<div style="color:#ffaa00;margin-bottom:4px;">Needs review: ' + data.manual_review.length + '</div>';
+    }
+    if (data.needs_work && data.needs_work.length > 0) {
+      html += '<div style="color:#ff8800;margin-bottom:4px;">Needs work: ' + data.needs_work.length + '</div>';
+    }
+    if (data.auto_rejected && data.auto_rejected.length > 0) {
+      html += '<div style="color:#ff4444;margin-bottom:4px;">Rejected: ' + data.auto_rejected.length + '</div>';
+    }
+    if (data.processed === 0) html = '<span class="text-muted">No pending items to process.</span>';
+    resultEl.innerHTML = html;
+    loadPipelineStats();
+  } catch (e) { resultEl.innerHTML = '<span style="color:#ff4444;">Error: ' + esc(e.message) + '</span>'; }
+  finally { btn.disabled = false; btn.textContent = 'Run Pipeline'; }
+}
+
+async function loadPipelineStats() {
+  try {
+    var resp = await fetch('/api/lisa/pipeline/stats');
+    var data = await resp.json();
+    if (data.error) return;
+    var ba = data.by_action || {};
+    document.getElementById('pipeline-approved').textContent = ba.auto_approved || 0;
+    document.getElementById('pipeline-review').textContent = ba.flagged_for_review || 0;
+    document.getElementById('pipeline-work').textContent = ba.returned_to_soren || 0;
+    document.getElementById('pipeline-rejected').textContent = ba.auto_rejected || 0;
+    var avgEl = document.getElementById('pipeline-avg-score');
+    if (data.avg_score) avgEl.textContent = 'Avg score: ' + data.avg_score + '/100';
+
+    // Render review queue items from queue_status
+    var qs = data.queue_status || {};
+    var reviewCount = qs.needs_review || 0;
+    var queueEl = document.getElementById('pipeline-review-queue');
+    if (reviewCount > 0) {
+      queueEl.innerHTML = '<div style="font-size:0.74rem;color:var(--text-secondary);margin-bottom:4px;">' + reviewCount + ' item(s) awaiting manual review</div>';
+    } else {
+      queueEl.innerHTML = '';
+    }
+  } catch (e) {}
+}
+
+async function rateContent() {
+  var caption = document.getElementById('rating-caption').value.trim();
+  var platform = document.getElementById('rating-platform').value;
+  var resultEl = document.getElementById('rating-result');
+  if (!caption) { resultEl.innerHTML = '<span class="text-muted">Enter content to rate.</span>'; return; }
+  resultEl.innerHTML = '<span class="text-muted">Rating...</span>';
+  try {
+    var resp = await fetch('/api/lisa/rate', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({caption:caption, platform:platform})});
+    var data = await resp.json();
+    if (data.error) { resultEl.innerHTML = '<span style="color:#ff4444;">' + esc(data.error) + '</span>'; return; }
+    var tierColors = {auto_approve:'#22aa44', manual_review:'#ffaa00', needs_work:'#ff8800', auto_reject:'#ff4444'};
+    var tierLabels = {auto_approve:'AUTO-APPROVE', manual_review:'MANUAL REVIEW', needs_work:'NEEDS WORK', auto_reject:'AUTO-REJECT'};
+    var tc = tierColors[data.tier] || '#888';
+    var html = '<div style="padding:var(--space-3);border-left:3px solid ' + tc + ';">';
+    html += '<div style="font-size:1.1rem;font-weight:700;color:' + tc + ';margin-bottom:6px;">' + (data.score||0) + '/100 ' + (tierLabels[data.tier]||data.tier) + '</div>';
+    // Dimension bars
+    var dims = data.dimension_scores || {};
+    var dimNames = {brand_voice:'Brand Voice',hook_power:'Hook Power',engagement_potential:'Engagement',platform_fit:'Platform Fit',emotional_impact:'Emotional',authenticity:'Authenticity',pillar_relevance:'Pillar',timing_fit:'Timing'};
+    html += '<div style="margin-bottom:8px;">';
+    var dk = Object.keys(dimNames);
+    for (var i=0;i<dk.length;i++) {
+      var k = dk[i];
+      var v = dims[k] || 0;
+      var barColor = v >= 7 ? '#22aa44' : v >= 4 ? '#ffaa00' : '#ff4444';
+      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">';
+      html += '<span style="width:100px;font-size:0.68rem;color:var(--text-muted);text-align:right;">' + dimNames[k] + '</span>';
+      html += '<div style="flex:1;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;">';
+      html += '<div style="width:' + (v*10) + '%;height:100%;background:' + barColor + ';border-radius:4px;"></div></div>';
+      html += '<span style="font-size:0.68rem;color:' + barColor + ';width:20px;">' + v + '</span></div>';
+    }
+    html += '</div>';
+    if (data.issues && data.issues.length > 0) {
+      html += '<div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:4px;">Issues:</div>';
+      for (var i=0;i<data.issues.length;i++) html += '<div style="font-size:0.7rem;color:var(--text-secondary);padding-left:8px;">- ' + esc(data.issues[i]) + '</div>';
+    }
+    if (data.suggested_improvements && data.suggested_improvements.length > 0) {
+      html += '<div style="font-size:0.72rem;color:var(--agent-mercury);margin-top:6px;">Suggestions:</div>';
+      for (var i=0;i<data.suggested_improvements.length;i++) html += '<div style="font-size:0.7rem;color:var(--text-secondary);padding-left:8px;">- ' + esc(data.suggested_improvements[i]) + '</div>';
+    }
+    html += '</div>';
+    resultEl.innerHTML = html;
+  } catch (e) { resultEl.innerHTML = '<span style="color:#ff4444;">Error: ' + esc(e.message) + '</span>'; }
+}
+
+function toggleWriteFields() {}
+
+async function generateWrite() {
+  var writeType = document.getElementById('write-type').value;
+  var topic = document.getElementById('write-topic').value.trim();
+  var platform = document.getElementById('write-platform').value;
+  var resultEl = document.getElementById('write-result');
+  if (!topic) { resultEl.textContent = 'Enter a topic or theme.'; return; }
+  resultEl.innerHTML = '<span class="text-muted">Generating...</span>';
+  try {
+    var body = {type: writeType, topic: topic, platform: platform};
+    if (writeType === 'caption') body.pillar = 'dark_motivation';
+    var resp = await fetch('/api/lisa/write', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    var data = await resp.json();
+    if (data.error) { resultEl.innerHTML = '<span style="color:#ff4444;">' + esc(data.error) + '</span>'; return; }
+    if (data.tweets) {
+      var html = '<div style="color:var(--agent-mercury);font-weight:600;margin-bottom:8px;">X Thread (' + data.tweets.length + ' tweets)</div>';
+      for (var i=0;i<data.tweets.length;i++) {
+        html += '<div style="padding:8px 12px;margin-bottom:6px;background:rgba(255,136,0,0.05);border-left:2px solid var(--agent-mercury);border-radius:4px;font-size:0.76rem;">' + esc(data.tweets[i]) + '</div>';
+      }
+      resultEl.innerHTML = html;
+    } else {
+      resultEl.textContent = data.text || 'No output generated.';
+    }
+  } catch (e) { resultEl.innerHTML = '<span style="color:#ff4444;">Error: ' + esc(e.message) + '</span>'; }
+}
+
+async function loadTimingPanel() {
+  try {
+    var resp = await fetch('/api/lisa/timing');
+    var data = await resp.json();
+    var el = document.getElementById('timing-panel');
+    if (data.error) { el.innerHTML = '<div class="text-muted">' + esc(data.error) + '</div>'; return; }
+    var platforms = Object.keys(data);
+    if (platforms.length === 0) { el.innerHTML = '<div class="text-muted">No timing data.</div>'; return; }
+    var platIcons = {x:'X', tiktok:'TikTok', instagram:'Instagram'};
+    var html = '';
+    for (var p=0;p<platforms.length;p++) {
+      var plat = platforms[p];
+      var pd = data[plat];
+      html += '<div style="margin-bottom:12px;padding:8px 12px;border-left:2px solid var(--agent-mercury);border-radius:4px;">';
+      html += '<div style="font-weight:600;font-size:0.78rem;color:var(--agent-mercury);margin-bottom:4px;">' + (platIcons[plat]||plat) + '</div>';
+      var windows = pd.peak_windows || [];
+      for (var w=0;w<windows.length;w++) {
+        var win = windows[w];
+        var hours = win.hours || [];
+        var timeRange = hours.length > 0 ? hours[0] + ':00 - ' + (hours[hours.length-1]+1) + ':00' : '--';
+        html += '<div style="font-size:0.72rem;color:var(--text-secondary);padding-left:8px;">';
+        html += '<span style="color:#22aa44;">' + win.score + '</span> ' + timeRange + ' ET — ' + esc(win.label);
+        html += '</div>';
+      }
+      if (pd.best_single_slot) {
+        html += '<div style="font-size:0.7rem;color:var(--text-muted);padding-left:8px;margin-top:2px;">Best: ' + esc(pd.best_single_slot.label) + '</div>';
+      }
+      if (pd.critical_rule) {
+        html += '<div style="font-size:0.68rem;color:var(--warning);padding-left:8px;margin-top:2px;">' + esc(pd.critical_rule) + '</div>';
+      }
+      html += '</div>';
+    }
+    el.innerHTML = html;
+  } catch (e) {}
+}
+
+async function loadAlgorithmPanel() {
+  try {
+    var resp = await fetch('/api/mercury/knowledge');
+    var data = await resp.json();
+    var el = document.getElementById('algorithm-panel');
+    if (data.error) { el.innerHTML = '<div class="text-muted">' + esc(data.error) + '</div>'; return; }
+    var ps = data.platform_specific || {};
+    var aw = data.algorithm_weights || {};
+    var platforms = Object.keys(ps);
+    if (platforms.length === 0) { el.innerHTML = '<div class="text-muted">No algorithm data.</div>'; return; }
+    var platIcons = {x:'X', tiktok:'TikTok', instagram:'Instagram'};
+    var html = '';
+    for (var p=0;p<platforms.length;p++) {
+      var plat = platforms[p];
+      var pd = ps[plat];
+      html += '<div class="expandable"><div class="expandable-header" onclick="this.parentElement.classList.toggle(&apos;open&apos;)">';
+      html += '<span style="font-weight:600;">' + (platIcons[plat]||plat) + ' Algorithm</span>';
+      html += '<span class="text-muted" style="font-size:0.7rem;">+</span></div>';
+      html += '<div class="expandable-body"><div style="font-family:var(--font-mono);font-size:0.72rem;">';
+      // Signals
+      var signals = pd.algorithm_signals || [];
+      if (signals.length > 0) {
+        html += '<div style="color:var(--agent-mercury);margin-bottom:4px;">Algorithm Signals:</div>';
+        for (var s=0;s<signals.length;s++) html += '<div style="color:var(--text-secondary);padding-left:8px;">- ' + esc(signals[s]) + '</div>';
+      }
+      // Key rules
+      var rules = pd.key_rules || [];
+      if (rules.length > 0) {
+        html += '<div style="color:var(--agent-mercury);margin-top:6px;margin-bottom:4px;">Key Rules:</div>';
+        for (var r=0;r<rules.length;r++) html += '<div style="color:var(--text-secondary);padding-left:8px;">- ' + esc(rules[r]) + '</div>';
+      }
+      // Weights
+      var weights = aw[plat] || {};
+      var wk = Object.keys(weights);
+      if (wk.length > 0) {
+        html += '<div style="color:var(--agent-mercury);margin-top:6px;margin-bottom:4px;">Signal Weights:</div>';
+        for (var wi=0;wi<wk.length;wi++) {
+          html += '<div style="color:var(--text-muted);padding-left:8px;">' + esc(wk[wi]) + ': <span style="color:var(--text-primary);">' + esc(String(weights[wk[wi]])) + '</span></div>';
+        }
+      }
+      html += '</div></div></div>';
+    }
+    el.innerHTML = html;
+  } catch (e) {}
+}
+
 function renderSentinel(data) {
   if (data.error || data.status === 'offline') {
     document.getElementById('sentinel-agents-online').textContent = '--';
@@ -2320,6 +2534,9 @@ async function refresh() {
       renderMercury(await resp.json());
       loadMercuryPlan();
       loadMercuryKnowledge();
+      loadPipelineStats();
+      loadTimingPanel();
+      loadAlgorithmPanel();
       loadAgentLearning('mercury');
       loadLisaGoLive();
       loadLisaCommentStats();

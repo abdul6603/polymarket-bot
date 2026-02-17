@@ -16,6 +16,87 @@
     <div class="stat-card" data-accent="mercury"><div class="stat-value" id="mercury-platforms-count">--</div><div class="stat-label">Platforms</div></div>
     <div class="stat-card" data-accent="mercury"><div class="stat-value" id="mercury-review-avg">--</div><div class="stat-label">Avg Review</div></div>
   </div>
+
+  <!-- Content Pipeline Panel -->
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="mercury">Content Pipeline</h2>
+    <div class="glass-card">
+      <div class="grid-4" style="margin-bottom:var(--space-4);">
+        <div class="stat-card" data-accent="mercury" style="border-left:3px solid #22aa44;"><div class="stat-value" id="pipeline-approved">--</div><div class="stat-label">Auto-Approved</div></div>
+        <div class="stat-card" data-accent="mercury" style="border-left:3px solid #ffaa00;"><div class="stat-value" id="pipeline-review">--</div><div class="stat-label">Needs Review</div></div>
+        <div class="stat-card" data-accent="mercury" style="border-left:3px solid #ff8800;"><div class="stat-value" id="pipeline-work">--</div><div class="stat-label">Needs Work</div></div>
+        <div class="stat-card" data-accent="mercury" style="border-left:3px solid #ff4444;"><div class="stat-value" id="pipeline-rejected">--</div><div class="stat-label">Rejected</div></div>
+      </div>
+      <div style="display:flex;gap:var(--space-3);align-items:center;margin-bottom:var(--space-3);">
+        <button class="btn btn-primary" onclick="runPipeline()" id="pipeline-run-btn">Run Pipeline</button>
+        <span id="pipeline-avg-score" class="text-muted" style="font-family:var(--font-mono);font-size:0.76rem;"></span>
+      </div>
+      <div id="pipeline-results" style="font-family:var(--font-mono);font-size:0.74rem;max-height:200px;overflow-y:auto;"></div>
+      <!-- Pending review queue -->
+      <div id="pipeline-review-queue" style="margin-top:var(--space-4);"></div>
+    </div>
+  </div>
+
+  <!-- Rating Breakdown -->
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="mercury">Content Rating</h2>
+    <div class="glass-card">
+      <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-3);flex-wrap:wrap;align-items:end;">
+        <div style="flex:1;min-width:200px;">
+          <textarea class="input" id="rating-caption" rows="2" placeholder="Paste a caption to rate..." style="width:100%;resize:vertical;font-family:var(--font-mono);font-size:0.78rem;"></textarea>
+        </div>
+        <div style="display:flex;gap:var(--space-2);flex-direction:column;">
+          <select class="input" id="rating-platform" style="font-size:0.76rem;padding:4px 8px;">
+            <option value="instagram">Instagram</option>
+            <option value="tiktok">TikTok</option>
+            <option value="x">X</option>
+          </select>
+          <button class="btn btn-primary" onclick="rateContent()">Rate Content</button>
+        </div>
+      </div>
+      <div id="rating-result" style="min-height:40px;font-family:var(--font-mono);font-size:0.76rem;"></div>
+    </div>
+  </div>
+
+  <!-- Writing Studio -->
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="mercury">Writing Studio</h2>
+    <div class="glass-card">
+      <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-3);flex-wrap:wrap;align-items:end;">
+        <select class="input" id="write-type" style="font-size:0.76rem;padding:4px 8px;width:120px;" onchange="toggleWriteFields()">
+          <option value="quote">Quote</option>
+          <option value="caption">Caption</option>
+          <option value="essay">Essay</option>
+          <option value="thread">X Thread</option>
+        </select>
+        <input type="text" class="input" id="write-topic" placeholder="Topic or theme..." style="flex:1;min-width:150px;font-size:0.76rem;padding:4px 8px;">
+        <select class="input" id="write-platform" style="font-size:0.76rem;padding:4px 8px;width:110px;">
+          <option value="instagram">Instagram</option>
+          <option value="tiktok">TikTok</option>
+          <option value="x">X</option>
+        </select>
+        <button class="btn btn-primary" onclick="generateWrite()">Generate</button>
+      </div>
+      <div id="write-result" style="min-height:60px;font-family:var(--font-mono);font-size:0.76rem;white-space:pre-wrap;"></div>
+    </div>
+  </div>
+
+  <!-- Platform Timing Map -->
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="mercury">Platform Timing Intelligence</h2>
+    <div class="glass-card" id="timing-panel">
+      <div class="text-muted">Loading timing data...</div>
+    </div>
+  </div>
+
+  <!-- Algorithm Intelligence -->
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="mercury">Algorithm Intelligence</h2>
+    <div class="glass-card" id="algorithm-panel">
+      <div class="text-muted">Loading algorithm data...</div>
+    </div>
+  </div>
+
   <div class="section-spacer">
     <h2 class="section-title" data-accent="mercury">Brand Review Gate</h2>
     <div class="glass-card">

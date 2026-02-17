@@ -264,6 +264,133 @@ def api_lisa_comment_status(comment_id: str):
         return jsonify({"error": str(e)[:200]})
 
 
+@mercury_bp.route("/api/lisa/pipeline/run", methods=["POST"])
+def api_lisa_pipeline_run():
+    """Trigger pipeline review of all pending items."""
+    try:
+        from mercury.core.pipeline import ContentPipeline
+        pipeline = ContentPipeline()
+        platform = (request.json or {}).get("platform", "instagram")
+        result = pipeline.review_pending(platform=platform)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@mercury_bp.route("/api/lisa/pipeline/stats")
+def api_lisa_pipeline_stats():
+    """Pipeline stats."""
+    try:
+        from mercury.core.pipeline import ContentPipeline
+        pipeline = ContentPipeline()
+        return jsonify(pipeline.get_stats())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@mercury_bp.route("/api/lisa/pipeline/approve/<item_id>", methods=["POST"])
+def api_lisa_pipeline_approve(item_id):
+    """Manual approve from dashboard."""
+    try:
+        from mercury.core.pipeline import ContentPipeline
+        pipeline = ContentPipeline()
+        platform = (request.json or {}).get("platform", "instagram")
+        result = pipeline.approve_item(item_id, platform)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@mercury_bp.route("/api/lisa/pipeline/reject/<item_id>", methods=["POST"])
+def api_lisa_pipeline_reject(item_id):
+    """Manual reject with reason."""
+    try:
+        from mercury.core.pipeline import ContentPipeline
+        pipeline = ContentPipeline()
+        reason = (request.json or {}).get("reason", "")
+        result = pipeline.reject_item(item_id, reason)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@mercury_bp.route("/api/lisa/rate", methods=["POST"])
+def api_lisa_rate():
+    """Rate a single content item."""
+    try:
+        from mercury.core.rating import ContentRater
+        rater = ContentRater()
+        data = request.json or {}
+        caption = data.get("caption", "")
+        platform = data.get("platform", "instagram")
+        pillar = data.get("pillar", "")
+        item = {"caption": caption, "pillar": pillar, "format": data.get("format", "")}
+        result = rater.rate(item, platform)
+        return jsonify(result.to_dict())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@mercury_bp.route("/api/lisa/write", methods=["POST"])
+def api_lisa_write():
+    """Generate content using Lisa's writer."""
+    try:
+        from mercury.core.writer import LisaWriter
+        writer = LisaWriter()
+        data = request.json or {}
+        write_type = data.get("type", "quote")
+        topic = data.get("topic", "discipline")
+        platform = data.get("platform", "instagram")
+
+        if write_type == "quote":
+            text = writer.write_quote(topic)
+        elif write_type == "essay":
+            length = data.get("length", "medium")
+            text = writer.write_essay(topic, length)
+        elif write_type == "caption":
+            item = {"pillar": data.get("pillar", "dark_motivation"), "format": data.get("format", "reel")}
+            text = writer.write_caption(item, platform)
+        elif write_type == "improve":
+            text = writer.improve_caption(data.get("caption", ""), data.get("issues", []), platform)
+        elif write_type == "thread":
+            tweets = writer.write_thread(topic, data.get("slides", 5))
+            return jsonify({"type": "thread", "tweets": tweets})
+        else:
+            return jsonify({"error": f"Unknown write type: {write_type}"}), 400
+
+        return jsonify({"type": write_type, "text": text, "topic": topic, "platform": platform})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@mercury_bp.route("/api/lisa/timing")
+def api_lisa_timing():
+    """Get platform timing data."""
+    try:
+        from mercury.core.scheduler import PostingScheduler
+        scheduler = PostingScheduler()
+        return jsonify(scheduler.get_timing_data())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@mercury_bp.route("/api/lisa/optimal-slot", methods=["POST"])
+def api_lisa_optimal_slot():
+    """Get optimal posting slot for content."""
+    try:
+        from mercury.core.scheduler import PostingScheduler
+        scheduler = PostingScheduler()
+        data = request.json or {}
+        slot = scheduler.get_optimal_slot(
+            platform=data.get("platform", "instagram"),
+            content_type=data.get("content_type", ""),
+            pillar=data.get("pillar", ""),
+        )
+        return jsonify(slot)
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
 @mercury_bp.route("/api/lisa/broadcasts")
 def api_lisa_broadcasts():
     """Process and acknowledge broadcasts for Lisa."""
