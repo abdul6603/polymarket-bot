@@ -132,6 +132,53 @@ def api_thor_activity():
         return jsonify({"error": str(e)})
 
 
+@thor_bp.route("/api/thor/costs")
+def api_thor_costs():
+    """Thor's API cost tracking report."""
+    try:
+        summary_file = THOR_DATA / "cost_summary.json"
+        if summary_file.exists():
+            summary = json.loads(summary_file.read_text())
+        else:
+            summary = {}
+
+        # Calculate daily spend from cost log
+        from datetime import datetime, timezone, timedelta
+        ET = timezone(timedelta(hours=-5))
+        today = datetime.now(ET).strftime("%Y-%m-%d")
+        daily_spend = 0.0
+        cost_log = THOR_DATA / "cost_log.jsonl"
+        recent_calls = []
+        if cost_log.exists():
+            for line in cost_log.read_text().splitlines():
+                if not line.strip():
+                    continue
+                try:
+                    entry = json.loads(line)
+                    if entry.get("timestamp", "").startswith(today):
+                        daily_spend += entry.get("cost_usd", 0)
+                    recent_calls.append(entry)
+                except Exception:
+                    continue
+
+        daily_budget = 5.0
+        return jsonify({
+            "daily_spend_usd": round(daily_spend, 4),
+            "daily_budget_usd": daily_budget,
+            "daily_remaining_usd": round(daily_budget - daily_spend, 4),
+            "daily_pct": round((daily_spend / daily_budget) * 100, 1) if daily_budget > 0 else 0,
+            "total_calls": summary.get("total_calls", 0),
+            "total_spend_usd": summary.get("total_spend_usd", 0),
+            "total_input_tokens": summary.get("total_input_tokens", 0),
+            "total_output_tokens": summary.get("total_output_tokens", 0),
+            "by_model": summary.get("by_model", {}),
+            "last_call": summary.get("last_call"),
+            "recent_calls": recent_calls[-10:],
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
 ATLAS_DATA = Path.home() / "atlas" / "data"
 SHELBY_DATA = Path.home() / "shelby" / "data"
 SENTINEL_DATA = Path.home() / "sentinel" / "data"

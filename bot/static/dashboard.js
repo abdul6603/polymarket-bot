@@ -7,6 +7,7 @@ var AGENT_COLORS = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22
 var AGENT_INITIALS = {garves:'GA',soren:'SO',shelby:'SH',atlas:'AT',mercury:'LI',sentinel:'RO',thor:'TH',hawk:'HK',viper:'VP'};
 var AGENT_ROLES = {garves:'Trading Bot',soren:'Content Creator',shelby:'Team Leader',atlas:'Data Scientist',mercury:'Social Media',sentinel:'Health Monitor',thor:'Coding Lieutenant',hawk:'Market Predator',viper:'Opportunity Hunter'};
 var AGENT_NAMES = {garves:'Garves',soren:'Soren',shelby:'Shelby',atlas:'Atlas',mercury:'Lisa',sentinel:'Robotox',thor:'Thor',hawk:'Hawk',viper:'Viper'};
+var AGENT_AVATARS = {soren:'/static/soren_profile.png'};
 
 function switchTab(tab) {
   currentTab = tab;
@@ -54,7 +55,14 @@ function renderAgentGrid(overview) {
     var brainKey = brainAgentMap[c.id] || c.id;
     var brainCount = _brainCountsCache[brainKey] || 0;
     html += '<div class="agent-card" data-agent="' + c.id + '" onclick="switchTab(&apos;' + c.id + '&apos;)">';
-    html += '<div class="agent-card-header"><span class="agent-card-name">' + (AGENT_NAMES[c.id] || c.id.charAt(0).toUpperCase() + c.id.slice(1)) + '</span>';
+    html += '<div class="agent-card-header">';
+    if (AGENT_AVATARS[c.id]) {
+      html += '<img class="agent-card-avatar" src="' + AGENT_AVATARS[c.id] + '" alt="' + (AGENT_NAMES[c.id]||c.id) + '">';
+    } else {
+      var agentColor = AGENT_COLORS[c.id] || '#888';
+      html += '<div class="agent-card-initial" style="background:' + agentColor + '22;color:' + agentColor + ';">' + (AGENT_INITIALS[c.id]||'??') + '</div>';
+    }
+    html += '<span class="agent-card-name">' + (AGENT_NAMES[c.id] || c.id.charAt(0).toUpperCase() + c.id.slice(1)) + '</span>';
     if (brainCount > 0) {
       html += '<span class="brain-badge" title="' + brainCount + ' brain note' + (brainCount > 1 ? 's' : '') + '">' + brainCount + '</span>';
     }
@@ -3471,12 +3479,47 @@ async function loadThor() {
     setText('thor-queue-pending', '--');
   }
 
+  // Load cost tracker
+  loadThorCosts();
   // Load queue
   loadThorQueue();
   // Load results
   loadThorResults();
   // Load activity
   loadThorActivity();
+}
+
+async function loadThorCosts() {
+  try {
+    var resp = await fetch('/api/thor/costs');
+    var data = await resp.json();
+    var daily = data.daily_spend_usd || 0;
+    var budget = data.daily_budget_usd || 5;
+    var pct = data.daily_pct || 0;
+    var total = data.total_spend_usd || 0;
+    var calls = data.total_calls || 0;
+
+    setText('thor-cost-daily', '$' + daily.toFixed(2));
+    setText('thor-cost-budget', '$' + budget.toFixed(2));
+    setText('thor-cost-total', '$' + total.toFixed(2));
+    setText('thor-cost-calls', calls);
+
+    var bar = document.getElementById('thor-cost-bar');
+    if (bar) {
+      bar.style.width = Math.min(pct, 100) + '%';
+      bar.style.background = pct > 80 ? 'var(--error)' : pct > 50 ? 'var(--warning)' : 'var(--success)';
+    }
+
+    var models = data.by_model || {};
+    var modelParts = [];
+    for (var m in models) {
+      var short = m.indexOf('opus') > -1 ? 'Opus' : m.indexOf('sonnet') > -1 ? 'Sonnet' : m.indexOf('haiku') > -1 ? 'Haiku' : m;
+      modelParts.push(short + ':' + models[m].calls);
+    }
+    setText('thor-cost-models', modelParts.length > 0 ? modelParts.join(', ') : '--');
+  } catch(e) {
+    // silent
+  }
 }
 
 function setText(id, val) {
@@ -4945,7 +4988,7 @@ async function loadHawkTab() {
   try {
     var catResp = await fetch('/api/hawk/categories');
     var catData = await catResp.json();
-    renderHawkCategories(catData.categories || {});
+    renderHawkCategories(catData.categories || {}, catData.opp_categories || {});
   } catch(e) {}
 
   // Opportunities
@@ -4992,54 +5035,249 @@ function renderHawkScanSummary(data) {
   }
 }
 
-function renderHawkCategories(cats) {
+function renderHawkCategories(cats, oppCats) {
   var el = document.getElementById('hawk-category-heatmap');
   if (!el) return;
-  var keys = Object.keys(cats);
-  if (keys.length === 0) { el.innerHTML = '<div class="text-muted" style="text-align:center;padding:12px;">No category data yet</div>'; return; }
   var catColors = {politics:'#4488ff',sports:'#ff8844',crypto_event:'#FFD700',culture:'#cc66ff',other:'#888888'};
-  var html = '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
-  for (var i = 0; i < keys.length; i++) {
-    var k = keys[i];
-    var c = cats[k];
-    var wr = (c.wins + c.losses) > 0 ? (c.wins / (c.wins + c.losses) * 100) : 0;
-    var color = catColors[k] || '#888';
-    html += '<div style="background:rgba(255,255,255,0.04);border-left:3px solid ' + color + ';border-radius:6px;padding:10px 14px;min-width:120px;">';
-    html += '<div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">' + esc(k) + '</div>';
-    html += '<div style="font-size:1.1rem;font-weight:700;color:' + wrColor(wr) + ';">' + wr.toFixed(1) + '%</div>';
-    html += '<div style="font-size:0.68rem;color:var(--text-secondary);">' + c.wins + 'W-' + c.losses + 'L | $' + (c.pnl || 0).toFixed(2) + '</div>';
-    html += '</div>';
+  var catLabels = {politics:'Politics',sports:'Sports',crypto_event:'Crypto',culture:'Culture',other:'Other'};
+  var hasResolved = Object.keys(cats).length > 0;
+  var hasOpps = oppCats && Object.keys(oppCats).length > 0;
+  if (!hasResolved && !hasOpps) { el.innerHTML = '<div class="text-muted" style="text-align:center;padding:12px;">No category data yet — trigger a scan</div>'; return; }
+
+  var html = '<div style="display:flex;flex-wrap:wrap;gap:10px;">';
+  // Show opportunity-based category cards (always if we have scan data)
+  if (hasOpps) {
+    var oKeys = Object.keys(oppCats).sort(function(a,b){ return (oppCats[b].total_ev||0)-(oppCats[a].total_ev||0); });
+    for (var i = 0; i < oKeys.length; i++) {
+      var k = oKeys[i];
+      var c = oppCats[k];
+      var rc = cats[k] || null;
+      var color = catColors[k] || '#888';
+      var label = catLabels[k] || k;
+      html += '<div style="background:rgba(255,255,255,0.04);border-left:3px solid ' + color + ';border-radius:8px;padding:12px 16px;min-width:140px;flex:1;">';
+      html += '<div style="font-size:0.72rem;color:' + color + ';text-transform:uppercase;letter-spacing:0.05em;font-weight:700;margin-bottom:4px;">' + esc(label) + '</div>';
+      html += '<div style="font-size:1.3rem;font-weight:800;color:#fff;">' + c.count + ' <span style="font-size:0.68rem;color:var(--text-muted);font-weight:400;">markets</span></div>';
+      html += '<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px;">Avg Edge: <span style="color:' + color + ';font-weight:600;">' + (c.avg_edge||0).toFixed(1) + '%</span></div>';
+      html += '<div style="font-size:0.72rem;color:var(--text-secondary);">Total EV: <span style="color:var(--success);font-weight:600;">+$' + (c.total_ev||0).toFixed(2) + '</span></div>';
+      html += '<div style="font-size:0.72rem;color:var(--text-secondary);">$30/each: <span style="color:#FFD700;font-weight:600;">+$' + (c.potential_30||0).toFixed(2) + '</span></div>';
+      if (rc) {
+        var wr = (rc.wins+rc.losses)>0?(rc.wins/(rc.wins+rc.losses)*100):0;
+        html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;border-top:1px solid rgba(255,255,255,0.06);padding-top:4px;">Resolved: ' + rc.wins + 'W-' + rc.losses + 'L (' + wr.toFixed(0) + '%) | $' + (rc.pnl||0).toFixed(2) + '</div>';
+      }
+      html += '</div>';
+    }
+  } else if (hasResolved) {
+    var keys = Object.keys(cats);
+    for (var i = 0; i < keys.length; i++) {
+      var k = keys[i];
+      var c = cats[k];
+      var wr = (c.wins + c.losses) > 0 ? (c.wins / (c.wins + c.losses) * 100) : 0;
+      var color = catColors[k] || '#888';
+      html += '<div style="background:rgba(255,255,255,0.04);border-left:3px solid ' + color + ';border-radius:6px;padding:10px 14px;min-width:120px;">';
+      html += '<div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">' + esc(k) + '</div>';
+      html += '<div style="font-size:1.1rem;font-weight:700;color:' + wrColor(wr) + ';">' + wr.toFixed(1) + '%</div>';
+      html += '<div style="font-size:0.68rem;color:var(--text-secondary);">' + c.wins + 'W-' + c.losses + 'L | $' + (c.pnl || 0).toFixed(2) + '</div>';
+      html += '</div>';
+    }
   }
   html += '</div>';
   el.innerHTML = html;
 }
 
-function renderHawkOpportunities(opps) {
-  var el = document.getElementById('hawk-opp-tbody');
-  if (!el) return;
-  if (opps.length === 0) { el.innerHTML = '<tr><td colspan="9" class="text-muted" style="text-align:center;padding:24px;">No opportunities found yet — hit Trigger Scan</td></tr>'; return; }
-  var html = '';
-  for (var i = 0; i < Math.min(opps.length, 30); i++) {
-    var o = opps[i];
-    var edgePct = (o.edge || 0) * 100;
-    var edgeColor = edgePct >= 20 ? '#00ff88' : edgePct >= 10 ? '#FFD700' : edgePct >= 5 ? 'var(--text)' : 'var(--text-muted)';
-    var dirColor = o.direction === 'yes' ? '#00ff88' : '#ff6666';
-    var dirLabel = o.direction === 'yes' ? 'Bet YES' : 'Bet NO';
-    var catColors = {politics:'#4488ff',sports:'#ff8844',crypto_event:'#FFD700',culture:'#cc66ff',other:'#888'};
-    var catColor = catColors[o.category] || '#888';
-    html += '<tr style="cursor:pointer;" onclick="showHawkReasoning(' + i + ')">';
-    html += '<td style="color:var(--text-muted);font-size:0.72rem;">' + (i+1) + '</td>';
-    html += '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.76rem;" title="' + esc(o.question || '') + '">' + esc((o.question || '').substring(0, 55)) + '</td>';
-    html += '<td><span style="color:' + catColor + ';font-size:0.68rem;font-weight:600;text-transform:uppercase;">' + esc(o.category || '?') + '</span></td>';
-    html += '<td style="color:' + dirColor + ';font-weight:700;font-size:0.78rem;">' + dirLabel + '</td>';
-    html += '<td style="font-family:var(--font-mono);font-size:0.76rem;">' + ((o.market_price || 0) * 100).toFixed(0) + '%</td>';
-    html += '<td style="font-family:var(--font-mono);font-size:0.76rem;">' + ((o.estimated_prob || 0) * 100).toFixed(0) + '%</td>';
-    html += '<td style="color:' + edgeColor + ';font-weight:700;font-family:var(--font-mono);font-size:0.78rem;">+' + edgePct.toFixed(1) + '%</td>';
-    html += '<td style="font-family:var(--font-mono);font-size:0.76rem;">$' + (o.position_size || 0).toFixed(0) + '</td>';
-    html += '<td style="font-family:var(--font-mono);font-size:0.76rem;color:var(--success);font-weight:600;">+$' + (o.expected_value || 0).toFixed(2) + '</td>';
-    html += '</tr>';
+var _hawkCatFilter = 'all';
+
+function hawkSetCatFilter(cat) {
+  _hawkCatFilter = cat;
+  var pills = document.querySelectorAll('#hawk-cat-filter-pills .hawk-filter-pill');
+  for (var i = 0; i < pills.length; i++) {
+    pills[i].style.background = pills[i].getAttribute('data-cat') === cat ? 'rgba(255,215,0,0.2)' : 'rgba(255,255,255,0.06)';
+    pills[i].style.borderColor = pills[i].getAttribute('data-cat') === cat ? '#FFD700' : 'rgba(255,255,255,0.1)';
   }
-  el.innerHTML = html;
+  renderHawkOpportunities(_hawkOppsCache);
+}
+
+function hawkCalcTimeLeft(endDate) {
+  if (!endDate) return {text: 'No deadline', color: 'var(--text-muted)', sort: 99999999};
+  var now = Date.now();
+  var end = new Date(endDate).getTime();
+  if (isNaN(end)) return {text: 'Unknown', color: 'var(--text-muted)', sort: 99999999};
+  var diff = end - now;
+  if (diff <= 0) return {text: 'Expired', color: 'var(--error)', sort: -1};
+  var hours = diff / 3600000;
+  var days = Math.floor(hours / 24);
+  var hrs = Math.floor(hours % 24);
+  if (days > 365) return {text: Math.floor(days/365) + 'y ' + Math.floor((days%365)/30) + 'mo', color: 'var(--text-muted)', sort: diff};
+  if (days > 30) return {text: Math.floor(days/30) + 'mo ' + (days%30) + 'd', color: '#888', sort: diff};
+  if (days > 7) return {text: days + 'd', color: 'var(--text-secondary)', sort: diff};
+  if (days > 1) return {text: days + 'd ' + hrs + 'h', color: '#FFD700', sort: diff};
+  if (hours > 1) return {text: Math.floor(hours) + 'h ' + Math.floor((diff%3600000)/60000) + 'm', color: '#ff8844', sort: diff};
+  return {text: Math.floor(diff/60000) + 'm', color: 'var(--error)', sort: diff};
+}
+
+function hawkCalc30Profit(o) {
+  var mp = o.market_price || 0.5;
+  var ep = o.estimated_prob || 0.5;
+  var buyPrice, winProb;
+  if (o.direction === 'yes') { buyPrice = mp; winProb = ep; }
+  else { buyPrice = 1 - mp; winProb = 1 - ep; }
+  if (buyPrice <= 0 || buyPrice >= 1) return {profit: 0, roi: 0, payout: 30};
+  var shares = 30.0 / buyPrice;
+  var payout = shares * 1.0;
+  var profit = payout - 30.0;
+  var roi = (profit / 30.0) * 100;
+  var expProfit = profit * winProb;
+  return {profit: profit, roi: roi, payout: payout, expProfit: expProfit, winProb: winProb, buyPrice: buyPrice, shares: shares};
+}
+
+function renderHawkOpportunities(opps) {
+  var groupEl = document.getElementById('hawk-opp-groups');
+  var pillEl = document.getElementById('hawk-cat-filter-pills');
+  var totalLabel = document.getElementById('hawk-opp-total-label');
+  if (!groupEl) return;
+  if (opps.length === 0) {
+    groupEl.innerHTML = '<div class="glass-card"><div class="text-muted" style="text-align:center;padding:24px;">No opportunities found yet — hit Trigger Scan</div></div>';
+    if (pillEl) pillEl.innerHTML = '';
+    return;
+  }
+  var catColors = {politics:'#4488ff',sports:'#ff8844',crypto_event:'#FFD700',culture:'#cc66ff',other:'#888'};
+  var catLabels = {politics:'Politics',sports:'Sports',crypto_event:'Crypto',culture:'Culture',other:'Other'};
+
+  // Build category counts for filter pills
+  var catCounts = {};
+  for (var i = 0; i < opps.length; i++) {
+    var cat = opps[i].category || 'other';
+    catCounts[cat] = (catCounts[cat]||0) + 1;
+  }
+  if (pillEl) {
+    var ph = '<button class="hawk-filter-pill" data-cat="all" onclick="hawkSetCatFilter(\'all\')" style="font-size:0.7rem;padding:4px 10px;border-radius:12px;border:1px solid ' + (_hawkCatFilter==='all'?'#FFD700':'rgba(255,255,255,0.1)') + ';background:' + (_hawkCatFilter==='all'?'rgba(255,215,0,0.2)':'rgba(255,255,255,0.06)') + ';color:#fff;cursor:pointer;font-weight:600;">All (' + opps.length + ')</button>';
+    var ckeys = Object.keys(catCounts).sort(function(a,b){return catCounts[b]-catCounts[a];});
+    for (var j = 0; j < ckeys.length; j++) {
+      var ck = ckeys[j];
+      var cc = catColors[ck]||'#888';
+      var active = _hawkCatFilter === ck;
+      ph += '<button class="hawk-filter-pill" data-cat="' + ck + '" onclick="hawkSetCatFilter(\'' + ck + '\')" style="font-size:0.7rem;padding:4px 10px;border-radius:12px;border:1px solid ' + (active?cc:'rgba(255,255,255,0.1)') + ';background:' + (active?'rgba(255,215,0,0.15)':'rgba(255,255,255,0.06)') + ';color:' + cc + ';cursor:pointer;font-weight:600;">' + (catLabels[ck]||ck) + ' (' + catCounts[ck] + ')</button>';
+    }
+    pillEl.innerHTML = ph;
+  }
+
+  // Filter by selected category
+  var filtered = [];
+  for (var i = 0; i < opps.length; i++) {
+    if (_hawkCatFilter === 'all' || opps[i].category === _hawkCatFilter) filtered.push(opps[i]);
+  }
+
+  // Group by time horizon
+  var groups = {urgent:[], shortTerm:[], medTerm:[], longTerm:[]};
+  var groupNames = {urgent:'Expiring Soon (< 7 days)', shortTerm:'Short Term (1-4 weeks)', medTerm:'Medium Term (1-6 months)', longTerm:'Long Term (6+ months)'};
+  var groupColors = {urgent:'#ff4444', shortTerm:'#ff8844', medTerm:'#FFD700', longTerm:'#4488ff'};
+
+  for (var i = 0; i < filtered.length; i++) {
+    var o = filtered[i];
+    var tl = hawkCalcTimeLeft(o.end_date);
+    o._timeLeft = tl;
+    var daysLeft = tl.sort / 86400000;
+    if (daysLeft < 0) continue; // expired
+    if (daysLeft <= 7) groups.urgent.push(o);
+    else if (daysLeft <= 28) groups.shortTerm.push(o);
+    else if (daysLeft <= 180) groups.medTerm.push(o);
+    else groups.longTerm.push(o);
+  }
+  // Also push no-deadline ones to longTerm
+  for (var i = 0; i < filtered.length; i++) {
+    if (filtered[i]._timeLeft && filtered[i]._timeLeft.sort === 99999999) groups.longTerm.push(filtered[i]);
+  }
+
+  var totalPot30 = 0;
+  for (var i = 0; i < filtered.length; i++) {
+    totalPot30 += hawkCalc30Profit(filtered[i]).expProfit;
+  }
+  if (totalLabel) totalLabel.textContent = filtered.length + ' markets | $30 each = $' + (filtered.length*30) + ' total risk | +$' + totalPot30.toFixed(2) + ' expected profit';
+
+  var html = '';
+  var gkeys = ['urgent','shortTerm','medTerm','longTerm'];
+  var globalIdx = 0;
+  for (var g = 0; g < gkeys.length; g++) {
+    var gk = gkeys[g];
+    var items = groups[gk];
+    if (items.length === 0) continue;
+
+    // Sort within group by expected value descending
+    items.sort(function(a,b){ return (b.expected_value||0)-(a.expected_value||0); });
+
+    var grpEv = 0, grp30 = 0;
+    for (var x = 0; x < items.length; x++) { grpEv += items[x].expected_value||0; grp30 += hawkCalc30Profit(items[x]).expProfit; }
+
+    html += '<div style="margin-bottom:16px;">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
+    html += '<div style="font-size:0.78rem;font-weight:700;color:' + groupColors[gk] + ';">' + groupNames[gk] + ' <span style="color:var(--text-muted);font-weight:400;">(' + items.length + ')</span></div>';
+    html += '<div style="font-size:0.7rem;color:var(--text-muted);">Group EV: <span style="color:var(--success);font-weight:600;">+$' + grpEv.toFixed(2) + '</span> | $30/ea profit: <span style="color:#FFD700;font-weight:600;">+$' + grp30.toFixed(2) + '</span></div>';
+    html += '</div>';
+    html += '<div class="glass-card" style="overflow-x:auto;padding:0;">';
+    html += '<table class="data-table" style="margin:0;"><thead><tr>';
+    html += '<th style="width:26px;">#</th>';
+    html += '<th style="min-width:200px;">Market</th>';
+    html += '<th>Category</th>';
+    html += '<th>Time Left</th>';
+    html += '<th>Pick</th>';
+    html += '<th>Crowd</th>';
+    html += '<th>Hawk</th>';
+    html += '<th>Edge</th>';
+    html += '<th style="min-width:110px;">$30 Profit</th>';
+    html += '<th>Exp. Return</th>';
+    html += '</tr></thead><tbody>';
+
+    for (var i = 0; i < items.length; i++) {
+      var o = items[i];
+      var edgePct = (o.edge || 0) * 100;
+      var edgeColor = edgePct >= 20 ? '#00ff88' : edgePct >= 10 ? '#FFD700' : edgePct >= 5 ? 'var(--text)' : 'var(--text-muted)';
+      var dirColor = o.direction === 'yes' ? '#00ff88' : '#ff6666';
+      var dirIcon = o.direction === 'yes' ? '&#9650;' : '&#9660;';
+      var dirLabel = o.direction === 'yes' ? 'YES' : 'NO';
+      var catColor = catColors[o.category] || '#888';
+      var tl = o._timeLeft || {text:'?',color:'var(--text-muted)'};
+      var p30 = hawkCalc30Profit(o);
+      var realIdx = _hawkOppsCache.indexOf(o);
+
+      html += '<tr style="cursor:pointer;" onclick="showHawkReasoning(' + realIdx + ')">';
+      html += '<td style="color:var(--text-muted);font-size:0.7rem;">' + (globalIdx+1) + '</td>';
+      // Market column: question + volume badge
+      html += '<td style="max-width:240px;"><div style="font-size:0.76rem;line-height:1.3;white-space:normal;" title="' + esc(o.question||'') + '">' + esc(o.question||'') + '</div>';
+      html += '<div style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;">Vol: $' + formatCompact(o.volume||0) + '</div></td>';
+      // Category
+      html += '<td><span style="color:' + catColor + ';font-size:0.66rem;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;">' + esc(catLabels[o.category]||o.category||'?') + '</span></td>';
+      // Time left
+      html += '<td style="font-size:0.74rem;font-weight:600;color:' + tl.color + ';">' + tl.text + '</td>';
+      // Pick
+      html += '<td style="font-weight:700;font-size:0.78rem;"><span style="color:' + dirColor + ';">' + dirIcon + ' ' + dirLabel + '</span></td>';
+      // Crowd price
+      html += '<td style="font-family:var(--font-mono);font-size:0.76rem;">' + ((o.market_price||0)*100).toFixed(0) + '%</td>';
+      // Hawk prob
+      html += '<td style="font-family:var(--font-mono);font-size:0.76rem;">' + ((o.estimated_prob||0)*100).toFixed(0) + '%</td>';
+      // Edge
+      html += '<td style="color:' + edgeColor + ';font-weight:700;font-family:var(--font-mono);font-size:0.78rem;">+' + edgePct.toFixed(1) + '%</td>';
+      // $30 Profit column
+      html += '<td style="font-size:0.72rem;">';
+      html += '<div style="color:var(--success);font-weight:700;font-family:var(--font-mono);">+$' + p30.profit.toFixed(2) + ' <span style="font-size:0.62rem;color:var(--text-muted);">(' + p30.roi.toFixed(0) + '% ROI)</span></div>';
+      html += '<div style="font-size:0.62rem;color:var(--text-muted);">Buy ' + p30.shares.toFixed(1) + ' @ ' + (p30.buyPrice*100).toFixed(0) + 'c</div>';
+      html += '</td>';
+      // Expected return (probability-weighted)
+      html += '<td style="font-family:var(--font-mono);font-size:0.76rem;color:#FFD700;font-weight:600;">+$' + p30.expProfit.toFixed(2) + '</td>';
+      html += '</tr>';
+      globalIdx++;
+    }
+    html += '</tbody></table></div></div>';
+  }
+
+  if (html === '') {
+    html = '<div class="glass-card"><div class="text-muted" style="text-align:center;padding:24px;">No opportunities match the selected filter</div></div>';
+  }
+  groupEl.innerHTML = html;
+}
+
+function formatCompact(n) {
+  if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n/1e3).toFixed(0) + 'K';
+  return n.toFixed(0);
 }
 
 function showHawkReasoning(idx) {

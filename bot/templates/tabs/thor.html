@@ -24,6 +24,25 @@
     <div class="stat-card" data-accent="thor"><div class="stat-value" id="thor-tokens">0</div><div class="stat-label">Tokens Used</div></div>
     <div class="stat-card" data-accent="success"><div class="stat-value" id="thor-success-rate">--</div><div class="stat-label">Success Rate</div></div>
   </div>
+  <div class="glass-card" style="margin:12px 0;border-left:3px solid var(--agent-thor);">
+    <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">API Cost Tracker</h3>
+    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+      <div style="font-family:var(--font-mono);font-size:0.82rem;">
+        <span class="text-muted">Today:</span> <span id="thor-cost-daily" style="color:var(--success);font-weight:600;">$0.00</span>
+        <span class="text-muted"> / </span><span id="thor-cost-budget">$5.00</span>
+      </div>
+      <div style="flex:1;min-width:120px;max-width:300px;">
+        <div style="background:var(--bg-card);border-radius:4px;height:8px;overflow:hidden;">
+          <div id="thor-cost-bar" style="height:100%;background:var(--success);width:0%;transition:width 0.3s;border-radius:4px;"></div>
+        </div>
+      </div>
+      <div style="font-family:var(--font-mono);font-size:0.74rem;">
+        <span class="text-muted">Total:</span> <span id="thor-cost-total">$0.00</span>
+        <span class="text-muted"> | Calls:</span> <span id="thor-cost-calls">0</span>
+        <span class="text-muted"> | Models:</span> <span id="thor-cost-models">--</span>
+      </div>
+    </div>
+  </div>
   <div class="section-spacer">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
       <h2 class="section-title" data-accent="thor" style="margin-bottom:0;">Smart Actions</h2>
