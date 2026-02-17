@@ -20,7 +20,7 @@ ET = timezone(timedelta(hours=-5))
 BRAIN_DIR = Path(__file__).parent.parent / "data" / "brains"
 BRAIN_DIR.mkdir(parents=True, exist_ok=True)
 
-VALID_AGENTS = ["claude", "garves", "soren", "shelby", "atlas", "lisa", "robotox", "thor"]
+VALID_AGENTS = ["claude", "garves", "soren", "shelby", "atlas", "lisa", "robotox", "thor", "hawk", "viper"]
 
 
 def _brain_file(agent: str) -> Path:

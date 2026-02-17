@@ -1,0 +1,56 @@
+<!-- HAWK -->
+<div class="tab-content" id="tab-hawk">
+  <div class="agent-widget-row">
+    <div class="widget-badge"><span class="wb-label">Agent:</span> <span style="color:#FFD700;font-weight:700;">Hawk</span></div>
+    <div class="widget-badge"><span class="wb-label">Role:</span> <span>Market Predator</span></div>
+    <button class="btn" id="hawk-scan-btn" onclick="hawkTriggerScan()" style="font-size:0.72rem;background:#FFD700;color:#000;">Trigger Scan</button>
+    <button class="btn" onclick="healthCheckAgent('hawk')" style="font-size:0.72rem;">Health Check</button>
+  </div>
+  <div class="health-inline" id="hawk-health-result"></div>
+  <div class="grid-6">
+    <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-winrate" style="color:#FFD700;">--</div><div class="stat-label">Win Rate</div></div>
+    <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-pnl">$0.00</div><div class="stat-label">Total P&amp;L</div></div>
+    <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-open-bets">0</div><div class="stat-label">Open Bets</div></div>
+    <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-total-trades">0</div><div class="stat-label">Total Trades</div></div>
+    <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-resolved">0</div><div class="stat-label">Resolved</div></div>
+    <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-daily-pnl">$0.00</div><div class="stat-label">Daily P&amp;L</div></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" style="color:#FFD700;">Category Heatmap</h2>
+    <div class="glass-card" id="hawk-category-heatmap"><div class="text-muted" style="text-align:center;padding:12px;">Waiting for category data...</div></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" style="color:#FFD700;">Live Opportunities</h2>
+    <div class="glass-card"><table class="data-table"><thead><tr><th>Market</th><th>Category</th><th>Market Price</th><th>Est. Prob</th><th>Edge</th></tr></thead><tbody id="hawk-opp-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No opportunities found yet</td></tr></tbody></table></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" style="color:#FFD700;">Open Positions</h2>
+    <div class="glass-card"><table class="data-table"><thead><tr><th>Market</th><th>Direction</th><th>Size</th><th>Entry</th><th>Category</th></tr></thead><tbody id="hawk-pos-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No open positions</td></tr></tbody></table></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" style="color:#FFD700;">Trade History</h2>
+    <div class="glass-card"><table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Category</th><th>Edge</th><th>Result</th></tr></thead><tbody id="hawk-hist-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No trade history</td></tr></tbody></table></div>
+  </div>
+  <div class="section-spacer">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
+      <h2 class="section-title" style="color:#FFD700;margin-bottom:0;">Knowledge &amp; Memory</h2>
+      <button class="agent-chat-trigger" onclick="openAgentChat('hawk')">&#x1F4AC; Chat with Hawk</button>
+    </div>
+    <div class="glass-card">
+      <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;">
+        <input type="text" class="input" id="hawk-brain-topic" placeholder="Topic..." style="flex:1;font-size:0.76rem;padding:5px 10px;">
+        <div id="hawk-brain-type-pills" style="display:flex;gap:4px;">
+          <button class="brain-pill active" data-type="note" onclick="setBrainType('hawk','note',this)">Note</button>
+          <button class="brain-pill" data-type="command" onclick="setBrainType('hawk','command',this)">Cmd</button>
+          <button class="brain-pill" data-type="memory" onclick="setBrainType('hawk','memory',this)">Mem</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <textarea class="input" id="hawk-brain-content" placeholder="Instructions, knowledge, or notes for Hawk..." style="flex:1;min-height:48px;font-size:0.76rem;padding:5px 10px;resize:vertical;box-sizing:border-box;"></textarea>
+        <button class="btn btn-primary" onclick="addBrainNote('hawk')" style="align-self:flex-end;padding:6px 14px;font-size:0.74rem;">Add</button>
+      </div>
+      <input type="hidden" id="hawk-brain-type" value="note">
+      <div id="hawk-brain-list" style="margin-top:10px;max-height:350px;overflow-y:auto;"><div class="text-muted" style="text-align:center;padding:12px;font-size:0.74rem;">No notes yet.</div></div>
+    </div>
+  </div>
+</div>

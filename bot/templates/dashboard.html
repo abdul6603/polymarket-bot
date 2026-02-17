@@ -21,6 +21,8 @@
   <button class="sidebar-btn" data-tab="mercury" onclick="switchTab('mercury')" title="Lisa">Lisa</button>
   <button class="sidebar-btn" data-tab="sentinel" onclick="switchTab('sentinel')" title="Robotox">Robotox</button>
   <button class="sidebar-btn" data-tab="thor" onclick="switchTab('thor')" title="Thor">Thor</button>
+  <button class="sidebar-btn" data-tab="hawk" onclick="switchTab('hawk')" title="Hawk" style="color:#FFD700;">Hawk</button>
+  <button class="sidebar-btn" data-tab="viper" onclick="switchTab('viper')" title="Viper" style="color:#00ff88;">Viper</button>
   <div class="sidebar-spacer"></div>
   <button class="sidebar-btn" data-tab="system" onclick="switchTab('system')" title="System">System</button>
   <button class="sidebar-btn" data-tab="chat" onclick="switchTab('chat')" title="Chat">Chat</button>
@@ -30,7 +32,7 @@
   <header class="header">
     <div class="header-left">
       <h1 class="header-title">Command Center</h1>
-      <div class="header-subtitle"><span class="dot-online"></span> 7 Agents Online</div>
+      <div class="header-subtitle"><span class="dot-online"></span> 9 Agents Online</div>
     </div>
     <div class="header-right">Last update: <span id="last-update">--:--:--</span></div>
   </header>
@@ -44,6 +46,8 @@
   {% include 'tabs/lisa.html' %}
   {% include 'tabs/robotox.html' %}
   {% include 'tabs/thor.html' %}
+  {% include 'tabs/hawk.html' %}
+  {% include 'tabs/viper.html' %}
   {% include 'tabs/system.html' %}
   {% include 'tabs/chat.html' %}
 

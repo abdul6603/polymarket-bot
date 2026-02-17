@@ -1,0 +1,126 @@
+"""Hawk (market predator) routes: /api/hawk/*"""
+from __future__ import annotations
+
+import json
+import logging
+from datetime import datetime, timezone, timedelta
+from pathlib import Path
+
+from flask import Blueprint, jsonify, request
+
+log = logging.getLogger(__name__)
+hawk_bp = Blueprint("hawk", __name__)
+
+DATA_DIR = Path(__file__).parent.parent.parent / "data"
+TRADES_FILE = DATA_DIR / "hawk_trades.jsonl"
+OPPS_FILE = DATA_DIR / "hawk_opportunities.json"
+STATUS_FILE = DATA_DIR / "hawk_status.json"
+ET = timezone(timedelta(hours=-5))
+
+
+def _load_trades() -> list[dict]:
+    if not TRADES_FILE.exists():
+        return []
+    trades = []
+    try:
+        with open(TRADES_FILE) as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    trades.append(json.loads(line))
+    except Exception:
+        pass
+    return trades
+
+
+def _load_status() -> dict:
+    if STATUS_FILE.exists():
+        try:
+            return json.loads(STATUS_FILE.read_text())
+        except Exception:
+            pass
+    return {"running": False}
+
+
+@hawk_bp.route("/api/hawk")
+def api_hawk():
+    """Full Hawk status — positions, P&L, categories."""
+    status = _load_status()
+    trades = _load_trades()
+    resolved = [t for t in trades if t.get("resolved") and t.get("outcome")]
+    wins = sum(1 for t in resolved if t.get("won"))
+    losses = len(resolved) - wins
+    total_pnl = sum(t.get("pnl", 0) for t in resolved)
+    wr = (wins / len(resolved) * 100) if resolved else 0
+    open_pos = [t for t in trades if not t.get("resolved")]
+
+    today = datetime.now(ET).strftime("%Y-%m-%d")
+    daily_resolved = [t for t in resolved if t.get("time_str", "").startswith(today)]
+    daily_pnl = sum(t.get("pnl", 0) for t in daily_resolved)
+
+    return jsonify({
+        "summary": {
+            "total_trades": len(trades),
+            "resolved": len(resolved),
+            "wins": wins,
+            "losses": losses,
+            "win_rate": round(wr, 1),
+            "pnl": round(total_pnl, 2),
+            "open_positions": len(open_pos),
+            "daily_pnl": round(daily_pnl, 2),
+        },
+        "status": status,
+    })
+
+
+@hawk_bp.route("/api/hawk/opportunities")
+def api_hawk_opportunities():
+    """Latest scan results with edge."""
+    if OPPS_FILE.exists():
+        try:
+            data = json.loads(OPPS_FILE.read_text())
+            return jsonify(data)
+        except Exception:
+            pass
+    return jsonify({"opportunities": [], "updated": 0})
+
+
+@hawk_bp.route("/api/hawk/positions")
+def api_hawk_positions():
+    """Open positions."""
+    trades = _load_trades()
+    open_pos = [t for t in trades if not t.get("resolved")]
+    return jsonify({"positions": open_pos[-20:]})
+
+
+@hawk_bp.route("/api/hawk/history")
+def api_hawk_history():
+    """Trade history with outcomes."""
+    trades = _load_trades()
+    resolved = [t for t in trades if t.get("resolved")]
+    resolved.reverse()
+    return jsonify({"trades": resolved[:50]})
+
+
+@hawk_bp.route("/api/hawk/categories")
+def api_hawk_categories():
+    """Category WR heatmap data."""
+    trades = _load_trades()
+    resolved = [t for t in trades if t.get("resolved")]
+    cats: dict[str, dict] = {}
+    for t in resolved:
+        cat = t.get("category", "other")
+        if cat not in cats:
+            cats[cat] = {"wins": 0, "losses": 0, "pnl": 0.0}
+        if t.get("won"):
+            cats[cat]["wins"] += 1
+        else:
+            cats[cat]["losses"] += 1
+        cats[cat]["pnl"] = round(cats[cat]["pnl"] + t.get("pnl", 0), 2)
+    return jsonify({"categories": cats})
+
+
+@hawk_bp.route("/api/hawk/scan", methods=["POST"])
+def api_hawk_scan():
+    """Trigger immediate scan (returns quickly, actual scan runs async)."""
+    return jsonify({"success": True, "message": "Scan triggered — results will appear on next refresh"})

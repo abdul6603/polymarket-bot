@@ -21,6 +21,8 @@ def register_all_blueprints(app: Flask) -> None:
     from bot.routes.thor import thor_bp
     from bot.routes.brain import brain_bp
     from bot.routes.system import system_bp
+    from bot.routes.hawk import hawk_bp
+    from bot.routes.viper import viper_bp
 
     app.register_blueprint(garves_bp)
     app.register_blueprint(soren_bp)
@@ -34,3 +36,5 @@ def register_all_blueprints(app: Flask) -> None:
     app.register_blueprint(thor_bp)
     app.register_blueprint(brain_bp)
     app.register_blueprint(system_bp)
+    app.register_blueprint(hawk_bp)
+    app.register_blueprint(viper_bp)

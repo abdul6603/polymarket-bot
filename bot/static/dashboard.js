@@ -3,10 +3,10 @@ var chatLoaded = false;
 var econPeriod = 'month';
 var _atlasBgCache = null;
 var _overviewCache = null;
-var AGENT_COLORS = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',mercury:'#ff8800',sentinel:'#00ff44',thor:'#ff6600'};
-var AGENT_INITIALS = {garves:'GA',soren:'SO',shelby:'SH',atlas:'AT',mercury:'LI',sentinel:'RO',thor:'TH'};
-var AGENT_ROLES = {garves:'Trading Bot',soren:'Content Creator',shelby:'Team Leader',atlas:'Data Scientist',mercury:'Social Media',sentinel:'Health Monitor',thor:'Coding Lieutenant'};
-var AGENT_NAMES = {garves:'Garves',soren:'Soren',shelby:'Shelby',atlas:'Atlas',mercury:'Lisa',sentinel:'Robotox',thor:'Thor'};
+var AGENT_COLORS = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',mercury:'#ff8800',sentinel:'#00ff44',thor:'#ff6600',hawk:'#FFD700',viper:'#00ff88'};
+var AGENT_INITIALS = {garves:'GA',soren:'SO',shelby:'SH',atlas:'AT',mercury:'LI',sentinel:'RO',thor:'TH',hawk:'HK',viper:'VP'};
+var AGENT_ROLES = {garves:'Trading Bot',soren:'Content Creator',shelby:'Team Leader',atlas:'Data Scientist',mercury:'Social Media',sentinel:'Health Monitor',thor:'Coding Lieutenant',hawk:'Market Predator',viper:'Opportunity Hunter'};
+var AGENT_NAMES = {garves:'Garves',soren:'Soren',shelby:'Shelby',atlas:'Atlas',mercury:'Lisa',sentinel:'Robotox',thor:'Thor',hawk:'Hawk',viper:'Viper'};
 
 function switchTab(tab) {
   currentTab = tab;
@@ -36,7 +36,7 @@ function renderAgentGrid(overview) {
   var g = overview.garves || {};
   var s = overview.soren || {};
   var sh = overview.shelby || {};
-  var brainAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',mercury:'lisa',sentinel:'robotox',thor:'thor'};
+  var brainAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',mercury:'lisa',sentinel:'robotox',thor:'thor',hawk:'hawk',viper:'viper'};
   var cards = [
     {id:'garves', stats:[['Win Rate',(g.win_rate||0)+'%'],['Trades',g.total_trades||0],['Pending',g.pending||0]], online:g.running},
     {id:'soren', stats:[['Queue',s.queue_pending||0],['Posted',s.total_posted||0]], online:true},
@@ -44,7 +44,9 @@ function renderAgentGrid(overview) {
     {id:'atlas', stats:[['Status','Active']], online:true},
     {id:'mercury', stats:[['Posts',(overview.mercury||{}).total_posts||0],['Review Avg',(overview.mercury||{}).review_avg ? (overview.mercury.review_avg+'/10') : '--']], online:true},
     {id:'sentinel', stats:[['Role','Monitor']], online:true},
-    {id:'thor', stats:[['Tasks',(overview.thor||{}).completed||0],['Queue',(overview.thor||{}).pending||0]], online:(overview.thor||{}).state !== 'offline'}
+    {id:'thor', stats:[['Tasks',(overview.thor||{}).completed||0],['Queue',(overview.thor||{}).pending||0]], online:(overview.thor||{}).state !== 'offline'},
+    {id:'hawk', stats:[['Win Rate',((overview.hawk||{}).win_rate||0)+'%'],['Open',(overview.hawk||{}).open_bets||0]], online:(overview.hawk||{}).running},
+    {id:'viper', stats:[['Found',(overview.viper||{}).opportunities||0],['Pushed',(overview.viper||{}).pushed||0]], online:(overview.viper||{}).running}
   ];
   var html = '';
   for (var i = 0; i < cards.length; i++) {
@@ -2873,6 +2875,14 @@ async function refresh() {
       loadBrainNotes('thor');
       loadCommandTable('thor');
       loadAgentActivity('thor');
+    } else if (currentTab === 'hawk') {
+      loadHawkTab();
+      loadBrainNotes('hawk');
+      loadCommandTable('hawk');
+    } else if (currentTab === 'viper') {
+      loadViperTab();
+      loadBrainNotes('viper');
+      loadCommandTable('viper');
     } else if (currentTab === 'system') {
       loadSystemTab();
     } else if (currentTab === 'chat') {
@@ -4700,4 +4710,240 @@ async function atlasEventBus() {
   } catch(e) {
     reportEl.innerHTML = '<div class="text-muted" style="text-align:center;padding:var(--space-6);">Failed to load event bus: ' + esc(e.message) + '</div>';
   }
+}
+
+// ══════════════════════════════════════
+// HAWK TAB — Market Predator
+// ══════════════════════════════════════
+async function loadHawkTab() {
+  try {
+    var resp = await fetch('/api/hawk');
+    var d = await resp.json();
+    var s = d.summary || {};
+    document.getElementById('hawk-winrate').textContent = (s.win_rate || 0).toFixed(1) + '%';
+    document.getElementById('hawk-winrate').style.color = wrColor(s.win_rate || 0);
+    document.getElementById('hawk-pnl').textContent = '$' + (s.pnl || 0).toFixed(2);
+    document.getElementById('hawk-pnl').style.color = (s.pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)';
+    document.getElementById('hawk-open-bets').textContent = s.open_positions || 0;
+    document.getElementById('hawk-total-trades').textContent = s.total_trades || 0;
+    document.getElementById('hawk-resolved').textContent = s.resolved || 0;
+    document.getElementById('hawk-daily-pnl').textContent = '$' + (s.daily_pnl || 0).toFixed(2);
+    document.getElementById('hawk-daily-pnl').style.color = (s.daily_pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)';
+  } catch(e) { console.error('hawk status:', e); }
+
+  // Category heatmap
+  try {
+    var catResp = await fetch('/api/hawk/categories');
+    var catData = await catResp.json();
+    renderHawkCategories(catData.categories || {});
+  } catch(e) {}
+
+  // Opportunities
+  try {
+    var oppResp = await fetch('/api/hawk/opportunities');
+    var oppData = await oppResp.json();
+    renderHawkOpportunities(oppData.opportunities || []);
+  } catch(e) {}
+
+  // Positions
+  try {
+    var posResp = await fetch('/api/hawk/positions');
+    var posData = await posResp.json();
+    renderHawkPositions(posData.positions || []);
+  } catch(e) {}
+
+  // Trade history
+  try {
+    var histResp = await fetch('/api/hawk/history');
+    var histData = await histResp.json();
+    renderHawkHistory(histData.trades || []);
+  } catch(e) {}
+}
+
+function renderHawkCategories(cats) {
+  var el = document.getElementById('hawk-category-heatmap');
+  if (!el) return;
+  var keys = Object.keys(cats);
+  if (keys.length === 0) { el.innerHTML = '<div class="text-muted" style="text-align:center;padding:12px;">No category data yet</div>'; return; }
+  var catColors = {politics:'#4488ff',sports:'#ff8844',crypto_event:'#FFD700',culture:'#cc66ff',other:'#888888'};
+  var html = '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    var c = cats[k];
+    var wr = (c.wins + c.losses) > 0 ? (c.wins / (c.wins + c.losses) * 100) : 0;
+    var color = catColors[k] || '#888';
+    html += '<div style="background:rgba(255,255,255,0.04);border-left:3px solid ' + color + ';border-radius:6px;padding:10px 14px;min-width:120px;">';
+    html += '<div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;">' + esc(k) + '</div>';
+    html += '<div style="font-size:1.1rem;font-weight:700;color:' + wrColor(wr) + ';">' + wr.toFixed(1) + '%</div>';
+    html += '<div style="font-size:0.68rem;color:var(--text-secondary);">' + c.wins + 'W-' + c.losses + 'L | $' + (c.pnl || 0).toFixed(2) + '</div>';
+    html += '</div>';
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function renderHawkOpportunities(opps) {
+  var el = document.getElementById('hawk-opp-tbody');
+  if (!el) return;
+  if (opps.length === 0) { el.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No opportunities found yet</td></tr>'; return; }
+  var html = '';
+  for (var i = 0; i < Math.min(opps.length, 20); i++) {
+    var o = opps[i];
+    var edgeColor = (o.edge || 0) >= 0.15 ? 'var(--success)' : (o.edge || 0) >= 0.10 ? 'var(--warning)' : 'var(--text)';
+    html += '<tr>';
+    html += '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(o.question || '') + '">' + esc((o.question || '').substring(0, 50)) + '</td>';
+    html += '<td><span class="badge" style="background:rgba(255,255,255,0.08);">' + esc(o.category || '?') + '</span></td>';
+    html += '<td>' + ((o.market_price || 0) * 100).toFixed(0) + '%</td>';
+    html += '<td>' + ((o.estimated_prob || 0) * 100).toFixed(0) + '%</td>';
+    html += '<td style="color:' + edgeColor + ';font-weight:600;">' + ((o.edge || 0) * 100).toFixed(1) + '%</td>';
+    html += '</tr>';
+  }
+  el.innerHTML = html;
+}
+
+function renderHawkPositions(positions) {
+  var el = document.getElementById('hawk-pos-tbody');
+  if (!el) return;
+  if (positions.length === 0) { el.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No open positions</td></tr>'; return; }
+  var html = '';
+  for (var i = 0; i < positions.length; i++) {
+    var p = positions[i];
+    html += '<tr>';
+    html += '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc((p.question || '').substring(0, 45)) + '</td>';
+    html += '<td>' + esc(p.direction || '?') + '</td>';
+    html += '<td>$' + (p.size_usd || 0).toFixed(2) + '</td>';
+    html += '<td>' + ((p.entry_price || 0) * 100).toFixed(0) + '%</td>';
+    html += '<td><span class="badge" style="background:rgba(255,255,255,0.08);">' + esc(p.category || '?') + '</span></td>';
+    html += '</tr>';
+  }
+  el.innerHTML = html;
+}
+
+function renderHawkHistory(trades) {
+  var el = document.getElementById('hawk-hist-tbody');
+  if (!el) return;
+  if (trades.length === 0) { el.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No trade history</td></tr>'; return; }
+  var html = '';
+  for (var i = 0; i < Math.min(trades.length, 30); i++) {
+    var t = trades[i];
+    var won = t.won;
+    html += '<tr>';
+    html += '<td>' + esc(t.time || '') + '</td>';
+    html += '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc((t.question || '').substring(0, 40)) + '</td>';
+    html += '<td><span class="badge" style="background:rgba(255,255,255,0.08);">' + esc(t.category || '?') + '</span></td>';
+    html += '<td>' + ((t.edge || 0) * 100).toFixed(1) + '%</td>';
+    html += '<td><span class="badge ' + (won ? 'badge-success' : 'badge-error') + '">' + (won ? 'WIN' : 'LOSS') + '</span></td>';
+    html += '</tr>';
+  }
+  el.innerHTML = html;
+}
+
+async function hawkTriggerScan() {
+  var btn = document.getElementById('hawk-scan-btn');
+  if (btn) btn.disabled = true;
+  try {
+    var resp = await fetch('/api/hawk/scan', {method:'POST'});
+    var d = await resp.json();
+    if (d.success) { loadHawkTab(); }
+  } catch(e) { console.error('hawk scan:', e); }
+  if (btn) { setTimeout(function(){ btn.disabled = false; }, 5000); }
+}
+
+// ══════════════════════════════════════
+// VIPER TAB — Opportunity Hunter
+// ══════════════════════════════════════
+async function loadViperTab() {
+  try {
+    var resp = await fetch('/api/viper');
+    var d = await resp.json();
+    var s = d.summary || {};
+    document.getElementById('viper-opportunities').textContent = s.total_found || 0;
+    document.getElementById('viper-revenue').textContent = '$' + (s.revenue_potential || 0).toFixed(0);
+    document.getElementById('viper-savings').textContent = '$' + (s.cost_savings || 0).toFixed(0);
+    document.getElementById('viper-pushed').textContent = s.pushed_to_shelby || 0;
+  } catch(e) { console.error('viper status:', e); }
+
+  // Cost audit
+  try {
+    var costResp = await fetch('/api/viper/costs');
+    var costData = await costResp.json();
+    renderViperCosts(costData.costs || []);
+  } catch(e) {}
+
+  // Opportunities
+  try {
+    var oppResp = await fetch('/api/viper/opportunities');
+    var oppData = await oppResp.json();
+    renderViperOpportunities(oppData.opportunities || []);
+  } catch(e) {}
+
+  // Soren metrics
+  try {
+    var sorenResp = await fetch('/api/viper/soren-metrics');
+    var sorenData = await sorenResp.json();
+    renderViperSorenMetrics(sorenData);
+  } catch(e) {}
+}
+
+function renderViperCosts(costs) {
+  var el = document.getElementById('viper-cost-tbody');
+  if (!el) return;
+  if (costs.length === 0) { el.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No cost data yet</td></tr>'; return; }
+  var html = '';
+  for (var i = 0; i < costs.length; i++) {
+    var c = costs[i];
+    var wasteColor = c.waste ? 'var(--error)' : 'var(--text)';
+    html += '<tr>';
+    html += '<td>' + esc(c.agent || '') + '</td>';
+    html += '<td>' + esc(c.service || '') + '</td>';
+    html += '<td>$' + (c.cost_usd || 0).toFixed(2) + '</td>';
+    html += '<td>' + esc(c.trend || '--') + '</td>';
+    html += '<td style="color:' + wasteColor + ';">' + (c.waste ? 'Yes' : '--') + '</td>';
+    html += '</tr>';
+  }
+  el.innerHTML = html;
+}
+
+function renderViperOpportunities(opps) {
+  var el = document.getElementById('viper-opp-tbody');
+  if (!el) return;
+  if (opps.length === 0) { el.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No opportunities found yet</td></tr>'; return; }
+  var html = '';
+  for (var i = 0; i < Math.min(opps.length, 20); i++) {
+    var o = opps[i];
+    var scoreColor = (o.score || 0) >= 80 ? 'var(--success)' : (o.score || 0) >= 60 ? 'var(--warning)' : 'var(--text-muted)';
+    html += '<tr>';
+    html += '<td><span class="badge" style="background:rgba(255,255,255,0.08);">' + esc(o.source || '?') + '</span></td>';
+    html += '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(o.title || '') + '">' + esc((o.title || '').substring(0, 50)) + '</td>';
+    html += '<td>$' + (o.estimated_value_usd || 0).toFixed(0) + '</td>';
+    html += '<td>' + (o.effort_hours || '?') + 'h</td>';
+    html += '<td style="color:' + scoreColor + ';font-weight:600;">' + (o.score || 0) + '</td>';
+    html += '<td>' + esc(o.status || 'new') + '</td>';
+    html += '</tr>';
+  }
+  el.innerHTML = html;
+}
+
+function renderViperSorenMetrics(data) {
+  var el = document.getElementById('viper-soren-metrics');
+  if (!el) return;
+  if (!data || !data.followers) { el.innerHTML = '<div class="text-muted" style="padding:12px;">No Soren metrics available yet.</div>'; return; }
+  var html = '<div style="display:flex;gap:12px;flex-wrap:wrap;">';
+  html += '<div style="background:rgba(255,255,255,0.04);border-radius:6px;padding:10px 14px;"><div style="font-size:0.72rem;color:var(--text-muted);">Followers</div><div style="font-size:1.1rem;font-weight:700;">' + (data.followers || 0) + '</div></div>';
+  html += '<div style="background:rgba(255,255,255,0.04);border-radius:6px;padding:10px 14px;"><div style="font-size:0.72rem;color:var(--text-muted);">Engagement</div><div style="font-size:1.1rem;font-weight:700;">' + ((data.engagement_rate || 0) * 100).toFixed(1) + '%</div></div>';
+  html += '<div style="background:rgba(255,255,255,0.04);border-radius:6px;padding:10px 14px;"><div style="font-size:0.72rem;color:var(--text-muted);">Est. CPM</div><div style="font-size:1.1rem;font-weight:700;color:var(--success);">$' + (data.estimated_cpm || 0).toFixed(2) + '</div></div>';
+  html += '<div style="background:rgba(255,255,255,0.04);border-radius:6px;padding:10px 14px;"><div style="font-size:0.72rem;color:var(--text-muted);">Brand Ready</div><div style="font-size:1.1rem;font-weight:700;">' + (data.brand_ready ? 'Yes' : 'Not yet') + '</div></div>';
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+async function viperTriggerScan() {
+  var btn = document.getElementById('viper-scan-btn');
+  if (btn) btn.disabled = true;
+  try {
+    var resp = await fetch('/api/viper/scan', {method:'POST'});
+    var d = await resp.json();
+    if (d.success) { loadViperTab(); }
+  } catch(e) { console.error('viper scan:', e); }
+  if (btn) { setTimeout(function(){ btn.disabled = false; }, 5000); }
 }

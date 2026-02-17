@@ -1,0 +1,50 @@
+<!-- VIPER -->
+<div class="tab-content" id="tab-viper">
+  <div class="agent-widget-row">
+    <div class="widget-badge"><span class="wb-label">Agent:</span> <span style="color:#00ff88;font-weight:700;">Viper</span></div>
+    <div class="widget-badge"><span class="wb-label">Role:</span> <span>Opportunity Hunter</span></div>
+    <button class="btn" id="viper-scan-btn" onclick="viperTriggerScan()" style="font-size:0.72rem;background:#00ff88;color:#000;">Trigger Scan</button>
+    <button class="btn" onclick="healthCheckAgent('viper')" style="font-size:0.72rem;">Health Check</button>
+  </div>
+  <div class="health-inline" id="viper-health-result"></div>
+  <div class="grid-4">
+    <div class="stat-card" data-accent="viper"><div class="stat-value" id="viper-opportunities">0</div><div class="stat-label">Opportunities Found</div></div>
+    <div class="stat-card" data-accent="success"><div class="stat-value" id="viper-revenue" style="color:var(--success);">$0</div><div class="stat-label">Revenue Potential</div></div>
+    <div class="stat-card" data-accent="warning"><div class="stat-value" id="viper-savings">$0</div><div class="stat-label">Cost Savings</div></div>
+    <div class="stat-card" data-accent="viper"><div class="stat-value" id="viper-pushed">0</div><div class="stat-label">Pushed to Shelby</div></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" style="color:#00ff88;">API Cost Audit</h2>
+    <div class="glass-card"><table class="data-table"><thead><tr><th>Agent</th><th>Service</th><th>Monthly Cost</th><th>Trend</th><th>Waste</th></tr></thead><tbody id="viper-cost-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No cost data yet</td></tr></tbody></table></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" style="color:#00ff88;">Opportunity Feed</h2>
+    <div class="glass-card"><table class="data-table"><thead><tr><th>Source</th><th>Title</th><th>Value</th><th>Effort</th><th>Score</th><th>Status</th></tr></thead><tbody id="viper-opp-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No opportunities found yet</td></tr></tbody></table></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" style="color:#00ff88;">Soren Monetization</h2>
+    <div class="glass-card" id="viper-soren-metrics"><div class="text-muted" style="text-align:center;padding:12px;">Waiting for Soren metrics...</div></div>
+  </div>
+  <div class="section-spacer">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
+      <h2 class="section-title" style="color:#00ff88;margin-bottom:0;">Knowledge &amp; Memory</h2>
+      <button class="agent-chat-trigger" onclick="openAgentChat('viper')">&#x1F4AC; Chat with Viper</button>
+    </div>
+    <div class="glass-card">
+      <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;">
+        <input type="text" class="input" id="viper-brain-topic" placeholder="Topic..." style="flex:1;font-size:0.76rem;padding:5px 10px;">
+        <div id="viper-brain-type-pills" style="display:flex;gap:4px;">
+          <button class="brain-pill active" data-type="note" onclick="setBrainType('viper','note',this)">Note</button>
+          <button class="brain-pill" data-type="command" onclick="setBrainType('viper','command',this)">Cmd</button>
+          <button class="brain-pill" data-type="memory" onclick="setBrainType('viper','memory',this)">Mem</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <textarea class="input" id="viper-brain-content" placeholder="Instructions, knowledge, or notes for Viper..." style="flex:1;min-height:48px;font-size:0.76rem;padding:5px 10px;resize:vertical;box-sizing:border-box;"></textarea>
+        <button class="btn btn-primary" onclick="addBrainNote('viper')" style="align-self:flex-end;padding:6px 14px;font-size:0.74rem;">Add</button>
+      </div>
+      <input type="hidden" id="viper-brain-type" value="note">
+      <div id="viper-brain-list" style="margin-top:10px;max-height:350px;overflow-y:auto;"><div class="text-muted" style="text-align:center;padding:12px;font-size:0.74rem;">No notes yet.</div></div>
+    </div>
+  </div>
+</div>

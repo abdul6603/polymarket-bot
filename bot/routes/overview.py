@@ -116,6 +116,24 @@ def api_overview():
         except Exception:
             pass
 
+    # Hawk
+    hawk_status = {}
+    hawk_status_file = DATA_DIR / "hawk_status.json"
+    if hawk_status_file.exists():
+        try:
+            hawk_status = json.loads(hawk_status_file.read_text())
+        except Exception:
+            pass
+
+    # Viper
+    viper_status = {}
+    viper_status_file = DATA_DIR / "viper_status.json"
+    if viper_status_file.exists():
+        try:
+            viper_status = json.loads(viper_status_file.read_text())
+        except Exception:
+            pass
+
     return jsonify({
         "garves": {
             "running": garves_running,
@@ -139,6 +157,16 @@ def api_overview():
             "review_avg": mercury_review_avg,
         },
         "thor": _get_thor_overview(),
+        "hawk": {
+            "running": hawk_status.get("running", False),
+            "win_rate": hawk_status.get("win_rate", 0),
+            "open_bets": hawk_status.get("open_positions", 0),
+        },
+        "viper": {
+            "running": viper_status.get("running", False),
+            "opportunities": viper_status.get("total_found", 0),
+            "pushed": viper_status.get("pushed_to_shelby", 0),
+        },
     })
 
 
