@@ -27,6 +27,32 @@ from bot.daily_cycle import should_reset, archive_and_reset
 
 log = logging.getLogger("bot")
 
+# Telegram trade alerts
+_TG_TOKEN = "8548823121:AAH-T9nkYVyF0t1LwGwconeRCDFiW6rvvGw"
+_TG_CHAT = "5303307536"
+
+
+def _send_telegram(text: str) -> bool:
+    """Send a Telegram message to Jordan via Shelby's bot."""
+    try:
+        import requests
+        resp = requests.post(
+            f"https://api.telegram.org/bot{_TG_TOKEN}/sendMessage",
+            json={"chat_id": _TG_CHAT, "text": text, "parse_mode": "Markdown"},
+            timeout=10,
+        )
+        if resp.status_code != 200:
+            # Retry without parse_mode in case of markdown errors
+            requests.post(
+                f"https://api.telegram.org/bot{_TG_TOKEN}/sendMessage",
+                json={"chat_id": _TG_CHAT, "text": text},
+                timeout=10,
+            )
+        return resp.status_code == 200
+    except Exception as e:
+        log.warning("Telegram alert failed: %s", str(e)[:100])
+        return False
+
 
 def _fetch_implied_price_rest(cfg: Config, market_id: str, up_token_id: str) -> float | None:
     """REST fallback: fetch current token price from CLOB when WS has no data."""
@@ -353,6 +379,22 @@ class TradingBot:
                     conviction.position_size_usd,
                     " ALL-ALIGNED" if conviction.all_assets_aligned else "",
                 )
+
+                # Telegram alert for live trades
+                if not self.cfg.dry_run:
+                    try:
+                        msg = (
+                            f"*GARVES TRADE*\n\n"
+                            f"*{sig.direction.upper()}* on {asset.upper()}/{timeframe}\n"
+                            f"Market: _{dm.question[:80]}_\n"
+                            f"Size: *${conviction.position_size_usd:.2f}*\n"
+                            f"Price: ${sig.probability:.3f} | Edge: {sig.edge*100:.1f}%\n"
+                            f"Conviction: {conviction.total_score:.0f}/100 [{conviction.tier_label}]\n"
+                            f"Order: `{order_id}`"
+                        )
+                        _send_telegram(msg)
+                    except Exception:
+                        pass
 
                 # Track for performance measurement
                 self.perf_tracker.record_signal(
