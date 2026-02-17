@@ -5624,11 +5624,19 @@ function renderHawkOpportunities(opps) {
       var p30 = hawkCalc30Profit(o);
       var realIdx = _hawkOppsCache.indexOf(o);
 
+      var pmUrl = '';
+      if (o.event_slug && o.market_slug) pmUrl = 'https://polymarket.com/event/' + o.event_slug + '/' + o.market_slug;
+      else if (o.market_slug) pmUrl = 'https://polymarket.com/event/' + o.market_slug;
+
       html += '<tr style="cursor:pointer;" onclick="showHawkReasoning(' + realIdx + ')">';
       html += '<td style="color:var(--text-muted);font-size:0.7rem;">' + (globalIdx+1) + '</td>';
-      // Market column: question + volume badge
-      html += '<td style="max-width:240px;"><div style="font-size:0.76rem;line-height:1.3;white-space:normal;" title="' + esc(o.question||'') + '">' + esc(o.question||'') + '</div>';
-      html += '<div style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;">Vol: $' + formatCompact(o.volume||0) + '</div></td>';
+      // Market column: question + polymarket link + volume
+      html += '<td style="max-width:260px;"><div style="font-size:0.76rem;line-height:1.3;white-space:normal;" title="' + esc(o.question||'') + '">' + esc(o.question||'') + '</div>';
+      html += '<div style="display:flex;align-items:center;gap:6px;margin-top:3px;">';
+      if (pmUrl) html += '<a href="' + pmUrl + '" target="_blank" onclick="event.stopPropagation()" style="font-size:0.62rem;color:#8B5CF6;text-decoration:none;font-weight:600;display:flex;align-items:center;gap:2px;">&#x1F517; Polymarket</a>';
+      else html += '<span style="font-size:0.62rem;color:var(--text-muted);">Polymarket</span>';
+      html += '<span style="font-size:0.62rem;color:var(--text-muted);">| Vol: $' + formatCompact(o.volume||0) + '</span>';
+      html += '</div></td>';
       // Category
       html += '<td><span style="color:' + catColor + ';font-size:0.66rem;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;">' + esc(catLabels[o.category]||o.category||'?') + '</span></td>';
       // Time left
@@ -5984,18 +5992,32 @@ async function loadViperTab() {
 function renderViperIntel(items) {
   var el = document.getElementById('viper-intel-tbody');
   if (!el) return;
-  if (items.length === 0) { el.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No intelligence yet — hit Trigger Scan</td></tr>'; return; }
+  if (items.length === 0) { el.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No intelligence yet — hit Trigger Scan</td></tr>'; return; }
   var html = '';
+  var srcColors = {tavily:'#8B5CF6', reddit:'#FF4500', polymarket:'#00d4ff'};
+  var srcIcons = {tavily:'&#x1F4F0;', reddit:'&#x1F4AC;', polymarket:'&#x1F4CA;'};
   for (var i = 0; i < Math.min(items.length, 25); i++) {
     var item = items[i];
     var sent = item.sentiment || 0;
     var sentColor = sent > 0.2 ? 'var(--success)' : sent < -0.2 ? 'var(--error)' : 'var(--text-muted)';
     var sentLabel = sent > 0.2 ? 'Positive' : sent < -0.2 ? 'Negative' : 'Neutral';
     var scoreColor = (item.score || 0) >= 70 ? 'var(--success)' : (item.score || 0) >= 40 ? 'var(--warning)' : 'var(--text-muted)';
-    var srcBadge = (item.source || 'unknown').split('/')[0];
+    var srcKey = (item.source || 'unknown').split('/')[0];
+    var srcFull = item.source || 'unknown';
+    var srcColor = srcColors[srcKey] || '#00ff88';
+    var srcIcon = srcIcons[srcKey] || '&#x1F50D;';
+    // Extract domain from URL for display
+    var domain = '';
+    try { if (item.url) domain = new URL(item.url).hostname.replace('www.',''); } catch(e){}
     html += '<tr>';
-    html += '<td><span class="badge" style="background:rgba(0,255,136,0.12);color:#00ff88;font-size:0.68rem;">' + esc(srcBadge) + '</span></td>';
-    html += '<td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(item.headline || item.title || '') + '">' + esc((item.headline || item.title || '').substring(0, 60)) + '</td>';
+    html += '<td><span class="badge" style="background:rgba(0,255,136,0.12);color:' + srcColor + ';font-size:0.68rem;">' + srcIcon + ' ' + esc(srcKey) + '</span>';
+    if (srcFull.includes('/')) html += '<div style="font-size:0.58rem;color:var(--text-muted);">' + esc(srcFull.split('/').slice(1).join('/')) + '</div>';
+    html += '</td>';
+    html += '<td style="max-width:280px;"><div style="font-size:0.76rem;line-height:1.3;white-space:normal;">' + esc((item.headline || item.title || '').substring(0, 80)) + '</div>';
+    if (item.url) {
+      html += '<a href="' + esc(item.url) + '" target="_blank" style="font-size:0.6rem;color:#8B5CF6;text-decoration:none;display:inline-flex;align-items:center;gap:2px;margin-top:2px;">&#x1F517; ' + esc(domain || 'Link') + '</a>';
+    }
+    html += '</td>';
     html += '<td><span class="badge" style="background:rgba(255,255,255,0.06);">' + esc(item.category || 'other') + '</span></td>';
     html += '<td style="color:' + sentColor + ';font-weight:600;">' + sentLabel + '</td>';
     html += '<td style="color:' + scoreColor + ';font-weight:600;">' + (item.score || 0) + '</td>';

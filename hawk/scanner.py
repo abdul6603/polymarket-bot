@@ -42,6 +42,8 @@ class HawkMarket:
     end_date: str = ""
     accepting_orders: bool = True
     event_title: str = ""
+    market_slug: str = ""
+    event_slug: str = ""
 
 
 def _categorize_market(question: str) -> str:
@@ -174,6 +176,8 @@ def scan_all_markets(cfg: HawkConfig) -> list[HawkMarket]:
                         end_date=m.get("endDate", m.get("end_date_iso", "")),
                         accepting_orders=True,
                         event_title=event_title,
+                        market_slug=m.get("slug", ""),
+                        event_slug=event.get("slug", ""),
                     )
                     all_markets.append(market)
 

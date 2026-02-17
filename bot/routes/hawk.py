@@ -266,6 +266,8 @@ def api_hawk_scan():
                     "volume": o.market.volume,
                     "end_date": o.market.end_date,
                     "event_title": o.market.event_title,
+                    "market_slug": o.market.market_slug,
+                    "event_slug": o.market.event_slug,
                 })
 
             OPPS_FILE.parent.mkdir(exist_ok=True)
