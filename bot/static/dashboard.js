@@ -3021,6 +3021,10 @@ async function refresh() {
       renderLiveResolvedTrades(data.recent_trades);
       fetch('/api/logs').then(function(r){return r.json();}).then(function(d){renderLiveLogs(d.lines);}).catch(function(){});
       fetch('/api/garves/balance').then(function(r){return r.json();}).then(function(d){renderLiveBalance(d);}).catch(function(){});
+      fetch('/api/garves/bankroll').then(function(r){return r.json();}).then(function(d){
+        var el = document.getElementById('garves-bankroll-label');
+        if(el && d.bankroll_usd) el.textContent = '$' + d.bankroll_usd.toFixed(0) + ' bankroll (' + d.multiplier.toFixed(2) + 'x)';
+      }).catch(function(){});
       loadAgentActivity('garves-live');
       loadGarvesMode();
     } else if (currentTab === 'garves') {

@@ -498,16 +498,25 @@ def api_garves_conviction():
                 "disabled": dyn_weights.get(name, base_w) <= 0,
             }
 
+        # Pull live bankroll multiplier
+        try:
+            from bot.bankroll import BankrollManager
+            bm = BankrollManager()
+            bankroll_status = bm.get_status()
+        except Exception:
+            bankroll_status = {}
+
         return jsonify({
             "engine_status": status,
             "indicator_weights": weight_info,
             "size_tiers": {
                 "0-29": "$0 (no trade)",
-                "30-49": "$5-8 (small)",
-                "50-69": "$10-15 (standard)",
-                "70-84": "$15-20 (increased)",
-                "85-100": "$20-25 (max conviction)",
+                "30-49": "$8-12 (small)",
+                "50-69": "$12-20 (standard)",
+                "70-84": "$20-28 (increased)",
+                "85-100": "$28-35 (max conviction)",
             },
+            "bankroll": bankroll_status,
         })
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500
@@ -699,3 +708,14 @@ def api_garves_balance():
         pass
 
     return jsonify(result)
+
+
+@garves_bp.route("/api/garves/bankroll")
+def api_garves_bankroll():
+    """Auto-compounding bankroll status."""
+    try:
+        from bot.bankroll import BankrollManager
+        bm = BankrollManager()
+        return jsonify(bm.get_status())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
