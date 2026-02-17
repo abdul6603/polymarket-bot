@@ -22,7 +22,7 @@ HAWK_OPPS_FILE = DATA_DIR / "hawk_opportunities.json"
 BRIEFING_FILE = DATA_DIR / "hawk_briefing.json"
 
 MAX_CONTEXT_PER_MARKET = 8
-ENTITY_MATCH_THRESHOLD = 0.35  # Must match >=35% of entities
+ENTITY_MATCH_THRESHOLD = 0.25  # Match if >=25% of entities found (1 of 3 is enough)
 
 
 def _load_briefing_entities() -> dict[str, list[str]]:
@@ -142,11 +142,38 @@ def update_market_context() -> int:
 
 
 def _load_hawk_markets() -> list[dict]:
-    """Load markets from Hawk's opportunities file."""
-    if not HAWK_OPPS_FILE.exists():
-        return []
-    try:
-        data = json.loads(HAWK_OPPS_FILE.read_text())
-        return data.get("opportunities", [])
-    except Exception:
-        return []
+    """Load markets from Hawk briefing (preferred) and opportunities.
+
+    Briefing has condition_id + entities + question — best for matching.
+    Opportunities is a fallback for markets not in briefing.
+    """
+    markets = []
+    seen_cids: set[str] = set()
+
+    # Primary: Hawk briefing (has condition_id, entities, question)
+    if BRIEFING_FILE.exists():
+        try:
+            briefing = json.loads(BRIEFING_FILE.read_text())
+            age = time.time() - briefing.get("generated_at", 0)
+            if age < 7200:
+                for m in briefing.get("markets", []):
+                    cid = m.get("condition_id", "")
+                    if cid and cid not in seen_cids:
+                        seen_cids.add(cid)
+                        markets.append(m)
+        except Exception:
+            pass
+
+    # Fallback: Hawk opportunities (for any markets not in briefing)
+    if HAWK_OPPS_FILE.exists():
+        try:
+            data = json.loads(HAWK_OPPS_FILE.read_text())
+            for opp in data.get("opportunities", []):
+                cid = opp.get("condition_id", "")
+                if cid and cid not in seen_cids:
+                    seen_cids.add(cid)
+                    markets.append(opp)
+        except Exception:
+            pass
+
+    return markets

@@ -56,8 +56,8 @@ def _load_hawk_queries() -> list[dict]:
 # ─── Tavily (real-time web search) ────────────────────────────────────
 
 _FALLBACK_QUERIES = [
-    "breaking news politics today",
-    "sports results scores today",
+    "Polymarket trending prediction markets today",
+    "prediction market news politics sports events today",
 ]
 
 
