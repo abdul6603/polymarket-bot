@@ -19,6 +19,7 @@ SYMBOL_MAP = {
     "btcusdt": "bitcoin",
     "ethusdt": "ethereum",
     "solusdt": "solana",
+    "xrpusdt": "xrp",
 }
 
 # Trade streams (individual trades for price/candle building)

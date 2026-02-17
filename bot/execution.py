@@ -25,9 +25,9 @@ KELLY_FRACTION = 0.25        # Quarter-Kelly for safety
 KELLY_MIN_SIZE_FRAC = 0.10   # Never size below 10% of base
 KELLY_MAX_SIZE_FRAC = 2.50   # Never size above 250% of base
 
-# Dynamic sizing: Garves determines $4-$10 per trade based on signal quality
-TRADE_MIN_USD = 4.0
-TRADE_MAX_USD = 10.0
+# Dynamic sizing: Garves determines $6-$15 per trade based on signal quality
+TRADE_MIN_USD = 6.0
+TRADE_MAX_USD = 15.0
 
 
 class Executor:
@@ -196,7 +196,7 @@ class Executor:
         """Poll order status and remove filled/expired positions."""
         if self.cfg.dry_run:
             # Expire dry-run positions based on market timeframe
-            TF_EXPIRE_S = {"5m": 300, "15m": 900, "1h": 3600, "4h": 14400}
+            TF_EXPIRE_S = {"5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "weekly": 604800}
             now = time.time()
             for pos in list(self.tracker.open_positions):
                 # Parse timeframe from order_id or default to 15m (900s)

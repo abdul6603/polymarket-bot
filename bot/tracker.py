@@ -48,6 +48,9 @@ class TradeRecord:
     regime_label: str = ""      # "extreme_fear", "fear", "neutral", "greed", "extreme_greed"
     regime_fng: int = -1        # Fear & Greed value (0-100), -1 = unknown
 
+    # Reward-to-Risk ratio at signal time
+    reward_risk_ratio: float = 0.0
+
     # V2: Signal rationale (human-readable trade reasoning)
     signal_rationale: str = ""
 
@@ -133,6 +136,7 @@ class PerformanceTracker:
             market_end_time=market_end_time,
             regime_label=regime_label,
             regime_fng=regime_fng,
+            reward_risk_ratio=getattr(signal, "reward_risk_ratio", 0.0) or 0.0,
             signal_rationale=rationale,
             dry_run=self.cfg.dry_run,
         )

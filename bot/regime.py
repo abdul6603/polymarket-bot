@@ -44,7 +44,7 @@ REGIME_TABLE = {
     "extreme_fear": lambda fng: RegimeAdjustment(
         label="extreme_fear", fng_value=fng,
         size_multiplier=0.7, edge_multiplier=1.3,
-        consensus_offset=1, confidence_floor=0.30,
+        consensus_offset=0, confidence_floor=0.30,
     ),
     "fear": lambda fng: RegimeAdjustment(
         label="fear", fng_value=fng,
@@ -64,7 +64,7 @@ REGIME_TABLE = {
     "extreme_greed": lambda fng: RegimeAdjustment(
         label="extreme_greed", fng_value=fng,
         size_multiplier=0.5, edge_multiplier=1.5,
-        consensus_offset=2, confidence_floor=0.35,
+        consensus_offset=1, confidence_floor=0.35,
     ),
 }
 

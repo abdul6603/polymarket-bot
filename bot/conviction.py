@@ -24,7 +24,12 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Optional
 
+from bot.bankroll import BankrollManager
+
 log = logging.getLogger(__name__)
+
+# Singleton bankroll manager
+_bankroll_manager = BankrollManager()
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 TRADES_FILE = DATA_DIR / "trades.jsonl"
@@ -34,14 +39,14 @@ TRADES_FILE = DATA_DIR / "trades.jsonl"
 SIZE_TIERS = {
     # (min_conviction, max_conviction): (min_usd, max_usd)
     (0, 30):   (0.0, 0.0),      # DON'T TRADE — insufficient evidence
-    (30, 50):  (5.0, 8.0),      # Small — tentative signal
-    (50, 70):  (10.0, 15.0),    # Standard — solid consensus
-    (70, 85):  (15.0, 20.0),    # Increased — strong multi-factor alignment
-    (85, 100): (20.0, 25.0),    # Maximum conviction — nearly everything aligns
+    (30, 50):  (8.0, 12.0),     # Small — tentative signal
+    (50, 70):  (12.0, 20.0),    # Standard — solid consensus
+    (70, 85):  (20.0, 28.0),    # Increased — strong multi-factor alignment
+    (85, 100): (28.0, 35.0),    # Maximum conviction — nearly everything aligns
 }
 
 # ── Safety Rails ──
-ABSOLUTE_MAX_PER_TRADE = 25.0       # Never exceed $25 per trade
+ABSOLUTE_MAX_PER_TRADE = 35.0       # Never exceed $35 per trade
 ABSOLUTE_MAX_DAILY_LOSS = 50.0      # Stop trading if daily loss hits $50
 LOSING_STREAK_THRESHOLD = 3         # Scale down after 3 consecutive losses
 LOSING_STREAK_PENALTY = 0.6         # Multiply conviction by 0.6 during losing streak
@@ -75,8 +80,8 @@ BAD_HOURS_ET = {5, 6, 7, 18, 19, 20, 21, 22, 23}
 
 # ── All Assets Aligned Mode thresholds ──
 ALL_ALIGNED_MIN_CONSENSUS = 7       # Each asset must have 7+ indicators agreeing
-ALL_ALIGNED_MIN_ASSETS = 3          # All 3 assets must agree
-ALL_ALIGNED_SIZE = 25.0             # Max size when all-aligned fires
+ALL_ALIGNED_MIN_ASSETS = 3          # 3 of 4 assets must agree
+ALL_ALIGNED_SIZE = 35.0             # Max size when all-aligned fires
 
 
 @dataclass
@@ -396,6 +401,14 @@ class ConvictionEngine:
             position_size = self._conviction_to_size(final_score)
             tier_label = self._get_tier_label(final_score)
 
+        # Apply bankroll multiplier (auto-compounding)
+        bankroll_mult = _bankroll_manager.get_multiplier()
+        if bankroll_mult != 1.0:
+            position_size *= bankroll_mult
+            safety_adjustments.append(
+                f"bankroll_mult={bankroll_mult:.2f}x"
+            )
+
         # Apply regime size multiplier even in all-aligned mode
         if regime is not None:
             position_size *= regime.size_multiplier
@@ -453,7 +466,7 @@ class ConvictionEngine:
         aligned_count = 0
         details = {}
 
-        for asset in ("bitcoin", "ethereum", "solana"):
+        for asset in ("bitcoin", "ethereum", "solana", "xrp"):
             snap = self._asset_signals.get(asset)
             if snap is None or (now - snap.timestamp) > self._SIGNAL_MAX_AGE:
                 details[asset] = "stale/missing"
@@ -465,7 +478,7 @@ class ConvictionEngine:
             else:
                 details[asset] = f"{snap.direction} (DISAGREE)"
 
-        all_aligned = aligned_count >= 3
+        all_aligned = aligned_count >= 3  # 3 of 4 assets is sufficient
         return all_aligned, target_direction, aligned_count, details
 
     def _check_all_assets_aligned(self, direction: str) -> bool:
@@ -482,14 +495,14 @@ class ConvictionEngine:
         has_volume = False
         has_arb = False
 
-        for asset in ("bitcoin", "ethereum", "solana"):
+        for asset in ("bitcoin", "ethereum", "solana", "xrp"):
             snap = self._asset_signals.get(asset)
             if snap is None or (now - snap.timestamp) > self._SIGNAL_MAX_AGE:
-                return False  # Missing data for one asset — can't confirm
+                continue  # Missing data — skip this asset, don't block
             if snap.direction != direction:
-                return False  # Not all aligned
+                continue  # Disagrees — skip
             if snap.consensus_count < ALL_ALIGNED_MIN_CONSENSUS:
-                return False  # Consensus too weak on one asset
+                continue  # Consensus too weak
 
             aligned_assets.append(asset)
             if snap.has_volume_spike:
@@ -504,10 +517,11 @@ class ConvictionEngine:
         if not (has_volume or has_arb):
             return False
 
+        aligned_names = "+".join(a.upper()[:3] for a in aligned_assets)
         log.info(
-            "ALL ASSETS ALIGNED: BTC+ETH+SOL all %s with 7+ consensus | "
+            "ALL ASSETS ALIGNED: %s all %s with 7+ consensus | "
             "volume_confirmed=%s arb_confirmed=%s",
-            direction.upper(), has_volume, has_arb,
+            aligned_names, direction.upper(), has_volume, has_arb,
         )
         return True
 
@@ -654,7 +668,7 @@ class ConvictionEngine:
                 return min_usd + t * (max_usd - min_usd)
 
         # Score is exactly 100
-        return 25.0
+        return 35.0
 
     @staticmethod
     def _get_tier_label(score: float) -> str:
@@ -759,7 +773,7 @@ class ConvictionEngine:
         perf = self._get_rolling_performance()
 
         asset_states = {}
-        for asset in ("bitcoin", "ethereum", "solana"):
+        for asset in ("bitcoin", "ethereum", "solana", "xrp"):
             snap = self._asset_signals.get(asset)
             if snap and (now - snap.timestamp) <= self._SIGNAL_MAX_AGE:
                 asset_states[asset] = {

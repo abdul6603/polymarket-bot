@@ -26,12 +26,14 @@ TF_5M = Timeframe(name="5m", priority=1, min_remaining_s=60, max_remaining_s=300
 TF_15M = Timeframe(name="15m", priority=2, min_remaining_s=120, max_remaining_s=900)
 TF_1H = Timeframe(name="1h", priority=3, min_remaining_s=300, max_remaining_s=3600)
 TF_4H = Timeframe(name="4h", priority=4, min_remaining_s=900, max_remaining_s=14400)
+TF_WEEKLY = Timeframe(name="weekly", priority=5, min_remaining_s=3600, max_remaining_s=604800)
 
 # Assets we trade
 ASSETS = {
     "bitcoin": {"keywords": ("bitcoin up or down",), "coingecko_id": "bitcoin"},
     "ethereum": {"keywords": ("ethereum up or down",), "coingecko_id": "ethereum"},
     "solana": {"keywords": ("solana up or down",), "coingecko_id": "solana"},
+    "xrp": {"keywords": ("xrp up or down",), "coingecko_id": "ripple"},
 }
 
 
@@ -77,10 +79,17 @@ def _classify_timeframe(question: str) -> Timeframe | None:
             return TF_1H
         elif duration <= 240:
             return TF_4H
+        elif duration <= 1440:
+            return TF_WEEKLY  # >4h up to 24h
         return None
 
     if _HOURLY_RE.search(question):
         return TF_1H
+
+    # Weekly markets: check for "weekly" keyword or very long durations
+    q_lower = question.lower()
+    if "weekly" in q_lower:
+        return TF_WEEKLY
 
     return None
 

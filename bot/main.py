@@ -19,6 +19,7 @@ from bot.price_cache import PriceCache
 from bot.regime import RegimeAdjustment, detect_regime
 from bot.risk import PositionTracker, check_risk
 from bot.signals import SignalEngine
+from bot.bankroll import BankrollManager
 from bot.straddle import StraddleEngine
 from bot.tracker import PerformanceTracker
 from bot.ws_feed import MarketFeed
@@ -103,6 +104,7 @@ class TradingBot:
         self.conviction_engine = ConvictionEngine()
         self.straddle_engine = StraddleEngine(cfg, self.executor, self.tracker, self.price_cache)
         self.perf_tracker = PerformanceTracker(cfg)
+        self.bankroll_manager = BankrollManager()
         self._shutdown_event = asyncio.Event()
         self._subscribed_tokens: set[str] = set()
         # Track when tokens were first subscribed (for warmup)
@@ -123,7 +125,7 @@ class TradingBot:
             pass
         # Per-market cooldown: market_id -> last trade timestamp
         self._market_cooldown: dict[str, float] = {}
-        self.COOLDOWN_SECONDS = 180  # 3 min cooldown after trading a market
+        self.COOLDOWN_SECONDS = 90  # 1.5 min cooldown after trading a market
 
     def _setup_logging(self) -> None:
         logging.basicConfig(
@@ -137,11 +139,15 @@ class TradingBot:
         log.info("=" * 60)
         log.info("Garves V2 — Multi-Timeframe Trading Bot")
         log.info("Signal -> Probability -> Edge -> Action -> Confidence -> P&L")
-        log.info("Assets: BTC, ETH, SOL | Timeframes: 5m, 15m, 1h, 4h")
+        log.info("Assets: BTC, ETH, SOL, XRP | Timeframes: 5m, 15m, 1h, 4h, weekly")
         log.info("Ensemble: 11 indicators + Temporal Arb + ATR Filter + Fee Awareness + ConvictionEngine")
         log.info("Risk: max %d concurrent, $%.2f cap, 5min cooldown",
                  self.cfg.max_concurrent_positions, self.cfg.max_position_usd)
         log.info("Dry run: %s | Tick: %ds", self.cfg.dry_run, self.cfg.tick_interval_s)
+        bankroll_status = self.bankroll_manager.get_status()
+        log.info("Bankroll: $%.2f (PnL: $%+.2f, mult: %.2fx)",
+                 bankroll_status["bankroll_usd"], bankroll_status["pnl_usd"],
+                 bankroll_status["multiplier"])
         log.info("V2: emergency_stop, trade_journal, shelby_commands, trade_alerts")
         log.info("=" * 60)
 
@@ -354,10 +360,11 @@ class TradingBot:
             if not sig:
                 continue
 
+            rr_str = f"R:R={sig.reward_risk_ratio:.2f}" if sig.reward_risk_ratio else "R:R=N/A"
             log.info(
-                "[%s/%s] SIGNAL: %s (prob=%.3f, edge=%.1f%%, conf=%.2f) | Implied: %s | %s",
+                "[%s/%s] SIGNAL: %s (prob=%.3f, edge=%.1f%%, conf=%.2f, %s) | Implied: %s | %s",
                 asset.upper(), timeframe, sig.direction.upper(),
-                sig.probability, sig.edge * 100, sig.confidence,
+                sig.probability, sig.edge * 100, sig.confidence, rr_str,
                 f"${implied_up:.3f}" if implied_up else "N/A",
                 dm.question[:50],
             )
@@ -412,12 +419,13 @@ class TradingBot:
                 # Telegram alert for live trades
                 if not self.cfg.dry_run:
                     try:
+                        rr_tg = f"R:R: {sig.reward_risk_ratio:.2f}" if sig.reward_risk_ratio else "R:R: N/A"
                         msg = (
                             f"*GARVES TRADE*\n\n"
                             f"*{sig.direction.upper()}* on {asset.upper()}/{timeframe}\n"
                             f"Market: _{dm.question[:80]}_\n"
                             f"Size: *${conviction.position_size_usd:.2f}*\n"
-                            f"Price: ${sig.probability:.3f} | Edge: {sig.edge*100:.1f}%\n"
+                            f"Price: ${sig.probability:.3f} | Edge: {sig.edge*100:.1f}% | {rr_tg}\n"
                             f"Conviction: {conviction.total_score:.0f}/100 [{conviction.tier_label}]\n"
                             f"Order: `{order_id}`"
                         )

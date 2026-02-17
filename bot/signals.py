@@ -40,6 +40,7 @@ PROB_CLAMP = {
     "15m": (0.25, 0.75),
     "1h": (0.20, 0.80),
     "4h": (0.15, 0.85),
+    "weekly": (0.10, 0.90),
 }
 
 # Indicator weights for the ensemble
@@ -86,6 +87,10 @@ TF_WEIGHT_SCALE = {
     "4h":  {"order_flow": 0.8, "orderbook": 0.8, "price_div": 0.7,
             "rsi": 1.2, "macd": 1.3, "heikin_ashi": 1.3,
             "funding_rate": 1.5, "liquidation": 0.8},
+    "weekly": {"rsi": 1.5, "macd": 1.5, "heikin_ashi": 1.5, "ema": 1.5,
+               "momentum": 1.3, "bollinger": 1.2, "order_flow": 0.5,
+               "orderbook": 0.5, "temporal_arb": 0.5, "price_div": 0.5,
+               "funding_rate": 1.5, "liquidation": 0.5},
 }
 
 MIN_CANDLES = 30
@@ -94,7 +99,7 @@ MIN_ATR_THRESHOLD = 0.00005  # skip if volatility below this (0.005% of price)
 MIN_CONFIDENCE = 0.25  # reject weak signals (avg was 0.178, most were losers)
 
 # Directional bias: UP predictions have 47.3% WR vs DOWN 63% — require higher confidence for UP
-UP_CONFIDENCE_PREMIUM = 0.08  # add 8% to confidence floor for UP bets
+UP_CONFIDENCE_PREMIUM = 0.05  # add 5% to confidence floor for UP bets (reduced from 8%)
 
 # Time-of-day filter: block hours with <30% WR across 140+ trades
 # Good hours: 00,02,10,12,16,17 (79.5% WR combined)
@@ -104,20 +109,26 @@ AVOID_HOURS_ET = {1, 3, 4, 5, 6, 7, 23}  # 7 dead hours — trade 8AM-10PM ET + 
 # Timeframe-specific minimum edge — must exceed estimated fees
 # Data: 0-8% edge = 20% WR, 8-11% = 62.5% WR — 8% is the breakeven floor
 MIN_EDGE_BY_TF = {
-    "5m": 0.08,   # 8% — raised from 6% (below 8% = 20% WR)
-    "15m": 0.08,  # 8% — raised from 9% regime-adjusted (0.7x was dropping to 6.3%)
-    "1h": 0.05,   # 5% — raised from 3%
-    "4h": 0.04,   # 4% — raised from 3%
+    "5m": 0.08,     # 8% — raised from 6% (below 8% = 20% WR)
+    "15m": 0.08,    # 8% — raised from 9% regime-adjusted (0.7x was dropping to 6.3%)
+    "1h": 0.05,     # 5% — raised from 3%
+    "4h": 0.04,     # 4% — raised from 3%
+    "weekly": 0.03, # 3% — lowest edge floor for longest timeframe
 }
 
 # Hard floor — regime adjustments cannot lower edge below this
 MIN_EDGE_ABSOLUTE = 0.08  # 8% — never trade below this regardless of regime
+
+# Reward-to-Risk ratio filter
+# R:R = ((1-P) * 0.98) / P  where P = token price, 0.98 = payout after 2% winner fee
+MIN_RR_RATIO = 0.8  # reject signals where R:R < 0.8 (too skewed against us)
 
 # Asset-specific edge premium — weaker assets need higher edge to trade
 ASSET_EDGE_PREMIUM = {
     "bitcoin": 1.0,    # baseline (33.9% WR — needs filtering not premium)
     "ethereum": 0.9,   # slight discount (best performer: 41.3% WR)
     "solana": 1.5,     # +50% edge required (31.6% WR — worst performer)
+    "xrp": 1.0,        # baseline — no data yet, start neutral
 }
 
 
@@ -132,6 +143,7 @@ class Signal:
     asset: str            # "bitcoin", "ethereum", "solana"
     indicator_votes: dict | None = None  # indicator_name -> direction at signal time
     atr_value: float | None = None       # ATR as fraction of price (for conviction engine)
+    reward_risk_ratio: float | None = None  # R:R = ((1-P)*0.98)/P
 
 
 def _estimate_fees(timeframe: str, implied_price: float | None) -> float:
@@ -511,6 +523,20 @@ class SignalEngine:
             import time as _time
             now_ts = _time.time()
 
+            # ── Reward-to-Risk Ratio Filter ──
+            # Buy token at price P: Win = (1-P)*0.98, Lose = P
+            # R:R = ((1-P)*0.98) / P
+            rr_ratio = None
+            token_price = implied_up_price if consensus_dir == "up" else (1 - implied_up_price if implied_up_price is not None else None)
+            if token_price is not None and 0.01 < token_price < 0.99:
+                rr_ratio = ((1 - token_price) * 0.98) / token_price
+                if rr_ratio < MIN_RR_RATIO:
+                    log.info(
+                        "[%s/%s] R:R filter: %.2f < %.2f (token_price=%.3f), skipping",
+                        asset.upper(), timeframe, rr_ratio, MIN_RR_RATIO, token_price,
+                    )
+                    return None
+
             # Cache this signal direction for cross-TF lookups
             self._signal_history[(asset, timeframe)] = (consensus_dir, now_ts)
 
@@ -524,6 +550,7 @@ class SignalEngine:
                 asset=asset,
                 indicator_votes=ind_votes,
                 atr_value=atr_val,
+                reward_risk_ratio=rr_ratio,
             )
 
         log.info(
