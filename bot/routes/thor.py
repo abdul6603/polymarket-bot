@@ -144,7 +144,7 @@ def api_thor_costs():
 
         # Calculate daily spend from cost log
         from datetime import datetime, timezone, timedelta
-from zoneinfo import ZoneInfo
+        from zoneinfo import ZoneInfo
         ET = ZoneInfo("America/New_York")
         today = datetime.now(ET).strftime("%Y-%m-%d")
         daily_spend = 0.0
