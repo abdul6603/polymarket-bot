@@ -179,6 +179,28 @@ def api_thor_costs():
         return jsonify({"error": str(e)[:200]})
 
 
+@thor_bp.route("/api/thor/reflexion")
+def api_thor_reflexion():
+    """Thor's reflexion stats — self-debugging memory."""
+    try:
+        from thor.core.reflexion import ReflexionMemory
+        rm = ReflexionMemory(THOR_DATA)
+        return jsonify(rm.get_stats())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@thor_bp.route("/api/thor/cache")
+def api_thor_cache():
+    """Thor's response cache stats."""
+    try:
+        from thor.core.cache import ResponseCache
+        rc = ResponseCache(THOR_DATA)
+        return jsonify(rc.get_stats())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
 ATLAS_DATA = Path.home() / "atlas" / "data"
 SHELBY_DATA = Path.home() / "shelby" / "data"
 SENTINEL_DATA = Path.home() / "sentinel" / "data"

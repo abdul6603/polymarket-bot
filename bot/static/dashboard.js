@@ -576,7 +576,7 @@ function closeModal() {
   modal.classList.remove('active');
 }
 
-// ── Shelby Task V2: state ──
+// ── Shelby Task V2 ──
 var _shelbyAllTasks = [];
 
 function renderShelby(data) {
@@ -584,104 +584,126 @@ function renderShelby(data) {
   _shelbyAllTasks = tasks;
   var todayStr = new Date().toISOString().substring(0, 10);
 
-  // Stat cards
-  var highPri = 0, pending = 0, doneToday = 0;
-  var nextDue = null;
+  var highPri = 0, pending = 0, doneToday = 0, nextDue = null;
   for (var i = 0; i < tasks.length; i++) {
-    var t = tasks[i];
-    var st = t.status || '';
+    var t = tasks[i], st = t.status || '';
     if (st !== 'done' && (t.priority || 0) > 70) highPri++;
     if (st === 'pending') pending++;
     if (st === 'done' && (t.completed || '').substring(0, 10) === todayStr) doneToday++;
-    if (st !== 'done' && t.due && (!nextDue || t.due < nextDue)) nextDue = t.due;
+    if (st !== 'done' && t.due && t.due.length >= 10 && (!nextDue || t.due < nextDue)) nextDue = t.due;
   }
-  var hpEl = document.getElementById('shelby-high-priority');
-  if (hpEl) hpEl.textContent = highPri;
-  var pEl = document.getElementById('shelby-tasks-pending');
-  if (pEl) pEl.textContent = pending;
-  var dtEl = document.getElementById('shelby-tasks-done-today');
-  if (dtEl) dtEl.textContent = doneToday;
-  var ndEl = document.getElementById('shelby-next-due');
-  if (ndEl) ndEl.textContent = nextDue ? nextDue.substring(5) : 'None';
-
+  var e1 = document.getElementById('shelby-high-priority');
+  var e2 = document.getElementById('shelby-tasks-pending');
+  var e3 = document.getElementById('shelby-tasks-done-today');
+  var e4 = document.getElementById('shelby-next-due');
+  if (e1) e1.textContent = highPri;
+  if (e2) e2.textContent = pending;
+  if (e3) e3.textContent = doneToday;
+  if (e4) e4.textContent = nextDue ? nextDue.substring(5, 10) : 'None';
   filterShelbyTasks();
 }
 
 function filterShelbyTasks() {
   var tasks = _shelbyAllTasks.slice();
   var fAgent = document.getElementById('shelby-filter-agent');
-  var fCat = document.getElementById('shelby-filter-category');
   var fStatus = document.getElementById('shelby-filter-status');
   var fSort = document.getElementById('shelby-filter-sort');
   var agentVal = fAgent ? fAgent.value : '';
-  var catVal = fCat ? fCat.value : '';
   var statusVal = fStatus ? fStatus.value : '';
   var sortVal = fSort ? fSort.value : 'priority';
 
   if (agentVal) tasks = tasks.filter(function(t) { return (t.agent || '') === agentVal; });
-  if (catVal) tasks = tasks.filter(function(t) { return (t.category || '') === catVal; });
   if (statusVal) tasks = tasks.filter(function(t) { return (t.status || '') === statusVal; });
 
   if (sortVal === 'priority') tasks.sort(function(a, b) { return (b.priority || 0) - (a.priority || 0); });
   else if (sortVal === 'due') tasks.sort(function(a, b) { return (a.due || 'zzzz').localeCompare(b.due || 'zzzz'); });
-  else if (sortVal === 'difficulty') tasks.sort(function(a, b) { return (a.difficulty || 2) - (b.difficulty || 2); });
+  else if (sortVal === 'agent') tasks.sort(function(a, b) { return (a.agent || '').localeCompare(b.agent || ''); });
   else if (sortVal === 'created') tasks.sort(function(a, b) { return (b.created || '').localeCompare(a.created || ''); });
 
-  renderShelbyTaskTable(tasks);
+  renderShelbyTaskCards(tasks);
   var cEl = document.getElementById('shelby-task-count');
-  if (cEl) cEl.textContent = tasks.length + ' tasks shown';
+  if (cEl) cEl.textContent = tasks.length + ' task' + (tasks.length !== 1 ? 's' : '');
 }
 
-function renderShelbyTaskTable(tasks) {
-  var tbody = document.getElementById('shelby-task-tbody');
-  if (!tbody) return;
-  if (tasks.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="10" class="text-muted" style="padding:16px;text-align:center;">No tasks match filters.</td></tr>';
-    return;
-  }
-  var html = '';
+function renderShelbyTaskCards(tasks) {
+  var el = document.getElementById('shelby-task-list');
+  if (!el) return;
+  if (tasks.length === 0) { el.innerHTML = '<div class="text-muted" style="padding:20px;text-align:center;">No tasks match your filters.</div>'; return; }
+
   var catColors = {infrastructure:'#00d4ff',integration:'#a78bfa',content:'#f59e0b',trading:'#10b981',research:'#6366f1',ops:'#94a3b8'};
-  var diffLabels = {1:'Easy',2:'Med',3:'Hard'};
+  var diffLabels = {1:'Easy',2:'Medium',3:'Hard'};
   var diffColors = {1:'#10b981',2:'#f59e0b',3:'#ef4444'};
-  var benLabels = {1:'Low',2:'Med',3:'High'};
-  var benColors = {1:'#94a3b8',2:'#f59e0b',3:'#10b981'};
   var statusNext = {pending:'in_progress',in_progress:'done',done:'pending'};
+  var statusLabels = {pending:'Pending',in_progress:'In Progress',done:'Done'};
+  var statusColors = {pending:'#94a3b8',in_progress:'#f59e0b',done:'#10b981'};
+  var html = '';
 
   for (var i = 0; i < tasks.length; i++) {
     var t = tasks[i];
     var pri = t.priority || 0;
-    var priColor = pri > 80 ? '#ef4444' : pri > 50 ? '#f59e0b' : '#94a3b8';
+    var priColor = pri > 80 ? '#ef4444' : pri > 50 ? '#f59e0b' : '#64748b';
+    var st = t.status || 'pending';
     var diff = t.difficulty || 2;
-    var ben = t.benefit || 2;
     var cat = t.category || 'ops';
     var agent = t.agent || '';
-    var agentDisplay = agent ? (AGENT_NAMES[agent] || agent.charAt(0).toUpperCase() + agent.slice(1)) : '-';
+    var agentName = agent ? (AGENT_NAMES[agent] || agent.charAt(0).toUpperCase() + agent.slice(1)) : 'Unassigned';
     var agentColor = agent ? (AGENT_COLORS[agent] || 'var(--text)') : 'var(--text-muted)';
-    var st = t.status || 'pending';
-    var stLabel = st === 'in_progress' ? 'In Prog' : st.charAt(0).toUpperCase() + st.slice(1);
-    var stColor = st === 'done' ? '#10b981' : st === 'in_progress' ? '#f59e0b' : '#94a3b8';
-    var dueStr = t.due ? t.due.substring(0, 10) : '-';
-    var rowOpacity = st === 'done' ? 'opacity:0.5;' : '';
+    var doneOpacity = st === 'done' ? 'opacity:0.45;' : '';
+    var doneStrike = st === 'done' ? 'text-decoration:line-through;' : '';
+    var dueStr = '';
+    if (t.due && t.due.length >= 10) {
+      var today = new Date(); today.setHours(0,0,0,0);
+      var dueDate = new Date(t.due.substring(0,10) + 'T00:00:00');
+      var daysDiff = Math.round((dueDate - today) / 86400000);
+      if (daysDiff < 0) dueStr = '<span style="color:#ef4444;font-weight:600;">Overdue ' + Math.abs(daysDiff) + 'd</span>';
+      else if (daysDiff === 0) dueStr = '<span style="color:#f59e0b;font-weight:600;">Due today</span>';
+      else if (daysDiff === 1) dueStr = '<span style="color:#f59e0b;">Tomorrow</span>';
+      else if (daysDiff <= 7) dueStr = '<span style="color:var(--text-muted);">' + t.due.substring(5,10) + ' (' + daysDiff + 'd)</span>';
+      else dueStr = '<span style="color:var(--text-muted);">' + t.due.substring(5,10) + '</span>';
+    }
 
-    html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);' + rowOpacity + '">';
-    html += '<td style="padding:6px;">' + t.id + '</td>';
-    html += '<td style="padding:6px;"><span style="background:' + priColor + ';color:#000;padding:2px 6px;border-radius:4px;font-weight:700;font-size:0.72rem;">' + pri + '</span></td>';
-    html += '<td style="padding:6px;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(t.title || '') + '">' + esc(t.title || '') + '</td>';
-    html += '<td style="padding:6px;"><span style="color:' + agentColor + ';font-weight:600;">' + esc(agentDisplay) + '</span></td>';
-    html += '<td style="padding:6px;"><span style="background:' + (catColors[cat] || '#94a3b8') + '22;color:' + (catColors[cat] || '#94a3b8') + ';padding:1px 6px;border-radius:3px;font-size:0.7rem;">' + esc(cat) + '</span></td>';
-    html += '<td style="padding:6px;"><span style="color:' + diffColors[diff] + ';font-weight:600;">' + diffLabels[diff] + '</span></td>';
-    html += '<td style="padding:6px;"><span style="color:' + benColors[ben] + ';font-weight:600;">' + benLabels[ben] + '</span></td>';
-    html += '<td style="padding:6px;font-size:0.72rem;">' + esc(dueStr) + '</td>';
-    html += '<td style="padding:6px;"><span style="cursor:pointer;background:' + stColor + '22;color:' + stColor + ';padding:2px 8px;border-radius:3px;font-size:0.7rem;font-weight:600;" onclick="updateShelbyTaskStatus(' + t.id + ',\'' + (statusNext[st] || 'pending') + '\')">' + stLabel + '</span></td>';
-    html += '<td style="padding:6px;white-space:nowrap;">';
-    html += '<button class="btn" style="padding:2px 6px;font-size:0.68rem;margin-right:3px;" onclick="deleteShelbyTask(' + t.id + ')">Del</button>';
-    html += '</td>';
-    html += '</tr>';
+    // Left border = priority color
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-left:3px solid ' + priColor + ';border-bottom:1px solid rgba(255,255,255,0.04);' + doneOpacity + '">';
+
+    // Priority badge
+    html += '<div style="min-width:36px;text-align:center;"><span style="background:' + priColor + '22;color:' + priColor + ';padding:3px 8px;border-radius:4px;font-weight:700;font-size:0.76rem;">' + pri + '</span></div>';
+
+    // Main content
+    html += '<div style="flex:1;min-width:0;">';
+    html += '<div style="font-size:0.82rem;font-weight:500;' + doneStrike + 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(t.title || '') + '">' + esc(t.title || '') + '</div>';
+    // Meta row: agent, category, difficulty, due
+    html += '<div style="display:flex;gap:8px;align-items:center;margin-top:3px;flex-wrap:wrap;">';
+    html += '<span style="color:' + agentColor + ';font-size:0.72rem;font-weight:600;">' + esc(agentName) + '</span>';
+    html += '<span style="background:' + (catColors[cat] || '#94a3b8') + '18;color:' + (catColors[cat] || '#94a3b8') + ';padding:1px 6px;border-radius:3px;font-size:0.68rem;">' + esc(cat) + '</span>';
+    html += '<span style="color:' + diffColors[diff] + ';font-size:0.7rem;">' + diffLabels[diff] + '</span>';
+    if (dueStr) html += dueStr;
+    html += '</div></div>';
+
+    // Status toggle
+    html += '<span style="cursor:pointer;background:' + statusColors[st] + '18;color:' + statusColors[st] + ';padding:4px 10px;border-radius:4px;font-size:0.72rem;font-weight:600;white-space:nowrap;user-select:none;" onclick="updateShelbyTaskStatus(' + t.id + ',\'' + (statusNext[st] || 'pending') + '\')" title="Click to change status">' + statusLabels[st] + '</span>';
+
+    // Delete
+    html += '<button style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;padding:4px 6px;opacity:0.5;" onclick="deleteShelbyTask(' + t.id + ')" title="Delete task">&times;</button>';
+
+    html += '</div>';
   }
-  tbody.innerHTML = html;
+  el.innerHTML = html;
 }
 
 // ── Shelby Task V2: CRUD ──
+
+function toggleShelbyAdvanced() {
+  var el = document.getElementById('shelby-add-advanced');
+  var btn = document.getElementById('shelby-advanced-toggle');
+  if (!el) return;
+  if (el.style.display === 'none') {
+    el.style.display = 'flex';
+    if (btn) btn.textContent = '- Hide options';
+  } else {
+    el.style.display = 'none';
+    if (btn) btn.textContent = '+ More options (difficulty, impact, category)';
+  }
+}
 
 function setShelbyDiff(val, btn) {
   document.getElementById('shelby-add-diff').value = val;
@@ -696,22 +718,26 @@ function setShelbyBen(val, btn) {
 }
 
 async function addShelbyTask() {
-  var title = document.getElementById('shelby-add-title').value.trim();
-  if (!title) return;
+  var titleEl = document.getElementById('shelby-add-title');
+  var title = titleEl ? titleEl.value.trim() : '';
+  if (!title) { if (titleEl) titleEl.focus(); return; }
+  var agentEl = document.getElementById('shelby-add-agent');
+  var catEl = document.getElementById('shelby-add-category');
+  var dueEl = document.getElementById('shelby-add-due');
   var body = {
     title: title,
-    agent: document.getElementById('shelby-add-agent').value || undefined,
-    category: document.getElementById('shelby-add-category').value || undefined,
+    agent: agentEl ? agentEl.value || undefined : undefined,
+    category: catEl ? catEl.value || undefined : undefined,
     difficulty: parseInt(document.getElementById('shelby-add-diff').value) || 2,
-    benefit: parseInt(document.getElementById('shelby-add-ben').value) || 2,
-    due: document.getElementById('shelby-add-due').value || undefined
+    benefit: parseInt(document.getElementById('shelby-add-ben').value) || 3,
+    due: dueEl ? dueEl.value || undefined : undefined
   };
   try {
     var resp = await fetch('/api/shelby/tasks', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
     var data = await resp.json();
     if (data.success) {
-      document.getElementById('shelby-add-title').value = '';
-      document.getElementById('shelby-add-due').value = '';
+      if (titleEl) titleEl.value = '';
+      if (dueEl) dueEl.value = '';
       var sr = await fetch('/api/shelby');
       renderShelby(await sr.json());
     } else {
@@ -2995,6 +3021,10 @@ async function refresh() {
       loadAgentLearning('sentinel');
       loadRobotoxDeps();
       loadLogWatcherAlerts();
+      loadRobotoxPerf();
+      loadRobotoxDepHealth();
+      loadRobotoxCorrelator();
+      loadRobotoxDeployWatches();
       loadBrainNotes('robotox');
       loadCommandTable('robotox');
       loadAgentSmartActions('robotox');
@@ -3002,6 +3032,8 @@ async function refresh() {
     } else if (currentTab === 'thor') {
       loadThor();
       loadSmartActions();
+      loadThorReflexion();
+      loadThorCache();
       loadBrainNotes('thor');
       loadCommandTable('thor');
       loadAgentActivity('thor');
@@ -3520,6 +3552,47 @@ async function loadThorCosts() {
   } catch(e) {
     // silent
   }
+}
+
+async function loadThorReflexion() {
+  var el = document.getElementById('thor-reflexion-stats');
+  if (!el) return;
+  try {
+    var resp = await fetch('/api/thor/reflexion');
+    var data = await resp.json();
+    if (data.error) { el.innerHTML = '<span class="text-muted">' + esc(data.error) + '</span>'; return; }
+    var html = '<div style="margin-bottom:4px;"><span style="font-size:1rem;font-weight:700;">' + (data.total || 0) + '</span> <span class="text-muted">reflections</span></div>';
+    var byType = data.by_type || {};
+    var types = Object.keys(byType);
+    if (types.length > 0) {
+      html += '<div style="display:flex;gap:8px;flex-wrap:wrap;">';
+      for (var i = 0; i < types.length; i++) {
+        var t = types[i];
+        var color = t === 'syntax' ? 'var(--error)' : t === 'quality_gate' ? 'var(--warning)' : 'var(--text-muted)';
+        html += '<span style="color:' + color + ';">' + esc(t) + ': ' + byType[t] + '</span>';
+      }
+      html += '</div>';
+    }
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = '<span class="text-muted">--</span>'; }
+}
+
+async function loadThorCache() {
+  var el = document.getElementById('thor-cache-stats');
+  if (!el) return;
+  try {
+    var resp = await fetch('/api/thor/cache');
+    var data = await resp.json();
+    if (data.error) { el.innerHTML = '<span class="text-muted">' + esc(data.error) + '</span>'; return; }
+    var hitRate = data.total_lookups > 0 ? Math.round((data.cache_hits / data.total_lookups) * 100) : 0;
+    var html = '<div style="margin-bottom:4px;"><span style="font-size:1rem;font-weight:700;">' + hitRate + '%</span> <span class="text-muted">hit rate</span></div>';
+    html += '<div style="display:flex;gap:10px;">';
+    html += '<span class="text-muted">Entries: ' + (data.cached_entries || 0) + '</span>';
+    html += '<span style="color:var(--success);">Hits: ' + (data.cache_hits || 0) + '</span>';
+    html += '<span class="text-muted">Lookups: ' + (data.total_lookups || 0) + '</span>';
+    html += '</div>';
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = '<span class="text-muted">--</span>'; }
 }
 
 function setText(id, val) {
@@ -4231,6 +4304,148 @@ async function loadLogWatcherAlerts() {
       }
     }
   } catch(e) { console.error('loadLogWatcherAlerts:', e); }
+}
+
+// ══════════════════════════════════════════════
+// ROBOTOX: Performance Baselines
+// ══════════════════════════════════════════════
+async function loadRobotoxPerf() {
+  var el = document.getElementById('robotox-perf-content');
+  if (!el) return;
+  try {
+    var resp = await fetch('/api/robotox/perf');
+    var data = await resp.json();
+    if (data.error) { el.innerHTML = '<span style="color:var(--error);">' + esc(data.error) + '</span>'; return; }
+    var current = data.current || {};
+    var baselines = data.baselines || {};
+    var agents = Object.keys(current);
+    if (agents.length === 0) { el.innerHTML = '<div class="text-muted" style="text-align:center;padding:var(--space-4);">No performance data yet — waiting for scan cycle.</div>'; return; }
+    var html = '<table class="data-table"><thead><tr><th>Agent</th><th>CPU %</th><th>Mem MB</th><th>Threads</th><th>Baseline Mem</th><th>Status</th></tr></thead><tbody>';
+    for (var i = 0; i < agents.length; i++) {
+      var a = agents[i];
+      var c = current[a] || {};
+      var b = baselines[a] || {};
+      var bMem = (b.mem_mb || {}).mean || 0;
+      var memRatio = bMem > 0 ? (c.mem_mb || 0) / bMem : 0;
+      var status = memRatio > 1.5 ? '<span style="color:var(--error);">SPIKE</span>' : memRatio > 1.2 ? '<span style="color:var(--warning);">HIGH</span>' : '<span style="color:var(--success);">OK</span>';
+      html += '<tr>';
+      html += '<td style="font-weight:600;text-transform:uppercase;">' + esc(a) + '</td>';
+      html += '<td style="font-family:var(--font-mono);">' + (c.cpu_pct || 0).toFixed(1) + '%</td>';
+      html += '<td style="font-family:var(--font-mono);">' + (c.mem_mb || 0).toFixed(1) + '</td>';
+      html += '<td style="font-family:var(--font-mono);text-align:center;">' + (c.threads || 0) + '</td>';
+      html += '<td style="font-family:var(--font-mono);">' + (bMem > 0 ? bMem.toFixed(1) : '--') + '</td>';
+      html += '<td>' + status + '</td>';
+      html += '</tr>';
+    }
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = '<span style="color:var(--error);">Failed: ' + esc(e.message) + '</span>'; }
+}
+
+// ══════════════════════════════════════════════
+// ROBOTOX: External Dependency Health
+// ══════════════════════════════════════════════
+async function loadRobotoxDepHealth() {
+  var el = document.getElementById('robotox-dep-health-content');
+  if (!el) return;
+  el.innerHTML = '<div class="text-muted" style="text-align:center;padding:var(--space-4);">Checking dependencies...</div>';
+  try {
+    var resp = await fetch('/api/robotox/dep-health');
+    var data = await resp.json();
+    if (data.error) { el.innerHTML = '<span style="color:var(--error);">' + esc(data.error) + '</span>'; return; }
+    var deps = data.dependencies || {};
+    var names = Object.keys(deps);
+    if (names.length === 0) { el.innerHTML = '<div class="text-muted" style="text-align:center;padding:var(--space-4);">No data — click Check Now to test.</div>'; return; }
+    var html = '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+    for (var i = 0; i < names.length; i++) {
+      var n = names[i];
+      var d = deps[n] || {};
+      var ok = d.status === 'ok' || d.reachable === true;
+      var color = ok ? 'var(--success)' : 'var(--error)';
+      var bg = ok ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)';
+      var latency = d.latency_ms ? d.latency_ms + 'ms' : '--';
+      html += '<div style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;background:' + bg + ';border:1px solid rgba(255,255,255,0.06);">';
+      html += '<span style="width:8px;height:8px;border-radius:50%;background:' + color + ';"></span>';
+      html += '<span style="font-weight:600;font-size:0.76rem;">' + esc(n) + '</span>';
+      html += '<span style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-muted);">' + latency + '</span>';
+      html += '</div>';
+    }
+    html += '</div>';
+    if (data.last_check) {
+      html += '<div class="text-muted" style="margin-top:8px;font-size:0.7rem;">Last check: ' + esc(data.last_check) + '</div>';
+    }
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = '<span style="color:var(--error);">Failed: ' + esc(e.message) + '</span>'; }
+}
+
+// ══════════════════════════════════════════════
+// ROBOTOX: Alert Correlator Stats
+// ══════════════════════════════════════════════
+async function loadRobotoxCorrelator() {
+  var el = document.getElementById('robotox-correlator-content');
+  if (!el) return;
+  try {
+    var resp = await fetch('/api/robotox/correlator');
+    var data = await resp.json();
+    if (data.error) { el.innerHTML = '<span style="color:var(--error);">' + esc(data.error) + '</span>'; return; }
+    var html = '<div style="display:flex;gap:16px;flex-wrap:wrap;">';
+    html += '<div style="text-align:center;"><div style="font-size:1.2rem;font-weight:700;color:var(--text-primary);">' + (data.total_received || 0) + '</div><div class="text-muted" style="font-size:0.7rem;">Alerts Received</div></div>';
+    html += '<div style="text-align:center;"><div style="font-size:1.2rem;font-weight:700;color:var(--success);">' + (data.suppressed || 0) + '</div><div class="text-muted" style="font-size:0.7rem;">Suppressed</div></div>';
+    html += '<div style="text-align:center;"><div style="font-size:1.2rem;font-weight:700;color:var(--warning);">' + (data.correlated || 0) + '</div><div class="text-muted" style="font-size:0.7rem;">Correlated</div></div>';
+    html += '<div style="text-align:center;"><div style="font-size:1.2rem;font-weight:700;color:var(--agent-sentinel);">' + (data.noise_reduction_pct || 0) + '%</div><div class="text-muted" style="font-size:0.7rem;">Noise Reduced</div></div>';
+    html += '<div style="text-align:center;"><div style="font-size:1.2rem;font-weight:700;color:var(--text-muted);">' + (data.pending || 0) + '</div><div class="text-muted" style="font-size:0.7rem;">Pending</div></div>';
+    html += '</div>';
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = '<span style="color:var(--error);">Failed: ' + esc(e.message) + '</span>'; }
+}
+
+// ══════════════════════════════════════════════
+// ROBOTOX: Deploy Watches (Auto-Rollback)
+// ══════════════════════════════════════════════
+async function loadRobotoxDeployWatches() {
+  var el = document.getElementById('robotox-deploy-content');
+  if (!el) return;
+  try {
+    var resp = await fetch('/api/robotox/deploy-watches');
+    var data = await resp.json();
+    if (data.error) { el.innerHTML = '<span style="color:var(--error);">' + esc(data.error) + '</span>'; return; }
+    var watches = data.active_watches || [];
+    var history = data.rollback_history || [];
+    var html = '';
+    if (watches.length > 0) {
+      html += '<div style="margin-bottom:12px;"><span style="font-weight:600;font-size:0.78rem;color:var(--warning);">Active Watches (' + watches.length + ')</span></div>';
+      for (var i = 0; i < watches.length; i++) {
+        var w = watches[i];
+        var elapsed = Math.round((Date.now()/1000 - (w.started_at || 0)) / 60);
+        var soakMin = Math.round(((w.soak_until || 0) - (w.started_at || 0)) / 60);
+        var pct = Math.min(100, Math.round(elapsed / soakMin * 100));
+        html += '<div style="padding:8px 12px;background:rgba(255,180,0,0.08);border-radius:8px;border:1px solid rgba(255,180,0,0.2);margin-bottom:6px;">';
+        html += '<div style="display:flex;justify-content:space-between;"><span style="font-weight:600;">' + esc(w.agent || '').toUpperCase() + '</span><span class="text-muted" style="font-size:0.72rem;">Task: ' + esc(w.task_id || '') + '</span></div>';
+        html += '<div style="margin-top:4px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:var(--warning);border-radius:2px;transition:width 0.3s;"></div></div>';
+        html += '<div class="text-muted" style="font-size:0.7rem;margin-top:3px;">' + elapsed + '/' + soakMin + ' min soaked | ' + (w.files || []).length + ' files</div>';
+        html += '</div>';
+      }
+    } else {
+      html += '<div class="text-muted" style="font-size:0.76rem;margin-bottom:8px;">No active watches.</div>';
+    }
+    if (history.length > 0) {
+      html += '<div style="margin-top:8px;"><span style="font-weight:600;font-size:0.78rem;color:var(--error);">Rollback History (' + history.length + ')</span></div>';
+      html += '<table class="data-table" style="margin-top:6px;"><thead><tr><th>Time</th><th>Agent</th><th>Reason</th><th>Files</th></tr></thead><tbody>';
+      var shown = history.slice(-5).reverse();
+      for (var i = 0; i < shown.length; i++) {
+        var r = shown[i];
+        var ts = (r.timestamp || '').substring(11, 19);
+        html += '<tr>';
+        html += '<td style="font-family:var(--font-mono);font-size:0.72rem;">' + esc(ts) + '</td>';
+        html += '<td style="font-weight:600;text-transform:uppercase;">' + esc(r.agent || '') + '</td>';
+        html += '<td style="font-size:0.72rem;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(r.reason || '') + '">' + esc(r.reason || '') + '</td>';
+        html += '<td style="text-align:center;">' + (r.files_rolled_back || []).length + '</td>';
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+    }
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = '<span style="color:var(--error);">Failed: ' + esc(e.message) + '</span>'; }
 }
 
 // ══════════════════════════════════════════════

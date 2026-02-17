@@ -39,6 +39,46 @@
     </div>
   </div>
   <div class="section-spacer">
+    <h2 class="section-title" data-accent="sentinel">Performance Baselines</h2>
+    <div class="glass-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
+        <span class="text-muted" style="font-size:0.76rem;">psutil-based CPU/memory/thread tracking per agent with z-score anomaly detection</span>
+        <button class="btn" onclick="loadRobotoxPerf()" style="font-size:0.72rem;">Refresh</button>
+      </div>
+      <div id="robotox-perf-content"><div class="text-muted" style="text-align:center;padding:var(--space-4);">Loading performance data...</div></div>
+    </div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="sentinel">External Dependencies</h2>
+    <div class="glass-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
+        <span class="text-muted" style="font-size:0.76rem;">Connectivity to Polymarket, Binance.US, OpenAI, Telegram, GitHub</span>
+        <button class="btn" onclick="loadRobotoxDepHealth()" style="font-size:0.72rem;">Check Now</button>
+      </div>
+      <div id="robotox-dep-health-content"><div class="text-muted" style="text-align:center;padding:var(--space-4);">No dependency health data yet.</div></div>
+    </div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="sentinel">Alert Correlation</h2>
+    <div class="glass-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
+        <span class="text-muted" style="font-size:0.76rem;">Noise reduction via causal graph — groups alerts, identifies root causes</span>
+        <button class="btn" onclick="loadRobotoxCorrelator()" style="font-size:0.72rem;">Refresh</button>
+      </div>
+      <div id="robotox-correlator-content"><div class="text-muted" style="text-align:center;padding:var(--space-4);">No correlation stats yet.</div></div>
+    </div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="sentinel">Deploy Watches (Auto-Rollback)</h2>
+    <div class="glass-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
+        <span class="text-muted" style="font-size:0.76rem;">Monitors Thor deployments during 5-min soak period — auto-reverts on regression</span>
+        <button class="btn" onclick="loadRobotoxDeployWatches()" style="font-size:0.72rem;">Refresh</button>
+      </div>
+      <div id="robotox-deploy-content"><div class="text-muted" style="text-align:center;padding:var(--space-4);">No active watches.</div></div>
+    </div>
+  </div>
+  <div class="section-spacer">
     <h2 class="section-title" data-accent="sentinel">Alerts</h2>
     <div class="feed-scroll" id="sentinel-alerts"><div class="feed-item"><span class="badge badge-success">OK</span> <span style="font-family:var(--font-mono);font-size:0.76rem;color:var(--text-secondary);margin-left:8px;">All systems nominal</span></div></div>
   </div>

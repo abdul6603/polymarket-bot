@@ -1,6 +1,8 @@
 """Robotox/Sentinel (health monitor) routes: /api/sentinel/*"""
 from __future__ import annotations
 
+from pathlib import Path
+
 from flask import Blueprint, jsonify
 
 sentinel_bp = Blueprint("sentinel", __name__)
@@ -77,6 +79,77 @@ def api_robotox_log_alerts():
             "alerts": s.get_log_watcher_alerts(),
             "patterns": s.get_log_watcher_patterns(),
         })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@sentinel_bp.route("/api/robotox/perf")
+def api_robotox_perf():
+    """Get current performance metrics for all agents."""
+    try:
+        s = _get_sentinel()
+        return jsonify({
+            "current": s.get_perf_current(),
+            "baselines": s.get_perf_baselines(),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@sentinel_bp.route("/api/robotox/dep-health")
+def api_robotox_dep_health():
+    """Get external dependency connectivity status."""
+    try:
+        s = _get_sentinel()
+        return jsonify(s.get_dep_health())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@sentinel_bp.route("/api/robotox/dep-health/check", methods=["POST"])
+def api_robotox_dep_health_check():
+    """Trigger a fresh dependency health check."""
+    try:
+        s = _get_sentinel()
+        return jsonify(s.check_dep_health())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@sentinel_bp.route("/api/robotox/intel-feed")
+def api_robotox_intel_feed():
+    """Get the shared intelligence feed."""
+    try:
+        import sys
+        sys.path.insert(0, str(Path.home()))
+        from shared.intelligence_feed import get_all, get_stats
+        return jsonify({
+            "items": get_all(limit=30),
+            "stats": get_stats(),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@sentinel_bp.route("/api/robotox/deploy-watches")
+def api_robotox_deploy_watches():
+    """Get active deployment watches and rollback history."""
+    try:
+        s = _get_sentinel()
+        return jsonify({
+            "active_watches": s.get_deploy_watches(),
+            "rollback_history": s.get_rollback_history(),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@sentinel_bp.route("/api/robotox/correlator")
+def api_robotox_correlator():
+    """Get alert correlation statistics."""
+    try:
+        s = _get_sentinel()
+        return jsonify(s.get_correlator_stats())
     except Exception as e:
         return jsonify({"error": str(e)[:200]})
 
