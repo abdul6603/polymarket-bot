@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Brotherhood — Agent Command Sheet</title>
+<style>
+  :root {
+    --bg: #060609;
+    --surface: #0b0b12;
+    --surface-2: #10101a;
+    --border: #1a1a2e;
+    --border-light: #252540;
+    --text: #e8e8f0;
+    --text-dim: #8888aa;
+    --text-muted: #555570;
+    --gold: #FFD700;
+    --shelby: #00d4ff;
+    --garves: #ff6b35;
+    --soren: #cc66ff;
+    --atlas: #22cc55;
+    --lisa: #ff8800;
+    --robotox: #00ff44;
+    --thor: #ff6600;
+    --hawk: #FFD700;
+    --viper: #00ff88;
+    --radius: 10px;
+    --font: 'Inter', 'SF Pro Display', -apple-system, system-ui, sans-serif;
+    --mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); padding: 48px 24px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  /* Header */
+  .page-header { text-align: center; margin-bottom: 48px; }
+  .page-header h1 { font-size: 2rem; font-weight: 700; color: #fff; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 6px; }
+  .page-header .tagline { font-size: 0.85rem; color: var(--text-muted); letter-spacing: 1px; }
+
+  /* Stats Row */
+  .stats-row { display: flex; justify-content: center; gap: 48px; margin-bottom: 44px; flex-wrap: wrap; }
+  .stat-box { text-align: center; }
+  .stat-box .num { font-size: 2rem; font-weight: 700; color: #fff; font-family: var(--mono); }
+  .stat-box .lbl { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 2px; }
+
+  /* Hierarchy */
+  .hierarchy-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 32px; margin-bottom: 44px; }
+  .hierarchy-card h3 { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); margin-bottom: 16px; }
+  .hierarchy-card pre { font-family: var(--mono); font-size: 0.78rem; line-height: 2; color: var(--text-dim); }
+  .h-gold { color: var(--gold); font-weight: 600; }
+  .h-blue { color: var(--shelby); font-weight: 600; }
+  .h-dim { color: #666; }
+
+  /* Agent Card */
+  .agent-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 28px; overflow: hidden; transition: border-color 0.2s; }
+  .agent-card:hover { border-color: var(--accent); }
+
+  .agent-top { display: flex; align-items: center; gap: 16px; padding: 20px 28px; border-bottom: 1px solid var(--border); }
+  .agent-badge { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; color: #000; flex-shrink: 0; }
+  .agent-info h2 { font-size: 1.15rem; color: #fff; font-weight: 600; }
+  .agent-info .role { font-size: 0.76rem; color: var(--text-dim); }
+  .agent-info .loc { font-size: 0.7rem; color: var(--text-muted); font-family: var(--mono); margin-top: 2px; }
+  .tool-count { margin-left: auto; background: var(--accent); color: #000; font-size: 0.68rem; font-weight: 700; padding: 4px 12px; border-radius: 20px; white-space: nowrap; }
+
+  .agent-body { padding: 22px 28px; }
+
+  /* Voice */
+  .voice { background: var(--surface-2); border-left: 3px solid var(--accent); padding: 12px 18px; border-radius: 0 8px 8px 0; margin-bottom: 18px; font-size: 0.82rem; color: var(--text-dim); font-style: italic; line-height: 1.6; }
+
+  /* Intelligence Meter */
+  .intel-section { margin-bottom: 20px; }
+  .intel-title { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); margin-bottom: 10px; }
+  .intel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+  .intel-item { display: flex; align-items: center; gap: 8px; }
+  .intel-label { font-size: 0.72rem; color: var(--text-dim); min-width: 100px; white-space: nowrap; }
+  .intel-bar-bg { flex: 1; height: 6px; background: #1a1a2e; border-radius: 3px; overflow: hidden; min-width: 60px; }
+  .intel-bar { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+  .intel-val { font-size: 0.68rem; font-weight: 600; color: var(--accent); font-family: var(--mono); min-width: 28px; text-align: right; }
+  .intel-overall { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; padding: 4px 12px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--border); }
+  .intel-overall .lbl { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+  .intel-overall .val { font-size: 1rem; font-weight: 700; color: var(--accent); font-family: var(--mono); }
+
+  /* Skills */
+  .section-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); margin: 18px 0 10px; }
+  .skills-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+  .skill-group { background: var(--surface-2); border-radius: 8px; padding: 12px 14px; }
+  .skill-group-name { font-size: 0.72rem; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .skill-list { list-style: none; }
+  .skill-list li { font-size: 0.76rem; color: #888; padding: 1px 0; padding-left: 14px; position: relative; }
+  .skill-list li::before { content: ""; position: absolute; left: 0; top: 8px; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); opacity: 0.5; }
+
+  /* Footer */
+  .footer { text-align: center; margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 0.75rem; color: var(--text-muted); }
+  .footer strong { color: var(--text-dim); }
+
+  @media (max-width: 700px) {
+    body { padding: 24px 12px; }
+    .stats-row { gap: 24px; }
+    .agent-top { flex-wrap: wrap; }
+    .tool-count { margin-left: 0; }
+    .intel-grid { grid-template-columns: 1fr; }
+    .skills-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="page-header">
+  <h1>The Brotherhood</h1>
+  <div class="tagline">Agent Command Sheet &mdash; February 16, 2026</div>
+</div>
+
+<div class="stats-row">
+  <div class="stat-box"><div class="num">9</div><div class="lbl">Agents</div></div>
+  <div class="stat-box"><div class="num">200+</div><div class="lbl">Capabilities</div></div>
+  <div class="stat-box"><div class="num">24/7</div><div class="lbl">Uptime</div></div>
+  <div class="stat-box"><div class="num">11</div><div class="lbl">API Endpoints</div></div>
+</div>
+
+<div class="hierarchy-card">
+  <h3>Command Hierarchy</h3>
+  <pre><span class="h-gold">JORDAN</span> <span class="h-dim">(The Boss)</span>
+  <span class="h-gold">CLAUDE</span> <span class="h-dim">(The Godfather &mdash; ultimate overseer)</span>
+    <span class="h-blue">THOR</span> <span class="h-dim">(The Engineer &mdash; coding lieutenant)</span>
+    <span class="h-blue">SHELBY</span> <span class="h-dim">(The Commander &mdash; team leader)</span>
+      ATLAS <span class="h-dim">(The Scientist &mdash; feeds ALL agents)</span>
+      SOREN <span class="h-dim">(The Thinker &mdash; content creator)</span>
+        LISA <span class="h-dim">(The Operator &mdash; social media)</span>
+      GARVES <span class="h-dim">(The Trader &mdash; crypto prediction markets)</span>
+      HAWK <span class="h-dim">(The Poker Shark &mdash; non-crypto Polymarket)</span>
+      VIPER <span class="h-dim">(The Silent Assassin &mdash; 24/7 intelligence engine)</span>
+      ROBOTOX <span class="h-dim">(The Watchman &mdash; health monitor)</span></pre>
+</div>
+
+<!-- ═══════════ SHELBY ═══════════ -->
+<div class="agent-card" style="--accent: var(--shelby);">
+  <div class="agent-top">
+    <div class="agent-badge" style="background: var(--shelby);">SH</div>
+    <div class="agent-info">
+      <h2>SHELBY</h2>
+      <div class="role">The Commander &bull; Team Leader &bull; Port 7777 &bull; TG Bot V2 (PTB v20.8)</div>
+      <div class="loc">~/shelby/</div>
+    </div>
+    <div class="tool-count" style="background: var(--shelby);">72 tools</div>
+  </div>
+  <div class="agent-body">
+    <div class="voice">"Yes sir. Garves is running &mdash; 2 positions open, 60% win rate. Soren has 10 posts queued. Awaiting your orders, sir."</div>
+    <div class="intel-section">
+      <div class="intel-title">Intelligence Meter</div>
+      <div class="intel-grid">
+        <div class="intel-item"><span class="intel-label">Team Awareness</span><div class="intel-bar-bg"><div class="intel-bar" style="width:85%;background:var(--shelby);"></div></div><span class="intel-val">85</span></div>
+        <div class="intel-item"><span class="intel-label">Task Management</span><div class="intel-bar-bg"><div class="intel-bar" style="width:78%;background:var(--shelby);"></div></div><span class="intel-val">78</span></div>
+        <div class="intel-item"><span class="intel-label">Communication</span><div class="intel-bar-bg"><div class="intel-bar" style="width:90%;background:var(--shelby);"></div></div><span class="intel-val">90</span></div>
+        <div class="intel-item"><span class="intel-label">Scheduling</span><div class="intel-bar-bg"><div class="intel-bar" style="width:82%;background:var(--shelby);"></div></div><span class="intel-val">82</span></div>
+        <div class="intel-item"><span class="intel-label">Decision Quality</span><div class="intel-bar-bg"><div class="intel-bar" style="width:76%;background:var(--shelby);"></div></div><span class="intel-val">76</span></div>
+      </div>
+      <div class="intel-overall"><span class="lbl">Overall:</span><span class="val">82</span></div>
+    </div>
+    <div class="section-label">Skills</div>
+    <div class="skills-grid">
+      <div class="skill-group"><div class="skill-group-name">Agent Management</div><ul class="skill-list"><li>check_agent_status</li><li>morning_briefing</li><li>broadcast_command</li><li>assign_task_to_agent</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Task & Finance</div><ul class="skill-list"><li>add_task / complete_task / list_tasks</li><li>add_expense / add_income</li><li>finance_report / budget_status</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">TG Bot V2 (PTB v20.8 Async)</div><ul class="skill-list"><li>14 command handlers (async)</li><li>3 services: notifier, charts, scheduler</li><li>PicklePersistence for state survival</li><li>Interactive inline keyboards</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">TG Notifications & Scheduling</div><ul class="skill-list"><li>Priority-based alerts (P0&ndash;P3)</li><li>Quiet hours &amp; anti-spam filtering</li><li>4 scheduled reports (morning/midday/EOD/weekly)</li><li>Content approval flow via Telegram</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">TG Charts & Visuals</div><ul class="skill-list"><li>Matplotlib dark-theme charts</li><li>P/L curves, indicator gauges</li><li>Intelligence spider diagrams</li><li>Agent drill-down inline keyboards</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">TG Commands & Workflows</div><ul class="skill-list"><li>/status /trades /tasks /regime</li><li>/soren /atlas /broadcast</li><li>/review /approve /queue</li><li>Thor task submission (ConversationHandler)</li></ul></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ GARVES ═══════════ -->
+<div class="agent-card" style="--accent: var(--garves);">
+  <div class="agent-top">
+    <div class="agent-badge" style="background: var(--garves);">GA</div>
+    <div class="agent-info">
+      <h2>GARVES</h2>
+      <div class="role">The Trader &bull; BTC/ETH/SOL Prediction Markets &bull; Live Trading</div>
+      <div class="loc">~/polymarket-bot/ &bull; .venv/bin/python -m bot.main</div>
+    </div>
+    <div class="tool-count" style="background: var(--garves);">22 tools</div>
+  </div>
+  <div class="agent-body">
+    <div class="voice">"Running. 2 open positions &mdash; BTC DOWN and ETH UP. 9 trades pending resolution. 1W-0L so far. Exposure: $20/$100."</div>
+    <div class="intel-section">
+      <div class="intel-title">Intelligence Meter</div>
+      <div class="intel-grid">
+        <div class="intel-item"><span class="intel-label">Market Knowledge</span><div class="intel-bar-bg"><div class="intel-bar" style="width:88%;background:var(--garves);"></div></div><span class="intel-val">88</span></div>
+        <div class="intel-item"><span class="intel-label">Accuracy</span><div class="intel-bar-bg"><div class="intel-bar" style="width:65%;background:var(--garves);"></div></div><span class="intel-val">65</span></div>
+        <div class="intel-item"><span class="intel-label">Experience</span><div class="intel-bar-bg"><div class="intel-bar" style="width:72%;background:var(--garves);"></div></div><span class="intel-val">72</span></div>
+        <div class="intel-item"><span class="intel-label">Risk Management</span><div class="intel-bar-bg"><div class="intel-bar" style="width:90%;background:var(--garves);"></div></div><span class="intel-val">90</span></div>
+        <div class="intel-item"><span class="intel-label">Adaptability</span><div class="intel-bar-bg"><div class="intel-bar" style="width:80%;background:var(--garves);"></div></div><span class="intel-val">80</span></div>
+      </div>
+      <div class="intel-overall"><span class="lbl">Overall:</span><span class="val">79</span></div>
+    </div>
+    <div class="section-label">Skills</div>
+    <div class="skills-grid">
+      <div class="skill-group"><div class="skill-group-name">11-Indicator Ensemble</div><ul class="skill-list"><li>RSI, MACD, EMA, Heikin Ashi</li><li>Bollinger, Momentum, Order Flow</li><li>Liquidity, Divergence, Temporal Arb</li><li>Dynamic weight learner</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Regime & Risk</div><ul class="skill-list"><li>Fear & Greed regime detection</li><li>Kelly Criterion dynamic sizing</li><li>Straddle engine</li><li>Conviction engine</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Execution</div><ul class="skill-list"><li>CLOB API (GTC limit orders)</li><li>Binance.US WebSocket (real-time)</li><li>Cross-timeframe validation</li><li>Auto-resolution tracking</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Reporting</div><ul class="skill-list"><li>Daily trade reports</li><li>Signal rationale generator</li><li>Trade alerts to Shelby</li></ul></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ SOREN ═══════════ -->
+<div class="agent-card" style="--accent: var(--soren);">
+  <div class="agent-top">
+    <div class="agent-badge" style="background: var(--soren);">SO</div>
+    <div class="agent-info">
+      <h2>SOREN</h2>
+      <div class="role">The Thinker &bull; Content Creator &bull; @soren.era</div>
+      <div class="loc">~/soren-content/</div>
+    </div>
+    <div class="tool-count" style="background: var(--soren);">28 tools</div>
+  </div>
+  <div class="agent-body">
+    <div class="voice">"Working on 3 reels for tomorrow. The heartbreak-to-power one hits hardest &mdash; that's going first."</div>
+    <div class="intel-section">
+      <div class="intel-title">Intelligence Meter</div>
+      <div class="intel-grid">
+        <div class="intel-item"><span class="intel-label">Creativity</span><div class="intel-bar-bg"><div class="intel-bar" style="width:82%;background:var(--soren);"></div></div><span class="intel-val">82</span></div>
+        <div class="intel-item"><span class="intel-label">Productivity</span><div class="intel-bar-bg"><div class="intel-bar" style="width:70%;background:var(--soren);"></div></div><span class="intel-val">70</span></div>
+        <div class="intel-item"><span class="intel-label">Brand Voice</span><div class="intel-bar-bg"><div class="intel-bar" style="width:78%;background:var(--soren);"></div></div><span class="intel-val">78</span></div>
+        <div class="intel-item"><span class="intel-label">Platform Reach</span><div class="intel-bar-bg"><div class="intel-bar" style="width:55%;background:var(--soren);"></div></div><span class="intel-val">55</span></div>
+        <div class="intel-item"><span class="intel-label">Trend Awareness</span><div class="intel-bar-bg"><div class="intel-bar" style="width:65%;background:var(--soren);"></div></div><span class="intel-val">65</span></div>
+      </div>
+      <div class="intel-overall"><span class="lbl">Overall:</span><span class="val">70</span></div>
+    </div>
+    <div class="section-label">Skills</div>
+    <div class="skills-grid">
+      <div class="skill-group"><div class="skill-group-name">Content Generation</div><ul class="skill-list"><li>10 content pillars (dark motivation, stoic, gym...)</li><li>batch_generate (7+ items)</li><li>A/B caption testing</li><li>Auto-trend generator</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Media Pipeline</div><ul class="skill-list"><li>ElevenLabs "Brian" voice</li><li>DALL-E 3 image generation</li><li>Script writer (15s/30s/60s)</li><li>Content repurpose engine</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Queue & Review</div><ul class="skill-list"><li>Content queue management</li><li>approve / decline / mark_posted</li><li>SEO title generator</li><li>Platform-aware hashtags</li></ul></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ ATLAS ═══════════ -->
+<div class="agent-card" style="--accent: var(--atlas);">
+  <div class="agent-top">
+    <div class="agent-badge" style="background: var(--atlas);">AT</div>
+    <div class="agent-info">
+      <h2>ATLAS</h2>
+      <div class="role">The Scientist &bull; 24/7 Research Engine &bull; 45-min Cycles</div>
+      <div class="loc">~/atlas/ &bull; Tavily API</div>
+    </div>
+    <div class="tool-count" style="background: var(--atlas);">31 tools</div>
+  </div>
+  <div class="agent-body">
+    <div class="voice">"I ran 3 research cycles overnight. Found that BTC 15m markets have a 3% taker fee the team missed. Already flagged it to Claude."</div>
+    <div class="intel-section">
+      <div class="intel-title">Intelligence Meter</div>
+      <div class="intel-grid">
+        <div class="intel-item"><span class="intel-label">Knowledge Depth</span><div class="intel-bar-bg"><div class="intel-bar" style="width:75%;background:var(--atlas);"></div></div><span class="intel-val">75</span></div>
+        <div class="intel-item"><span class="intel-label">Research Quality</span><div class="intel-bar-bg"><div class="intel-bar" style="width:70%;background:var(--atlas);"></div></div><span class="intel-val">70</span></div>
+        <div class="intel-item"><span class="intel-label">Learning Rate</span><div class="intel-bar-bg"><div class="intel-bar" style="width:68%;background:var(--atlas);"></div></div><span class="intel-val">68</span></div>
+        <div class="intel-item"><span class="intel-label">Agent Coverage</span><div class="intel-bar-bg"><div class="intel-bar" style="width:80%;background:var(--atlas);"></div></div><span class="intel-val">80</span></div>
+        <div class="intel-item"><span class="intel-label">Synthesis</span><div class="intel-bar-bg"><div class="intel-bar" style="width:65%;background:var(--atlas);"></div></div><span class="intel-val">65</span></div>
+      </div>
+      <div class="intel-overall"><span class="lbl">Overall:</span><span class="val">72</span></div>
+    </div>
+    <div class="section-label">Skills</div>
+    <div class="skills-grid">
+      <div class="skill-group"><div class="skill-group-name">Knowledge Base</div><ul class="skill-list"><li>Observe, summarize, track evidence</li><li>Auto-summarization to learnings</li><li>Hypothesis engine (experiments)</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Research & Analysis</div><ul class="skill-list"><li>Tavily web research (45-min cycles)</li><li>Competitor spy module</li><li>On-chain data (BTC/ETH/SOL)</li><li>Sentiment analysis + trend forecast</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Agent Optimization</div><ul class="skill-list"><li>garves_optimizer / soren_optimizer</li><li>shelby_optimizer / mercury_optimizer</li><li>Agent assessments (0-100 scores)</li><li>Cross-agent anomaly detection</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Intelligence Delivery</div><ul class="skill-list"><li>Push critical insights (Telegram)</li><li>Data feed to all agents</li><li>Executive intel brief</li></ul></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ LISA ═══════════ -->
+<div class="agent-card" style="--accent: var(--lisa);">
+  <div class="agent-top">
+    <div class="agent-badge" style="background: var(--lisa);">LI</div>
+    <div class="agent-info">
+      <h2>LISA</h2>
+      <div class="role">The Operator &bull; Social Media Manager &bull; Semi-Auto</div>
+      <div class="loc">~/mercury/</div>
+    </div>
+    <div class="tool-count" style="background: var(--lisa);">25 tools</div>
+  </div>
+  <div class="agent-body">
+    <div class="voice">"3 reels posted. IG engagement up 12%. Increasing stoic_lessons frequency. Schedule locked. Awaiting confirmation."</div>
+    <div class="intel-section">
+      <div class="intel-title">Intelligence Meter</div>
+      <div class="intel-grid">
+        <div class="intel-item"><span class="intel-label">Platform Knowledge</span><div class="intel-bar-bg"><div class="intel-bar" style="width:70%;background:var(--lisa);"></div></div><span class="intel-val">70</span></div>
+        <div class="intel-item"><span class="intel-label">Posting Discipline</span><div class="intel-bar-bg"><div class="intel-bar" style="width:65%;background:var(--lisa);"></div></div><span class="intel-val">65</span></div>
+        <div class="intel-item"><span class="intel-label">Brand Alignment</span><div class="intel-bar-bg"><div class="intel-bar" style="width:72%;background:var(--lisa);"></div></div><span class="intel-val">72</span></div>
+        <div class="intel-item"><span class="intel-label">Strategy Depth</span><div class="intel-bar-bg"><div class="intel-bar" style="width:60%;background:var(--lisa);"></div></div><span class="intel-val">60</span></div>
+        <div class="intel-item"><span class="intel-label">Engagement IQ</span><div class="intel-bar-bg"><div class="intel-bar" style="width:55%;background:var(--lisa);"></div></div><span class="intel-val">55</span></div>
+      </div>
+      <div class="intel-overall"><span class="lbl">Overall:</span><span class="val">64</span></div>
+    </div>
+    <div class="section-label">Skills</div>
+    <div class="skills-grid">
+      <div class="skill-group"><div class="skill-group-name">Publishing</div><ul class="skill-list"><li>IG / TikTok / X posting</li><li>Platform-aware formatting</li><li>Optimal posting times</li><li>Brand review gate (score/10)</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Pipeline</div><ul class="skill-list"><li>request_soren_batch</li><li>generate_weekly_calendar</li><li>auto_prioritize queue</li><li>bulk_schedule</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Intelligence</div><ul class="skill-list"><li>MercuryBrain (knowledge system)</li><li>Reply intelligence</li><li>pull_trends_from_atlas</li><li>daily_performance_report</li></ul></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ ROBOTOX ═══════════ -->
+<div class="agent-card" style="--accent: var(--robotox);">
+  <div class="agent-top">
+    <div class="agent-badge" style="background: var(--robotox);">RO</div>
+    <div class="agent-info">
+      <h2>ROBOTOX</h2>
+      <div class="role">The Watchman &bull; Health Monitor &bull; Autonomous Auto-Fixer</div>
+      <div class="loc">~/sentinel/</div>
+    </div>
+    <div class="tool-count" style="background: var(--robotox);">18 tools</div>
+  </div>
+  <div class="agent-body">
+    <div class="voice">"All systems green. 9 agents online. 0 errors in last 6h. Next scan in 45s."</div>
+    <div class="intel-section">
+      <div class="intel-title">Intelligence Meter</div>
+      <div class="intel-grid">
+        <div class="intel-item"><span class="intel-label">Detection</span><div class="intel-bar-bg"><div class="intel-bar" style="width:82%;background:var(--robotox);"></div></div><span class="intel-val">82</span></div>
+        <div class="intel-item"><span class="intel-label">Auto-Fix</span><div class="intel-bar-bg"><div class="intel-bar" style="width:75%;background:var(--robotox);"></div></div><span class="intel-val">75</span></div>
+        <div class="intel-item"><span class="intel-label">Vigilance</span><div class="intel-bar-bg"><div class="intel-bar" style="width:85%;background:var(--robotox);"></div></div><span class="intel-val">85</span></div>
+        <div class="intel-item"><span class="intel-label">Coverage</span><div class="intel-bar-bg"><div class="intel-bar" style="width:78%;background:var(--robotox);"></div></div><span class="intel-val">78</span></div>
+        <div class="intel-item"><span class="intel-label">Response Speed</span><div class="intel-bar-bg"><div class="intel-bar" style="width:80%;background:var(--robotox);"></div></div><span class="intel-val">80</span></div>
+      </div>
+      <div class="intel-overall"><span class="lbl">Overall:</span><span class="val">80</span></div>
+    </div>
+    <div class="section-label">Skills</div>
+    <div class="skills-grid">
+      <div class="skill-group"><div class="skill-group-name">Monitoring</div><ul class="skill-list"><li>Process check (pgrep patterns)</li><li>Port check (socket test)</li><li>System vitals (CPU/mem/disk)</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Auto-Fix</div><ul class="skill-list"><li>Auto-restart crashed agents</li><li>Port conflict resolution</li><li>Cooldown (5min, max 3 attempts)</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Log Watcher</div><ul class="skill-list"><li>11 error patterns (geo-blocks, API fails...)</li><li>Auto-fix + escalate to Thor</li><li>Telegram alerts via Shelby</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Scanning</div><ul class="skill-list"><li>Bug scanner (bare excepts, secrets)</li><li>Dependency checker</li><li>Health/fix logging</li></ul></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ THOR ═══════════ -->
+<div class="agent-card" style="--accent: var(--thor);">
+  <div class="agent-top">
+    <div class="agent-badge" style="background: var(--thor);">TH</div>
+    <div class="agent-info">
+      <h2>THOR</h2>
+      <div class="role">The Engineer &bull; Coding Lieutenant &bull; Hybrid Claude AI</div>
+      <div class="loc">~/thor/ &bull; python -m thor</div>
+    </div>
+    <div class="tool-count" style="background: var(--thor);">20 tools</div>
+  </div>
+  <div class="agent-body">
+    <div class="voice">"Methodical. Blueprints first. Clean execution. Task received &mdash; analyzing codebase, generating implementation, running tests."</div>
+    <div class="intel-section">
+      <div class="intel-title">Intelligence Meter</div>
+      <div class="intel-grid">
+        <div class="intel-item"><span class="intel-label">Code Quality</span><div class="intel-bar-bg"><div class="intel-bar" style="width:75%;background:var(--thor);"></div></div><span class="intel-val">75</span></div>
+        <div class="intel-item"><span class="intel-label">Knowledge Depth</span><div class="intel-bar-bg"><div class="intel-bar" style="width:60%;background:var(--thor);"></div></div><span class="intel-val">60</span></div>
+        <div class="intel-item"><span class="intel-label">Task Execution</span><div class="intel-bar-bg"><div class="intel-bar" style="width:70%;background:var(--thor);"></div></div><span class="intel-val">70</span></div>
+        <div class="intel-item"><span class="intel-label">System Coverage</span><div class="intel-bar-bg"><div class="intel-bar" style="width:65%;background:var(--thor);"></div></div><span class="intel-val">65</span></div>
+        <div class="intel-item"><span class="intel-label">Efficiency</span><div class="intel-bar-bg"><div class="intel-bar" style="width:72%;background:var(--thor);"></div></div><span class="intel-val">72</span></div>
+      </div>
+      <div class="intel-overall"><span class="lbl">Overall:</span><span class="val">68</span></div>
+    </div>
+    <div class="section-label">Skills</div>
+    <div class="skills-grid">
+      <div class="skill-group"><div class="skill-group-name">Code Generation</div><ul class="skill-list"><li>Read codebase, generate code</li><li>Auto-escalate Sonnet to Opus</li><li>Test runner + validation</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Task System</div><ul class="skill-list"><li>File-based task queue</li><li>Priority: normal/high/critical</li><li>Results with test outcomes</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Knowledge</div><ul class="skill-list"><li>Atlas research feed</li><li>Knowledge base (indexed)</li><li>Smart actions generator</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Integration</div><ul class="skill-list"><li>Progress sheet auto-update</li><li>Dashboard auto-update</li><li>Git commit + push</li></ul></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ HAWK ═══════════ -->
+<div class="agent-card" style="--accent: var(--hawk);">
+  <div class="agent-top">
+    <div class="agent-badge" style="background: var(--hawk);">HK</div>
+    <div class="agent-info">
+      <h2>HAWK</h2>
+      <div class="role">The Poker Shark &bull; Polymarket Predator &bull; GPT-4o Brain &bull; Live Trading</div>
+      <div class="loc">~/polymarket-bot/hawk/ &bull; .venv/bin/python -m hawk</div>
+    </div>
+    <div class="tool-count" style="background: var(--hawk);">22 tools</div>
+  </div>
+  <div class="agent-body">
+    <div class="voice">"Market says 35%. Real probability is 61%. That's not a bet, that's a robbery. Recency bias &mdash; the crowd is anchored to yesterday's news."</div>
+    <div class="intel-section">
+      <div class="intel-title">Intelligence Meter</div>
+      <div class="intel-grid">
+        <div class="intel-item"><span class="intel-label">Market Scanning</span><div class="intel-bar-bg"><div class="intel-bar" style="width:90%;background:var(--hawk);"></div></div><span class="intel-val">90</span></div>
+        <div class="intel-item"><span class="intel-label">Probability Analysis</span><div class="intel-bar-bg"><div class="intel-bar" style="width:85%;background:var(--hawk);"></div></div><span class="intel-val">85</span></div>
+        <div class="intel-item"><span class="intel-label">Edge Detection</span><div class="intel-bar-bg"><div class="intel-bar" style="width:82%;background:var(--hawk);"></div></div><span class="intel-val">82</span></div>
+        <div class="intel-item"><span class="intel-label">Risk Management</span><div class="intel-bar-bg"><div class="intel-bar" style="width:88%;background:var(--hawk);"></div></div><span class="intel-val">88</span></div>
+        <div class="intel-item"><span class="intel-label">Category Knowledge</span><div class="intel-bar-bg"><div class="intel-bar" style="width:78%;background:var(--hawk);"></div></div><span class="intel-val">78</span></div>
+        <div class="intel-item"><span class="intel-label">Contrarian IQ</span><div class="intel-bar-bg"><div class="intel-bar" style="width:86%;background:var(--hawk);"></div></div><span class="intel-val">86</span></div>
+      </div>
+      <div class="intel-overall"><span class="lbl">Overall:</span><span class="val">85</span></div>
+    </div>
+    <div class="section-label">Skills</div>
+    <div class="skills-grid">
+      <div class="skill-group"><div class="skill-group-name">Gamma API Scanner</div><ul class="skill-list"><li>Scans ALL active Polymarket markets</li><li>Contested filter (12-88% YES price)</li><li>Mid-tier targeting (skip top-5 efficient)</li><li>Category classifier (politics, sports, crypto events, culture)</li><li>Excludes crypto Up/Down (Garves territory)</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Contrarian GPT-4o Analyst</div><ul class="skill-list"><li>6 mispricing patterns (recency, anchoring, narrative, extreme, neglected, breaking news)</li><li>First-principles probability estimation</li><li>Batch analysis (5 concurrent threads)</li><li>Anti-anchoring: ignores market price in reasoning</li><li>25+ opportunities per scan</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Edge & Kelly Sizing</div><ul class="skill-list"><li>Edge calculator (GPT prob vs market price)</li><li>Quarter-Kelly criterion sizing</li><li>Expected value ranking</li><li>Min 5% edge threshold</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Risk & Execution</div><ul class="skill-list"><li>$250 bankroll, $25 max bet</li><li>8 concurrent, $50 daily loss cap</li><li>CLOB API executor (GTC limit orders)</li><li>Category P&L heatmap tracking</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Live Dashboard</div><ul class="skill-list"><li>Real-time scan progress bar</li><li>9-column opportunity table with reasoning</li><li>Scan summary (scanned/contested/analyzed/EV)</li><li>Click-to-view GPT-4o reasoning per market</li></ul></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ VIPER ═══════════ -->
+<div class="agent-card" style="--accent: var(--viper);">
+  <div class="agent-top">
+    <div class="agent-badge" style="background: var(--viper);">VP</div>
+    <div class="agent-info">
+      <h2>VIPER</h2>
+      <div class="role">The Silent Assassin &bull; 24/7 Intelligence Engine &bull; Feeds Hawk &amp; Shelby</div>
+      <div class="loc">~/polymarket-bot/viper/ &bull; .venv/bin/python -m viper</div>
+    </div>
+    <div class="tool-count" style="background: var(--viper);">20 tools</div>
+  </div>
+  <div class="agent-body">
+    <div class="voice">"Intel acquired. 14 items &mdash; 6 matched to live markets. Fed to Hawk. Cost audit: $47/mo across 4 APIs. Soren at 2.1k followers, brand-ready at 5k."</div>
+    <div class="intel-section">
+      <div class="intel-title">Intelligence Meter</div>
+      <div class="intel-grid">
+        <div class="intel-item"><span class="intel-label">Intelligence Scan</span><div class="intel-bar-bg"><div class="intel-bar" style="width:84%;background:var(--viper);"></div></div><span class="intel-val">84</span></div>
+        <div class="intel-item"><span class="intel-label">Market Matching</span><div class="intel-bar-bg"><div class="intel-bar" style="width:80%;background:var(--viper);"></div></div><span class="intel-val">80</span></div>
+        <div class="intel-item"><span class="intel-label">Cost Analysis</span><div class="intel-bar-bg"><div class="intel-bar" style="width:82%;background:var(--viper);"></div></div><span class="intel-val">82</span></div>
+        <div class="intel-item"><span class="intel-label">Monetization IQ</span><div class="intel-bar-bg"><div class="intel-bar" style="width:72%;background:var(--viper);"></div></div><span class="intel-val">72</span></div>
+        <div class="intel-item"><span class="intel-label">Source Coverage</span><div class="intel-bar-bg"><div class="intel-bar" style="width:78%;background:var(--viper);"></div></div><span class="intel-val">78</span></div>
+        <div class="intel-item"><span class="intel-label">Hawk Integration</span><div class="intel-bar-bg"><div class="intel-bar" style="width:85%;background:var(--viper);"></div></div><span class="intel-val">85</span></div>
+      </div>
+      <div class="intel-overall"><span class="lbl">Overall:</span><span class="val">80</span></div>
+    </div>
+    <div class="section-label">Skills</div>
+    <div class="skills-grid">
+      <div class="skill-group"><div class="skill-group-name">Intelligence Scanner</div><ul class="skill-list"><li>Tavily news aggregation (real-time)</li><li>Reddit prediction subs monitoring</li><li>Polymarket activity scanning</li><li>Sentiment + category classification</li><li>Market matching (intel to live markets)</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Live Cost Audit</div><ul class="skill-list"><li>Per-agent API cost tracking (real data)</li><li>OpenAI, ElevenLabs, Tavily, Anthropic</li><li>Waste detection + optimization flags</li><li>Monthly spend breakdown</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Soren Monetization</div><ul class="skill-list"><li>Follower growth tracking</li><li>CPM estimation by platform</li><li>Brand deal milestone alerts</li><li>Revenue projection engine</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Intel Delivery</div><ul class="skill-list"><li>Feeds intelligence to Hawk for trading</li><li>Push high-score ops to Shelby</li><li>[VIPER] prefix for traceability</li><li>Live scan progress + dashboard feed</li></ul></div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  Generated by <strong>Claude (The Godfather)</strong> &mdash; February 16, 2026 &bull; 9 Agents &bull; 200+ Capabilities &bull; Auto-updated each session
+</div>
+
+</div>
+</body>
+</html>
