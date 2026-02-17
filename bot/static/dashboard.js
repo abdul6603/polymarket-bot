@@ -4902,20 +4902,19 @@ function renderHawkOpportunities(opps) {
     var edgePct = (o.edge || 0) * 100;
     var edgeColor = edgePct >= 20 ? '#00ff88' : edgePct >= 10 ? '#FFD700' : edgePct >= 5 ? 'var(--text)' : 'var(--text-muted)';
     var dirColor = o.direction === 'yes' ? '#00ff88' : '#ff6666';
-    var dirArrow = o.direction === 'yes' ? '\u25B2' : '\u25BC';
-    var dirLabel = o.direction === 'yes' ? 'YES' : 'NO';
+    var dirLabel = o.direction === 'yes' ? 'Bet YES' : 'Bet NO';
     var catColors = {politics:'#4488ff',sports:'#ff8844',crypto_event:'#FFD700',culture:'#cc66ff',other:'#888'};
     var catColor = catColors[o.category] || '#888';
     html += '<tr style="cursor:pointer;" onclick="showHawkReasoning(' + i + ')">';
     html += '<td style="color:var(--text-muted);font-size:0.72rem;">' + (i+1) + '</td>';
     html += '<td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.76rem;" title="' + esc(o.question || '') + '">' + esc((o.question || '').substring(0, 55)) + '</td>';
     html += '<td><span style="color:' + catColor + ';font-size:0.68rem;font-weight:600;text-transform:uppercase;">' + esc(o.category || '?') + '</span></td>';
-    html += '<td style="color:' + dirColor + ';font-weight:700;font-size:0.78rem;">' + dirArrow + ' ' + dirLabel + '</td>';
+    html += '<td style="color:' + dirColor + ';font-weight:700;font-size:0.78rem;">' + dirLabel + '</td>';
     html += '<td style="font-family:var(--font-mono);font-size:0.76rem;">' + ((o.market_price || 0) * 100).toFixed(0) + '%</td>';
     html += '<td style="font-family:var(--font-mono);font-size:0.76rem;">' + ((o.estimated_prob || 0) * 100).toFixed(0) + '%</td>';
-    html += '<td style="color:' + edgeColor + ';font-weight:700;font-family:var(--font-mono);font-size:0.78rem;">' + edgePct.toFixed(1) + '%</td>';
+    html += '<td style="color:' + edgeColor + ';font-weight:700;font-family:var(--font-mono);font-size:0.78rem;">+' + edgePct.toFixed(1) + '%</td>';
     html += '<td style="font-family:var(--font-mono);font-size:0.76rem;">$' + (o.position_size || 0).toFixed(0) + '</td>';
-    html += '<td style="font-family:var(--font-mono);font-size:0.76rem;color:var(--success);font-weight:600;">$' + (o.expected_value || 0).toFixed(2) + '</td>';
+    html += '<td style="font-family:var(--font-mono);font-size:0.76rem;color:var(--success);font-weight:600;">+$' + (o.expected_value || 0).toFixed(2) + '</td>';
     html += '</tr>';
   }
   el.innerHTML = html;
@@ -4925,8 +4924,8 @@ function showHawkReasoning(idx) {
   var panel = document.getElementById('hawk-reasoning-panel');
   if (!panel || !_hawkOppsCache[idx]) return;
   var o = _hawkOppsCache[idx];
-  var dirArrow = o.direction === 'yes' ? '\u25B2 YES' : '\u25BC NO';
-  document.getElementById('hawk-reasoning-market').textContent = dirArrow + ' | Edge: ' + ((o.edge||0)*100).toFixed(1) + '% | ' + (o.question || '');
+  var dirLabel = o.direction === 'yes' ? 'Bet YES' : 'Bet NO';
+  document.getElementById('hawk-reasoning-market').textContent = dirLabel + ' | Mispriced by +' + ((o.edge||0)*100).toFixed(1) + '% | ' + (o.question || '');
   document.getElementById('hawk-reasoning-text').textContent = o.reasoning || 'No reasoning available';
   panel.style.display = 'block';
   panel.scrollIntoView({behavior:'smooth', block:'nearest'});

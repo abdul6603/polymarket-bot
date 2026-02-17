@@ -19,7 +19,7 @@
   <div class="grid-3" style="margin-top:12px;">
     <div class="stat-card" data-accent="success"><div class="stat-value" id="hsim-wins" style="color:var(--success);">0</div><div class="stat-label">Wins</div></div>
     <div class="stat-card" data-accent="error"><div class="stat-value" id="hsim-losses" style="color:var(--error);">0</div><div class="stat-label">Losses</div></div>
-    <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hsim-avg-edge">0%</div><div class="stat-label">Avg Edge</div></div>
+    <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hsim-avg-edge">0%</div><div class="stat-label">Avg Mispricing</div></div>
   </div>
   <!-- Best / Worst Trade -->
   <div class="section-spacer">
@@ -39,7 +39,7 @@
     <h2 class="section-title" style="color:#FFD700;">Open Paper Positions</h2>
     <div class="glass-card" style="overflow-x:auto;">
       <table class="data-table">
-        <thead><tr><th>Market</th><th>Dir</th><th>Size</th><th>Entry</th><th>Edge</th><th>Category</th><th>Placed</th></tr></thead>
+        <thead><tr><th>Market</th><th>Pick</th><th>Bet Size</th><th>Entry Price</th><th>Mispriced By</th><th>Type</th><th>Placed</th></tr></thead>
         <tbody id="hsim-open-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;padding:24px;">No open positions</td></tr></tbody>
       </table>
     </div>
@@ -49,7 +49,7 @@
     <h2 class="section-title" style="color:#FFD700;">Resolved Trades</h2>
     <div class="glass-card" style="overflow-x:auto;">
       <table class="data-table">
-        <thead><tr><th>Market</th><th>Dir</th><th>Size</th><th>Edge</th><th>Result</th><th>P&amp;L</th><th>Category</th></tr></thead>
+        <thead><tr><th>Market</th><th>Pick</th><th>Bet Size</th><th>Mispriced By</th><th>Result</th><th>Profit/Loss</th><th>Type</th></tr></thead>
         <tbody id="hsim-resolved-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;padding:24px;">No resolved trades yet</td></tr></tbody>
       </table>
     </div>
