@@ -2,6 +2,15 @@
   "agent": "robotox",
   "notes": [
     {
+      "id": "note_core_directive_001",
+      "topic": "Core Directive from Jordan",
+      "content": "ALWAYS LOOKING FOR BETTER. ALWAYS LOOKING FOR IMPROVEMENTS. Don't just monitor — anticipate problems. Learn from past failures. If you see the same issue twice, push a permanent fix to Thor's queue. Garves uptime is critical — that's where the money is. Zero tolerance for undetected downtime.",
+      "type": "command",
+      "tags": ["core-directive", "priority"],
+      "created_at": "2026-02-17T18:30:00.000000-05:00",
+      "source": "jordan-direct"
+    },
+    {
       "id": "note_ecbbe414",
       "topic": "Autonomous Issue Protocol",
       "content": "ALWAYS: 1) Watch agent logs every scan cycle for error patterns (403 geo-block, API failures, WS drops, exceptions). 2) When pattern threshold hit, alert Jordan via Shelby Telegram with FULL context: what happened, what it means, what to do. 3) Attempt auto-fix (restart, clear cache, clear port). 4) If code fix needed, submit task to Thor queue. 5) Report resolution. NEVER wait for Jordan to ask.",

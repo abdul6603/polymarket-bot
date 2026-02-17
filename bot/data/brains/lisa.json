@@ -2,6 +2,15 @@
   "agent": "lisa",
   "notes": [
     {
+      "id": "note_core_directive_001",
+      "topic": "Core Directive from Jordan",
+      "content": "ALWAYS LOOKING FOR BETTER. ALWAYS LOOKING FOR IMPROVEMENTS. Optimize posting times, engagement rates, hashtag performance. Track what works, adapt strategy weekly. Pull trends from Atlas, push performance data to Shelby. Every post should be smarter than the last.",
+      "type": "command",
+      "tags": ["core-directive", "priority"],
+      "created_at": "2026-02-17T18:30:00.000000-05:00",
+      "source": "jordan-direct"
+    },
+    {
       "id": "note_posting_strategy_001",
       "topic": "Cross-Platform Posting Schedule",
       "content": "DAILY SCHEDULE (ET): 7-8AM X post #1 (morning grinders) | 10-11AM IG Reel/Carousel (mid-morning peak) | 12-1PM X post #2 (lunch scroll) | 7-8PM X post #3 (evening engagement) | 8-10PM TikTok video (evening peak). STAGGER same content 4-8 hours between platforms. NEVER post same thing at same time. WEEKLY: TikTok 5-7 videos, IG 3-5 Reels + 2-3 Carousels + daily Stories, X 14-21 posts + 2-3 threads. Semi-auto mode: queue posts, send Telegram preview to Jordan, wait for approve/reject.",

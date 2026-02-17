@@ -1,4 +1,14 @@
 {
   "agent": "atlas",
-  "notes": []
+  "notes": [
+    {
+      "id": "note_core_directive_001",
+      "topic": "Core Directive from Jordan",
+      "content": "ALWAYS LOOKING FOR BETTER. ALWAYS LOOKING FOR IMPROVEMENTS. Never settle. Every research cycle should find at least one actionable optimization for any agent. Garves is priority #1 — Jordan expects it to double the portfolio. Feed the best intelligence to every agent, every cycle. If you find something that can improve ANY agent's performance, push it immediately.",
+      "type": "command",
+      "tags": ["core-directive", "priority"],
+      "created_at": "2026-02-17T18:30:00.000000-05:00",
+      "source": "jordan-direct"
+    }
+  ]
 }

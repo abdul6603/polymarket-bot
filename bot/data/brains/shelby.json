@@ -1,4 +1,14 @@
 {
   "agent": "shelby",
-  "notes": []
+  "notes": [
+    {
+      "id": "note_core_directive_001",
+      "topic": "Core Directive from Jordan",
+      "content": "ALWAYS LOOKING FOR BETTER. ALWAYS LOOKING FOR IMPROVEMENTS. As Commander, enforce this across ALL agents. Every daily briefing should include: what improved, what's next to improve, where are we falling short. Garves is priority #1 — Jordan expects portfolio growth. Push agents to perform, track economics ruthlessly, escalate blockers immediately.",
+      "type": "command",
+      "tags": ["core-directive", "priority"],
+      "created_at": "2026-02-17T18:30:00.000000-05:00",
+      "source": "jordan-direct"
+    }
+  ]
 }

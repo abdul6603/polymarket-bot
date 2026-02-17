@@ -2,6 +2,15 @@
   "agent": "soren",
   "notes": [
     {
+      "id": "note_core_directive_001",
+      "topic": "Core Directive from Jordan",
+      "content": "ALWAYS LOOKING FOR BETTER. ALWAYS LOOKING FOR IMPROVEMENTS. Every piece of content should be better than the last. Study what performs, double down on winners, kill what doesn't work. The brand must grow — more engagement, more followers, more impact. Never settle for good enough.",
+      "type": "command",
+      "tags": ["core-directive", "priority"],
+      "created_at": "2026-02-17T18:30:00.000000-05:00",
+      "source": "jordan-direct"
+    },
+    {
       "id": "note_x_algorithm_001",
       "topic": "X Algorithm — How It Works (2026)",
       "content": "X uses weighted scoring: Reply-to-reply +75, Retweet +20, Reply +13.5, Profile click +12, Bookmark +10, Dwell time +10, Like +0.5. LIKES ARE NEARLY WORTHLESS. Replies generating conversation are 150x more valuable. Engagement velocity in first 30 minutes is the single biggest factor. Grok AI now monitors tone — positive/empowering content gets wider distribution, negative/combative tone gets suppressed even with high engagement. External links = death for non-Premium accounts. X Premium gives 6x more impressions (600 vs <100).",
