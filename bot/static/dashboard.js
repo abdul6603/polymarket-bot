@@ -487,40 +487,8 @@ function renderSoren(data) {
       '<span style="color:#ff8800;">' + (fs.stale||0) + ' stale</span> · ' +
       '<span style="color:var(--error);">' + (fs.expired||0) + ' expired</span></span>';
   }
-  var items = data.items || [];
-  var el = document.getElementById('soren-queue');
-  if (items.length === 0) { el.innerHTML = '<div class="text-muted" style="padding:var(--space-6);text-align:center;">No content in queue.</div>'; return; }
-  var html = '';
-  for (var i = 0; i < items.length && i < 20; i++) {
-    var item = items[i];
-    var id = item.id || i;
-    var status = item.status || 'pending';
-    var bcls = status === 'posted' ? 'badge-success' : status === 'failed' ? 'badge-error' : 'badge-warning';
-    html += '<div class="queue-item">';
-    html += '<div class="queue-item-header"><span class="queue-item-title">' + esc(item.title || item.pillar || 'Content #' + id) + '</span>';
-    html += '<div class="queue-item-badges"><span class="badge ' + bcls + '">' + esc(status) + '</span>';
-    if (item.freshness) html += freshnessBadge(item.freshness);
-    if (item.platform) html += '<span class="badge badge-neutral">' + esc(item.platform) + '</span>';
-    if (item.pillar) html += '<span class="badge badge-neutral">' + esc(item.pillar) + '</span>';
-    html += '</div></div>';
-    if (item.content) html += '<div class="queue-item-preview">' + esc((item.content || '').substring(0, 120)) + '</div>';
-    if (status === 'pending') {
-      html += '<div class="queue-item-actions">';
-      html += '<button class="btn btn-primary" onclick="sorenGenerate(&apos;' + id + '&apos;,&apos;full&apos;)">Generate</button>';
-      html += '<button class="btn" onclick="sorenGenerate(&apos;' + id + '&apos;,&apos;caption&apos;)">Caption Only</button>';
-      html += '<button class="btn btn-success" onclick="sorenApprove(&apos;' + id + '&apos;)">Approve</button>';
-      html += '<button class="btn btn-error" onclick="sorenReject(&apos;' + id + '&apos;)">Reject</button>';
-      html += '</div>';
-    } else if (status === 'approved' || status === 'generated') {
-      html += '<div class="queue-item-actions">';
-      html += '<button class="btn btn-primary" onclick="sorenPreview(&apos;' + id + '&apos;)">Preview</button>';
-      html += '<button class="btn" onclick="sorenDownload(&apos;' + id + '&apos;)">Download</button>';
-      html += '<button class="btn" style="color:var(--agent-mercury);" onclick="sorenBrandCheck(&apos;' + id + '&apos;,this)">Brand Check</button>';
-      html += '</div>';
-    }
-    html += '</div>';
-  }
-  el.innerHTML = html;
+  // Use new filterable queue renderer
+  renderSorenQueue(data.items || []);
 }
 
 async function sorenGenerate(itemId, mode) {
@@ -1997,6 +1965,348 @@ async function loadAlgorithmPanel() {
   } catch (e) {}
 }
 
+// ── Inline Agent Chat (Soren & Lisa tabs) ──
+
+function toggleInlineChat(agent) {
+  var chatEl = document.getElementById(agent + '-inline-chat');
+  if (!chatEl) return;
+  var visible = chatEl.style.display !== 'none';
+  chatEl.style.display = visible ? 'none' : 'block';
+  if (!visible) {
+    var inputEl = document.getElementById(agent + '-inline-chat-input');
+    if (inputEl) inputEl.focus();
+  }
+}
+
+async function sendInlineChat(agent) {
+  var inputEl = document.getElementById(agent + '-inline-chat-input');
+  var msgsEl = document.getElementById(agent + '-inline-chat-msgs');
+  if (!inputEl || !msgsEl) return;
+  var msg = inputEl.value.trim();
+  if (!msg) return;
+  inputEl.value = '';
+  // Map agent name to API key
+  var apiAgent = agent === 'lisa' ? 'mercury' : agent;
+  var agentColor = AGENT_COLORS[apiAgent] || '#888';
+  var agentName = AGENT_NAMES[apiAgent] || agent;
+  // Clear placeholder
+  var ph = msgsEl.querySelector('.text-muted');
+  if (ph && msgsEl.children.length === 1) msgsEl.innerHTML = '';
+  // Show user message
+  msgsEl.innerHTML += '<div style="text-align:right;margin-bottom:4px;"><span style="background:rgba(255,255,255,0.08);padding:3px 8px;border-radius:6px;font-size:0.72rem;">' + esc(msg) + '</span></div>';
+  msgsEl.innerHTML += '<div id="' + agent + '-chat-typing" style="margin-bottom:4px;"><span style="color:var(--text-muted);font-style:italic;font-size:0.72rem;">Thinking...</span></div>';
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+  try {
+    var resp = await fetch('/api/chat/agent/' + apiAgent, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: msg})
+    });
+    var data = await resp.json();
+    var typing = document.getElementById(agent + '-chat-typing');
+    if (typing) typing.remove();
+    var history = data.history || [];
+    var html = '';
+    for (var i = 0; i < history.length; i++) {
+      var m = history[i];
+      if (m.role === 'user') {
+        html += '<div style="text-align:right;margin-bottom:4px;"><span style="background:rgba(255,255,255,0.08);padding:3px 8px;border-radius:6px;font-size:0.72rem;">' + esc(m.content) + '</span></div>';
+      } else {
+        html += '<div style="margin-bottom:4px;"><span style="background:rgba(255,255,255,0.04);padding:3px 8px;border-radius:6px;font-size:0.72rem;border-left:2px solid ' + agentColor + ';">' + esc(m.content) + '</span></div>';
+      }
+    }
+    msgsEl.innerHTML = html;
+    msgsEl.scrollTop = msgsEl.scrollHeight;
+  } catch(e) {
+    var typing = document.getElementById(agent + '-chat-typing');
+    if (typing) typing.innerHTML = '<span style="color:#ff4444;font-size:0.72rem;">Error: ' + esc(e.message) + '</span>';
+  }
+}
+
+// ── Soren Tab Functions ──
+
+var _sorenQueueFilter = 'all';
+var _sorenQueueData = [];
+
+async function sorenSendToLisa() {
+  try {
+    var resp = await fetch('/api/lisa/pipeline/run', {method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({platform: 'instagram'})});
+    var data = await resp.json();
+    if (data.error) { alert('Error: ' + data.error); return; }
+    var msg = 'Pipeline processed ' + (data.processed || 0) + ' items';
+    if (data.auto_approved) msg += ', ' + data.auto_approved.length + ' approved';
+    if (data.manual_review) msg += ', ' + data.manual_review.length + ' for review';
+    if (data.needs_work) msg += ', ' + data.needs_work.length + ' need work';
+    if (data.auto_rejected) msg += ', ' + data.auto_rejected.length + ' rejected';
+    alert(msg);
+    refresh();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+function sorenCustomGenerate() {
+  var genSection = document.querySelector('#soren-gen-prompt');
+  if (genSection) genSection.scrollIntoView({behavior: 'smooth'});
+}
+
+async function sorenRefreshQueue() {
+  refresh();
+}
+
+function sorenFilterQueue(filter, btn) {
+  _sorenQueueFilter = filter;
+  // Update button active states
+  var btns = document.querySelectorAll('.soren-filter-btn');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+  if (btn) btn.classList.add('active');
+  // Re-render with filter
+  renderSorenQueue(_sorenQueueData);
+}
+
+function renderSorenQueue(items) {
+  _sorenQueueData = items || [];
+  var el = document.getElementById('soren-queue');
+  if (!el) return;
+  var filtered = _sorenQueueData;
+  if (_sorenQueueFilter !== 'all') {
+    filtered = _sorenQueueData.filter(function(item) {
+      return item.status === _sorenQueueFilter;
+    });
+  }
+  if (filtered.length === 0) {
+    el.innerHTML = '<div class="text-muted" style="padding:var(--space-4);text-align:center;">No items match filter "' + esc(_sorenQueueFilter) + '".</div>';
+    return;
+  }
+  var html = '';
+  var tierColors = {lisa_approved:'#22aa44', needs_review:'#ffaa00', needs_improvement:'#ff8800', jordan_approved:'#22aa44', rejected:'#ff4444', pending:'#888', posted:'#22aa44', approved:'#22aa44', generated:'#00d4ff', failed:'#ff4444'};
+  for (var i = 0; i < filtered.length && i < 30; i++) {
+    var item = filtered[i];
+    var id = item.id || i;
+    var status = item.status || 'pending';
+    var sc = tierColors[status] || '#888';
+    html += '<div class="queue-item" style="border-left:3px solid ' + sc + ';">';
+    html += '<div class="queue-item-header"><span class="queue-item-title">' + esc(item.title || item.pillar || 'Content #' + id) + '</span>';
+    html += '<div class="queue-item-badges"><span class="badge" style="background:' + sc + '22;color:' + sc + ';border:1px solid ' + sc + '44;">' + esc(status.replace(/_/g, ' ')) + '</span>';
+    if (item.rating_score) html += '<span class="badge badge-neutral">' + item.rating_score + '/100</span>';
+    if (item.platform) html += '<span class="badge badge-neutral">' + esc(item.platform) + '</span>';
+    if (item.pillar) html += '<span class="badge badge-neutral">' + esc(item.pillar) + '</span>';
+    html += '</div></div>';
+    var caption = item.caption || item.content || '';
+    if (caption) html += '<div class="queue-item-preview">' + esc(caption.substring(0, 140)) + '</div>';
+    if (item.suggested_time) {
+      html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;">Scheduled: ' + esc(item.suggested_time) + '</div>';
+    }
+    html += '<div class="queue-item-actions">';
+    if (status === 'pending') {
+      html += '<button class="btn btn-primary" onclick="sorenGenerate(\'' + id + '\',\'full\')" style="font-size:0.7rem;">Generate</button>';
+      html += '<button class="btn" onclick="sorenGenerate(\'' + id + '\',\'caption\')" style="font-size:0.7rem;">Caption Only</button>';
+      html += '<button class="btn btn-success" onclick="sorenApprove(\'' + id + '\')" style="font-size:0.7rem;">Approve</button>';
+      html += '<button class="btn btn-error" onclick="sorenReject(\'' + id + '\')" style="font-size:0.7rem;">Reject</button>';
+    } else if (status === 'approved' || status === 'generated') {
+      html += '<button class="btn btn-primary" onclick="sorenPreview(\'' + id + '\')" style="font-size:0.7rem;">Preview</button>';
+      html += '<button class="btn" onclick="sorenDownload(\'' + id + '\')" style="font-size:0.7rem;">Download</button>';
+      html += '<button class="btn" style="font-size:0.7rem;color:var(--agent-mercury);" onclick="sorenBrandCheck(\'' + id + '\',this)">Brand Check</button>';
+    } else if (status === 'lisa_approved' || status === 'needs_review') {
+      html += '<span style="font-size:0.68rem;color:#ffaa00;">Awaiting Jordan approval</span>';
+    } else if (status === 'jordan_approved') {
+      html += '<span style="font-size:0.68rem;color:#22aa44;">Scheduled for posting</span>';
+    }
+    html += '</div></div>';
+  }
+  el.innerHTML = html;
+}
+
+async function sorenGenerateCustom(mode) {
+  var prompt = document.getElementById('soren-gen-prompt').value.trim();
+  var pillar = document.getElementById('soren-gen-pillar').value;
+  var resultEl = document.getElementById('soren-gen-result');
+  resultEl.innerHTML = '<span class="text-muted">Generating...</span>';
+  try {
+    var resp = await fetch('/api/soren/custom-generate', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({prompt: prompt, pillar: pillar, mode: mode || 'full'})
+    });
+    var data = await resp.json();
+    if (data.error) { resultEl.innerHTML = '<span style="color:#ff4444;">' + esc(data.error) + '</span>'; return; }
+    var html = '<div style="padding:8px 12px;border-left:3px solid var(--agent-soren);margin-top:8px;">';
+    if (data.caption) html += '<div style="font-size:0.76rem;color:var(--text-primary);margin-bottom:4px;white-space:pre-wrap;">' + esc(data.caption) + '</div>';
+    if (data.title) html += '<div style="font-size:0.72rem;color:var(--text-muted);">Title: ' + esc(data.title) + '</div>';
+    if (data.pillar) html += '<div style="font-size:0.72rem;color:var(--text-muted);">Pillar: ' + esc(data.pillar) + '</div>';
+    if (data.id) html += '<div style="font-size:0.72rem;color:var(--text-muted);">ID: ' + esc(data.id) + '</div>';
+    html += '</div>';
+    resultEl.innerHTML = html;
+    refresh();
+  } catch(e) { resultEl.innerHTML = '<span style="color:#ff4444;">Error: ' + esc(e.message) + '</span>'; }
+}
+
+async function loadPillarDistribution() {
+  var el = document.getElementById('soren-pillar-dist');
+  if (!el) return;
+  try {
+    var resp = await fetch('/api/soren');
+    var data = await resp.json();
+    var items = data.items || [];
+    if (items.length === 0) { el.innerHTML = '<div class="text-muted">No content in queue.</div>'; return; }
+    var counts = {};
+    var total = items.length;
+    for (var i = 0; i < items.length; i++) {
+      var p = items[i].pillar || 'unknown';
+      counts[p] = (counts[p] || 0) + 1;
+    }
+    var pillars = Object.keys(counts).sort(function(a,b) { return counts[b] - counts[a]; });
+    var colors = ['#cc66ff','#ff6600','#00d4ff','#22aa44','#ffaa00','#ff4444','#ff8800','#8888ff','#44ccaa','#ff66aa'];
+    var html = '';
+    for (var i = 0; i < pillars.length; i++) {
+      var p = pillars[i];
+      var pct = Math.round(counts[p] / total * 100);
+      var c = colors[i % colors.length];
+      html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">';
+      html += '<span style="width:120px;font-size:0.72rem;color:var(--text-muted);text-align:right;">' + esc(p.replace(/_/g, ' ')) + '</span>';
+      html += '<div style="flex:1;height:12px;background:rgba(255,255,255,0.06);border-radius:6px;overflow:hidden;">';
+      html += '<div style="width:' + pct + '%;height:100%;background:' + c + ';border-radius:6px;transition:width 0.3s;"></div></div>';
+      html += '<span style="font-size:0.72rem;color:' + c + ';width:40px;">' + counts[p] + ' (' + pct + '%)</span>';
+      html += '</div>';
+    }
+    el.innerHTML = html;
+  } catch(e) {}
+}
+
+// ── Lisa Tab — Jordan Approval Queue & Posting Schedule ──
+
+async function loadJordanQueue() {
+  var el = document.getElementById('jordan-approval-queue');
+  var countEl = document.getElementById('jordan-queue-count');
+  if (!el) return;
+  try {
+    var resp = await fetch('/api/lisa/jordan-queue');
+    var data = await resp.json();
+    var items = data.items || [];
+    if (countEl) countEl.textContent = items.length > 0 ? items.length + ' awaiting' : '';
+    if (items.length === 0) {
+      el.innerHTML = '<div class="glass-card" style="text-align:center;padding:var(--space-6);"><div style="font-size:1.2rem;color:var(--text-muted);margin-bottom:4px;">No items pending</div><div style="font-size:0.72rem;color:var(--text-secondary);">Run the pipeline on pending Soren content to populate this queue</div></div>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      var isApproved = item.status === 'lisa_approved';
+      var borderColor = isApproved ? '#22aa44' : '#ffaa00';
+      var tierLabel = isApproved ? 'LISA APPROVED' : 'NEEDS REVIEW';
+      html += '<div class="glass-card" style="border-left:3px solid ' + borderColor + ';margin-bottom:8px;">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">';
+      html += '<div>';
+      html += '<div style="font-weight:600;font-size:0.78rem;color:var(--text-primary);margin-bottom:2px;">' + esc(item.title || item.pillar || 'Content') + '</div>';
+      html += '<div style="display:flex;gap:4px;flex-wrap:wrap;">';
+      html += '<span class="badge" style="background:' + borderColor + '22;color:' + borderColor + ';border:1px solid ' + borderColor + '44;">' + tierLabel + '</span>';
+      if (item.pillar) html += '<span class="badge badge-neutral">' + esc(item.pillar.replace(/_/g, ' ')) + '</span>';
+      if (item.platform) html += '<span class="badge badge-neutral">' + esc(item.platform) + '</span>';
+      if (item.format) html += '<span class="badge badge-neutral">' + esc(item.format) + '</span>';
+      html += '</div></div>';
+      if (item.rating_score) {
+        var scoreColor = item.rating_score >= 80 ? '#22aa44' : item.rating_score >= 60 ? '#ffaa00' : '#ff4444';
+        html += '<div style="text-align:right;"><div style="font-size:1.1rem;font-weight:700;color:' + scoreColor + ';">' + item.rating_score + '</div><div style="font-size:0.66rem;color:var(--text-muted);">/100</div></div>';
+      }
+      html += '</div>';
+      // Caption preview
+      if (item.caption) html += '<div style="font-family:var(--font-mono);font-size:0.74rem;color:var(--text-secondary);margin-bottom:8px;padding:6px 8px;background:rgba(255,255,255,0.03);border-radius:4px;">' + esc(item.caption) + '</div>';
+      // Rating dimensions mini-bars
+      var dims = item.rating_dimensions || {};
+      var dk = Object.keys(dims);
+      if (dk.length > 0) {
+        html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">';
+        var dimNames = {brand_voice:'Voice',hook_power:'Hook',engagement_potential:'Engage',platform_fit:'Platform',emotional_impact:'Emotion',authenticity:'Auth',pillar_relevance:'Pillar',timing_fit:'Timing'};
+        for (var d = 0; d < dk.length; d++) {
+          var k = dk[d];
+          var v = dims[k] || 0;
+          var dc = v >= 7 ? '#22aa44' : v >= 4 ? '#ffaa00' : '#ff4444';
+          html += '<span style="font-size:0.66rem;color:' + dc + ';">' + (dimNames[k]||k) + ':' + v + '</span>';
+        }
+        html += '</div>';
+      }
+      // Issues and suggestions
+      if (item.rating_issues && item.rating_issues.length > 0) {
+        html += '<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:4px;">';
+        for (var r = 0; r < item.rating_issues.length; r++) html += '<div style="padding-left:8px;">- ' + esc(item.rating_issues[r]) + '</div>';
+        html += '</div>';
+      }
+      // Suggested time
+      if (item.suggested_time) {
+        html += '<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:6px;">Suggested: <span style="color:var(--agent-mercury);">' + esc(item.suggested_time.replace('T', ' ')) + '</span>';
+        if (item.suggested_reason) html += ' — ' + esc(item.suggested_reason);
+        html += '</div>';
+      }
+      // Action buttons
+      html += '<div style="display:flex;gap:6px;margin-top:4px;">';
+      html += '<button class="btn btn-primary" onclick="jordanApproveItem(\'' + esc(item.id) + '\',\'' + esc(item.platform || 'instagram') + '\')" style="font-size:0.72rem;">Approve</button>';
+      html += '<button class="btn btn-error" onclick="jordanRejectItem(\'' + esc(item.id) + '\')" style="font-size:0.72rem;">Reject</button>';
+      html += '</div>';
+      html += '</div>';
+    }
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = '<div class="text-muted">Error loading queue: ' + esc(e.message) + '</div>'; }
+}
+
+async function jordanApproveItem(itemId, platform) {
+  try {
+    var resp = await fetch('/api/lisa/jordan-approve/' + encodeURIComponent(itemId), {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({platform: platform || 'instagram'})
+    });
+    var data = await resp.json();
+    if (data.error) { alert('Error: ' + data.error); return; }
+    refresh();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+async function jordanRejectItem(itemId) {
+  var reason = prompt('Rejection reason (optional):') || '';
+  try {
+    var resp = await fetch('/api/lisa/pipeline/reject/' + encodeURIComponent(itemId), {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({reason: reason})
+    });
+    var data = await resp.json();
+    if (data.error) { alert('Error: ' + data.error); return; }
+    refresh();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+async function loadPostingSchedule() {
+  var el = document.getElementById('posting-schedule-timeline');
+  var countEl = document.getElementById('posting-schedule-count');
+  if (!el) return;
+  try {
+    var resp = await fetch('/api/lisa/posting-schedule');
+    var data = await resp.json();
+    var schedule = data.schedule || [];
+    if (countEl) countEl.textContent = schedule.length > 0 ? schedule.length + ' scheduled' : '';
+    if (schedule.length === 0) {
+      el.innerHTML = '<div class="glass-card" style="text-align:center;padding:var(--space-4);"><div style="font-size:0.76rem;color:var(--text-muted);">No posts scheduled yet</div><div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px;">Approve content from Jordan\'s queue to schedule posts</div></div>';
+      return;
+    }
+    var html = '';
+    var platIcons = {instagram:'IG', tiktok:'TT', x:'X'};
+    for (var i = 0; i < schedule.length; i++) {
+      var item = schedule[i];
+      var timeStr = (item.scheduled_time || '').replace('T', ' ');
+      html += '<div class="glass-card" style="border-left:3px solid #22aa44;margin-bottom:6px;padding:8px 12px;">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+      html += '<div>';
+      html += '<span style="font-size:0.78rem;font-weight:600;color:#22aa44;margin-right:8px;">' + esc(timeStr) + '</span>';
+      html += '<span class="badge badge-neutral">' + (platIcons[item.platform] || esc(item.platform)) + '</span>';
+      if (item.pillar) html += ' <span class="badge badge-neutral">' + esc(item.pillar.replace(/_/g, ' ')) + '</span>';
+      html += '</div>';
+      if (item.rating_score) {
+        var sc = item.rating_score >= 80 ? '#22aa44' : '#ffaa00';
+        html += '<span style="font-size:0.76rem;font-weight:600;color:' + sc + ';">' + item.rating_score + '/100</span>';
+      }
+      html += '</div>';
+      if (item.caption) html += '<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px;">' + esc(item.caption) + '</div>';
+      if (item.scheduled_reason) html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;">' + esc(item.scheduled_reason) + '</div>';
+      html += '</div>';
+    }
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = '<div class="text-muted">Error: ' + esc(e.message) + '</div>'; }
+}
+
 function renderSentinel(data) {
   if (data.error || data.status === 'offline') {
     document.getElementById('sentinel-agents-online').textContent = '--';
@@ -2497,6 +2807,7 @@ async function refresh() {
       renderSoren(await resp.json());
       loadAgentLearning('soren');
       loadSorenCompetitors();
+      loadPillarDistribution();
       loadBrainNotes('soren');
       loadCommandTable('soren');
       loadAgentSmartActions('soren');
@@ -2532,6 +2843,8 @@ async function refresh() {
     } else if (currentTab === 'mercury') {
       var resp = await fetch('/api/mercury');
       renderMercury(await resp.json());
+      loadJordanQueue();
+      loadPostingSchedule();
       loadMercuryPlan();
       loadMercuryKnowledge();
       loadPipelineStats();

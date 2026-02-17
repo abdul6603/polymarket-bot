@@ -391,6 +391,43 @@ def api_lisa_optimal_slot():
         return jsonify({"error": str(e)[:200]})
 
 
+@mercury_bp.route("/api/lisa/jordan-queue")
+def api_lisa_jordan_queue():
+    """Items awaiting Jordan's approval."""
+    try:
+        from mercury.core.pipeline import ContentPipeline
+        pipeline = ContentPipeline()
+        items = pipeline.get_jordan_queue()
+        return jsonify({"items": items, "count": len(items)})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@mercury_bp.route("/api/lisa/jordan-approve/<item_id>", methods=["POST"])
+def api_lisa_jordan_approve(item_id):
+    """Jordan approves — schedule at optimal time."""
+    try:
+        from mercury.core.pipeline import ContentPipeline
+        pipeline = ContentPipeline()
+        platform = (request.json or {}).get("platform", "")
+        result = pipeline.jordan_approve(item_id, platform)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@mercury_bp.route("/api/lisa/posting-schedule")
+def api_lisa_posting_schedule():
+    """Get all scheduled posts sorted by time."""
+    try:
+        from mercury.core.pipeline import ContentPipeline
+        pipeline = ContentPipeline()
+        schedule = pipeline.get_posting_schedule()
+        return jsonify({"schedule": schedule, "count": len(schedule)})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
 @mercury_bp.route("/api/lisa/broadcasts")
 def api_lisa_broadcasts():
     """Process and acknowledge broadcasts for Lisa."""
