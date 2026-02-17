@@ -109,6 +109,21 @@
     <div id="shelby-task-list"><div class="text-muted" style="padding:16px;text-align:center;">Loading tasks...</div></div>
   </div>
 
+  <!-- Quick Dispatch -->
+  <div class="glass-card" style="margin:12px 0;border-left:3px solid #3b82f6;padding:12px 16px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <h3 style="font-size:0.76rem;margin:0;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Quick Dispatch</h3>
+      <span style="font-size:0.68rem;color:var(--text-muted);opacity:0.6;">Auto-creates &amp; dispatches tasks for each routine</span>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="btn" onclick="triggerScheduledDispatch('dispatch_morning')" style="font-size:0.74rem;padding:6px 14px;">Morning Brief</button>
+      <button class="btn" onclick="triggerScheduledDispatch('dispatch_midday')" style="font-size:0.74rem;padding:6px 14px;">Midday Review</button>
+      <button class="btn" onclick="triggerScheduledDispatch('dispatch_evening')" style="font-size:0.74rem;padding:6px 14px;">Trading Report</button>
+      <button class="btn" onclick="triggerScheduledDispatch('dispatch_eod')" style="font-size:0.74rem;padding:6px 14px;">End of Day</button>
+    </div>
+    <div id="dispatch-schedule-result" style="font-size:0.72rem;color:#3b82f6;margin-top:6px;display:none;"></div>
+  </div>
+
   <!-- Schedule + Assessments + Economics -->
   <div class="section-spacer">
     <h2 class="section-title" data-accent="shelby">Daily Schedule</h2>

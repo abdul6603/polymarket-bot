@@ -197,6 +197,23 @@ def api_shelby_tasks_dispatch(task_id):
         return jsonify({"error": str(e)[:200]}), 500
 
 
+@shelby_bp.route("/api/shelby/schedule/dispatch", methods=["POST"])
+def api_shelby_schedule_dispatch():
+    """Manually trigger scheduled dispatch for a routine."""
+    data = request.get_json() or {}
+    routine = data.get("routine", "")
+    valid = ("dispatch_morning", "dispatch_midday", "dispatch_evening", "dispatch_eod")
+    if routine not in valid:
+        return jsonify({"error": f"Invalid routine. Use one of: {', '.join(valid)}"}), 400
+    try:
+        from core.scheduler import ProactiveScheduler
+        sched = ProactiveScheduler()
+        result = sched._run_scheduled_dispatch(routine)
+        return jsonify({"success": True, "routine": routine, "result": result})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
 @shelby_bp.route("/api/shelby/tasks/prioritize", methods=["POST"])
 def api_shelby_tasks_prioritize():
     """Recalculate all task priorities."""
