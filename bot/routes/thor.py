@@ -179,6 +179,70 @@ def api_thor_costs():
         return jsonify({"error": str(e)[:200]})
 
 
+@thor_bp.route("/api/thor/review")
+def api_thor_review():
+    """Thor's AI code review stats."""
+    try:
+        from thor.core.reviewer import CodeReviewer
+        cr = CodeReviewer(THOR_DATA)
+        return jsonify(cr.get_stats())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@thor_bp.route("/api/thor/codebase-index")
+def api_thor_codebase_index():
+    """Codebase index — functions, classes, complexity across all agents."""
+    try:
+        from thor.core.codebase_index import CodebaseIndex
+        ci = CodebaseIndex(THOR_DATA)
+        stats = ci.get_stats()
+        # Per-agent summaries
+        agent_summaries = {}
+        for agent in (stats.get("agents_indexed") or []):
+            agent_summaries[agent] = ci.get_agent_summary(agent)
+        return jsonify({
+            "stats": stats,
+            "agents": agent_summaries,
+            "stale": ci.is_stale(),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@thor_bp.route("/api/thor/codebase-index/build", methods=["POST"])
+def api_thor_codebase_index_build():
+    """Trigger a fresh codebase index build."""
+    try:
+        from thor.core.codebase_index import CodebaseIndex
+        ci = CodebaseIndex(THOR_DATA)
+        stats = ci.build()
+        return jsonify({"status": "built", "stats": stats})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@thor_bp.route("/api/thor/codebase-index/search")
+def api_thor_codebase_search():
+    """Search functions/classes in the codebase index."""
+    from flask import request
+    query = request.args.get("q", "")
+    agent = request.args.get("agent", "")
+    search_type = request.args.get("type", "function")
+    if not query:
+        return jsonify({"error": "Missing query parameter 'q'"})
+    try:
+        from thor.core.codebase_index import CodebaseIndex
+        ci = CodebaseIndex(THOR_DATA)
+        if search_type == "class":
+            results = ci.search_classes(query, agent)
+        else:
+            results = ci.search_functions(query, agent)
+        return jsonify({"results": results, "count": len(results)})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
 @thor_bp.route("/api/thor/progress")
 def api_thor_progress():
     """Thor's task progress tracker — active tasks + stats."""

@@ -276,6 +276,52 @@ def api_atlas_costs():
         return jsonify({"error": str(e)[:200]})
 
 
+@atlas_bp.route("/api/atlas/kb-health")
+def api_atlas_kb_health():
+    """Knowledge base health metrics — confidence, age, contradictions."""
+    try:
+        from atlas.brain import KnowledgeBase
+        kb = KnowledgeBase()
+        return jsonify(kb.get_kb_health())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@atlas_bp.route("/api/atlas/kb-consolidate", methods=["POST"])
+def api_atlas_kb_consolidate():
+    """Trigger knowledge base consolidation — merge similar learnings."""
+    try:
+        from atlas.brain import KnowledgeBase
+        kb = KnowledgeBase()
+        return jsonify(kb.consolidate())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@atlas_bp.route("/api/atlas/kb-contradictions")
+def api_atlas_kb_contradictions():
+    """Get potential contradictions in the knowledge base."""
+    try:
+        from atlas.brain import KnowledgeBase
+        kb = KnowledgeBase()
+        return jsonify({"contradictions": kb.detect_contradictions()})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
+@atlas_bp.route("/api/atlas/kb-weighted")
+def api_atlas_kb_weighted():
+    """Get weighted learnings sorted by confidence * recency."""
+    try:
+        from flask import request
+        agent = request.args.get("agent", None)
+        from atlas.brain import KnowledgeBase
+        kb = KnowledgeBase()
+        return jsonify({"learnings": kb.get_weighted_learnings(agent=agent)})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
 @atlas_bp.route("/api/atlas/summarize", methods=["POST"])
 def api_atlas_summarize():
     """Compress old observations into learnings."""

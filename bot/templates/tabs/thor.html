@@ -91,6 +91,28 @@
     </div>
   </div>
   <div class="section-spacer">
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <div class="glass-card" style="flex:1;min-width:200px;border-left:3px solid var(--agent-thor);">
+        <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Code Review</h3>
+        <div id="thor-review-stats" style="font-family:var(--font-mono);font-size:0.76rem;"><span class="text-muted">Loading...</span></div>
+      </div>
+      <div class="glass-card" style="flex:1;min-width:200px;border-left:3px solid var(--agent-thor);">
+        <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Progress Tracker</h3>
+        <div id="thor-progress-stats" style="font-family:var(--font-mono);font-size:0.76rem;"><span class="text-muted">Loading...</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="thor">Codebase Index</h2>
+    <div class="glass-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
+        <span class="text-muted" style="font-size:0.76rem;">AST-parsed function/class index across all Brotherhood agents</span>
+        <button class="btn" onclick="loadThorCodebaseIndex()" style="font-size:0.72rem;">Refresh</button>
+      </div>
+      <div id="thor-codebase-index"><div class="text-muted" style="text-align:center;padding:var(--space-4);">Loading...</div></div>
+    </div>
+  </div>
+  <div class="section-spacer">
     <h2 class="section-title" data-accent="thor">Activity Log</h2>
     <div class="glass-card" style="max-height:300px;overflow-y:auto;">
       <div id="thor-activity-log" style="font-family:monospace;font-size:0.75rem;padding:12px;color:var(--text-primary);">Waiting for data...</div>

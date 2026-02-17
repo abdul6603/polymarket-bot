@@ -3030,6 +3030,7 @@ async function refresh() {
       loadCommandTable('atlas');
       loadAgentSmartActions('atlas');
       loadAgentActivity('atlas');
+      loadAtlasKBHealth();
     } else if (currentTab === 'mercury') {
       var resp = await fetch('/api/mercury');
       renderMercury(await resp.json());
@@ -3066,6 +3067,9 @@ async function refresh() {
       loadSmartActions();
       loadThorReflexion();
       loadThorCache();
+      loadThorReview();
+      loadThorProgress();
+      loadThorCodebaseIndex();
       loadBrainNotes('thor');
       loadCommandTable('thor');
       loadAgentActivity('thor');
@@ -3625,6 +3629,126 @@ async function loadThorCache() {
     html += '</div>';
     el.innerHTML = html;
   } catch(e) { el.innerHTML = '<span class="text-muted">--</span>'; }
+}
+
+async function loadThorReview() {
+  var el = document.getElementById('thor-review-stats');
+  if (!el) return;
+  try {
+    var resp = await fetch('/api/thor/review');
+    var data = await resp.json();
+    if (data.error) { el.innerHTML = '<span class="text-muted">' + esc(data.error) + '</span>'; return; }
+    var passRate = data.total > 0 ? Math.round((data.passed / data.total) * 100) : 0;
+    var html = '<div style="margin-bottom:4px;"><span style="font-size:1rem;font-weight:700;">' + passRate + '%</span> <span class="text-muted">pass rate</span></div>';
+    html += '<div style="display:flex;gap:10px;">';
+    html += '<span style="color:var(--success);">Passed: ' + (data.passed || 0) + '</span>';
+    html += '<span style="color:var(--error);">Failed: ' + (data.failed || 0) + '</span>';
+    html += '<span class="text-muted">Avg: ' + (data.avg_score || 0) + '</span>';
+    html += '</div>';
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = '<span class="text-muted">--</span>'; }
+}
+
+async function loadThorProgress() {
+  var el = document.getElementById('thor-progress-stats');
+  if (!el) return;
+  try {
+    var resp = await fetch('/api/thor/progress');
+    var data = await resp.json();
+    if (data.error) { el.innerHTML = '<span class="text-muted">' + esc(data.error) + '</span>'; return; }
+    var stats = data.stats || {};
+    var active = data.active || [];
+    var html = '<div style="margin-bottom:4px;"><span style="font-size:1rem;font-weight:700;">' + (stats.total_tracked || 0) + '</span> <span class="text-muted">tracked</span></div>';
+    html += '<div style="display:flex;gap:10px;">';
+    html += '<span style="color:var(--success);">Done: ' + (stats.completed || 0) + '</span>';
+    html += '<span style="color:var(--error);">Failed: ' + (stats.failed || 0) + '</span>';
+    html += '<span style="color:var(--warning);">Active: ' + (stats.active || 0) + '</span>';
+    html += '</div>';
+    if (active.length > 0) {
+      html += '<div style="margin-top:6px;font-size:0.72rem;color:var(--warning);">In progress: ' + esc(active[0].title || '') + '</div>';
+    }
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = '<span class="text-muted">--</span>'; }
+}
+
+async function loadThorCodebaseIndex() {
+  var el = document.getElementById('thor-codebase-index');
+  if (!el) return;
+  try {
+    var resp = await fetch('/api/thor/codebase-index');
+    var data = await resp.json();
+    if (data.error) { el.innerHTML = '<span style="color:var(--error);">' + esc(data.error) + '</span>'; return; }
+    var stats = data.stats || {};
+    var agents = data.agents || {};
+    var stale = data.stale;
+    var html = '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px;">';
+    html += '<div style="text-align:center;"><div style="font-size:1.1rem;font-weight:700;">' + (stats.total_files || 0) + '</div><div class="text-muted" style="font-size:0.7rem;">Files</div></div>';
+    html += '<div style="text-align:center;"><div style="font-size:1.1rem;font-weight:700;">' + (stats.total_functions || 0) + '</div><div class="text-muted" style="font-size:0.7rem;">Functions</div></div>';
+    html += '<div style="text-align:center;"><div style="font-size:1.1rem;font-weight:700;">' + (stats.total_classes || 0) + '</div><div class="text-muted" style="font-size:0.7rem;">Classes</div></div>';
+    html += '<div style="text-align:center;"><div style="font-size:1.1rem;font-weight:700;">' + (stats.total_imports || 0) + '</div><div class="text-muted" style="font-size:0.7rem;">Imports</div></div>';
+    if (stale) html += '<div style="text-align:center;"><div style="font-size:0.78rem;color:var(--warning);font-weight:600;">STALE</div><div class="text-muted" style="font-size:0.7rem;">Needs rebuild</div></div>';
+    html += '</div>';
+    // Agent breakdown
+    var agentNames = Object.keys(agents);
+    if (agentNames.length > 0) {
+      html += '<table class="data-table"><thead><tr><th>Agent</th><th>Files</th><th>Functions</th><th>Classes</th><th>Lines</th><th>Avg Cx</th></tr></thead><tbody>';
+      for (var i = 0; i < agentNames.length; i++) {
+        var a = agents[agentNames[i]];
+        var cxColor = a.avg_complexity > 6 ? 'var(--error)' : a.avg_complexity > 4 ? 'var(--warning)' : 'var(--text-secondary)';
+        html += '<tr>';
+        html += '<td style="font-weight:600;text-transform:uppercase;">' + esc(agentNames[i]) + '</td>';
+        html += '<td style="font-family:var(--font-mono);">' + a.files + '</td>';
+        html += '<td style="font-family:var(--font-mono);">' + a.functions + '</td>';
+        html += '<td style="font-family:var(--font-mono);">' + a.classes + '</td>';
+        html += '<td style="font-family:var(--font-mono);">' + (a.total_lines || 0).toLocaleString() + '</td>';
+        html += '<td style="font-family:var(--font-mono);color:' + cxColor + ';">' + a.avg_complexity + '</td>';
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+    }
+    if (stats.built_at) html += '<div class="text-muted" style="margin-top:6px;font-size:0.7rem;">Built: ' + esc(stats.built_at) + ' (' + (stats.elapsed_s || 0) + 's)</div>';
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = '<span style="color:var(--error);">Failed: ' + esc(e.message) + '</span>'; }
+}
+
+async function loadAtlasKBHealth() {
+  var el = document.getElementById('atlas-kb-health');
+  if (!el) return;
+  try {
+    var resp = await fetch('/api/atlas/kb-health');
+    var data = await resp.json();
+    if (data.error) { el.innerHTML = '<span style="color:var(--error);">' + esc(data.error) + '</span>'; return; }
+    var html = '<div style="display:flex;gap:16px;flex-wrap:wrap;">';
+    html += '<div style="text-align:center;"><div style="font-size:1.1rem;font-weight:700;">' + (data.total_learnings || 0) + '</div><div class="text-muted" style="font-size:0.7rem;">Learnings</div></div>';
+    html += '<div style="text-align:center;"><div style="font-size:1.1rem;font-weight:700;">' + (data.total_observations || 0) + '</div><div class="text-muted" style="font-size:0.7rem;">Observations</div></div>';
+    var conf = data.confidence || {};
+    html += '<div style="text-align:center;"><div style="font-size:1.1rem;font-weight:700;color:var(--success);">' + (conf.high || 0) + '</div><div class="text-muted" style="font-size:0.7rem;">High Conf</div></div>';
+    html += '<div style="text-align:center;"><div style="font-size:1.1rem;font-weight:700;color:var(--warning);">' + (conf.medium || 0) + '</div><div class="text-muted" style="font-size:0.7rem;">Medium</div></div>';
+    html += '<div style="text-align:center;"><div style="font-size:1.1rem;font-weight:700;color:var(--error);">' + (conf.low || 0) + '</div><div class="text-muted" style="font-size:0.7rem;">Low Conf</div></div>';
+    var age = data.age || {};
+    html += '<div style="text-align:center;"><div style="font-size:1.1rem;font-weight:700;color:var(--agent-atlas);">' + (age.fresh_7d || 0) + '</div><div class="text-muted" style="font-size:0.7rem;">Fresh (7d)</div></div>';
+    html += '<div style="text-align:center;"><div style="font-size:1.1rem;font-weight:700;color:var(--text-muted);">' + (age.stale_30d_plus || 0) + '</div><div class="text-muted" style="font-size:0.7rem;">Stale (30d+)</div></div>';
+    if (data.contradictions > 0) {
+      html += '<div style="text-align:center;"><div style="font-size:1.1rem;font-weight:700;color:var(--error);">' + data.contradictions + '</div><div class="text-muted" style="font-size:0.7rem;">Contradictions</div></div>';
+    }
+    html += '</div>';
+    html += '<div style="margin-top:8px;display:flex;gap:8px;">';
+    html += '<span class="text-muted" style="font-size:0.72rem;">Applied: ' + (data.applied || 0) + '/' + (data.total_learnings || 0) + '</span>';
+    if (data.last_consolidated) html += '<span class="text-muted" style="font-size:0.72rem;">Last consolidated: ' + esc(data.last_consolidated).substring(0, 16) + '</span>';
+    html += '<button class="btn" onclick="atlasConsolidate()" style="font-size:0.68rem;margin-left:auto;">Consolidate</button>';
+    html += '</div>';
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = '<span style="color:var(--error);">Failed: ' + esc(e.message) + '</span>'; }
+}
+
+async function atlasConsolidate() {
+  try {
+    var resp = await fetch('/api/atlas/kb-consolidate', {method: 'POST'});
+    var data = await resp.json();
+    if (data.status === 'consolidated') {
+      loadAtlasKBHealth();
+    }
+  } catch(e) { console.error('atlasConsolidate:', e); }
 }
 
 function setText(id, val) {
