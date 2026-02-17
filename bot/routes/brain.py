@@ -21,7 +21,7 @@ ET = ZoneInfo("America/New_York")
 BRAIN_DIR = Path(__file__).parent.parent / "data" / "brains"
 BRAIN_DIR.mkdir(parents=True, exist_ok=True)
 
-VALID_AGENTS = ["claude", "garves", "soren", "shelby", "atlas", "lisa", "robotox", "thor", "hawk", "viper"]
+VALID_AGENTS = ["claude", "garves", "soren", "shelby", "atlas", "lisa", "robotox", "thor", "hawk", "viper", "quant"]
 
 
 def _brain_file(agent: str) -> Path:
@@ -160,6 +160,26 @@ def api_brain_all():
         data = _load_brain(agent)
         counts[agent] = len(data.get("notes", []))
     return jsonify({"agents": counts})
+
+
+@brain_bp.route("/api/brain/recent-updates")
+def api_brain_recent_updates():
+    """Collect latest brain entries across ALL agents, sorted by time, top 20."""
+    all_notes = []
+    for agent in VALID_AGENTS:
+        data = _load_brain(agent)
+        for note in data.get("notes", []):
+            all_notes.append({
+                "agent": agent,
+                "topic": note.get("topic", ""),
+                "content": note.get("content", "")[:300],
+                "type": note.get("type", "note"),
+                "created_at": note.get("created_at", ""),
+                "source": note.get("source", ""),
+            })
+    # Sort by created_at descending
+    all_notes.sort(key=lambda x: x.get("created_at", ""), reverse=True)
+    return jsonify({"updates": all_notes[:20]})
 
 
 # ── Command Registry ──

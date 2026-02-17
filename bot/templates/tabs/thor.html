@@ -5,17 +5,9 @@
     <div class="widget-badge" id="thor-state"><span class="wb-label">State:</span> <span>--</span></div>
     <div class="widget-badge" id="thor-model"><span class="wb-label">Model:</span> <span>--</span></div>
     <button class="btn" onclick="healthCheckAgent('thor')" style="font-size:0.72rem;">Health Check</button>
+    <button class="agent-chat-trigger" onclick="openAgentChat('thor')" style="font-size:0.72rem;color:var(--agent-thor);">Chat</button>
   </div>
   <div class="health-inline" id="thor-health-result"></div>
-  <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-thor);">
-    <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Agent Activity</h3>
-    <div id="thor-activity-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:150px;overflow-y:auto;"><span class="text-muted">Waiting for activity...</span></div>
-  </div>
-  <div style="display:flex;gap:8px;margin-bottom:12px;">
-    <button class="btn" id="btn-update-sheet" onclick="thorUpdateSheet()" style="font-size:0.76rem;background:#ff6600;color:#000;font-weight:600;">Update Progress Sheet</button>
-    <button class="btn" id="btn-update-dash" onclick="thorUpdateDashboard()" style="font-size:0.76rem;background:#ff6600;color:#000;font-weight:600;">Update Dashboard</button>
-    <span id="thor-action-status" class="text-muted" style="font-size:0.72rem;align-self:center;"></span>
-  </div>
   <div class="grid-6">
     <div class="stat-card" data-accent="thor"><div class="stat-value" id="thor-queue-pending">0</div><div class="stat-label">Pending Tasks</div></div>
     <div class="stat-card" data-accent="success"><div class="stat-value" id="thor-completed">0</div><div class="stat-label">Completed</div></div>
@@ -24,6 +16,27 @@
     <div class="stat-card" data-accent="thor"><div class="stat-value" id="thor-tokens">0</div><div class="stat-label">Tokens Used</div></div>
     <div class="stat-card" data-accent="success"><div class="stat-value" id="thor-success-rate">--</div><div class="stat-label">Success Rate</div></div>
   </div>
+
+  <!-- Action Buttons -->
+  <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;">
+    <button class="btn" id="btn-update-sheet" onclick="thorUpdateSheet()" style="font-size:0.76rem;background:#ff6600;color:#000;font-weight:600;">Update Progress Sheet</button>
+    <button class="btn" id="btn-update-brotherhood" onclick="thorUpdateBrotherhood()" style="font-size:0.76rem;background:#ff6600;color:#000;font-weight:600;">Update Brotherhood Sheet</button>
+    <button class="btn" id="btn-update-dash" onclick="thorUpdateDashboard()" style="font-size:0.76rem;background:#ff6600;color:#000;font-weight:600;">Update Dashboard</button>
+    <span id="thor-action-status" class="text-muted" style="font-size:0.72rem;align-self:center;"></span>
+  </div>
+
+  <!-- Smart Actions — ABOVE activity -->
+  <div class="section-spacer" style="margin-top:0;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
+      <h2 class="section-title" data-accent="thor" style="margin-bottom:0;">Smart Actions</h2>
+      <button class="btn" onclick="loadSmartActions()" style="font-size:0.72rem;">Refresh</button>
+    </div>
+    <div id="thor-smart-actions" style="display:flex;flex-wrap:wrap;gap:8px;">
+      <span class="text-muted">Loading live suggestions...</span>
+    </div>
+  </div>
+
+  <!-- API Cost Tracker -->
   <div class="glass-card" style="margin:12px 0;border-left:3px solid var(--agent-thor);">
     <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">API Cost Tracker</h3>
     <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
@@ -43,15 +56,14 @@
       </div>
     </div>
   </div>
-  <div class="section-spacer">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
-      <h2 class="section-title" data-accent="thor" style="margin-bottom:0;">Smart Actions</h2>
-      <button class="btn" onclick="loadSmartActions()" style="font-size:0.72rem;">Refresh</button>
-    </div>
-    <div id="thor-smart-actions" style="display:flex;flex-wrap:wrap;gap:8px;">
-      <span class="text-muted">Loading live suggestions...</span>
-    </div>
+
+  <!-- Activity Feed — merged activity + log -->
+  <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-thor);">
+    <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Activity Feed</h3>
+    <div id="thor-activity-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:200px;overflow-y:auto;"><span class="text-muted">Waiting for activity...</span></div>
   </div>
+
+  <!-- Submit Custom Task -->
   <div class="section-spacer">
     <h2 class="section-title" data-accent="thor">Submit Custom Task</h2>
     <div class="glass-card">
@@ -70,38 +82,42 @@
       </div>
     </div>
   </div>
+
+  <!-- Task Queue -->
   <div class="section-spacer">
     <h2 class="section-title" data-accent="thor">Task Queue</h2>
     <div class="glass-card"><table class="data-table"><thead><tr><th>ID</th><th>Title</th><th>Agent</th><th>Priority</th><th>Status</th></tr></thead><tbody id="thor-queue-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No tasks</td></tr></tbody></table></div>
   </div>
+
+  <!-- Recent Results -->
   <div class="section-spacer">
     <h2 class="section-title" data-accent="thor">Recent Results</h2>
     <div class="glass-card"><table class="data-table"><thead><tr><th>Task</th><th>Model</th><th>Files</th><th>Test</th><th>Phrase</th></tr></thead><tbody id="thor-results-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No results yet</td></tr></tbody></table></div>
   </div>
+
+  <!-- Reflexion + Cache + Code Review + Progress -->
   <div class="section-spacer">
-    <div style="display:flex;gap:12px;flex-wrap:wrap;">
-      <div class="glass-card" style="flex:1;min-width:200px;border-left:3px solid var(--agent-thor);">
-        <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Reflexion Memory</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="glass-card" style="border-left:3px solid var(--agent-thor);">
+        <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Reflexion Memory <span class="text-muted" style="font-weight:400;font-size:0.6rem;">Remembers past debugging failures</span></h3>
         <div id="thor-reflexion-stats" style="font-family:var(--font-mono);font-size:0.76rem;"><span class="text-muted">Loading...</span></div>
       </div>
-      <div class="glass-card" style="flex:1;min-width:200px;border-left:3px solid var(--agent-thor);">
-        <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Response Cache</h3>
+      <div class="glass-card" style="border-left:3px solid var(--agent-thor);">
+        <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Response Cache <span class="text-muted" style="font-weight:400;font-size:0.6rem;">Caches similar API calls to save $</span></h3>
         <div id="thor-cache-stats" style="font-family:var(--font-mono);font-size:0.76rem;"><span class="text-muted">Loading...</span></div>
       </div>
-    </div>
-  </div>
-  <div class="section-spacer">
-    <div style="display:flex;gap:12px;flex-wrap:wrap;">
-      <div class="glass-card" style="flex:1;min-width:200px;border-left:3px solid var(--agent-thor);">
-        <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Code Review</h3>
+      <div class="glass-card" style="border-left:3px solid var(--agent-thor);">
+        <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Code Review <span class="text-muted" style="font-weight:400;font-size:0.6rem;">Automated quality checks on output</span></h3>
         <div id="thor-review-stats" style="font-family:var(--font-mono);font-size:0.76rem;"><span class="text-muted">Loading...</span></div>
       </div>
-      <div class="glass-card" style="flex:1;min-width:200px;border-left:3px solid var(--agent-thor);">
+      <div class="glass-card" style="border-left:3px solid var(--agent-thor);">
         <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Progress Tracker</h3>
         <div id="thor-progress-stats" style="font-family:var(--font-mono);font-size:0.76rem;"><span class="text-muted">Loading...</span></div>
       </div>
     </div>
   </div>
+
+  <!-- Codebase Index -->
   <div class="section-spacer">
     <h2 class="section-title" data-accent="thor">Codebase Index</h2>
     <div class="glass-card">
@@ -112,36 +128,10 @@
       <div id="thor-codebase-index"><div class="text-muted" style="text-align:center;padding:var(--space-4);">Loading...</div></div>
     </div>
   </div>
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="thor">Activity Log</h2>
-    <div class="glass-card" style="max-height:300px;overflow-y:auto;">
-      <div id="thor-activity-log" style="font-family:monospace;font-size:0.75rem;padding:12px;color:var(--text-primary);">Waiting for data...</div>
-    </div>
-  </div>
+
+  <!-- Commands -->
   <div class="section-spacer">
     <h2 class="section-title" data-accent="thor">Commands &amp; Capabilities</h2>
     <div class="glass-card"><div id="thor-commands" style="max-height:250px;overflow-y:auto;"><span class="text-muted">Loading commands...</span></div></div>
-  </div>
-  <div class="section-spacer">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
-      <h2 class="section-title" data-accent="thor" style="margin-bottom:0;">Knowledge & Memory</h2>
-      <button class="agent-chat-trigger" onclick="openAgentChat('thor')">&#x1F4AC; Chat with Thor</button>
-    </div>
-    <div class="glass-card">
-      <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;">
-        <input type="text" class="input" id="thor-brain-topic" placeholder="Topic..." style="flex:1;font-size:0.76rem;padding:5px 10px;">
-        <div id="thor-brain-type-pills" style="display:flex;gap:4px;">
-          <button class="brain-pill active" data-type="note" onclick="setBrainType('thor','note',this)">Note</button>
-          <button class="brain-pill" data-type="command" onclick="setBrainType('thor','command',this)">Cmd</button>
-          <button class="brain-pill" data-type="memory" onclick="setBrainType('thor','memory',this)">Mem</button>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <textarea class="input" id="thor-brain-content" placeholder="Instructions, knowledge, or notes for Thor..." style="flex:1;min-height:48px;font-size:0.76rem;padding:5px 10px;resize:vertical;box-sizing:border-box;"></textarea>
-        <button class="btn btn-primary" onclick="addBrainNote('thor')" style="align-self:flex-end;padding:6px 14px;font-size:0.74rem;">Add</button>
-      </div>
-      <input type="hidden" id="thor-brain-type" value="note">
-      <div id="thor-brain-list" style="margin-top:10px;max-height:350px;overflow-y:auto;"><div class="text-muted" style="text-align:center;padding:12px;font-size:0.74rem;">No notes yet.</div></div>
-    </div>
   </div>
 </div>

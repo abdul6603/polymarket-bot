@@ -9,6 +9,7 @@
     --agent-thor: #ff6600;
     --agent-hawk: #FFD700;
     --agent-viper: #00ff88;
+    --agent-quant: #00BFFF;
     --bg: #000000;
     --surface: #080810;
     --surface-elevated: #0c0c18;
@@ -32,7 +33,7 @@
     --space-5: 16px; --space-6: 20px; --space-8: 28px; --space-10: 36px; --space-12: 44px;
     --transition-fast: 120ms ease;
     --transition-base: 200ms ease;
-    --sidebar-width: 88px;
+    --sidebar-width: 110px;
   }
   *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
   html { font-size:14px; -webkit-font-smoothing:antialiased; }
@@ -98,12 +99,13 @@
     border-bottom:1px solid var(--border); width:100%; text-align:center;
   }
   .sidebar-btn {
-    width:100%; height:36px; border:none; background:none;
+    width:100%; height:32px; border:none; background:none;
     color:var(--text-muted); font-family:var(--font-mono);
     font-size:0.62rem; font-weight:600; letter-spacing:0.04em;
     cursor:pointer; border-radius:var(--radius-sm);
     transition:all var(--transition-base);
-    display:flex; align-items:center; justify-content:center;
+    display:flex; align-items:center; justify-content:flex-start;
+    gap:4px; padding:0 6px;
     margin:1px 4px; position:relative;
   }
   .sidebar-btn:hover { background:rgba(255,255,255,0.04); color:var(--text-secondary); }
@@ -118,7 +120,29 @@
   .sidebar-btn[data-tab="thor"].active { color:var(--agent-thor); box-shadow:inset 3px 0 0 var(--agent-thor); }
   .sidebar-btn[data-tab="system"].active { color:var(--agent-shelby); box-shadow:inset 3px 0 0 var(--agent-shelby); }
   .sidebar-btn[data-tab="chat"].active { color:var(--text-secondary); box-shadow:inset 3px 0 0 var(--text-secondary); }
+  .sidebar-btn[data-tab="garves-live"].active { color:var(--agent-garves); box-shadow:inset 3px 0 0 var(--agent-garves); }
+  .sidebar-btn[data-tab="hawk"].active { color:var(--agent-hawk); box-shadow:inset 3px 0 0 var(--agent-hawk); }
+  .sidebar-btn[data-tab="viper"].active { color:var(--agent-viper); box-shadow:inset 3px 0 0 var(--agent-viper); }
+  .sidebar-btn[data-tab="quant"].active { color:var(--agent-quant); box-shadow:inset 3px 0 0 var(--agent-quant); }
   .sidebar-spacer { flex:1; }
+  .sidebar-divider {
+    width:80%;height:1px;background:var(--border);margin:4px auto;
+  }
+  .sidebar-section-label {
+    font-family:var(--font-mono);font-size:0.52rem;font-weight:700;
+    color:var(--text-muted);letter-spacing:0.12em;text-transform:uppercase;
+    padding:6px 8px 2px;width:100%;text-align:center;opacity:0.6;
+  }
+  .sidebar-icon {
+    display:inline-flex;align-items:center;justify-content:center;
+    width:24px;height:24px;border-radius:50%;
+    font-family:var(--font-mono);font-size:0.52rem;font-weight:700;
+    color:#000;flex-shrink:0;letter-spacing:0.02em;
+  }
+  .sidebar-label {
+    font-family:var(--font-mono);font-size:0.56rem;font-weight:600;
+    color:inherit;white-space:nowrap;margin-left:4px;
+  }
 
   /* Tab Content */
   .tab-content { display:none; padding:var(--space-8) 0 var(--space-12); animation:fadeSlideIn 0.35s ease; }
@@ -325,6 +349,12 @@
   .agent-card-header { display:flex; align-items:center; justify-content:space-between; gap:6px; }
   .agent-card-avatar { width:30px; height:30px; border-radius:50%; flex-shrink:0; object-fit:cover; border:2px solid rgba(255,255,255,0.1); }
   .agent-card-initial { width:30px; height:30px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:0.62rem; font-weight:700; letter-spacing:0.04em; border:2px solid rgba(255,255,255,0.1); }
+  .agent-avatar {
+    display:inline-flex;align-items:center;justify-content:center;
+    width:30px;height:30px;border-radius:50%;
+    font-family:var(--font-mono);font-size:0.62rem;font-weight:700;
+    color:#000;flex-shrink:0;border:2px solid rgba(255,255,255,0.1);
+  }
   .agent-card-name { font-family:var(--font-mono); font-size:0.88rem; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; }
   .brain-badge { display:inline-flex; align-items:center; justify-content:center; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:rgba(255,170,0,0.2); color:#ffaa00; font-size:0.65rem; font-weight:700; font-family:var(--font-mono); }
   .agent-card[data-agent="garves"] .agent-card-name { color:var(--agent-garves); }

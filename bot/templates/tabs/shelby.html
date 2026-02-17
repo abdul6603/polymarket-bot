@@ -37,6 +37,7 @@
         <option value="shelby">Shelby</option>
         <option value="hawk">Hawk</option>
         <option value="viper">Viper</option>
+        <option value="quant">Quant</option>
       </select>
       <input type="date" class="input" id="shelby-add-due" style="width:140px;font-size:0.78rem;padding:8px;">
       <button class="btn btn-success" onclick="addShelbyTask()" style="padding:8px 20px;font-size:0.8rem;font-weight:600;white-space:nowrap;">Add Task</button>
@@ -88,6 +89,7 @@
       <option value="shelby">Shelby</option>
       <option value="hawk">Hawk</option>
       <option value="viper">Viper</option>
+      <option value="quant">Quant</option>
     </select>
     <select class="input" id="shelby-filter-status" onchange="filterShelbyTasks()" style="font-size:0.74rem;padding:4px 8px;width:auto;">
       <option value="">All Status</option>
@@ -152,24 +154,5 @@
   <div class="section-spacer">
     <h2 class="section-title" data-accent="shelby">Commands &amp; Capabilities</h2>
     <div class="glass-card"><div id="shelby-commands" style="max-height:250px;overflow-y:auto;"><span class="text-muted">Loading commands...</span></div></div>
-  </div>
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="shelby" style="margin-bottom:0;">Knowledge & Memory</h2>
-    <div class="glass-card" style="margin-top:var(--space-3);">
-      <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;">
-        <input type="text" class="input" id="shelby-brain-topic" placeholder="Topic..." style="flex:1;font-size:0.76rem;padding:5px 10px;">
-        <div id="shelby-brain-type-pills" style="display:flex;gap:4px;">
-          <button class="brain-pill active" data-type="note" onclick="setBrainType('shelby','note',this)">Note</button>
-          <button class="brain-pill" data-type="command" onclick="setBrainType('shelby','command',this)">Cmd</button>
-          <button class="brain-pill" data-type="memory" onclick="setBrainType('shelby','memory',this)">Mem</button>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <textarea class="input" id="shelby-brain-content" placeholder="Instructions, knowledge, or notes for Shelby..." style="flex:1;min-height:48px;font-size:0.76rem;padding:5px 10px;resize:vertical;box-sizing:border-box;"></textarea>
-        <button class="btn btn-primary" onclick="addBrainNote('shelby')" style="align-self:flex-end;padding:6px 14px;font-size:0.74rem;">Add</button>
-      </div>
-      <input type="hidden" id="shelby-brain-type" value="note">
-      <div id="shelby-brain-list" style="margin-top:10px;max-height:350px;overflow-y:auto;"><div class="text-muted" style="text-align:center;padding:12px;font-size:0.74rem;">No notes yet.</div></div>
-    </div>
   </div>
 </div>

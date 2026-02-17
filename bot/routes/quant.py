@@ -178,3 +178,125 @@ def api_quant_run():
 def api_quant_run_status():
     """Poll backtest progress."""
     return jsonify({"running": _run_running, **_run_progress})
+
+
+@quant_bp.route("/api/quant/smart-actions")
+def api_quant_smart_actions():
+    """Dynamic smart actions based on Quant's current state and data."""
+    actions = []
+    status = _load_json(STATUS_FILE)
+    results = _load_json(RESULTS_FILE)
+    recs = _load_json(RECS_FILE)
+    wf = _load_json(WF_FILE)
+    analytics = _load_json(ANALYTICS_FILE)
+
+    combos = status.get("total_combos_tested", 0)
+    top = results.get("top_results", [])
+    best = top[0] if top else {}
+    baseline = results.get("baseline", {})
+    recommendations = recs.get("recommendations", [])
+    wf_data = wf.get("walk_forward", {})
+
+    # 1. Suggest running a backtest if none done yet or stale
+    if combos == 0:
+        actions.append({
+            "id": "quant_first_backtest",
+            "title": "Run First Backtest",
+            "description": "No backtests have been run yet. Trigger one to find optimal parameters.",
+            "priority": "high", "agent": "quant", "source": "quant_state",
+        })
+    elif status.get("last_run"):
+        try:
+            from datetime import datetime
+            last = datetime.fromisoformat(status["last_run"].replace("Z", "+00:00"))
+            age_hours = (datetime.now(last.tzinfo) - last).total_seconds() / 3600
+            if age_hours > 24:
+                actions.append({
+                    "id": "quant_stale_backtest",
+                    "title": "Re-run Backtest (Stale Data)",
+                    "description": f"Last backtest was {int(age_hours)}h ago. New trades may shift optimal params.",
+                    "priority": "medium", "agent": "quant", "source": "quant_state",
+                })
+        except Exception:
+            pass
+
+    # 2. If there are unreviewed recommendations
+    if recommendations:
+        actions.append({
+            "id": "quant_review_recs",
+            "title": f"Review {len(recommendations)} Recommendations",
+            "description": "Quant found parameter improvements. Review and decide whether to apply.",
+            "priority": "high", "agent": "quant", "source": "quant_recs",
+        })
+
+    # 3. If best WR significantly higher than baseline
+    if best and baseline:
+        best_wr = best.get("win_rate", 0)
+        base_wr = baseline.get("win_rate", 0)
+        delta = best_wr - base_wr
+        if delta > 3:
+            actions.append({
+                "id": "quant_apply_params",
+                "title": f"Potential +{delta:.1f}% WR Improvement",
+                "description": f"Best found: {best_wr:.1f}% vs current {base_wr:.1f}%. Consider applying optimized params to Garves.",
+                "priority": "high", "agent": "quant", "source": "quant_results",
+            })
+
+    # 4. Walk-forward validation needed
+    if not wf_data.get("folds") and combos > 0:
+        actions.append({
+            "id": "quant_need_wf",
+            "title": "Walk-Forward Validation Needed",
+            "description": "No walk-forward results found. Run WF to check for overfitting.",
+            "priority": "medium", "agent": "quant", "source": "quant_wf",
+        })
+
+    # 5. Check for overfitting
+    if wf_data.get("folds"):
+        avg_oos = wf_data.get("avg_oos_wr", 0)
+        if best and best.get("win_rate", 0) - avg_oos > 10:
+            actions.append({
+                "id": "quant_overfit_warning",
+                "title": "Overfitting Warning",
+                "description": f"In-sample WR ({best.get('win_rate', 0):.1f}%) is {best.get('win_rate', 0) - avg_oos:.1f}% higher than OOS ({avg_oos:.1f}%). Results may be overfit.",
+                "priority": "high", "agent": "quant", "source": "quant_wf",
+            })
+
+    # 6. Diversity analysis
+    diversity = analytics.get("diversity", {})
+    if diversity.get("diversity_score", 1) < 0.5:
+        actions.append({
+            "id": "quant_low_diversity",
+            "title": "Low Indicator Diversity",
+            "description": "Indicators may be highly correlated. Consider adding diverse signal sources.",
+            "priority": "medium", "agent": "quant", "source": "quant_analytics",
+        })
+
+    # 7. Kelly sizing suggestion
+    kelly = analytics.get("kelly", {})
+    if kelly.get("half_kelly") and kelly["half_kelly"] > 0.15:
+        actions.append({
+            "id": "quant_kelly_sizing",
+            "title": f"Kelly Suggests {kelly['half_kelly']*100:.0f}% Position Size",
+            "description": "Half-Kelly criterion suggests a meaningful position. Review if Garves stake matches.",
+            "priority": "low", "agent": "quant", "source": "quant_analytics",
+        })
+
+    # Pull from Atlas improvements if available
+    try:
+        atlas_imp_file = Path.home() / "atlas" / "data" / "improvements.json"
+        if atlas_imp_file.exists():
+            imp_data = json.loads(atlas_imp_file.read_text())
+            quant_imps = imp_data.get("quant", [])
+            for imp in quant_imps[:3]:
+                actions.append({
+                    "id": f"atlas_quant_{hash(imp.get('title', '')) % 10000}",
+                    "title": imp.get("title", "Atlas Suggestion"),
+                    "description": imp.get("description", "")[:200],
+                    "priority": imp.get("priority", "medium"),
+                    "agent": "quant", "source": "atlas_kb",
+                })
+    except Exception:
+        pass
+
+    return jsonify({"actions": actions, "count": len(actions)})

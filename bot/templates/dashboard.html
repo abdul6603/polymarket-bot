@@ -13,20 +13,54 @@
 <body>
 <nav class="sidebar">
   <div class="sidebar-brand">CC</div>
-  <button class="sidebar-btn active" data-tab="overview" onclick="switchTab('overview')" title="Overview">Overview</button>
-  <button class="sidebar-btn" data-tab="system" onclick="switchTab('system')" title="System" style="color:#aaaaaa;">System</button>
-  <button class="sidebar-btn" data-tab="garves-live" onclick="switchTab('garves-live')" title="Garves Live" style="color:#00ff88;">Garves $</button>
-  <button class="sidebar-btn" data-tab="garves" onclick="switchTab('garves')" title="Garves Sim" style="color:#00d4ff;">Garves Sim</button>
-  <button class="sidebar-btn" data-tab="soren" onclick="switchTab('soren')" title="Soren" style="color:#cc66ff;">Soren</button>
-  <button class="sidebar-btn" data-tab="shelby" onclick="switchTab('shelby')" title="Shelby" style="color:#ffaa00;">Shelby</button>
-  <button class="sidebar-btn" data-tab="atlas" onclick="switchTab('atlas')" title="Atlas" style="color:#22aa44;">Atlas</button>
-  <button class="sidebar-btn" data-tab="mercury" onclick="switchTab('mercury')" title="Lisa" style="color:#ff8800;">Lisa</button>
-  <button class="sidebar-btn" data-tab="sentinel" onclick="switchTab('sentinel')" title="Robotox" style="color:#00ff44;">Robotox</button>
-  <button class="sidebar-btn" data-tab="thor" onclick="switchTab('thor')" title="Thor" style="color:#ff6600;">Thor</button>
-  <button class="sidebar-btn" data-tab="hawk-sim" onclick="switchTab('hawk-sim')" title="Hawk Sim" style="color:#FFD700;">Hawk Sim</button>
-  <button class="sidebar-btn" data-tab="hawk" onclick="switchTab('hawk')" title="Hawk Live" style="color:#FFD700;">Hawk $</button>
-  <button class="sidebar-btn" data-tab="viper" onclick="switchTab('viper')" title="Viper" style="color:#00ff88;">Viper</button>
-  <button class="sidebar-btn" data-tab="quant" onclick="switchTab('quant')" title="Quant" style="color:#00BFFF;">Quant</button>
+  <div class="sidebar-divider"></div>
+  <div class="sidebar-section-label">COMMAND</div>
+  <button class="sidebar-btn active" data-tab="overview" onclick="switchTab('overview')" title="Overview">
+    <span class="sidebar-icon" style="background:var(--text-secondary);">OV</span><span class="sidebar-label">Overview</span>
+  </button>
+  <button class="sidebar-btn" data-tab="system" onclick="switchTab('system')" title="System">
+    <span class="sidebar-icon" style="background:#aaaaaa;">SY</span><span class="sidebar-label">System</span>
+  </button>
+  <div class="sidebar-divider"></div>
+  <div class="sidebar-section-label">TRADING</div>
+  <button class="sidebar-btn" data-tab="garves-live" onclick="switchTab('garves-live')" title="Garves">
+    <span class="sidebar-icon" style="background:var(--agent-garves);">GA</span><span class="sidebar-label">Garves $</span>
+  </button>
+  <button class="sidebar-btn" data-tab="hawk" onclick="switchTab('hawk')" title="Hawk">
+    <span class="sidebar-icon" style="background:var(--agent-hawk);">HK</span><span class="sidebar-label">Hawk $</span>
+  </button>
+  <button class="sidebar-btn" data-tab="quant" onclick="switchTab('quant')" title="Quant">
+    <span class="sidebar-icon" style="background:var(--agent-quant);">QT</span><span class="sidebar-label">Quant</span>
+  </button>
+  <div class="sidebar-divider"></div>
+  <div class="sidebar-section-label">CONTENT</div>
+  <button class="sidebar-btn" data-tab="soren" onclick="switchTab('soren')" title="Soren">
+    <span class="sidebar-icon" style="background:var(--agent-soren);">SO</span><span class="sidebar-label">Soren</span>
+  </button>
+  <button class="sidebar-btn" data-tab="mercury" onclick="switchTab('mercury')" title="Lisa">
+    <span class="sidebar-icon" style="background:var(--agent-mercury);">LI</span><span class="sidebar-label">Lisa</span>
+  </button>
+  <div class="sidebar-divider"></div>
+  <div class="sidebar-section-label">OPS</div>
+  <button class="sidebar-btn" data-tab="shelby" onclick="switchTab('shelby')" title="Shelby">
+    <span class="sidebar-icon" style="background:var(--agent-shelby);">SH</span><span class="sidebar-label">Shelby</span>
+  </button>
+  <button class="sidebar-btn" data-tab="atlas" onclick="switchTab('atlas')" title="Atlas">
+    <span class="sidebar-icon" style="background:var(--agent-atlas);">AT</span><span class="sidebar-label">Atlas</span>
+  </button>
+  <button class="sidebar-btn" data-tab="sentinel" onclick="switchTab('sentinel')" title="Robotox">
+    <span class="sidebar-icon" style="background:var(--agent-sentinel);">RO</span><span class="sidebar-label">Robotox</span>
+  </button>
+  <button class="sidebar-btn" data-tab="thor" onclick="switchTab('thor')" title="Thor">
+    <span class="sidebar-icon" style="background:var(--agent-thor);">TH</span><span class="sidebar-label">Thor</span>
+  </button>
+  <button class="sidebar-btn" data-tab="viper" onclick="switchTab('viper')" title="Viper">
+    <span class="sidebar-icon" style="background:var(--agent-viper);">VP</span><span class="sidebar-label">Viper</span>
+  </button>
+  <div class="sidebar-divider"></div>
+  <button class="sidebar-btn" data-tab="chat" onclick="switchTab('chat')" title="Chat">
+    <span class="sidebar-icon" style="background:#888;">CH</span><span class="sidebar-label">Chat</span>
+  </button>
   <div class="sidebar-spacer"></div>
 </nav>
 
@@ -41,18 +75,17 @@
 
   {% include 'tabs/overview.html' %}
   {% include 'tabs/garves_live.html' %}
-  {% include 'tabs/garves_sim.html' %}
   {% include 'tabs/soren.html' %}
   {% include 'tabs/shelby.html' %}
   {% include 'tabs/atlas.html' %}
   {% include 'tabs/lisa.html' %}
   {% include 'tabs/robotox.html' %}
   {% include 'tabs/thor.html' %}
-  {% include 'tabs/hawk_sim.html' %}
   {% include 'tabs/hawk.html' %}
   {% include 'tabs/viper.html' %}
   {% include 'tabs/quant.html' %}
   {% include 'tabs/system.html' %}
+  {% include 'tabs/chat.html' %}
 
   <!-- Agent Chat Popup -->
   <div id="agent-chat-popup" class="agent-chat-popup" style="display:none;">

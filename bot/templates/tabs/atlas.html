@@ -4,6 +4,7 @@
   <div class="agent-widget-row" id="atlas-widgets">
     <div class="widget-badge" id="atlas-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
     <button class="btn" onclick="healthCheckAgent(&apos;atlas&apos;)" style="font-size:0.72rem;">Health Check</button>
+    <button class="agent-chat-trigger" onclick="openAgentChat(&apos;atlas&apos;)" style="font-size:0.72rem;color:var(--agent-atlas);">Chat</button>
   </div>
   <div class="health-inline" id="atlas-health-result"></div>
   <div class="grid-4">
@@ -23,15 +24,43 @@
     <span style="color:var(--text-muted);font-size:0.66rem;text-transform:uppercase;letter-spacing:0.06em;">Latest Insight</span>
     <div id="atlas-insight-text" style="margin-top:4px;color:var(--text-primary);"></div>
   </div>
-  <div id="atlas-hierarchy" class="glass-card" style="margin-top:12px;margin-bottom:12px;"></div>
   <div id="atlas-bg-status" class="glass-card" style="margin-top:12px;margin-bottom:12px;"></div>
-  <div id="atlas-cost-panel" style="margin-bottom:12px;padding:12px 16px;background:var(--surface-secondary);border-radius:8px;"></div>
+  <!-- KB Health — Simplified bar -->
   <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-atlas);">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-2);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
       <h3 class="section-title" style="font-size:0.72rem;margin-bottom:0;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Knowledge Base Health</h3>
       <button class="btn" onclick="loadAtlasKBHealth()" style="font-size:0.72rem;">Refresh</button>
     </div>
-    <div id="atlas-kb-health"><span class="text-muted">Loading...</span></div>
+    <div id="atlas-kb-health-bar" style="margin-bottom:4px;">
+      <div style="height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;">
+        <div id="atlas-kb-bar-fill" style="height:100%;width:0%;border-radius:4px;transition:width 0.5s ease;background:#00ff44;"></div>
+      </div>
+    </div>
+    <div id="atlas-kb-health-summary" style="display:flex;gap:12px;flex-wrap:wrap;">
+      <span class="text-muted" style="font-size:0.7rem;">Loading...</span>
+    </div>
+  </div>
+  <!-- Deep Research -->
+  <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-atlas);background:linear-gradient(135deg,rgba(124,77,255,0.04),rgba(0,191,255,0.04));">
+    <h3 class="section-title" style="font-size:0.76rem;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em;color:var(--agent-atlas);">Deep Research</h3>
+    <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:10px;">Target an agent or topic for focused intelligence gathering.</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <select class="input" id="atlas-deep-agent" style="width:130px;font-size:0.78rem;padding:6px 10px;">
+        <option value="">Any Agent</option>
+        <option value="garves">Garves</option>
+        <option value="hawk">Hawk</option>
+        <option value="quant">Quant</option>
+        <option value="soren">Soren</option>
+        <option value="lisa">Lisa</option>
+        <option value="shelby">Shelby</option>
+        <option value="thor">Thor</option>
+        <option value="robotox">Robotox</option>
+        <option value="viper">Viper</option>
+      </select>
+      <input type="text" class="input" id="atlas-deep-query" placeholder="Research topic (e.g. 'polymarket API rate limits')..." style="flex:1;min-width:200px;font-size:0.78rem;padding:6px 10px;" onkeydown="if(event.key==='Enter')atlasDeepResearch()">
+      <button class="btn btn-primary" onclick="atlasDeepResearch()" style="font-size:0.76rem;padding:6px 16px;white-space:nowrap;">Launch Research</button>
+    </div>
+    <div id="atlas-deep-result" style="display:none;margin-top:10px;padding:10px 14px;background:var(--surface-secondary);border-radius:6px;font-size:0.76rem;max-height:300px;overflow-y:auto;"></div>
   </div>
   <div class="section-spacer">
     <h2 class="section-title" data-accent="atlas">Command Center</h2>
@@ -72,6 +101,18 @@
         <span class="cmd-icon">&#x1F6E1;</span>
         <div class="cmd-text"><span class="cmd-title">Analyze Robotox</span><span class="cmd-sub">Monitoring health, fixes, alerts</span></div>
       </div>
+      <div class="atlas-cmd-card" data-color="gold" onclick="atlasAnalyze('hawk')">
+        <span class="cmd-icon">&#x1F985;</span>
+        <div class="cmd-text"><span class="cmd-title">Analyze Hawk</span><span class="cmd-sub">Market scanning, edge detection, trades</span></div>
+      </div>
+      <div class="atlas-cmd-card" data-color="green" onclick="atlasAnalyze('viper')">
+        <span class="cmd-icon">&#x1F40D;</span>
+        <div class="cmd-text"><span class="cmd-title">Analyze Viper</span><span class="cmd-sub">Opportunities, costs, revenue potential</span></div>
+      </div>
+      <div class="atlas-cmd-card" data-color="cyan" onclick="atlasAnalyze('quant')">
+        <span class="cmd-icon">&#x1F9EA;</span>
+        <div class="cmd-text"><span class="cmd-title">Analyze Quant</span><span class="cmd-sub">Backtesting, walk-forward, strategy health</span></div>
+      </div>
       <div class="atlas-cmd-card" data-color="green" onclick="atlasInfraEval()">
         <span class="cmd-icon">&#x1F3D7;</span>
         <div class="cmd-text"><span class="cmd-title">System / Infra</span><span class="cmd-sub">Infrastructure health and improvement ideas</span></div>
@@ -109,11 +150,15 @@
   </div>
   <div class="section-spacer">
     <h2 class="section-title" data-accent="atlas">Competitor Intel</h2>
+    <div id="atlas-competitor-summary" style="display:none;margin-bottom:10px;padding:12px 16px;background:var(--surface-secondary);border-radius:8px;border-left:3px solid var(--agent-atlas);">
+      <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Key Takeaways</div>
+      <div id="atlas-competitor-bullets" style="font-size:0.76rem;line-height:1.6;"></div>
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <button class="btn" onclick="atlasCompetitorSendTo('lisa')" style="font-size:0.68rem;padding:4px 10px;">Send to Lisa</button>
+        <button class="btn" onclick="atlasCompetitorSendTo('soren')" style="font-size:0.68rem;padding:4px 10px;">Send to Soren</button>
+      </div>
+    </div>
     <div class="glass-card" id="atlas-competitors"><div class="text-muted" style="text-align:center;padding:var(--space-6);">No competitor intel yet.</div></div>
-  </div>
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="atlas">Trade Journal Analysis</h2>
-    <div class="glass-card" id="atlas-trade-analysis"><div class="text-muted" style="text-align:center;padding:var(--space-4);">No trade analysis yet.</div></div>
   </div>
   <div class="section-spacer">
     <h2 class="section-title" data-accent="atlas">Suggested Actions</h2>
@@ -122,27 +167,5 @@
   <div class="section-spacer">
     <h2 class="section-title" data-accent="atlas">Commands &amp; Capabilities</h2>
     <div class="glass-card"><div id="atlas-commands" style="max-height:250px;overflow-y:auto;"><span class="text-muted">Loading commands...</span></div></div>
-  </div>
-  <div class="section-spacer">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
-      <h2 class="section-title" data-accent="atlas" style="margin-bottom:0;">Knowledge & Memory</h2>
-      <button class="agent-chat-trigger" onclick="openAgentChat('atlas')">&#x1F4AC; Chat with Atlas</button>
-    </div>
-    <div class="glass-card">
-      <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;">
-        <input type="text" class="input" id="atlas-brain-topic" placeholder="Topic..." style="flex:1;font-size:0.76rem;padding:5px 10px;">
-        <div id="atlas-brain-type-pills" style="display:flex;gap:4px;">
-          <button class="brain-pill active" data-type="note" onclick="setBrainType('atlas','note',this)">Note</button>
-          <button class="brain-pill" data-type="command" onclick="setBrainType('atlas','command',this)">Cmd</button>
-          <button class="brain-pill" data-type="memory" onclick="setBrainType('atlas','memory',this)">Mem</button>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <textarea class="input" id="atlas-brain-content" placeholder="Instructions, knowledge, or notes for Atlas..." style="flex:1;min-height:48px;font-size:0.76rem;padding:5px 10px;resize:vertical;box-sizing:border-box;"></textarea>
-        <button class="btn btn-primary" onclick="addBrainNote('atlas')" style="align-self:flex-end;padding:6px 14px;font-size:0.74rem;">Add</button>
-      </div>
-      <input type="hidden" id="atlas-brain-type" value="note">
-      <div id="atlas-brain-list" style="margin-top:10px;max-height:350px;overflow-y:auto;"><div class="text-muted" style="text-align:center;padding:12px;font-size:0.74rem;">No notes yet.</div></div>
-    </div>
   </div>
 </div>

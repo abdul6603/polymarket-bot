@@ -97,6 +97,36 @@
     <div class="flex flex-col gap-3" id="soren-queue"><div class="text-muted" style="padding:var(--space-4);text-align:center;">Loading...</div></div>
   </div>
 
+  <!-- Performance Metrics -->
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="soren">Performance Metrics</h2>
+    <div class="glass-card" style="border-left:3px solid var(--agent-soren);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
+        <span class="text-muted" style="font-size:0.76rem;">Content velocity, quality scores, and pipeline health</span>
+        <button class="btn" onclick="loadSorenMetrics()" style="font-size:0.72rem;">Refresh</button>
+      </div>
+      <div class="grid-4" style="margin-bottom:12px;">
+        <div style="text-align:center;">
+          <div id="soren-metric-velocity" style="font-size:1.2rem;font-weight:800;color:var(--agent-soren);">--</div>
+          <div style="font-size:0.68rem;color:var(--text-muted);">Posts / Week</div>
+        </div>
+        <div style="text-align:center;">
+          <div id="soren-metric-quality" style="font-size:1.2rem;font-weight:800;color:var(--success);">--</div>
+          <div style="font-size:0.68rem;color:var(--text-muted);">Avg Quality</div>
+        </div>
+        <div style="text-align:center;">
+          <div id="soren-metric-approval" style="font-size:1.2rem;font-weight:800;color:#FFD700;">--</div>
+          <div style="font-size:0.68rem;color:var(--text-muted);">Approval Rate</div>
+        </div>
+        <div style="text-align:center;">
+          <div id="soren-metric-pillars" style="font-size:1.2rem;font-weight:800;color:var(--agent-soren);">--</div>
+          <div style="font-size:0.68rem;color:var(--text-muted);">Active Pillars</div>
+        </div>
+      </div>
+      <div id="soren-metrics-detail" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-secondary);"></div>
+    </div>
+  </div>
+
   <!-- Competitor Intelligence -->
   <div class="section-spacer">
     <h2 class="section-title" data-accent="soren">Competitor Intelligence</h2>
@@ -113,28 +143,5 @@
   <div class="section-spacer">
     <h2 class="section-title" data-accent="soren">Commands &amp; Capabilities</h2>
     <div class="glass-card"><div id="soren-commands" style="max-height:250px;overflow-y:auto;"><span class="text-muted">Loading commands...</span></div></div>
-  </div>
-
-  <!-- Knowledge & Memory -->
-  <div class="section-spacer">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
-      <h2 class="section-title" data-accent="soren" style="margin-bottom:0;">Knowledge & Memory</h2>
-    </div>
-    <div class="glass-card">
-      <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;">
-        <input type="text" class="input" id="soren-brain-topic" placeholder="Topic..." style="flex:1;font-size:0.76rem;padding:5px 10px;">
-        <div id="soren-brain-type-pills" style="display:flex;gap:4px;">
-          <button class="brain-pill active" data-type="note" onclick="setBrainType('soren','note',this)">Note</button>
-          <button class="brain-pill" data-type="command" onclick="setBrainType('soren','command',this)">Cmd</button>
-          <button class="brain-pill" data-type="memory" onclick="setBrainType('soren','memory',this)">Mem</button>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <textarea class="input" id="soren-brain-content" placeholder="Instructions, knowledge, or notes for Soren..." style="flex:1;min-height:48px;font-size:0.76rem;padding:5px 10px;resize:vertical;box-sizing:border-box;"></textarea>
-        <button class="btn btn-primary" onclick="addBrainNote('soren')" style="align-self:flex-end;padding:6px 14px;font-size:0.74rem;">Add</button>
-      </div>
-      <input type="hidden" id="soren-brain-type" value="note">
-      <div id="soren-brain-list" style="margin-top:10px;max-height:350px;overflow-y:auto;"><div class="text-muted" style="text-align:center;padding:12px;font-size:0.74rem;">No notes yet.</div></div>
-    </div>
   </div>
 </div>

@@ -429,6 +429,50 @@ def api_lisa_posting_schedule():
         return jsonify({"error": str(e)[:200]}), 500
 
 
+@mercury_bp.route("/api/lisa/platform-status")
+def api_lisa_platform_status():
+    """Check platform connectivity status for Go-Live panel."""
+    platforms = {}
+    for plat in ["x", "tiktok", "instagram"]:
+        platforms[plat] = {"connected": False, "reason": ""}
+
+    # Check X (Twitter) — look for OAuth keys in env
+    try:
+        import os
+        x_key = os.environ.get("X_API_KEY") or os.environ.get("TWITTER_API_KEY")
+        x_secret = os.environ.get("X_API_SECRET") or os.environ.get("TWITTER_API_SECRET")
+        x_token = os.environ.get("X_ACCESS_TOKEN") or os.environ.get("TWITTER_ACCESS_TOKEN")
+        if x_key and x_secret and x_token:
+            platforms["x"]["connected"] = True
+        else:
+            # Try loading from mercury .env
+            mercury_env = MERCURY_ROOT / ".env"
+            if mercury_env.exists():
+                env_text = mercury_env.read_text()
+                has_keys = "X_API_KEY" in env_text or "TWITTER_API_KEY" in env_text
+                platforms["x"]["connected"] = has_keys
+                if not has_keys:
+                    platforms["x"]["reason"] = "API keys not configured"
+            else:
+                platforms["x"]["reason"] = "No .env file"
+    except Exception:
+        platforms["x"]["reason"] = "Error checking"
+
+    # TikTok — check if posting module exists
+    tiktok_module = MERCURY_ROOT / "core" / "tiktok_publisher.py"
+    platforms["tiktok"]["connected"] = tiktok_module.exists()
+    if not platforms["tiktok"]["connected"]:
+        platforms["tiktok"]["reason"] = "Publisher module not installed"
+
+    # Instagram — check if posting module exists
+    ig_module = MERCURY_ROOT / "core" / "ig_publisher.py"
+    platforms["instagram"]["connected"] = ig_module.exists()
+    if not platforms["instagram"]["connected"]:
+        platforms["instagram"]["reason"] = "Publisher module not installed"
+
+    return jsonify(platforms)
+
+
 @mercury_bp.route("/api/lisa/broadcasts")
 def api_lisa_broadcasts():
     """Process and acknowledge broadcasts for Lisa."""

@@ -884,3 +884,36 @@ def api_thor_update_dashboard():
         return jsonify({"task_id": task_id, "status": "submitted", "message": "Thor will update the dashboard"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500, 500
+
+
+@thor_bp.route("/api/thor/update-brotherhood", methods=["POST"])
+def api_thor_update_brotherhood():
+    """Submit a task to Thor to update the Brotherhood Sheet HTML."""
+    try:
+        from thor.core.task_queue import CodingTask, TaskQueue
+        from thor.config import ThorConfig
+        cfg = ThorConfig()
+        queue = TaskQueue(cfg.tasks_dir, cfg.results_dir)
+
+        task = CodingTask(
+            title="Update Agent Brotherhood Sheet HTML",
+            description=(
+                "Update ~/Desktop/Agent_Brotherhood_Sheet.html to reflect current agent capabilities, "
+                "tools, intelligence meters, and hierarchy. Ensure all 10 agents (Garves, Soren, Atlas, "
+                "Lisa, Shelby, Robotox, Thor, Hawk, Viper, Quant) are listed with correct skills, "
+                "colors, roles, and intelligence scores. Keep the existing HTML structure and styling."
+            ),
+            target_files=[
+                str(Path.home() / "Desktop/Agent_Brotherhood_Sheet.html"),
+            ],
+            context_files=[
+                str(Path.home() / "polymarket-bot/bot/routes/overview.py"),
+            ],
+            agent="dashboard",
+            priority="high",
+            assigned_by="jordan_dashboard_button",
+        )
+        task_id = queue.submit(task)
+        return jsonify({"task_id": task_id, "status": "submitted", "message": "Thor will update the Brotherhood Sheet"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500, 500

@@ -102,16 +102,26 @@ function renderIndicatorAccuracy(data) {
   tbody.innerHTML = html;
 }
 
-async function generate4hReport() {
-  var el = document.getElementById('report-4h-content');
-  el.textContent = 'Generating report...';
+async function loadMemoryFeed() {
+  var el = document.getElementById('memory-feed-panel');
+  if (!el) return;
   try {
-    var resp = await fetch('/api/garves/report-4h');
-    var data = await resp.json();
-    if (data.report) { el.textContent = data.report; }
-    else if (data.error) { el.textContent = 'Error: ' + data.error; }
-    else { el.textContent = JSON.stringify(data, null, 2); }
-  } catch (e) { el.textContent = 'Error: ' + e.message; }
+    var resp = await fetch('/api/brain/recent-updates');
+    var d = await resp.json();
+    var items = d.updates || [];
+    if (items.length === 0) { el.innerHTML = '<div class="text-muted" style="text-align:center;padding:var(--space-4);font-size:0.76rem;">No recent memory updates.</div>'; return; }
+    var html = '';
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      var color = AGENT_COLORS[it.agent] || 'var(--text-secondary)';
+      html += '<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.025);font-size:0.74rem;">';
+      html += '<span style="color:' + color + ';font-weight:600;min-width:60px;font-family:var(--font-mono);">' + esc(AGENT_NAMES[it.agent] || it.agent) + '</span>';
+      html += '<span style="color:var(--text-muted);min-width:48px;">' + esc(it.time || '') + '</span>';
+      html += '<span style="color:var(--text-secondary);flex:1;">' + esc((it.topic || '') + ': ' + (it.content || '').substring(0, 120)) + '</span>';
+      html += '</div>';
+    }
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = '<div class="text-muted" style="text-align:center;padding:var(--space-4);">Memory feed unavailable.</div>'; }
 }
 
 function renderGarvesStats(data) {
@@ -1029,21 +1039,6 @@ function renderAtlas(data) {
     apiBudgetEl.textContent = todayCalls + ' calls';
     apiBudgetEl.style.color = todayCalls > 100 ? 'var(--warning)' : 'var(--success)';
   }
-  // Cost panel
-  var costEl = document.getElementById('atlas-cost-panel');
-  if (costEl && data.costs) {
-    var c = data.costs;
-    var totalProj = (c.total_cost_projected||0);
-    var totalBudget = (c.total_budget||140);
-    var budgetColor = totalProj > totalBudget ? 'var(--error)' : totalProj > totalBudget * 0.8 ? 'var(--warning)' : 'var(--success)';
-    costEl.innerHTML = '<div style="display:flex;gap:20px;flex-wrap:wrap;">' +
-      '<div><span class="stat-label">TODAY</span><div style="font-size:1.1rem;font-weight:600;">Tavily: ' + (c.today_tavily||0) + ' researches | OpenAI: ' + (c.today_openai||0) + ' analyses</div></div>' +
-      '<div><span class="stat-label">THIS MONTH</span><div style="font-size:1.1rem;font-weight:600;">Tavily: ' + (c.month_tavily||0) + ' researches | OpenAI: ' + (c.month_openai||0) + ' analyses</div></div>' +
-      '<div><span class="stat-label">PROJECTED MONTHLY</span><div style="font-size:1.1rem;font-weight:600;">Tavily: ' + (c.projected_tavily||0) + ' / 12,000 researches | OpenAI: ' + (c.projected_openai||0) + ' analyses</div></div>' +
-      '<div><span class="stat-label">PROJECTED COST</span><div style="font-size:1.1rem;font-weight:600;color:' + budgetColor + ';">$' + totalProj.toFixed(2) + ' / $' + totalBudget.toFixed(2) + ' budget</div>' +
-      '<div style="font-size:0.8rem;color:var(--text-secondary);">Tavily $' + (c.tavily_cost_projected||0).toFixed(2) + ' / $' + (c.tavily_budget||90) + ' | OpenAI $' + (c.openai_cost_projected||0).toFixed(2) + ' / $' + (c.openai_budget||50) + '</div></div>' +
-      '</div>';
-  }
 }
 
 async function loadAtlasBgStatus() {
@@ -1326,6 +1321,71 @@ async function atlasLiveResearch() {
   } catch(e) {
     el.innerHTML = '<div style="color:var(--error);">Failed to load: ' + e.message + '</div>';
   }
+}
+
+async function atlasDeepResearch() {
+  var agentEl = document.getElementById('atlas-deep-agent');
+  var queryEl = document.getElementById('atlas-deep-query');
+  var resultEl = document.getElementById('atlas-deep-result');
+  if (!queryEl || !resultEl) return;
+  var query = queryEl.value.trim();
+  if (!query) { alert('Enter a research topic'); return; }
+  var agent = agentEl ? agentEl.value : '';
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = '<div style="color:var(--agent-atlas);">Researching: ' + esc(query) + '...</div>';
+  try {
+    var resp = await fetch('/api/atlas/deep-research', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:agent,query:query})});
+    var data = await resp.json();
+    if (data.error) { resultEl.innerHTML = '<div style="color:var(--error);">' + esc(data.error) + '</div>'; return; }
+    var results = data.results || [];
+    var html = '<div style="font-weight:600;color:var(--agent-atlas);margin-bottom:8px;">Research Results (' + results.length + ' findings)</div>';
+    if (!results.length) {
+      html += '<div class="text-muted">No results found. Try a different query.</div>';
+    } else {
+      results.forEach(function(r) {
+        html += '<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.06);">';
+        if (r.error) { html += '<div style="color:var(--error);">' + esc(r.error) + '</div>'; }
+        else {
+          if (r.title || r.query) html += '<div style="font-weight:600;font-size:0.78rem;color:var(--text-primary);">' + esc(r.title || r.query || '') + '</div>';
+          if (r.insight || r.summary || r.content) html += '<div style="font-size:0.76rem;color:var(--text-secondary);margin-top:3px;line-height:1.5;">' + esc((r.insight || r.summary || r.content || '').substring(0, 400)) + '</div>';
+          if (r.url || r.source) html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;">' + esc(r.source || r.url || '') + '</div>';
+        }
+        html += '</div>';
+      });
+    }
+    resultEl.innerHTML = html;
+    // Also show in report area
+    var reportEl = document.getElementById('atlas-report');
+    if (reportEl) reportEl.innerHTML = html;
+  } catch(e) { resultEl.innerHTML = '<div style="color:var(--error);">Research failed: ' + esc(e.message) + '</div>'; }
+}
+
+async function loadAtlasCompetitorSummary() {
+  var el = document.getElementById('atlas-competitor-summary');
+  var bullets = document.getElementById('atlas-competitor-bullets');
+  if (!el || !bullets) return;
+  try {
+    var resp = await fetch('/api/atlas/competitor-summary');
+    var data = await resp.json();
+    if (!data.has_data) { el.style.display = 'none'; return; }
+    el.style.display = 'block';
+    var html = '';
+    (data.bullets || []).forEach(function(b) {
+      html += '<div style="margin-bottom:4px;padding-left:12px;border-left:2px solid var(--agent-atlas);">' + esc(b.text) + '</div>';
+    });
+    bullets.innerHTML = html;
+  } catch(e) { el.style.display = 'none'; }
+}
+
+function atlasCompetitorSendTo(agent) {
+  var bullets = document.getElementById('atlas-competitor-bullets');
+  if (!bullets) return;
+  var text = bullets.innerText;
+  if (!text) { alert('No competitor intel to send'); return; }
+  fetch('/api/brain/' + agent, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({topic:'Competitor Intel from Atlas',content:text.substring(0,2000),type:'note',tags:['competitor','atlas']})})
+  .then(function(r){return r.json();}).then(function(d){
+    alert('Sent to ' + agent + (d.success ? ' successfully' : ': ' + (d.error || 'failed')));
+  }).catch(function(e){ alert('Failed: ' + e.message); });
 }
 
 function atlasPriorityBadge(p) {
@@ -1896,6 +1956,54 @@ async function mercuryReviewItem(itemId) {
     }
     spanEl.innerHTML = html;
   } catch (e) { spanEl.innerHTML = '<span style="color:#ff4444;font-size:0.72rem;">Error</span>'; }
+}
+
+async function lisaMiniChat() {
+  var input = document.getElementById('lisa-mini-chat-input');
+  var messages = document.getElementById('lisa-mini-chat-messages');
+  if (!input || !messages) return;
+  var text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  // Show user message
+  if (messages.querySelector('.text-muted')) messages.innerHTML = '';
+  messages.innerHTML += '<div style="margin-bottom:6px;"><span style="color:var(--text-muted);font-size:0.68rem;">You:</span> <span style="font-size:0.74rem;">' + esc(text) + '</span></div>';
+  messages.innerHTML += '<div id="lisa-mini-typing" style="color:var(--agent-mercury);font-size:0.72rem;">Lisa is typing...</div>';
+  messages.scrollTop = messages.scrollHeight;
+  try {
+    var resp = await fetch('/api/chat/agent/mercury', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text})});
+    var data = await resp.json();
+    var typing = document.getElementById('lisa-mini-typing');
+    if (typing) typing.remove();
+    var reply = data.reply || data.response || 'No response';
+    messages.innerHTML += '<div style="margin-bottom:6px;"><span style="color:var(--agent-mercury);font-size:0.68rem;">Lisa:</span> <span style="font-size:0.74rem;">' + esc(reply) + '</span></div>';
+    messages.scrollTop = messages.scrollHeight;
+  } catch(e) {
+    var typing = document.getElementById('lisa-mini-typing');
+    if (typing) typing.textContent = 'Error: ' + e.message;
+  }
+}
+
+async function loadLisaPlatformStatus() {
+  var el = document.getElementById('lisa-platform-status');
+  if (!el) return;
+  try {
+    var resp = await fetch('/api/lisa/platform-status');
+    var data = await resp.json();
+    var html = '';
+    var names = {x:'X (Twitter)',tiktok:'TikTok',instagram:'Instagram'};
+    ['x','tiktok','instagram'].forEach(function(plat) {
+      var info = data[plat] || {};
+      var connected = info.connected;
+      var color = connected ? '#00ff44' : '#ff5555';
+      var dot = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + color + ';margin-right:4px;box-shadow:0 0 4px ' + color + ';"></span>';
+      html += '<div style="display:flex;align-items:center;gap:4px;font-size:0.74rem;">';
+      html += dot + '<span style="color:' + color + ';">' + (names[plat] || plat) + '</span>';
+      if (!connected && info.reason) html += '<span class="text-muted" style="font-size:0.65rem;">(' + esc(info.reason) + ')</span>';
+      html += '</div>';
+    });
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = ''; }
 }
 
 async function loadMercuryPlan() {
@@ -3010,6 +3118,7 @@ async function refresh() {
       if (_intelData) renderTeamIntelligence(_intelData);
       loadBrainNotes('claude');
       loadCommandTable('claude');
+      loadMemoryFeed();
     } else if (currentTab === 'garves-live') {
       var resp = await fetch('/api/trades/live');
       var data = await resp.json();
@@ -3026,24 +3135,12 @@ async function refresh() {
         if(el && d.bankroll_usd) el.textContent = '$' + d.bankroll_usd.toFixed(0) + ' bankroll (' + d.multiplier.toFixed(2) + 'x)';
       }).catch(function(){});
       loadAgentActivity('garves-live');
-      loadGarvesMode();
-    } else if (currentTab === 'garves') {
-      var resp = await fetch('/api/trades/sim');
-      var data = await resp.json();
-      renderGarvesStats(data);
-      renderBreakdown('bd-asset', data.by_asset);
-      renderBreakdown('bd-tf', data.by_timeframe);
-      renderBreakdown('bd-dir', data.by_direction);
-      renderPendingTrades(data.pending_trades);
-      renderResolvedTrades(data.recent_trades);
-      fetch('/api/logs').then(function(r){return r.json();}).then(function(d){renderLogs(d.lines);}).catch(function(){});
       loadRegimeBadge();
       loadConvictionData();
       loadDailyReports();
       loadDerivatives();
       loadAgentLearning('garves');
       loadNewsSentiment();
-      loadBrainNotes('garves');
       loadCommandTable('garves');
       loadAgentSmartActions('garves');
     } else if (currentTab === 'soren') {
@@ -3052,10 +3149,10 @@ async function refresh() {
       loadAgentLearning('soren');
       loadSorenCompetitors();
       loadPillarDistribution();
-      loadBrainNotes('soren');
       loadCommandTable('soren');
       loadAgentSmartActions('soren');
       loadAgentActivity('soren');
+      loadSorenMetrics();
     } else if (currentTab === 'shelby') {
       var resp = await fetch('/api/shelby');
       renderShelby(await resp.json());
@@ -3063,7 +3160,6 @@ async function refresh() {
       try { loadEconomics(); } catch(e) {}
       try { loadAssessments(); } catch(e) {}
       try { loadShelbyNextRoutine(); } catch(e) {}
-      loadBrainNotes('shelby');
       loadCommandTable('shelby');
       loadAgentSmartActions('shelby');
       loadAgentActivity('shelby');
@@ -3079,12 +3175,11 @@ async function refresh() {
       loadAtlasBgStatus();
       loadCompetitorIntel();
       loadAgentLearning('atlas');
-      loadTradeAnalysis();
-      loadBrainNotes('atlas');
       loadCommandTable('atlas');
       loadAgentSmartActions('atlas');
       loadAgentActivity('atlas');
       loadAtlasKBHealth();
+      loadAtlasCompetitorSummary();
     } else if (currentTab === 'mercury') {
       var resp = await fetch('/api/mercury');
       renderMercury(await resp.json());
@@ -3097,8 +3192,8 @@ async function refresh() {
       loadAlgorithmPanel();
       loadAgentLearning('mercury');
       loadLisaGoLive();
+      loadLisaPlatformStatus();
       loadLisaCommentStats();
-      loadBrainNotes('lisa');
       loadCommandTable('lisa');
       loadAgentSmartActions('lisa');
       loadAgentActivity('mercury');
@@ -3112,7 +3207,6 @@ async function refresh() {
       loadRobotoxDepHealth();
       loadRobotoxCorrelator();
       loadRobotoxDeployWatches();
-      loadBrainNotes('robotox');
       loadCommandTable('robotox');
       loadAgentSmartActions('robotox');
       loadAgentActivity('sentinel');
@@ -3124,23 +3218,18 @@ async function refresh() {
       loadThorReview();
       loadThorProgress();
       loadThorCodebaseIndex();
-      loadBrainNotes('thor');
       loadCommandTable('thor');
       loadAgentActivity('thor');
-    } else if (currentTab === 'hawk-sim') {
-      loadHawkSimTab();
     } else if (currentTab === 'hawk') {
       loadHawkTab();
-      loadBrainNotes('hawk');
-      loadCommandTable('hawk');
+      loadHawkSimTab();
+      loadAgentActivity('hawk');
     } else if (currentTab === 'viper') {
       loadViperTab();
-      loadBrainNotes('viper');
       loadCommandTable('viper');
     } else if (currentTab === 'quant') {
       loadQuantTab();
-      loadBrainNotes('quant');
-      loadCommandTable('quant');
+      loadQuantSmartActions();
     } else if (currentTab === 'system') {
       loadSystemTab();
     } else if (currentTab === 'chat') {
@@ -3776,33 +3865,32 @@ async function loadThorCodebaseIndex() {
 }
 
 async function loadAtlasKBHealth() {
-  var el = document.getElementById('atlas-kb-health');
-  if (!el) return;
+  var barFill = document.getElementById('atlas-kb-bar-fill');
+  var summary = document.getElementById('atlas-kb-health-summary');
+  if (!summary) return;
   try {
     var resp = await fetch('/api/atlas/kb-health');
     var data = await resp.json();
-    if (data.error) { el.innerHTML = '<span style="color:var(--error);">' + esc(data.error) + '</span>'; return; }
-    var html = '<div style="display:flex;gap:16px;flex-wrap:wrap;">';
-    html += '<div style="text-align:center;"><div style="font-size:1.1rem;font-weight:700;">' + (data.total_learnings || 0) + '</div><div class="text-muted" style="font-size:0.7rem;">Learnings</div></div>';
-    html += '<div style="text-align:center;"><div style="font-size:1.1rem;font-weight:700;">' + (data.total_observations || 0) + '</div><div class="text-muted" style="font-size:0.7rem;">Observations</div></div>';
+    if (data.error) { summary.innerHTML = '<span style="color:var(--error);font-size:0.7rem;">' + esc(data.error) + '</span>'; return; }
     var conf = data.confidence || {};
-    html += '<div style="text-align:center;"><div style="font-size:1.1rem;font-weight:700;color:var(--success);">' + (conf.high || 0) + '</div><div class="text-muted" style="font-size:0.7rem;">High Conf</div></div>';
-    html += '<div style="text-align:center;"><div style="font-size:1.1rem;font-weight:700;color:var(--warning);">' + (conf.medium || 0) + '</div><div class="text-muted" style="font-size:0.7rem;">Medium</div></div>';
-    html += '<div style="text-align:center;"><div style="font-size:1.1rem;font-weight:700;color:var(--error);">' + (conf.low || 0) + '</div><div class="text-muted" style="font-size:0.7rem;">Low Conf</div></div>';
-    var age = data.age || {};
-    html += '<div style="text-align:center;"><div style="font-size:1.1rem;font-weight:700;color:var(--agent-atlas);">' + (age.fresh_7d || 0) + '</div><div class="text-muted" style="font-size:0.7rem;">Fresh (7d)</div></div>';
-    html += '<div style="text-align:center;"><div style="font-size:1.1rem;font-weight:700;color:var(--text-muted);">' + (age.stale_30d_plus || 0) + '</div><div class="text-muted" style="font-size:0.7rem;">Stale (30d+)</div></div>';
-    if (data.contradictions > 0) {
-      html += '<div style="text-align:center;"><div style="font-size:1.1rem;font-weight:700;color:var(--error);">' + data.contradictions + '</div><div class="text-muted" style="font-size:0.7rem;">Contradictions</div></div>';
-    }
-    html += '</div>';
-    html += '<div style="margin-top:8px;display:flex;gap:8px;">';
-    html += '<span class="text-muted" style="font-size:0.72rem;">Applied: ' + (data.applied || 0) + '/' + (data.total_learnings || 0) + '</span>';
-    if (data.last_consolidated) html += '<span class="text-muted" style="font-size:0.72rem;">Last consolidated: ' + esc(data.last_consolidated).substring(0, 16) + '</span>';
-    html += '<button class="btn" onclick="atlasConsolidate()" style="font-size:0.68rem;margin-left:auto;">Consolidate</button>';
-    html += '</div>';
-    el.innerHTML = html;
-  } catch(e) { el.innerHTML = '<span style="color:var(--error);">Failed: ' + esc(e.message) + '</span>'; }
+    var total = (data.total_learnings || 0) + (data.total_observations || 0);
+    var highPct = total > 0 ? Math.round((conf.high || 0) / total * 100) : 0;
+    var contradictions = data.contradictions || 0;
+    var stale = (data.age || {}).stale_30d_plus || 0;
+    // Health score: high confidence %, minus stale penalty, minus contradiction penalty
+    var healthScore = Math.min(100, Math.max(0, highPct + 20 - (stale > 10 ? 15 : stale > 5 ? 8 : 0) - (contradictions * 5)));
+    var barColor = healthScore >= 70 ? '#00ff44' : healthScore >= 40 ? '#FFD700' : '#ff5555';
+    if (barFill) { barFill.style.width = healthScore + '%'; barFill.style.background = barColor; }
+    var html = '';
+    html += '<span style="font-size:0.72rem;font-weight:600;color:' + barColor + ';">' + healthScore + '% Health</span>';
+    html += '<span class="text-muted" style="font-size:0.7rem;">' + (data.total_learnings || 0) + ' learnings</span>';
+    html += '<span class="text-muted" style="font-size:0.7rem;">' + (data.total_observations || 0) + ' observations</span>';
+    html += '<span class="text-muted" style="font-size:0.7rem;">' + (conf.high || 0) + ' high-confidence</span>';
+    if (contradictions > 0) html += '<span style="font-size:0.7rem;color:var(--error);">' + contradictions + ' contradictions</span>';
+    if (stale > 0) html += '<span style="font-size:0.7rem;color:var(--text-muted);">' + stale + ' stale</span>';
+    html += '<button class="btn" onclick="atlasConsolidate()" style="font-size:0.66rem;margin-left:auto;padding:3px 8px;">Consolidate</button>';
+    summary.innerHTML = html;
+  } catch(e) { summary.innerHTML = '<span style="color:var(--error);font-size:0.7rem;">Failed to load</span>'; }
 }
 
 async function atlasConsolidate() {
@@ -4005,6 +4093,30 @@ async function thorUpdateDashboard() {
   btn.textContent = 'Update Dashboard';
 }
 
+async function thorUpdateBrotherhood() {
+  var btn = document.getElementById('btn-update-brotherhood');
+  var status = document.getElementById('thor-action-status');
+  btn.disabled = true;
+  btn.textContent = 'Submitting...';
+  status.textContent = '';
+  try {
+    var resp = await fetch('/api/thor/update-brotherhood', {method: 'POST'});
+    var data = await resp.json();
+    if (data.error) {
+      status.textContent = 'Error: ' + data.error;
+      status.style.color = 'var(--error)';
+    } else {
+      status.textContent = 'Task submitted to Thor (' + (data.task_id || '').substring(0, 12) + ') — he will update the Brotherhood Sheet';
+      status.style.color = 'var(--success)';
+    }
+  } catch(e) {
+    status.textContent = 'Failed: ' + e.message;
+    status.style.color = 'var(--error)';
+  }
+  btn.disabled = false;
+  btn.textContent = 'Update Brotherhood Sheet';
+}
+
 async function loadSmartActions() {
   var el = document.getElementById('thor-smart-actions');
   if (!el) return;
@@ -4201,6 +4313,24 @@ async function loadNewsSentiment() {
 // ══════════════════════════════════════════════
 // TIER 2: Soren Competitors
 // ══════════════════════════════════════════════
+async function loadSorenMetrics() {
+  try {
+    var resp = await fetch('/api/soren/metrics');
+    var data = await resp.json();
+    setEl('soren-metric-velocity', data.velocity || 0);
+    setEl('soren-metric-quality', data.avg_quality ? data.avg_quality.toFixed(1) : '--');
+    setEl('soren-metric-approval', data.approval_rate ? data.approval_rate + '%' : '--');
+    setEl('soren-metric-pillars', data.active_pillars || 0);
+    var detail = document.getElementById('soren-metrics-detail');
+    if (detail) {
+      var html = '<span class="text-muted">Top pillar:</span> <span style="color:var(--agent-soren);font-weight:600;">' + esc(data.top_pillar || 'none') + '</span>';
+      html += ' &nbsp;|&nbsp; <span class="text-muted">Total content:</span> ' + (data.total_content || 0);
+      html += ' &nbsp;|&nbsp; <span class="text-muted">Total posted:</span> <span style="color:var(--success);">' + (data.total_posted || 0) + '</span>';
+      detail.innerHTML = html;
+    }
+  } catch(e) { console.warn('loadSorenMetrics error:', e); }
+}
+
 async function loadSorenCompetitors() {
   try {
     var resp = await fetch('/api/soren/competitors');
@@ -5588,7 +5718,7 @@ function renderHawkIntelSync(data) {
     for (var j = 0; j < mi.intel_items.length; j++) {
       var it = mi.intel_items[j];
       var typeColor = it.match_type === 'pre_linked' ? '#00ff88' : '#FFD700';
-      var typeLabel = it.match_type === 'pre_linked' ? 'Targeted' : 'Entity';
+      var typeLabel = it.match_type === 'pre_linked' ? 'Targeted' : 'Keyword Match';
       html += '<tr>';
       if (j === 0) {
         html += '<td rowspan="' + mi.intel_items.length + '" style="max-width:200px;vertical-align:top;"><div style="font-size:0.74rem;line-height:1.3;white-space:normal;">' + esc(mi.question) + '</div><div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;">' + esc(entStr) + '</div></td>';
@@ -5645,7 +5775,7 @@ function renderHawkCategories(cats, oppCats) {
       html += '<div style="font-size:0.72rem;color:' + color + ';text-transform:uppercase;letter-spacing:0.05em;font-weight:700;margin-bottom:4px;">' + esc(label) + '</div>';
       html += '<div style="font-size:1.3rem;font-weight:800;color:#fff;">' + c.count + ' <span style="font-size:0.68rem;color:var(--text-muted);font-weight:400;">markets</span></div>';
       html += '<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px;">Avg Edge: <span style="color:' + color + ';font-weight:600;">' + (c.avg_edge||0).toFixed(1) + '%</span></div>';
-      html += '<div style="font-size:0.72rem;color:var(--text-secondary);">Total EV: <span style="color:var(--success);font-weight:600;">+$' + (c.total_ev||0).toFixed(2) + '</span></div>';
+      html += '<div style="font-size:0.72rem;color:var(--text-secondary);">Total Est. Profit: <span style="color:var(--success);font-weight:600;">+$' + (c.total_ev||0).toFixed(2) + '</span></div>';
       html += '<div style="font-size:0.72rem;color:var(--text-secondary);">$30/each: <span style="color:#FFD700;font-weight:600;">+$' + (c.potential_30||0).toFixed(2) + '</span></div>';
       if (rc) {
         var wr = (rc.wins+rc.losses)>0?(rc.wins/(rc.wins+rc.losses)*100):0;
@@ -5797,7 +5927,7 @@ function renderHawkOpportunities(opps) {
     html += '<div style="margin-bottom:16px;">';
     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
     html += '<div style="font-size:0.78rem;font-weight:700;color:' + groupColors[gk] + ';">' + groupNames[gk] + ' <span style="color:var(--text-muted);font-weight:400;">(' + items.length + ')</span></div>';
-    html += '<div style="font-size:0.7rem;color:var(--text-muted);">Group EV: <span style="color:var(--success);font-weight:600;">+$' + grpEv.toFixed(2) + '</span> | $30/ea profit: <span style="color:#FFD700;font-weight:600;">+$' + grp30.toFixed(2) + '</span></div>';
+    html += '<div style="font-size:0.7rem;color:var(--text-muted);">Group Est. Profit: <span style="color:var(--success);font-weight:600;">+$' + grpEv.toFixed(2) + '</span> | $30/ea profit: <span style="color:#FFD700;font-weight:600;">+$' + grp30.toFixed(2) + '</span></div>';
     html += '</div>';
     html += '<div class="glass-card" style="overflow-x:auto;padding:0;">';
     html += '<table class="data-table" style="margin:0;"><thead><tr>';
@@ -6146,6 +6276,7 @@ async function hawkSimResolve() {
       }
     }
     await loadHawkSimTab();
+    await loadHawkTab();
   } catch(e) {
     if (msg) { msg.style.background = 'rgba(255,0,0,0.08)'; msg.style.color = 'var(--error)'; msg.textContent = 'Resolution check failed: ' + e.message; }
   }
@@ -6880,7 +7011,7 @@ function renderHawkSuggestions(suggestions) {
     html += '<span style="color:' + dirColor + ';font-weight:700;">' + dirArrow + '</span>';
     html += '<span>Category: <b style="color:var(--text-secondary);">' + esc(s.category || 'other') + '</b></span>';
     html += '<span>Edge: <b style="color:#FFD700;">' + ((s.edge || 0) * 100).toFixed(1) + '%</b></span>';
-    html += '<span>EV: <b style="color:var(--success);">+$' + (s.expected_value || 0).toFixed(2) + '</b></span>';
+    html += '<span>Est. Profit: <b style="color:var(--success);">+$' + (s.expected_value || 0).toFixed(2) + '</b></span>';
     html += '<span>Bet: <b style="color:#fff;">$' + (s.position_size || 0).toFixed(0) + '</b></span>';
     html += '<span>Vol: <b>$' + ((s.volume || 0) / 1000).toFixed(0) + 'k</b></span>';
     // Time left with urgency color
@@ -7355,6 +7486,34 @@ async function quantPollProgress() {
       }, 1000);
     }
   } catch(e) { console.error('quant poll:', e); }
+}
+
+async function loadQuantSmartActions() {
+  var el = document.getElementById('quant-smart-actions');
+  if (!el) return;
+  try {
+    var resp = await fetch('/api/quant/smart-actions');
+    var d = await resp.json();
+    var actions = d.actions || [];
+    if (!actions.length) {
+      el.innerHTML = '<span class="text-muted" style="font-size:0.76rem;">No suggestions right now.</span>';
+      return;
+    }
+    var html = '';
+    actions.forEach(function(a) {
+      var color = a.priority === 'high' ? '#ff5555' : a.priority === 'medium' ? '#FFD700' : '#00BFFF';
+      html += '<div style="background:rgba(0,191,255,0.06);border:1px solid rgba(0,191,255,0.15);border-radius:8px;padding:10px 14px;flex:1 1 280px;min-width:260px;">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
+      html += '<span style="font-weight:600;font-size:0.78rem;color:' + color + ';">' + (a.title || '') + '</span>';
+      html += '<span style="font-size:0.62rem;padding:2px 6px;border-radius:3px;background:' + color + '22;color:' + color + ';">' + (a.priority || 'low') + '</span>';
+      html += '</div>';
+      html += '<div class="text-muted" style="font-size:0.7rem;line-height:1.4;">' + (a.description || '') + '</div>';
+      html += '</div>';
+    });
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '<span class="text-muted">Failed to load</span>';
+  }
 }
 
 function quantHealthCheck() {

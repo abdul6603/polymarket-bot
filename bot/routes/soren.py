@@ -493,6 +493,63 @@ def api_soren_broadcasts():
         return jsonify({"error": str(e)[:200]}), 500
 
 
+@soren_bp.route("/api/soren/metrics")
+def api_soren_metrics():
+    """Soren performance metrics: velocity, quality, approval rate, active pillars."""
+    queue = []
+    if SOREN_QUEUE_FILE.exists():
+        try:
+            with open(SOREN_QUEUE_FILE) as f:
+                queue = json.load(f)
+        except Exception:
+            pass
+
+    now = datetime.now(ET)
+    week_ago = now.timestamp() - 7 * 86400
+
+    # Posts this week
+    posted = [q for q in queue if q.get("status") == "posted"]
+    posted_this_week = 0
+    for q in posted:
+        try:
+            ts = datetime.fromisoformat(q.get("posted_at", q.get("approved_at", ""))).timestamp()
+            if ts >= week_ago:
+                posted_this_week += 1
+        except Exception:
+            pass
+
+    # Quality scores from Lisa reviews
+    reviewed = [q for q in queue if q.get("lisa_score") is not None]
+    avg_quality = round(sum(q["lisa_score"] for q in reviewed) / len(reviewed), 1) if reviewed else 0
+
+    # Approval rate
+    total_reviewed = len([q for q in queue if q.get("status") in ("approved", "posted", "rejected")])
+    approved_count = len([q for q in queue if q.get("status") in ("approved", "posted")])
+    approval_rate = round(approved_count / total_reviewed * 100) if total_reviewed else 0
+
+    # Active pillars
+    active_pillars = len(set(q.get("pillar", "") for q in queue if q.get("pillar")))
+
+    # Top pillar
+    pillar_counts = {}
+    for q in queue:
+        p = q.get("pillar", "")
+        if p:
+            pillar_counts[p] = pillar_counts.get(p, 0) + 1
+    top_pillar = max(pillar_counts, key=pillar_counts.get) if pillar_counts else "none"
+
+    return jsonify({
+        "velocity": posted_this_week,
+        "avg_quality": avg_quality,
+        "approval_rate": approval_rate,
+        "active_pillars": active_pillars,
+        "top_pillar": top_pillar,
+        "total_content": len(queue),
+        "total_posted": len(posted),
+        "total_reviewed": total_reviewed,
+    })
+
+
 @soren_bp.route("/api/soren/competitors")
 def api_soren_competitors():
     """Soren competitor content intelligence from Atlas."""

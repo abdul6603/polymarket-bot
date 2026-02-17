@@ -33,7 +33,17 @@
     <div class="stat-card" data-accent="mercury"><div class="stat-value" id="mercury-outbox-stat">--</div><div class="stat-label">Outbox</div></div>
     <div class="stat-card" data-accent="mercury"><div class="stat-value" id="mercury-total-posted">--</div><div class="stat-label">Posted</div></div>
     <div class="stat-card" data-accent="mercury"><div class="stat-value" id="mercury-platforms-count">--</div><div class="stat-label">Platforms</div></div>
-    <div class="stat-card" data-accent="mercury"><div class="stat-value" id="mercury-review-avg">--</div><div class="stat-label">Avg Review</div></div>
+    <div class="stat-card" data-accent="mercury"><div class="stat-value" id="mercury-review-avg">--</div><div class="stat-label">Avg Quality</div></div>
+  </div>
+
+  <!-- Embedded Chat -->
+  <div class="glass-card" style="margin:12px 0;border-left:3px solid var(--agent-mercury);">
+    <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Chat with Lisa <span class="text-muted" style="font-weight:400;font-size:0.65rem;margin-left:4px;">Test social media vibes</span></h3>
+    <div id="lisa-mini-chat-messages" style="font-family:var(--font-mono);font-size:0.74rem;max-height:150px;overflow-y:auto;margin-bottom:8px;"><span class="text-muted">Start a conversation...</span></div>
+    <div style="display:flex;gap:6px;">
+      <input type="text" class="input" id="lisa-mini-chat-input" placeholder="Ask Lisa about posting strategy, timing, captions..." style="flex:1;font-size:0.76rem;padding:6px 10px;" onkeydown="if(event.key==='Enter')lisaMiniChat()">
+      <button class="btn btn-primary" onclick="lisaMiniChat()" style="font-size:0.72rem;padding:6px 14px;">Send</button>
+    </div>
   </div>
 
   <!-- JORDAN'S APPROVAL QUEUE — Most prominent section -->
@@ -59,9 +69,9 @@
     <h2 class="section-title" data-accent="mercury">Content Pipeline</h2>
     <div class="glass-card">
       <div class="grid-4" style="margin-bottom:var(--space-4);">
-        <div class="stat-card" data-accent="mercury" style="border-left:3px solid #22aa44;"><div class="stat-value" id="pipeline-approved">--</div><div class="stat-label">Lisa Approved</div></div>
-        <div class="stat-card" data-accent="mercury" style="border-left:3px solid #ffaa00;"><div class="stat-value" id="pipeline-review">--</div><div class="stat-label">Needs Review</div></div>
-        <div class="stat-card" data-accent="mercury" style="border-left:3px solid #ff8800;"><div class="stat-value" id="pipeline-work">--</div><div class="stat-label">Needs Work</div></div>
+        <div class="stat-card" data-accent="mercury" style="border-left:3px solid #22aa44;"><div class="stat-value" id="pipeline-approved">--</div><div class="stat-label">Reviewed &amp; Passed</div></div>
+        <div class="stat-card" data-accent="mercury" style="border-left:3px solid #ffaa00;"><div class="stat-value" id="pipeline-review">--</div><div class="stat-label">Awaiting Review</div></div>
+        <div class="stat-card" data-accent="mercury" style="border-left:3px solid #ff8800;"><div class="stat-value" id="pipeline-work">--</div><div class="stat-label">Revisions Needed</div></div>
         <div class="stat-card" data-accent="mercury" style="border-left:3px solid #ff4444;"><div class="stat-value" id="pipeline-rejected">--</div><div class="stat-label">Rejected</div></div>
       </div>
       <div style="display:flex;gap:var(--space-3);align-items:center;margin-bottom:var(--space-3);">
@@ -177,6 +187,7 @@
     <h2 class="section-title" data-accent="mercury">Go-Live Toggle</h2>
     <div class="glass-card" id="lisa-golive-panel">
       <div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:var(--space-3);">Toggle platforms between dry-run and live posting:</div>
+      <div id="lisa-platform-status" style="display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap;"></div>
       <div class="grid-3" id="lisa-golive-toggles"><div class="text-muted" style="text-align:center;">Loading...</div></div>
     </div>
   </div>
@@ -239,26 +250,4 @@
     <div class="glass-card"><div id="lisa-commands" style="max-height:250px;overflow-y:auto;"><span class="text-muted">Loading commands...</span></div></div>
   </div>
 
-  <!-- Knowledge & Memory -->
-  <div class="section-spacer">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
-      <h2 class="section-title" data-accent="lisa" style="margin-bottom:0;">Knowledge & Memory</h2>
-    </div>
-    <div class="glass-card">
-      <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;">
-        <input type="text" class="input" id="lisa-brain-topic" placeholder="Topic..." style="flex:1;font-size:0.76rem;padding:5px 10px;">
-        <div id="lisa-brain-type-pills" style="display:flex;gap:4px;">
-          <button class="brain-pill active" data-type="note" onclick="setBrainType('lisa','note',this)">Note</button>
-          <button class="brain-pill" data-type="command" onclick="setBrainType('lisa','command',this)">Cmd</button>
-          <button class="brain-pill" data-type="memory" onclick="setBrainType('lisa','memory',this)">Mem</button>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <textarea class="input" id="lisa-brain-content" placeholder="Instructions, knowledge, or notes for Lisa..." style="flex:1;min-height:48px;font-size:0.76rem;padding:5px 10px;resize:vertical;box-sizing:border-box;"></textarea>
-        <button class="btn btn-primary" onclick="addBrainNote('lisa')" style="align-self:flex-end;padding:6px 14px;font-size:0.74rem;">Add</button>
-      </div>
-      <input type="hidden" id="lisa-brain-type" value="note">
-      <div id="lisa-brain-list" style="margin-top:10px;max-height:350px;overflow-y:auto;"><div class="text-muted" style="text-align:center;padding:12px;font-size:0.74rem;">No notes yet.</div></div>
-    </div>
-  </div>
 </div>

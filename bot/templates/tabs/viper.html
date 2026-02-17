@@ -8,6 +8,7 @@
     <button class="btn" onclick="viperRefreshNow()" style="font-size:0.72rem;background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.3);font-weight:600;">Refresh Data</button>
     <button class="btn" id="viper-scan-btn" onclick="viperTriggerScan()" style="font-size:0.72rem;background:#00ff88;color:#000;font-weight:700;">Trigger Scan</button>
     <button class="btn" onclick="healthCheckAgent('viper')" style="font-size:0.72rem;">Health Check</button>
+    <button class="agent-chat-trigger" onclick="openAgentChat('viper')" style="font-size:0.72rem;color:#00ff88;">Chat</button>
   </div>
   <div class="health-inline" id="viper-health-result"></div>
   <!-- Scan Progress Bar -->
@@ -56,6 +57,32 @@
   <!-- Brand Channel: Viper → Soren → Lisa -->
   <div class="section-spacer">
     <h2 class="section-title" style="color:#00ff88;">Brand Channel <span style="font-size:0.68rem;color:#cc66ff;font-weight:400;margin-left:6px;">Viper &rarr; Soren &rarr; Lisa</span></h2>
+    <!-- Workflow Diagram -->
+    <div style="display:flex;align-items:center;gap:0;margin-bottom:14px;padding:12px 16px;background:rgba(0,255,136,0.04);border:1px solid rgba(0,255,136,0.12);border-radius:8px;flex-wrap:wrap;justify-content:center;">
+      <div style="text-align:center;min-width:100px;">
+        <div style="font-size:1.2rem;">&#x1F50D;</div>
+        <div style="font-size:0.72rem;font-weight:700;color:#00ff88;">Viper</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);">Finds opportunity</div>
+      </div>
+      <div style="color:var(--text-muted);font-size:1.1rem;padding:0 8px;">&rarr;</div>
+      <div style="text-align:center;min-width:100px;">
+        <div style="font-size:1.2rem;">&#x2B50;</div>
+        <div style="font-size:0.72rem;font-weight:700;color:#FFD700;">Scores brand fit</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);">Match to Soren pillars</div>
+      </div>
+      <div style="color:var(--text-muted);font-size:1.1rem;padding:0 8px;">&rarr;</div>
+      <div style="text-align:center;min-width:100px;">
+        <div style="font-size:1.2rem;">&#x270D;&#xFE0F;</div>
+        <div style="font-size:0.72rem;font-weight:700;color:var(--agent-soren);">Soren</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);">Creates content</div>
+      </div>
+      <div style="color:var(--text-muted);font-size:1.1rem;padding:0 8px;">&rarr;</div>
+      <div style="text-align:center;min-width:100px;">
+        <div style="font-size:1.2rem;">&#x1F4E2;</div>
+        <div style="font-size:0.72rem;font-weight:700;color:var(--agent-mercury);">Lisa</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);">Schedules & posts</div>
+      </div>
+    </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;" id="brand-channel-badges"></div>
     <!-- Needs Review Cards -->
     <div id="brand-channel-review" style="margin-bottom:12px;"></div>
@@ -71,27 +98,5 @@
     <h2 class="section-title" style="color:#00ff88;">Soren Metrics</h2>
     <div class="glass-card" id="viper-soren-metrics"><div class="text-muted" style="text-align:center;padding:12px;">Waiting for Soren metrics...</div></div>
     <div id="viper-metrics-updated" style="font-size:0.62rem;color:var(--text-muted);margin-top:6px;text-align:right;"></div>
-  </div>
-  <div class="section-spacer">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
-      <h2 class="section-title" style="color:#00ff88;margin-bottom:0;">Knowledge &amp; Memory</h2>
-      <button class="agent-chat-trigger" onclick="openAgentChat('viper')">&#x1F4AC; Chat with Viper</button>
-    </div>
-    <div class="glass-card">
-      <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;">
-        <input type="text" class="input" id="viper-brain-topic" placeholder="Topic..." style="flex:1;font-size:0.76rem;padding:5px 10px;">
-        <div id="viper-brain-type-pills" style="display:flex;gap:4px;">
-          <button class="brain-pill active" data-type="note" onclick="setBrainType('viper','note',this)">Note</button>
-          <button class="brain-pill" data-type="command" onclick="setBrainType('viper','command',this)">Cmd</button>
-          <button class="brain-pill" data-type="memory" onclick="setBrainType('viper','memory',this)">Mem</button>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <textarea class="input" id="viper-brain-content" placeholder="Instructions, knowledge, or notes for Viper..." style="flex:1;min-height:48px;font-size:0.76rem;padding:5px 10px;resize:vertical;box-sizing:border-box;"></textarea>
-        <button class="btn btn-primary" onclick="addBrainNote('viper')" style="align-self:flex-end;padding:6px 14px;font-size:0.74rem;">Add</button>
-      </div>
-      <input type="hidden" id="viper-brain-type" value="note">
-      <div id="viper-brain-list" style="margin-top:10px;max-height:350px;overflow-y:auto;"><div class="text-muted" style="text-align:center;padding:12px;font-size:0.74rem;">No notes yet.</div></div>
-    </div>
   </div>
 </div>

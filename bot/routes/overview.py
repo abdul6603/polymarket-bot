@@ -956,10 +956,69 @@ def api_intelligence():
     except Exception:
         result["viper"] = {"dimensions": {}, "overall": 0, "title": "The Opportunity Hunter"}
 
+    # -- QUANT -- The Strategy Alchemist --
+    try:
+        quant_intel = {"dimensions": {}, "overall": 0, "title": "The Strategy Alchemist"}
+        quant_status_file = DATA_DIR / "quant_status.json"
+        quant_results_file = DATA_DIR / "quant_results.json"
+        quant_wf_file = DATA_DIR / "quant_walk_forward.json"
+        quant_analytics_file = DATA_DIR / "quant_analytics.json"
+
+        q_status = {}
+        if quant_status_file.exists():
+            q_status = json.loads(quant_status_file.read_text())
+        q_results = {}
+        if quant_results_file.exists():
+            q_results = json.loads(quant_results_file.read_text())
+        q_wf = {}
+        if quant_wf_file.exists():
+            q_wf = json.loads(quant_wf_file.read_text())
+        q_analytics = {}
+        if quant_analytics_file.exists():
+            q_analytics = json.loads(quant_analytics_file.read_text())
+
+        combos_tested = q_status.get("total_combos_tested", 0)
+        top_results = q_results.get("top_results", [])
+        best_wr = top_results[0].get("win_rate", 0) if top_results else 0
+
+        # 1. Backtesting Volume — how many combos tested
+        bt_volume = min(100, int(combos_tested * 0.02) + 10) if combos_tested else 10
+        quant_intel["dimensions"]["Backtesting Volume"] = bt_volume
+
+        # 2. Statistical Rigor — walk-forward validation + confidence intervals
+        wf_data = q_wf.get("walk_forward", {})
+        ci_data = q_wf.get("confidence_interval", {})
+        wf_folds = len(wf_data.get("folds", []))
+        has_ci = bool(ci_data.get("lower"))
+        rigor = min(100, 15 + wf_folds * 12 + (25 if has_ci else 0) + min(20, len(top_results) * 2))
+        quant_intel["dimensions"]["Statistical Rigor"] = rigor
+
+        # 3. Walk-Forward Accuracy — OOS win rate quality
+        wf_oos = wf_data.get("avg_oos_wr", 0)
+        wf_accuracy = min(100, int(wf_oos * 1.4)) if wf_oos else 15
+        quant_intel["dimensions"]["Walk-Forward Accuracy"] = wf_accuracy
+
+        # 4. Indicator Diversity — diversity score from analytics
+        diversity = q_analytics.get("diversity", {})
+        div_score = diversity.get("diversity_score", 0)
+        indicator_div = min(100, int(div_score * 100) + 15) if div_score else 20
+        quant_intel["dimensions"]["Indicator Diversity"] = indicator_div
+
+        # 5. Strategy Optimization — improvement found + best WR
+        improvement = q_results.get("improvement", 0) if q_results else 0
+        opt_score = min(100, 15 + int(best_wr * 0.8) + int(improvement * 5))
+        quant_intel["dimensions"]["Strategy Optimization"] = opt_score
+
+        scores = list(quant_intel["dimensions"].values())
+        quant_intel["overall"] = int(sum(scores) / len(scores)) if scores else 0
+        result["quant"] = quant_intel
+    except Exception:
+        result["quant"] = {"dimensions": {}, "overall": 0, "title": "The Strategy Alchemist"}
+
     # -- TEAM -- Collective Intelligence --
     try:
         team = {"dimensions": {}, "overall": 0, "title": "Brotherhood"}
-        agents = ["garves", "soren", "atlas", "shelby", "lisa", "robotox", "thor", "hawk", "viper"]
+        agents = ["garves", "soren", "atlas", "shelby", "lisa", "robotox", "thor", "hawk", "viper", "quant"]
         agent_scores = {a: result.get(a, {}).get("overall", 0) for a in agents}
 
         # 1. Collective Knowledge
@@ -972,9 +1031,11 @@ def api_intelligence():
         thor_know = result.get("thor", {}).get("dimensions", {}).get("Knowledge Depth", 0)
         hawk_scan = result.get("hawk", {}).get("dimensions", {}).get("Market Scanning", 0)
         viper_disc = result.get("viper", {}).get("dimensions", {}).get("Discovery", 0)
-        collective_knowledge = int((atlas_depth * 0.20 + garves_know * 0.15 + soren_brand * 0.10 +
-                                    shelby_aware * 0.10 + lisa_plat * 0.08 + robotox_cov * 0.08 +
-                                    thor_know * 0.10 + hawk_scan * 0.10 + viper_disc * 0.09))
+        quant_rigor = result.get("quant", {}).get("dimensions", {}).get("Statistical Rigor", 0)
+        collective_knowledge = int((atlas_depth * 0.18 + garves_know * 0.13 + soren_brand * 0.09 +
+                                    shelby_aware * 0.09 + lisa_plat * 0.07 + robotox_cov * 0.07 +
+                                    thor_know * 0.09 + hawk_scan * 0.09 + viper_disc * 0.08 +
+                                    quant_rigor * 0.11))
         team["dimensions"]["Collective Knowledge"] = min(100, collective_knowledge)
 
         # 2. Coordination
@@ -994,7 +1055,8 @@ def api_intelligence():
         thor_exec = result.get("thor", {}).get("dimensions", {}).get("Task Execution", 0)
         hawk_acc = result.get("hawk", {}).get("dimensions", {}).get("Accuracy", 0)
         viper_rev = result.get("viper", {}).get("dimensions", {}).get("Revenue Potential", 0)
-        performance = int((garves_acc + soren_prod + atlas_quality + shelby_task + lisa_disc + robotox_det + thor_exec + hawk_acc + viper_rev) / 9)
+        quant_wf_acc = result.get("quant", {}).get("dimensions", {}).get("Walk-Forward Accuracy", 0)
+        performance = int((garves_acc + soren_prod + atlas_quality + shelby_task + lisa_disc + robotox_det + thor_exec + hawk_acc + viper_rev + quant_wf_acc) / 10)
         team["dimensions"]["Performance"] = min(100, performance)
 
         # 4. Autonomy
@@ -1014,8 +1076,10 @@ def api_intelligence():
         thor_coverage = result.get("thor", {}).get("dimensions", {}).get("System Coverage", 0)
         hawk_breadth = result.get("hawk", {}).get("dimensions", {}).get("Category Breadth", 0)
         viper_monetize = result.get("viper", {}).get("dimensions", {}).get("Monetization IQ", 0)
-        adaptability = int((garves_adapt * 0.18 + soren_trend * 0.12 + lisa_strat * 0.12 +
-                            shelby_dec * 0.18 + thor_coverage * 0.15 + hawk_breadth * 0.13 + viper_monetize * 0.12))
+        quant_opt = result.get("quant", {}).get("dimensions", {}).get("Strategy Optimization", 0)
+        adaptability = int((garves_adapt * 0.16 + soren_trend * 0.10 + lisa_strat * 0.10 +
+                            shelby_dec * 0.16 + thor_coverage * 0.13 + hawk_breadth * 0.11 +
+                            viper_monetize * 0.10 + quant_opt * 0.14))
         team["dimensions"]["Adaptability"] = min(100, adaptability)
 
         team_scores = list(team["dimensions"].values())

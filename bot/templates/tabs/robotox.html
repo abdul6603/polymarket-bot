@@ -4,6 +4,7 @@
   <div class="agent-widget-row" id="sentinel-widgets">
     <div class="widget-badge" id="sentinel-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
     <button class="btn" onclick="healthCheckAgent(&apos;sentinel&apos;)" style="font-size:0.72rem;">Health Check</button>
+    <button class="agent-chat-trigger" onclick="openAgentChat(&apos;sentinel&apos;)" style="font-size:0.72rem;color:var(--agent-sentinel);">Chat</button>
   </div>
   <div class="health-inline" id="sentinel-health-result"></div>
   <div class="grid-4">
@@ -72,7 +73,7 @@
     <h2 class="section-title" data-accent="sentinel">Deploy Watches (Auto-Rollback)</h2>
     <div class="glass-card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
-        <span class="text-muted" style="font-size:0.76rem;">Monitors Thor deployments during 5-min soak period — auto-reverts on regression</span>
+        <span class="text-muted" style="font-size:0.76rem;">When Thor deploys code, Robotox watches for 5 minutes. If errors spike or health drops, it auto-reverts the change and alerts Jordan.</span>
         <button class="btn" onclick="loadRobotoxDeployWatches()" style="font-size:0.72rem;">Refresh</button>
       </div>
       <div id="robotox-deploy-content"><div class="text-muted" style="text-align:center;padding:var(--space-4);">No active watches.</div></div>
@@ -90,9 +91,10 @@
     <h2 class="section-title" data-accent="sentinel">Dependency Checker</h2>
     <div class="glass-card" id="robotox-deps-panel">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
-        <span class="text-muted" style="font-size:0.78rem;" id="robotox-deps-last-check">Last check: never</span>
+        <span class="text-muted" style="font-size:0.76rem;">Tests if required Python packages, config files, and API keys exist for each agent</span>
         <button class="btn" onclick="robotoxDepCheck()" style="font-size:0.72rem;">Run Check</button>
       </div>
+      <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:var(--space-2);" id="robotox-deps-last-check">Last check: never</div>
       <div id="robotox-deps-content"><div class="text-muted" style="text-align:center;padding:var(--space-4);">No dependency report yet.</div></div>
     </div>
   </div>
@@ -103,27 +105,5 @@
   <div class="section-spacer">
     <h2 class="section-title" data-accent="sentinel">Commands &amp; Capabilities</h2>
     <div class="glass-card"><div id="robotox-commands" style="max-height:250px;overflow-y:auto;"><span class="text-muted">Loading commands...</span></div></div>
-  </div>
-  <div class="section-spacer">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
-      <h2 class="section-title" data-accent="sentinel" style="margin-bottom:0;">Knowledge & Memory</h2>
-      <button class="agent-chat-trigger" onclick="openAgentChat('sentinel')">&#x1F4AC; Chat with Robotox</button>
-    </div>
-    <div class="glass-card">
-      <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;">
-        <input type="text" class="input" id="robotox-brain-topic" placeholder="Topic..." style="flex:1;font-size:0.76rem;padding:5px 10px;">
-        <div id="robotox-brain-type-pills" style="display:flex;gap:4px;">
-          <button class="brain-pill active" data-type="note" onclick="setBrainType('robotox','note',this)">Note</button>
-          <button class="brain-pill" data-type="command" onclick="setBrainType('robotox','command',this)">Cmd</button>
-          <button class="brain-pill" data-type="memory" onclick="setBrainType('robotox','memory',this)">Mem</button>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <textarea class="input" id="robotox-brain-content" placeholder="Instructions, knowledge, or notes for Robotox..." style="flex:1;min-height:48px;font-size:0.76rem;padding:5px 10px;resize:vertical;box-sizing:border-box;"></textarea>
-        <button class="btn btn-primary" onclick="addBrainNote('robotox')" style="align-self:flex-end;padding:6px 14px;font-size:0.74rem;">Add</button>
-      </div>
-      <input type="hidden" id="robotox-brain-type" value="note">
-      <div id="robotox-brain-list" style="margin-top:10px;max-height:350px;overflow-y:auto;"><div class="text-muted" style="text-align:center;padding:12px;font-size:0.74rem;">No notes yet.</div></div>
-    </div>
   </div>
 </div>

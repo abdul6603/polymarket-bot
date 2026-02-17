@@ -710,6 +710,78 @@ def api_atlas_hub_eval():
         return jsonify({"error": str(e)[:200]}), 500, 500
 
 
+@atlas_bp.route("/api/atlas/deep-research", methods=["POST"])
+def api_atlas_deep_research():
+    """Targeted deep research on a specific agent or topic."""
+    atlas = get_atlas()
+    if not atlas:
+        return jsonify({"error": "Atlas not available"}), 503
+    try:
+        body = request.get_json(silent=True) or {}
+        agent = body.get("agent", "")
+        query = body.get("query", "").strip()
+        if not query:
+            return jsonify({"error": "Query is required"}), 400
+
+        # Use Atlas researcher to do targeted research
+        results = []
+        try:
+            research_result = atlas.researcher.research(
+                agent=agent or "general",
+                query=query,
+                max_results=5,
+            )
+            if isinstance(research_result, list):
+                results = research_result
+            elif isinstance(research_result, dict):
+                results = research_result.get("results", [research_result])
+        except Exception as e:
+            results = [{"error": str(e)[:200]}]
+
+        return jsonify({
+            "agent": agent,
+            "query": query,
+            "results": results[:5],
+            "count": len(results),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@atlas_bp.route("/api/atlas/competitor-summary")
+def api_atlas_competitor_summary():
+    """Auto-digest competitor intel into 3 actionable bullets."""
+    if not COMPETITOR_INTEL_FILE.exists():
+        return jsonify({"bullets": [], "has_data": False})
+    try:
+        with open(COMPETITOR_INTEL_FILE) as f:
+            data = json.load(f)
+
+        bullets = []
+        # Extract key insights from each category
+        for category in ["trading", "content", "ai_agents"]:
+            items = data.get(category, [])
+            if not items:
+                continue
+            # Get the most recent/relevant item
+            for item in items[:2]:
+                name = item.get("name", item.get("title", "Unknown"))
+                insight = item.get("insight", item.get("description", item.get("summary", "")))
+                if insight:
+                    bullets.append({
+                        "category": category,
+                        "text": f"[{category.replace('_', ' ').title()}] {name}: {insight[:150]}",
+                    })
+
+        return jsonify({
+            "bullets": bullets[:5],
+            "has_data": bool(bullets),
+            "total_entries": sum(len(data.get(c, [])) for c in ["trading", "content", "ai_agents"]),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200], "bullets": [], "has_data": False}), 500
+
+
 @atlas_bp.route("/api/atlas/suggest-agent")
 def api_atlas_suggest_agent():
     """Atlas suggests whether a new agent is needed and describes its role."""
