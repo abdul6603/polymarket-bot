@@ -372,6 +372,11 @@ class ConvictionEngine:
                 f"daily_loss=${daily_loss:.2f} >= ${ABSOLUTE_MAX_DAILY_LOSS} STOP"
             )
 
+        # Safety 5: SOL asset penalty — consistently underperforming (33% WR, negative P/L)
+        if signal.asset and signal.asset.lower() in ("solana", "sol"):
+            multiplier *= 0.4
+            safety_adjustments.append("sol_penalty (0.4x — consistently low WR)")
+
         # Apply multiplier to raw score
         final_score = max(0.0, min(100.0, raw_score * multiplier))
 

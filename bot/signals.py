@@ -44,36 +44,32 @@ PROB_CLAMP = {
 }
 
 # Indicator weights for the ensemble
-# Updated based on 125-trade analysis (Feb 15):
-#   REMOVED: sentiment (47.6% acc — worse than random, actively harmful)
-#   REMOVED: vwap (46.8% acc — worse than random, actively harmful)
-#   REDUCED: bollinger 0.9→0.3 (47.5% acc — barely above random)
-#   BOOSTED: rsi 1.0→1.5 (68.9% acc — best frequent indicator)
-#   BOOSTED: order_flow 1.3→1.6 (58.3% acc — strong microstructure signal)
+# Updated based on 164-trade accuracy data (Feb 17):
+#   TOP TIER: news (81%), volume_spike (80%), liquidation (74%)
+#   MID TIER: temporal_arb (60%), price_div (57%), macd (57%), ema (56%)
+#   LOW TIER: momentum (55%), heikin_ashi (53%), order_flow (52%), spot_depth (55%)
+#   HARMFUL:  bollinger (44%), rsi (40%), funding_rate (0%) — below coin flip
 WEIGHTS = {
-    # Technical analysis
-    "rsi": 1.5,
-    "macd": 1.1,
-    "ema": 1.2,
-    "heikin_ashi": 0.9,
-    "bollinger": 0.3,
-    "momentum": 1.0,
-    # Order flow / market microstructure
-    "order_flow": 1.6,
-    "orderbook": 1.5,
-    "liquidity": 0.7,
-    # Cross-venue
+    # TOP TIER — proven edge (>70% accuracy)
+    "news": 2.5,
+    "volume_spike": 2.5,
+    "liquidation": 2.0,
+    # MID TIER — above coin flip (55-60%)
+    "temporal_arb": 1.8,
     "price_div": 1.4,
-    # New high-edge signals
-    "temporal_arb": 2.0,
-    "volume_spike": 1.1,
-    # News sentiment (24/7 RSS feed)
-    "news": 0.8,
-    # Derivatives intelligence (Binance Futures)
-    "funding_rate": 1.3,
-    "liquidation": 1.5,
-    # Binance spot order book depth
-    "spot_depth": 1.0,
+    "macd": 1.1,
+    "ema": 1.1,
+    # LOW TIER — marginal (50-55%)
+    "momentum": 0.6,
+    "heikin_ashi": 0.5,
+    "order_flow": 0.5,
+    "spot_depth": 0.5,
+    "orderbook": 0.5,
+    "liquidity": 0.4,
+    # DISABLED — below coin flip (harmful)
+    "bollinger": 0.0,
+    "rsi": 0.0,
+    "funding_rate": 0.0,
 }
 
 # Timeframe-dependent weight scaling
@@ -103,7 +99,7 @@ UP_CONFIDENCE_PREMIUM = 0.08  # add 8% to confidence floor for UP bets
 # Time-of-day filter: block hours with <30% WR across 140+ trades
 # Good hours: 00,02,10,12,16,17 (79.5% WR combined)
 # Bad hours: 05 (0%), 18 (17%), 19 (29%), 20 (13%), 21 (0%), 22 (12%), 23 (22%)
-AVOID_HOURS_ET = {5, 6, 7, 18, 19, 20, 21, 22, 23}  # 9 dead hours
+AVOID_HOURS_ET = {0, 1, 2, 3, 4, 5, 6, 7, 23}  # 9 dead hours — only trade 8AM-10PM ET
 
 # Timeframe-specific minimum edge — must exceed estimated fees
 # Data: 0-8% edge = 20% WR, 8-11% = 62.5% WR — 8% is the breakeven floor
