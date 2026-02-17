@@ -38,16 +38,17 @@ TRADES_FILE = DATA_DIR / "trades.jsonl"
 # Conviction maps to these tiers with smooth interpolation within each band.
 SIZE_TIERS = {
     # (min_conviction, max_conviction): (min_usd, max_usd)
+    # Priority: WIN RATE first (conf>=55%), then size proportionally.
     (0, 15):   (0.0, 0.0),      # DON'T TRADE — truly insufficient evidence
-    (15, 30):  (6.0, 8.0),     # Micro — marginal but viable trade
-    (30, 50):  (8.0, 12.0),    # Small — tentative signal
-    (50, 70):  (12.0, 20.0),    # Standard — solid consensus
-    (70, 85):  (20.0, 28.0),    # Increased — strong multi-factor alignment
-    (85, 100): (28.0, 35.0),    # Maximum conviction — nearly everything aligns
+    (15, 30):  (10.0, 15.0),    # Micro — marginal but viable trade
+    (30, 50):  (15.0, 25.0),    # Small — tentative signal
+    (50, 70):  (25.0, 35.0),    # Standard — solid consensus
+    (70, 85):  (35.0, 45.0),    # Increased — strong multi-factor alignment
+    (85, 100): (45.0, 55.0),    # Maximum conviction — nearly everything aligns
 }
 
 # ── Safety Rails ──
-ABSOLUTE_MAX_PER_TRADE = 35.0       # Never exceed $35 per trade
+ABSOLUTE_MAX_PER_TRADE = 55.0       # Max per trade — safe but meaningful
 ABSOLUTE_MAX_DAILY_LOSS = 50.0      # Stop trading if daily loss hits $50
 LOSING_STREAK_THRESHOLD = 3         # Scale down after 3 consecutive losses
 LOSING_STREAK_PENALTY = 0.75        # Multiply conviction by 0.75 during losing streak (0.6 was too crushing)

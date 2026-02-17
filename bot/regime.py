@@ -44,7 +44,7 @@ REGIME_TABLE = {
     "extreme_fear": lambda fng: RegimeAdjustment(
         label="extreme_fear", fng_value=fng,
         size_multiplier=0.7, edge_multiplier=1.1,  # reduced 1.3→1.1: live 70% WR in extreme_fear contradicts old 35.7% data
-        consensus_offset=0, confidence_floor=0.30,
+        consensus_offset=0, confidence_floor=0.55,  # matched to MIN_CONFIDENCE=0.55 — regime should never lower it
     ),
     "fear": lambda fng: RegimeAdjustment(
         label="fear", fng_value=fng,

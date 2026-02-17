@@ -126,6 +126,9 @@ class TradingBot:
         # Per-market cooldown: market_id -> last trade timestamp
         self._market_cooldown: dict[str, float] = {}
         self.COOLDOWN_SECONDS = 90  # 1.5 min cooldown after trading a market
+        # Per-market stacking cap: market_id -> trade count (prevents concentrated risk)
+        self._market_trade_count: dict[str, int] = {}
+        self.MAX_TRADES_PER_MARKET = 3  # Max 3 trades per unique market (was unlimited — 9x stacking seen)
 
     def _setup_logging(self) -> None:
         logging.basicConfig(
@@ -311,6 +314,10 @@ class TradingBot:
             if now - last_trade < self.COOLDOWN_SECONDS:
                 continue
 
+            # Per-market stacking cap — prevent concentrated risk on one market
+            if self._market_trade_count.get(market_id, 0) >= self.MAX_TRADES_PER_MARKET:
+                continue
+
             # Extract token IDs
             tokens = market.get("tokens", [])
             if len(tokens) < 2:
@@ -414,6 +421,7 @@ class TradingBot:
             if order_id:
                 trades_this_tick += 1
                 self._market_cooldown[market_id] = now
+                self._market_trade_count[market_id] = self._market_trade_count.get(market_id, 0) + 1
                 log.info(
                     "  -> Order placed: %s | Conviction: %.0f/100 [%s] $%.2f%s",
                     order_id, conviction.total_score, conviction.tier_label,

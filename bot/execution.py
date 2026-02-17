@@ -25,9 +25,9 @@ KELLY_FRACTION = 0.25        # Quarter-Kelly for safety
 KELLY_MIN_SIZE_FRAC = 0.10   # Never size below 10% of base
 KELLY_MAX_SIZE_FRAC = 2.50   # Never size above 250% of base
 
-# Dynamic sizing: Garves determines $6-$15 per trade based on signal quality
-TRADE_MIN_USD = 6.0
-TRADE_MAX_USD = 15.0
+# Dynamic sizing: conviction engine handles $10-$55 per trade based on signal quality
+TRADE_MIN_USD = 10.0
+TRADE_MAX_USD = 55.0
 
 
 class Executor:

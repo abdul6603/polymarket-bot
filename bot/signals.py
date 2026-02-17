@@ -98,7 +98,7 @@ CONSENSUS_RATIO = 0.70  # 70% of active (non-disabled) indicators must agree
 CONSENSUS_FLOOR = 3     # never require fewer than 3 agreements
 MIN_CONSENSUS = CONSENSUS_FLOOR  # backward compat for backtest/quant (absolute floor)
 MIN_ATR_THRESHOLD = 0.00005  # skip if volatility below this (0.005% of price)
-MIN_CONFIDENCE = 0.25  # reject weak signals (avg was 0.178, most were losers)
+MIN_CONFIDENCE = 0.55  # DATA: conf>=55% = 82.9% WR, conf>=60% = 91.7% WR. Old 0.25 let through garbage.
 
 # Directional bias: UP predictions have 47.3% WR vs DOWN 63% — require higher confidence for UP
 UP_CONFIDENCE_PREMIUM = 0.02  # reduced 5%→2%: live data shows UP=70.8% WR vs DOWN=68.8% — UP outperforms, don't penalize
@@ -106,7 +106,7 @@ UP_CONFIDENCE_PREMIUM = 0.02  # reduced 5%→2%: live data shows UP=70.8% WR vs 
 # Time-of-day filter: block hours with <30% WR across 140+ trades
 # Good hours: 00,02,10,12,16,17 (79.5% WR combined)
 # Bad hours: 05 (0%), 18 (17%), 19 (29%), 20 (13%), 21 (0%), 22 (12%), 23 (22%)
-AVOID_HOURS_ET = {1, 3, 4, 5, 6, 7, 23}  # 7 dead hours — trade 8AM-10PM ET + keep 0,2 (79.5% WR)
+AVOID_HOURS_ET = {1, 3, 4, 5, 6, 7, 8, 23}  # 8AM = 50% WR (6W/6L coin flip). Trade 9AM-10PM ET + keep 0,2
 
 # Timeframe-specific minimum edge — must exceed estimated fees
 # Data: 0-8% edge = 20% WR, 8-11% = 62.5% WR — 8% is the breakeven floor
@@ -509,10 +509,14 @@ class SignalEngine:
             )
             return None
 
-        # ── Directional Bias: UP predictions need higher confidence (47.3% WR vs 63% DOWN) ──
-        effective_conf_floor = regime.confidence_floor if regime else MIN_CONFIDENCE
+        # ── Confidence Floor: MAX of regime floor and MIN_CONFIDENCE (never let regime lower it) ──
+        regime_floor = regime.confidence_floor if regime else MIN_CONFIDENCE
+        effective_conf_floor = max(regime_floor, MIN_CONFIDENCE)
         if consensus_dir == "up":
             effective_conf_floor += UP_CONFIDENCE_PREMIUM
+        # ETH confidence premium: weakest asset (72% WR vs BTC 79%, XRP 100%)
+        if asset == "ethereum":
+            effective_conf_floor += 0.03  # +3% for ETH — 9 of 12 losses were ETH
         if confidence < effective_conf_floor:
             log.info(
                 "[%s/%s] Confidence too low for %s: %.3f < %.3f (UP premium applied: %s)",

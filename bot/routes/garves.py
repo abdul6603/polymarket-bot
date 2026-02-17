@@ -511,13 +511,16 @@ def api_garves_conviction():
             "indicator_weights": weight_info,
             "size_tiers": {
                 "0-14": "$0 (no trade)",
-                "15-29": "$6-8 (micro)",
-                "30-49": "$8-12 (small)",
-                "50-69": "$12-20 (standard)",
-                "70-84": "$20-28 (increased)",
-                "85-100": "$28-35 (max conviction)",
+                "15-29": "$10-15 (micro)",
+                "30-49": "$15-25 (small)",
+                "50-69": "$25-35 (standard)",
+                "70-84": "$35-45 (increased)",
+                "85-100": "$45-55 (max conviction)",
             },
             "consensus_model": "proportional 70% of active indicators, floor=3",
+            "confidence_floor": "0.55 (91.7% WR at conf>=60%)",
+            "stacking_cap": "max 3 trades per market",
+            "blocked_hours": "1,3,4,5,6,7,8,23 (8AM=50% WR removed)",
             "bankroll": bankroll_status,
         })
     except Exception as e:
