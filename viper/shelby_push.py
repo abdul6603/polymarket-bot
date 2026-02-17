@@ -8,14 +8,15 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 from viper.config import ViperConfig
-from viper.scanner import Opportunity
+from viper.intel import IntelItem
 
 log = logging.getLogger(__name__)
 
-ET = timezone(timedelta(hours=-5))
+from zoneinfo import ZoneInfo
+ET = ZoneInfo("America/New_York")
 
 
-def push_to_shelby(cfg: ViperConfig, opp: Opportunity, score: int) -> bool:
+def push_to_shelby(cfg: ViperConfig, item: IntelItem, score: int) -> bool:
     """Append task to Shelby's tasks.json with [VIPER] prefix."""
     tasks_file = cfg.shelby_tasks_file
 
@@ -30,16 +31,15 @@ def push_to_shelby(cfg: ViperConfig, opp: Opportunity, score: int) -> bool:
 
     # Create task entry
     task = {
-        "title": f"[VIPER] {opp.title[:100]}",
+        "title": f"[VIPER] {item.headline[:100]}",
         "description": (
-            f"Source: {opp.source}\n"
-            f"Value: ${opp.estimated_value_usd:.0f}\n"
-            f"Effort: {opp.effort_hours:.0f}h\n"
-            f"Score: {score}/100\n"
-            f"URL: {opp.url}\n"
-            f"Category: {opp.category}\n"
-            f"Tags: {', '.join(opp.tags)}\n\n"
-            f"{opp.description[:300]}"
+            f"Source: {item.source}\n"
+            f"Category: {item.category}\n"
+            f"Sentiment: {item.sentiment:+.2f}\n"
+            f"Confidence: {item.confidence:.0%}\n"
+            f"URL: {item.url}\n"
+            f"Tags: {', '.join(item.relevance_tags)}\n\n"
+            f"{item.summary[:300]}"
         ),
         "priority": "high" if score >= 80 else "normal",
         "status": "pending",
@@ -54,7 +54,7 @@ def push_to_shelby(cfg: ViperConfig, opp: Opportunity, score: int) -> bool:
     try:
         tasks_file.parent.mkdir(parents=True, exist_ok=True)
         tasks_file.write_text(json.dumps(tasks, indent=2))
-        log.info("Pushed to Shelby: [VIPER] %s (score=%d)", opp.title[:50], score)
+        log.info("Pushed to Shelby: [VIPER] %s (score=%d)", item.headline[:50], score)
         return True
     except Exception:
         log.exception("Failed to push to Shelby")

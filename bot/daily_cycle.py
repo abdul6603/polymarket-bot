@@ -14,11 +14,12 @@ import os
 import time
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 log = logging.getLogger(__name__)
 
-ET = timezone(timedelta(hours=-5))
+ET = ZoneInfo("America/New_York")
 DATA_DIR = Path(__file__).parent.parent / "data"
 TRADES_FILE = DATA_DIR / "trades.jsonl"
 DAILY_REPORTS_FILE = DATA_DIR / "daily_reports.json"

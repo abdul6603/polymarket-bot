@@ -26,7 +26,8 @@ OPPS_FILE = DATA_DIR / "hawk_opportunities.json"
 SUGGESTIONS_FILE = DATA_DIR / "hawk_suggestions.json"
 MODE_FILE = DATA_DIR / "hawk_mode.json"
 
-ET = timezone(timedelta(hours=-5))
+from zoneinfo import ZoneInfo
+ET = ZoneInfo("America/New_York")
 
 # Brain notes file
 BRAIN_FILE = DATA_DIR / "brains" / "hawk.json"
@@ -291,9 +292,12 @@ class HawkBot:
                     res = resolve_paper_trades()
                     if res["resolved"] > 0:
                         log.info(
-                            "Resolved %d trades: %d W / %d L",
+                            "Resolved %d trades: %d W / %d L | P&L: $%.2f",
                             res["resolved"], res["wins"], res["losses"],
+                            res.get("total_pnl", 0.0),
                         )
+                        # Record PnL with risk manager so daily loss cap works
+                        self.risk.record_pnl(res.get("total_pnl", 0.0))
                         # Reload tracker positions from disk
                         self.tracker._positions = []
                         self.tracker._load_positions()

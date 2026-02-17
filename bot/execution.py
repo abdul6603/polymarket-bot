@@ -147,7 +147,7 @@ class Executor:
         )
 
         if self.cfg.dry_run:
-            order_id = f"dry-run-{market_id[:8]}"
+            order_id = f"dry-run-{market_id[:8]}-{int(time.time())}"
             log.info("[DRY RUN] Simulated order: %s", order_id)
             pos = Position(
                 market_id=market_id,
@@ -195,12 +195,16 @@ class Executor:
     def check_fills(self) -> None:
         """Poll order status and remove filled/expired positions."""
         if self.cfg.dry_run:
-            # Expire dry-run positions after 5 minutes (market resolution)
+            # Expire dry-run positions based on market timeframe
+            TF_EXPIRE_S = {"5m": 300, "15m": 900, "1h": 3600, "4h": 14400}
             now = time.time()
             for pos in list(self.tracker.open_positions):
+                # Parse timeframe from order_id or default to 15m (900s)
+                expire_s = TF_EXPIRE_S.get(getattr(pos, "timeframe", ""), 900)
                 age = now - pos.opened_at
-                if age > 300:  # 5 min
-                    log.info("[DRY RUN] Position expired after %.0fs: %s", age, pos.order_id)
+                if age > expire_s:
+                    log.info("[DRY RUN] Position expired after %.0fs (tf limit %ds): %s",
+                             age, expire_s, pos.order_id)
                     self.tracker.remove(pos.order_id)
             return
 

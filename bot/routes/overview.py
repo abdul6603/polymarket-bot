@@ -7,6 +7,7 @@ import subprocess
 import sys
 import time
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 from flask import Blueprint, jsonify
@@ -364,7 +365,7 @@ def api_agent_kpis(agent):
 @overview_bp.route("/api/intelligence")
 def api_intelligence():
     """Intelligence meter for all agents -- 5 dimensions each, 0-100 scale."""
-    ET_tz = timezone(timedelta(hours=-5))
+    ET_tz = ZoneInfo("America/New_York")
 
     result = {}
 

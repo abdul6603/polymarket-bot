@@ -31,7 +31,8 @@ STATUS_FILE = DATA_DIR / "viper_status.json"
 OPPS_FILE = DATA_DIR / "viper_opportunities.json"
 COSTS_FILE = DATA_DIR / "viper_costs.json"
 
-ET = timezone(timedelta(hours=-5))
+from zoneinfo import ZoneInfo
+ET = ZoneInfo("America/New_York")
 
 BRAIN_FILE = DATA_DIR / "brains" / "viper.json"
 

@@ -8,13 +8,14 @@ import shutil
 import subprocess
 import time
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 from flask import Blueprint, jsonify
 
 system_bp = Blueprint("system", __name__)
 
-ET = timezone(timedelta(hours=-5))
+ET = ZoneInfo("America/New_York")
 
 # Agent process patterns for identification
 AGENT_PROCESS_MAP = {

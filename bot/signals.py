@@ -100,7 +100,7 @@ UP_CONFIDENCE_PREMIUM = 0.08  # add 8% to confidence floor for UP bets
 # Time-of-day filter: block hours with <30% WR across 140+ trades
 # Good hours: 00,02,10,12,16,17 (79.5% WR combined)
 # Bad hours: 05 (0%), 18 (17%), 19 (29%), 20 (13%), 21 (0%), 22 (12%), 23 (22%)
-AVOID_HOURS_ET = {0, 1, 2, 3, 4, 5, 6, 7, 23}  # 9 dead hours — only trade 8AM-10PM ET
+AVOID_HOURS_ET = {1, 3, 4, 5, 6, 7, 23}  # 7 dead hours — trade 8AM-10PM ET + keep 0,2 (79.5% WR)
 
 # Timeframe-specific minimum edge — must exceed estimated fees
 # Data: 0-8% edge = 20% WR, 8-11% = 62.5% WR — 8% is the breakeven floor
@@ -139,15 +139,18 @@ def _estimate_fees(timeframe: str, implied_price: float | None) -> float:
     """Estimate total Polymarket fees as fraction to subtract from edge.
 
     - 2% winner fee (always, on payout)
-    - Up to 3% taker fee on 15m markets (peaks at 50/50 odds)
+    - Up to 3% taker fee on ALL timeframes (peaks at 50/50 odds, scales with proximity)
+      Shorter timeframes get slightly higher taker fees due to wider spreads.
     """
     winner_fee = 0.02
 
-    taker_fee = 0.0
-    if timeframe == "15m":
-        ip = implied_price if implied_price is not None else 0.5
-        distance = abs(ip - 0.5)
-        taker_fee = 0.03 * max(1.0 - distance * 2, 0)
+    ip = implied_price if implied_price is not None else 0.5
+    distance = abs(ip - 0.5)
+    # Base taker fee peaks at 3% for 50/50, drops to 0% at extreme prices
+    base_taker = 0.03 * max(1.0 - distance * 2, 0)
+    # Shorter timeframes have wider spreads -> slightly higher effective taker fee
+    tf_multiplier = {"5m": 1.0, "15m": 1.0, "1h": 0.8, "4h": 0.6}.get(timeframe, 0.8)
+    taker_fee = base_taker * tf_multiplier
 
     return winner_fee + taker_fee
 
@@ -185,8 +188,8 @@ class SignalEngine:
             return None
 
         # ── Time-of-Day Filter: skip dead zone hours (06-07 ET = 0-33% WR) ──
-        from datetime import datetime, timezone, timedelta
-        current_hour_et = datetime.now(timezone(timedelta(hours=-5))).hour
+        from zoneinfo import ZoneInfo
+        current_hour_et = datetime.now(ZoneInfo("America/New_York")).hour
         if current_hour_et in AVOID_HOURS_ET:
             log.info("[%s/%s] Time-of-day filter: hour %d ET is in dead zone, skipping",
                      asset.upper(), timeframe, current_hour_et)
@@ -412,14 +415,8 @@ class SignalEngine:
 
         confidence = min(abs(score), 1.0)
 
-        # ── Minimum Confidence Filter (regime-adjusted) ──
-        effective_confidence = regime.confidence_floor if regime else MIN_CONFIDENCE
-        if confidence < effective_confidence:
-            log.info(
-                "[%s/%s] Confidence too low: %.3f < %.3f, skipping",
-                asset.upper(), timeframe, confidence, effective_confidence,
-            )
-            return None
+        # NOTE: Confidence check moved below edge calculation — the second check
+        # handles both directions (UP gets premium) so the first was redundant.
 
         # ── Edge Calculation ──
         if implied_up_price is not None and 0.01 < implied_up_price < 0.99:

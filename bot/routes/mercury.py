@@ -181,7 +181,8 @@ def api_lisa_go_live():
 
         config = _load_live_config()
         from datetime import datetime, timezone, timedelta
-        ET = timezone(timedelta(hours=-5))
+from zoneinfo import ZoneInfo
+        ET = ZoneInfo("America/New_York")
 
         if enable:
             config[platform] = {

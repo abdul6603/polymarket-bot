@@ -45,16 +45,8 @@ def api_system_health():
         return jsonify({"overall": "unknown", "error": str(e)[:200]})
 
 
-@infra_bp.route("/api/broadcasts")
-def api_broadcasts():
-    """Get recent broadcasts with acknowledgment status."""
-    try:
-        sys.path.insert(0, str(Path.home() / "shelby"))
-        from core.broadcast import get_recent_broadcasts
-        broadcasts = get_recent_broadcasts(limit=15)
-        return jsonify({"broadcasts": broadcasts})
-    except Exception as e:
-        return jsonify({"broadcasts": [], "error": str(e)[:200]})
+# NOTE: /api/broadcasts is registered in overview.py (richer version with ack status)
+# Removed duplicate route that was here to prevent Flask route collision.
 
 
 @infra_bp.route("/api/agent-messages/<agent_name>")
@@ -155,10 +147,19 @@ def api_health_agent(agent_name: str):
     return jsonify({"status": "unknown", "message": "No health file found"})
 
 
+VALID_LOG_AGENTS = {
+    "garves", "shelby", "atlas", "lisa", "robotox", "thor", "hawk", "viper",
+    "quant", "soren", "mercury", "sentinel", "dashboard",
+}
+
+
 @infra_bp.route("/api/agent-logs/<agent_name>")
 def api_agent_logs(agent_name: str):
     """Get structured logs for an agent from the hub log files."""
     import json
+    # Prevent path traversal — only allow known agent names
+    if agent_name not in VALID_LOG_AGENTS:
+        return jsonify({"agent": agent_name, "logs": [], "error": "Unknown agent"}), 404
     log_file = Path.home() / ".agent-hub" / "logs" / f"{agent_name}.jsonl"
     if not log_file.exists():
         return jsonify({"agent": agent_name, "logs": [], "message": "No logs yet"})

@@ -48,7 +48,7 @@ def resolve_paper_trades() -> dict:
             cid_to_trades.setdefault(cid, []).append(t)
 
     session = get_session()
-    stats = {"checked": len(unresolved), "resolved": 0, "wins": 0, "losses": 0, "skipped": 0}
+    stats = {"checked": len(unresolved), "resolved": 0, "wins": 0, "losses": 0, "skipped": 0, "total_pnl": 0.0}
 
     for cid, cid_trades in cid_to_trades.items():
         try:
@@ -70,7 +70,9 @@ def resolve_paper_trades() -> dict:
             data = resp.json()
 
             # Check if market is resolved
-            resolved_flag = data.get("closed") or data.get("resolved")
+            # Check if market is actually resolved (outcome determined)
+            # "closed" alone means no new orders — NOT that outcome is known
+            resolved_flag = data.get("resolved", False)
             if not resolved_flag:
                 stats["skipped"] += len(cid_trades)
                 continue
@@ -103,6 +105,7 @@ def resolve_paper_trades() -> dict:
                 t["resolve_time"] = time.time()
 
                 stats["resolved"] += 1
+                stats["total_pnl"] += pnl
                 if won:
                     stats["wins"] += 1
                 else:

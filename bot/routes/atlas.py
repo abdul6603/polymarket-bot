@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 from flask import Blueprint, jsonify, request
@@ -210,7 +211,7 @@ def api_atlas_costs():
             tracker = json.load(f)
 
         daily = tracker.get("daily", {})
-        today = datetime.now(timezone(timedelta(hours=-5))).strftime("%Y-%m-%d")
+        today = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
         today_data = daily.get(today, {})
 
         # Monthly totals

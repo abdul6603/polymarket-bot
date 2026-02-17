@@ -13,7 +13,8 @@ from quant.scorer import score_result
 log = logging.getLogger(__name__)
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
-ET = timezone(timedelta(hours=-5))
+from zoneinfo import ZoneInfo
+ET = ZoneInfo("America/New_York")
 
 
 def _now_et() -> str:

@@ -246,10 +246,11 @@ def api_shelby_brief():
         implied = t.get("implied_up_price", 0.5)
         d = t.get("direction", "up")
         ep = implied if d == "up" else (1 - implied)
+        stake = float(os.getenv("ORDER_SIZE_USD", "5.0"))
         if t.get("won"):
-            today_pnl += 5.0 * (1 - ep) - 5.0 * 0.02
+            today_pnl += stake * (1 - ep) - stake * 0.02
         else:
-            today_pnl += -5.0 * ep
+            today_pnl += -stake * ep
 
     garves_running = False
     try:

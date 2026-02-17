@@ -110,7 +110,7 @@ def bollinger_bands(closes: list[float], period: int = 20, num_std: float = 2.0)
     sma = np.mean(window)
     std = np.std(window)
     if std == 0:
-        return IndicatorVote(direction="up", confidence=0.05)
+        return None  # No volatility = no signal (was biasing "up")
 
     upper = sma + num_std * std
     lower = sma - num_std * std
@@ -231,7 +231,7 @@ def heikin_ashi(candles: list[Candle]) -> IndicatorVote | None:
 
     streak = max(bullish_streak, bearish_streak)
     if streak < 2:
-        return IndicatorVote(direction="up", confidence=0.05, raw_value=0)
+        return None  # No clear streak = no signal (was biasing "up")
 
     direction = "up" if bullish_streak > bearish_streak else "down"
     conf = min(streak / 5.0, 1.0)

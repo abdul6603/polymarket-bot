@@ -7,6 +7,7 @@ import subprocess
 import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 from bot.config import Config
@@ -141,7 +142,7 @@ class PerformanceTracker:
             "Tracked signal: %s %s/%s %s (prob=%.1f%%, edge=%.1f%%) expires=%s",
             trade_id, signal.asset.upper(), signal.timeframe,
             signal.direction.upper(), signal.probability * 100, signal.edge * 100,
-            datetime.fromtimestamp(market_end_time, tz=timezone(timedelta(hours=-5))).strftime("%I:%M%p ET"),
+            datetime.fromtimestamp(market_end_time, tz=ZoneInfo("America/New_York")).strftime("%I:%M%p ET"),
         )
         log.info("Rationale: %s", rationale)
 

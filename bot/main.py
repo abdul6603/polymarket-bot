@@ -27,9 +27,10 @@ from bot.daily_cycle import should_reset, archive_and_reset
 
 log = logging.getLogger("bot")
 
-# Telegram trade alerts
-_TG_TOKEN = "8548823121:AAH-T9nkYVyF0t1LwGwconeRCDFiW6rvvGw"
-_TG_CHAT = "5303307536"
+# Telegram trade alerts — loaded from .env (never hardcode secrets)
+import os
+_TG_TOKEN = os.environ.get("TG_BOT_TOKEN", "")
+_TG_CHAT = os.environ.get("TG_CHAT_ID", "")
 
 
 def _send_telegram(text: str) -> bool:
@@ -387,8 +388,9 @@ class TradingBot:
                          conviction.total_score, conviction.tier_label)
                 continue
 
-            # Risk check
-            allowed, reason = check_risk(self.cfg, sig, self.tracker, market_id)
+            # Risk check (pass actual conviction size, not default $10)
+            allowed, reason = check_risk(self.cfg, sig, self.tracker, market_id,
+                                         trade_size_usd=conviction.position_size_usd)
             if not allowed:
                 log.info("  -> Blocked: %s", reason)
                 continue

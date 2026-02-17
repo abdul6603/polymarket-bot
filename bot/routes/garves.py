@@ -82,7 +82,7 @@ def api_trades():
 
     # PnL estimate
     total_pnl = 0.0
-    stake = float(os.getenv("ORDER_SIZE_USD", "10.0"))
+    stake = float(os.getenv("ORDER_SIZE_USD", "5.0"))
     for t in resolved:
         if t.get("outcome") == "unknown":
             continue

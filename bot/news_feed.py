@@ -77,22 +77,27 @@ class CryptoNewsFeed:
         if not headlines:
             return None
 
-        # Filter to asset-specific headlines
+        # Filter to asset-specific headlines (deduplicate by title to prevent double-counting)
         asset_keys = ASSET_KEYWORDS.get(asset, [asset])
         relevant = []
+        seen_titles: set[str] = set()
         for h in headlines:
             title_lower = h["title"].lower()
+            if title_lower in seen_titles:
+                continue
             if any(k in title_lower for k in asset_keys):
                 relevant.append(h)
+                seen_titles.add(title_lower)
 
         # Also include general crypto/market headlines
         general_keys = ["crypto", "market", "defi", "web3", "blockchain"]
         for h in headlines:
-            if h in relevant:
-                continue
             title_lower = h["title"].lower()
+            if title_lower in seen_titles:
+                continue
             if any(k in title_lower for k in general_keys):
                 relevant.append(h)
+                seen_titles.add(title_lower)
 
         if not relevant:
             return None

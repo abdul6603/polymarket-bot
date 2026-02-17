@@ -11,7 +11,8 @@ from hawk.tracker import HawkTracker
 
 log = logging.getLogger(__name__)
 
-ET = timezone(timedelta(hours=-5))
+from zoneinfo import ZoneInfo
+ET = ZoneInfo("America/New_York")
 
 
 class HawkRiskManager:

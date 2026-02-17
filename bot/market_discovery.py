@@ -124,10 +124,11 @@ def _parse_candle_end_time(question: str, end_date_iso: str) -> float | None:
         else:
             return None
 
-    # Build the datetime in ET (UTC-5)
-    et_offset = timezone(timedelta(hours=-5))
+    # Build the datetime in ET (DST-aware)
+    from zoneinfo import ZoneInfo
+    et_tz = ZoneInfo("America/New_York")
     try:
-        candle_end = datetime(year, month_num, int(day_str), hour % 24, minute, tzinfo=et_offset)
+        candle_end = datetime(year, month_num, int(day_str), hour % 24, minute, tzinfo=et_tz)
         # Handle hour overflow (e.g. 11PM + 1h = midnight next day)
         if hour >= 24:
             candle_end += timedelta(days=1)

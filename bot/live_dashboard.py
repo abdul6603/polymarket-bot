@@ -73,7 +73,7 @@ app = Flask(
 # ── SocketIO for real-time push (optional — falls back to polling if unavailable) ──
 socketio = None
 if HAS_SOCKETIO:
-    socketio = SocketIO(app, async_mode="threading", cors_allowed_origins="*")
+    socketio = SocketIO(app, async_mode="threading", cors_allowed_origins=["http://localhost:8877", "http://127.0.0.1:8877"])
 
 
 @app.after_request
@@ -188,7 +188,7 @@ if __name__ == "__main__":
 
     if socketio:
         print("[Dashboard] Running with Flask-SocketIO (WebSocket support)")
-        socketio.run(app, host="0.0.0.0", port=8877, debug=False, allow_unsafe_werkzeug=True)
+        socketio.run(app, host="127.0.0.1", port=8877, debug=False, allow_unsafe_werkzeug=True)
     else:
         print("[Dashboard] Running without SocketIO (polling only)")
-        app.run(host="0.0.0.0", port=8877, debug=False, threaded=True)
+        app.run(host="127.0.0.1", port=8877, debug=False, threaded=True)

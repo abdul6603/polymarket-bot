@@ -13,6 +13,7 @@ import json
 import sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 
 # ── Paths ──
@@ -45,9 +46,9 @@ VIPER_ROOT = Path(__file__).parent.parent / "viper"
 sys.path.insert(0, str(ATLAS_ROOT.parent))
 
 
-# ── Timezone ──
+# ── Timezone (DST-aware: UTC-5 in winter, UTC-4 in summer) ──
 
-ET = timezone(timedelta(hours=-5))
+ET = ZoneInfo("America/New_York")
 
 
 # ── Default assessments for Shelby ──

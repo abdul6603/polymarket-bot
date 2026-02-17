@@ -284,8 +284,8 @@ class ConvictionEngine:
 
         # ── 6. Time-of-Day Quality (0-8 points) ──
         # Are we in a historically high-WR hour?
-        et_tz = timezone(timedelta(hours=-5))
-        current_hour = datetime.now(et_tz).hour
+        from zoneinfo import ZoneInfo
+        current_hour = datetime.now(ZoneInfo("America/New_York")).hour
         if current_hour in GOOD_HOURS_ET:
             time_score = 1.0   # Prime time — 79.5% combined WR
         elif current_hour in OKAY_HOURS_ET:
@@ -610,13 +610,14 @@ class ConvictionEngine:
 
             # Daily P&L estimate (simplified: each trade is ~$10 base)
             # Count today's wins and losses
-            et_tz = timezone(timedelta(hours=-5))
-            today_str = datetime.now(et_tz).strftime("%Y-%m-%d")
+            from zoneinfo import ZoneInfo
+            _et = ZoneInfo("America/New_York")
+            today_str = datetime.now(_et).strftime("%Y-%m-%d")
             daily_wins = 0
             daily_losses = 0
             for r in resolved:
                 ts = r.get("resolve_time") or r.get("timestamp", 0)
-                trade_date = datetime.fromtimestamp(ts, tz=et_tz).strftime("%Y-%m-%d")
+                trade_date = datetime.fromtimestamp(ts, tz=_et).strftime("%Y-%m-%d")
                 if trade_date == today_str:
                     if r.get("won"):
                         daily_wins += 1

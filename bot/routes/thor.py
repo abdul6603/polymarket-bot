@@ -144,7 +144,8 @@ def api_thor_costs():
 
         # Calculate daily spend from cost log
         from datetime import datetime, timezone, timedelta
-        ET = timezone(timedelta(hours=-5))
+from zoneinfo import ZoneInfo
+        ET = ZoneInfo("America/New_York")
         today = datetime.now(ET).strftime("%Y-%m-%d")
         daily_spend = 0.0
         cost_log = THOR_DATA / "cost_log.jsonl"
@@ -397,12 +398,19 @@ def _generate_smart_actions(agent_filter: str = "") -> list[dict]:
 
     # 3. Garves performance → optimization actions
     try:
-        trades_file = GARVES_DATA / "trades.json"
+        trades_file = GARVES_DATA / "trades.jsonl"
         if trades_file.exists():
-            trades = json.loads(trades_file.read_text())
-            if isinstance(trades, list) and len(trades) >= 5:
-                recent = trades[-20:]
-                wins = sum(1 for t in recent if t.get("result") == "win")
+            trades = []
+            for line in trades_file.read_text().strip().split("\n"):
+                if line.strip():
+                    try:
+                        trades.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        pass
+            resolved = [t for t in trades if t.get("resolved")]
+            if len(resolved) >= 5:
+                recent = resolved[-20:]
+                wins = sum(1 for t in recent if t.get("won"))
                 wr = wins / len(recent) * 100 if recent else 0
                 if wr < 55:
                     actions.append({

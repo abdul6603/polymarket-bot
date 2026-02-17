@@ -6,6 +6,7 @@ import time
 import uuid
 import threading
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 from flask import Blueprint, jsonify, request
@@ -14,7 +15,7 @@ from bot.brain_interpreter import interpret_note
 
 brain_bp = Blueprint("brain", __name__)
 
-ET = timezone(timedelta(hours=-5))
+ET = ZoneInfo("America/New_York")
 
 # Universal brain storage directory
 BRAIN_DIR = Path(__file__).parent.parent / "data" / "brains"

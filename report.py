@@ -6,10 +6,11 @@ import json
 import sys
 from collections import defaultdict
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 DATA_FILE = Path(__file__).parent / "data" / "trades.jsonl"
-ET = timezone(timedelta(hours=-5))
+ET = ZoneInfo("America/New_York")
 
 
 def load_trades() -> list[dict]:

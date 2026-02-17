@@ -62,21 +62,22 @@ def check_risk(
     signal: Signal,
     tracker: PositionTracker,
     market_id: str,
+    trade_size_usd: float | None = None,
 ) -> tuple[bool, str]:
     """Gate a trade on risk limits.
+
+    Args:
+        trade_size_usd: Actual trade size from ConvictionEngine. Falls back to cfg.order_size_usd.
 
     Returns:
         (allowed, reason) — True if trade is allowed, otherwise reason string.
     """
-    min_edge = cfg.min_edge_pct / 100.0
-
-    if signal.edge < min_edge:
-        return False, f"Edge {signal.edge:.3f} below minimum {min_edge:.3f}"
+    size = trade_size_usd if trade_size_usd is not None else cfg.order_size_usd
 
     if tracker.count >= cfg.max_concurrent_positions:
         return False, f"Max concurrent positions reached ({cfg.max_concurrent_positions})"
 
-    new_exposure = tracker.total_exposure + cfg.order_size_usd
+    new_exposure = tracker.total_exposure + size
     if new_exposure > cfg.max_position_usd:
         return False, f"Would exceed max exposure: ${new_exposure:.2f} > ${cfg.max_position_usd:.2f}"
 
@@ -84,8 +85,8 @@ def check_risk(
         return False, f"Already have position in market {market_id}"
 
     log.info(
-        "Risk check passed: edge=%.3f, positions=%d/%d, exposure=$%.2f/$%.2f",
-        signal.edge, tracker.count, cfg.max_concurrent_positions,
+        "Risk check passed: edge=%.3f, size=$%.2f, positions=%d/%d, exposure=$%.2f/$%.2f",
+        signal.edge, size, tracker.count, cfg.max_concurrent_positions,
         tracker.total_exposure, cfg.max_position_usd,
     )
     return True, "ok"

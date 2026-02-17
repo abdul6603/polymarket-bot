@@ -6,6 +6,7 @@ import logging
 import threading
 import time
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 from flask import Blueprint, jsonify, request
@@ -21,7 +22,7 @@ BRIEFING_FILE = DATA_DIR / "hawk_briefing.json"
 MARKET_CONTEXT_FILE = DATA_DIR / "viper_market_context.json"
 MODE_FILE = DATA_DIR / "hawk_mode.json"
 SUGGESTIONS_FILE = DATA_DIR / "hawk_suggestions.json"
-ET = timezone(timedelta(hours=-5))
+ET = ZoneInfo("America/New_York")
 
 _scan_lock = threading.Lock()
 _scan_running = False

@@ -7,6 +7,7 @@ import time
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from hawk.edge import TradeOpportunity
 
@@ -15,7 +16,7 @@ log = logging.getLogger(__name__)
 DATA_DIR = Path(__file__).parent.parent / "data"
 TRADES_FILE = DATA_DIR / "hawk_trades.jsonl"
 
-ET = timezone(timedelta(hours=-5))
+ET = ZoneInfo("America/New_York")
 
 
 class HawkTracker:
