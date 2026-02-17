@@ -785,6 +785,21 @@ async function deleteShelbyTask(id) {
   } catch (e) { console.error(e); }
 }
 
+async function triggerScheduledDispatch(routine) {
+  var resultEl = document.getElementById('dispatch-schedule-result');
+  if (resultEl) { resultEl.style.display = 'block'; resultEl.textContent = 'Dispatching...'; }
+  try {
+    var resp = await fetch('/api/shelby/schedule/dispatch', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({routine: routine})});
+    var data = await resp.json();
+    if (data.success) {
+      if (resultEl) resultEl.textContent = routine.replace('dispatch_','').replace(/^\w/,function(c){return c.toUpperCase();}) + ': ' + data.result;
+      setTimeout(async function() { var sr = await fetch('/api/shelby'); renderShelby(await sr.json()); }, 2000);
+    } else {
+      if (resultEl) resultEl.textContent = 'Error: ' + (data.error || 'Unknown');
+    }
+  } catch (e) { if (resultEl) resultEl.textContent = 'Error: ' + e.message; }
+}
+
 async function manualDispatchTask(id) {
   try {
     var btn = document.getElementById('dispatch-btn-' + id);
