@@ -1,8 +1,8 @@
-<!-- HAWK -->
+<!-- HAWK V2 — The Smart Degen -->
 <div class="tab-content" id="tab-hawk">
   <div class="agent-widget-row">
-    <div class="widget-badge"><span class="wb-label">Agent:</span> <span style="color:#FFD700;font-weight:700;">Hawk</span></div>
-    <div class="widget-badge"><span class="wb-label">Role:</span> <span>Market Predator</span></div>
+    <div class="widget-badge"><span class="wb-label">Agent:</span> <span style="color:#FFD700;font-weight:700;">Hawk V2</span></div>
+    <div class="widget-badge"><span class="wb-label">Role:</span> <span>Smart Degen</span></div>
     <div class="widget-badge" id="hawk-mode-badge"><span class="wb-label">Mode:</span> <span id="hawk-mode-label" style="color:#FFD700;">--</span></div>
     <button class="btn" id="hawk-mode-toggle" onclick="toggleHawkMode()" style="font-size:0.72rem;background:rgba(255,215,0,0.15);color:#FFD700;border:1px solid rgba(255,215,0,0.3);font-weight:600;">Switch Mode</button>
     <button class="btn" id="hawk-scan-btn" onclick="hawkTriggerScan()" style="font-size:0.72rem;background:#FFD700;color:#000;font-weight:700;">Trigger Scan</button>
@@ -28,8 +28,16 @@
     <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-pnl">$0.00</div><div class="stat-label">Total P&amp;L</div></div>
     <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-open-bets">0</div><div class="stat-label">Open Bets</div></div>
     <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-total-trades">0</div><div class="stat-label">Total Trades</div></div>
-    <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-resolved">0</div><div class="stat-label">Resolved</div></div>
+    <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-eff-bankroll">$200</div><div class="stat-label">Eff. Bankroll</div></div>
     <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-daily-pnl">$0.00</div><div class="stat-label">Daily P&amp;L</div></div>
+  </div>
+  <!-- Risk Meter Summary -->
+  <div id="hawk-risk-meter-bar" style="margin:12px 0;display:flex;gap:6px;flex-wrap:wrap;">
+    <div class="widget-badge"><span class="wb-label">Risk Dist:</span> <span id="hawk-risk-low" style="color:#00ff44;">0 Low</span></div>
+    <div class="widget-badge"><span class="wb-label"></span> <span id="hawk-risk-med" style="color:#FFD700;">0 Med</span></div>
+    <div class="widget-badge"><span class="wb-label"></span> <span id="hawk-risk-high" style="color:#ff6600;">0 High</span></div>
+    <div class="widget-badge"><span class="wb-label"></span> <span id="hawk-risk-extreme" style="color:#ff3333;">0 Extreme</span></div>
+    <div class="widget-badge"><span class="wb-label">Avg Risk:</span> <span id="hawk-avg-risk" style="color:var(--text-secondary);">--</span></div>
   </div>
   <!-- Scan Summary -->
   <div id="hawk-scan-summary" style="display:none;margin-bottom:12px;">
@@ -44,7 +52,7 @@
   </div>
   <!-- Intel Sync — powered by Viper -->
   <div class="section-spacer" id="hawk-intel-sync-section" style="display:none;">
-    <h2 class="section-title" style="color:#FFD700;">Intel Feed <span style="font-size:0.68rem;color:#00ff88;font-weight:400;margin-left:6px;">powered by Viper</span></h2>
+    <h2 class="section-title" style="color:#FFD700;">Intel Feed <span style="font-size:0.68rem;color:#00ff88;font-weight:400;margin-left:6px;">powered by Viper + Atlas</span></h2>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;" id="hawk-intel-badges"></div>
     <div class="glass-card">
       <table class="data-table">
@@ -64,31 +72,54 @@
       <div class="glass-card"><div class="text-muted" style="text-align:center;padding:24px;">No suggestions yet — trigger a scan</div></div>
     </div>
   </div>
-  <div class="section-spacer">
-    <h2 class="section-title" style="color:#FFD700;">Live Opportunities <span id="hawk-opp-total-label" style="font-size:0.72rem;color:var(--text-muted);font-weight:400;margin-left:8px;"></span></h2>
-    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;" id="hawk-cat-filter-pills"></div>
-    <div id="hawk-opp-groups"></div>
-  </div>
-  <!-- Reasoning panel (shown when clicking a row) -->
+  <!-- Why This Trade Panel (expanded on click) -->
   <div id="hawk-reasoning-panel" style="display:none;margin-top:-8px;margin-bottom:16px;">
     <div style="background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.15);border-radius:8px;padding:14px 18px;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-        <div>
-          <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:4px;">WHY HAWK THINKS THIS</div>
-          <div id="hawk-reasoning-market" style="font-weight:600;color:#FFD700;font-size:0.82rem;margin-bottom:6px;"></div>
-          <div id="hawk-reasoning-text" style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5;"></div>
+        <div style="flex:1;">
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:4px;">WHY THIS TRADE</div>
+          <div id="hawk-reasoning-market" style="font-weight:600;color:#FFD700;font-size:0.82rem;margin-bottom:8px;"></div>
+          <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;" id="hawk-reasoning-badges"></div>
+          <div style="margin-bottom:6px;">
+            <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:2px;">REASONING</div>
+            <div id="hawk-reasoning-text" style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5;"></div>
+          </div>
+          <div style="margin-bottom:6px;">
+            <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:2px;">MONEY THESIS</div>
+            <div id="hawk-reasoning-money" style="font-size:0.78rem;color:#00ff44;line-height:1.5;"></div>
+          </div>
+          <div style="margin-bottom:6px;">
+            <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:2px;">NEWS FACTOR</div>
+            <div id="hawk-reasoning-news" style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5;"></div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:2px;">EDGE SOURCE</div>
+            <div id="hawk-reasoning-edge-src" style="font-size:0.78rem;color:#FFD700;line-height:1.5;"></div>
+          </div>
         </div>
         <button onclick="document.getElementById('hawk-reasoning-panel').style.display='none'" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1rem;padding:0 4px;">x</button>
       </div>
     </div>
   </div>
   <div class="section-spacer">
+    <h2 class="section-title" style="color:#FFD700;">Live Opportunities <span id="hawk-opp-total-label" style="font-size:0.72rem;color:var(--text-muted);font-weight:400;margin-left:8px;"></span></h2>
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;" id="hawk-cat-filter-pills"></div>
+    <div id="hawk-opp-groups"></div>
+  </div>
+  <div class="section-spacer">
     <h2 class="section-title" style="color:#FFD700;">Open Positions</h2>
-    <div class="glass-card"><table class="data-table"><thead><tr><th>Market</th><th>Direction</th><th>Size</th><th>Entry</th><th>Category</th></tr></thead><tbody id="hawk-pos-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No open positions</td></tr></tbody></table></div>
+    <div class="glass-card"><table class="data-table"><thead><tr><th>Market</th><th>Direction</th><th>Size</th><th>Entry</th><th>Risk</th><th>Category</th></tr></thead><tbody id="hawk-pos-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No open positions</td></tr></tbody></table></div>
+  </div>
+  <!-- Trade Reviews Panel -->
+  <div class="section-spacer" id="hawk-reviews-section">
+    <h2 class="section-title" style="color:#FFD700;">Trade Reviews <span id="hawk-review-count" style="font-size:0.72rem;color:var(--text-muted);font-weight:400;margin-left:8px;"></span></h2>
+    <div id="hawk-reviews-list">
+      <div class="glass-card"><div class="text-muted" style="text-align:center;padding:24px;">No trade reviews yet — reviews appear after trades resolve</div></div>
+    </div>
   </div>
   <div class="section-spacer">
     <h2 class="section-title" style="color:#FFD700;">Trade History</h2>
-    <div class="glass-card"><table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Category</th><th>Edge</th><th>Result</th></tr></thead><tbody id="hawk-hist-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No trade history</td></tr></tbody></table></div>
+    <div class="glass-card"><table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Category</th><th>Risk</th><th>Edge</th><th>Result</th></tr></thead><tbody id="hawk-hist-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No trade history</td></tr></tbody></table></div>
   </div>
   <div class="section-spacer">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">

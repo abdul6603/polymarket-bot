@@ -17,12 +17,11 @@ TRADES_FILE = DATA_DIR / "hawk_trades.jsonl"
 def resolve_paper_trades() -> dict:
     """Check all unresolved paper trades against Gamma API for outcomes.
 
-    Returns summary: {checked, resolved, wins, losses, skipped}.
+    Returns summary: {checked, resolved, wins, losses, skipped, total_pnl}.
     """
     if not TRADES_FILE.exists():
-        return {"checked": 0, "resolved": 0, "wins": 0, "losses": 0, "skipped": 0}
+        return {"checked": 0, "resolved": 0, "wins": 0, "losses": 0, "skipped": 0, "total_pnl": 0.0}
 
-    # Load all trades
     trades = []
     try:
         with open(TRADES_FILE) as f:
@@ -32,18 +31,18 @@ def resolve_paper_trades() -> dict:
                     trades.append(json.loads(line))
     except Exception:
         log.exception("Failed to load trades for resolution")
-        return {"checked": 0, "resolved": 0, "wins": 0, "losses": 0, "skipped": 0}
+        return {"checked": 0, "resolved": 0, "wins": 0, "losses": 0, "skipped": 0, "total_pnl": 0.0}
 
     unresolved = [t for t in trades if not t.get("resolved")]
     if not unresolved:
-        return {"checked": 0, "resolved": 0, "wins": 0, "losses": 0, "skipped": 0}
+        return {"checked": 0, "resolved": 0, "wins": 0, "losses": 0, "skipped": 0, "total_pnl": 0.0}
 
     log.info("Checking %d unresolved paper trades...", len(unresolved))
 
-    # Collect unique condition IDs to check
+    # Collect unique condition IDs — support both old market_id and new condition_id
     cid_to_trades: dict[str, list[dict]] = {}
     for t in unresolved:
-        cid = t.get("market_id", "")
+        cid = t.get("condition_id") or t.get("market_id", "")
         if cid:
             cid_to_trades.setdefault(cid, []).append(t)
 
@@ -52,13 +51,11 @@ def resolve_paper_trades() -> dict:
 
     for cid, cid_trades in cid_to_trades.items():
         try:
-            # Check Gamma API for market resolution
             resp = session.get(
                 f"https://gamma-api.polymarket.com/markets/{cid}",
                 timeout=10,
             )
             if resp.status_code != 200:
-                # Try CLOB API fallback
                 resp = session.get(
                     f"https://clob.polymarket.com/markets/{cid}",
                     timeout=10,
@@ -69,21 +66,16 @@ def resolve_paper_trades() -> dict:
 
             data = resp.json()
 
-            # Check if market is resolved
-            # Check if market is actually resolved (outcome determined)
-            # "closed" alone means no new orders — NOT that outcome is known
             resolved_flag = data.get("resolved", False)
             if not resolved_flag:
                 stats["skipped"] += len(cid_trades)
                 continue
 
-            # Determine winning outcome
             winning_outcome = _get_winning_outcome(data)
             if not winning_outcome:
                 stats["skipped"] += len(cid_trades)
                 continue
 
-            # Resolve each trade for this market
             for t in cid_trades:
                 direction = t.get("direction", "yes")
                 entry_price = t.get("entry_price", 0.5)
@@ -91,11 +83,9 @@ def resolve_paper_trades() -> dict:
 
                 won = direction == winning_outcome
                 if won:
-                    # Bought at entry_price, paid out at $1.00
-                    payout = size_usd / entry_price  # tokens bought
-                    pnl = payout - size_usd  # profit = payout - cost
+                    payout = size_usd / entry_price
+                    pnl = payout - size_usd
                 else:
-                    # Lost entire stake
                     pnl = -size_usd
 
                 t["resolved"] = True
@@ -112,12 +102,13 @@ def resolve_paper_trades() -> dict:
                     stats["losses"] += 1
 
                 log.info(
-                    "Resolved: %s | %s %s | %s | P&L: $%.2f",
+                    "Resolved: %s | %s %s | %s | P&L: $%.2f | risk=%s",
                     t.get("question", "")[:50],
                     direction.upper(),
                     "WON" if won else "LOST",
                     winning_outcome.upper(),
                     pnl,
+                    t.get("risk_score", "?"),
                 )
 
         except Exception:
@@ -128,12 +119,19 @@ def resolve_paper_trades() -> dict:
     if stats["resolved"] > 0:
         _rewrite_trades(trades)
 
+        # V2: Trigger post-trade reviewer
+        try:
+            from hawk.reviewer import review_resolved_trades
+            review_resolved_trades()
+            log.info("Post-trade review triggered after %d resolutions", stats["resolved"])
+        except Exception:
+            log.exception("Post-trade review failed after resolution")
+
     return stats
 
 
 def _get_winning_outcome(data: dict) -> str:
     """Determine winning outcome from market data."""
-    # Gamma format: check outcomes and outcomePrices
     outcomes = data.get("outcomes", [])
     prices = data.get("outcomePrices", [])
 
@@ -148,7 +146,6 @@ def _get_winning_outcome(data: dict) -> str:
         except (json.JSONDecodeError, TypeError):
             prices = []
 
-    # After resolution, winning outcome has price ~1.0, losing ~0.0
     if outcomes and prices and len(outcomes) == len(prices):
         for i, p in enumerate(prices):
             try:
@@ -157,7 +154,6 @@ def _get_winning_outcome(data: dict) -> str:
             except (ValueError, TypeError):
                 continue
 
-    # CLOB format: check tokens
     tokens = data.get("tokens", [])
     for t in tokens:
         winner = t.get("winner")

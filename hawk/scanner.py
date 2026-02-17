@@ -28,7 +28,8 @@ _CATEGORY_KEYWORDS = {
                      "defi", "nft", "halving", "etf", "sec", "price will"],
     "culture": ["oscar", "grammy", "emmy", "movie", "film", "music", "celebrity", "tiktok",
                 "youtube", "twitch", "viral", "ai", "spacex", "nasa", "weather", "elon musk",
-                "tweet"],
+                "tweet", "openai", "google", "apple", "microsoft", "amazon", "meta",
+                "earthquake", "hurricane", "war", "conflict", "ceasefire"],
 }
 
 
@@ -45,6 +46,7 @@ class HawkMarket:
     event_title: str = ""
     market_slug: str = ""
     event_slug: str = ""
+    time_left_hours: float = 0.0
 
 
 def _categorize_market(question: str) -> str:
@@ -178,6 +180,15 @@ def scan_all_markets(cfg: HawkConfig) -> list[HawkMarket]:
                                 tok["token_id"] = raw_token_ids[idx]
                             tokens.append(tok)
 
+                    # Compute time left in hours
+                    time_left_h = 0.0
+                    if m_end_date:
+                        try:
+                            end_dt = datetime.fromisoformat(m_end_date.replace("Z", "+00:00"))
+                            time_left_h = max(0.0, (end_dt - datetime.now(timezone.utc)).total_seconds() / 3600)
+                        except (ValueError, TypeError):
+                            pass
+
                     market = HawkMarket(
                         condition_id=cid,
                         question=question,
@@ -190,6 +201,7 @@ def scan_all_markets(cfg: HawkConfig) -> list[HawkMarket]:
                         event_title=event_title,
                         market_slug=m.get("slug", ""),
                         event_slug=event.get("slug", ""),
+                        time_left_hours=time_left_h,
                     )
                     all_markets.append(market)
 

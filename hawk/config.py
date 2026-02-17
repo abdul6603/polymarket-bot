@@ -27,14 +27,20 @@ class HawkConfig:
     # OpenAI for GPT-4o analysis
     openai_api_key: str = _env("OPENAI_API_KEY")
 
-    # Hawk-specific risk params
-    bankroll_usd: float = float(_env("HAWK_BANKROLL_USD", "250"))
-    max_bet_usd: float = float(_env("HAWK_MAX_BET_USD", "25"))
-    max_concurrent: int = int(_env("HAWK_MAX_CONCURRENT", "8"))
-    daily_loss_cap: float = float(_env("HAWK_DAILY_LOSS_CAP", "50"))
-    cycle_minutes: int = int(_env("HAWK_CYCLE_MINUTES", "30"))
-    min_edge: float = float(_env("HAWK_MIN_EDGE", "0.10"))
+    # Hawk-specific risk params — V2 aggressive defaults
+    bankroll_usd: float = float(_env("HAWK_BANKROLL_USD", "200"))
+    max_bet_usd: float = float(_env("HAWK_MAX_BET_USD", "35"))
+    max_concurrent: int = int(_env("HAWK_MAX_CONCURRENT", "6"))
+    daily_loss_cap: float = float(_env("HAWK_DAILY_LOSS_CAP", "40"))
+    cycle_minutes: int = int(_env("HAWK_CYCLE_MINUTES", "15"))
+    min_edge: float = float(_env("HAWK_MIN_EDGE", "0.07"))
     min_volume: int = int(_env("HAWK_MIN_VOLUME", "5000"))
     min_liquidity: int = int(_env("HAWK_MIN_LIQUIDITY", "1000"))
-    max_days: int = int(_env("HAWK_MAX_DAYS", "5"))
+    max_days: int = int(_env("HAWK_MAX_DAYS", "3"))
     dry_run: bool = _env("HAWK_DRY_RUN", "true").lower() in ("true", "1", "yes")
+
+    # V2 new params
+    kelly_fraction: float = float(_env("HAWK_KELLY_FRACTION", "0.35"))
+    max_risk_score: int = int(_env("HAWK_MAX_RISK_SCORE", "8"))
+    compound_bankroll: bool = _env("HAWK_COMPOUND_BANKROLL", "true").lower() in ("true", "1", "yes")
+    news_enrichment: bool = _env("HAWK_NEWS_ENRICHMENT", "true").lower() in ("true", "1", "yes")

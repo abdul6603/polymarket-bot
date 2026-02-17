@@ -1,4 +1,4 @@
-"""Position + P&L + Category Tracker for Hawk."""
+"""Position + P&L + Category Tracker for Hawk V2."""
 from __future__ import annotations
 
 import json
@@ -56,15 +56,19 @@ class HawkTracker:
     def count(self) -> int:
         return len(self._positions)
 
-    def has_position_for_market(self, market_id: str) -> bool:
-        return any(p.get("market_id") == market_id for p in self._positions)
+    def has_position_for_market(self, condition_id: str) -> bool:
+        """Check by condition_id (V2 standardized) with fallback to market_id."""
+        return any(
+            p.get("condition_id") == condition_id or p.get("market_id") == condition_id
+            for p in self._positions
+        )
 
     def record_trade(self, opp: TradeOpportunity, order_id: str) -> None:
         """Append trade to JSONL and track in memory."""
         rec = {
             "trade_id": f"hawk_{opp.market.condition_id[:8]}_{int(time.time())}",
             "order_id": order_id,
-            "market_id": opp.market.condition_id,
+            "condition_id": opp.market.condition_id,
             "question": opp.market.question[:200],
             "category": opp.market.category,
             "direction": opp.direction,
@@ -77,9 +81,18 @@ class HawkTracker:
             "reasoning": opp.estimate.reasoning[:500],
             "kelly_fraction": opp.kelly_fraction,
             "expected_value": opp.expected_value,
+            # V2 new fields
+            "risk_score": opp.risk_score,
+            "edge_source": opp.estimate.edge_source,
+            "time_left_hours": opp.time_left_hours,
+            "urgency_label": opp.urgency_label,
+            "money_thesis": opp.estimate.money_thesis[:300],
+            "news_factor": opp.estimate.news_factor[:300],
+            # Timestamps
             "timestamp": time.time(),
             "opened_at": time.time(),
             "time_str": datetime.now(ET).strftime("%Y-%m-%d %I:%M%p"),
+            # Resolution fields
             "resolved": False,
             "outcome": "",
             "won": False,
@@ -89,14 +102,20 @@ class HawkTracker:
         self._positions.append(rec)
         self._append_to_file(rec)
         log.info(
-            "Tracked Hawk trade: %s %s | $%.2f | edge=%.1f%% | %s",
+            "Tracked Hawk trade: %s %s | $%.2f | edge=%.1f%% | risk=%d/10 | %s | %s",
             opp.direction.upper(), opp.market.condition_id[:12],
-            opp.position_size_usd, opp.edge * 100, opp.market.category,
+            opp.position_size_usd, opp.edge * 100,
+            opp.risk_score, opp.urgency_label or "no-urgency", opp.market.category,
         )
 
     def remove_position(self, order_id: str) -> None:
         """Remove a position by order ID."""
         self._positions = [p for p in self._positions if p.get("order_id") != order_id]
+
+    def cumulative_pnl(self) -> float:
+        """Total realized P&L across all resolved trades (for compound bankroll)."""
+        all_trades = self._load_all_trades()
+        return sum(t.get("pnl", 0) for t in all_trades if t.get("resolved"))
 
     def category_stats(self) -> dict:
         """Returns {category: {wins, losses, pnl, win_rate}} for heatmap."""
@@ -135,6 +154,7 @@ class HawkTracker:
             "open_positions": self.count,
             "total_exposure": round(self.total_exposure, 2),
             "daily_pnl": self._daily_pnl(resolved),
+            "cumulative_pnl": round(total_pnl, 2),
         }
 
     def _daily_pnl(self, resolved: list[dict]) -> float:

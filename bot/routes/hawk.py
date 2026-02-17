@@ -163,9 +163,17 @@ def api_hawk_approve():
                 "entry_price": round(entry_price, 4),
                 "edge": target.get("edge", 0),
                 "estimated_prob": target.get("estimated_prob", 0.5),
+                "confidence": target.get("confidence", 0.5),
                 "reasoning": target.get("reasoning", "")[:200],
                 "tier": target.get("tier", "SPECULATIVE"),
                 "score": target.get("score", 0),
+                # V2 fields
+                "risk_score": target.get("risk_score", 5),
+                "edge_source": target.get("edge_source", ""),
+                "time_left_hours": target.get("time_left_hours", 0),
+                "urgency_label": target.get("urgency_label", ""),
+                "money_thesis": target.get("money_thesis", "")[:300],
+                "news_factor": target.get("news_factor", "")[:300],
                 "dry_run": True,
                 "resolved": False,
                 "time_str": datetime.now(ET).strftime("%Y-%m-%d %H:%M"),
@@ -210,9 +218,11 @@ def api_hawk_approve():
             )
             estimate = ProbabilityEstimate(
                 market_id=target["condition_id"],
+                question=target.get("question", ""),
                 estimated_prob=target.get("estimated_prob", 0.5),
                 confidence=target.get("confidence", 0.5),
                 reasoning=target.get("reasoning", ""),
+                category=target.get("category", "other"),
             )
             opp = TradeOpportunity(
                 market=market,
@@ -396,7 +406,7 @@ def api_hawk_scan():
             from hawk.config import HawkConfig
             from hawk.scanner import scan_all_markets
             from hawk.analyst import batch_analyze
-            from hawk.edge import calculate_edge, rank_opportunities
+            from hawk.edge import calculate_edge, rank_opportunities, urgency_label as _urgency_label
 
             cfg = HawkConfig()
             _set_progress("Scanning Polymarket...", "Fetching active markets from Gamma API", 10)
@@ -423,8 +433,9 @@ def api_hawk_scan():
                 if 0.12 <= yes_price <= 0.88:
                     contested.append(m)
 
-            contested.sort(key=lambda m: m.volume, reverse=True)
-            target_markets = contested[5:35] if len(contested) > 35 else contested
+            # V2: Urgency-weighted ranking
+            from hawk.main import _urgency_rank
+            target_markets = _urgency_rank(contested)[:30]
 
             _set_progress(
                 "GPT-4o analysis",
@@ -475,6 +486,10 @@ def api_hawk_scan():
                     "event_title": o.market.event_title,
                     "market_slug": o.market.market_slug,
                     "event_slug": o.market.event_slug,
+                    "risk_score": o.risk_score,
+                    "time_left_hours": o.time_left_hours,
+                    "urgency_label": o.urgency_label,
+                    "edge_source": o.estimate.edge_source,
                 })
 
             OPPS_FILE.parent.mkdir(exist_ok=True)
@@ -533,6 +548,12 @@ def api_hawk_scan():
                         "end_date": o.market.end_date,
                         "volume": o.market.volume,
                         "event_title": o.market.event_title,
+                        "risk_score": o.risk_score,
+                        "time_left_hours": round(o.time_left_hours, 1),
+                        "urgency_label": o.urgency_label,
+                        "edge_source": o.estimate.edge_source,
+                        "money_thesis": o.estimate.money_thesis[:300],
+                        "news_factor": o.estimate.news_factor[:300],
                     })
                 SUGGESTIONS_FILE.write_text(json.dumps({
                     "suggestions": suggestions,
@@ -722,3 +743,112 @@ def api_hawk_intel_sync():
     )
 
     return jsonify(result)
+
+
+# ── V2 New Endpoints ──
+
+REVIEWS_FILE = DATA_DIR / "hawk_reviews.json"
+
+
+@hawk_bp.route("/api/hawk/risk-meter")
+def api_hawk_risk_meter():
+    """Risk distribution chart data from current suggestions."""
+    if not SUGGESTIONS_FILE.exists():
+        return jsonify({"distribution": {}, "avg_risk": 0, "total": 0})
+    try:
+        data = json.loads(SUGGESTIONS_FILE.read_text())
+        suggestions = data.get("suggestions", [])
+        dist = {"low": 0, "medium": 0, "high": 0, "extreme": 0}
+        for s in suggestions:
+            rs = s.get("risk_score", 5)
+            if rs <= 3:
+                dist["low"] += 1
+            elif rs <= 6:
+                dist["medium"] += 1
+            elif rs <= 8:
+                dist["high"] += 1
+            else:
+                dist["extreme"] += 1
+        scores = [s.get("risk_score", 5) for s in suggestions]
+        avg = round(sum(scores) / len(scores), 1) if scores else 0
+        return jsonify({"distribution": dist, "avg_risk": avg, "total": len(suggestions)})
+    except Exception:
+        return jsonify({"distribution": {}, "avg_risk": 0, "total": 0})
+
+
+@hawk_bp.route("/api/hawk/reviews")
+def api_hawk_reviews():
+    """Post-trade analysis from hawk_reviews.json."""
+    if not REVIEWS_FILE.exists():
+        return jsonify({"total_reviewed": 0, "trade_reviews": []})
+    try:
+        data = json.loads(REVIEWS_FILE.read_text())
+        return jsonify(data)
+    except Exception:
+        return jsonify({"total_reviewed": 0, "trade_reviews": []})
+
+
+@hawk_bp.route("/api/hawk/performance")
+def api_hawk_performance():
+    """Win rate breakdowns by category, risk level, and edge range."""
+    if not REVIEWS_FILE.exists():
+        # Compute from trades directly
+        trades = _load_trades()
+        resolved = [t for t in trades if t.get("resolved") and t.get("outcome")]
+        if not resolved:
+            return jsonify({"total": 0, "by_category": {}, "by_risk": {}, "by_edge": {}})
+
+        by_cat: dict[str, dict] = {}
+        by_risk: dict[str, dict] = {}
+        by_edge: dict[str, dict] = {}
+
+        for t in resolved:
+            cat = t.get("category", "other")
+            if cat not in by_cat:
+                by_cat[cat] = {"wins": 0, "losses": 0, "pnl": 0.0}
+            if t.get("won"):
+                by_cat[cat]["wins"] += 1
+            else:
+                by_cat[cat]["losses"] += 1
+            by_cat[cat]["pnl"] += t.get("pnl", 0)
+
+            rs = t.get("risk_score", 5)
+            bucket = "low" if rs <= 3 else "medium" if rs <= 6 else "high"
+            if bucket not in by_risk:
+                by_risk[bucket] = {"wins": 0, "losses": 0, "pnl": 0.0}
+            if t.get("won"):
+                by_risk[bucket]["wins"] += 1
+            else:
+                by_risk[bucket]["losses"] += 1
+            by_risk[bucket]["pnl"] += t.get("pnl", 0)
+
+            edge = t.get("edge", 0)
+            eb = "7-10%" if edge < 0.10 else "10-15%" if edge < 0.15 else "15-20%" if edge < 0.20 else "20%+"
+            if eb not in by_edge:
+                by_edge[eb] = {"wins": 0, "losses": 0, "pnl": 0.0}
+            if t.get("won"):
+                by_edge[eb]["wins"] += 1
+            else:
+                by_edge[eb]["losses"] += 1
+            by_edge[eb]["pnl"] += t.get("pnl", 0)
+
+        return jsonify({
+            "total": len(resolved),
+            "by_category": by_cat,
+            "by_risk": by_risk,
+            "by_edge": by_edge,
+        })
+
+    try:
+        data = json.loads(REVIEWS_FILE.read_text())
+        return jsonify({
+            "total": data.get("total_reviewed", 0),
+            "win_rate": data.get("win_rate", 0),
+            "by_category": data.get("win_rate_by_category", {}),
+            "by_risk": data.get("win_rate_by_risk_level", {}),
+            "by_edge": data.get("win_rate_by_edge_range", {}),
+            "calibration": data.get("calibration_score", 0),
+            "recommendations": data.get("recommendations", []),
+        })
+    except Exception:
+        return jsonify({"total": 0, "by_category": {}, "by_risk": {}, "by_edge": {}})

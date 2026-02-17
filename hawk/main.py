@@ -1,4 +1,4 @@
-"""Hawk Main Bot Loop — scan markets, analyze with GPT-4o, execute trades."""
+"""Hawk V2 Main Bot Loop — The Smart Degen."""
 from __future__ import annotations
 
 import asyncio
@@ -11,7 +11,7 @@ from pathlib import Path
 from hawk.config import HawkConfig
 from hawk.scanner import scan_all_markets
 from hawk.analyst import batch_analyze
-from hawk.edge import calculate_edge, calculate_confidence_tier, rank_opportunities
+from hawk.edge import calculate_edge, calculate_confidence_tier, rank_opportunities, urgency_label
 from hawk.executor import HawkExecutor
 from hawk.tracker import HawkTracker
 from hawk.risk import HawkRiskManager
@@ -29,7 +29,6 @@ MODE_FILE = DATA_DIR / "hawk_mode.json"
 from zoneinfo import ZoneInfo
 ET = ZoneInfo("America/New_York")
 
-# Brain notes file
 BRAIN_FILE = DATA_DIR / "brains" / "hawk.json"
 
 
@@ -44,13 +43,17 @@ def _load_brain_notes() -> list[dict]:
     return []
 
 
-def _save_status(tracker: HawkTracker, running: bool = True, cycle: int = 0) -> None:
+def _save_status(tracker: HawkTracker, risk: HawkRiskManager | None = None,
+                 running: bool = True, cycle: int = 0) -> None:
     """Save current status to data/hawk_status.json for dashboard."""
     DATA_DIR.mkdir(exist_ok=True)
     summary = tracker.summary()
     summary["running"] = running
     summary["cycle"] = cycle
     summary["last_update"] = datetime.now(ET).isoformat()
+    if risk:
+        summary["effective_bankroll"] = round(risk.effective_bankroll(), 2)
+        summary["consecutive_losses"] = risk.consecutive_losses
     try:
         STATUS_FILE.write_text(json.dumps(summary, indent=2))
     except Exception:
@@ -77,19 +80,128 @@ def _save_suggestions(suggestions: list[dict]) -> None:
         log.exception("Failed to save Hawk suggestions")
 
 
+# ── Multi-Source Intel Loading ──
+
 def _load_viper_context() -> dict:
-    """Load Viper market context intel for suggestion enrichment."""
+    """Load Viper market context intel (pre-matched)."""
     ctx_file = DATA_DIR / "viper_market_context.json"
     if ctx_file.exists():
         try:
-            return json.loads(ctx_file.read_text())
+            ctx = json.loads(ctx_file.read_text())
+            if ctx:
+                return ctx
         except Exception:
             pass
+    log.info("Viper market context empty — using raw intel fallback")
     return {}
 
 
+def _match_raw_intel(markets) -> dict:
+    """Fallback: load raw Viper intel and keyword-match to markets."""
+    import re
+    intel_file = DATA_DIR / "viper_intel.json"
+    if not intel_file.exists():
+        return {}
+    try:
+        data = json.loads(intel_file.read_text())
+        raw_items = data.get("items", [])
+    except Exception:
+        return {}
+
+    if not raw_items:
+        return {}
+
+    now = time.time()
+    context = {}
+    for market in markets:
+        cid = market.condition_id
+        q_words = set(re.findall(r'\b[a-zA-Z]{4,}\b', market.question.lower()))
+        stop = {"will", "what", "when", "this", "that", "have", "from", "with", "been", "more", "than"}
+        q_words -= stop
+
+        matched = []
+        for item in raw_items:
+            if now - item.get("timestamp", 0) > 86400:
+                continue
+            text = (item.get("headline", "") + " " + item.get("summary", "")).lower()
+            overlap = sum(1 for w in q_words if w in text)
+            if overlap >= 2:
+                matched.append(item)
+
+        if matched:
+            context[cid] = matched[:5]
+
+    if context:
+        log.info("Raw intel fallback: matched %d markets", len(context))
+    return context
+
+
+def _load_atlas_intel() -> dict:
+    """Load Atlas intel for Hawk markets."""
+    atlas_file = DATA_DIR / "hawk_atlas_intel.json"
+    if not atlas_file.exists():
+        return {}
+    try:
+        data = json.loads(atlas_file.read_text())
+        return data.get("market_intel", {})
+    except Exception:
+        return {}
+
+
+def _load_all_intel(markets) -> dict:
+    """Multi-source intel loader with fallback."""
+    context = _load_viper_context()
+    if not context:
+        context = _match_raw_intel(markets)
+    atlas_intel = _load_atlas_intel()
+    # Merge atlas into context
+    for cid, items in atlas_intel.items():
+        if cid in context:
+            context[cid].extend(items)
+        else:
+            context[cid] = items
+    return context
+
+
+# ── Urgency-Weighted Market Ranking ──
+
+def _urgency_rank(markets) -> list:
+    """Rank markets by urgency (ending-soon first) + value factors."""
+    scored = []
+    for m in markets:
+        score = 0
+
+        # Urgency bonus (ending-soon = massive priority)
+        if m.time_left_hours <= 6:
+            score += 50
+        elif m.time_left_hours <= 24:
+            score += 35
+        elif m.time_left_hours <= 48:
+            score += 20
+        elif m.time_left_hours <= 72:
+            score += 10
+
+        # Volume sweet spot (not too big, not too small)
+        if 5000 <= m.volume <= 50000:
+            score += 15
+        elif m.volume > 50000:
+            score += 5
+
+        # Contestedness (closer to 50/50 = more edge potential)
+        yes_price = _get_yes_price(m)
+        if abs(yes_price - 0.5) < 0.15:
+            score += 10
+        elif abs(yes_price - 0.5) < 0.25:
+            score += 5
+
+        scored.append((score, m))
+
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [m for _, m in scored]
+
+
 class HawkBot:
-    """The Poker Shark — scans all Polymarket markets and trades mispriced contracts."""
+    """The Poker Shark V2 — The Smart Degen."""
 
     def __init__(self):
         self.cfg = HawkConfig()
@@ -110,7 +222,6 @@ class HawkBot:
                 new_mode = "DRY RUN" if new_dry_run else "LIVE"
                 object.__setattr__(self.cfg, "dry_run", new_dry_run)
                 log.info("Mode toggled: %s -> %s", old_mode, new_mode)
-                # Reinitialize executor if switching to live
                 if not new_dry_run:
                     self._init_executor()
         except Exception:
@@ -130,41 +241,41 @@ class HawkBot:
         self.executor = HawkExecutor(self.cfg, client, self.tracker)
 
     async def run(self) -> None:
-        """Main loop — runs every cfg.cycle_minutes."""
+        """Main loop — V2 Smart Degen."""
         logging.basicConfig(
             level=logging.INFO,
             format="%(asctime)s %(levelname)-7s [HAWK] %(message)s",
             datefmt="%H:%M:%S",
         )
-        log.info("Hawk starting — The Poker Shark")
-        log.info("Config: bankroll=$%.0f, max_bet=$%.0f, max_concurrent=%d, min_edge=%.0f%%",
-                 self.cfg.bankroll_usd, self.cfg.max_bet_usd, self.cfg.max_concurrent, self.cfg.min_edge * 100)
+        log.info("Hawk V2 starting — The Smart Degen")
+        log.info("Config: bankroll=$%.0f, max_bet=$%.0f, kelly=%.0f%%, min_edge=%.0f%%",
+                 self.cfg.bankroll_usd, self.cfg.max_bet_usd,
+                 self.cfg.kelly_fraction * 100, self.cfg.min_edge * 100)
+        log.info("V2 features: compound=%s, news=%s, max_risk=%d, cycle=%dm",
+                 self.cfg.compound_bankroll, self.cfg.news_enrichment,
+                 self.cfg.max_risk_score, self.cfg.cycle_minutes)
         log.info("Mode: %s", "DRY RUN" if self.cfg.dry_run else "LIVE TRADING")
 
         self._init_executor()
-        _save_status(self.tracker, running=True, cycle=0)
+        _save_status(self.tracker, self.risk, running=True, cycle=0)
 
         while True:
             self.cycle += 1
-            log.info("=== Hawk Cycle %d ===", self.cycle)
+            log.info("=== Hawk V2 Cycle %d ===", self.cycle)
 
             try:
-                # Check mode toggle from dashboard
                 self._check_mode_toggle()
 
-                # Read brain notes
                 notes = _load_brain_notes()
                 if notes:
                     latest = notes[-1]
                     log.info("Brain note: [%s] %s", latest.get("topic", "?"), latest.get("content", "")[:100])
 
-                # Daily reset
                 self.risk.daily_reset()
 
-                # Check shutdown
                 if self.risk.is_shutdown():
                     log.warning("Daily loss cap hit — skipping cycle")
-                    _save_status(self.tracker, running=True, cycle=self.cycle)
+                    _save_status(self.tracker, self.risk, running=True, cycle=self.cycle)
                     await asyncio.sleep(self.cfg.cycle_minutes * 60)
                     continue
 
@@ -174,50 +285,45 @@ class HawkBot:
                 log.info("Found %d eligible markets", len(markets))
 
                 if not markets:
-                    _save_status(self.tracker, running=True, cycle=self.cycle)
+                    _save_status(self.tracker, self.risk, running=True, cycle=self.cycle)
                     await asyncio.sleep(self.cfg.cycle_minutes * 60)
                     continue
 
-                # 2. Smart market selection
-                # Filter for "contested" markets where real debate exists:
-                # - YES price between 15-85% (not penny bets or near-certainties)
-                # - Prefer near-term events (days/weeks, not years)
+                # 2. Filter contested (12-88% YES price)
                 contested = []
                 for m in markets:
-                    yes_price = 0.5
-                    for t in m.tokens:
-                        if (t.get("outcome") or "").lower() in ("yes", "up"):
-                            try:
-                                yes_price = float(t.get("price", 0.5))
-                            except (ValueError, TypeError):
-                                pass
-                            break
-                    # Only contested markets — real uncertainty
+                    yes_price = _get_yes_price(m)
                     if 0.12 <= yes_price <= 0.88:
                         contested.append(m)
 
-                log.info("Contested markets (12-88%% price): %d / %d total", len(contested), len(markets))
+                log.info("Contested markets (12-88%%): %d / %d total", len(contested), len(markets))
 
-                # Sort contested by volume, skip top 5 (still very efficient)
-                contested.sort(key=lambda m: m.volume, reverse=True)
-                target_markets = contested[5:45] if len(contested) > 45 else contested
+                # 3. V2: Urgency-weighted ranking (ending-soon first)
+                ranked_markets = _urgency_rank(contested)
 
-                # 3. Analyze with GPT-4o (max 30 to balance cost vs coverage)
+                # Take top 35 by urgency score (no more "skip top 5" — analyze high-volume if ending soon)
+                target_markets = ranked_markets[:35]
+
+                # Cap at 30 for GPT-4o analysis
                 target_markets = target_markets[:30]
-                log.info("Analyzing %d contested mid-tier markets with GPT-4o...", len(target_markets))
+                log.info("Analyzing %d urgency-ranked markets with GPT-4o V2...", len(target_markets))
+
+                # 4. Analyze with GPT-4o (V2 wise degen personality)
                 estimates = batch_analyze(self.cfg, target_markets, max_concurrent=5)
 
-                # 4. Calculate edges
+                # 5. Calculate edges with compound bankroll
+                eff_bankroll = self.risk.effective_bankroll()
+                log.info("Effective bankroll: $%.2f (base=$%.0f + P&L)", eff_bankroll, self.cfg.bankroll_usd)
+
                 opportunities = []
                 estimate_map = {e.market_id: e for e in estimates}
                 for market in target_markets:
                     est = estimate_map.get(market.condition_id)
                     if est:
-                        opp = calculate_edge(market, est, self.cfg)
+                        opp = calculate_edge(market, est, self.cfg, bankroll=eff_bankroll)
                         if opp:
                             opportunities.append(opp)
 
-                # 5. Rank by expected value
                 ranked = rank_opportunities(opportunities)
                 log.info("Found %d opportunities with edge >= %.0f%%", len(ranked), self.cfg.min_edge * 100)
 
@@ -235,17 +341,27 @@ class HawkBot:
                         "position_size": o.position_size_usd,
                         "expected_value": o.expected_value,
                         "reasoning": o.estimate.reasoning[:200],
+                        "risk_score": o.risk_score,
+                        "time_left_hours": o.time_left_hours,
+                        "urgency_label": o.urgency_label,
+                        "edge_source": o.estimate.edge_source,
                     })
                 _save_opportunities(opp_data)
 
-                # Generate briefing for Viper — targeted intel queries
+                # Generate briefing for Viper (always, not just when opps exist)
                 try:
-                    generate_briefing(opp_data, self.cycle)
+                    all_market_data = [{
+                        "question": m.question[:200],
+                        "condition_id": m.condition_id,
+                        "category": m.category,
+                        "volume": m.volume,
+                    } for m in target_markets]
+                    generate_briefing(all_market_data if not opp_data else opp_data, self.cycle)
                 except Exception:
                     log.exception("Failed to generate Hawk briefing")
 
-                # 6. Build suggestions for dashboard review
-                viper_ctx = _load_viper_context()
+                # 6. Build suggestions with multi-source intel
+                intel_ctx = _load_all_intel(target_markets)
                 suggestions = []
                 for opp in ranked:
                     allowed, reason = self.risk.check_trade(opp)
@@ -253,8 +369,10 @@ class HawkBot:
                         log.info("Risk blocked: %s", reason)
                         continue
                     cid = opp.market.condition_id
-                    has_viper = len(viper_ctx.get(cid, [])) > 0
-                    tier_info = calculate_confidence_tier(opp, has_viper_intel=has_viper)
+                    intel_items = intel_ctx.get(cid, [])
+                    has_viper = len(intel_items) > 0
+                    tier_info = calculate_confidence_tier(opp, has_viper_intel=has_viper,
+                                                         viper_intel_count=len(intel_items))
                     suggestions.append({
                         "condition_id": cid,
                         "token_id": opp.token_id,
@@ -270,10 +388,17 @@ class HawkBot:
                         "reasoning": opp.estimate.reasoning[:300],
                         "score": tier_info["score"],
                         "tier": tier_info["tier"],
-                        "viper_intel_count": len(viper_ctx.get(cid, [])),
+                        "viper_intel_count": len(intel_items),
                         "end_date": opp.market.end_date,
                         "volume": opp.market.volume,
                         "event_title": opp.market.event_title,
+                        # V2 new fields
+                        "risk_score": opp.risk_score,
+                        "time_left_hours": round(opp.time_left_hours, 1),
+                        "urgency_label": opp.urgency_label,
+                        "edge_source": opp.estimate.edge_source,
+                        "money_thesis": opp.estimate.money_thesis[:300],
+                        "news_factor": opp.estimate.news_factor[:300],
                     })
 
                 _save_suggestions(suggestions)
@@ -287,7 +412,7 @@ class HawkBot:
                 if self.executor and not self.cfg.dry_run:
                     self.executor.check_fills()
 
-                # Resolve paper trades — check if any markets have settled
+                # Resolve paper trades
                 if self.cfg.dry_run:
                     res = resolve_paper_trades()
                     if res["resolved"] > 0:
@@ -296,20 +421,32 @@ class HawkBot:
                             res["resolved"], res["wins"], res["losses"],
                             res.get("total_pnl", 0.0),
                         )
-                        # Record PnL with risk manager so daily loss cap works
                         self.risk.record_pnl(res.get("total_pnl", 0.0))
-                        # Reload tracker positions from disk
+                        # Reload tracker
                         self.tracker._positions = []
                         self.tracker._load_positions()
 
-                # Save status
-                _save_status(self.tracker, running=True, cycle=self.cycle)
+                        # V2: Trigger post-trade review
+                        try:
+                            from hawk.reviewer import review_resolved_trades
+                            review = review_resolved_trades()
+                            if review.get("total_reviewed", 0) > 0:
+                                log.info("Post-trade review: %d trades, %.1f%% WR, calibration=%.3f",
+                                         review["total_reviewed"], review.get("win_rate", 0),
+                                         review.get("calibration_score", 0))
+                                if review.get("recommendations"):
+                                    for rec in review["recommendations"]:
+                                        log.info("REVIEW REC: %s", rec)
+                        except Exception:
+                            log.exception("Post-trade review failed")
+
+                _save_status(self.tracker, self.risk, running=True, cycle=self.cycle)
 
             except Exception:
-                log.exception("Hawk cycle %d failed", self.cycle)
-                _save_status(self.tracker, running=True, cycle=self.cycle)
+                log.exception("Hawk V2 cycle %d failed", self.cycle)
+                _save_status(self.tracker, self.risk, running=True, cycle=self.cycle)
 
-            log.info("Hawk cycle %d complete. Sleeping %d minutes...", self.cycle, self.cfg.cycle_minutes)
+            log.info("Hawk V2 cycle %d complete. Sleeping %d minutes...", self.cycle, self.cfg.cycle_minutes)
             await asyncio.sleep(self.cfg.cycle_minutes * 60)
 
 

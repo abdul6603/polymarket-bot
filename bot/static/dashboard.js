@@ -5408,16 +5408,37 @@ async function loadHawkTab() {
     var resp = await fetch('/api/hawk');
     var d = await resp.json();
     var s = d.summary || {};
+    var st = d.status || {};
     document.getElementById('hawk-winrate').textContent = (s.win_rate || 0).toFixed(1) + '%';
     document.getElementById('hawk-winrate').style.color = wrColor(s.win_rate || 0);
     document.getElementById('hawk-pnl').textContent = '$' + (s.pnl || 0).toFixed(2);
     document.getElementById('hawk-pnl').style.color = (s.pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)';
     document.getElementById('hawk-open-bets').textContent = s.open_positions || 0;
     document.getElementById('hawk-total-trades').textContent = s.total_trades || 0;
-    document.getElementById('hawk-resolved').textContent = s.resolved || 0;
+    // V2: Effective bankroll
+    var effBr = st.effective_bankroll || 200;
+    var effEl = document.getElementById('hawk-eff-bankroll');
+    if (effEl) { effEl.textContent = '$' + effBr.toFixed(0); effEl.style.color = effBr >= 200 ? 'var(--success)' : '#FFD700'; }
     document.getElementById('hawk-daily-pnl').textContent = '$' + (s.daily_pnl || 0).toFixed(2);
     document.getElementById('hawk-daily-pnl').style.color = (s.daily_pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)';
   } catch(e) { console.error('hawk status:', e); }
+
+  // V2: Risk meter summary
+  try {
+    var rmResp = await fetch('/api/hawk/risk-meter');
+    var rm = await rmResp.json();
+    var dist = rm.distribution || {};
+    var lowEl = document.getElementById('hawk-risk-low');
+    var medEl = document.getElementById('hawk-risk-med');
+    var highEl = document.getElementById('hawk-risk-high');
+    var extEl = document.getElementById('hawk-risk-extreme');
+    var avgEl = document.getElementById('hawk-avg-risk');
+    if (lowEl) lowEl.textContent = (dist.low || 0) + ' Low';
+    if (medEl) medEl.textContent = (dist.medium || 0) + ' Med';
+    if (highEl) highEl.textContent = (dist.high || 0) + ' High';
+    if (extEl) extEl.textContent = (dist.extreme || 0) + ' Extreme';
+    if (avgEl) { avgEl.textContent = (rm.avg_risk || 0).toFixed(1) + '/10'; avgEl.style.color = hawkRiskColor(rm.avg_risk || 5); }
+  } catch(e) {}
 
   // Category heatmap
   try {
@@ -5456,11 +5477,68 @@ async function loadHawkTab() {
     renderHawkIntelSync(syncData);
   } catch(e) {}
 
+  // V2: Trade Reviews
+  try {
+    var revResp = await fetch('/api/hawk/reviews');
+    var revData = await revResp.json();
+    renderHawkReviews(revData);
+  } catch(e) {}
+
   // Mode badge
   loadHawkMode();
 
   // Trade suggestions
   loadHawkSuggestions();
+}
+
+function renderHawkReviews(data) {
+  var countEl = document.getElementById('hawk-review-count');
+  var listEl = document.getElementById('hawk-reviews-list');
+  if (!listEl) return;
+  var reviews = data.trade_reviews || [];
+  if (countEl) countEl.textContent = reviews.length > 0 ? '(' + reviews.length + ' reviewed)' : '';
+  if (reviews.length === 0) {
+    listEl.innerHTML = '<div class="glass-card"><div class="text-muted" style="text-align:center;padding:24px;">No trade reviews yet</div></div>';
+    return;
+  }
+  // Show recommendations first
+  var recs = data.recommendations || [];
+  var html = '';
+  if (recs.length > 0) {
+    html += '<div style="background:rgba(255,215,0,0.08);border:1px solid rgba(255,215,0,0.25);border-radius:8px;padding:12px 16px;margin-bottom:12px;">';
+    html += '<div style="font-size:0.72rem;color:#FFD700;font-weight:700;margin-bottom:6px;">HAWK RECOMMENDATIONS</div>';
+    for (var r = 0; r < recs.length; r++) {
+      html += '<div style="font-size:0.74rem;color:var(--text-secondary);margin-bottom:4px;">- ' + esc(recs[r]) + '</div>';
+    }
+    html += '</div>';
+  }
+  // Calibration + stats
+  html += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">';
+  html += '<div class="widget-badge"><span class="wb-label">Win Rate:</span> <span style="color:' + wrColor(data.win_rate || 0) + ';">' + (data.win_rate || 0).toFixed(1) + '%</span></div>';
+  html += '<div class="widget-badge"><span class="wb-label">Calibration:</span> <span style="color:' + ((data.calibration_score || 0) < 0.3 ? '#00ff88' : '#ff6600') + ';">' + (data.calibration_score || 0).toFixed(3) + '</span></div>';
+  html += '<div class="widget-badge"><span class="wb-label">P&L:</span> <span style="color:' + ((data.total_pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)') + ';">$' + (data.total_pnl || 0).toFixed(2) + '</span></div>';
+  html += '</div>';
+  // Review cards (last 10)
+  var shown = reviews.slice(-10).reverse();
+  for (var i = 0; i < shown.length; i++) {
+    var rv = shown[i];
+    var wonColor = rv.won ? '#00ff88' : '#ff6666';
+    var wonText = rv.won ? 'WON' : 'LOST';
+    html += '<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;margin-bottom:8px;">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
+    html += '<span style="font-size:0.78rem;font-weight:600;color:#fff;">' + esc((rv.question || '').substring(0,100)) + '</span>';
+    html += '<span style="background:' + wonColor + '22;color:' + wonColor + ';padding:2px 10px;border-radius:4px;font-size:0.68rem;font-weight:700;">' + wonText + ' $' + Math.abs(rv.pnl || 0).toFixed(2) + '</span>';
+    html += '</div>';
+    html += '<div style="font-size:0.72rem;color:var(--text-secondary);">' + esc(rv.verdict || '') + '</div>';
+    html += '<div style="display:flex;gap:10px;margin-top:4px;font-size:0.68rem;color:var(--text-muted);">';
+    html += '<span>Risk: ' + (rv.risk_score || '?') + '/10</span>';
+    html += '<span>Calibration: ' + (rv.prob_calibration || '?') + '</span>';
+    html += '<span>Category: ' + esc(rv.category || '?') + '</span>';
+    html += '<span>' + esc(rv.time_str || '') + '</span>';
+    html += '</div>';
+    html += '</div>';
+  }
+  listEl.innerHTML = html;
 }
 
 function renderHawkIntelSync(data) {
@@ -6736,6 +6814,25 @@ async function loadHawkSuggestions() {
   } catch(e) { console.error('hawk suggestions:', e); }
 }
 
+function hawkRiskColor(rs) {
+  if (rs <= 3) return '#00ff44';
+  if (rs <= 6) return '#FFD700';
+  if (rs <= 8) return '#ff6600';
+  return '#ff3333';
+}
+
+function hawkUrgencyBadge(label) {
+  if (!label) return '';
+  var colors = {'ENDING NOW':'#ff3333','ENDING SOON':'#ff6600','TOMORROW':'#FFD700','THIS WEEK':'#888'};
+  var c = colors[label] || '#888';
+  return '<span style="background:' + c + '22;color:' + c + ';padding:2px 8px;border-radius:4px;font-size:0.64rem;font-weight:700;letter-spacing:0.03em;">' + label + '</span>';
+}
+
+function hawkRiskBadge(rs) {
+  var c = hawkRiskColor(rs);
+  return '<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;border-radius:50%;background:' + c + ';display:inline-block;"></span><span style="font-size:0.68rem;font-weight:700;color:' + c + ';">' + rs + '/10</span></span>';
+}
+
 function renderHawkSuggestions(suggestions) {
   var el = document.getElementById('hawk-suggestions-list');
   if (!el) return;
@@ -6758,17 +6855,20 @@ function renderHawkSuggestions(suggestions) {
     var dirColor = s.direction === 'yes' ? '#00ff88' : '#ff6666';
     var dirArrow = s.direction === 'yes' ? '\u25B2 YES' : '\u25BC NO';
     var tl = hawkCalcTimeLeft(s.end_date);
+    var rs = s.risk_score || 5;
 
     html += '<div style="background:' + tbg + ';border:1px solid ' + tbr + ';border-radius:10px;padding:16px;margin-bottom:10px;">';
 
-    // Header row: tier badge + question
+    // Header row: tier badge + risk + urgency + question
     html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">';
     html += '<div style="flex:1;">';
-    html += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">';
+    html += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;flex-wrap:wrap;">';
     html += '<span style="background:' + tc + ';color:#000;font-weight:800;padding:2px 10px;border-radius:4px;font-size:0.68rem;letter-spacing:0.05em;">' + tier + '</span>';
+    html += hawkRiskBadge(rs);
+    if (s.urgency_label) html += hawkUrgencyBadge(s.urgency_label);
     html += '<span style="font-size:0.72rem;font-weight:700;color:' + tc + ';">Score: ' + (s.score || 0) + '/100</span>';
     if (s.viper_intel_count > 0) {
-      html += '<span style="background:rgba(0,255,136,0.15);color:#00ff88;padding:2px 8px;border-radius:4px;font-size:0.64rem;font-weight:600;">\uD83D\uDD0D ' + s.viper_intel_count + ' intel</span>';
+      html += '<span style="background:rgba(0,255,136,0.15);color:#00ff88;padding:2px 8px;border-radius:4px;font-size:0.64rem;font-weight:600;">' + s.viper_intel_count + ' intel</span>';
     }
     html += '</div>';
     html += '<div style="font-size:0.84rem;font-weight:600;color:#fff;line-height:1.4;">' + esc(s.question) + '</div>';
@@ -6781,25 +6881,54 @@ function renderHawkSuggestions(suggestions) {
     html += '<span>Category: <b style="color:var(--text-secondary);">' + esc(s.category || 'other') + '</b></span>';
     html += '<span>Edge: <b style="color:#FFD700;">' + ((s.edge || 0) * 100).toFixed(1) + '%</b></span>';
     html += '<span>EV: <b style="color:var(--success);">+$' + (s.expected_value || 0).toFixed(2) + '</b></span>';
-    html += '<span>Suggested Bet: <b style="color:#fff;">$' + (s.position_size || 0).toFixed(0) + '</b></span>';
-    html += '<span>Volume: <b>$' + ((s.volume || 0) / 1000).toFixed(0) + 'k</b></span>';
-    html += '<span style="color:' + (tl.color || 'var(--text-muted)') + ';">Resolves: ' + tl.text + '</span>';
+    html += '<span>Bet: <b style="color:#fff;">$' + (s.position_size || 0).toFixed(0) + '</b></span>';
+    html += '<span>Vol: <b>$' + ((s.volume || 0) / 1000).toFixed(0) + 'k</b></span>';
+    // Time left with urgency color
+    var tlHrs = s.time_left_hours || 0;
+    var tlText = tlHrs < 1 ? '<1h' : tlHrs < 24 ? tlHrs.toFixed(0) + 'h' : (tlHrs/24).toFixed(1) + 'd';
+    var tlColor = tlHrs < 6 ? '#ff3333' : tlHrs < 24 ? '#ff6600' : tlHrs < 48 ? '#FFD700' : 'var(--text-muted)';
+    html += '<span style="color:' + tlColor + ';font-weight:600;">' + tlText + ' left</span>';
     html += '</div>';
 
     // Reasoning
     if (s.reasoning) {
-      html += '<div style="font-size:0.72rem;color:var(--text-secondary);line-height:1.5;margin-bottom:12px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:6px;">' + esc(s.reasoning) + '</div>';
+      html += '<div style="font-size:0.72rem;color:var(--text-secondary);line-height:1.5;margin-bottom:8px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:6px;">' + esc(s.reasoning) + '</div>';
     }
 
-    // Action buttons
-    html += '<div style="display:flex;gap:8px;">';
+    // Action buttons + Why This Trade
+    html += '<div style="display:flex;gap:8px;align-items:center;">';
     html += '<button onclick="approveHawkTrade(\'' + esc(s.condition_id) + '\')" style="background:#00ff88;color:#000;font-weight:700;padding:6px 18px;border:none;border-radius:6px;cursor:pointer;font-size:0.76rem;">Approve</button>';
     html += '<button onclick="dismissHawkSuggestion(\'' + esc(s.condition_id) + '\')" style="background:rgba(255,255,255,0.08);color:var(--text-muted);font-weight:600;padding:6px 18px;border:1px solid rgba(255,255,255,0.1);border-radius:6px;cursor:pointer;font-size:0.76rem;">Dismiss</button>';
+    html += '<button onclick="showHawkWhyTrade(' + i + ')" style="background:rgba(255,215,0,0.12);color:#FFD700;font-weight:600;padding:6px 14px;border:1px solid rgba(255,215,0,0.25);border-radius:6px;cursor:pointer;font-size:0.72rem;">Why This Trade?</button>';
     html += '</div>';
 
     html += '</div>';
   }
   el.innerHTML = html;
+
+  // Store for Why This Trade panel
+  window._hawkSuggestions = suggestions;
+}
+
+function showHawkWhyTrade(idx) {
+  var s = (window._hawkSuggestions || [])[idx];
+  if (!s) return;
+  var panel = document.getElementById('hawk-reasoning-panel');
+  if (!panel) return;
+  document.getElementById('hawk-reasoning-market').textContent = s.question || '';
+  // Badges
+  var badges = document.getElementById('hawk-reasoning-badges');
+  var bh = '';
+  bh += hawkRiskBadge(s.risk_score || 5);
+  if (s.urgency_label) bh += hawkUrgencyBadge(s.urgency_label);
+  bh += '<span style="font-size:0.68rem;color:var(--text-muted);">Edge: ' + ((s.edge||0)*100).toFixed(1) + '% | Conf: ' + ((s.confidence||0)*100).toFixed(0) + '%</span>';
+  badges.innerHTML = bh;
+  document.getElementById('hawk-reasoning-text').textContent = s.reasoning || 'No reasoning available';
+  document.getElementById('hawk-reasoning-money').textContent = s.money_thesis || 'N/A';
+  document.getElementById('hawk-reasoning-news').textContent = s.news_factor || 'N/A';
+  document.getElementById('hawk-reasoning-edge-src').textContent = s.edge_source || 'N/A';
+  panel.style.display = 'block';
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
 }
 
 async function approveHawkTrade(conditionId) {

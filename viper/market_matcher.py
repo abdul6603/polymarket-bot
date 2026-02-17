@@ -22,7 +22,7 @@ HAWK_OPPS_FILE = DATA_DIR / "hawk_opportunities.json"
 BRIEFING_FILE = DATA_DIR / "hawk_briefing.json"
 
 MAX_CONTEXT_PER_MARKET = 8
-ENTITY_MATCH_THRESHOLD = 0.25  # Match if >=25% of entities found (1 of 3 is enough)
+ENTITY_MATCH_THRESHOLD = 0.15  # V2: Lowered from 25% to 15% — cast wider net for intel
 
 
 def _load_briefing_entities() -> dict[str, list[str]]:
