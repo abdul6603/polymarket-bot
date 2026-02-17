@@ -122,7 +122,7 @@ class TradingBot:
             pass
         # Per-market cooldown: market_id -> last trade timestamp
         self._market_cooldown: dict[str, float] = {}
-        self.COOLDOWN_SECONDS = 300  # 5 min cooldown after trading a market
+        self.COOLDOWN_SECONDS = 180  # 3 min cooldown after trading a market
 
     def _setup_logging(self) -> None:
         logging.basicConfig(
@@ -170,9 +170,36 @@ class TradingBot:
         log.info("Shutdown signal received")
         self._shutdown_event.set()
 
+    def _check_mode_toggle(self) -> None:
+        """Check if mode was toggled via dashboard and update cfg accordingly."""
+        mode_file = Path(__file__).parent.parent / "data" / "garves_mode.json"
+        if not mode_file.exists():
+            return
+        try:
+            import json as _json
+            mode_data = _json.loads(mode_file.read_text())
+            new_dry_run = mode_data.get("dry_run", self.cfg.dry_run)
+            if new_dry_run != self.cfg.dry_run:
+                old_mode = "DRY RUN" if self.cfg.dry_run else "LIVE"
+                new_mode = "DRY RUN" if new_dry_run else "LIVE"
+                object.__setattr__(self.cfg, "dry_run", new_dry_run)
+                log.info("Mode toggled: %s -> %s", old_mode, new_mode)
+                # Reinitialize CLOB client if switching to live
+                if not new_dry_run and self.cfg.private_key:
+                    self.client = build_client(self.cfg)
+                    self.executor = Executor(self.cfg, self.client, self.tracker)
+                elif new_dry_run:
+                    self.client = None
+                    self.executor = Executor(self.cfg, None, self.tracker)
+        except Exception:
+            log.exception("Failed to read Garves mode toggle file")
+
     async def _tick(self) -> None:
         """Single tick: evaluate ALL discovered markets, trade any with edge."""
         log.info("--- Tick ---")
+
+        # Check mode toggle from dashboard
+        self._check_mode_toggle()
 
         # Daily cycle: archive yesterday's trades and start fresh at midnight ET
         if should_reset():

@@ -3,7 +3,8 @@
   <div class="agent-widget-row">
     <div class="widget-badge"><span class="wb-label">Agent:</span> <span style="color:#FFD700;font-weight:700;">Hawk</span></div>
     <div class="widget-badge"><span class="wb-label">Role:</span> <span>Market Predator</span></div>
-    <div class="widget-badge" id="hawk-mode-badge"><span class="wb-label">Mode:</span> <span id="hawk-mode-label" style="color:#FFD700;">Live</span></div>
+    <div class="widget-badge" id="hawk-mode-badge"><span class="wb-label">Mode:</span> <span id="hawk-mode-label" style="color:#FFD700;">--</span></div>
+    <button class="btn" id="hawk-mode-toggle" onclick="toggleHawkMode()" style="font-size:0.72rem;background:rgba(255,215,0,0.15);color:#FFD700;border:1px solid rgba(255,215,0,0.3);font-weight:600;">Switch Mode</button>
     <button class="btn" id="hawk-scan-btn" onclick="hawkTriggerScan()" style="font-size:0.72rem;background:#FFD700;color:#000;font-weight:700;">Trigger Scan</button>
     <button class="btn" onclick="healthCheckAgent('hawk')" style="font-size:0.72rem;">Health Check</button>
   </div>
@@ -55,6 +56,13 @@
   <div class="section-spacer">
     <h2 class="section-title" style="color:#FFD700;">Category Heatmap</h2>
     <div class="glass-card" id="hawk-category-heatmap"><div class="text-muted" style="text-align:center;padding:12px;">Waiting for category data...</div></div>
+  </div>
+  <!-- Trade Suggestions — Approval Queue -->
+  <div class="section-spacer" id="hawk-suggestions-section">
+    <h2 class="section-title" style="color:#FFD700;">Trade Suggestions <span id="hawk-sug-count" style="font-size:0.72rem;color:var(--text-muted);font-weight:400;margin-left:8px;"></span></h2>
+    <div id="hawk-suggestions-list">
+      <div class="glass-card"><div class="text-muted" style="text-align:center;padding:24px;">No suggestions yet — trigger a scan</div></div>
+    </div>
   </div>
   <div class="section-spacer">
     <h2 class="section-title" style="color:#FFD700;">Live Opportunities <span id="hawk-opp-total-label" style="font-size:0.72rem;color:var(--text-muted);font-weight:400;margin-left:8px;"></span></h2>

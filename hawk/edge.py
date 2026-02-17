@@ -123,6 +123,29 @@ def calculate_edge(
     )
 
 
+def calculate_confidence_tier(opp: TradeOpportunity, has_viper_intel: bool = False) -> dict:
+    """Score an opportunity and assign a confidence tier.
+
+    Returns dict with 'score' (0-100) and 'tier' (HIGH/MEDIUM/SPECULATIVE).
+    """
+    score = 0
+    # Edge component (40 pts max)
+    score += min(40, int(opp.edge * 200))
+    # Confidence component (30 pts max)
+    score += int(opp.estimate.confidence * 30)
+    # Viper intel bonus (15 pts)
+    if has_viper_intel:
+        score += 15
+    # Volume bonus (15 pts)
+    if opp.market.volume > 50000:
+        score += 15
+    elif opp.market.volume > 10000:
+        score += 8
+
+    tier = "HIGH" if score >= 80 else "MEDIUM" if score >= 60 else "SPECULATIVE"
+    return {"score": min(100, score), "tier": tier}
+
+
 def rank_opportunities(opps: list[TradeOpportunity]) -> list[TradeOpportunity]:
     """Sort by expected value descending."""
     return sorted(opps, key=lambda o: o.expected_value, reverse=True)

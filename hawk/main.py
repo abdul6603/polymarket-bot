@@ -11,7 +11,7 @@ from pathlib import Path
 from hawk.config import HawkConfig
 from hawk.scanner import scan_all_markets
 from hawk.analyst import batch_analyze
-from hawk.edge import calculate_edge, rank_opportunities
+from hawk.edge import calculate_edge, calculate_confidence_tier, rank_opportunities
 from hawk.executor import HawkExecutor
 from hawk.tracker import HawkTracker
 from hawk.risk import HawkRiskManager
@@ -23,6 +23,8 @@ log = logging.getLogger(__name__)
 DATA_DIR = Path(__file__).parent.parent / "data"
 STATUS_FILE = DATA_DIR / "hawk_status.json"
 OPPS_FILE = DATA_DIR / "hawk_opportunities.json"
+SUGGESTIONS_FILE = DATA_DIR / "hawk_suggestions.json"
+MODE_FILE = DATA_DIR / "hawk_mode.json"
 
 ET = timezone(timedelta(hours=-5))
 
@@ -62,6 +64,29 @@ def _save_opportunities(opps: list[dict]) -> None:
         log.exception("Failed to save Hawk opportunities")
 
 
+def _save_suggestions(suggestions: list[dict]) -> None:
+    """Save trade suggestions for dashboard review."""
+    try:
+        DATA_DIR.mkdir(exist_ok=True)
+        SUGGESTIONS_FILE.write_text(json.dumps({
+            "suggestions": suggestions,
+            "updated": time.time(),
+        }, indent=2))
+    except Exception:
+        log.exception("Failed to save Hawk suggestions")
+
+
+def _load_viper_context() -> dict:
+    """Load Viper market context intel for suggestion enrichment."""
+    ctx_file = DATA_DIR / "viper_market_context.json"
+    if ctx_file.exists():
+        try:
+            return json.loads(ctx_file.read_text())
+        except Exception:
+            pass
+    return {}
+
+
 class HawkBot:
     """The Poker Shark — scans all Polymarket markets and trades mispriced contracts."""
 
@@ -71,6 +96,24 @@ class HawkBot:
         self.risk = HawkRiskManager(self.cfg, self.tracker)
         self.executor: HawkExecutor | None = None
         self.cycle = 0
+
+    def _check_mode_toggle(self) -> None:
+        """Check if mode was toggled via dashboard and update cfg accordingly."""
+        if not MODE_FILE.exists():
+            return
+        try:
+            mode_data = json.loads(MODE_FILE.read_text())
+            new_dry_run = mode_data.get("dry_run", self.cfg.dry_run)
+            if new_dry_run != self.cfg.dry_run:
+                old_mode = "DRY RUN" if self.cfg.dry_run else "LIVE"
+                new_mode = "DRY RUN" if new_dry_run else "LIVE"
+                object.__setattr__(self.cfg, "dry_run", new_dry_run)
+                log.info("Mode toggled: %s -> %s", old_mode, new_mode)
+                # Reinitialize executor if switching to live
+                if not new_dry_run:
+                    self._init_executor()
+        except Exception:
+            log.exception("Failed to read mode toggle file")
 
     def _init_executor(self) -> None:
         """Initialize CLOB client and executor."""
@@ -105,6 +148,9 @@ class HawkBot:
             log.info("=== Hawk Cycle %d ===", self.cycle)
 
             try:
+                # Check mode toggle from dashboard
+                self._check_mode_toggle()
+
                 # Read brain notes
                 notes = _load_brain_notes()
                 if notes:
@@ -197,21 +243,48 @@ class HawkBot:
                 except Exception:
                     log.exception("Failed to generate Hawk briefing")
 
-                # 6. Execute trades
-                if self.executor:
-                    for opp in ranked:
-                        allowed, reason = self.risk.check_trade(opp)
-                        if not allowed:
-                            log.info("Risk blocked: %s", reason)
-                            continue
-                        order_id = self.executor.place_order(opp)
-                        if order_id:
-                            log.info("Trade placed: %s | %s | edge=%.1f%%",
-                                     opp.direction.upper(), opp.market.question[:50], opp.edge * 100)
+                # 6. Build suggestions for dashboard review
+                viper_ctx = _load_viper_context()
+                suggestions = []
+                for opp in ranked:
+                    allowed, reason = self.risk.check_trade(opp)
+                    if not allowed:
+                        log.info("Risk blocked: %s", reason)
+                        continue
+                    cid = opp.market.condition_id
+                    has_viper = len(viper_ctx.get(cid, [])) > 0
+                    tier_info = calculate_confidence_tier(opp, has_viper_intel=has_viper)
+                    suggestions.append({
+                        "condition_id": cid,
+                        "token_id": opp.token_id,
+                        "question": opp.market.question[:200],
+                        "category": opp.market.category,
+                        "direction": opp.direction,
+                        "position_size": round(opp.position_size_usd, 2),
+                        "edge": round(opp.edge, 4),
+                        "expected_value": round(opp.expected_value, 4),
+                        "market_price": _get_yes_price(opp.market),
+                        "estimated_prob": opp.estimate.estimated_prob,
+                        "confidence": opp.estimate.confidence,
+                        "reasoning": opp.estimate.reasoning[:300],
+                        "score": tier_info["score"],
+                        "tier": tier_info["tier"],
+                        "viper_intel_count": len(viper_ctx.get(cid, [])),
+                        "end_date": opp.market.end_date,
+                        "volume": opp.market.volume,
+                        "event_title": opp.market.event_title,
+                    })
 
-                    # Check fills (live mode only)
-                    if not self.cfg.dry_run:
-                        self.executor.check_fills()
+                _save_suggestions(suggestions)
+                log.info("Saved %d trade suggestions (HIGH: %d, MEDIUM: %d, SPEC: %d)",
+                         len(suggestions),
+                         sum(1 for s in suggestions if s["tier"] == "HIGH"),
+                         sum(1 for s in suggestions if s["tier"] == "MEDIUM"),
+                         sum(1 for s in suggestions if s["tier"] == "SPECULATIVE"))
+
+                # Check fills (live mode only)
+                if self.executor and not self.cfg.dry_run:
+                    self.executor.check_fills()
 
                 # Resolve paper trades — check if any markets have settled
                 if self.cfg.dry_run:

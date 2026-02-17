@@ -36,4 +36,5 @@ class HawkConfig:
     min_edge: float = float(_env("HAWK_MIN_EDGE", "0.10"))
     min_volume: int = int(_env("HAWK_MIN_VOLUME", "5000"))
     min_liquidity: int = int(_env("HAWK_MIN_LIQUIDITY", "1000"))
+    max_days: int = int(_env("HAWK_MAX_DAYS", "5"))
     dry_run: bool = _env("HAWK_DRY_RUN", "true").lower() in ("true", "1", "yes")

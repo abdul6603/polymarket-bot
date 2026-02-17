@@ -25,6 +25,45 @@ from bot.shared import (
 
 garves_bp = Blueprint("garves", __name__)
 
+MODE_FILE = DATA_DIR / "garves_mode.json"
+
+
+@garves_bp.route("/api/garves/mode")
+def api_garves_mode():
+    """Current Garves trading mode."""
+    if MODE_FILE.exists():
+        try:
+            data = json.loads(MODE_FILE.read_text())
+            return jsonify(data)
+        except Exception:
+            pass
+    # Default: read from env
+    dry_run = os.getenv("DRY_RUN", "true").lower() in ("true", "1", "yes")
+    return jsonify({"dry_run": dry_run})
+
+
+@garves_bp.route("/api/garves/toggle-mode", methods=["POST"])
+def api_garves_toggle_mode():
+    """Toggle Garves between live and paper trading."""
+    from datetime import datetime as dt, timezone as tz
+    current_dry = True
+    if MODE_FILE.exists():
+        try:
+            current_dry = json.loads(MODE_FILE.read_text()).get("dry_run", True)
+        except Exception:
+            pass
+    else:
+        current_dry = os.getenv("DRY_RUN", "true").lower() in ("true", "1", "yes")
+
+    new_dry = not current_dry
+    DATA_DIR.mkdir(exist_ok=True)
+    MODE_FILE.write_text(json.dumps({
+        "dry_run": new_dry,
+        "toggled_at": dt.now(tz.utc).isoformat(),
+    }, indent=2))
+    mode_label = "PAPER" if new_dry else "LIVE"
+    return jsonify({"success": True, "dry_run": new_dry, "mode": mode_label})
+
 
 @garves_bp.route("/api/trades")
 def api_trades():

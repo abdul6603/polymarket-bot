@@ -2988,6 +2988,7 @@ async function refresh() {
       renderLiveResolvedTrades(data.recent_trades);
       fetch('/api/logs').then(function(r){return r.json();}).then(function(d){renderLiveLogs(d.lines);}).catch(function(){});
       loadAgentActivity('garves-live');
+      loadGarvesMode();
     } else if (currentTab === 'garves') {
       var resp = await fetch('/api/trades/sim');
       var data = await resp.json();
@@ -5412,6 +5413,12 @@ async function loadHawkTab() {
     var syncData = await syncResp.json();
     renderHawkIntelSync(syncData);
   } catch(e) {}
+
+  // Mode badge
+  loadHawkMode();
+
+  // Trade suggestions
+  loadHawkSuggestions();
 }
 
 function renderHawkIntelSync(data) {
@@ -6448,4 +6455,192 @@ async function viperTriggerScan() {
     _viperUpdateProgress({step: 'Error: ' + e.message, detail: '', pct: 0});
     if (btn) { btn.disabled = false; btn.textContent = 'Trigger Scan'; btn.style.opacity = '1'; }
   }
+}
+
+// ══════════════════════════════════════
+// MODE TOGGLE — Garves & Hawk
+// ══════════════════════════════════════
+
+async function toggleGarvesMode() {
+  var btn = document.getElementById('garves-mode-toggle');
+  if (btn) { btn.disabled = true; btn.textContent = 'Switching...'; }
+  try {
+    var resp = await fetch('/api/garves/toggle-mode', {method:'POST'});
+    var d = await resp.json();
+    if (d.success) {
+      updateGarvesModeBadge(d.dry_run);
+    }
+  } catch(e) { console.error('garves toggle:', e); }
+  if (btn) { btn.disabled = false; btn.textContent = 'Switch Mode'; }
+}
+
+async function toggleHawkMode() {
+  var btn = document.getElementById('hawk-mode-toggle');
+  if (btn) { btn.disabled = true; btn.textContent = 'Switching...'; }
+  try {
+    var resp = await fetch('/api/hawk/toggle-mode', {method:'POST'});
+    var d = await resp.json();
+    if (d.success) {
+      updateHawkModeBadge(d.dry_run);
+    }
+  } catch(e) { console.error('hawk toggle:', e); }
+  if (btn) { btn.disabled = false; btn.textContent = 'Switch Mode'; }
+}
+
+function updateGarvesModeBadge(isDryRun) {
+  var badge = document.getElementById('garves-mode-badge');
+  if (badge) {
+    if (isDryRun) {
+      badge.style.background = '#FFD700';
+      badge.style.color = '#000';
+      badge.textContent = 'PAPER MODE';
+    } else {
+      badge.style.background = '#00ff88';
+      badge.style.color = '#000';
+      badge.textContent = 'LIVE TRADING';
+    }
+  }
+}
+
+function updateHawkModeBadge(isDryRun) {
+  var label = document.getElementById('hawk-mode-label');
+  if (label) {
+    if (isDryRun) {
+      label.textContent = 'Paper';
+      label.style.color = '#FFD700';
+    } else {
+      label.textContent = 'Live';
+      label.style.color = '#00ff88';
+    }
+  }
+}
+
+async function loadGarvesMode() {
+  try {
+    var resp = await fetch('/api/garves/mode');
+    var d = await resp.json();
+    updateGarvesModeBadge(d.dry_run);
+  } catch(e) {}
+}
+
+async function loadHawkMode() {
+  try {
+    var resp = await fetch('/api/hawk/mode');
+    var d = await resp.json();
+    updateHawkModeBadge(d.dry_run);
+  } catch(e) {}
+}
+
+// ══════════════════════════════════════
+// HAWK SUGGESTIONS — Trade Approval Queue
+// ══════════════════════════════════════
+
+async function loadHawkSuggestions() {
+  try {
+    var resp = await fetch('/api/hawk/suggestions');
+    var d = await resp.json();
+    var suggestions = d.suggestions || [];
+    renderHawkSuggestions(suggestions);
+    var countEl = document.getElementById('hawk-sug-count');
+    if (countEl) countEl.textContent = suggestions.length > 0 ? '(' + suggestions.length + ' pending)' : '';
+  } catch(e) { console.error('hawk suggestions:', e); }
+}
+
+function renderHawkSuggestions(suggestions) {
+  var el = document.getElementById('hawk-suggestions-list');
+  if (!el) return;
+  if (suggestions.length === 0) {
+    el.innerHTML = '<div class="glass-card"><div class="text-muted" style="text-align:center;padding:24px;">No suggestions yet — trigger a scan</div></div>';
+    return;
+  }
+
+  var tierColors = {HIGH:'#00ff88', MEDIUM:'#FFD700', SPECULATIVE:'#ff8844'};
+  var tierBg = {HIGH:'rgba(0,255,136,0.08)', MEDIUM:'rgba(255,215,0,0.08)', SPECULATIVE:'rgba(255,136,68,0.08)'};
+  var tierBorder = {HIGH:'rgba(0,255,136,0.3)', MEDIUM:'rgba(255,215,0,0.3)', SPECULATIVE:'rgba(255,136,68,0.3)'};
+
+  var html = '';
+  for (var i = 0; i < suggestions.length; i++) {
+    var s = suggestions[i];
+    var tier = s.tier || 'SPECULATIVE';
+    var tc = tierColors[tier] || '#888';
+    var tbg = tierBg[tier] || 'rgba(255,255,255,0.04)';
+    var tbr = tierBorder[tier] || 'rgba(255,255,255,0.1)';
+    var dirColor = s.direction === 'yes' ? '#00ff88' : '#ff6666';
+    var dirArrow = s.direction === 'yes' ? '\u25B2 YES' : '\u25BC NO';
+    var tl = hawkCalcTimeLeft(s.end_date);
+
+    html += '<div style="background:' + tbg + ';border:1px solid ' + tbr + ';border-radius:10px;padding:16px;margin-bottom:10px;">';
+
+    // Header row: tier badge + question
+    html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">';
+    html += '<div style="flex:1;">';
+    html += '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">';
+    html += '<span style="background:' + tc + ';color:#000;font-weight:800;padding:2px 10px;border-radius:4px;font-size:0.68rem;letter-spacing:0.05em;">' + tier + '</span>';
+    html += '<span style="font-size:0.72rem;font-weight:700;color:' + tc + ';">Score: ' + (s.score || 0) + '/100</span>';
+    if (s.viper_intel_count > 0) {
+      html += '<span style="background:rgba(0,255,136,0.15);color:#00ff88;padding:2px 8px;border-radius:4px;font-size:0.64rem;font-weight:600;">\uD83D\uDD0D ' + s.viper_intel_count + ' intel</span>';
+    }
+    html += '</div>';
+    html += '<div style="font-size:0.84rem;font-weight:600;color:#fff;line-height:1.4;">' + esc(s.question) + '</div>';
+    html += '</div>';
+    html += '</div>';
+
+    // Stats row
+    html += '<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:0.76rem;margin-bottom:10px;">';
+    html += '<span style="color:' + dirColor + ';font-weight:700;">' + dirArrow + '</span>';
+    html += '<span>Category: <b style="color:var(--text-secondary);">' + esc(s.category || 'other') + '</b></span>';
+    html += '<span>Edge: <b style="color:#FFD700;">' + ((s.edge || 0) * 100).toFixed(1) + '%</b></span>';
+    html += '<span>EV: <b style="color:var(--success);">+$' + (s.expected_value || 0).toFixed(2) + '</b></span>';
+    html += '<span>Suggested Bet: <b style="color:#fff;">$' + (s.position_size || 0).toFixed(0) + '</b></span>';
+    html += '<span>Volume: <b>$' + ((s.volume || 0) / 1000).toFixed(0) + 'k</b></span>';
+    html += '<span style="color:' + (tl.color || 'var(--text-muted)') + ';">Resolves: ' + tl.text + '</span>';
+    html += '</div>';
+
+    // Reasoning
+    if (s.reasoning) {
+      html += '<div style="font-size:0.72rem;color:var(--text-secondary);line-height:1.5;margin-bottom:12px;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:6px;">' + esc(s.reasoning) + '</div>';
+    }
+
+    // Action buttons
+    html += '<div style="display:flex;gap:8px;">';
+    html += '<button onclick="approveHawkTrade(\'' + esc(s.condition_id) + '\')" style="background:#00ff88;color:#000;font-weight:700;padding:6px 18px;border:none;border-radius:6px;cursor:pointer;font-size:0.76rem;">Approve</button>';
+    html += '<button onclick="dismissHawkSuggestion(\'' + esc(s.condition_id) + '\')" style="background:rgba(255,255,255,0.08);color:var(--text-muted);font-weight:600;padding:6px 18px;border:1px solid rgba(255,255,255,0.1);border-radius:6px;cursor:pointer;font-size:0.76rem;">Dismiss</button>';
+    html += '</div>';
+
+    html += '</div>';
+  }
+  el.innerHTML = html;
+}
+
+async function approveHawkTrade(conditionId) {
+  if (!confirm('Approve this trade for execution?')) return;
+  try {
+    var resp = await fetch('/api/hawk/approve', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({condition_id: conditionId})
+    });
+    var d = await resp.json();
+    if (d.success) {
+      alert('Trade approved! Order ID: ' + (d.order_id || 'unknown') + ' (' + (d.mode || 'unknown') + ')');
+      loadHawkSuggestions();
+      loadHawkTab();
+    } else {
+      alert('Failed: ' + (d.error || 'Unknown error'));
+    }
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+async function dismissHawkSuggestion(conditionId) {
+  try {
+    var resp = await fetch('/api/hawk/dismiss', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({condition_id: conditionId})
+    });
+    var d = await resp.json();
+    if (d.success) {
+      loadHawkSuggestions();
+    }
+  } catch(e) { console.error('dismiss:', e); }
 }

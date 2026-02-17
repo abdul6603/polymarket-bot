@@ -19,6 +19,8 @@ OPPS_FILE = DATA_DIR / "hawk_opportunities.json"
 STATUS_FILE = DATA_DIR / "hawk_status.json"
 BRIEFING_FILE = DATA_DIR / "hawk_briefing.json"
 MARKET_CONTEXT_FILE = DATA_DIR / "viper_market_context.json"
+MODE_FILE = DATA_DIR / "hawk_mode.json"
+SUGGESTIONS_FILE = DATA_DIR / "hawk_suggestions.json"
 ET = timezone(timedelta(hours=-5))
 
 _scan_lock = threading.Lock()
@@ -53,6 +55,173 @@ def _load_status() -> dict:
         except Exception:
             pass
     return {"running": False}
+
+
+@hawk_bp.route("/api/hawk/mode")
+def api_hawk_mode():
+    """Current Hawk trading mode."""
+    if MODE_FILE.exists():
+        try:
+            data = json.loads(MODE_FILE.read_text())
+            return jsonify(data)
+        except Exception:
+            pass
+    import os
+    dry_run = os.getenv("HAWK_DRY_RUN", "true").lower() in ("true", "1", "yes")
+    return jsonify({"dry_run": dry_run})
+
+
+@hawk_bp.route("/api/hawk/toggle-mode", methods=["POST"])
+def api_hawk_toggle_mode():
+    """Toggle Hawk between live and paper trading."""
+    current_dry = True
+    if MODE_FILE.exists():
+        try:
+            current_dry = json.loads(MODE_FILE.read_text()).get("dry_run", True)
+        except Exception:
+            pass
+    else:
+        import os
+        current_dry = os.getenv("HAWK_DRY_RUN", "true").lower() in ("true", "1", "yes")
+
+    new_dry = not current_dry
+    DATA_DIR.mkdir(exist_ok=True)
+    MODE_FILE.write_text(json.dumps({
+        "dry_run": new_dry,
+        "toggled_at": datetime.now(timezone.utc).isoformat(),
+    }, indent=2))
+    mode_label = "PAPER" if new_dry else "LIVE"
+    return jsonify({"success": True, "dry_run": new_dry, "mode": mode_label})
+
+
+@hawk_bp.route("/api/hawk/suggestions")
+def api_hawk_suggestions():
+    """Trade suggestions with confidence tiers for Jordan to review."""
+    if SUGGESTIONS_FILE.exists():
+        try:
+            data = json.loads(SUGGESTIONS_FILE.read_text())
+            return jsonify(data)
+        except Exception:
+            pass
+    return jsonify({"suggestions": [], "updated": 0})
+
+
+@hawk_bp.route("/api/hawk/approve", methods=["POST"])
+def api_hawk_approve():
+    """Approve a suggested trade for execution."""
+    body = request.get_json(force=True, silent=True) or {}
+    condition_id = body.get("condition_id", "")
+    if not condition_id:
+        return jsonify({"success": False, "error": "Missing condition_id"}), 400
+
+    # Load suggestions
+    if not SUGGESTIONS_FILE.exists():
+        return jsonify({"success": False, "error": "No suggestions file"}), 404
+    try:
+        sdata = json.loads(SUGGESTIONS_FILE.read_text())
+    except Exception:
+        return jsonify({"success": False, "error": "Cannot read suggestions"}), 500
+
+    suggestions = sdata.get("suggestions", [])
+    target = None
+    for s in suggestions:
+        if s.get("condition_id") == condition_id:
+            target = s
+            break
+
+    if not target:
+        return jsonify({"success": False, "error": "Suggestion not found"}), 404
+
+    # Execute trade via HawkExecutor
+    try:
+        from hawk.config import HawkConfig
+        from hawk.scanner import HawkMarket
+        from hawk.analyst import ProbabilityEstimate
+        from hawk.edge import TradeOpportunity
+        from hawk.executor import HawkExecutor
+        from hawk.tracker import HawkTracker
+
+        cfg = HawkConfig()
+        tracker = HawkTracker()
+
+        # Build CLOB client if live
+        client = None
+        if not cfg.dry_run:
+            try:
+                from bot.auth import build_client
+                from bot.config import Config
+                garves_cfg = Config()
+                client = build_client(garves_cfg)
+            except Exception:
+                log.warning("Could not init CLOB client for approve")
+
+        executor = HawkExecutor(cfg, client, tracker)
+
+        # Reconstruct TradeOpportunity from suggestion data
+        market = HawkMarket(
+            condition_id=target["condition_id"],
+            question=target["question"],
+            category=target.get("category", "other"),
+            volume=target.get("volume", 0),
+            liquidity=0,
+            tokens=[
+                {"outcome": target["direction"], "price": str(target.get("market_price", 0.5)),
+                 "token_id": target.get("token_id", "")},
+            ],
+            end_date=target.get("end_date", ""),
+            event_title=target.get("event_title", ""),
+        )
+        estimate = ProbabilityEstimate(
+            market_id=target["condition_id"],
+            estimated_prob=target.get("estimated_prob", 0.5),
+            confidence=target.get("confidence", 0.5),
+            reasoning=target.get("reasoning", ""),
+        )
+        opp = TradeOpportunity(
+            market=market,
+            estimate=estimate,
+            edge=target.get("edge", 0),
+            direction=target["direction"],
+            token_id=target.get("token_id", ""),
+            kelly_fraction=target.get("position_size", 10) / cfg.bankroll_usd,
+            position_size_usd=target.get("position_size", 10),
+            expected_value=target.get("expected_value", 0),
+        )
+
+        order_id = executor.place_order(opp)
+        if order_id:
+            # Remove from suggestions
+            remaining = [s for s in suggestions if s.get("condition_id") != condition_id]
+            sdata["suggestions"] = remaining
+            SUGGESTIONS_FILE.write_text(json.dumps(sdata, indent=2))
+            return jsonify({"success": True, "order_id": order_id, "mode": "dry_run" if cfg.dry_run else "live"})
+        else:
+            return jsonify({"success": False, "error": "Order placement failed"}), 500
+    except Exception as e:
+        log.exception("Failed to approve hawk trade")
+        return jsonify({"success": False, "error": str(e)[:200]}), 500
+
+
+@hawk_bp.route("/api/hawk/dismiss", methods=["POST"])
+def api_hawk_dismiss():
+    """Dismiss a suggested trade."""
+    body = request.get_json(force=True, silent=True) or {}
+    condition_id = body.get("condition_id", "")
+    if not condition_id:
+        return jsonify({"success": False, "error": "Missing condition_id"}), 400
+
+    if not SUGGESTIONS_FILE.exists():
+        return jsonify({"success": False, "error": "No suggestions"}), 404
+
+    try:
+        sdata = json.loads(SUGGESTIONS_FILE.read_text())
+        suggestions = sdata.get("suggestions", [])
+        remaining = [s for s in suggestions if s.get("condition_id") != condition_id]
+        sdata["suggestions"] = remaining
+        SUGGESTIONS_FILE.write_text(json.dumps(sdata, indent=2))
+        return jsonify({"success": True, "remaining": len(remaining)})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)[:200]}), 500
 
 
 @hawk_bp.route("/api/hawk")
@@ -287,6 +456,55 @@ def api_hawk_scan():
                 generate_briefing(opp_data)
             except Exception:
                 log.exception("Failed to generate Hawk briefing from dashboard scan")
+
+            # Generate suggestions with confidence tiers
+            try:
+                from hawk.edge import calculate_confidence_tier
+                viper_ctx = {}
+                if MARKET_CONTEXT_FILE.exists():
+                    try:
+                        viper_ctx = json.loads(MARKET_CONTEXT_FILE.read_text())
+                    except Exception:
+                        pass
+                suggestions = []
+                for o in ranked:
+                    cid = o.market.condition_id
+                    has_viper = len(viper_ctx.get(cid, [])) > 0
+                    tier_info = calculate_confidence_tier(o, has_viper_intel=has_viper)
+                    yes_price = 0.5
+                    for t in o.market.tokens:
+                        if (t.get("outcome") or "").lower() in ("yes", "up"):
+                            try:
+                                yes_price = float(t.get("price", 0.5))
+                            except (ValueError, TypeError):
+                                pass
+                    suggestions.append({
+                        "condition_id": cid,
+                        "token_id": o.token_id,
+                        "question": o.market.question[:200],
+                        "category": o.market.category,
+                        "direction": o.direction,
+                        "position_size": round(o.position_size_usd, 2),
+                        "edge": round(o.edge, 4),
+                        "expected_value": round(o.expected_value, 4),
+                        "market_price": yes_price,
+                        "estimated_prob": o.estimate.estimated_prob,
+                        "confidence": o.estimate.confidence,
+                        "reasoning": o.estimate.reasoning[:300],
+                        "score": tier_info["score"],
+                        "tier": tier_info["tier"],
+                        "viper_intel_count": len(viper_ctx.get(cid, [])),
+                        "end_date": o.market.end_date,
+                        "volume": o.market.volume,
+                        "event_title": o.market.event_title,
+                    })
+                SUGGESTIONS_FILE.write_text(json.dumps({
+                    "suggestions": suggestions,
+                    "updated": time.time(),
+                }, indent=2))
+                log.info("Hawk scan: saved %d suggestions", len(suggestions))
+            except Exception:
+                log.exception("Failed to generate suggestions from scan")
 
             total_ev = sum(o["expected_value"] for o in opp_data)
             _set_progress(

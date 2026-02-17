@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass, field
+from datetime import datetime, timezone, timedelta
 from typing import Any
 
 from hawk.config import HawkConfig
@@ -128,6 +129,17 @@ def scan_all_markets(cfg: HawkConfig) -> list[HawkMarket]:
                     # Skip low-volume markets
                     if volume < cfg.min_volume:
                         continue
+
+                    # Skip markets that resolve too far out
+                    m_end_date = m.get("endDate", m.get("end_date_iso", ""))
+                    if cfg.max_days > 0 and m_end_date:
+                        try:
+                            end_dt = datetime.fromisoformat(m_end_date.replace("Z", "+00:00"))
+                            cutoff = datetime.now(timezone.utc) + timedelta(days=cfg.max_days)
+                            if end_dt > cutoff:
+                                continue
+                        except (ValueError, TypeError):
+                            continue  # Skip unparseable dates
 
                     # Build tokens list from Gamma format
                     # Gamma returns these as JSON-encoded strings, not arrays
