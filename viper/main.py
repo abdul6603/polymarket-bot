@@ -1,19 +1,28 @@
-"""Viper Main Bot Loop — scan web, audit costs, score opportunities, push to Shelby."""
+"""Viper Main Loop — 24/7 market intelligence engine.
+
+Scans real-time data sources every 5 minutes:
+  1. Tavily — breaking news across all categories
+  2. Polymarket — volume spikes, trending markets
+  3. Reddit — prediction market communities
+
+Feeds intelligence directly to Hawk for enhanced probability analysis.
+"""
 from __future__ import annotations
 
 import asyncio
 import json
 import logging
 import time
+from dataclasses import asdict
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 from viper.config import ViperConfig
 from viper.scanner import scan_all
+from viper.intel import append_intel, load_intel, save_intel, IntelItem
+from viper.market_matcher import update_market_context
 from viper.cost_audit import audit_all
-from viper.monetize import get_soren_metrics
-from viper.scorer import score_opportunity
-from viper.shelby_push import push_to_shelby
+from viper.scorer import score_intel
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +37,6 @@ BRAIN_FILE = DATA_DIR / "brains" / "viper.json"
 
 
 def _load_brain_notes() -> list[dict]:
-    """Load brain notes for Viper."""
     if BRAIN_FILE.exists():
         try:
             data = json.loads(BRAIN_FILE.read_text())
@@ -39,7 +47,6 @@ def _load_brain_notes() -> list[dict]:
 
 
 def _save_status(summary: dict) -> None:
-    """Save current status for dashboard."""
     DATA_DIR.mkdir(exist_ok=True)
     summary["last_update"] = datetime.now(ET).isoformat()
     try:
@@ -48,43 +55,76 @@ def _save_status(summary: dict) -> None:
         log.exception("Failed to save Viper status")
 
 
-def _save_opportunities(opps: list[dict]) -> None:
-    """Save opportunities for dashboard."""
+def _save_opportunities(items: list[dict]) -> None:
     try:
-        OPPS_FILE.write_text(json.dumps({"opportunities": opps, "updated": time.time()}, indent=2))
+        OPPS_FILE.write_text(json.dumps({"opportunities": items, "updated": time.time()}, indent=2))
     except Exception:
         log.exception("Failed to save Viper opportunities")
 
 
 def _save_costs(costs: dict) -> None:
-    """Save cost audit for dashboard."""
     try:
         COSTS_FILE.write_text(json.dumps(costs, indent=2))
     except Exception:
         log.exception("Failed to save Viper costs")
 
 
+def run_single_scan(cfg: ViperConfig) -> dict:
+    """Run a single intelligence scan cycle. Used by both the main loop and the API trigger."""
+    result = {"intel_count": 0, "matched": 0, "sources": {}}
+
+    # 1. Scan all sources
+    intel_items = scan_all(cfg.tavily_api_key, cfg.clob_host)
+    result["intel_count"] = len(intel_items)
+
+    # Count by source
+    for item in intel_items:
+        src = item.source.split("/")[0] if "/" in item.source else item.source
+        result["sources"][src] = result["sources"].get(src, 0) + 1
+
+    # 2. Append to intel feed (deduplicates)
+    new_count = append_intel(intel_items)
+    result["new_items"] = new_count
+
+    # 3. Score and save as opportunities
+    scored = []
+    for item in intel_items:
+        score = score_intel(item)
+        d = asdict(item)
+        d["score"] = score
+        scored.append(d)
+    scored.sort(key=lambda x: x["score"], reverse=True)
+    _save_opportunities(scored[:100])
+
+    # 4. Match intel to markets → build context for Hawk
+    matched = update_market_context()
+    result["matched"] = matched
+
+    return result
+
+
 class ViperBot:
-    """The Silent Assassin — finds revenue opportunities and pushes them to Shelby."""
+    """The Silent Assassin — 24/7 market intelligence engine feeding Hawk."""
 
     def __init__(self):
         self.cfg = ViperConfig()
         self.cycle = 0
-        self.total_found = 0
-        self.total_pushed = 0
+        self.total_intel = 0
+        self.total_matched = 0
 
     async def run(self) -> None:
-        """Main loop — runs every cfg.cycle_minutes."""
         logging.basicConfig(
             level=logging.INFO,
             format="%(asctime)s %(levelname)-7s [VIPER] %(message)s",
             datefmt="%H:%M:%S",
         )
-        log.info("Viper starting — The Silent Assassin")
-        log.info("Config: cycle=%dmin, min_score=%d, dry_run=%s",
-                 self.cfg.cycle_minutes, self.cfg.min_opportunity_score, self.cfg.dry_run)
+        log.info("Viper starting — The Silent Assassin (24/7 Intelligence Engine)")
+        log.info("Config: cycle=%dmin, tavily=%s, clob=%s",
+                 self.cfg.cycle_minutes,
+                 "YES" if self.cfg.tavily_api_key else "NO",
+                 self.cfg.clob_host[:30])
 
-        _save_status({"running": True, "total_found": 0, "pushed_to_shelby": 0})
+        _save_status({"running": True, "total_intel": 0, "total_matched": 0, "mode": "intelligence"})
 
         while True:
             self.cycle += 1
@@ -97,88 +137,45 @@ class ViperBot:
                     latest = notes[-1]
                     log.info("Brain note: [%s] %s", latest.get("topic", "?"), latest.get("content", "")[:100])
 
-                # 1. Scan all sources
-                log.info("Scanning web for opportunities...")
-                opportunities = scan_all()
-                self.total_found += len(opportunities)
+                # Run the scan
+                result = run_single_scan(self.cfg)
+                self.total_intel += result.get("new_items", 0)
+                self.total_matched += result.get("matched", 0)
 
-                # 2. Score all opportunities
-                scored = []
-                for opp in opportunities:
-                    score = score_opportunity(opp)
-                    scored.append((opp, score))
-                scored.sort(key=lambda x: x[1], reverse=True)
+                log.info("Cycle %d: %d items scanned, %d new, %d market matches",
+                         self.cycle, result["intel_count"], result.get("new_items", 0), result["matched"])
+                log.info("Sources: %s", result.get("sources", {}))
 
-                # Save for dashboard
-                opp_data = []
-                for opp, score in scored:
-                    opp_data.append({
-                        "id": opp.id,
-                        "source": opp.source,
-                        "title": opp.title[:200],
-                        "description": opp.description[:300],
-                        "estimated_value_usd": opp.estimated_value_usd,
-                        "effort_hours": opp.effort_hours,
-                        "urgency": opp.urgency,
-                        "confidence": opp.confidence,
-                        "url": opp.url,
-                        "category": opp.category,
-                        "score": score,
-                        "status": "pushed" if score >= self.cfg.min_opportunity_score else "low_score",
-                    })
-                _save_opportunities(opp_data)
+                # Cost audit (every 12 cycles = every hour)
+                if self.cycle % 12 == 0:
+                    log.info("Running hourly cost audit...")
+                    cost_data = audit_all()
+                    _save_costs(cost_data)
+                    log.info("Total estimated monthly API cost: $%.2f", cost_data.get("total_monthly", 0))
 
-                # 3. Push high-score to Shelby
-                pushed_count = 0
-                for opp, score in scored:
-                    if score >= self.cfg.min_opportunity_score:
-                        if self.cfg.dry_run:
-                            log.info("[DRY RUN] Would push to Shelby: %s (score=%d)", opp.title[:50], score)
-                            pushed_count += 1
-                        else:
-                            if push_to_shelby(self.cfg, opp, score):
-                                pushed_count += 1
-                self.total_pushed += pushed_count
-
-                # 4. Cost audit
-                log.info("Running API cost audit...")
-                cost_data = audit_all()
-                _save_costs(cost_data)
-                log.info("Total estimated monthly API cost: $%.2f", cost_data.get("total_monthly", 0))
-
-                # 5. Check Soren metrics
-                log.info("Checking Soren monetization metrics...")
-                soren_metrics = get_soren_metrics(self.cfg)
-                log.info("Soren: %d followers, %.1f%% engagement, CPM=$%.2f",
-                         soren_metrics.get("followers", 0),
-                         soren_metrics.get("engagement_rate", 0) * 100,
-                         soren_metrics.get("estimated_cpm", 0))
-
-                # 6. Calculate summary
-                revenue_potential = sum(opp.estimated_value_usd for opp, s in scored if s >= self.cfg.min_opportunity_score)
-                cost_savings = sum(c["cost_usd"] for c in cost_data.get("costs", []) if c.get("waste"))
-
-                summary = {
+                # Save status
+                _save_status({
                     "running": True,
+                    "mode": "intelligence",
                     "cycle": self.cycle,
-                    "total_found": self.total_found,
-                    "pushed_to_shelby": self.total_pushed,
-                    "revenue_potential": round(revenue_potential, 0),
-                    "cost_savings": round(cost_savings, 0),
-                    "this_cycle_found": len(opportunities),
-                    "this_cycle_pushed": pushed_count,
-                }
-                _save_status(summary)
-
-                log.info("Cycle %d: found=%d, scored=%d high, pushed=%d",
-                         self.cycle, len(opportunities),
-                         sum(1 for _, s in scored if s >= self.cfg.min_opportunity_score),
-                         pushed_count)
+                    "total_intel": self.total_intel,
+                    "total_matched": self.total_matched,
+                    "last_scan_items": result["intel_count"],
+                    "last_scan_new": result.get("new_items", 0),
+                    "last_scan_matched": result["matched"],
+                    "sources": result.get("sources", {}),
+                })
 
             except Exception:
                 log.exception("Viper cycle %d failed", self.cycle)
-                _save_status({"running": True, "cycle": self.cycle, "total_found": self.total_found,
-                              "pushed_to_shelby": self.total_pushed, "error": True})
+                _save_status({
+                    "running": True,
+                    "mode": "intelligence",
+                    "cycle": self.cycle,
+                    "total_intel": self.total_intel,
+                    "total_matched": self.total_matched,
+                    "error": True,
+                })
 
-            log.info("Viper cycle %d complete. Sleeping %d minutes...", self.cycle, self.cfg.cycle_minutes)
+            log.info("Viper cycle %d complete. Next scan in %d minutes...", self.cycle, self.cfg.cycle_minutes)
             await asyncio.sleep(self.cfg.cycle_minutes * 60)

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
+import threading
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
@@ -16,6 +17,9 @@ TRADES_FILE = DATA_DIR / "hawk_trades.jsonl"
 OPPS_FILE = DATA_DIR / "hawk_opportunities.json"
 STATUS_FILE = DATA_DIR / "hawk_status.json"
 ET = timezone(timedelta(hours=-5))
+
+_scan_lock = threading.Lock()
+_scan_running = False
 
 
 def _load_trades() -> list[dict]:
@@ -122,5 +126,86 @@ def api_hawk_categories():
 
 @hawk_bp.route("/api/hawk/scan", methods=["POST"])
 def api_hawk_scan():
-    """Trigger immediate scan (returns quickly, actual scan runs async)."""
-    return jsonify({"success": True, "message": "Scan triggered — results will appear on next refresh"})
+    """Trigger immediate market scan + analysis in background thread."""
+    global _scan_running
+
+    if _scan_running:
+        return jsonify({"success": False, "message": "Scan already running"})
+
+    def _run_scan():
+        global _scan_running
+        try:
+            _scan_running = True
+            from hawk.config import HawkConfig
+            from hawk.scanner import scan_all_markets
+            from hawk.analyst import batch_analyze
+            from hawk.edge import calculate_edge, rank_opportunities
+            import time
+
+            cfg = HawkConfig()
+            log.info("Hawk scan triggered via dashboard")
+
+            # 1. Scan markets
+            markets = scan_all_markets(cfg)
+            if not markets:
+                log.info("Hawk scan: no markets found")
+                return
+
+            # 2. Sort by volume, take top 20
+            markets.sort(key=lambda m: m.volume, reverse=True)
+            top_markets = markets[:20]
+
+            # 3. Analyze with GPT-4o
+            estimates = batch_analyze(cfg, top_markets, max_concurrent=5)
+
+            # 4. Calculate edges
+            opportunities = []
+            estimate_map = {e.market_id: e for e in estimates}
+            for market in top_markets:
+                est = estimate_map.get(market.condition_id)
+                if est:
+                    opp = calculate_edge(market, est, cfg)
+                    if opp:
+                        opportunities.append(opp)
+
+            # 5. Rank and save
+            ranked = rank_opportunities(opportunities)
+            opp_data = []
+            for o in ranked:
+                yes_price = 0.5
+                for t in o.market.tokens:
+                    if (t.get("outcome") or "").lower() in ("yes", "up"):
+                        try:
+                            yes_price = float(t.get("price", 0.5))
+                        except (ValueError, TypeError):
+                            pass
+                opp_data.append({
+                    "question": o.market.question[:200],
+                    "category": o.market.category,
+                    "market_price": yes_price,
+                    "estimated_prob": o.estimate.estimated_prob,
+                    "edge": o.edge,
+                    "direction": o.direction,
+                    "position_size": o.position_size_usd,
+                    "expected_value": o.expected_value,
+                    "reasoning": o.estimate.reasoning[:200],
+                    "condition_id": o.market.condition_id,
+                })
+
+            OPPS_FILE.parent.mkdir(exist_ok=True)
+            OPPS_FILE.write_text(json.dumps({
+                "opportunities": opp_data,
+                "updated": time.time(),
+            }, indent=2))
+            log.info("Hawk scan complete: %d opportunities with edge", len(opp_data))
+
+        except Exception:
+            log.exception("Triggered Hawk scan failed")
+        finally:
+            _scan_running = False
+
+    with _scan_lock:
+        thread = threading.Thread(target=_run_scan, daemon=True)
+        thread.start()
+
+    return jsonify({"success": True, "message": "Market scan + GPT-4o analysis running — results in ~30 seconds"})

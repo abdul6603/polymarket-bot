@@ -4848,41 +4848,45 @@ function renderHawkHistory(trades) {
 
 async function hawkTriggerScan() {
   var btn = document.getElementById('hawk-scan-btn');
-  if (btn) btn.disabled = true;
+  if (btn) { btn.disabled = true; btn.textContent = 'Scanning...'; }
   try {
     var resp = await fetch('/api/hawk/scan', {method:'POST'});
     var d = await resp.json();
-    if (d.success) { loadHawkTab(); }
+    if (d.success) {
+      // Wait for background scan + GPT analysis then reload
+      setTimeout(function(){ loadHawkTab(); }, 30000);
+    }
   } catch(e) { console.error('hawk scan:', e); }
-  if (btn) { setTimeout(function(){ btn.disabled = false; }, 5000); }
+  if (btn) { setTimeout(function(){ btn.disabled = false; btn.textContent = 'Trigger Scan'; }, 35000); }
 }
 
 // ══════════════════════════════════════
-// VIPER TAB — Opportunity Hunter
+// VIPER TAB — 24/7 Intelligence Engine
 // ══════════════════════════════════════
 async function loadViperTab() {
   try {
     var resp = await fetch('/api/viper');
     var d = await resp.json();
     var s = d.summary || {};
-    document.getElementById('viper-opportunities').textContent = s.total_found || 0;
-    document.getElementById('viper-revenue').textContent = '$' + (s.revenue_potential || 0).toFixed(0);
-    document.getElementById('viper-savings').textContent = '$' + (s.cost_savings || 0).toFixed(0);
-    document.getElementById('viper-pushed').textContent = s.pushed_to_shelby || 0;
+    document.getElementById('viper-intel-count').textContent = s.total_intel || s.last_scan_items || 0;
+    document.getElementById('viper-matched').textContent = s.total_matched || s.last_scan_matched || 0;
+    var srcCount = s.sources ? Object.keys(s.sources).length : 0;
+    document.getElementById('viper-sources').textContent = srcCount || 3;
+    document.getElementById('viper-cycle').textContent = s.cycle || 0;
   } catch(e) { console.error('viper status:', e); }
+
+  // Intelligence feed
+  try {
+    var oppResp = await fetch('/api/viper/opportunities');
+    var oppData = await oppResp.json();
+    renderViperIntel(oppData.opportunities || []);
+  } catch(e) {}
 
   // Cost audit
   try {
     var costResp = await fetch('/api/viper/costs');
     var costData = await costResp.json();
-    renderViperCosts(costData.costs || []);
-  } catch(e) {}
-
-  // Opportunities
-  try {
-    var oppResp = await fetch('/api/viper/opportunities');
-    var oppData = await oppResp.json();
-    renderViperOpportunities(oppData.opportunities || []);
+    renderViperCosts(costData);
   } catch(e) {}
 
   // Soren metrics
@@ -4893,40 +4897,70 @@ async function loadViperTab() {
   } catch(e) {}
 }
 
-function renderViperCosts(costs) {
-  var el = document.getElementById('viper-cost-tbody');
+function renderViperIntel(items) {
+  var el = document.getElementById('viper-intel-tbody');
   if (!el) return;
-  if (costs.length === 0) { el.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No cost data yet</td></tr>'; return; }
+  if (items.length === 0) { el.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No intelligence yet — trigger a scan</td></tr>'; return; }
   var html = '';
-  for (var i = 0; i < costs.length; i++) {
-    var c = costs[i];
-    var wasteColor = c.waste ? 'var(--error)' : 'var(--text)';
+  for (var i = 0; i < Math.min(items.length, 25); i++) {
+    var item = items[i];
+    var sent = item.sentiment || 0;
+    var sentColor = sent > 0.2 ? 'var(--success)' : sent < -0.2 ? 'var(--error)' : 'var(--text-muted)';
+    var sentLabel = sent > 0.2 ? 'Positive' : sent < -0.2 ? 'Negative' : 'Neutral';
+    var scoreColor = (item.score || 0) >= 70 ? 'var(--success)' : (item.score || 0) >= 40 ? 'var(--warning)' : 'var(--text-muted)';
+    var srcBadge = (item.source || 'unknown').split('/')[0];
     html += '<tr>';
-    html += '<td>' + esc(c.agent || '') + '</td>';
-    html += '<td>' + esc(c.service || '') + '</td>';
-    html += '<td>$' + (c.cost_usd || 0).toFixed(2) + '</td>';
-    html += '<td>' + esc(c.trend || '--') + '</td>';
-    html += '<td style="color:' + wasteColor + ';">' + (c.waste ? 'Yes' : '--') + '</td>';
+    html += '<td><span class="badge" style="background:rgba(0,255,136,0.12);color:#00ff88;font-size:0.68rem;">' + esc(srcBadge) + '</span></td>';
+    html += '<td style="max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(item.headline || item.title || '') + '">' + esc((item.headline || item.title || '').substring(0, 60)) + '</td>';
+    html += '<td><span class="badge" style="background:rgba(255,255,255,0.06);">' + esc(item.category || 'other') + '</span></td>';
+    html += '<td style="color:' + sentColor + ';font-weight:600;">' + sentLabel + '</td>';
+    html += '<td style="color:' + scoreColor + ';font-weight:600;">' + (item.score || 0) + '</td>';
     html += '</tr>';
   }
   el.innerHTML = html;
 }
 
-function renderViperOpportunities(opps) {
-  var el = document.getElementById('viper-opp-tbody');
+function renderViperCosts(data) {
+  var costs = data.costs || [];
+  var totals = data.agent_totals || {};
+  var totalMonthly = data.total_monthly || 0;
+  var daysTracked = data.days_tracked || 1;
+
+  var sumEl = document.getElementById('viper-cost-summary');
+  if (sumEl) {
+    var sh = '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">';
+    sh += '<div style="background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.2);border-radius:8px;padding:10px 16px;">';
+    sh += '<div style="font-size:0.68rem;color:var(--text-muted);">Total / Month</div>';
+    sh += '<div style="font-size:1.3rem;font-weight:700;color:#00ff88;">$' + totalMonthly.toFixed(2) + '</div>';
+    sh += '<div style="font-size:0.62rem;color:var(--text-muted);">' + daysTracked + ' day' + (daysTracked > 1 ? 's' : '') + ' tracked</div></div>';
+    var sortedAgents = Object.keys(totals).sort(function(a,b){ return totals[b] - totals[a]; });
+    for (var i = 0; i < sortedAgents.length; i++) {
+      var ag = sortedAgents[i];
+      var cost = totals[ag];
+      var agColor = ag === 'infrastructure' ? '#aaaaaa' : (AGENT_COLORS[ag] || EVENT_AGENT_COLORS[ag] || '#888');
+      sh += '<div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:10px 16px;min-width:80px;">';
+      sh += '<div style="font-size:0.68rem;color:var(--text-muted);">' + esc(ag === 'infrastructure' ? 'Infra' : (AGENT_NAMES[ag] || ag)) + '</div>';
+      sh += '<div style="font-size:1.1rem;font-weight:700;color:' + agColor + ';">$' + cost.toFixed(2) + '</div></div>';
+    }
+    sh += '</div>';
+    sumEl.innerHTML = sh;
+  }
+
+  var el = document.getElementById('viper-cost-tbody');
   if (!el) return;
-  if (opps.length === 0) { el.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No opportunities found yet</td></tr>'; return; }
+  if (costs.length === 0) { el.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No cost data</td></tr>'; return; }
   var html = '';
-  for (var i = 0; i < Math.min(opps.length, 20); i++) {
-    var o = opps[i];
-    var scoreColor = (o.score || 0) >= 80 ? 'var(--success)' : (o.score || 0) >= 60 ? 'var(--warning)' : 'var(--text-muted)';
+  for (var j = 0; j < costs.length; j++) {
+    var c = costs[j];
+    var ac = c.agent === 'infrastructure' ? '#aaaaaa' : (AGENT_COLORS[c.agent] || EVENT_AGENT_COLORS[c.agent] || '#888');
+    var cc = c.cost_usd > 0 ? (c.cost_usd > 30 ? 'var(--warning)' : 'var(--text)') : 'var(--text-muted)';
     html += '<tr>';
-    html += '<td><span class="badge" style="background:rgba(255,255,255,0.08);">' + esc(o.source || '?') + '</span></td>';
-    html += '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(o.title || '') + '">' + esc((o.title || '').substring(0, 50)) + '</td>';
-    html += '<td>$' + (o.estimated_value_usd || 0).toFixed(0) + '</td>';
-    html += '<td>' + (o.effort_hours || '?') + 'h</td>';
-    html += '<td style="color:' + scoreColor + ';font-weight:600;">' + (o.score || 0) + '</td>';
-    html += '<td>' + esc(o.status || 'new') + '</td>';
+    html += '<td style="color:' + ac + ';font-weight:600;">' + esc(c.agent === 'infrastructure' ? 'Infra' : (AGENT_NAMES[c.agent] || c.agent || '')) + '</td>';
+    html += '<td>' + esc(c.service || '') + '</td>';
+    html += '<td style="font-family:var(--font-mono);color:' + cc + ';">$' + (c.cost_usd || 0).toFixed(2) + '</td>';
+    html += '<td style="font-family:var(--font-mono);font-size:0.7rem;">' + (c.cost_per_call ? '$' + c.cost_per_call.toFixed(4) : '--') + '</td>';
+    html += '<td style="font-family:var(--font-mono);font-size:0.7rem;">' + (c.daily_calls ? Math.round(c.daily_calls) + '/day' : '--') + '</td>';
+    html += '<td style="font-size:0.66rem;color:var(--text-muted);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(c.source || '') + '">' + esc(c.source || '--') + '</td>';
     html += '</tr>';
   }
   el.innerHTML = html;
@@ -4947,11 +4981,14 @@ function renderViperSorenMetrics(data) {
 
 async function viperTriggerScan() {
   var btn = document.getElementById('viper-scan-btn');
-  if (btn) btn.disabled = true;
+  if (btn) { btn.disabled = true; btn.textContent = 'Scanning...'; }
   try {
     var resp = await fetch('/api/viper/scan', {method:'POST'});
     var d = await resp.json();
-    if (d.success) { loadViperTab(); }
+    if (d.success) {
+      // Wait for background scan to complete then reload
+      setTimeout(function(){ loadViperTab(); }, 15000);
+    }
   } catch(e) { console.error('viper scan:', e); }
-  if (btn) { setTimeout(function(){ btn.disabled = false; }, 5000); }
+  if (btn) { setTimeout(function(){ btn.disabled = false; btn.textContent = 'Trigger Scan'; }, 18000); }
 }

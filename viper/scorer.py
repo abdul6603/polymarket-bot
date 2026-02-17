@@ -1,48 +1,59 @@
-"""Opportunity Scoring — 0-100 score for each opportunity."""
+"""Intel Scoring — 0-100 score for intelligence items based on trading potential."""
 from __future__ import annotations
 
-from viper.scanner import Opportunity
+from viper.intel import IntelItem
 
 
-def score_opportunity(opp: Opportunity) -> int:
-    """Score 0-100: value(40%) + effort(20%) + urgency(20%) + confidence(20%)."""
+def score_intel(item: IntelItem) -> int:
+    """Score 0-100: relevance(40%) + confidence(25%) + recency(20%) + sentiment_strength(15%)."""
+    import time
 
-    # Value score (0-100): higher value = higher score
-    if opp.estimated_value_usd >= 1000:
-        value_score = 100
-    elif opp.estimated_value_usd >= 500:
-        value_score = 80
-    elif opp.estimated_value_usd >= 200:
-        value_score = 60
-    elif opp.estimated_value_usd >= 100:
-        value_score = 40
+    # Relevance score: more tags = more relevant to prediction markets
+    tag_count = len(item.relevance_tags)
+    if tag_count >= 5:
+        relevance_score = 100
+    elif tag_count >= 3:
+        relevance_score = 75
+    elif tag_count >= 1:
+        relevance_score = 50
     else:
-        value_score = 20
+        relevance_score = 10
 
-    # Effort score (0-100): lower effort = higher score (inverse)
-    if opp.effort_hours <= 4:
-        effort_score = 100
-    elif opp.effort_hours <= 8:
-        effort_score = 80
-    elif opp.effort_hours <= 20:
-        effort_score = 50
-    elif opp.effort_hours <= 40:
-        effort_score = 30
-    else:
-        effort_score = 10
-
-    # Urgency score
-    urgency_map = {"urgent": 100, "high": 80, "normal": 50, "low": 20}
-    urgency_score = urgency_map.get(opp.urgency, 50)
+    # Already matched to a market = very relevant
+    if item.matched_markets:
+        relevance_score = min(100, relevance_score + 30)
 
     # Confidence score
-    confidence_score = int(opp.confidence * 100)
+    confidence_score = int(item.confidence * 100)
 
-    # Weighted average
+    # Recency score: newer = better
+    age_minutes = (time.time() - item.timestamp) / 60
+    if age_minutes < 30:
+        recency_score = 100
+    elif age_minutes < 120:
+        recency_score = 80
+    elif age_minutes < 360:
+        recency_score = 50
+    elif age_minutes < 1440:
+        recency_score = 30
+    else:
+        recency_score = 10
+
+    # Sentiment strength: strong sentiment (positive or negative) is more actionable
+    sentiment_strength = abs(item.sentiment)
+    if sentiment_strength >= 0.5:
+        sentiment_score = 100
+    elif sentiment_strength >= 0.3:
+        sentiment_score = 70
+    elif sentiment_strength >= 0.1:
+        sentiment_score = 40
+    else:
+        sentiment_score = 20
+
     total = (
-        value_score * 0.40 +
-        effort_score * 0.20 +
-        urgency_score * 0.20 +
-        confidence_score * 0.20
+        relevance_score * 0.40 +
+        confidence_score * 0.25 +
+        recency_score * 0.20 +
+        sentiment_score * 0.15
     )
     return max(0, min(100, int(total)))

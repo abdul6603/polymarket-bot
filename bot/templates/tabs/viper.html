@@ -2,25 +2,27 @@
 <div class="tab-content" id="tab-viper">
   <div class="agent-widget-row">
     <div class="widget-badge"><span class="wb-label">Agent:</span> <span style="color:#00ff88;font-weight:700;">Viper</span></div>
-    <div class="widget-badge"><span class="wb-label">Role:</span> <span>Opportunity Hunter</span></div>
+    <div class="widget-badge"><span class="wb-label">Role:</span> <span>24/7 Intelligence Engine</span></div>
+    <div class="widget-badge" id="viper-mode-badge"><span class="wb-label">Mode:</span> <span style="color:#00ff88;">Intelligence</span></div>
     <button class="btn" id="viper-scan-btn" onclick="viperTriggerScan()" style="font-size:0.72rem;background:#00ff88;color:#000;">Trigger Scan</button>
     <button class="btn" onclick="healthCheckAgent('viper')" style="font-size:0.72rem;">Health Check</button>
   </div>
   <div class="health-inline" id="viper-health-result"></div>
   <div id="intel-viper" class="intel-meter" style="margin-bottom:12px;"></div>
   <div class="grid-4">
-    <div class="stat-card" data-accent="viper"><div class="stat-value" id="viper-opportunities">0</div><div class="stat-label">Opportunities Found</div></div>
-    <div class="stat-card" data-accent="success"><div class="stat-value" id="viper-revenue" style="color:var(--success);">$0</div><div class="stat-label">Revenue Potential</div></div>
-    <div class="stat-card" data-accent="warning"><div class="stat-value" id="viper-savings">$0</div><div class="stat-label">Cost Savings</div></div>
-    <div class="stat-card" data-accent="viper"><div class="stat-value" id="viper-pushed">0</div><div class="stat-label">Pushed to Shelby</div></div>
+    <div class="stat-card" data-accent="viper"><div class="stat-value" id="viper-intel-count">0</div><div class="stat-label">Intel Items</div></div>
+    <div class="stat-card" data-accent="success"><div class="stat-value" id="viper-matched" style="color:var(--success);">0</div><div class="stat-label">Market Matches</div></div>
+    <div class="stat-card" data-accent="warning"><div class="stat-value" id="viper-sources">0</div><div class="stat-label">Active Sources</div></div>
+    <div class="stat-card" data-accent="viper"><div class="stat-value" id="viper-cycle">0</div><div class="stat-label">Scan Cycle</div></div>
   </div>
   <div class="section-spacer">
-    <h2 class="section-title" style="color:#00ff88;">API Cost Audit</h2>
-    <div class="glass-card"><table class="data-table"><thead><tr><th>Agent</th><th>Service</th><th>Monthly Cost</th><th>Trend</th><th>Waste</th></tr></thead><tbody id="viper-cost-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No cost data yet</td></tr></tbody></table></div>
+    <h2 class="section-title" style="color:#00ff88;">Live Intelligence Feed</h2>
+    <div class="glass-card"><table class="data-table"><thead><tr><th>Source</th><th>Headline</th><th>Category</th><th>Sentiment</th><th>Score</th></tr></thead><tbody id="viper-intel-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No intelligence yet — trigger a scan</td></tr></tbody></table></div>
   </div>
   <div class="section-spacer">
-    <h2 class="section-title" style="color:#00ff88;">Opportunity Feed</h2>
-    <div class="glass-card"><table class="data-table"><thead><tr><th>Source</th><th>Title</th><th>Value</th><th>Effort</th><th>Score</th><th>Status</th></tr></thead><tbody id="viper-opp-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No opportunities found yet</td></tr></tbody></table></div>
+    <h2 class="section-title" style="color:#00ff88;">Live Cost Audit</h2>
+    <div id="viper-cost-summary"></div>
+    <div class="glass-card"><table class="data-table"><thead><tr><th>Agent</th><th>Service</th><th>Monthly</th><th>Per Call</th><th>Volume</th><th>Source</th></tr></thead><tbody id="viper-cost-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">Loading live costs...</td></tr></tbody></table></div>
   </div>
   <div class="section-spacer">
     <h2 class="section-title" style="color:#00ff88;">Soren Monetization</h2>
