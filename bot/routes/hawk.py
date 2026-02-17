@@ -433,9 +433,29 @@ def api_hawk_scan():
                 if 0.12 <= yes_price <= 0.88:
                     contested.append(m)
 
-            # V2: Urgency-weighted ranking
-            from hawk.main import _urgency_rank
-            target_markets = _urgency_rank(contested)[:30]
+            # V2: Urgency-weighted ranking (inline to avoid importing hawk.main which pulls py_clob_client)
+            def _urgency_rank_inline(markets):
+                scored = []
+                for m in markets:
+                    sc = 0
+                    if m.time_left_hours <= 6: sc += 50
+                    elif m.time_left_hours <= 24: sc += 35
+                    elif m.time_left_hours <= 48: sc += 20
+                    elif m.time_left_hours <= 72: sc += 10
+                    if 5000 <= m.volume <= 50000: sc += 15
+                    elif m.volume > 50000: sc += 5
+                    yp = 0.5
+                    for t in m.tokens:
+                        if (t.get("outcome") or "").lower() in ("yes", "up"):
+                            try: yp = float(t.get("price", 0.5))
+                            except: pass
+                            break
+                    if abs(yp - 0.5) < 0.15: sc += 10
+                    elif abs(yp - 0.5) < 0.25: sc += 5
+                    scored.append((sc, m))
+                scored.sort(key=lambda x: x[0], reverse=True)
+                return [m for _, m in scored]
+            target_markets = _urgency_rank_inline(contested)[:30]
 
             _set_progress(
                 "GPT-4o analysis",
