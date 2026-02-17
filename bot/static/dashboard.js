@@ -6162,6 +6162,9 @@ async function loadViperTab() {
     var sorenOppData = await sorenOppResp.json();
     renderSorenOpportunities(sorenOppData);
   } catch(e) {}
+
+  // Brand Channel
+  loadBrandChannel();
 }
 
 function renderViperIntel(items) {
@@ -6455,6 +6458,151 @@ async function viperTriggerScan() {
     _viperUpdateProgress({step: 'Error: ' + e.message, detail: '', pct: 0});
     if (btn) { btn.disabled = false; btn.textContent = 'Trigger Scan'; btn.style.opacity = '1'; }
   }
+}
+
+// ══════════════════════════════════════
+// BRAND CHANNEL — Viper → Soren → Lisa
+// ══════════════════════════════════════
+
+async function loadBrandChannel() {
+  try {
+    var resp = await fetch('/api/viper/brand-channel');
+    var d = await resp.json();
+    var msgs = d.messages || [];
+    var stats = d.stats || {};
+    renderBrandChannelBadges(stats);
+    renderBrandChannelReview(msgs.filter(function(m) { return m.status === 'assessed'; }));
+    renderBrandChannelTable(msgs);
+  } catch(e) { console.error('brand channel:', e); }
+}
+
+function renderBrandChannelBadges(stats) {
+  var el = document.getElementById('brand-channel-badges');
+  if (!el) return;
+  var total = stats.total || 0;
+  var approved = stats.approved || 0;
+  var review = stats.assessed || 0;
+  var rejected = stats.rejected || 0;
+  var planned = stats.content_planned || 0;
+  var h = '';
+  h += '<div class="widget-badge"><span class="wb-label">Total:</span> <span style="color:#00ff88;font-weight:700;">' + total + '</span></div>';
+  h += '<div class="widget-badge" style="background:rgba(0,255,136,0.08);"><span class="wb-label">Approved:</span> <span style="color:var(--success);font-weight:700;">' + approved + '</span></div>';
+  h += '<div class="widget-badge" style="background:rgba(255,200,0,0.08);"><span class="wb-label">Needs Review:</span> <span style="color:var(--warning);font-weight:700;">' + review + '</span></div>';
+  h += '<div class="widget-badge" style="background:rgba(255,80,80,0.08);"><span class="wb-label">Rejected:</span> <span style="color:var(--error);font-weight:700;">' + rejected + '</span></div>';
+  h += '<div class="widget-badge" style="background:rgba(200,100,255,0.08);"><span class="wb-label">Content Planned:</span> <span style="color:#cc66ff;font-weight:700;">' + planned + '</span></div>';
+  el.innerHTML = h;
+}
+
+function renderBrandChannelReview(msgs) {
+  var el = document.getElementById('brand-channel-review');
+  if (!el) return;
+  if (!msgs || msgs.length === 0) {
+    el.innerHTML = '';
+    return;
+  }
+  var h = '<div style="display:flex;flex-direction:column;gap:10px;">';
+  for (var i = 0; i < msgs.length; i++) {
+    var m = msgs[i];
+    var opp = m.opportunity || {};
+    var ba = m.brand_assessment || {};
+    var score = ba.brand_fit_score || 0;
+    var scoreColor = score >= 70 ? 'var(--success)' : score >= 40 ? 'var(--warning)' : 'var(--error)';
+    h += '<div style="background:rgba(255,200,0,0.06);border:1px solid rgba(255,200,0,0.2);border-radius:10px;padding:14px 18px;">';
+    h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">';
+    h += '<div><div style="font-weight:700;font-size:0.82rem;color:var(--text-primary);">' + esc(opp.title || 'Untitled') + '</div>';
+    h += '<div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px;">' + esc(opp.type || '') + ' | ' + esc(opp.source || '') + '</div></div>';
+    h += '<div style="text-align:right;"><div style="font-size:1.3rem;font-weight:700;color:' + scoreColor + ';">' + score + '</div>';
+    h += '<div style="font-size:0.6rem;color:var(--text-muted);">Brand Fit</div></div></div>';
+    if (ba.pillar_match && ba.pillar_match !== 'none') {
+      h += '<div style="margin-bottom:6px;"><span class="badge" style="background:rgba(200,100,255,0.12);color:#cc66ff;font-size:0.66rem;">' + esc(ba.pillar_match.replace(/_/g, ' ')) + '</span>';
+      if (ba.archetype_alignment) h += ' <span class="badge" style="background:rgba(255,255,255,0.06);font-size:0.66rem;">' + esc(ba.archetype_alignment) + '</span>';
+      h += '</div>';
+    }
+    if (ba.content_suggestion) {
+      h += '<div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px;line-height:1.4;">' + esc(ba.content_suggestion) + '</div>';
+    }
+    if (ba.reasoning) {
+      h += '<div style="font-size:0.66rem;color:var(--text-muted);margin-bottom:8px;font-style:italic;">' + esc(ba.reasoning) + '</div>';
+    }
+    h += '<div style="display:flex;gap:8px;">';
+    h += '<button class="btn" onclick="brandChannelApprove(\'' + esc(m.id) + '\')" style="background:var(--success);color:#000;font-weight:700;font-size:0.72rem;padding:5px 14px;">Approve</button>';
+    h += '<button class="btn" onclick="brandChannelReject(\'' + esc(m.id) + '\')" style="background:var(--error);color:#fff;font-weight:700;font-size:0.72rem;padding:5px 14px;">Reject</button>';
+    h += '</div></div>';
+  }
+  h += '</div>';
+  el.innerHTML = h;
+}
+
+function renderBrandChannelTable(msgs) {
+  var el = document.getElementById('brand-channel-tbody');
+  if (!el) return;
+  if (!msgs || msgs.length === 0) {
+    el.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No brand channel activity yet</td></tr>';
+    return;
+  }
+  var statusColors = {approved:'var(--success)', rejected:'var(--error)', assessed:'var(--warning)', content_planned:'#cc66ff'};
+  var statusLabels = {approved:'Approved', rejected:'Rejected', assessed:'Needs Review', content_planned:'Planned'};
+  var h = '';
+  for (var i = 0; i < Math.min(msgs.length, 30); i++) {
+    var m = msgs[i];
+    var opp = m.opportunity || {};
+    var ba = m.brand_assessment || {};
+    var score = ba.brand_fit_score || 0;
+    var scoreColor = score >= 70 ? 'var(--success)' : score >= 40 ? 'var(--warning)' : 'var(--error)';
+    var st = m.status || 'unknown';
+    var stColor = statusColors[st] || 'var(--text-muted)';
+    var stLabel = statusLabels[st] || st;
+    var verdict = ba.auto_verdict || '';
+    var verdictColor = verdict === 'auto_approved' ? 'var(--success)' : verdict === 'auto_rejected' ? 'var(--error)' : 'var(--warning)';
+    h += '<tr>';
+    h += '<td><span class="badge" style="background:rgba(255,255,255,0.06);color:' + stColor + ';font-size:0.66rem;">' + esc(stLabel) + '</span></td>';
+    h += '<td style="max-width:220px;"><div style="font-size:0.74rem;line-height:1.3;white-space:normal;">' + esc((opp.title || '').substring(0, 60)) + '</div>';
+    if (opp.url) h += '<a href="' + esc(opp.url) + '" target="_blank" style="font-size:0.58rem;color:#8B5CF6;">Link</a>';
+    h += '</td>';
+    h += '<td style="color:' + scoreColor + ';font-weight:700;">' + score + '</td>';
+    h += '<td><span style="font-size:0.68rem;color:#cc66ff;">' + esc((ba.pillar_match || 'none').replace(/_/g, ' ')) + '</span></td>';
+    h += '<td><span style="font-size:0.68rem;color:' + verdictColor + ';">' + esc((verdict || '').replace(/_/g, ' ')) + '</span></td>';
+    h += '<td>';
+    if (st === 'assessed') {
+      h += '<button class="btn" onclick="brandChannelApprove(\'' + esc(m.id) + '\')" style="font-size:0.62rem;padding:2px 8px;background:var(--success);color:#000;">OK</button> ';
+      h += '<button class="btn" onclick="brandChannelReject(\'' + esc(m.id) + '\')" style="font-size:0.62rem;padding:2px 8px;background:var(--error);color:#fff;">No</button>';
+    } else if (st === 'approved') {
+      h += '<button class="btn" onclick="brandChannelPlan(\'' + esc(m.id) + '\')" style="font-size:0.62rem;padding:2px 8px;background:#cc66ff;color:#000;">Plan</button>';
+    } else {
+      h += '<span style="font-size:0.62rem;color:var(--text-muted);">—</span>';
+    }
+    h += '</td></tr>';
+  }
+  el.innerHTML = h;
+}
+
+async function brandChannelApprove(id) {
+  try {
+    var resp = await fetch('/api/viper/brand-channel/' + id + '/approve', {method:'POST'});
+    var d = await resp.json();
+    if (d.success) loadBrandChannel();
+  } catch(e) { console.error('brand approve:', e); }
+}
+
+async function brandChannelReject(id) {
+  var reason = prompt('Rejection reason (optional):') || '';
+  try {
+    var resp = await fetch('/api/viper/brand-channel/' + id + '/reject', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({reason: reason})
+    });
+    var d = await resp.json();
+    if (d.success) loadBrandChannel();
+  } catch(e) { console.error('brand reject:', e); }
+}
+
+async function brandChannelPlan(id) {
+  try {
+    var resp = await fetch('/api/viper/brand-channel/' + id + '/plan', {method:'POST'});
+    var d = await resp.json();
+    if (d.success) loadBrandChannel();
+  } catch(e) { console.error('brand plan:', e); }
 }
 
 // ══════════════════════════════════════

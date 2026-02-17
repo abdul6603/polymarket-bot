@@ -259,6 +259,15 @@ def scout_soren_opportunities(tavily_key: str) -> list[dict]:
     opp_dicts = [asdict(o) for o in all_opps[:50]]
     _save_soren_opportunities(opp_dicts)
 
+    # Submit top opportunities to brand channel for Soren assessment
+    try:
+        from shared.brand_channel import submit_opportunity
+        for opp in opp_dicts[:10]:
+            if opp.get("fit_score", 0) >= 15:
+                submit_opportunity(opp)
+    except Exception:
+        log.exception("Brand channel submission failed")
+
     return opp_dicts
 
 

@@ -118,6 +118,70 @@ def api_viper_soren_opportunities():
     return jsonify({"opportunities": [], "count": 0, "updated": 0, "types": {}})
 
 
+# ── Brand Channel Endpoints ─────────────────────────────────────────
+
+
+@viper_bp.route("/api/viper/brand-channel")
+def api_viper_brand_channel():
+    """Brand Channel pipeline — messages + stats."""
+    try:
+        from shared.brand_channel import get_messages, get_channel_stats
+        status_filter = request.args.get("status")
+        limit = int(request.args.get("limit", 50))
+        messages = get_messages(status=status_filter, limit=limit)
+        stats = get_channel_stats()
+        return jsonify({"messages": messages, "stats": stats})
+    except Exception as e:
+        log.exception("Brand channel read failed")
+        return jsonify({"messages": [], "stats": {}, "error": str(e)[:200]})
+
+
+@viper_bp.route("/api/viper/brand-channel/<msg_id>/approve", methods=["POST"])
+def api_viper_brand_approve(msg_id):
+    """Jordan approves a needs-review opportunity."""
+    try:
+        from shared.brand_channel import update_status
+        result = update_status(msg_id, "approved", by="jordan")
+        if result:
+            return jsonify({"success": True, "message": result})
+        return jsonify({"success": False, "error": "Message not found"}), 404
+    except Exception as e:
+        log.exception("Brand channel approve failed")
+        return jsonify({"success": False, "error": str(e)[:200]})
+
+
+@viper_bp.route("/api/viper/brand-channel/<msg_id>/reject", methods=["POST"])
+def api_viper_brand_reject(msg_id):
+    """Jordan rejects a needs-review opportunity."""
+    try:
+        from shared.brand_channel import update_status
+        body = request.get_json(silent=True) or {}
+        reason = body.get("reason", "")
+        result = update_status(msg_id, "rejected", by="jordan", notes=reason)
+        if result:
+            return jsonify({"success": True, "message": result})
+        return jsonify({"success": False, "error": "Message not found"}), 404
+    except Exception as e:
+        log.exception("Brand channel reject failed")
+        return jsonify({"success": False, "error": str(e)[:200]})
+
+
+@viper_bp.route("/api/viper/brand-channel/<msg_id>/plan", methods=["POST"])
+def api_viper_brand_plan(msg_id):
+    """Lisa marks an approved opportunity as content_planned."""
+    try:
+        from shared.brand_channel import update_status
+        body = request.get_json(silent=True) or {}
+        notes = body.get("notes", "")
+        result = update_status(msg_id, "content_planned", by="lisa", notes=notes)
+        if result:
+            return jsonify({"success": True, "message": result})
+        return jsonify({"success": False, "error": "Message not found"}), 404
+    except Exception as e:
+        log.exception("Brand channel plan failed")
+        return jsonify({"success": False, "error": str(e)[:200]})
+
+
 @viper_bp.route("/api/viper/scan-status")
 def api_viper_scan_status():
     """Poll scan progress."""
