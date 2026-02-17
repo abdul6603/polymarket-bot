@@ -677,10 +677,26 @@ function renderShelbyTaskCards(tasks) {
     html += '<span style="background:' + (catColors[cat] || '#94a3b8') + '18;color:' + (catColors[cat] || '#94a3b8') + ';padding:1px 6px;border-radius:3px;font-size:0.68rem;">' + esc(cat) + '</span>';
     html += '<span style="color:' + diffColors[diff] + ';font-size:0.7rem;">' + diffLabels[diff] + '</span>';
     if (dueStr) html += dueStr;
-    html += '</div></div>';
+    html += '</div>';
+    // Notes preview (dispatch results)
+    if (t.notes) {
+      var notesPreview = t.notes.length > 120 ? t.notes.substring(0, 117) + '...' : t.notes;
+      var notesBg = st === 'done' ? 'rgba(16,185,129,0.08)' : 'rgba(59,130,246,0.08)';
+      var notesColor = st === 'done' ? '#10b981' : '#3b82f6';
+      html += '<div style="margin-top:4px;padding:3px 8px;background:' + notesBg + ';border-radius:4px;font-size:0.68rem;color:' + notesColor + ';line-height:1.4;cursor:pointer;white-space:pre-line;" onclick="this.textContent=this.dataset.full||this.textContent" data-full="' + esc(t.notes) + '">' + esc(notesPreview) + '</div>';
+    }
+    html += '</div>';
 
     // Status toggle
-    html += '<span style="cursor:pointer;background:' + statusColors[st] + '18;color:' + statusColors[st] + ';padding:4px 10px;border-radius:4px;font-size:0.72rem;font-weight:600;white-space:nowrap;user-select:none;" onclick="updateShelbyTaskStatus(' + t.id + ',\'' + (statusNext[st] || 'pending') + '\')" title="Click to change status">' + statusLabels[st] + '</span>';
+    var stLabel = statusLabels[st];
+    if (st === 'in_progress' && (t.notes || '').indexOf('Dispatching') === 0) stLabel = 'Running...';
+    html += '<span style="cursor:pointer;background:' + statusColors[st] + '18;color:' + statusColors[st] + ';padding:4px 10px;border-radius:4px;font-size:0.72rem;font-weight:600;white-space:nowrap;user-select:none;" onclick="updateShelbyTaskStatus(' + t.id + ',\'' + (statusNext[st] || 'pending') + '\')" title="Click to change status">' + stLabel + '</span>';
+
+    // Run (dispatch) button — show for pending/in_progress tasks assigned to dispatchable agents
+    var dispatchAgents = ['robotox','atlas','thor'];
+    if (st !== 'done' && dispatchAgents.indexOf(agent) !== -1) {
+      html += '<button id="dispatch-btn-' + t.id + '" style="background:none;border:1px solid rgba(255,255,255,0.15);color:#3b82f6;cursor:pointer;font-size:0.72rem;padding:3px 7px;border-radius:4px;line-height:1;" onclick="manualDispatchTask(' + t.id + ')" title="Run / Dispatch task">&#9654;</button>';
+    }
 
     // Delete
     html += '<button style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:0.8rem;padding:4px 6px;opacity:0.5;" onclick="deleteShelbyTask(' + t.id + ')" title="Delete task">&times;</button>';
@@ -767,6 +783,22 @@ async function deleteShelbyTask(id) {
       renderShelby(await sr.json());
     }
   } catch (e) { console.error(e); }
+}
+
+async function manualDispatchTask(id) {
+  try {
+    var btn = document.getElementById('dispatch-btn-' + id);
+    if (btn) { btn.disabled = true; btn.textContent = '...'; }
+    var resp = await fetch('/api/shelby/tasks/' + id + '/dispatch', {method:'POST'});
+    var data = await resp.json();
+    if (data.success) {
+      var sr = await fetch('/api/shelby');
+      renderShelby(await sr.json());
+    } else {
+      alert(data.error || 'Cannot dispatch this task');
+      if (btn) { btn.disabled = false; btn.textContent = '\u25B6'; }
+    }
+  } catch (e) { console.error(e); if (btn) { btn.disabled = false; btn.textContent = '\u25B6'; } }
 }
 
 async function reprioritizeTasks() {

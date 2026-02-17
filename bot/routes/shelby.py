@@ -130,7 +130,14 @@ def api_shelby_tasks_create():
             tags=data.get("tags"),
             notes=data.get("notes"),
         )
-        return jsonify({"success": True, "task": task})
+        # Auto-dispatch if the agent+title matches a known action
+        dispatched = False
+        try:
+            from bot.task_dispatcher import dispatch_task
+            dispatched = dispatch_task(task)
+        except Exception:
+            pass
+        return jsonify({"success": True, "task": task, "dispatched": dispatched})
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500
 
@@ -167,6 +174,25 @@ def api_shelby_tasks_delete(task_id):
         if not ok:
             return jsonify({"error": f"Task #{task_id} not found"}), 404
         return jsonify({"success": True, "deleted": task_id})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@shelby_bp.route("/api/shelby/tasks/<int:task_id>/dispatch", methods=["POST"])
+def api_shelby_tasks_dispatch(task_id):
+    """Manually dispatch (or re-dispatch) a task to its assigned agent."""
+    try:
+        from core.tasks import get_task
+        task = get_task(task_id)
+        if not task:
+            return jsonify({"error": f"Task #{task_id} not found"}), 404
+        if not task.get("agent"):
+            return jsonify({"error": "Task has no assigned agent"}), 400
+        from bot.task_dispatcher import dispatch_task
+        dispatched = dispatch_task(task)
+        if not dispatched:
+            return jsonify({"error": "No matching action for this task/agent combination"}), 400
+        return jsonify({"success": True, "dispatched": True, "task_id": task_id})
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500
 
