@@ -38,13 +38,13 @@ TRADES_FILE = DATA_DIR / "trades.jsonl"
 # Conviction maps to these tiers with smooth interpolation within each band.
 SIZE_TIERS = {
     # (min_conviction, max_conviction): (min_usd, max_usd)
-    # Priority: WIN RATE first (conf>=55%), then size proportionally.
+    # V3 Cash Printer: high confidence filter (0.55) means every trade is quality. Size up.
     (0, 15):   (0.0, 0.0),      # DON'T TRADE — truly insufficient evidence
-    (15, 30):  (10.0, 15.0),    # Micro — marginal but viable trade
-    (30, 50):  (15.0, 25.0),    # Small — tentative signal
-    (50, 70):  (25.0, 35.0),    # Standard — solid consensus
-    (70, 85):  (35.0, 45.0),    # Increased — strong multi-factor alignment
-    (85, 100): (45.0, 55.0),    # Maximum conviction — nearly everything aligns
+    (15, 30):  (20.0, 25.0),    # Micro — passed confidence filter, minimum $20
+    (30, 50):  (25.0, 35.0),    # Small — solid signal
+    (50, 70):  (35.0, 42.0),    # Standard — strong consensus
+    (70, 85):  (42.0, 50.0),    # Increased — strong multi-factor alignment
+    (85, 100): (50.0, 55.0),    # Maximum conviction — nearly everything aligns
 }
 
 # ── Safety Rails ──
