@@ -45,19 +45,28 @@ def _get_token_id(market: HawkMarket, outcome: str = "yes") -> str:
 
 
 def kelly_size(
-    edge: float,
-    odds: float,
+    true_prob: float,
+    market_price: float,
     bankroll: float,
     max_bet: float,
     fraction: float = 0.25,
 ) -> float:
-    """Quarter-Kelly sizing. Same formula as bot/execution.py."""
-    if odds <= 0 or edge <= 0:
+    """Quarter-Kelly sizing.
+
+    Args:
+        true_prob: Our estimated probability of winning (e.g. 0.75)
+        market_price: Current market price we'd pay (e.g. 0.48)
+        bankroll: Total bankroll
+        max_bet: Max single bet
+        fraction: Kelly fraction (0.25 = quarter Kelly)
+    """
+    if market_price <= 0 or market_price >= 1 or true_prob <= 0:
         return 0.0
-    payout = (1.0 / odds) - 1.0
+    payout = (1.0 / market_price) - 1.0
     if payout <= 0:
         return 0.0
-    kelly_full = (edge * payout - (1 - edge)) / payout
+    # Kelly formula: f = (p*b - q) / b where p=prob, b=payout, q=1-p
+    kelly_full = (true_prob * payout - (1 - true_prob)) / payout
     if kelly_full <= 0:
         return 0.0
     size = bankroll * kelly_full * fraction
@@ -83,19 +92,21 @@ def calculate_edge(
         direction = "yes"
         edge = yes_edge
         token_id = _get_token_id(market, "yes")
-        odds = yes_price
+        buy_price = yes_price
+        true_prob = est_prob  # Our estimated YES probability
     elif no_edge >= cfg.min_edge:
         direction = "no"
         edge = no_edge
         token_id = _get_token_id(market, "no")
-        odds = no_price
+        buy_price = no_price
+        true_prob = 1 - est_prob  # Our estimated NO probability
     else:
         return None
 
     if not token_id:
         return None
 
-    kf = kelly_size(edge, odds, cfg.bankroll_usd, cfg.max_bet_usd)
+    kf = kelly_size(true_prob, buy_price, cfg.bankroll_usd, cfg.max_bet_usd)
     if kf < 1.0:
         return None
 

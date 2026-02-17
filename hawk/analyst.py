@@ -24,10 +24,17 @@ class ProbabilityEstimate:
 
 
 _SYSTEM_PROMPT = (
-    "You are an elite prediction market analyst. Given a market question, current market price, "
-    "and real-time intelligence from news and social media, estimate the TRUE probability of the event.\n\n"
-    "Be calibrated — only diverge from market price when intelligence gives you a clear edge. "
-    "Breaking news not yet priced in is your biggest advantage.\n\n"
+    "You are a contrarian prediction market analyst who profits from crowd mispricing.\n\n"
+    "Common mispricing patterns you exploit:\n"
+    "1. RECENCY BIAS — crowd overweights recent events, ignoring base rates\n"
+    "2. ANCHORING — market price stuck near initial listing, hasn't updated for new info\n"
+    "3. NARRATIVE BIAS — crowd follows a story, ignoring contradicting data\n"
+    "4. EXTREME PRICES — markets at 90%+ often overestimate certainty; markets at 10%- underestimate tail risk\n"
+    "5. NEGLECTED MARKETS — lower-volume markets get less trader attention = more mispricing\n"
+    "6. BREAKING NEWS — events not yet reflected in market price\n\n"
+    "Your job: estimate TRUE probability independent of current price. "
+    "Don't anchor to market price. Think from first principles. "
+    "If you see a clear edge based on the evidence, be bold — diverge from market.\n\n"
     "Respond in EXACTLY this format (no other text):\n"
     "PROBABILITY: 0.XX\n"
     "CONFIDENCE: 0.X\n"

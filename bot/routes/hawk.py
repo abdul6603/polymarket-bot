@@ -151,17 +151,32 @@ def api_hawk_scan():
                 log.info("Hawk scan: no markets found")
                 return
 
-            # 2. Sort by volume, take top 20
-            markets.sort(key=lambda m: m.volume, reverse=True)
-            top_markets = markets[:20]
+            # 2. Filter contested markets (12-88% YES price) — skip penny bets
+            contested = []
+            for m in markets:
+                yes_price = 0.5
+                for t in m.tokens:
+                    if (t.get("outcome") or "").lower() in ("yes", "up"):
+                        try:
+                            yes_price = float(t.get("price", 0.5))
+                        except (ValueError, TypeError):
+                            pass
+                        break
+                if 0.12 <= yes_price <= 0.88:
+                    contested.append(m)
+
+            # Sort by volume, skip top 5 (most efficient), take mid-tier
+            contested.sort(key=lambda m: m.volume, reverse=True)
+            target_markets = contested[5:35] if len(contested) > 35 else contested
+            log.info("Contested markets: %d, analyzing %d", len(contested), len(target_markets))
 
             # 3. Analyze with GPT-4o
-            estimates = batch_analyze(cfg, top_markets, max_concurrent=5)
+            estimates = batch_analyze(cfg, target_markets, max_concurrent=5)
 
             # 4. Calculate edges
             opportunities = []
             estimate_map = {e.market_id: e for e in estimates}
-            for market in top_markets:
+            for market in target_markets:
                 est = estimate_map.get(market.condition_id)
                 if est:
                     opp = calculate_edge(market, est, cfg)

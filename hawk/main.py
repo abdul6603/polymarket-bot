@@ -129,18 +129,39 @@ class HawkBot:
                     await asyncio.sleep(self.cfg.cycle_minutes * 60)
                     continue
 
-                # 2. Sort by volume and take top 20 for GPT analysis
-                markets.sort(key=lambda m: m.volume, reverse=True)
-                top_markets = markets[:20]
+                # 2. Smart market selection
+                # Filter for "contested" markets where real debate exists:
+                # - YES price between 15-85% (not penny bets or near-certainties)
+                # - Prefer near-term events (days/weeks, not years)
+                contested = []
+                for m in markets:
+                    yes_price = 0.5
+                    for t in m.tokens:
+                        if (t.get("outcome") or "").lower() in ("yes", "up"):
+                            try:
+                                yes_price = float(t.get("price", 0.5))
+                            except (ValueError, TypeError):
+                                pass
+                            break
+                    # Only contested markets — real uncertainty
+                    if 0.12 <= yes_price <= 0.88:
+                        contested.append(m)
 
-                # 3. Analyze with GPT-4o
-                log.info("Analyzing top %d markets with GPT-4o...", len(top_markets))
-                estimates = batch_analyze(self.cfg, top_markets, max_concurrent=5)
+                log.info("Contested markets (12-88%% price): %d / %d total", len(contested), len(markets))
+
+                # Sort contested by volume, skip top 5 (still very efficient)
+                contested.sort(key=lambda m: m.volume, reverse=True)
+                target_markets = contested[5:45] if len(contested) > 45 else contested
+
+                # 3. Analyze with GPT-4o (max 30 to balance cost vs coverage)
+                target_markets = target_markets[:30]
+                log.info("Analyzing %d contested mid-tier markets with GPT-4o...", len(target_markets))
+                estimates = batch_analyze(self.cfg, target_markets, max_concurrent=5)
 
                 # 4. Calculate edges
                 opportunities = []
                 estimate_map = {e.market_id: e for e in estimates}
-                for market in top_markets:
+                for market in target_markets:
                     est = estimate_map.get(market.condition_id)
                     if est:
                         opp = calculate_edge(market, est, self.cfg)
