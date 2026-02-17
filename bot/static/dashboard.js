@@ -1975,7 +1975,7 @@ async function lisaMiniChat() {
     var data = await resp.json();
     var typing = document.getElementById('lisa-mini-typing');
     if (typing) typing.remove();
-    var reply = data.reply || data.response || 'No response';
+    var reply = data.content || data.reply || data.response || 'No response';
     messages.innerHTML += '<div style="margin-bottom:6px;"><span style="color:var(--agent-mercury);font-size:0.68rem;">Lisa:</span> <span style="font-size:0.74rem;">' + esc(reply) + '</span></div>';
     messages.scrollTop = messages.scrollHeight;
   } catch(e) {
@@ -3157,7 +3157,7 @@ async function refresh() {
       var resp = await fetch('/api/shelby');
       renderShelby(await resp.json());
       try { loadSchedule(); } catch(e) {}
-      try { loadEconomics(); } catch(e) {}
+      // Economics section removed
       try { loadAssessments(); } catch(e) {}
       try { loadShelbyNextRoutine(); } catch(e) {}
       loadCommandTable('shelby');

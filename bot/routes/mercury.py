@@ -57,10 +57,13 @@ def api_mercury():
         except Exception:
             pass
 
+    # Only count actually-posted-live entries (not dry_run)
+    live_posts = [p for p in posting_log if not p.get("dry_run", False)]
+
     recent_posts = sorted(posting_log, key=lambda x: x.get("posted_at", ""), reverse=True)[:20]
 
     platforms = {}
-    for post in posting_log:
+    for post in live_posts:
         p = post.get("platform", "unknown")
         if p not in platforms:
             platforms[p] = {"total": 0, "last_post": ""}
@@ -86,7 +89,7 @@ def api_mercury():
         "outbox": outbox[:20],
         "outbox_count": len(outbox),
         "recent_posts": recent_posts,
-        "total_posts": len(posting_log),
+        "total_posts": len(live_posts),
         "platforms": platforms,
         "analytics_summary": analytics.get("summary", {}),
         "review_stats": review_stats,
