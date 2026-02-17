@@ -259,3 +259,99 @@ def api_hawk_scan():
         thread.start()
 
     return jsonify({"success": True, "message": "Scan started"})
+
+
+@hawk_bp.route("/api/hawk/resolve", methods=["POST"])
+def api_hawk_resolve():
+    """Trigger resolution check on all unresolved paper trades."""
+    try:
+        from hawk.resolver import resolve_paper_trades
+        result = resolve_paper_trades()
+        return jsonify({"success": True, **result})
+    except Exception as e:
+        log.exception("Hawk resolve failed")
+        return jsonify({"success": False, "error": str(e)[:200]})
+
+
+@hawk_bp.route("/api/hawk/sim")
+def api_hawk_sim():
+    """Full simulation stats — paper trading performance evaluation."""
+    trades = _load_trades()
+    if not trades:
+        return jsonify({
+            "total_trades": 0, "open": 0, "resolved": 0,
+            "wins": 0, "losses": 0, "win_rate": 0,
+            "total_pnl": 0, "avg_edge": 0, "avg_pnl": 0,
+            "best_trade": None, "worst_trade": None,
+            "total_wagered": 0, "roi": 0,
+            "categories": {}, "open_positions": [], "recent_resolved": [],
+        })
+
+    resolved = [t for t in trades if t.get("resolved") and t.get("outcome")]
+    open_pos = [t for t in trades if not t.get("resolved")]
+    wins = sum(1 for t in resolved if t.get("won"))
+    losses = len(resolved) - wins
+    total_pnl = sum(t.get("pnl", 0) for t in resolved)
+    wr = (wins / len(resolved) * 100) if resolved else 0
+    avg_edge = sum(t.get("edge", 0) for t in trades) / len(trades) if trades else 0
+    avg_pnl = total_pnl / len(resolved) if resolved else 0
+    total_wagered = sum(t.get("size_usd", 0) for t in trades)
+    roi = (total_pnl / total_wagered * 100) if total_wagered > 0 else 0
+
+    # Best/worst trade
+    best = max(resolved, key=lambda t: t.get("pnl", 0)) if resolved else None
+    worst = min(resolved, key=lambda t: t.get("pnl", 0)) if resolved else None
+
+    # Category breakdown
+    cats: dict[str, dict] = {}
+    for t in resolved:
+        cat = t.get("category", "other")
+        if cat not in cats:
+            cats[cat] = {"wins": 0, "losses": 0, "pnl": 0.0, "trades": 0}
+        cats[cat]["trades"] += 1
+        if t.get("won"):
+            cats[cat]["wins"] += 1
+        else:
+            cats[cat]["losses"] += 1
+        cats[cat]["pnl"] = round(cats[cat]["pnl"] + t.get("pnl", 0), 2)
+    for cat in cats:
+        total = cats[cat]["wins"] + cats[cat]["losses"]
+        cats[cat]["win_rate"] = round(cats[cat]["wins"] / total * 100, 1) if total > 0 else 0
+
+    # Trim for response
+    def _trim(t):
+        return {
+            "question": t.get("question", "")[:120],
+            "direction": t.get("direction", ""),
+            "size_usd": t.get("size_usd", 0),
+            "entry_price": t.get("entry_price", 0),
+            "edge": t.get("edge", 0),
+            "estimated_prob": t.get("estimated_prob", 0),
+            "category": t.get("category", ""),
+            "time_str": t.get("time_str", ""),
+            "resolved": t.get("resolved", False),
+            "won": t.get("won", False),
+            "pnl": t.get("pnl", 0),
+            "reasoning": t.get("reasoning", "")[:200],
+        }
+
+    recent = sorted(resolved, key=lambda t: t.get("resolve_time", 0), reverse=True)[:20]
+
+    return jsonify({
+        "total_trades": len(trades),
+        "open": len(open_pos),
+        "resolved": len(resolved),
+        "wins": wins,
+        "losses": losses,
+        "win_rate": round(wr, 1),
+        "total_pnl": round(total_pnl, 2),
+        "avg_edge": round(avg_edge * 100, 1),
+        "avg_pnl": round(avg_pnl, 2),
+        "best_trade": _trim(best) if best else None,
+        "worst_trade": _trim(worst) if worst else None,
+        "total_wagered": round(total_wagered, 2),
+        "roi": round(roi, 1),
+        "categories": cats,
+        "open_positions": [_trim(t) for t in open_pos[-20:]],
+        "recent_resolved": [_trim(t) for t in recent],
+    })

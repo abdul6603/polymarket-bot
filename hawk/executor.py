@@ -70,12 +70,7 @@ class HawkExecutor:
     def check_fills(self) -> None:
         """Poll order status."""
         if self.cfg.dry_run:
-            now = time.time()
-            for pos in list(self.tracker.open_positions):
-                age = now - pos.get("opened_at", now)
-                if age > 600:
-                    log.info("[DRY RUN] Position expired: %s", pos.get("order_id", "?"))
-                    self.tracker.remove_position(pos.get("order_id", ""))
+            # Paper trades stay open until market resolves (handled by resolver.py)
             return
 
         if not self.client:

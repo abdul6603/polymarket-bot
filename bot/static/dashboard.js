@@ -2875,6 +2875,8 @@ async function refresh() {
       loadBrainNotes('thor');
       loadCommandTable('thor');
       loadAgentActivity('thor');
+    } else if (currentTab === 'hawk-sim') {
+      loadHawkSimTab();
     } else if (currentTab === 'hawk') {
       loadHawkTab();
       loadBrainNotes('hawk');
@@ -4953,6 +4955,170 @@ async function hawkTriggerScan() {
     console.error('hawk scan:', e);
     _hawkUpdateProgress({step: 'Error: ' + e.message, detail: '', pct: 0});
     if (btn) { btn.disabled = false; btn.textContent = 'Trigger Scan'; btn.style.opacity = '1'; }
+  }
+}
+
+// ══════════════════════════════════════
+// HAWK SIM TAB — Paper Trading Evaluation
+// ══════════════════════════════════════
+
+async function loadHawkSimTab() {
+  try {
+    var resp = await fetch('/api/hawk/sim');
+    var d = await resp.json();
+    var setEl = function(id, val) { var e = document.getElementById(id); if(e) e.textContent = val; };
+    var setClr = function(id, val, clr) { var e = document.getElementById(id); if(e) { e.textContent = val; e.style.color = clr; } };
+
+    setEl('hsim-total', d.total_trades || 0);
+    setEl('hsim-open', d.open || 0);
+    setClr('hsim-wr', (d.win_rate || 0).toFixed(1) + '%', wrColor(d.win_rate || 0));
+    var pnl = d.total_pnl || 0;
+    setClr('hsim-pnl', (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2), pnl >= 0 ? 'var(--success)' : 'var(--error)');
+    var roi = d.roi || 0;
+    setClr('hsim-roi', (roi >= 0 ? '+' : '') + roi.toFixed(1) + '%', roi >= 0 ? 'var(--success)' : 'var(--error)');
+    setEl('hsim-wagered', '$' + (d.total_wagered || 0).toFixed(0));
+    setClr('hsim-wins', d.wins || 0, 'var(--success)');
+    setClr('hsim-losses', d.losses || 0, 'var(--error)');
+    setEl('hsim-avg-edge', (d.avg_edge || 0).toFixed(1) + '%');
+
+    // Status badge
+    var badge = document.getElementById('hsim-status-badge');
+    if (badge) {
+      var statusSpan = badge.querySelector('span:last-child');
+      if (statusSpan) {
+        if (d.open > 0) { statusSpan.textContent = d.open + ' pending'; statusSpan.style.color = '#ffaa00'; }
+        else if (d.resolved > 0) { statusSpan.textContent = 'Evaluated'; statusSpan.style.color = 'var(--success)'; }
+        else { statusSpan.textContent = 'No trades'; statusSpan.style.color = 'var(--text-muted)'; }
+      }
+    }
+
+    // Best / Worst trade cards
+    renderHawkSimTradeCard('hsim-best-trade', d.best_trade, 'BEST TRADE', 'var(--success)');
+    renderHawkSimTradeCard('hsim-worst-trade', d.worst_trade, 'WORST TRADE', 'var(--error)');
+
+    // Category heatmap
+    renderHawkSimCategories(d.categories || {});
+
+    // Open positions
+    renderHawkSimOpen(d.open_positions || []);
+
+    // Resolved trades
+    renderHawkSimResolved(d.recent_resolved || []);
+
+  } catch(e) { console.error('hawk sim:', e); }
+}
+
+function renderHawkSimTradeCard(elId, trade, label, color) {
+  var el = document.getElementById(elId);
+  if (!el) return;
+  if (!trade) { el.innerHTML = '<div class="text-muted" style="text-align:center;padding:12px;">No resolved trades yet</div>'; return; }
+  var pnl = trade.pnl || 0;
+  var pnlClr = pnl >= 0 ? 'var(--success)' : 'var(--error)';
+  var dirClr = trade.direction === 'yes' ? '#00ff88' : '#ff6666';
+  var dirArr = trade.direction === 'yes' ? '\u25B2 YES' : '\u25BC NO';
+  el.innerHTML = '<div style="padding:4px;">' +
+    '<div style="font-size:0.68rem;color:' + color + ';text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">' + label + '</div>' +
+    '<div style="font-size:0.82rem;font-weight:600;color:#fff;margin-bottom:4px;">' + esc((trade.question || '').substring(0,80)) + '</div>' +
+    '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:0.74rem;color:var(--text-secondary);">' +
+      '<span style="color:' + dirClr + ';font-weight:700;">' + dirArr + '</span>' +
+      '<span>$' + (trade.size_usd || 0).toFixed(0) + ' bet</span>' +
+      '<span>Edge: ' + ((trade.edge || 0) * 100).toFixed(1) + '%</span>' +
+      '<span style="color:' + pnlClr + ';font-weight:700;">P&L: ' + (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2) + '</span>' +
+      '<span>' + esc(trade.category || '') + '</span>' +
+    '</div>' +
+  '</div>';
+}
+
+function renderHawkSimCategories(cats) {
+  var el = document.getElementById('hsim-category-map');
+  if (!el) return;
+  var keys = Object.keys(cats);
+  if (keys.length === 0) { el.innerHTML = '<div class="text-muted" style="text-align:center;padding:12px;">No category data yet</div>'; return; }
+  var catColors = {politics:'#4488ff',sports:'#ff8844',crypto_event:'#FFD700',culture:'#cc66ff',other:'#888888'};
+  var html = '<div style="display:flex;flex-wrap:wrap;gap:10px;">';
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    var c = cats[k];
+    var wr = c.win_rate || 0;
+    var color = catColors[k] || '#888';
+    html += '<div style="background:rgba(255,255,255,0.04);border-left:3px solid ' + color + ';border-radius:6px;padding:12px 16px;min-width:140px;flex:1;">';
+    html += '<div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;">' + esc(k) + '</div>';
+    html += '<div style="font-size:1.2rem;font-weight:700;color:' + wrColor(wr) + ';">' + wr.toFixed(0) + '%</div>';
+    html += '<div style="font-size:0.7rem;color:var(--text-secondary);">' + c.wins + 'W-' + c.losses + 'L</div>';
+    var catPnl = c.pnl || 0;
+    html += '<div style="font-size:0.72rem;font-weight:600;color:' + (catPnl >= 0 ? 'var(--success)' : 'var(--error)') + ';">' + (catPnl >= 0 ? '+' : '') + '$' + catPnl.toFixed(2) + '</div>';
+    html += '</div>';
+  }
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function renderHawkSimOpen(positions) {
+  var el = document.getElementById('hsim-open-tbody');
+  if (!el) return;
+  if (positions.length === 0) { el.innerHTML = '<tr><td colspan="7" class="text-muted" style="text-align:center;padding:24px;">No open positions</td></tr>'; return; }
+  var html = '';
+  for (var i = 0; i < positions.length; i++) {
+    var p = positions[i];
+    var dirClr = p.direction === 'yes' ? '#00ff88' : '#ff6666';
+    var dirArr = p.direction === 'yes' ? '\u25B2 YES' : '\u25BC NO';
+    html += '<tr>';
+    html += '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.76rem;" title="' + esc(p.question || '') + '">' + esc((p.question || '').substring(0, 50)) + '</td>';
+    html += '<td style="color:' + dirClr + ';font-weight:700;font-size:0.78rem;">' + dirArr + '</td>';
+    html += '<td style="font-family:var(--font-mono);font-size:0.76rem;">$' + (p.size_usd || 0).toFixed(0) + '</td>';
+    html += '<td style="font-family:var(--font-mono);font-size:0.76rem;">' + ((p.entry_price || 0) * 100).toFixed(0) + '%</td>';
+    html += '<td style="font-family:var(--font-mono);font-size:0.76rem;color:#FFD700;">' + ((p.edge || 0) * 100).toFixed(1) + '%</td>';
+    html += '<td><span style="font-size:0.7rem;color:var(--text-secondary);">' + esc(p.category || '?') + '</span></td>';
+    html += '<td style="font-size:0.72rem;color:var(--text-muted);">' + esc(p.time_str || '') + '</td>';
+    html += '</tr>';
+  }
+  el.innerHTML = html;
+}
+
+function renderHawkSimResolved(trades) {
+  var el = document.getElementById('hsim-resolved-tbody');
+  if (!el) return;
+  if (trades.length === 0) { el.innerHTML = '<tr><td colspan="7" class="text-muted" style="text-align:center;padding:24px;">No resolved trades yet</td></tr>'; return; }
+  var html = '';
+  for (var i = 0; i < trades.length; i++) {
+    var t = trades[i];
+    var won = t.won;
+    var pnl = t.pnl || 0;
+    var dirClr = t.direction === 'yes' ? '#00ff88' : '#ff6666';
+    var dirArr = t.direction === 'yes' ? '\u25B2 YES' : '\u25BC NO';
+    html += '<tr>';
+    html += '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.76rem;" title="' + esc(t.question || '') + '">' + esc((t.question || '').substring(0, 50)) + '</td>';
+    html += '<td style="color:' + dirClr + ';font-weight:700;font-size:0.78rem;">' + dirArr + '</td>';
+    html += '<td style="font-family:var(--font-mono);font-size:0.76rem;">$' + (t.size_usd || 0).toFixed(0) + '</td>';
+    html += '<td style="font-family:var(--font-mono);font-size:0.76rem;">' + ((t.edge || 0) * 100).toFixed(1) + '%</td>';
+    html += '<td><span class="badge ' + (won ? 'badge-success' : 'badge-error') + '">' + (won ? 'WIN' : 'LOSS') + '</span></td>';
+    html += '<td style="font-family:var(--font-mono);font-weight:600;color:' + (pnl >= 0 ? 'var(--success)' : 'var(--error)') + ';">' + (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2) + '</td>';
+    html += '<td><span style="font-size:0.7rem;color:var(--text-secondary);">' + esc(t.category || '?') + '</span></td>';
+    html += '</tr>';
+  }
+  el.innerHTML = html;
+}
+
+async function hawkSimResolve() {
+  var msg = document.getElementById('hawk-sim-resolve-msg');
+  if (msg) { msg.style.display = 'block'; msg.style.background = 'rgba(255,215,0,0.08)'; msg.style.color = '#FFD700'; msg.textContent = 'Checking market resolutions...'; }
+  try {
+    var resp = await fetch('/api/hawk/resolve', {method:'POST'});
+    var d = await resp.json();
+    if (msg) {
+      if (d.resolved > 0) {
+        msg.style.background = 'rgba(0,255,136,0.08)';
+        msg.style.color = 'var(--success)';
+        msg.textContent = 'Resolved ' + d.resolved + ' trades: ' + d.wins + ' wins, ' + d.losses + ' losses. ' + d.skipped + ' still pending.';
+      } else {
+        msg.style.background = 'rgba(255,255,255,0.04)';
+        msg.style.color = 'var(--text-muted)';
+        msg.textContent = 'No trades resolved yet. ' + (d.checked || 0) + ' checked, ' + (d.skipped || 0) + ' markets still open.';
+      }
+    }
+    await loadHawkSimTab();
+  } catch(e) {
+    if (msg) { msg.style.background = 'rgba(255,0,0,0.08)'; msg.style.color = 'var(--error)'; msg.textContent = 'Resolution check failed: ' + e.message; }
   }
 }
 

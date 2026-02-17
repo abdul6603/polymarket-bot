@@ -15,6 +15,7 @@ from hawk.edge import calculate_edge, rank_opportunities
 from hawk.executor import HawkExecutor
 from hawk.tracker import HawkTracker
 from hawk.risk import HawkRiskManager
+from hawk.resolver import resolve_paper_trades
 
 log = logging.getLogger(__name__)
 
@@ -200,8 +201,21 @@ class HawkBot:
                             log.info("Trade placed: %s | %s | edge=%.1f%%",
                                      opp.direction.upper(), opp.market.question[:50], opp.edge * 100)
 
-                    # Check fills
-                    self.executor.check_fills()
+                    # Check fills (live mode only)
+                    if not self.cfg.dry_run:
+                        self.executor.check_fills()
+
+                # Resolve paper trades — check if any markets have settled
+                if self.cfg.dry_run:
+                    res = resolve_paper_trades()
+                    if res["resolved"] > 0:
+                        log.info(
+                            "Resolved %d trades: %d W / %d L",
+                            res["resolved"], res["wins"], res["losses"],
+                        )
+                        # Reload tracker positions from disk
+                        self.tracker._positions = []
+                        self.tracker._load_positions()
 
                 # Save status
                 _save_status(self.tracker, running=True, cycle=self.cycle)
