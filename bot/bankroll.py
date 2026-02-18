@@ -35,7 +35,7 @@ def calculate_trade_pnl(won: bool, probability: float, size_usd: float) -> float
 
 class BankrollManager:
     INITIAL_BANKROLL = 250.0  # Starting bankroll from .env
-    MIN_MULTIPLIER = 0.5      # Floor: never size below 50% of base
+    MIN_MULTIPLIER = 0.75     # Floor: never size below 75% of base (prevents death spiral)
     MAX_MULTIPLIER = 2.0      # Cap: never size above 200% of base
     CACHE_TTL = 60            # Refresh every 60 seconds
 
