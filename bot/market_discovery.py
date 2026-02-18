@@ -219,6 +219,93 @@ _cached_offset: int | None = None
 _offset_cached_at: float = 0
 _OFFSET_CACHE_TTL = 600  # re-search every 10 minutes
 
+# Gamma API cache for hourly markets (not in CLOB paginated list)
+_gamma_cache: list[dict[str, Any]] = []
+_gamma_cached_at: float = 0
+_GAMMA_CACHE_TTL = 120  # refresh every 2 minutes
+
+
+def _fetch_hourly_from_gamma() -> list[dict[str, Any]]:
+    """Fetch hourly crypto Up/Down markets from the Gamma events API.
+
+    These markets use the 'XPM ET' format (e.g. "Bitcoin Up or Down - February 17, 8PM ET")
+    and are NOT returned by the CLOB paginated /markets endpoint.
+    We query Gamma, then fetch full market data from CLOB by condition_id.
+    """
+    global _gamma_cache, _gamma_cached_at
+
+    now = time.time()
+    if _gamma_cache and (now - _gamma_cached_at) < _GAMMA_CACHE_TTL:
+        return _gamma_cache
+
+    results: list[dict[str, Any]] = []
+    seen_cids: set[str] = set()
+
+    # Build slug patterns for current + next day hourly markets
+    from datetime import datetime as _dt
+    from zoneinfo import ZoneInfo
+    et_now = _dt.now(ZoneInfo("America/New_York"))
+
+    # Generate slugs for current and nearby hours across all assets
+    slug_prefixes = {
+        "bitcoin": "bitcoin-up-or-down",
+        "ethereum": "ethereum-up-or-down",
+        "solana": "solana-up-or-down",
+        "xrp": "xrp-up-or-down",
+    }
+
+    for asset_name, prefix in slug_prefixes.items():
+        # Check current hour and next few hours
+        for hour_offset in range(0, 4):
+            target = et_now + timedelta(hours=hour_offset)
+            month_name = target.strftime("%B").lower()
+            day = target.day
+            hour = target.hour
+            ampm = "am" if hour < 12 else "pm"
+            display_hour = hour % 12
+            if display_hour == 0:
+                display_hour = 12
+            slug = f"{prefix}-{month_name}-{day}-{display_hour}{ampm}-et"
+
+            try:
+                resp = get_session().get(
+                    f"https://gamma-api.polymarket.com/events?slug={slug}",
+                    timeout=5,
+                )
+                if resp.status_code != 200:
+                    continue
+                events = resp.json()
+                if not events:
+                    continue
+
+                ev = events[0]
+                for m in ev.get("markets", []):
+                    cid = m.get("conditionId", "")
+                    if not cid or cid in seen_cids:
+                        continue
+                    if not m.get("active") or m.get("closed"):
+                        continue
+
+                    # Fetch full CLOB data for this market
+                    clob_resp = get_session().get(
+                        f"https://clob.polymarket.com/markets/{cid}",
+                        timeout=5,
+                    )
+                    if clob_resp.status_code == 200:
+                        clob_market = clob_resp.json()
+                        if clob_market.get("accepting_orders") and clob_market.get("active"):
+                            seen_cids.add(cid)
+                            results.append(clob_market)
+            except Exception:
+                continue
+
+    if results:
+        log.info("Gamma hourly discovery: found %d markets", len(results))
+
+    _gamma_cache = results
+    _gamma_cached_at = now
+    return results
+
 
 def fetch_markets(cfg: Config) -> list[DiscoveredMarket]:
     """Fetch active Bitcoin & Ethereum Up/Down markets from the CLOB API."""
@@ -266,6 +353,17 @@ def fetch_markets(cfg: Config) -> list[DiscoveredMarket]:
             ):
                 seen_ids.add(cid)
                 all_active.append(m)
+
+    # Fetch hourly markets from Gamma API (not in CLOB paginated list)
+    try:
+        gamma_markets = _fetch_hourly_from_gamma()
+        for m in gamma_markets:
+            cid = m.get("condition_id", "")
+            if cid not in seen_ids and _detect_asset(m.get("question", "")) is not None:
+                seen_ids.add(cid)
+                all_active.append(m)
+    except Exception:
+        log.debug("Gamma hourly fetch failed, continuing with CLOB-only markets")
 
     # Classify into timeframes and compute remaining time
     results: list[DiscoveredMarket] = []
