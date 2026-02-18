@@ -136,10 +136,6 @@ MIN_CONFIDENCE = 0.55  # DATA: conf>=55% = 82.9% WR, conf>=60% = 91.7% WR. Old 0
 # Directional bias: UP predictions have 47.3% WR vs DOWN 63% — require higher confidence for UP
 UP_CONFIDENCE_PREMIUM = 0.12  # Quant optimal: 0.12. UP bets need higher bar — forces only high-conviction UP trades through.
 
-# Time-of-day filter: block hours with <30% WR across 140+ trades
-# Good hours: 00,02,10,12,16,17 (79.5% WR combined)
-# Bad hours: 05 (0%), 18 (17%), 19 (29%), 20 (13%), 21 (0%), 22 (12%), 23 (22%)
-AVOID_HOURS_ET = {6, 7}  # Only block hours with proven poor data (original design)
 # NY market open manipulation window: 9:30-10:15 AM ET — high manipulation, skip
 NY_OPEN_AVOID_START = (9, 30)   # 9:30 AM ET
 NY_OPEN_AVOID_END = (10, 15)    # 10:15 AM ET
@@ -247,17 +243,12 @@ class SignalEngine:
             )
             return None
 
-        # ── Time-of-Day Filter: skip dead zone hours + NY open manipulation window ──
+        # ── NY Open Manipulation Window: 9:30-10:15 AM ET ──
         from datetime import datetime as _dt
         from zoneinfo import ZoneInfo
         _now_et = _dt.now(ZoneInfo("America/New_York"))
         current_hour_et = _now_et.hour
         current_min_et = _now_et.minute
-        if current_hour_et in AVOID_HOURS_ET:
-            log.info("[%s/%s] Time-of-day filter: hour %d ET is in dead zone, skipping",
-                     asset.upper(), timeframe, current_hour_et)
-            return None
-        # NY market open: 9:30-10:15 AM ET — manipulation window
         now_hm = (current_hour_et, current_min_et)
         if NY_OPEN_AVOID_START <= now_hm <= NY_OPEN_AVOID_END:
             log.info("[%s/%s] NY open manipulation window (%d:%02d ET), skipping",

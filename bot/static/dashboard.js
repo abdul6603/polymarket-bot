@@ -354,49 +354,43 @@ function renderLiveResolvedTrades(trades) {
   }
 }
 
-// === ON-CHAIN PORTFOLIO RENDERER ===
+// === PORTFOLIO RENDERER ===
 function renderOnChainPositions(data) {
   var dot = document.getElementById('positions-live-dot');
-  var totalEl = document.getElementById('positions-total-value');
   if (!dot) return;
 
   dot.style.background = data.live ? 'var(--success)' : '#555';
 
   var t = data.totals || {};
-  var totalPnl = t.total_pnl || 0;
-  if (totalEl) {
-    var tStr = (totalPnl >= 0 ? '+$' : '-$') + Math.abs(totalPnl).toFixed(2);
-    totalEl.innerHTML = 'Net PnL: <span style="color:' + (totalPnl >= 0 ? 'var(--success)' : 'var(--error)') + ';font-weight:700;">' + tStr + '</span>';
-  }
 
-  // Summary cards
-  var invEl = document.getElementById('oc-invested');
+  // Summary cards — open positions only
+  var countEl = document.getElementById('oc-open-count');
+  var marginEl = document.getElementById('oc-margin');
   var valEl = document.getElementById('oc-value');
-  var realEl = document.getElementById('oc-realized');
-  var unrealEl = document.getElementById('oc-unrealized');
-  if (invEl) invEl.textContent = '$' + (t.invested || 0).toFixed(2);
-  if (valEl) { valEl.textContent = '$' + (t.current_value || 0).toFixed(2); valEl.style.color = 'var(--success)'; }
-  if (realEl) {
-    var rp = t.realized_pnl || 0;
-    realEl.textContent = (rp >= 0 ? '+$' : '-$') + Math.abs(rp).toFixed(2);
-    realEl.style.color = rp >= 0 ? 'var(--success)' : 'var(--error)';
+  var pnlEl = document.getElementById('oc-open-pnl');
+
+  if (countEl) countEl.textContent = t.open_count || 0;
+  if (marginEl) marginEl.textContent = '$' + (t.open_margin || 0).toFixed(2);
+  if (valEl) {
+    valEl.textContent = '$' + (t.open_value || 0).toFixed(2);
+    valEl.style.color = (t.open_value || 0) > 0 ? 'var(--success)' : '';
   }
-  if (unrealEl) {
-    var up = t.unrealized_pnl || 0;
-    unrealEl.textContent = (up >= 0 ? '+$' : '-$') + Math.abs(up).toFixed(2);
-    unrealEl.style.color = up >= 0 ? 'var(--success)' : 'var(--error)';
+  if (pnlEl) {
+    var op = t.open_pnl || 0;
+    pnlEl.textContent = (op >= 0 ? '+$' : '-$') + Math.abs(op).toFixed(2);
+    pnlEl.style.color = op >= 0 ? 'var(--success)' : 'var(--error)';
   }
 
-  // Active positions table
-  var activeEl = document.getElementById('oc-active-tbody');
-  var active = data.active || [];
-  if (activeEl) {
-    if (active.length === 0) {
-      activeEl.innerHTML = '<tr><td colspan="9" class="text-muted" style="text-align:center;padding:12px;">No active positions</td></tr>';
+  // Current Holdings table
+  var holdEl = document.getElementById('oc-holdings-tbody');
+  var holdings = data.holdings || [];
+  if (holdEl) {
+    if (holdings.length === 0) {
+      holdEl.innerHTML = '<tr><td colspan="9" class="text-muted" style="text-align:center;padding:16px;">No open positions — scanning for opportunities</td></tr>';
     } else {
       var html = '';
-      for (var i = 0; i < active.length; i++) {
-        var p = active[i];
+      for (var i = 0; i < holdings.length; i++) {
+        var p = holdings[i];
         var pc = p.pnl >= 0 ? 'var(--success)' : 'var(--error)';
         var ps = (p.pnl >= 0 ? '+$' : '-$') + Math.abs(p.pnl).toFixed(2);
         html += '<tr>';
@@ -408,27 +402,39 @@ function renderOnChainPositions(data) {
         html += '<td style="font-weight:600;">$' + p.cur_price.toFixed(3) + '</td>';
         html += '<td>$' + p.cost.toFixed(2) + '</td>';
         html += '<td style="font-weight:600;">$' + p.value.toFixed(2) + '</td>';
-        html += '<td style="color:' + pc + ';font-weight:700;">' + ps + ' (' + p.pnl_pct.toFixed(1) + '%)</td>';
+        if (p.status === 'won') {
+          html += '<td><span class="badge badge-success" style="font-weight:700;">WON ' + ps + '</span></td>';
+        } else {
+          html += '<td style="color:' + pc + ';font-weight:700;">' + ps + ' (' + p.pnl_pct.toFixed(1) + '%)</td>';
+        }
         html += '</tr>';
       }
-      activeEl.innerHTML = html;
+      holdEl.innerHTML = html;
     }
   }
 
-  // Settled positions table
-  var settledEl = document.getElementById('oc-settled-tbody');
-  var wlEl = document.getElementById('oc-settled-wl');
-  var settled = data.settled || [];
-  if (wlEl) {
-    wlEl.innerHTML = '<span style="color:var(--success);">' + (t.wins || 0) + 'W</span> / <span style="color:var(--error);">' + (t.losses || 0) + 'L</span>';
+  // Trade History
+  var histEl = document.getElementById('oc-history-tbody');
+  var recEl = document.getElementById('oc-record');
+  var realPnlEl = document.getElementById('oc-realized-pnl');
+  var history = data.history || [];
+
+  if (recEl) {
+    var w = t.record_wins || 0;
+    var l = t.record_losses || 0;
+    recEl.innerHTML = '<span style="color:var(--success);font-weight:600;">' + w + 'W</span> / <span style="color:var(--error);font-weight:600;">' + l + 'L</span>';
   }
-  if (settledEl) {
-    if (settled.length === 0) {
-      settledEl.innerHTML = '<tr><td colspan="7" class="text-muted" style="text-align:center;padding:12px;">No settled positions yet</td></tr>';
+  if (realPnlEl) {
+    var rp = t.realized_pnl || 0;
+    realPnlEl.innerHTML = 'Realized: <span style="color:' + (rp >= 0 ? 'var(--success)' : 'var(--error)') + ';font-weight:600;">' + (rp >= 0 ? '+$' : '-$') + Math.abs(rp).toFixed(2) + '</span>';
+  }
+  if (histEl) {
+    if (history.length === 0) {
+      histEl.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:12px;">No trade history</td></tr>';
     } else {
       var html = '';
-      for (var i = 0; i < settled.length; i++) {
-        var p = settled[i];
+      for (var i = 0; i < history.length; i++) {
+        var p = history[i];
         var won = p.won;
         var rp = p.result_pnl || 0;
         var rc = rp >= 0 ? 'var(--success)' : 'var(--error)';
@@ -437,13 +443,12 @@ function renderOnChainPositions(data) {
         html += '<td style="font-weight:600;">' + esc(p.asset) + '</td>';
         html += '<td style="font-size:0.72rem;">' + esc(p.market) + '</td>';
         html += '<td>' + esc(p.outcome) + '</td>';
-        html += '<td>' + p.size.toFixed(0) + '</td>';
-        html += '<td>$' + p.cost.toFixed(2) + '</td>';
+        html += '<td>$' + (p.cost || 0).toFixed(2) + '</td>';
         html += '<td><span class="badge ' + (won ? 'badge-success' : 'badge-error') + '" style="font-weight:700;">' + (won ? 'WON' : 'LOST') + '</span></td>';
         html += '<td style="color:' + rc + ';font-weight:700;font-size:0.88rem;">' + rs + '</td>';
         html += '</tr>';
       }
-      settledEl.innerHTML = html;
+      histEl.innerHTML = html;
     }
   }
 }

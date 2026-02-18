@@ -810,7 +810,12 @@ def _parse_asset_from_title(title: str) -> str:
 
 @garves_bp.route("/api/garves/positions")
 def api_garves_positions():
-    """Live on-chain positions — combined by market, with real PnL math."""
+    """Live on-chain portfolio — positions + activity-based W/L history.
+
+    Uses two Polymarket data-api endpoints:
+    - /positions for current open holdings
+    - /activity for full trade history (wins get redeemed and vanish from positions)
+    """
     # Check cache
     if POSITIONS_CACHE_FILE.exists():
         try:
@@ -822,36 +827,44 @@ def api_garves_positions():
 
     wallet = POLYMARKET_WALLET
     result = {
-        "active": [], "settled": [],
-        "totals": {"invested": 0.0, "current_value": 0.0, "realized_pnl": 0.0,
-                   "unrealized_pnl": 0.0, "total_pnl": 0.0,
-                   "wins": 0, "losses": 0, "active_count": 0},
+        "holdings": [],
+        "history": [],
+        "totals": {
+            "open_count": 0,
+            "open_margin": 0.0,
+            "open_value": 0.0,
+            "open_pnl": 0.0,
+            "record_wins": 0,
+            "record_losses": 0,
+            "realized_pnl": 0.0,
+        },
         "live": False, "fetched_at": 0, "error": None,
     }
 
     try:
         import urllib.request
-        url = f"https://data-api.polymarket.com/positions?user={wallet.lower()}"
-        req = urllib.request.Request(url, headers={"User-Agent": "Garves/1.0"})
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            data = json.loads(resp.read().decode())
+        headers = {"User-Agent": "Garves/1.0"}
 
-        # Group by condition_id (same market = same condition_id)
+        # ── 1. Fetch current positions (open holdings) ──
+        pos_url = f"https://data-api.polymarket.com/positions?user={wallet.lower()}"
+        req = urllib.request.Request(pos_url, headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            pos_data = json.loads(resp.read().decode())
+
+        holdings = []
+        totals = result["totals"]
+
+        # Group by condition_id
         grouped: dict[str, list] = {}
-        if isinstance(data, list):
-            for pos in data:
+        if isinstance(pos_data, list):
+            for pos in pos_data:
                 size = float(pos.get("size", 0))
                 if size <= 0:
                     continue
                 cid = pos.get("conditionId", pos.get("asset", ""))
                 grouped.setdefault(cid, []).append(pos)
 
-        active_positions = []
-        settled_positions = []
-        totals = result["totals"]
-
         for cid, entries in grouped.items():
-            # Combine all entries for this market
             total_size = sum(float(e.get("size", 0)) for e in entries)
             total_cost = sum(float(e.get("size", 0)) * float(e.get("avgPrice", 0)) for e in entries)
             cur_price = float(entries[0].get("curPrice", 0))
@@ -861,57 +874,89 @@ def api_garves_positions():
             title = entries[0].get("title", entries[0].get("slug", "Unknown"))
             outcome = entries[0].get("outcome", "")
             asset = _parse_asset_from_title(title)
-            num_bets = len(entries)
 
             row = {
-                "market": title,
-                "asset": asset,
-                "outcome": outcome,
-                "num_bets": num_bets,
-                "size": round(total_size, 2),
-                "avg_price": round(avg_price, 4),
-                "cur_price": round(cur_price, 4),
-                "cost": round(total_cost, 2),
-                "value": round(total_value, 2),
-                "pnl": round(pnl, 2),
+                "market": title, "asset": asset, "outcome": outcome,
+                "size": round(total_size, 2), "avg_price": round(avg_price, 4),
+                "cur_price": round(cur_price, 4), "cost": round(total_cost, 2),
+                "value": round(total_value, 2), "pnl": round(pnl, 2),
                 "pnl_pct": round((pnl / total_cost * 100) if total_cost > 0 else 0, 1),
-                "condition_id": cid,
             }
 
-            # All positions count toward invested/value totals
-            totals["invested"] += total_cost
-            totals["current_value"] += total_value
-
-            # Active = cur_price between 0.001 and 0.999 (market not settled)
+            # Open = price between 0.1%-99.9%  |  Settled with value = won unredeemed
             if 0.001 < cur_price < 0.999:
-                active_positions.append(row)
-                totals["unrealized_pnl"] += pnl
-                totals["active_count"] += 1
+                holdings.append(row)
+                totals["open_count"] += 1
+                totals["open_margin"] += total_cost
+                totals["open_value"] += total_value
+                totals["open_pnl"] += pnl
+
+        holdings.sort(key=lambda x: -x["value"])
+
+        # ── 2. Fetch activity for real W/L record ──
+        act_url = f"https://data-api.polymarket.com/activity?user={wallet.lower()}&limit=500"
+        req2 = urllib.request.Request(act_url, headers=headers)
+        with urllib.request.urlopen(req2, timeout=10) as resp2:
+            activity = json.loads(resp2.read().decode())
+
+        # Group activity by market title → compute spent vs redeemed
+        from collections import defaultdict
+        markets: dict[str, dict] = defaultdict(lambda: {
+            "spent": 0.0, "redeemed": 0.0, "outcome": "", "trades": 0,
+        })
+        if isinstance(activity, list):
+            for e in activity:
+                title = e.get("title", "?")
+                if e.get("type") == "TRADE":
+                    sz = float(e.get("size", 0))
+                    px = float(e.get("price", 0))
+                    markets[title]["spent"] += sz * px
+                    markets[title]["trades"] += 1
+                    if not markets[title]["outcome"]:
+                        markets[title]["outcome"] = e.get("outcome", "")
+                elif e.get("type") == "REDEEM":
+                    markets[title]["redeemed"] += float(e.get("size", 0))
+
+        history = []
+        for title, m in markets.items():
+            if m["trades"] == 0:
+                continue
+            pnl = m["redeemed"] - m["spent"]
+            won = m["redeemed"] > 0 and pnl > 0
+            asset = _parse_asset_from_title(title)
+            row = {
+                "market": title, "asset": asset,
+                "outcome": m["outcome"],
+                "size": 0, "cost": round(m["spent"], 2),
+                "won": won,
+                "result_pnl": round(pnl, 2),
+            }
+            # Skip markets still open (no redeem yet and position still active)
+            if m["redeemed"] == 0:
+                # Check if this market is in current holdings (still open)
+                still_open = any(h["market"] == title for h in holdings)
+                if still_open:
+                    continue
+                # Not open, no redeem → loss
+                row["won"] = False
+                row["result_pnl"] = round(-m["spent"], 2)
+
+            history.append(row)
+            if row["won"]:
+                totals["record_wins"] += 1
+                totals["realized_pnl"] += pnl
             else:
-                # Settled: cur_price ~1 = won, cur_price ~0 = lost
-                won = cur_price >= 0.5
-                row["won"] = won
-                row["result_pnl"] = round(total_value - total_cost, 2) if won else round(-total_cost, 2)
-                settled_positions.append(row)
-                if won:
-                    totals["wins"] += 1
-                    totals["realized_pnl"] += (total_value - total_cost)
-                else:
-                    totals["losses"] += 1
-                    totals["realized_pnl"] += -total_cost
+                totals["record_losses"] += 1
+                totals["realized_pnl"] += row["result_pnl"]
 
-        # Sort: active by value desc, settled by pnl desc
-        active_positions.sort(key=lambda x: -x["value"])
-        settled_positions.sort(key=lambda x: -x.get("result_pnl", 0))
+        # Sort: wins first (by pnl desc), then losses
+        history.sort(key=lambda x: (-int(x["won"]), -x.get("result_pnl", 0)))
 
-        totals["total_pnl"] = round(totals["realized_pnl"] + totals["unrealized_pnl"], 2)
-        totals["realized_pnl"] = round(totals["realized_pnl"], 2)
-        totals["unrealized_pnl"] = round(totals["unrealized_pnl"], 2)
-        totals["invested"] = round(totals["invested"], 2)
-        totals["current_value"] = round(totals["current_value"], 2)
+        for k in ("open_margin", "open_value", "open_pnl", "realized_pnl"):
+            totals[k] = round(totals[k], 2)
 
-        result["active"] = active_positions
-        result["settled"] = settled_positions
+        result["holdings"] = holdings
+        result["history"] = history
         result["totals"] = totals
         result["live"] = True
     except Exception as e:

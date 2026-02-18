@@ -42,42 +42,35 @@
   </div>
   <div class="mt-6" id="garves-regime-badge"><span class="badge badge-info">Regime: --</span></div>
 
-  <!-- On-Chain Portfolio (replaces ConvictionEngine) -->
+  <!-- Portfolio -->
   <div class="section-spacer">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-      <h2 class="section-title" data-accent="garves" style="margin:0;">On-Chain Portfolio</h2>
+      <h2 class="section-title" data-accent="garves" style="margin:0;">Portfolio</h2>
       <span id="positions-live-dot" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;animation:pulse-glow 2s ease-in-out infinite;"></span>
       <span style="font-size:0.64rem;color:var(--success);">LIVE</span>
-      <span id="positions-total-value" class="text-muted" style="font-size:0.76rem;margin-left:auto;">--</span>
     </div>
-    <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;border-left:3px solid var(--agent-garves);">
-      <div style="font-size:0.68rem;color:var(--text-muted);line-height:1.5;">
-        <strong>What is this?</strong> Real-time data pulled from your Polymarket wallet on Polygon. Every row is a position Garves holds on-chain.
-        <strong>Invested</strong> = total USDC spent buying shares. <strong>Value</strong> = what those shares are worth right now.
-        <strong>PnL</strong> = profit or loss (value minus cost). Settled positions show final results; active ones update live as market prices move.
-      </div>
-    </div>
-    <!-- On-chain summary cards -->
+    <!-- Open positions summary cards -->
     <div class="grid-4" id="onchain-summary-cards">
-      <div class="stat-card" data-accent="garves"><div class="stat-value" id="oc-invested">--</div><div class="stat-label">Invested</div></div>
-      <div class="stat-card" data-accent="success"><div class="stat-value" id="oc-value">--</div><div class="stat-label">Current Value</div></div>
-      <div class="stat-card" data-accent="success"><div class="stat-value" id="oc-realized">--</div><div class="stat-label">Realized PnL</div></div>
-      <div class="stat-card" data-accent="warning"><div class="stat-value" id="oc-unrealized">--</div><div class="stat-label">Unrealized PnL</div></div>
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="oc-open-count">0</div><div class="stat-label">Open Positions</div></div>
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="oc-margin">$0.00</div><div class="stat-label">Margin</div></div>
+      <div class="stat-card" data-accent="success"><div class="stat-value" id="oc-value">$0.00</div><div class="stat-label">Market Value</div></div>
+      <div class="stat-card" data-accent="success"><div class="stat-value" id="oc-open-pnl">$0.00</div><div class="stat-label">Open P&L</div></div>
     </div>
-    <!-- Active positions table -->
+    <!-- Current Holdings table -->
     <div style="margin-top:10px;">
-      <h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-2);">Active Positions</h3>
-      <div class="glass-card"><table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Bet</th><th>Shares</th><th>Avg Price</th><th>Now</th><th>Cost</th><th>Value</th><th>PnL</th></tr></thead>
-      <tbody id="oc-active-tbody"><tr><td colspan="9" class="text-muted" style="text-align:center;padding:16px;">Loading...</td></tr></tbody></table></div>
+      <h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-2);">Current Holdings</h3>
+      <div class="glass-card"><table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Bet</th><th>Shares</th><th>Entry</th><th>Now</th><th>Margin</th><th>Value</th><th>P&L</th></tr></thead>
+      <tbody id="oc-holdings-tbody"><tr><td colspan="9" class="text-muted" style="text-align:center;padding:16px;">No open positions</td></tr></tbody></table></div>
     </div>
-    <!-- Settled positions table -->
-    <div style="margin-top:10px;">
+    <!-- Trade History -->
+    <div style="margin-top:14px;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:var(--space-2);">
-        <h3 class="section-title" style="font-size:0.76rem;margin:0;">Settled Positions</h3>
-        <span id="oc-settled-wl" class="text-muted" style="font-size:0.72rem;">--</span>
+        <h3 class="section-title" style="font-size:0.76rem;margin:0;">Trade History</h3>
+        <span id="oc-record" class="text-muted" style="font-size:0.72rem;">--</span>
+        <span id="oc-realized-pnl" class="text-muted" style="font-size:0.72rem;margin-left:auto;">--</span>
       </div>
-      <div class="glass-card"><table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Bet</th><th>Shares</th><th>Cost</th><th>Result</th><th>PnL</th></tr></thead>
-      <tbody id="oc-settled-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;padding:16px;">Loading...</td></tr></tbody></table></div>
+      <div class="glass-card"><table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Bet</th><th>Cost</th><th>Result</th><th>P&L</th></tr></thead>
+      <tbody id="oc-history-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:16px;">No trade history</td></tr></tbody></table></div>
     </div>
   </div>
 
