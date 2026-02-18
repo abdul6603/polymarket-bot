@@ -408,6 +408,22 @@ class HawkBot:
                          sum(1 for s in suggestions if s["tier"] == "MEDIUM"),
                          sum(1 for s in suggestions if s["tier"] == "SPECULATIVE"))
 
+                # Auto-execute: place trades for risk-approved opportunities
+                trades_placed = 0
+                for opp in ranked:
+                    allowed, reason = self.risk.check_trade(opp)
+                    if not allowed:
+                        continue
+                    if self.executor:
+                        order_id = self.executor.place_order(opp)
+                        if order_id:
+                            trades_placed += 1
+                            log.info("TRADE PLACED: %s %s | $%.2f | edge=%.1f%% | %s",
+                                     opp.direction.upper(), opp.market.question[:60],
+                                     opp.position_size_usd, opp.edge * 100, order_id)
+                if trades_placed > 0:
+                    log.info("Placed %d trades this cycle", trades_placed)
+
                 # Check fills (live mode only)
                 if self.executor and not self.cfg.dry_run:
                     self.executor.check_fills()
@@ -451,12 +467,18 @@ class HawkBot:
 
 
 def _get_yes_price(market) -> float:
-    """Get YES price from market tokens."""
+    """Get YES/Over/first-token price from market tokens."""
     for t in market.tokens:
         outcome = (t.get("outcome") or "").lower()
-        if outcome in ("yes", "up"):
+        if outcome in ("yes", "up", "over"):
             try:
                 return float(t.get("price", 0.5))
             except (ValueError, TypeError):
                 return 0.5
+    # Fallback: first token is the "yes" equivalent
+    if market.tokens:
+        try:
+            return float(market.tokens[0].get("price", 0.5))
+        except (ValueError, TypeError):
+            return 0.5
     return 0.5

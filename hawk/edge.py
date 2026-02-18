@@ -26,24 +26,43 @@ class TradeOpportunity:
     urgency_label: str = ""
 
 
+_YES_OUTCOMES = {"yes", "up", "over"}
+_NO_OUTCOMES = {"no", "down", "under"}
+
+
 def _get_market_price(market: HawkMarket, outcome: str = "yes") -> float:
-    """Get current market price for a given outcome."""
+    """Get current market price for a given outcome (handles Yes/No/Over/Under)."""
+    target = _YES_OUTCOMES if outcome == "yes" else _NO_OUTCOMES
     for t in market.tokens:
         tok_outcome = (t.get("outcome") or "").lower()
-        if tok_outcome == outcome:
+        if tok_outcome in target:
             try:
                 return float(t.get("price", 0.5))
             except (ValueError, TypeError):
                 return 0.5
+    # Fallback: first token = "yes" equivalent, second = "no" equivalent
+    tokens = market.tokens
+    if len(tokens) == 2:
+        idx = 0 if outcome == "yes" else 1
+        try:
+            return float(tokens[idx].get("price", 0.5))
+        except (ValueError, TypeError):
+            return 0.5
     return 0.5
 
 
 def _get_token_id(market: HawkMarket, outcome: str = "yes") -> str:
-    """Get the token_id for a given outcome."""
+    """Get the token_id for a given outcome (handles Yes/No/Over/Under + team names)."""
+    target = _YES_OUTCOMES if outcome == "yes" else _NO_OUTCOMES
     for t in market.tokens:
         tok_outcome = (t.get("outcome") or "").lower()
-        if tok_outcome == outcome:
+        if tok_outcome in target:
             return t.get("token_id", "")
+    # Fallback: first token = "yes" equivalent, second = "no" equivalent
+    tokens = market.tokens
+    if len(tokens) == 2:
+        idx = 0 if outcome == "yes" else 1
+        return tokens[idx].get("token_id", "")
     return ""
 
 
@@ -167,6 +186,11 @@ def calculate_edge(
 
     yes_edge = est_prob - yes_price
     no_edge = (1 - est_prob) - no_price
+    best_edge = max(yes_edge, no_edge)
+
+    if best_edge > 0.02:  # Log any non-trivial edge for debugging
+        log.info("Edge calc: %s | GPT=%.2f market=%.2f | YES_edge=%.1f%% NO_edge=%.1f%%",
+                 market.question[:50], est_prob, yes_price, yes_edge*100, no_edge*100)
 
     if yes_edge >= cfg.min_edge and yes_edge >= no_edge:
         direction = "yes"

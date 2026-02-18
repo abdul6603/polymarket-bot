@@ -106,13 +106,26 @@ class HawkExecutor:
                 log.exception("Failed to cancel order %s", pos.get("order_id", "?"))
 
 
+_YES_OUTCOMES = {"yes", "up", "over"}
+_NO_OUTCOMES = {"no", "down", "under"}
+
+
 def _get_entry_price(opp: TradeOpportunity) -> float:
     """Get the entry price for the trade direction."""
+    target = _YES_OUTCOMES if opp.direction == "yes" else _NO_OUTCOMES
     for t in opp.market.tokens:
         tok_outcome = (t.get("outcome") or "").lower()
-        if tok_outcome == opp.direction:
+        if tok_outcome in target:
             try:
                 return max(0.01, min(0.99, float(t.get("price", 0.5))))
             except (ValueError, TypeError):
                 return 0.5
+    # Fallback: first token for yes, second for no
+    tokens = opp.market.tokens
+    if len(tokens) == 2:
+        idx = 0 if opp.direction == "yes" else 1
+        try:
+            return max(0.01, min(0.99, float(tokens[idx].get("price", 0.5))))
+        except (ValueError, TypeError):
+            return 0.5
     return 0.5

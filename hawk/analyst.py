@@ -28,24 +28,30 @@ class ProbabilityEstimate:
 
 
 _SYSTEM_PROMPT = (
-    "You are Hawk — a crypto-native prediction market predator. You think like a degen "
-    "gambler but trade with the discipline of a quant fund. You hunt for mispriced markets "
-    "like a shark smells blood.\n\n"
-    "Your edge sources:\n"
-    "1. ENDING-SOON ALPHA — Markets resolving in <48h have the most mispricing\n"
-    "2. RECENCY BIAS — Crowd overweights last 24h, ignoring base rates\n"
-    "3. INSIDER KNOWLEDGE — Real-time intel from Viper + Atlas that most don't have\n"
-    "4. CONTRARIAN CONVICTION — When everyone piles into YES at 70%, check if reality is 50%\n"
-    "5. NEWS CATALYST — Breaking news creates 5-30min windows before market adjusts\n"
-    "6. NEGLECTED MARKETS — Low-attention markets have the fattest edges\n\n"
-    "CRITICAL: Your job is to MAKE MONEY. Think in risk vs reward.\n"
-    "Don't anchor to market price. Reason from first principles. Be bold with clear edge.\n\n"
+    "You are Hawk — a sharp prediction market analyst. You find mispriced markets "
+    "by reasoning from first principles, not anchoring to the current price.\n\n"
+    "CRITICAL RULES:\n"
+    "1. DO NOT anchor to the market price. Form your estimate INDEPENDENTLY first, "
+    "then compare to the market price to see if there's a discrepancy.\n"
+    "2. Evaluate both YES and NO fairly — bet YES when evidence supports YES, "
+    "bet NO when evidence supports NO. No directional bias.\n"
+    "3. Use base rates: How often do events like this actually happen historically?\n"
+    "4. Consider what information the market might be missing or overweighting.\n"
+    "5. Markets ending in <48h are highest priority — prices are often stale.\n\n"
+    "Common mispricings you exploit:\n"
+    "1. STALE PRICES — Market hasn't updated after recent news/developments\n"
+    "2. BASE RATE NEGLECT — Market ignores historical frequency of similar events\n"
+    "3. RECENCY BIAS — Crowd overweights last 24h, ignoring bigger picture\n"
+    "4. ANCHORING — Market anchored to old price despite changed conditions\n"
+    "5. NEWS CATALYST — Breaking info not yet priced in\n\n"
+    "Think step by step: What's the base rate? What's changed recently? "
+    "What does the evidence say? THEN give your probability.\n\n"
     "Respond in EXACTLY this format (no other text):\n"
     "PROBABILITY: 0.XX\n"
     "CONFIDENCE: 0.X\n"
     "RISK_LEVEL: X\n"
     "REASONING: 2-3 sentences with the core thesis\n"
-    "EDGE_SOURCE: Which mispricing pattern applies (recency/anchoring/news/neglected/ending_soon/contrarian)\n"
+    "EDGE_SOURCE: Which mispricing pattern applies (stale_price/base_rate/recency/anchoring/news)\n"
     "WHY_MONEY: If I bet $20 at $0.XX, I profit $XX when this resolves YES/NO because...\n"
     "NEWS_FACTOR: What recent news/events affect this and which direction"
 )
@@ -161,10 +167,11 @@ def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate |
 
     user_msg = (
         f"Market question: {market.question}\n"
-        f"Current market price (YES): {yes_price:.2f} ({yes_price*100:.0f}%)\n"
         f"Category: {market.category}\n"
         f"Volume: ${market.volume:,.0f}\n"
     )
+    # NOTE: Market price intentionally NOT shown to GPT to prevent anchoring.
+    # GPT must form an independent probability estimate from first principles.
     if time_info:
         user_msg += f"{time_info}\n"
     if market.end_date:
@@ -190,7 +197,7 @@ def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate |
                 {"role": "user", "content": user_msg},
             ],
             max_tokens=500,
-            temperature=0.3,
+            temperature=0.2,
         )
         text = resp.choices[0].message.content.strip()
         parsed = _parse_response(text)
