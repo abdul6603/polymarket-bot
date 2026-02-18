@@ -878,11 +878,13 @@ def api_garves_positions():
                 "condition_id": cid,
             }
 
+            # All positions count toward invested/value totals
+            totals["invested"] += total_cost
+            totals["current_value"] += total_value
+
             # Active = cur_price between 0.001 and 0.999 (market not settled)
             if 0.001 < cur_price < 0.999:
                 active_positions.append(row)
-                totals["invested"] += total_cost
-                totals["current_value"] += total_value
                 totals["unrealized_pnl"] += pnl
                 totals["active_count"] += 1
             else:
