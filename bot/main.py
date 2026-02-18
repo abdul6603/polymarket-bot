@@ -135,7 +135,15 @@ class TradingBot:
         self._market_cooldown: dict[str, float] = {}
         self.COOLDOWN_SECONDS = 90  # 1.5 min cooldown after trading a market
         # Per-market stacking cap: market_id -> trade count (prevents concentrated risk)
+        # Initialized from pending trades so restarts don't reset the count
         self._market_trade_count: dict[str, int] = {}
+        for _tid, _prec in self.perf_tracker._pending.items():
+            mid = _prec.market_id
+            self._market_trade_count[mid] = self._market_trade_count.get(mid, 0) + 1
+        if self._market_trade_count:
+            log.info("Loaded market trade counts from %d pending trades: %s",
+                     sum(self._market_trade_count.values()),
+                     {k[:10]: v for k, v in self._market_trade_count.items()})
         self.MAX_TRADES_PER_MARKET = 1  # Max 1 trade per market — no stacking (was 3, caused $73 concentrated loss)
         # Smart stacking: escalating conviction for each additional bet in same window
         self.STACK_EDGE_ESCALATION = 0.02       # +2% edge per stacked bet

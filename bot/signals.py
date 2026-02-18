@@ -51,6 +51,40 @@ PROB_CLAMP = {
     "weekly": (0.10, 0.90),
 }
 
+# ── Indicator Groups: prevent correlated indicators from dominating ──
+# Trend indicators (MACD, EMA, momentum, heikin_ashi) all measure price trend.
+# In extreme fear they ALL herd bearish, creating fake "strong consensus"
+# from one signal counted 4 times. Cap each group's weight contribution.
+INDICATOR_GROUPS = {
+    "trend": {"macd", "ema", "heikin_ashi", "momentum"},
+    "flow": {"order_flow", "spot_depth", "orderbook", "liquidity"},
+    "external": {"open_interest", "long_short_ratio", "etf_flow", "whale_flow"},
+    "price_action": {"temporal_arb", "price_div", "volume_spike"},
+    "macro": {"news", "dxy_trend", "stablecoin_flow", "tvl_momentum", "mempool"},
+    "derivatives": {"funding_rate", "liquidation"},
+}
+MAX_GROUP_WEIGHT_FRACTION = 0.35  # No single group can contribute > 35% of total weight
+
+# ── Regime-Aware Indicator Scaling ──
+# In extreme fear, trend-following indicators measure the fear itself, not predict the future.
+# Demote them. In extreme greed, same logic — trend follows euphoria.
+REGIME_INDICATOR_SCALE = {
+    "extreme_fear": {
+        "macd": 0.5, "ema": 0.5, "momentum": 0.5, "heikin_ashi": 0.5,
+        "volume_spike": 1.2, "order_flow": 1.0, "liquidation": 1.2,
+    },
+    "fear": {
+        "macd": 0.7, "ema": 0.7, "momentum": 0.7, "heikin_ashi": 0.7,
+    },
+    "extreme_greed": {
+        "macd": 0.5, "ema": 0.5, "momentum": 0.5, "heikin_ashi": 0.5,
+        "volume_spike": 1.2, "order_flow": 1.0,
+    },
+    "greed": {
+        "macd": 0.7, "ema": 0.7, "momentum": 0.7, "heikin_ashi": 0.7,
+    },
+}
+
 # Indicator weights for the ensemble
 # Updated by Quant backtest (Feb 17, 127 trades, weight_v149):
 #   Baseline 60.0% WR → Optimized 65.3% WR (+5.3pp)
@@ -478,34 +512,62 @@ class SignalEngine:
             log.info("[%s/%s] Too few indicators fired (%d)", asset.upper(), timeframe, len(active))
             return None
 
-        # ── Weighted Ensemble Score (with timeframe scaling) ──
+        # ── Weighted Ensemble Score (with timeframe + regime + group cap scaling) ──
         dynamic_weights = get_dynamic_weights(WEIGHTS)
         tf_scale = TF_WEIGHT_SCALE.get(timeframe, {})
+        regime_scale = REGIME_INDICATOR_SCALE.get(regime.label, {}) if regime else {}
+
+        # Pass 1: compute raw weights for each indicator
+        indicator_weights: dict[str, float] = {}
+        disabled = []
+        for name, vote in active.items():
+            base_w = dynamic_weights.get(name, 1.0)
+            if base_w <= 0:
+                disabled.append(name)
+                continue
+            w = base_w * tf_scale.get(name, 1.0) * regime_scale.get(name, 1.0)
+            indicator_weights[name] = w
+
+        # Pass 2: apply indicator group caps — no single group > 35% of total
+        total_raw = sum(indicator_weights.values())
+        if total_raw > 0:
+            # Find which group each indicator belongs to
+            ind_to_group = {}
+            for grp, members in INDICATOR_GROUPS.items():
+                for m in members:
+                    ind_to_group[m] = grp
+
+            # Compute group totals
+            group_totals: dict[str, float] = {}
+            for name, w in indicator_weights.items():
+                grp = ind_to_group.get(name, "other")
+                group_totals[grp] = group_totals.get(grp, 0) + w
+
+            # Cap groups that exceed MAX_GROUP_WEIGHT_FRACTION
+            for grp, grp_total in group_totals.items():
+                fraction = grp_total / total_raw
+                if fraction > MAX_GROUP_WEIGHT_FRACTION:
+                    scale_down = (MAX_GROUP_WEIGHT_FRACTION * total_raw) / grp_total
+                    for name in indicator_weights:
+                        if ind_to_group.get(name, "other") == grp:
+                            indicator_weights[name] *= scale_down
+                    log.info("[%s/%s] Group cap: '%s' was %.0f%% of total, scaled to %.0f%%",
+                             asset.upper(), timeframe, grp, fraction * 100, MAX_GROUP_WEIGHT_FRACTION * 100)
+
+        # Pass 3: compute weighted ensemble score
         weighted_sum = 0.0
         weight_total = 0.0
         up_count = 0
         down_count = 0
 
-        disabled = []
         for name, vote in active.items():
-            base_w = dynamic_weights.get(name, 1.0)
-
-            # Skip indicators disabled by weight learner (accuracy < 40%)
-            if base_w <= 0:
-                disabled.append(name)
+            if name in disabled or name not in indicator_weights:
                 continue
-
-            # Apply timeframe-specific weight scaling
-            scale = tf_scale.get(name, 1.0)
-            w = base_w * scale
-
+            w = indicator_weights[name]
             sign = 1.0 if vote.direction == "up" else -1.0
             weighted_sum += w * vote.confidence * sign
-            weight_total += w  # FIX: normalize by raw weights, not confidence-weighted
+            weight_total += w
 
-            # Only count toward consensus if confidence is meaningful
-            # Low-confidence votes (<15%) still contribute to weighted score but
-            # don't inflate head count — prevents noise from outvoting strong signals
             if vote.confidence >= MIN_VOTE_CONFIDENCE:
                 if vote.direction == "up":
                     up_count += 1
@@ -590,9 +652,22 @@ class SignalEngine:
                     )
                     return None
 
-        # ── Map Score → Probability ──
+        # ── Map Score → Probability (blended with market) ──
         lo, hi = PROB_CLAMP.get(timeframe, (0.30, 0.70))
-        raw_prob = 0.5 + score * 0.25
+        model_prob = 0.5 + score * 0.25
+
+        # Bayesian blend: market gets more weight when it has strong conviction.
+        # This prevents phantom contrarian edges — the old code generated fake 45%
+        # edges when our model (capped at 0.75) disagreed with market at 0.82.
+        if implied_up_price is not None and 0.05 < implied_up_price < 0.95:
+            market_conviction = abs(implied_up_price - 0.5)
+            market_weight = 0.3 + market_conviction  # 0.30 at 50/50, 0.80 at extremes
+            market_weight = min(market_weight, 0.80)  # cap market influence
+            model_weight = 1.0 - market_weight
+            raw_prob = model_weight * model_prob + market_weight * implied_up_price
+        else:
+            raw_prob = model_prob
+
         prob_up = max(lo, min(hi, raw_prob))
 
         confidence = min(abs(score), 1.0)
@@ -645,22 +720,27 @@ class SignalEngine:
         consensus_prob = prob_up if consensus_dir == "up" else (1 - prob_up)
         consensus_token = up_token_id if consensus_dir == "up" else down_token_id
 
-        # ── Safety: reject signals that contradict strong market odds ──
+        # ── Safety: graduated filter for contrarian signals ──
+        # When betting against the market, require progressively stronger consensus.
+        # Old filter: only triggered at 15% lean, easily passed by correlated indicators.
+        # New: graduated from 5% lean, with escalating consensus requirements.
         if implied_up_price is not None and 0.01 < implied_up_price < 0.99:
             market_dir = "up" if implied_up_price > 0.5 else "down"
             market_strength = abs(implied_up_price - 0.5)
 
-            if consensus_dir != market_dir and market_strength > 0.15:
-                # Our indicators disagree with a strong market lean (>65%)
-                # Require much higher consensus to go against the market
-                contrarian_min = max(effective_consensus + 1, int(active_count * 0.80))
+            if consensus_dir != market_dir and market_strength > 0.05:
+                # Graduated: 5-10% lean = +1, 10-20% = +2, 20%+ = +3
+                extra_needed = 1 + int(market_strength * 10)
+                contrarian_min = effective_consensus + extra_needed
+                contrarian_min = min(contrarian_min, active_count)  # can't require more than available
                 if agree_count < contrarian_min:
                     log.info(
                         "[%s/%s] Market safety filter: consensus=%s but market=%s (%.0f%%), "
-                        "need %d/%d agree (have %d), skipping",
+                        "need %d/%d agree (have %d), lean=%.1f%% extra_needed=%d, skipping",
                         asset.upper(), timeframe, consensus_dir.upper(),
                         market_dir.upper(), implied_up_price * 100,
-                        contrarian_min, total_indicators, agree_count,
+                        contrarian_min, active_count, agree_count,
+                        market_strength * 100, extra_needed,
                     )
                     return None
 

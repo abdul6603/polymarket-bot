@@ -180,9 +180,13 @@ class PerformanceTracker:
 
             outcome = self._fetch_resolution(rec.market_id)
             if outcome is None:
-                # Not resolved yet — if it's been more than 30 min past end, skip
-                if now > rec.market_end_time + 1800:
-                    log.warning("Trade %s: market %s still unresolved after 30min, marking stale", trade_id, rec.market_id[:12])
+                # Timeframe-based timeout: longer markets get more time to resolve
+                # Old: 30 min flat timeout caused 1h markets to be marked "unknown"
+                timeout_map = {"5m": 600, "15m": 900, "1h": 7200, "4h": 18000, "weekly": 86400}
+                timeout_s = timeout_map.get(rec.timeframe, 3600)
+                if now > rec.market_end_time + timeout_s:
+                    log.warning("Trade %s: market %s still unresolved after %dmin, marking stale",
+                                trade_id, rec.market_id[:12], timeout_s // 60)
                     rec.resolved = True
                     rec.outcome = "unknown"
                     rec.resolve_time = now
@@ -207,8 +211,9 @@ class PerformanceTracker:
             if self._position_tracker:
                 self._position_tracker.remove_resolved_trade(trade_id)
 
-            # Record indicator accuracy for dynamic weight learning
-            if rec.indicator_votes:
+            # Record indicator accuracy — but ONLY for actually resolved trades,
+            # NOT for "unknown" outcomes (those would poison the weight learner)
+            if rec.indicator_votes and rec.outcome in ("up", "down"):
                 record_indicator_votes(rec, rec.indicator_votes)
 
             # V2: Push resolution alert to Shelby
