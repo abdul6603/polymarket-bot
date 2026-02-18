@@ -10,21 +10,29 @@ from bot.indicators import (
     IndicatorVote,
     atr,
     bollinger_bands,
+    dxy_trend_signal,
     ema_crossover,
+    etf_flow_signal,
     fear_greed_index,
     funding_rate_signal,
     get_params,
     heikin_ashi,
     liquidation_cascade_signal,
     liquidity_signal,
+    long_short_ratio_signal,
     macd,
+    mempool_congestion_signal,
     momentum,
+    open_interest_signal,
     order_flow_delta,
     price_divergence,
     rsi,
     spot_depth_signal,
+    stablecoin_flow_signal,
     temporal_arb,
+    tvl_momentum_signal,
     volume_spike,
+    whale_flow_signal,
 )
 from bot.news_feed import get_news_feed
 from bot.price_cache import PriceCache
@@ -71,6 +79,15 @@ WEIGHTS = {
     "bollinger": 0.0,
     "rsi": 0.0,
     "funding_rate": 0.0,
+    # EXTERNAL DATA — Phase 1 Multi-API indicators (start conservative, weight_learner adjusts)
+    "open_interest": 0.8,     # Coinglass: cross-exchange OI trend
+    "long_short_ratio": 0.6,  # Coinglass: contrarian L/S ratio
+    "etf_flow": 0.7,          # Coinglass: BTC ETF institutional flows
+    "dxy_trend": 0.5,         # FRED: USD index inverse correlation
+    "stablecoin_flow": 0.5,   # DeFiLlama: stablecoin market cap changes
+    "tvl_momentum": 0.4,      # DeFiLlama: DeFi TVL shifts
+    "mempool": 0.5,           # Mempool.space: BTC network congestion
+    "whale_flow": 0.7,        # Whale Alert: large exchange flows
 }
 
 # Timeframe-dependent weight scaling
@@ -78,19 +95,35 @@ WEIGHTS = {
 TF_WEIGHT_SCALE = {
     "5m":  {"order_flow": 1.8, "orderbook": 2.0, "temporal_arb": 2.5, "price_div": 2.0,
             "rsi": 0.6, "macd": 0.6, "heikin_ashi": 0.5,
-            "spot_depth": 1.5, "liquidation": 1.8, "funding_rate": 0.5},
+            "spot_depth": 1.5, "liquidation": 1.8, "funding_rate": 0.5,
+            # External: slow data gets low weight on fast timeframes
+            "open_interest": 0.4, "long_short_ratio": 0.3, "etf_flow": 0.3,
+            "dxy_trend": 0.2, "stablecoin_flow": 0.2, "tvl_momentum": 0.2,
+            "mempool": 0.5, "whale_flow": 0.5},
     "15m": {"order_flow": 1.5, "orderbook": 1.8, "temporal_arb": 2.0, "price_div": 1.5,
             "rsi": 0.8, "macd": 0.9,
-            "spot_depth": 1.3, "liquidation": 1.5, "funding_rate": 0.8},
+            "spot_depth": 1.3, "liquidation": 1.5, "funding_rate": 0.8,
+            "open_interest": 0.6, "long_short_ratio": 0.5, "etf_flow": 0.5,
+            "dxy_trend": 0.3, "stablecoin_flow": 0.3, "tvl_momentum": 0.3,
+            "mempool": 0.6, "whale_flow": 0.6},
     "1h":  {"order_flow": 1.0, "orderbook": 1.2, "rsi": 1.0, "macd": 1.1,
-            "funding_rate": 1.2, "liquidation": 1.0},
+            "funding_rate": 1.2, "liquidation": 1.0,
+            "open_interest": 1.0, "long_short_ratio": 0.8, "etf_flow": 0.8,
+            "dxy_trend": 0.6, "stablecoin_flow": 0.6, "tvl_momentum": 0.6,
+            "mempool": 0.8, "whale_flow": 1.0},
     "4h":  {"order_flow": 0.8, "orderbook": 0.8, "price_div": 0.7,
             "rsi": 1.2, "macd": 1.3, "heikin_ashi": 1.3,
-            "funding_rate": 1.5, "liquidation": 0.8},
+            "funding_rate": 1.5, "liquidation": 0.8,
+            "open_interest": 1.3, "long_short_ratio": 1.2, "etf_flow": 1.2,
+            "dxy_trend": 1.0, "stablecoin_flow": 1.0, "tvl_momentum": 1.0,
+            "mempool": 0.6, "whale_flow": 1.2},
     "weekly": {"rsi": 1.5, "macd": 1.5, "heikin_ashi": 1.5, "ema": 1.5,
                "momentum": 1.3, "bollinger": 1.2, "order_flow": 0.5,
                "orderbook": 0.5, "temporal_arb": 0.5, "price_div": 0.5,
-               "funding_rate": 1.5, "liquidation": 0.5},
+               "funding_rate": 1.5, "liquidation": 0.5,
+               "open_interest": 1.5, "long_short_ratio": 1.5, "etf_flow": 1.5,
+               "dxy_trend": 1.3, "stablecoin_flow": 1.3, "tvl_momentum": 1.3,
+               "mempool": 0.4, "whale_flow": 1.3},
 }
 
 MIN_CANDLES = 30
@@ -124,6 +157,11 @@ MIN_EDGE_ABSOLUTE = 0.08  # 8% — never trade below this regardless of regime
 # Reward-to-Risk ratio filter
 # R:R = ((1-P) * 0.98) / P  where P = token price, 0.98 = payout after 2% winner fee
 MIN_RR_RATIO = 0.8  # reject signals where R:R < 0.8 (too skewed against us)
+
+# Minimum confidence to count toward consensus vote
+# Indicators below this confidence are basically guessing — don't let them inflate head count
+# XRP loss analysis: 4/6 "DOWN" voters had <10% confidence, outvoted MACD at 81% UP
+MIN_VOTE_CONFIDENCE = 0.15  # 15% — below this, vote doesn't count for consensus
 
 # Reversal Sentinel — disabled indicators act as reversal canaries
 # When 2+ disabled indicators disagree with majority, raise the bar
@@ -194,6 +232,7 @@ class SignalEngine:
         regime: RegimeAdjustment | None = None,
         derivatives_data: dict | None = None,
         spot_depth: dict | None = None,
+        external_data: dict | None = None,
     ) -> Signal | None:
         """Generate a signal from the weighted ensemble of all indicators."""
 
@@ -344,6 +383,89 @@ class SignalEngine:
         else:
             votes["spot_depth"] = None
 
+        # ── External Data Indicators (Phase 1 — Multi-API Integration) ──
+        ext = external_data or {}
+
+        # Coinglass: OI, Long/Short, ETF flow
+        cg = ext.get("coinglass")
+        if cg:
+            try:
+                votes["open_interest"] = open_interest_signal(
+                    cg.oi_change_1h_pct, cg.oi_change_4h_pct,
+                )
+            except Exception:
+                votes["open_interest"] = None
+            try:
+                votes["long_short_ratio"] = long_short_ratio_signal(cg.long_short_ratio)
+            except Exception:
+                votes["long_short_ratio"] = None
+            try:
+                if cg.etf_available and asset == "bitcoin":
+                    votes["etf_flow"] = etf_flow_signal(cg.etf_net_flow_usd)
+                else:
+                    votes["etf_flow"] = None
+            except Exception:
+                votes["etf_flow"] = None
+        else:
+            votes["open_interest"] = None
+            votes["long_short_ratio"] = None
+            votes["etf_flow"] = None
+
+        # FRED Macro: DXY trend
+        macro = ext.get("macro")
+        if macro and macro.dxy_trend:
+            try:
+                votes["dxy_trend"] = dxy_trend_signal(macro.dxy_trend, macro.dxy_change_pct)
+            except Exception:
+                votes["dxy_trend"] = None
+        else:
+            votes["dxy_trend"] = None
+
+        # DeFiLlama: stablecoin flow + TVL momentum
+        defi = ext.get("defi")
+        if defi:
+            try:
+                votes["stablecoin_flow"] = stablecoin_flow_signal(
+                    defi.stablecoin_change_7d_usd, defi.stablecoin_change_7d_pct,
+                )
+            except Exception:
+                votes["stablecoin_flow"] = None
+            try:
+                votes["tvl_momentum"] = tvl_momentum_signal(
+                    defi.tvl_change_24h_pct, defi.tvl_change_7d_pct,
+                )
+            except Exception:
+                votes["tvl_momentum"] = None
+        else:
+            votes["stablecoin_flow"] = None
+            votes["tvl_momentum"] = None
+
+        # Mempool.space: BTC congestion (BTC only)
+        mempool_data = ext.get("mempool")
+        if mempool_data and asset == "bitcoin":
+            try:
+                votes["mempool"] = mempool_congestion_signal(
+                    mempool_data.fee_ratio_vs_baseline,
+                    mempool_data.tx_count,
+                    mempool_data.congestion_level,
+                )
+            except Exception:
+                votes["mempool"] = None
+        else:
+            votes["mempool"] = None
+
+        # Whale Alert: exchange flow
+        whale = ext.get("whale")
+        if whale:
+            try:
+                votes["whale_flow"] = whale_flow_signal(
+                    whale.deposits_usd, whale.withdrawals_usd, whale.tx_count,
+                )
+            except Exception:
+                votes["whale_flow"] = None
+        else:
+            votes["whale_flow"] = None
+
         # Filter to non-None votes
         active: dict[str, IndicatorVote] = {
             k: v for k, v in votes.items() if v is not None
@@ -378,10 +500,14 @@ class SignalEngine:
             weighted_sum += w * vote.confidence * sign
             weight_total += w  # FIX: normalize by raw weights, not confidence-weighted
 
-            if vote.direction == "up":
-                up_count += 1
-            else:
-                down_count += 1
+            # Only count toward consensus if confidence is meaningful
+            # Low-confidence votes (<15%) still contribute to weighted score but
+            # don't inflate head count — prevents noise from outvoting strong signals
+            if vote.confidence >= MIN_VOTE_CONFIDENCE:
+                if vote.direction == "up":
+                    up_count += 1
+                else:
+                    down_count += 1
 
         if disabled:
             log.info("[%s/%s] Disabled anti-signals (accuracy <40%%): %s",
