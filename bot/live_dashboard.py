@@ -129,8 +129,18 @@ if socketio:
 # ── Main entry point ──
 
 if __name__ == "__main__":
+    import socket
     import webbrowser
     import time
+
+    # ── Guard: exit immediately if port 8877 is already in use ──
+    _sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        _sock.bind(("127.0.0.1", 8877))
+        _sock.close()
+    except OSError:
+        print("[Dashboard] Port 8877 already in use — another instance is running. Exiting.")
+        sys.exit(0)
 
     # Auto-start Atlas background research loop
     def _auto_start_atlas():
