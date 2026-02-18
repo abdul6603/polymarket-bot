@@ -65,6 +65,9 @@ class HawkTracker:
 
     def record_trade(self, opp: TradeOpportunity, order_id: str) -> None:
         """Append trade to JSONL and track in memory."""
+        if self.has_position_for_market(opp.market.condition_id):
+            log.warning("Duplicate trade blocked: already have position for %s", opp.market.condition_id[:12])
+            return
         rec = {
             "trade_id": f"hawk_{opp.market.condition_id[:8]}_{int(time.time())}",
             "order_id": order_id,
@@ -187,13 +190,26 @@ class HawkTracker:
             log.exception("Failed to write Hawk trade record")
 
 
+_YES_OUTCOMES = {"yes", "up", "over"}
+_NO_OUTCOMES = {"no", "down", "under"}
+
+
 def _get_price(opp: TradeOpportunity) -> float:
-    """Get entry price for the trade direction."""
+    """Get entry price for the trade direction (handles Over/Under/team outcomes)."""
+    target = _YES_OUTCOMES if opp.direction == "yes" else _NO_OUTCOMES
     for t in opp.market.tokens:
         tok_outcome = (t.get("outcome") or "").lower()
-        if tok_outcome == opp.direction:
+        if tok_outcome in target:
             try:
-                return float(t.get("price", 0.5))
+                return max(0.01, min(0.99, float(t.get("price", 0.5))))
             except (ValueError, TypeError):
                 return 0.5
+    # Fallback: first token = yes, second = no
+    tokens = opp.market.tokens
+    if len(tokens) == 2:
+        idx = 0 if opp.direction == "yes" else 1
+        try:
+            return max(0.01, min(0.99, float(tokens[idx].get("price", 0.5))))
+        except (ValueError, TypeError):
+            return 0.5
     return 0.5
