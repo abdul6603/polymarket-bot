@@ -111,15 +111,15 @@ def get_data(asset: str) -> CoinglassData | None:
     except Exception:
         pass
 
-    # 2. OI change over time
+    # 2. OI change over time (1h candles: -2 = 1h ago, -5 = 4h ago)
     try:
-        ohlc = _api_get("open_interest_his", {"symbol": symbol, "time_type": 2, "currency": "USD"})
+        ohlc = _api_get("open_interest_his", {"symbol": symbol, "time_type": 1, "currency": "USD"})
         if ohlc and isinstance(ohlc, dict):
             prices = ohlc.get("priceList", []) or ohlc.get("dataMap", {})
             if isinstance(prices, list) and len(prices) >= 2:
                 current = float(prices[-1][-1]) if prices[-1] else 0
-                h1_ago = float(prices[-12][-1]) if len(prices) > 12 and prices[-12] else current
-                h4_ago = float(prices[-48][-1]) if len(prices) > 48 and prices[-48] else current
+                h1_ago = float(prices[-2][-1]) if len(prices) > 1 and prices[-2] else current
+                h4_ago = float(prices[-5][-1]) if len(prices) > 4 and prices[-5] else current
                 if h1_ago > 0:
                     result.oi_change_1h_pct = (current - h1_ago) / h1_ago * 100
                 if h4_ago > 0:

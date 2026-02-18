@@ -46,6 +46,7 @@ ASSET_KEYWORDS = {
     "bitcoin": ["bitcoin", "btc", "satoshi"],
     "ethereum": ["ethereum", "eth", "vitalik", "erc-20", "erc20"],
     "solana": ["solana", "sol"],
+    "xrp": ["xrp", "ripple", "xrpl"],
 }
 
 CACHE_TTL = 300  # 5 minutes
@@ -167,6 +168,19 @@ class CryptoNewsFeed:
                     title_el = item.find("title")
                     if title_el is None or not title_el.text:
                         continue
+
+                    # Parse pubDate if available and filter old headlines
+                    pub_el = item.find("pubDate")
+                    if pub_el is not None and pub_el.text:
+                        try:
+                            from email.utils import parsedate_to_datetime
+                            pub_dt = parsedate_to_datetime(pub_el.text)
+                            age_seconds = now - pub_dt.timestamp()
+                            if age_seconds > MAX_HEADLINE_AGE:
+                                continue
+                        except Exception:
+                            pass  # If parsing fails, include the headline
+
                     headlines.append({
                         "title": title_el.text.strip(),
                         "source": feed_url.split("/")[2],

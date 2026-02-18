@@ -34,7 +34,7 @@ class RegimeAdjustment:
 _DEFAULT_REGIME = RegimeAdjustment(
     label="neutral", fng_value=50,
     size_multiplier=1.0, edge_multiplier=1.0,
-    consensus_offset=0, confidence_floor=0.25,
+    consensus_offset=0, confidence_floor=0.55,
 )
 
 REGIME_TABLE = {
@@ -49,22 +49,22 @@ REGIME_TABLE = {
     "fear": lambda fng: RegimeAdjustment(
         label="fear", fng_value=fng,
         size_multiplier=0.9, edge_multiplier=1.1,
-        consensus_offset=0, confidence_floor=0.25,
+        consensus_offset=0, confidence_floor=0.55,  # match MIN_CONFIDENCE baseline
     ),
     "neutral": lambda fng: RegimeAdjustment(
         label="neutral", fng_value=fng,
         size_multiplier=1.0, edge_multiplier=1.0,
-        consensus_offset=0, confidence_floor=0.25,
+        consensus_offset=0, confidence_floor=0.55,  # match MIN_CONFIDENCE baseline
     ),
     "greed": lambda fng: RegimeAdjustment(
         label="greed", fng_value=fng,
         size_multiplier=0.8, edge_multiplier=1.2,
-        consensus_offset=1, confidence_floor=0.30,
+        consensus_offset=1, confidence_floor=0.60,  # require stronger conviction in greed
     ),
     "extreme_greed": lambda fng: RegimeAdjustment(
         label="extreme_greed", fng_value=fng,
         size_multiplier=0.5, edge_multiplier=1.5,
-        consensus_offset=1, confidence_floor=0.35,
+        consensus_offset=1, confidence_floor=0.65,  # highest bar — most unreliable regime
     ),
 }
 

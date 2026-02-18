@@ -156,6 +156,7 @@ class Executor:
                 size_usd=order_size_usd,
                 entry_price=price,
                 order_id=order_id,
+                timeframe=getattr(signal, "timeframe", ""),
             )
             self.tracker.add(pos)
             return order_id
@@ -227,9 +228,13 @@ class Executor:
                 log.debug("Could not check order %s", pos.order_id)
 
     def cancel_all_open(self) -> None:
-        """Cancel all open orders for shutdown cleanup."""
+        """Cancel unfilled open orders for shutdown cleanup.
+
+        Only cancels orders that haven't been filled yet.
+        Filled positions (active holdings) stay in tracker.
+        """
         if self.cfg.dry_run:
-            log.info("[DRY RUN] Would cancel %d open orders", self.tracker.count)
+            log.info("[DRY RUN] Clearing %d dry-run positions on shutdown", self.tracker.count)
             for pos in list(self.tracker.open_positions):
                 self.tracker.remove(pos.order_id)
             return
@@ -239,8 +244,13 @@ class Executor:
 
         for pos in list(self.tracker.open_positions):
             try:
+                order = self.client.get_order(pos.order_id)
+                status = order.get("status", "").lower()
+                if status in ("matched", "filled"):
+                    log.info("Order %s already filled — keeping in tracker", pos.order_id)
+                    continue
                 self.client.cancel(pos.order_id)
-                log.info("Cancelled order %s", pos.order_id)
+                log.info("Cancelled open order %s", pos.order_id)
                 self.tracker.remove(pos.order_id)
             except Exception:
                 log.exception("Failed to cancel order %s", pos.order_id)

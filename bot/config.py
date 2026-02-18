@@ -26,7 +26,7 @@ class Config:
     gamma_host: str = _env("GAMMA_HOST", "https://gamma-api.polymarket.com")
     ws_url: str = _env("WS_URL", "wss://ws-subscriptions-clob.polymarket.com/ws/market")
     coingecko_url: str = _env("COINGECKO_URL", "https://api.coingecko.com/api/v3")
-    binance_ws_url: str = _env("BINANCE_WS_URL", "wss://stream.binance.com:9443")
+    binance_ws_url: str = _env("BINANCE_WS_URL", "wss://stream.binance.us:9443")
 
     # Risk — $250 bankroll, $150 total exposure cap
     max_position_usd: float = float(_env("MAX_POSITION_USD", "150.0"))

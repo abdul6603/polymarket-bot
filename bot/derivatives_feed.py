@@ -27,8 +27,10 @@ LIQUIDATION_STREAMS = "/".join(f"{s.lower()}@forceOrder" for s in FUTURES_SYMBOL
 MARK_PRICE_STREAMS = "/".join(f"{s.lower()}@markPrice" for s in FUTURES_SYMBOL_MAP)
 STREAMS = f"{LIQUIDATION_STREAMS}/{MARK_PRICE_STREAMS}"
 
-# Hardcoded Binance Futures WebSocket (NOT from config — config has Binance US URL)
+# Binance Futures WebSocket — binance.com only (no futures on Binance.US)
+# Requires VPN from geo-blocked regions. Falls back gracefully with backoff.
 _FUTURES_WS_URL = "wss://fstream.binance.com"
+_MAX_BACKOFF = 300  # 5 min max between retries when geo-blocked
 
 # Cascade detection thresholds
 CASCADE_USD_THRESHOLD = 500_000  # $500K in 5 minutes
@@ -111,14 +113,17 @@ class DerivativesFeed:
 
     async def _run_loop(self) -> None:
         """Main loop that reconnects on disconnect."""
+        backoff = 5
         while self._running:
             try:
                 await self._connect()
+                backoff = 5  # Reset on successful connection
             except asyncio.CancelledError:
                 return
             except Exception:
-                log.exception("Derivatives WS error, reconnecting in 5s")
-                await asyncio.sleep(5)
+                log.warning("Derivatives WS error, reconnecting in %ds (geo-block likely)", backoff)
+                await asyncio.sleep(backoff)
+                backoff = min(backoff * 2, _MAX_BACKOFF)
 
     async def _connect(self) -> None:
         """Connect to Binance Futures WebSocket and handle messages."""

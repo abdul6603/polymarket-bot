@@ -38,6 +38,8 @@ _TG_CHAT = os.environ.get("TG_CHAT_ID", "")
 
 def _send_telegram(text: str) -> bool:
     """Send a Telegram message to Jordan via Shelby's bot."""
+    if not _TG_TOKEN or not _TG_CHAT:
+        return False
     try:
         import requests
         resp = requests.post(
@@ -45,14 +47,15 @@ def _send_telegram(text: str) -> bool:
             json={"chat_id": _TG_CHAT, "text": text, "parse_mode": "Markdown"},
             timeout=10,
         )
-        if resp.status_code != 200:
-            # Retry without parse_mode in case of markdown errors
-            requests.post(
-                f"https://api.telegram.org/bot{_TG_TOKEN}/sendMessage",
-                json={"chat_id": _TG_CHAT, "text": text},
-                timeout=10,
-            )
-        return resp.status_code == 200
+        if resp.status_code == 200:
+            return True
+        # Retry without parse_mode in case of markdown errors
+        retry = requests.post(
+            f"https://api.telegram.org/bot{_TG_TOKEN}/sendMessage",
+            json={"chat_id": _TG_CHAT, "text": text},
+            timeout=10,
+        )
+        return retry.status_code == 200
     except Exception as e:
         log.warning("Telegram alert failed: %s", str(e)[:100])
         return False
@@ -232,6 +235,9 @@ class TradingBot:
                 )
                 # Reload tracker with empty state
                 self.perf_tracker = PerformanceTracker(self.cfg, position_tracker=self.tracker)
+                # Reset per-market trade counts and cooldowns for new day
+                self._market_trade_count = {}
+                self._market_cooldown = {}
             except Exception as e:
                 log.error("Daily reset failed: %s", str(e)[:200])
 

@@ -26,6 +26,7 @@ class Position:
     shares: float = 0.0      # actual share count from chain
     opened_at: float = field(default_factory=time.time)
     strategy: str = "directional"  # "directional" or "straddle"
+    timeframe: str = ""      # signal timeframe for dry-run expiry timing
 
 
 class PositionTracker:
@@ -236,9 +237,21 @@ class PositionTracker:
         return pos
 
     def remove_resolved_trade(self, trade_id: str) -> None:
-        """Remove a position when its trade resolves (called by PerformanceTracker)."""
+        """Remove a position when its trade resolves (called by PerformanceTracker).
+
+        trade_id format is '{market_id[:12]}_{timestamp}', so we extract the
+        market_id prefix and match against positions by market_id.
+        """
+        # Direct key match (unlikely but check first)
         if trade_id in self._positions:
             del self._positions[trade_id]
+            return
+        # Match by market_id prefix from trade_id
+        market_prefix = trade_id.rsplit("_", 1)[0] if "_" in trade_id else trade_id
+        to_remove = [k for k, p in self._positions.items() if p.market_id.startswith(market_prefix)]
+        if to_remove:
+            del self._positions[to_remove[0]]
+            log.info("Removed resolved position for market prefix %s (key=%s)", market_prefix, to_remove[0])
 
     def remove_by_token(self, token_id: str) -> None:
         """Remove all positions for a token (used when chain sync detects 0 balance)."""
@@ -302,9 +315,8 @@ def check_risk(
             f"= ${real_positions + size:.2f} > ${MAX_TOTAL_EXPOSURE:.2f}"
         )
 
-    # Check 4: No duplicate market positions
-    if tracker.has_position_for_market(market_id):
-        return False, f"Already have position in market {market_id}"
+    # Check 4: Duplicate market guard moved to main.py _market_trade_count
+    # (smart stacking allows up to MAX_TRADES_PER_MARKET per market)
 
     log.info(
         "Risk check passed: edge=%.3f, size=$%.2f, positions=%d/%d, "

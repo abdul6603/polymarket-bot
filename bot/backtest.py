@@ -61,8 +61,8 @@ DATA_DIR = Path(__file__).parent.parent / "data"
 CANDLE_DIR = DATA_DIR / "candles"
 CANDLE_DIR.mkdir(parents=True, exist_ok=True)
 
-BINANCE_KLINES_URL = "https://api.binance.com/api/v3/klines"
-SYMBOL_MAP = {"bitcoin": "BTCUSDT", "ethereum": "ETHUSDT", "solana": "SOLUSDT"}
+BINANCE_KLINES_URL = "https://api.binance.us/api/v3/klines"
+SYMBOL_MAP = {"bitcoin": "BTCUSDT", "ethereum": "ETHUSDT", "solana": "SOLUSDT", "xrp": "XRPUSDT"}
 TIMEFRAME_MINUTES = {"5m": 5, "15m": 15, "1h": 60, "4h": 240}
 
 

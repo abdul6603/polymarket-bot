@@ -111,7 +111,7 @@ def get_data() -> DefiFlowData | None:
 
     _cache["defi"] = (result, now)
     log.info(
-        "[DEFI] Stablecoin MCap=$%.0fB (7d: %+$%.0fB, %+.1f%%) | TVL=$%.0fB (24h: %+.1f%%, 7d: %+.1f%%)",
+        "[DEFI] Stablecoin MCap=$%.0fB (7d: $%+.0fB, %+.1f%%) | TVL=$%.0fB (24h: %+.1f%%, 7d: %+.1f%%)",
         result.stablecoin_mcap_usd / 1e9,
         result.stablecoin_change_7d_usd / 1e9,
         result.stablecoin_change_7d_pct,

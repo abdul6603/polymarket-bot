@@ -5,7 +5,7 @@ import logging
 import os
 import subprocess
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from pathlib import Path
@@ -92,7 +92,10 @@ class PerformanceTracker:
                         continue
                     rec = json.loads(line)
                     if not rec.get("resolved"):
-                        self._pending[rec["trade_id"]] = TradeRecord(**rec)
+                        # Filter to only known TradeRecord fields (handles schema changes)
+                        valid_keys = {f.name for f in fields(TradeRecord)}
+                        filtered = {k: v for k, v in rec.items() if k in valid_keys}
+                        self._pending[rec["trade_id"]] = TradeRecord(**filtered)
             log.info("Loaded %d pending trades to resolve", len(self._pending))
         except Exception:
             log.exception("Failed to load trade history")
