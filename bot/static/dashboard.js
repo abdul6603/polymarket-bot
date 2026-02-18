@@ -354,40 +354,98 @@ function renderLiveResolvedTrades(trades) {
   }
 }
 
-// === ON-CHAIN POSITIONS RENDERER ===
+// === ON-CHAIN PORTFOLIO RENDERER ===
 function renderOnChainPositions(data) {
-  var feed = document.getElementById('onchain-positions-feed');
   var dot = document.getElementById('positions-live-dot');
   var totalEl = document.getElementById('positions-total-value');
-  if (!feed) return;
+  if (!dot) return;
 
-  if (dot) dot.style.background = data.live ? 'var(--success)' : '#555';
-  if (totalEl) totalEl.textContent = data.live ? 'Total Value: $' + (data.total_value || 0).toFixed(2) : 'Offline';
+  dot.style.background = data.live ? 'var(--success)' : '#555';
 
-  var positions = data.positions || [];
-  if (positions.length === 0) {
-    feed.innerHTML = '<div class="glass-card text-muted" style="text-align:center;padding:16px;">' + (data.error ? 'Error: ' + esc(data.error) : 'No open positions on-chain') + '</div>';
-    return;
+  var t = data.totals || {};
+  var totalPnl = t.total_pnl || 0;
+  if (totalEl) {
+    var tStr = (totalPnl >= 0 ? '+$' : '-$') + Math.abs(totalPnl).toFixed(2);
+    totalEl.innerHTML = 'Net PnL: <span style="color:' + (totalPnl >= 0 ? 'var(--success)' : 'var(--error)') + ';font-weight:700;">' + tStr + '</span>';
   }
 
-  var html = '';
-  for (var i = 0; i < positions.length; i++) {
-    var p = positions[i];
-    var pnlColor = p.unrealized_pnl >= 0 ? 'var(--success)' : 'var(--error)';
-    var pnlStr = (p.unrealized_pnl >= 0 ? '+' : '') + '$' + p.unrealized_pnl.toFixed(2);
-    html += '<div class="glass-card" style="padding:10px 14px;border-left:3px solid ' + pnlColor + ';">';
-    html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">';
-    html += '<div>';
-    html += '<div style="font-weight:600;font-size:0.82rem;">' + esc(p.market || 'Unknown') + '</div>';
-    html += '<div class="text-muted" style="font-size:0.68rem;">Outcome: ' + esc(p.outcome) + ' | Size: ' + p.size.toFixed(2) + ' shares</div>';
-    html += '</div>';
-    html += '<div style="text-align:right;">';
-    html += '<div style="font-size:0.72rem;">Avg: $' + p.avg_price.toFixed(3) + ' &rarr; Now: $' + p.cur_price.toFixed(3) + '</div>';
-    html += '<div style="font-weight:700;color:' + pnlColor + ';">' + pnlStr + '</div>';
-    html += '<div class="text-muted" style="font-size:0.64rem;">Value: $' + p.value.toFixed(2) + '</div>';
-    html += '</div></div></div>';
+  // Summary cards
+  var invEl = document.getElementById('oc-invested');
+  var valEl = document.getElementById('oc-value');
+  var realEl = document.getElementById('oc-realized');
+  var unrealEl = document.getElementById('oc-unrealized');
+  if (invEl) invEl.textContent = '$' + (t.invested || 0).toFixed(2);
+  if (valEl) { valEl.textContent = '$' + (t.current_value || 0).toFixed(2); valEl.style.color = 'var(--success)'; }
+  if (realEl) {
+    var rp = t.realized_pnl || 0;
+    realEl.textContent = (rp >= 0 ? '+$' : '-$') + Math.abs(rp).toFixed(2);
+    realEl.style.color = rp >= 0 ? 'var(--success)' : 'var(--error)';
   }
-  feed.innerHTML = html;
+  if (unrealEl) {
+    var up = t.unrealized_pnl || 0;
+    unrealEl.textContent = (up >= 0 ? '+$' : '-$') + Math.abs(up).toFixed(2);
+    unrealEl.style.color = up >= 0 ? 'var(--success)' : 'var(--error)';
+  }
+
+  // Active positions table
+  var activeEl = document.getElementById('oc-active-tbody');
+  var active = data.active || [];
+  if (activeEl) {
+    if (active.length === 0) {
+      activeEl.innerHTML = '<tr><td colspan="9" class="text-muted" style="text-align:center;padding:12px;">No active positions</td></tr>';
+    } else {
+      var html = '';
+      for (var i = 0; i < active.length; i++) {
+        var p = active[i];
+        var pc = p.pnl >= 0 ? 'var(--success)' : 'var(--error)';
+        var ps = (p.pnl >= 0 ? '+$' : '-$') + Math.abs(p.pnl).toFixed(2);
+        html += '<tr>';
+        html += '<td style="font-weight:600;">' + esc(p.asset) + '</td>';
+        html += '<td style="font-size:0.72rem;">' + esc(p.market) + '</td>';
+        html += '<td style="color:' + (p.outcome === 'Up' ? 'var(--success)' : 'var(--error)') + ';font-weight:600;">' + esc(p.outcome) + '</td>';
+        html += '<td>' + p.size.toFixed(0) + '</td>';
+        html += '<td>$' + p.avg_price.toFixed(3) + '</td>';
+        html += '<td style="font-weight:600;">$' + p.cur_price.toFixed(3) + '</td>';
+        html += '<td>$' + p.cost.toFixed(2) + '</td>';
+        html += '<td style="font-weight:600;">$' + p.value.toFixed(2) + '</td>';
+        html += '<td style="color:' + pc + ';font-weight:700;">' + ps + ' (' + p.pnl_pct.toFixed(1) + '%)</td>';
+        html += '</tr>';
+      }
+      activeEl.innerHTML = html;
+    }
+  }
+
+  // Settled positions table
+  var settledEl = document.getElementById('oc-settled-tbody');
+  var wlEl = document.getElementById('oc-settled-wl');
+  var settled = data.settled || [];
+  if (wlEl) {
+    wlEl.innerHTML = '<span style="color:var(--success);">' + (t.wins || 0) + 'W</span> / <span style="color:var(--error);">' + (t.losses || 0) + 'L</span>';
+  }
+  if (settledEl) {
+    if (settled.length === 0) {
+      settledEl.innerHTML = '<tr><td colspan="7" class="text-muted" style="text-align:center;padding:12px;">No settled positions yet</td></tr>';
+    } else {
+      var html = '';
+      for (var i = 0; i < settled.length; i++) {
+        var p = settled[i];
+        var won = p.won;
+        var rp = p.result_pnl || 0;
+        var rc = rp >= 0 ? 'var(--success)' : 'var(--error)';
+        var rs = (rp >= 0 ? '+$' : '-$') + Math.abs(rp).toFixed(2);
+        html += '<tr>';
+        html += '<td style="font-weight:600;">' + esc(p.asset) + '</td>';
+        html += '<td style="font-size:0.72rem;">' + esc(p.market) + '</td>';
+        html += '<td>' + esc(p.outcome) + '</td>';
+        html += '<td>' + p.size.toFixed(0) + '</td>';
+        html += '<td>$' + p.cost.toFixed(2) + '</td>';
+        html += '<td><span class="badge ' + (won ? 'badge-success' : 'badge-error') + '" style="font-weight:700;">' + (won ? 'WON' : 'LOST') + '</span></td>';
+        html += '<td style="color:' + rc + ';font-weight:700;font-size:0.88rem;">' + rs + '</td>';
+        html += '</tr>';
+      }
+      settledEl.innerHTML = html;
+    }
+  }
 }
 
 function renderLiveLogs(lines) {
@@ -666,40 +724,7 @@ async function loadConvictionData() {
     var resp = await fetch('/api/garves/conviction');
     var data = await resp.json();
     if (data.error) return;
-    var es = data.engine_status || {};
-    document.getElementById('conv-rolling-wr').textContent = es.rolling_wr || 'N/A';
-    var streak = es.current_streak || 0;
-    var streakEl = document.getElementById('conv-streak');
-    streakEl.textContent = (streak > 0 ? '+' : '') + streak;
-    streakEl.style.color = streak > 0 ? 'var(--success)' : streak < 0 ? 'var(--error)' : 'var(--text-secondary)';
-    var dpEl = document.getElementById('conv-daily-pnl');
-    dpEl.textContent = es.daily_pnl || '$0.00';
-    dpEl.style.color = (es.daily_pnl || '').indexOf('-') !== -1 ? 'var(--error)' : 'var(--success)';
-    document.getElementById('conv-total-resolved').textContent = es.total_resolved || 0;
-    // Asset signals cards
-    var assets = es.asset_signals || {};
-    var assetHtml = '';
-    var assetKeys = ['bitcoin','ethereum','solana'];
-    for (var i = 0; i < assetKeys.length; i++) {
-      var ak = assetKeys[i];
-      var sig = assets[ak] || {};
-      var label = ak.charAt(0).toUpperCase() + ak.slice(1);
-      if (sig.status === 'no_signal') {
-        assetHtml += '<div class="glass-card" style="text-align:center;"><h4 style="margin:0 0 4px;font-size:0.76rem;color:var(--text-secondary);">' + label + '</h4><span class="text-muted">No signal</span></div>';
-      } else {
-        var dirColor = sig.direction === 'up' ? 'var(--success)' : 'var(--error)';
-        assetHtml += '<div class="glass-card" style="text-align:center;"><h4 style="margin:0 0 4px;font-size:0.76rem;color:var(--agent-garves);">' + label + '</h4>';
-        assetHtml += '<div style="font-size:1.1rem;font-weight:700;color:' + dirColor + ';">' + (sig.direction || '').toUpperCase() + '</div>';
-        assetHtml += '<div style="font-size:0.68rem;color:var(--text-secondary);">Consensus: ' + (sig.consensus || '--') + ' | Edge: ' + (sig.edge || '--') + '</div>';
-        var badges = '';
-        if (sig.volume_spike) badges += '<span class="badge badge-success" style="font-size:0.6rem;margin:2px;">VOL</span>';
-        if (sig.temporal_arb) badges += '<span class="badge badge-success" style="font-size:0.6rem;margin:2px;">ARB</span>';
-        if (badges) assetHtml += '<div style="margin-top:3px;">' + badges + '</div>';
-        assetHtml += '</div>';
-      }
-    }
-    document.getElementById('conv-asset-signals').innerHTML = assetHtml;
-    // Indicator weights table
+    // Indicator weights table only (asset signals removed — were always "no signal")
     var weights = data.indicator_weights || {};
     var wKeys = Object.keys(weights);
     if (wKeys.length > 0) {

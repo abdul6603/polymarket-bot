@@ -794,9 +794,23 @@ POSITIONS_CACHE_FILE = DATA_DIR / "polymarket_positions.json"
 POSITIONS_CACHE_TTL = 30  # seconds
 
 
+def _parse_asset_from_title(title: str) -> str:
+    """Extract asset name from market title."""
+    t = title.lower()
+    if "bitcoin" in t:
+        return "BTC"
+    if "ethereum" in t:
+        return "ETH"
+    if "solana" in t:
+        return "SOL"
+    if "xrp" in t:
+        return "XRP"
+    return "?"
+
+
 @garves_bp.route("/api/garves/positions")
 def api_garves_positions():
-    """Live on-chain positions from Polymarket data API."""
+    """Live on-chain positions — combined by market, with real PnL math."""
     # Check cache
     if POSITIONS_CACHE_FILE.exists():
         try:
@@ -807,7 +821,13 @@ def api_garves_positions():
             pass
 
     wallet = POLYMARKET_WALLET
-    result = {"positions": [], "total_value": 0.0, "live": False, "fetched_at": 0, "error": None}
+    result = {
+        "active": [], "settled": [],
+        "totals": {"invested": 0.0, "current_value": 0.0, "realized_pnl": 0.0,
+                   "unrealized_pnl": 0.0, "total_pnl": 0.0,
+                   "wins": 0, "losses": 0, "active_count": 0},
+        "live": False, "fetched_at": 0, "error": None,
+    }
 
     try:
         import urllib.request
@@ -816,35 +836,81 @@ def api_garves_positions():
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode())
 
-        positions = []
-        total_value = 0.0
+        # Group by condition_id (same market = same condition_id)
+        grouped: dict[str, list] = {}
         if isinstance(data, list):
             for pos in data:
                 size = float(pos.get("size", 0))
                 if size <= 0:
                     continue
-                cur_price = float(pos.get("curPrice", 0))
-                avg_price = float(pos.get("avgPrice", 0))
-                value = size * cur_price
-                cost = size * avg_price
-                unrealized_pnl = value - cost
-                total_value += value
+                cid = pos.get("conditionId", pos.get("asset", ""))
+                grouped.setdefault(cid, []).append(pos)
 
-                positions.append({
-                    "market": pos.get("title", pos.get("slug", "Unknown")),
-                    "outcome": pos.get("outcome", ""),
-                    "size": round(size, 4),
-                    "avg_price": round(avg_price, 4),
-                    "cur_price": round(cur_price, 4),
-                    "value": round(value, 2),
-                    "cost": round(cost, 2),
-                    "unrealized_pnl": round(unrealized_pnl, 2),
-                    "condition_id": pos.get("conditionId", ""),
-                    "asset_id": pos.get("asset", ""),
-                })
+        active_positions = []
+        settled_positions = []
+        totals = result["totals"]
 
-        result["positions"] = positions
-        result["total_value"] = round(total_value, 2)
+        for cid, entries in grouped.items():
+            # Combine all entries for this market
+            total_size = sum(float(e.get("size", 0)) for e in entries)
+            total_cost = sum(float(e.get("size", 0)) * float(e.get("avgPrice", 0)) for e in entries)
+            cur_price = float(entries[0].get("curPrice", 0))
+            total_value = total_size * cur_price
+            avg_price = total_cost / total_size if total_size > 0 else 0
+            pnl = total_value - total_cost
+            title = entries[0].get("title", entries[0].get("slug", "Unknown"))
+            outcome = entries[0].get("outcome", "")
+            asset = _parse_asset_from_title(title)
+            num_bets = len(entries)
+
+            row = {
+                "market": title,
+                "asset": asset,
+                "outcome": outcome,
+                "num_bets": num_bets,
+                "size": round(total_size, 2),
+                "avg_price": round(avg_price, 4),
+                "cur_price": round(cur_price, 4),
+                "cost": round(total_cost, 2),
+                "value": round(total_value, 2),
+                "pnl": round(pnl, 2),
+                "pnl_pct": round((pnl / total_cost * 100) if total_cost > 0 else 0, 1),
+                "condition_id": cid,
+            }
+
+            # Active = cur_price between 0.001 and 0.999 (market not settled)
+            if 0.001 < cur_price < 0.999:
+                active_positions.append(row)
+                totals["invested"] += total_cost
+                totals["current_value"] += total_value
+                totals["unrealized_pnl"] += pnl
+                totals["active_count"] += 1
+            else:
+                # Settled: cur_price ~1 = won, cur_price ~0 = lost
+                won = cur_price >= 0.5
+                row["won"] = won
+                row["result_pnl"] = round(total_value - total_cost, 2) if won else round(-total_cost, 2)
+                settled_positions.append(row)
+                if won:
+                    totals["wins"] += 1
+                    totals["realized_pnl"] += (total_value - total_cost)
+                else:
+                    totals["losses"] += 1
+                    totals["realized_pnl"] += -total_cost
+
+        # Sort: active by value desc, settled by pnl desc
+        active_positions.sort(key=lambda x: -x["value"])
+        settled_positions.sort(key=lambda x: -x.get("result_pnl", 0))
+
+        totals["total_pnl"] = round(totals["realized_pnl"] + totals["unrealized_pnl"], 2)
+        totals["realized_pnl"] = round(totals["realized_pnl"], 2)
+        totals["unrealized_pnl"] = round(totals["unrealized_pnl"], 2)
+        totals["invested"] = round(totals["invested"], 2)
+        totals["current_value"] = round(totals["current_value"], 2)
+
+        result["active"] = active_positions
+        result["settled"] = settled_positions
+        result["totals"] = totals
         result["live"] = True
     except Exception as e:
         result["error"] = str(e)[:200]

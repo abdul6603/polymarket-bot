@@ -42,20 +42,55 @@
   </div>
   <div class="mt-6" id="garves-regime-badge"><span class="badge badge-info">Regime: --</span></div>
 
-  <!-- ConvictionEngine -->
+  <!-- On-Chain Portfolio (replaces ConvictionEngine) -->
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="garves">ConvictionEngine</h2>
-    <div class="grid-4" id="conviction-stats">
-      <div class="stat-card" data-accent="garves"><div class="stat-value" id="conv-rolling-wr">--</div><div class="stat-label">Rolling WR (20)</div></div>
-      <div class="stat-card" data-accent="garves"><div class="stat-value" id="conv-streak">--</div><div class="stat-label">Streak</div></div>
-      <div class="stat-card" data-accent="success"><div class="stat-value" id="conv-daily-pnl">--</div><div class="stat-label">Daily PnL</div></div>
-      <div class="stat-card" data-accent="garves"><div class="stat-value" id="conv-total-resolved">--</div><div class="stat-label">Total Resolved</div></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <h2 class="section-title" data-accent="garves" style="margin:0;">On-Chain Portfolio</h2>
+      <span id="positions-live-dot" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;animation:pulse-glow 2s ease-in-out infinite;"></span>
+      <span style="font-size:0.64rem;color:var(--success);">LIVE</span>
+      <span id="positions-total-value" class="text-muted" style="font-size:0.76rem;margin-left:auto;">--</span>
     </div>
-    <div class="grid-3 mt-3" id="conv-asset-signals"></div>
-    <div class="mt-3">
-      <h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">Indicator Weights</h3>
-      <div class="glass-card"><table class="data-table"><thead><tr><th>Indicator</th><th>Base</th><th>Dynamic</th><th>Accuracy</th><th>Samples</th><th>Status</th></tr></thead><tbody id="conv-weights-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody></table></div>
+    <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;border-left:3px solid var(--agent-garves);">
+      <div style="font-size:0.68rem;color:var(--text-muted);line-height:1.5;">
+        <strong>What is this?</strong> Real-time data pulled from your Polymarket wallet on Polygon. Every row is a position Garves holds on-chain.
+        <strong>Invested</strong> = total USDC spent buying shares. <strong>Value</strong> = what those shares are worth right now.
+        <strong>PnL</strong> = profit or loss (value minus cost). Settled positions show final results; active ones update live as market prices move.
+      </div>
     </div>
+    <!-- On-chain summary cards -->
+    <div class="grid-4" id="onchain-summary-cards">
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="oc-invested">--</div><div class="stat-label">Invested</div></div>
+      <div class="stat-card" data-accent="success"><div class="stat-value" id="oc-value">--</div><div class="stat-label">Current Value</div></div>
+      <div class="stat-card" data-accent="success"><div class="stat-value" id="oc-realized">--</div><div class="stat-label">Realized PnL</div></div>
+      <div class="stat-card" data-accent="warning"><div class="stat-value" id="oc-unrealized">--</div><div class="stat-label">Unrealized PnL</div></div>
+    </div>
+    <!-- Active positions table -->
+    <div style="margin-top:10px;">
+      <h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-2);">Active Positions</h3>
+      <div class="glass-card"><table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Bet</th><th>Shares</th><th>Avg Price</th><th>Now</th><th>Cost</th><th>Value</th><th>PnL</th></tr></thead>
+      <tbody id="oc-active-tbody"><tr><td colspan="9" class="text-muted" style="text-align:center;padding:16px;">Loading...</td></tr></tbody></table></div>
+    </div>
+    <!-- Settled positions table -->
+    <div style="margin-top:10px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:var(--space-2);">
+        <h3 class="section-title" style="font-size:0.76rem;margin:0;">Settled Positions</h3>
+        <span id="oc-settled-wl" class="text-muted" style="font-size:0.72rem;">--</span>
+      </div>
+      <div class="glass-card"><table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Bet</th><th>Shares</th><th>Cost</th><th>Result</th><th>PnL</th></tr></thead>
+      <tbody id="oc-settled-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;padding:16px;">Loading...</td></tr></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- Indicator Weights (kept from ConvictionEngine) -->
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="garves">Indicator Weights</h2>
+    <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;border-left:3px solid var(--agent-garves);">
+      <div style="font-size:0.68rem;color:var(--text-muted);line-height:1.5;">
+        <strong>Base</strong> = starting weight from Quant backtesting. <strong>Dynamic</strong> = auto-adjusted by the weight learner based on each indicator's live accuracy.
+        Indicators with accuracy above 55% get boosted +30%. Below 45% accuracy = disabled (0 weight). <strong>Samples</strong> = total votes cast by this indicator across all trades.
+      </div>
+    </div>
+    <div class="glass-card"><table class="data-table"><thead><tr><th>Indicator</th><th>Base</th><th>Dynamic</th><th>Accuracy</th><th>Samples</th><th>Status</th></tr></thead><tbody id="conv-weights-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody></table></div>
   </div>
 
   <div class="section-spacer">
@@ -66,33 +101,21 @@
       <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Direction</h3><table class="data-table"><thead><tr><th>Dir</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-dir"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
     </div>
   </div>
-  <!-- On-Chain Positions -->
-  <div class="section-spacer">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-      <h2 class="section-title" data-accent="garves" style="margin:0;">On-Chain Positions</h2>
-      <span id="positions-live-dot" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;"></span>
-      <span id="positions-total-value" class="text-muted" style="font-size:0.76rem;margin-left:auto;">--</span>
-    </div>
-    <div id="onchain-positions-feed" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
-      <div class="glass-card text-muted" style="text-align:center;padding:16px;">Loading on-chain positions...</div>
-    </div>
-  </div>
 
   <!-- Live Positions (Pending Trades with Countdown Timers) -->
   <div class="section-spacer">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-      <h2 class="section-title" data-accent="warning" style="margin:0;">Live Positions</h2>
+      <h2 class="section-title" data-accent="warning" style="margin:0;">Pending Trades</h2>
       <span id="pending-count-badge" style="background:var(--warning);color:#000;font-weight:700;padding:2px 8px;border-radius:10px;font-size:0.72rem;">0</span>
       <span id="pending-exposure" class="text-muted" style="font-size:0.76rem;margin-left:auto;">Exposure: --</span>
     </div>
-    <div id="live-positions-cards" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;"></div>
     <div class="glass-card" id="live-positions-table-wrap">
       <table class="data-table"><thead><tr><th>Placed</th><th>Market</th><th>Direction</th><th>Stake</th><th>Edge</th><th style="min-width:100px;">Countdown</th><th>Pot. Profit</th><th>Pot. Loss</th></tr></thead>
       <tbody id="live-pending-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No pending trades</td></tr></tbody></table>
     </div>
   </div>
 
-  <!-- Resolved Trades with Win/Loss Amounts -->
+  <!-- Resolved Trades -->
   <div class="section-spacer">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
       <h2 class="section-title" data-accent="garves" style="margin:0;">Resolved Trades</h2>
