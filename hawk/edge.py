@@ -197,8 +197,8 @@ def calculate_edge(
     # V3: Dynamic min_edge based on confidence and data quality
     has_sportsbook = getattr(estimate, 'sportsbook_prob', None) is not None
     if has_sportsbook:
-        # Sportsbook-backed: trust the data, lower threshold
-        effective_min_edge = max(0.03, cfg.min_edge - 0.02)
+        # Sportsbook-backed: slightly lower threshold (they're reliable)
+        effective_min_edge = max(0.05, cfg.min_edge - 0.03)
     elif estimate.confidence >= 0.6:
         effective_min_edge = cfg.min_edge
     elif estimate.confidence >= 0.4:
@@ -236,12 +236,8 @@ def calculate_edge(
     if not token_id:
         return None
 
-    # V4: Cross-platform confidence bonus
+    # V4: Cross-platform intelligence (used for risk adjustment, NOT edge inflation)
     xp_count = getattr(estimate, 'cross_platform_count', 0)
-    if xp_count >= 2:
-        edge *= 1.10  # +10% edge boost with 2+ cross-platform confirmations
-    elif xp_count == 1:
-        edge *= 1.05  # +5% with 1 cross-platform match
 
     kf = kelly_size(true_prob, buy_price, effective_bankroll, cfg.max_bet_usd, cfg.kelly_fraction)
     if kf < 1.0:

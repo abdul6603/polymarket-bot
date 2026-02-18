@@ -309,11 +309,8 @@ class HawkBot:
                 # 3. V2: Urgency-weighted ranking (ending-soon first)
                 ranked_markets = _urgency_rank(contested)
 
-                # Take top 35 by urgency score (no more "skip top 5" — analyze high-volume if ending soon)
-                target_markets = ranked_markets[:35]
-
                 # Cap at 30 for GPT-4o analysis
-                target_markets = target_markets[:30]
+                target_markets = ranked_markets[:30]
                 log.info("Analyzing %d urgency-ranked markets with GPT-4o V2...", len(target_markets))
 
                 # 4. Analyze with GPT-4o (V2 wise degen personality)
@@ -368,14 +365,16 @@ class HawkBot:
                 except Exception:
                     log.exception("Failed to generate Hawk briefing")
 
-                # 6. Build suggestions with multi-source intel
+                # 6. Build suggestions + auto-execute in single pass (one risk check per opp)
                 intel_ctx = _load_all_intel(target_markets)
                 suggestions = []
+                trades_placed = 0
                 for opp in ranked:
                     allowed, reason = self.risk.check_trade(opp)
                     if not allowed:
                         log.info("Risk blocked: %s", reason)
                         continue
+
                     cid = opp.market.condition_id
                     intel_items = intel_ctx.get(cid, [])
                     has_viper = len(intel_items) > 0
@@ -409,19 +408,7 @@ class HawkBot:
                         "news_factor": opp.estimate.news_factor[:300],
                     })
 
-                _save_suggestions(suggestions)
-                log.info("Saved %d trade suggestions (HIGH: %d, MEDIUM: %d, SPEC: %d)",
-                         len(suggestions),
-                         sum(1 for s in suggestions if s["tier"] == "HIGH"),
-                         sum(1 for s in suggestions if s["tier"] == "MEDIUM"),
-                         sum(1 for s in suggestions if s["tier"] == "SPECULATIVE"))
-
-                # Auto-execute: place trades for risk-approved opportunities
-                trades_placed = 0
-                for opp in ranked:
-                    allowed, reason = self.risk.check_trade(opp)
-                    if not allowed:
-                        continue
+                    # Auto-execute immediately after risk approval
                     if self.executor:
                         order_id = self.executor.place_order(opp)
                         if order_id:
@@ -429,6 +416,13 @@ class HawkBot:
                             log.info("TRADE PLACED: %s %s | $%.2f | edge=%.1f%% | %s",
                                      opp.direction.upper(), opp.market.question[:60],
                                      opp.position_size_usd, opp.edge * 100, order_id)
+
+                _save_suggestions(suggestions)
+                log.info("Saved %d trade suggestions (HIGH: %d, MEDIUM: %d, SPEC: %d)",
+                         len(suggestions),
+                         sum(1 for s in suggestions if s["tier"] == "HIGH"),
+                         sum(1 for s in suggestions if s["tier"] == "MEDIUM"),
+                         sum(1 for s in suggestions if s["tier"] == "SPECULATIVE"))
                 if trades_placed > 0:
                     log.info("Placed %d trades this cycle", trades_placed)
 
@@ -445,12 +439,14 @@ class HawkBot:
                             res["resolved"], res["wins"], res["losses"],
                             res.get("total_pnl", 0.0),
                         )
-                        self.risk.record_pnl(res.get("total_pnl", 0.0))
+                        # Record per-trade PnL for accurate streak detection
+                        for trade_pnl in res.get("per_trade_pnl", []):
+                            self.risk.record_pnl(trade_pnl)
                         # Reload tracker
                         self.tracker._positions = []
                         self.tracker._load_positions()
 
-                        # V2: Trigger post-trade review
+                        # Post-trade review
                         try:
                             from hawk.reviewer import review_resolved_trades
                             review = review_resolved_trades()

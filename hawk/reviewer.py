@@ -92,7 +92,10 @@ def review_resolved_trades() -> dict:
     calibration_errors = []
     for t in resolved:
         est_prob = t.get("estimated_prob", 0.5)
-        actual = 1.0 if t.get("outcome") == "yes" else 0.0
+        # Won means our estimated direction was correct
+        # For YES bets: won=True means event happened, actual_prob=1.0
+        # For NO bets: won=True means event didn't happen, actual_prob for our bet=1.0
+        actual = 1.0 if t.get("won") else 0.0
         calibration_errors.append(abs(est_prob - actual))
     avg_calibration = round(sum(calibration_errors) / len(calibration_errors), 3) if calibration_errors else 0
 
@@ -178,15 +181,15 @@ def generate_trade_report(trade: dict) -> dict:
     risk = trade.get("risk_score", 5)
 
     # Was reasoning correct?
-    if direction == outcome:
+    if won:
         direction_correct = True
         verdict = "Correct call"
     else:
         direction_correct = False
-        verdict = f"Wrong call — bet {direction.upper()}, resolved {outcome.upper()}"
+        verdict = f"Wrong call — bet {direction.upper()}, lost"
 
     # Probability calibration
-    actual = 1.0 if outcome == "yes" else 0.0
+    actual = 1.0 if won else 0.0
     prob_error = abs(est_prob - actual)
     if prob_error < 0.15:
         calibration = "excellent"

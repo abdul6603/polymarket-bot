@@ -47,7 +47,7 @@ def resolve_paper_trades() -> dict:
             cid_to_trades.setdefault(cid, []).append(t)
 
     session = get_session()
-    stats = {"checked": len(unresolved), "resolved": 0, "wins": 0, "losses": 0, "skipped": 0, "total_pnl": 0.0}
+    stats = {"checked": len(unresolved), "resolved": 0, "wins": 0, "losses": 0, "skipped": 0, "total_pnl": 0.0, "per_trade_pnl": []}
 
     for cid, cid_trades in cid_to_trades.items():
         try:
@@ -117,6 +117,7 @@ def resolve_paper_trades() -> dict:
 
                 stats["resolved"] += 1
                 stats["total_pnl"] += pnl
+                stats["per_trade_pnl"].append(round(pnl, 2))
                 if won:
                     stats["wins"] += 1
                 else:
@@ -139,48 +140,8 @@ def resolve_paper_trades() -> dict:
     if stats["resolved"] > 0:
         _rewrite_trades(trades)
 
-        # V2: Trigger post-trade reviewer
-        try:
-            from hawk.reviewer import review_resolved_trades
-            review_resolved_trades()
-            log.info("Post-trade review triggered after %d resolutions", stats["resolved"])
-        except Exception:
-            log.exception("Post-trade review failed after resolution")
-
     return stats
 
-
-def _get_winning_outcome(data: dict) -> str:
-    """Determine winning outcome from market data."""
-    outcomes = data.get("outcomes", [])
-    prices = data.get("outcomePrices", [])
-
-    if isinstance(outcomes, str):
-        try:
-            outcomes = json.loads(outcomes)
-        except (json.JSONDecodeError, TypeError):
-            outcomes = []
-    if isinstance(prices, str):
-        try:
-            prices = json.loads(prices)
-        except (json.JSONDecodeError, TypeError):
-            prices = []
-
-    if outcomes and prices and len(outcomes) == len(prices):
-        for i, p in enumerate(prices):
-            try:
-                if float(p) >= 0.95:
-                    return outcomes[i].lower()
-            except (ValueError, TypeError):
-                continue
-
-    tokens = data.get("tokens", [])
-    for t in tokens:
-        winner = t.get("winner")
-        if winner:
-            return (t.get("outcome") or "yes").lower()
-
-    return ""
 
 
 def _rewrite_trades(trades: list[dict]) -> None:

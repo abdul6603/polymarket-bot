@@ -80,10 +80,10 @@ _NONSPORTS_SYSTEM_PROMPT = (
     "4. If you have NO specific knowledge about this event, set CONFIDENCE to 0.3 or below.\n"
     "5. Only set CONFIDENCE above 0.6 if you have specific, concrete reasons.\n\n"
     "Common mispricings:\n"
-    "1. STALE PRICES — Market hasn't updated after recent news\n"
-    "2. BASE RATE NEGLECT — Market ignores historical frequency\n"
-    "3. RECENCY BIAS — Crowd overweights recent events\n"
-    "4. NEWS CATALYST — Breaking info not yet priced in\n\n"
+    "1. BASE RATE NEGLECT — Market ignores historical frequency\n"
+    "2. RECENCY BIAS — Crowd overweights recent events\n"
+    "3. NEWS CATALYST — Breaking info not yet priced in\n"
+    "4. ANCHORING — Crowd anchors on salient numbers instead of reasoning\n\n"
     "Respond in EXACTLY this format:\n"
     "PROBABILITY: 0.XX\n"
     "CONFIDENCE: 0.X\n"
@@ -411,7 +411,7 @@ def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate |
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_msg},
             ],
-            max_tokens=500,
+            max_tokens=700,
             temperature=0.2,
         )
         text = resp.choices[0].message.content.strip()

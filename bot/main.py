@@ -339,31 +339,46 @@ class TradingBot:
 
         # Gather external data per asset (cached, won't re-fetch each tick)
         external_data_cache: dict[str, dict] = {}
+        defi = None
+        mempool_data = None
         try:
-            from bot.coinglass import get_data as get_coinglass
             from bot.defi_data import get_data as get_defi
-            from bot.mempool import get_data as get_mempool
-            from bot.whale_tracker import get_flow as get_whale_flow
-
             defi = get_defi()
-            mempool_data = get_mempool()
-
-            for asset_name in ("bitcoin", "ethereum", "solana", "xrp"):
-                ext: dict = {}
-                try:
-                    ext["coinglass"] = get_coinglass(asset_name)
-                except Exception:
-                    ext["coinglass"] = None
-                ext["macro"] = macro_ctx
-                ext["defi"] = defi
-                ext["mempool"] = mempool_data
-                try:
-                    ext["whale"] = get_whale_flow(asset_name)
-                except Exception:
-                    ext["whale"] = None
-                external_data_cache[asset_name] = ext
         except Exception:
-            log.debug("External data import/fetch failed, continuing without")
+            log.debug("DeFi data fetch failed")
+        try:
+            from bot.mempool import get_data as get_mempool
+            mempool_data = get_mempool()
+        except Exception:
+            log.debug("Mempool data fetch failed")
+
+        for asset_name in ("bitcoin", "ethereum", "solana", "xrp"):
+            ext: dict = {}
+            try:
+                from bot.coinglass import get_data as get_coinglass
+                ext["coinglass"] = get_coinglass(asset_name)
+            except Exception:
+                ext["coinglass"] = None
+            ext["macro"] = macro_ctx
+            ext["defi"] = defi
+            ext["mempool"] = mempool_data
+            try:
+                from bot.whale_tracker import get_flow as get_whale_flow
+                ext["whale"] = get_whale_flow(asset_name)
+            except Exception:
+                ext["whale"] = None
+            external_data_cache[asset_name] = ext
+
+        # Log external data status
+        if external_data_cache:
+            sources = []
+            sample = next(iter(external_data_cache.values()), {})
+            if sample.get("defi"): sources.append("DeFi")
+            if sample.get("mempool"): sources.append("Mempool")
+            if sample.get("macro"): sources.append("Macro")
+            if sample.get("coinglass"): sources.append("Coinglass")
+            if sources:
+                log.info("[EXT DATA] Active sources: %s", ", ".join(sources))
 
         # Save external data state for dashboard
         self._save_external_data_state(external_data_cache, macro_ctx)
@@ -430,7 +445,7 @@ class TradingBot:
                 regime=regime,
                 derivatives_data=deriv_data,
                 spot_depth=spot_depth,
-                external_data=external_data_cache.get(asset),
+                external_data=external_data_cache.get(asset.lower()),
             )
             if not sig:
                 continue

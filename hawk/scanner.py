@@ -162,6 +162,10 @@ def scan_all_markets(cfg: HawkConfig) -> list[HawkMarket]:
                     if volume < cfg.min_volume:
                         continue
 
+                    # Skip low-liquidity markets (wide spreads, slippage risk)
+                    if liquidity < cfg.min_liquidity:
+                        continue
+
                     # Skip markets that resolve too far out OR too soon
                     m_end_date = m.get("endDate", m.get("end_date_iso", ""))
                     if m_end_date:
