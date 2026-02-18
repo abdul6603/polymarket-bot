@@ -25,6 +25,7 @@ from bot.tracker import PerformanceTracker
 from bot.ws_feed import MarketFeed
 from bot.v2_tools import is_emergency_stopped, accept_commands, process_command, daily_trade_report
 from bot.daily_cycle import should_reset, archive_and_reset
+from bot.orderbook_check import check_orderbook_depth
 
 log = logging.getLogger("bot")
 
@@ -414,6 +415,24 @@ class TradingBot:
                 log.info("  -> Blocked: %s", reason)
                 continue
 
+            # Orderbook depth check — verify liquidity before placing order
+            ob_ok, ob_reason, ob_analysis = check_orderbook_depth(
+                clob_host=self.cfg.clob_host,
+                token_id=sig.token_id,
+                order_size_usd=conviction.position_size_usd,
+                target_price=sig.probability,
+            )
+            if not ob_ok:
+                log.info("  -> Orderbook blocked: %s", ob_reason)
+                continue
+            if ob_analysis:
+                log.info(
+                    "  -> Orderbook: liq=$%.0f (bid=$%.0f ask=$%.0f) spread=$%.3f slip=%.1f%%",
+                    ob_analysis.total_liquidity_usd, ob_analysis.bid_liquidity_usd,
+                    ob_analysis.ask_liquidity_usd, ob_analysis.spread,
+                    ob_analysis.estimated_slippage_pct * 100,
+                )
+
             # Execute with conviction-based sizing
             order_id = self.executor.place_order(
                 sig, market_id, conviction_size=conviction.position_size_usd
@@ -433,13 +452,16 @@ class TradingBot:
                 if not self.cfg.dry_run:
                     try:
                         rr_tg = f"R:R: {sig.reward_risk_ratio:.2f}" if sig.reward_risk_ratio else "R:R: N/A"
+                        ob_tg = ""
+                        if ob_analysis:
+                            ob_tg = f"\nBook: ${ob_analysis.total_liquidity_usd:.0f} liq | ${ob_analysis.spread:.3f} spread | {ob_analysis.estimated_slippage_pct*100:.1f}% slip"
                         msg = (
                             f"*GARVES TRADE*\n\n"
                             f"*{sig.direction.upper()}* on {asset.upper()}/{timeframe}\n"
                             f"Market: _{dm.question[:80]}_\n"
                             f"Size: *${conviction.position_size_usd:.2f}*\n"
                             f"Price: ${sig.probability:.3f} | Edge: {sig.edge*100:.1f}% | {rr_tg}\n"
-                            f"Conviction: {conviction.total_score:.0f}/100 [{conviction.tier_label}]\n"
+                            f"Conviction: {conviction.total_score:.0f}/100 [{conviction.tier_label}]{ob_tg}\n"
                             f"Order: `{order_id}`"
                         )
                         _send_telegram(msg)
@@ -457,6 +479,9 @@ class TradingBot:
                     indicator_votes=sig.indicator_votes,
                     regime_label=regime.label,
                     regime_fng=regime.fng_value,
+                    ob_liquidity_usd=ob_analysis.total_liquidity_usd if ob_analysis else 0.0,
+                    ob_spread=ob_analysis.spread if ob_analysis else 0.0,
+                    ob_slippage_pct=ob_analysis.estimated_slippage_pct if ob_analysis else 0.0,
                 )
 
         # ── Straddle Engine: if no directional trades and regime is fear ──

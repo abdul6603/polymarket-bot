@@ -25,9 +25,9 @@ KELLY_FRACTION = 0.25        # Quarter-Kelly for safety
 KELLY_MIN_SIZE_FRAC = 0.10   # Never size below 10% of base
 KELLY_MAX_SIZE_FRAC = 2.50   # Never size above 250% of base
 
-# Dynamic sizing: V3 Cash Printer — $22-$55 per trade, every trade passed 0.55 confidence
-TRADE_MIN_USD = 22.0
-TRADE_MAX_USD = 55.0
+# Dynamic sizing: V3 Kelly-backed — $25-$50 per trade, consensus=7 + conf=0.55 filter
+TRADE_MIN_USD = 25.0
+TRADE_MAX_USD = 50.0
 
 
 class Executor:

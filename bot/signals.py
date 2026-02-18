@@ -94,14 +94,14 @@ TF_WEIGHT_SCALE = {
 }
 
 MIN_CANDLES = 30
-CONSENSUS_RATIO = 0.70  # 70% of active (non-disabled) indicators must agree
-CONSENSUS_FLOOR = 3     # never require fewer than 3 agreements
+CONSENSUS_RATIO = 0.78  # Quant: consensus=7/9 active = 78%. Achieves 7 needed when 9 active indicators.
+CONSENSUS_FLOOR = 4     # Hard floor: 4 minimum. With 5 active→need 4 (80%), 9 active→need 7 (78% = Quant optimal).
 MIN_CONSENSUS = CONSENSUS_FLOOR  # backward compat for backtest/quant (absolute floor)
 MIN_ATR_THRESHOLD = 0.00005  # skip if volatility below this (0.005% of price)
 MIN_CONFIDENCE = 0.55  # DATA: conf>=55% = 82.9% WR, conf>=60% = 91.7% WR. Old 0.25 let through garbage.
 
 # Directional bias: UP predictions have 47.3% WR vs DOWN 63% — require higher confidence for UP
-UP_CONFIDENCE_PREMIUM = 0.02  # reduced 5%→2%: live data shows UP=70.8% WR vs DOWN=68.8% — UP outperforms, don't penalize
+UP_CONFIDENCE_PREMIUM = 0.12  # Quant optimal: 0.12. UP bets need higher bar — forces only high-conviction UP trades through.
 
 # Time-of-day filter: block hours with <30% WR across 140+ trades
 # Good hours: 00,02,10,12,16,17 (79.5% WR combined)

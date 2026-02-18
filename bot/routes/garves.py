@@ -724,3 +724,45 @@ def api_garves_bankroll():
         return jsonify(bm.get_status())
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500
+
+
+@garves_bp.route("/api/garves/orderbook-stats")
+def api_garves_orderbook_stats():
+    """Orderbook depth stats from recent trades."""
+    try:
+        trades = _load_trades()
+        ob_trades = [t for t in trades if t.get("ob_liquidity_usd", 0) > 0]
+        if not ob_trades:
+            return jsonify({
+                "total_with_ob_data": 0,
+                "message": "No trades with orderbook data yet (V3 feature)",
+            })
+
+        recent = ob_trades[-50:]  # last 50 trades with OB data
+        avg_liq = sum(t["ob_liquidity_usd"] for t in recent) / len(recent)
+        avg_spread = sum(t["ob_spread"] for t in recent) / len(recent)
+        avg_slip = sum(t["ob_slippage_pct"] for t in recent) / len(recent)
+
+        # Win rate by liquidity bucket
+        high_liq = [t for t in ob_trades if t["ob_liquidity_usd"] >= 500]
+        low_liq = [t for t in ob_trades if 0 < t["ob_liquidity_usd"] < 500]
+        high_liq_wr = (sum(1 for t in high_liq if t.get("won")) / len(high_liq) * 100) if high_liq else 0
+        low_liq_wr = (sum(1 for t in low_liq if t.get("won")) / len(low_liq) * 100) if low_liq else 0
+
+        return jsonify({
+            "total_with_ob_data": len(ob_trades),
+            "recent_avg_liquidity": round(avg_liq, 2),
+            "recent_avg_spread": round(avg_spread, 4),
+            "recent_avg_slippage_pct": round(avg_slip * 100, 2),
+            "high_liq_trades": len(high_liq),
+            "high_liq_wr": round(high_liq_wr, 1),
+            "low_liq_trades": len(low_liq),
+            "low_liq_wr": round(low_liq_wr, 1),
+            "thresholds": {
+                "min_liquidity_usd": 150,
+                "max_spread": 0.06,
+                "max_slippage_pct": 5.0,
+            },
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500

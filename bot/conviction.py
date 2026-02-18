@@ -38,17 +38,17 @@ TRADES_FILE = DATA_DIR / "trades.jsonl"
 # Conviction maps to these tiers with smooth interpolation within each band.
 SIZE_TIERS = {
     # (min_conviction, max_conviction): (min_usd, max_usd)
-    # V3 Cash Printer: high confidence filter (0.55) means every trade is quality. Size up.
+    # V3 Kelly-backed: $31.25 recommended, $30 base. Consensus=7 + conf=0.55 = quality trades only.
     (0, 15):   (0.0, 0.0),      # DON'T TRADE — truly insufficient evidence
-    (15, 30):  (22.0, 28.0),    # Micro — passed confidence filter, minimum $22
-    (30, 50):  (28.0, 36.0),    # Small — solid signal
-    (50, 70):  (36.0, 43.0),    # Standard — strong consensus
-    (70, 85):  (43.0, 50.0),    # Increased — strong multi-factor alignment
-    (85, 100): (50.0, 55.0),    # Maximum conviction — nearly everything aligns
+    (15, 30):  (25.0, 30.0),    # Micro — passed all filters, Kelly floor
+    (30, 50):  (30.0, 35.0),    # Small — solid signal, Kelly base
+    (50, 70):  (35.0, 40.0),    # Standard — strong consensus
+    (70, 85):  (40.0, 45.0),    # Increased — strong multi-factor alignment
+    (85, 100): (45.0, 50.0),    # Maximum conviction — nearly everything aligns
 }
 
 # ── Safety Rails ──
-ABSOLUTE_MAX_PER_TRADE = 55.0       # Max per trade — safe but meaningful
+ABSOLUTE_MAX_PER_TRADE = 50.0       # Max per trade — Kelly-backed ceiling
 ABSOLUTE_MAX_DAILY_LOSS = 50.0      # Stop trading if daily loss hits $50
 LOSING_STREAK_THRESHOLD = 3         # Scale down after 3 consecutive losses
 LOSING_STREAK_PENALTY = 0.75        # Multiply conviction by 0.75 during losing streak (0.6 was too crushing)

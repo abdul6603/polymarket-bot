@@ -54,6 +54,11 @@ class TradeRecord:
     # V2: Signal rationale (human-readable trade reasoning)
     signal_rationale: str = ""
 
+    # V3: Orderbook depth at execution time
+    ob_liquidity_usd: float = 0.0
+    ob_spread: float = 0.0
+    ob_slippage_pct: float = 0.0
+
     # Resolution (filled in later)
     resolved: bool = False
     outcome: str = ""       # "up" or "down" — actual market result
@@ -102,6 +107,9 @@ class PerformanceTracker:
         indicator_votes: dict | None = None,
         regime_label: str = "",
         regime_fng: int = -1,
+        ob_liquidity_usd: float = 0.0,
+        ob_spread: float = 0.0,
+        ob_slippage_pct: float = 0.0,
     ) -> None:
         """Record a new signal prediction."""
         trade_id = f"{market_id[:12]}_{int(time.time())}"
@@ -138,6 +146,9 @@ class PerformanceTracker:
             regime_fng=regime_fng,
             reward_risk_ratio=getattr(signal, "reward_risk_ratio", 0.0) or 0.0,
             signal_rationale=rationale,
+            ob_liquidity_usd=ob_liquidity_usd,
+            ob_spread=ob_spread,
+            ob_slippage_pct=ob_slippage_pct,
             dry_run=self.cfg.dry_run,
         )
         self._pending[trade_id] = rec
