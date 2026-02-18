@@ -44,12 +44,12 @@ PROB_CLAMP = {
 }
 
 # Indicator weights for the ensemble
-# Updated by Quant backtest (Feb 17, 127 trades):
+# Updated by Quant backtest (Feb 17, 127 trades, weight_v149):
 #   Baseline 60.0% WR → Optimized 65.3% WR (+5.3pp)
-#   Changes: ema 1.1→0.6, order_flow 0.5→1.0, news 2.5→1.0
+#   Feb 17 tuning: order_flow 3.0→4.0 (every top-20 config uses 4.0, catches reversals via volume delta)
+#                  momentum 1.0→1.2 (#1 config uses 1.2, 63.2% accuracy)
 #   news demoted: only 3/11 correct in recent trades (27.3%)
 #   ema demoted: 55.2% accuracy, marginal contributor
-#   order_flow promoted: doubled weight based on weight_v171 sweep
 WEIGHTS = {
     # TOP TIER — proven edge (>70% accuracy)
     "volume_spike": 2.5,
@@ -58,10 +58,10 @@ WEIGHTS = {
     "temporal_arb": 1.8,
     "price_div": 1.4,
     "macd": 1.1,
-    "order_flow": 3.0,  # Quant V3: 2.0→3.0 (57.8% accuracy, every top-20 config used 4.0, stepping to 3.0)
+    "order_flow": 4.0,  # Quant V4: 3.0→4.0 (every top-20 config uses 4.0, catches reversals via real-time Binance volume delta)
     "news": 0.0,         # DISABLED: 47.1% accuracy = below coin flip. Atlas+Quant+Bottleneck all agree
     # LOW TIER — marginal (50-55%)
-    "momentum": 1.0,    # Quant V3: 0.6→1.0 (59.9% accuracy, #1 config uses 1.2, stepping to 1.0)
+    "momentum": 1.2,    # Quant V4: 1.0→1.2 (#1 config uses 1.2, 63.2% accuracy)
     "ema": 0.6,           # Quant: 1.1→0.6 (weight_v171)
     "heikin_ashi": 0.5,
     "spot_depth": 0.6,  # Re-enabled: 63.0% accuracy on 54 votes (was wrongly disabled for "insufficient data")
@@ -124,6 +124,12 @@ MIN_EDGE_ABSOLUTE = 0.08  # 8% — never trade below this regardless of regime
 # Reward-to-Risk ratio filter
 # R:R = ((1-P) * 0.98) / P  where P = token price, 0.98 = payout after 2% winner fee
 MIN_RR_RATIO = 0.8  # reject signals where R:R < 0.8 (too skewed against us)
+
+# Reversal Sentinel — disabled indicators act as reversal canaries
+# When 2+ disabled indicators disagree with majority, raise the bar
+REVERSAL_SENTINEL_INDICATORS = {"rsi", "bollinger", "heikin_ashi", "funding_rate"}
+REVERSAL_SENTINEL_THRESHOLD = 2   # how many dissenters needed to trigger
+REVERSAL_SENTINEL_PENALTY = 0.10  # +10% confidence floor when triggered
 
 # Asset-specific edge premium — weaker assets need higher edge to trade
 ASSET_EDGE_PREMIUM = {
@@ -407,6 +413,37 @@ class SignalEngine:
             )
             return None
 
+        # ── Reversal Sentinel — disabled indicators as reversal canaries ──
+        # RSI, Bollinger, Heikin Ashi, funding_rate are computed but disabled (weight=0).
+        # When 2+ of them disagree with majority, it signals a potential reversal.
+        reversal_penalty = 0.0
+        sentinel_dissenters = []
+        for ind_name in REVERSAL_SENTINEL_INDICATORS:
+            vote = votes.get(ind_name)
+            if vote is not None and vote.direction != majority_dir:
+                sentinel_dissenters.append(ind_name)
+
+        if len(sentinel_dissenters) >= REVERSAL_SENTINEL_THRESHOLD:
+            # Raise consensus requirement by +1
+            sentinel_consensus = effective_consensus + 1
+            if agree_count < sentinel_consensus:
+                log.info(
+                    "[%s/%s] REVERSAL SENTINEL: %d disabled indicators (%s) disagree with %s, "
+                    "raised consensus to %d but only %d agree — BLOCKED",
+                    asset.upper(), timeframe, len(sentinel_dissenters),
+                    "+".join(sentinel_dissenters), majority_dir.upper(),
+                    sentinel_consensus, agree_count,
+                )
+                return None
+            reversal_penalty = REVERSAL_SENTINEL_PENALTY
+            log.info(
+                "[%s/%s] REVERSAL SENTINEL: %d disabled indicators (%s) disagree with %s — "
+                "confidence penalty +%.0f%% applied (passed consensus %d/%d)",
+                asset.upper(), timeframe, len(sentinel_dissenters),
+                "+".join(sentinel_dissenters), majority_dir.upper(),
+                reversal_penalty * 100, agree_count, sentinel_consensus,
+            )
+
         # ── Trend Filter — anti-trend signals need stronger consensus ──
         if len(closes) >= 50:
             short_trend = sum(closes[-10:]) / 10
@@ -517,6 +554,8 @@ class SignalEngine:
         # ETH confidence premium: weakest asset (72% WR vs BTC 79%, XRP 100%)
         if asset == "ethereum":
             effective_conf_floor += 0.03  # +3% for ETH — 9 of 12 losses were ETH
+        # Reversal sentinel penalty: raise floor when disabled indicators signal reversal
+        effective_conf_floor += reversal_penalty
         if confidence < effective_conf_floor:
             log.info(
                 "[%s/%s] Confidence too low for %s: %.3f < %.3f (UP premium applied: %s)",

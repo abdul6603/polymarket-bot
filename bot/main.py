@@ -130,6 +130,9 @@ class TradingBot:
         # Per-market stacking cap: market_id -> trade count (prevents concentrated risk)
         self._market_trade_count: dict[str, int] = {}
         self.MAX_TRADES_PER_MARKET = 3  # Max 3 trades per unique market (was unlimited — 9x stacking seen)
+        # Smart stacking: escalating conviction for each additional bet in same window
+        self.STACK_EDGE_ESCALATION = 0.02       # +2% edge per stacked bet
+        self.STACK_CONFIDENCE_ESCALATION = 0.05  # +5% confidence per stacked bet
 
     def _setup_logging(self) -> None:
         logging.basicConfig(
@@ -367,6 +370,27 @@ class TradingBot:
             )
             if not sig:
                 continue
+
+            # ── Smart Window Stacking: escalating conviction for additional bets ──
+            stack_count = self._market_trade_count.get(market_id, 0)
+            if stack_count > 0:
+                escalated_edge = 0.08 + stack_count * self.STACK_EDGE_ESCALATION
+                escalated_conf = 0.55 + stack_count * self.STACK_CONFIDENCE_ESCALATION
+                if sig.edge < escalated_edge or sig.confidence < escalated_conf:
+                    log.info(
+                        "[%s/%s] Smart stack filter: bet #%d needs edge>=%.1f%% conf>=%.0f%% "
+                        "(have edge=%.1f%% conf=%.0f%%) — BLOCKED",
+                        asset.upper(), timeframe, stack_count + 1,
+                        escalated_edge * 100, escalated_conf * 100,
+                        sig.edge * 100, sig.confidence * 100,
+                    )
+                    continue
+                log.info(
+                    "[%s/%s] Smart stack filter: bet #%d passed (edge=%.1f%%>=%.1f%% conf=%.0f%%>=%.0f%%)",
+                    asset.upper(), timeframe, stack_count + 1,
+                    sig.edge * 100, escalated_edge * 100,
+                    sig.confidence * 100, escalated_conf * 100,
+                )
 
             rr_str = f"R:R={sig.reward_risk_ratio:.2f}" if sig.reward_risk_ratio else "R:R=N/A"
             log.info(
