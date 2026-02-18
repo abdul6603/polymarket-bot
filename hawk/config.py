@@ -44,3 +44,6 @@ class HawkConfig:
     max_risk_score: int = int(_env("HAWK_MAX_RISK_SCORE", "8"))
     compound_bankroll: bool = _env("HAWK_COMPOUND_BANKROLL", "true").lower() in ("true", "1", "yes")
     news_enrichment: bool = _env("HAWK_NEWS_ENRICHMENT", "true").lower() in ("true", "1", "yes")
+
+    # V3: Sportsbook Odds API
+    odds_api_key: str = _env("ODDS_API_KEY", "")

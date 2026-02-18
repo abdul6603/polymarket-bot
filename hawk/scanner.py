@@ -13,7 +13,32 @@ from bot.http_session import get_session
 log = logging.getLogger(__name__)
 
 # Keywords that indicate Garves's territory — exclude these
-_UPDOWN_RE = re.compile(r"(bitcoin|ethereum|solana|btc|eth|sol)\s+(up or down)", re.IGNORECASE)
+_UPDOWN_RE = re.compile(r"(bitcoin|ethereum|solana|btc|eth|sol|xrp)\s+(up or down)", re.IGNORECASE)
+
+# Sports detection patterns — regex for high-confidence sports identification
+_SPORTS_RE = re.compile(
+    r"(spread:\s|o/u\s?\d|over/under|moneyline|"
+    r"\bvs\.?\b|"  # "vs" or "vs."
+    r"(gators|cardinals|tar heels|wolverines|wildcats|bulldogs|hawks|eagles|"
+    r"tigers|bears|lions|panthers|falcons|rams|cowboys|packers|chiefs|"
+    r"warriors|lakers|celtics|nets|knicks|heat|bucks|suns|clippers|"
+    r"cavaliers|mavericks|nuggets|76ers|grizzlies|pelicans|rockets|"
+    r"yankees|dodgers|red sox|braves|astros|padres|mets|phillies|"
+    r"ravens|steelers|bengals|browns|bills|dolphins|patriots|jets|"
+    r"commanders|giants|saints|buccaneers|49ers|seahawks|chargers|raiders|"
+    r"broncos|texans|colts|jaguars|titans|vikings|"
+    r"revolutionaries|wolfpack|badgers|buckeyes|billikens|"
+    r"redhawks|minutemen|flashes|hokies|hurricanes|mustangs|"
+    r"red raiders|sun devils|boilermakers|hoosiers|crimson tide|"
+    r"seminoles|blue devils|demon deacons|yellow jackets|"
+    r"jayhawks|longhorns|sooners|cyclones|mountaineers|"
+    r"razorbacks|volunteers|commodores|gamecocks|aggies|"
+    r"ducks|beavers|huskies|cougars|bruins|trojans|"
+    r"golden flashes|fighting irish|spartans|hawkeyes|"
+    r"terrapins|nittany lions|scarlet knights|"
+    r"esports|dota 2|counter-strike|league of legends|valorant))",
+    re.IGNORECASE,
+)
 
 # Category keywords
 _CATEGORY_KEYWORDS = {
@@ -23,7 +48,9 @@ _CATEGORY_KEYWORDS = {
     "sports": ["nba", "nfl", "mlb", "nhl", "soccer", "football", "basketball", "baseball",
                "hockey", "tennis", "ufc", "mma", "boxing", "super bowl", "world cup",
                "championship", "playoffs", "match", "game", "score", "olympics", "fifa",
-               "ice hockey", "gold medal"],
+               "ice hockey", "gold medal", "ncaa", "college basketball", "college football",
+               "premier league", "la liga", "serie a", "bundesliga", "ligue 1",
+               "formula 1", "f1", "grand prix", "pga", "lpga", "atp", "wta"],
     "crypto_event": ["bitcoin", "ethereum", "crypto", "btc", "eth", "sol", "token", "blockchain",
                      "defi", "nft", "halving", "etf", "sec", "price will"],
     "culture": ["oscar", "grammy", "emmy", "movie", "film", "music", "celebrity", "tiktok",
@@ -50,7 +77,10 @@ class HawkMarket:
 
 
 def _categorize_market(question: str) -> str:
-    """Keyword-classify a market question into a category."""
+    """Classify market into category. Sports regex checked FIRST for accuracy."""
+    # Sports regex catches "vs.", "Spread:", "O/U", team mascots, esports
+    if _SPORTS_RE.search(question):
+        return "sports"
     q = question.lower()
     for cat, keywords in _CATEGORY_KEYWORDS.items():
         if any(kw in q for kw in keywords):

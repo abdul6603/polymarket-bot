@@ -1,4 +1,13 @@
-"""GPT-4o Probability Analyst V2 — The Wise Degen."""
+"""GPT-4o Probability Analyst V3 — Sportsbook-First Intelligence.
+
+Architecture:
+  Sports markets  → Sportsbook consensus (The Odds API) + ESPN data → GPT adjusts ±5%
+  Non-sports      → GPT-4o primary with confidence gate + news enrichment
+
+GPT-4o is NO LONGER the probability estimator for sports. The sportsbook consensus
+(averaged from 40+ bookmakers) IS the probability. GPT-4o's role is to adjust
+±5% based on qualitative factors the books might miss.
+"""
 from __future__ import annotations
 
 import logging
@@ -25,35 +34,59 @@ class ProbabilityEstimate:
     edge_source: str = ""
     money_thesis: str = ""
     news_factor: str = ""
+    sportsbook_prob: float | None = None  # V3: sportsbook consensus if available
+    sportsbook_books: int = 0  # V3: how many bookmakers contributed
 
 
-_SYSTEM_PROMPT = (
+# ─────────────────────────────────────────────────────
+# System prompts — separate for sports vs non-sports
+# ─────────────────────────────────────────────────────
+
+_SPORTS_SYSTEM_PROMPT = (
+    "You are Hawk — a sports prediction market analyst. You have been given "
+    "the SPORTSBOOK CONSENSUS probability from professional bookmakers (DraftKings, "
+    "FanDuel, BetMGM, etc). This is your baseline — it reflects millions of dollars "
+    "of sharp money and professional analysis.\n\n"
+    "Your job is to ADJUST the sportsbook probability by -5% to +5% based on:\n"
+    "1. Breaking news or injuries not yet reflected in the betting lines\n"
+    "2. Matchup-specific factors (rivalry games, motivation, coaching styles)\n"
+    "3. Situational spots (back-to-back, travel, rest advantage)\n"
+    "4. Weather or venue factors\n\n"
+    "CRITICAL: Do NOT deviate more than 5% from the sportsbook consensus unless "
+    "you have VERY strong evidence (confirmed injury to star player, etc).\n"
+    "The sportsbooks are sharper than you. Respect their number.\n\n"
+    "Respond in EXACTLY this format:\n"
+    "PROBABILITY: 0.XX\n"
+    "CONFIDENCE: 0.X\n"
+    "RISK_LEVEL: X\n"
+    "REASONING: 2-3 sentences explaining your adjustment from the sportsbook line\n"
+    "EDGE_SOURCE: sportsbook_divergence/injury_news/situational/weather/none\n"
+    "WHY_MONEY: If I bet $15 at $0.XX, I profit $XX when this resolves YES/NO because...\n"
+    "NEWS_FACTOR: What specific news/data drove your adjustment"
+)
+
+_NONSPORTS_SYSTEM_PROMPT = (
     "You are Hawk — a sharp prediction market analyst. You find mispriced markets "
-    "by reasoning from first principles, not anchoring to the current price.\n\n"
+    "by reasoning from first principles.\n\n"
     "CRITICAL RULES:\n"
-    "1. DO NOT anchor to the market price. Form your estimate INDEPENDENTLY first, "
-    "then compare to the market price to see if there's a discrepancy.\n"
-    "2. Evaluate both YES and NO fairly — bet YES when evidence supports YES, "
-    "bet NO when evidence supports NO. No directional bias.\n"
-    "3. Use base rates: How often do events like this actually happen historically?\n"
-    "4. Consider what information the market might be missing or overweighting.\n"
-    "5. Markets ending in <48h are highest priority — prices are often stale.\n\n"
-    "Common mispricings you exploit:\n"
-    "1. STALE PRICES — Market hasn't updated after recent news/developments\n"
-    "2. BASE RATE NEGLECT — Market ignores historical frequency of similar events\n"
-    "3. RECENCY BIAS — Crowd overweights last 24h, ignoring bigger picture\n"
-    "4. ANCHORING — Market anchored to old price despite changed conditions\n"
-    "5. NEWS CATALYST — Breaking info not yet priced in\n\n"
-    "Think step by step: What's the base rate? What's changed recently? "
-    "What does the evidence say? THEN give your probability.\n\n"
-    "Respond in EXACTLY this format (no other text):\n"
+    "1. DO NOT anchor to the market price. Form your estimate INDEPENDENTLY.\n"
+    "2. Evaluate both YES and NO fairly. No directional bias.\n"
+    "3. Use base rates: How often do events like this actually happen?\n"
+    "4. If you have NO specific knowledge about this event, set CONFIDENCE to 0.3 or below.\n"
+    "5. Only set CONFIDENCE above 0.6 if you have specific, concrete reasons.\n\n"
+    "Common mispricings:\n"
+    "1. STALE PRICES — Market hasn't updated after recent news\n"
+    "2. BASE RATE NEGLECT — Market ignores historical frequency\n"
+    "3. RECENCY BIAS — Crowd overweights recent events\n"
+    "4. NEWS CATALYST — Breaking info not yet priced in\n\n"
+    "Respond in EXACTLY this format:\n"
     "PROBABILITY: 0.XX\n"
     "CONFIDENCE: 0.X\n"
     "RISK_LEVEL: X\n"
     "REASONING: 2-3 sentences with the core thesis\n"
-    "EDGE_SOURCE: Which mispricing pattern applies (stale_price/base_rate/recency/anchoring/news)\n"
-    "WHY_MONEY: If I bet $20 at $0.XX, I profit $XX when this resolves YES/NO because...\n"
-    "NEWS_FACTOR: What recent news/events affect this and which direction"
+    "EDGE_SOURCE: stale_price/base_rate/recency/anchoring/news\n"
+    "WHY_MONEY: If I bet $15 at $0.XX, I profit $XX when this resolves YES/NO because...\n"
+    "NEWS_FACTOR: What recent news/events affect this"
 )
 
 
@@ -143,42 +176,106 @@ def _get_news_context(market: HawkMarket) -> str:
     return ""
 
 
-def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate | None:
-    """Send question + context to GPT-4o, get 7-part probability estimate."""
-    yes_price = 0.5
-    for t in market.tokens:
-        outcome = (t.get("outcome") or "").lower()
-        if outcome in ("yes", "up"):
-            try:
-                yes_price = float(t.get("price", 0.5))
-            except (ValueError, TypeError):
-                pass
-            break
+def _get_sportsbook_data(cfg: HawkConfig, market: HawkMarket) -> tuple[float | None, int, str]:
+    """Get sportsbook consensus probability + ESPN context for a sports market.
 
-    # Time left info
+    Returns (sportsbook_prob, num_books, espn_context_str).
+    """
+    sportsbook_prob = None
+    num_books = 0
+    espn_context = ""
+
+    try:
+        from hawk.odds import get_sportsbook_probability, _detect_sport, _extract_teams
+        from hawk.espn import get_match_context, format_context_for_gpt
+
+        # Get sportsbook odds
+        odds_api_key = getattr(cfg, 'odds_api_key', '')
+        sb_prob, consensus = get_sportsbook_probability(
+            odds_api_key, market.question,
+        )
+        if sb_prob is not None and consensus is not None:
+            sportsbook_prob = sb_prob
+            num_books = consensus.num_books
+            log.info("Sportsbook data for %s: prob=%.2f (%d books)",
+                     market.question[:40], sb_prob, num_books)
+
+        # Get ESPN context
+        sport_key = _detect_sport(market.question)
+        teams = _extract_teams(market.question)
+        if sport_key and teams:
+            ctx = get_match_context(market.question, sport_key, teams)
+            if ctx:
+                espn_context = format_context_for_gpt(ctx)
+
+    except Exception:
+        log.debug("Sportsbook/ESPN data fetch failed for %s", market.condition_id[:12])
+
+    return sportsbook_prob, num_books, espn_context
+
+
+def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate | None:
+    """Analyze a market using the V3 sportsbook-first architecture.
+
+    Sports: sportsbook consensus → GPT adjusts ±5%
+    Non-sports: GPT-4o primary with confidence calibration
+    """
+    is_sports = market.category == "sports"
+
+    # ── Sports: get sportsbook + ESPN data first ──
+    sportsbook_prob = None
+    sportsbook_books = 0
+    espn_context = ""
+
+    if is_sports:
+        sportsbook_prob, sportsbook_books, espn_context = _get_sportsbook_data(cfg, market)
+
+    # ── Build GPT prompt ──
     time_info = ""
     if market.time_left_hours > 0:
         if market.time_left_hours < 24:
             time_info = f"Time left: {market.time_left_hours:.1f} hours (ENDING SOON!)"
         elif market.time_left_hours < 48:
-            time_info = f"Time left: {market.time_left_hours:.1f} hours (~{market.time_left_hours/24:.1f} days)"
+            time_info = f"Time left: {market.time_left_hours:.1f} hours"
         else:
-            time_info = f"Time left: {market.time_left_hours/24:.1f} days"
+            time_info = f"Time left: {market.time_left_hours / 24:.1f} days"
 
     user_msg = (
         f"Market question: {market.question}\n"
         f"Category: {market.category}\n"
         f"Volume: ${market.volume:,.0f}\n"
     )
-    # NOTE: Market price intentionally NOT shown to GPT to prevent anchoring.
-    # GPT must form an independent probability estimate from first principles.
     if time_info:
         user_msg += f"{time_info}\n"
     if market.end_date:
         user_msg += f"End date: {market.end_date}\n"
-    user_msg += "\nWhat is the TRUE probability of YES?"
 
-    # Inject intelligence
+    # Sports-specific: inject sportsbook consensus + ESPN data
+    if is_sports and sportsbook_prob is not None:
+        user_msg += (
+            f"\nSPORTSBOOK CONSENSUS PROBABILITY: {sportsbook_prob:.1%} "
+            f"(averaged from {sportsbook_books} professional bookmakers)\n"
+            f"This is your BASELINE. Adjust by -5% to +5% based on evidence below.\n"
+        )
+        system_prompt = _SPORTS_SYSTEM_PROMPT
+    elif is_sports:
+        # Sports but no sportsbook data — GPT must be cautious
+        user_msg += (
+            "\nNO sportsbook data available for this game. "
+            "Be VERY cautious. Set CONFIDENCE to 0.3 or below unless you have "
+            "specific knowledge about these teams.\n"
+        )
+        system_prompt = _NONSPORTS_SYSTEM_PROMPT
+    else:
+        system_prompt = _NONSPORTS_SYSTEM_PROMPT
+
+    # Inject ESPN context
+    if espn_context:
+        user_msg += espn_context
+
+    user_msg += "\n\nWhat is the TRUE probability of YES?"
+
+    # Inject intelligence (Viper + news)
     viper_context = _get_viper_context(market)
     if viper_context:
         user_msg += viper_context
@@ -188,12 +285,13 @@ def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate |
         if news_context:
             user_msg += news_context
 
+    # ── Call GPT-4o ──
     try:
         client = openai.OpenAI(api_key=cfg.openai_api_key)
         resp = client.chat.completions.create(
             model="gpt-4o",
             messages=[
-                {"role": "system", "content": _SYSTEM_PROMPT},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_msg},
             ],
             max_tokens=500,
@@ -202,21 +300,69 @@ def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate |
         text = resp.choices[0].message.content.strip()
         parsed = _parse_response(text)
 
-        return ProbabilityEstimate(
-            market_id=market.condition_id,
-            question=market.question,
-            estimated_prob=parsed["prob"],
-            confidence=parsed["conf"],
-            reasoning=parsed["reasoning"],
-            category=market.category,
-            risk_level=parsed["risk_level"],
-            edge_source=parsed["edge_source"],
-            money_thesis=parsed["money_thesis"],
-            news_factor=parsed["news_factor"],
-        )
     except Exception:
         log.exception("GPT analysis failed for %s", market.condition_id[:12])
+        # If we have sportsbook data, use that directly without GPT
+        if sportsbook_prob is not None:
+            log.info("Using raw sportsbook prob (GPT failed): %.2f for %s",
+                     sportsbook_prob, market.question[:40])
+            return ProbabilityEstimate(
+                market_id=market.condition_id,
+                question=market.question,
+                estimated_prob=sportsbook_prob,
+                confidence=0.7,  # High confidence in sportsbook data
+                reasoning=f"Sportsbook consensus from {sportsbook_books} bookmakers (GPT unavailable)",
+                category=market.category,
+                risk_level=4,
+                edge_source="sportsbook_divergence",
+                money_thesis="",
+                news_factor="",
+                sportsbook_prob=sportsbook_prob,
+                sportsbook_books=sportsbook_books,
+            )
         return None
+
+    # ── V3 Confidence Calibration ──
+    final_prob = parsed["prob"]
+    final_conf = parsed["conf"]
+
+    if is_sports and sportsbook_prob is not None:
+        # Clamp GPT's adjustment to ±5% from sportsbook consensus
+        max_adjustment = 0.05
+        gpt_adjustment = final_prob - sportsbook_prob
+        if abs(gpt_adjustment) > max_adjustment:
+            clamped = sportsbook_prob + max(min(gpt_adjustment, max_adjustment), -max_adjustment)
+            log.info("Clamped GPT adjustment: %.2f → %.2f (sportsbook=%.2f, GPT wanted %.2f)",
+                     final_prob, clamped, sportsbook_prob, final_prob)
+            final_prob = clamped
+
+        # Higher confidence when backed by sportsbook data
+        final_conf = max(final_conf, 0.65)
+        parsed["edge_source"] = "sportsbook_divergence"
+    elif is_sports and sportsbook_prob is None:
+        # Sports without sportsbook data — force low confidence
+        final_conf = min(final_conf, 0.35)
+        log.info("No sportsbook data: forcing low confidence %.2f for %s",
+                 final_conf, market.question[:40])
+    else:
+        # Non-sports: penalize base_rate edge source
+        if parsed["edge_source"].lower() in ("base_rate", ""):
+            final_conf = min(final_conf, 0.4)
+
+    return ProbabilityEstimate(
+        market_id=market.condition_id,
+        question=market.question,
+        estimated_prob=max(0.01, min(0.99, final_prob)),
+        confidence=final_conf,
+        reasoning=parsed["reasoning"],
+        category=market.category,
+        risk_level=parsed["risk_level"],
+        edge_source=parsed["edge_source"],
+        money_thesis=parsed["money_thesis"],
+        news_factor=parsed["news_factor"],
+        sportsbook_prob=sportsbook_prob,
+        sportsbook_books=sportsbook_books,
+    )
 
 
 def batch_analyze(
@@ -225,6 +371,12 @@ def batch_analyze(
     max_concurrent: int = 5,
 ) -> list[ProbabilityEstimate]:
     """Parallel analysis with ThreadPoolExecutor."""
+    # Separate sports and non-sports for logging
+    sports = [m for m in markets if m.category == "sports"]
+    non_sports = [m for m in markets if m.category != "sports"]
+    log.info("Analyzing %d markets: %d sports (sportsbook-first), %d non-sports (GPT primary)",
+             len(markets), len(sports), len(non_sports))
+
     estimates: list[ProbabilityEstimate] = []
 
     with ThreadPoolExecutor(max_workers=max_concurrent) as pool:
@@ -237,5 +389,8 @@ def batch_analyze(
             if result is not None:
                 estimates.append(result)
 
-    log.info("Analyzed %d/%d markets with GPT-4o (V2 Wise Degen)", len(estimates), len(markets))
+    # Log V3 stats
+    sb_count = sum(1 for e in estimates if e.sportsbook_prob is not None)
+    log.info("V3 Analysis: %d/%d markets | %d with sportsbook data | %d GPT-only",
+             len(estimates), len(markets), sb_count, len(estimates) - sb_count)
     return estimates

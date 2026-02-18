@@ -177,28 +177,48 @@ def calculate_edge(
     cfg: HawkConfig,
     bankroll: float | None = None,
 ) -> TradeOpportunity | None:
-    """Compare GPT prob vs market price, return None if edge < min_edge."""
+    """Compare estimated prob vs market price, return None if edge < min_edge.
+
+    V3: Confidence-adjusted min_edge. Low-confidence trades need higher edge
+    to compensate for uncertainty. Sportsbook-backed trades get lower threshold.
+    """
     effective_bankroll = bankroll or cfg.bankroll_usd
 
     yes_price = _get_market_price(market, "yes")
     no_price = _get_market_price(market, "no")
     est_prob = estimate.estimated_prob
 
+    # V3: Dynamic min_edge based on confidence and data quality
+    has_sportsbook = getattr(estimate, 'sportsbook_prob', None) is not None
+    if has_sportsbook:
+        # Sportsbook-backed: trust the data, lower threshold
+        effective_min_edge = max(0.03, cfg.min_edge - 0.02)
+    elif estimate.confidence >= 0.6:
+        effective_min_edge = cfg.min_edge
+    elif estimate.confidence >= 0.4:
+        # Medium confidence: require more edge
+        effective_min_edge = cfg.min_edge + 0.05
+    else:
+        # Low confidence (GPT guessing): require very high edge
+        effective_min_edge = max(0.15, cfg.min_edge + 0.10)
+
     yes_edge = est_prob - yes_price
     no_edge = (1 - est_prob) - no_price
     best_edge = max(yes_edge, no_edge)
 
-    if best_edge > 0.02:  # Log any non-trivial edge for debugging
-        log.info("Edge calc: %s | GPT=%.2f market=%.2f | YES_edge=%.1f%% NO_edge=%.1f%%",
-                 market.question[:50], est_prob, yes_price, yes_edge*100, no_edge*100)
+    source_tag = "SB" if has_sportsbook else "GPT"
+    if best_edge > 0.02:
+        log.info("Edge calc [%s]: %s | prob=%.2f market=%.2f | YES=%.1f%% NO=%.1f%% | min=%.1f%% conf=%.1f",
+                 source_tag, market.question[:45], est_prob, yes_price,
+                 yes_edge * 100, no_edge * 100, effective_min_edge * 100, estimate.confidence)
 
-    if yes_edge >= cfg.min_edge and yes_edge >= no_edge:
+    if yes_edge >= effective_min_edge and yes_edge >= no_edge:
         direction = "yes"
         edge = yes_edge
         token_id = _get_token_id(market, "yes")
         buy_price = yes_price
         true_prob = est_prob
-    elif no_edge >= cfg.min_edge:
+    elif no_edge >= effective_min_edge:
         direction = "no"
         edge = no_edge
         token_id = _get_token_id(market, "no")
