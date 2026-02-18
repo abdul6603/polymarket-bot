@@ -37,6 +37,7 @@ class HawkConfig:
     min_volume: int = int(_env("HAWK_MIN_VOLUME", "5000"))
     min_liquidity: int = int(_env("HAWK_MIN_LIQUIDITY", "1000"))
     max_days: int = int(_env("HAWK_MAX_DAYS", "3"))
+    min_hours: float = float(_env("HAWK_MIN_HOURS", "2.0"))  # Never bet on markets expiring < 2h
     dry_run: bool = _env("HAWK_DRY_RUN", "true").lower() in ("true", "1", "yes")
 
     # V2 new params

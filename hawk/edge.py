@@ -80,11 +80,15 @@ def calculate_risk_score(
     """
     score = 5  # Base
 
-    # Time pressure: ending soon = lower risk (more info available)
-    if time_left_hours <= 6:
-        score -= 1
+    # Time pressure: too soon = high risk (no exit time), sweet spot = 6-48h
+    if time_left_hours < 2:
+        score += 3  # Extremely risky — no time for edge
+    elif time_left_hours < 6:
+        score += 1  # Tight
+    elif time_left_hours <= 48:
+        score -= 1  # Sweet spot
     elif time_left_hours > 72:
-        score += 1
+        score += 1  # Too far out — more uncertainty
 
     # Edge magnitude: big edge = lower risk
     if edge > 0.20:
@@ -132,10 +136,12 @@ def risk_label(score: int) -> str:
 
 def urgency_label(time_left_hours: float) -> str:
     """Urgency badge label."""
-    if time_left_hours <= 6:
-        return "ENDING NOW"
-    elif time_left_hours <= 24:
+    if time_left_hours < 2:
+        return "TOO SOON"
+    elif time_left_hours <= 6:
         return "ENDING SOON"
+    elif time_left_hours <= 24:
+        return "TODAY"
     elif time_left_hours <= 48:
         return "TOMORROW"
     elif time_left_hours <= 72:

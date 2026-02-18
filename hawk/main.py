@@ -166,20 +166,20 @@ def _load_all_intel(markets) -> dict:
 # ── Urgency-Weighted Market Ranking ──
 
 def _urgency_rank(markets) -> list:
-    """Rank markets by urgency (ending-soon first) + value factors."""
+    """Rank markets by sweet-spot timing + value factors."""
     scored = []
     for m in markets:
         score = 0
 
-        # Urgency bonus (ending-soon = massive priority)
-        if m.time_left_hours <= 6:
-            score += 50
-        elif m.time_left_hours <= 24:
-            score += 35
-        elif m.time_left_hours <= 48:
-            score += 20
-        elif m.time_left_hours <= 72:
-            score += 10
+        # Sweet spot: 6-48h = enough time for edge, close enough for conviction
+        if 6 <= m.time_left_hours <= 24:
+            score += 40
+        elif 24 < m.time_left_hours <= 48:
+            score += 30
+        elif 2 <= m.time_left_hours < 6:
+            score += 15  # Acceptable but not ideal
+        elif m.time_left_hours > 48:
+            score += 5
 
         # Volume sweet spot (not too big, not too small)
         if 5000 <= m.volume <= 50000:

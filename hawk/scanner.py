@@ -162,16 +162,22 @@ def scan_all_markets(cfg: HawkConfig) -> list[HawkMarket]:
                     if volume < cfg.min_volume:
                         continue
 
-                    # Skip markets that resolve too far out
+                    # Skip markets that resolve too far out OR too soon
                     m_end_date = m.get("endDate", m.get("end_date_iso", ""))
-                    if cfg.max_days > 0 and m_end_date:
+                    if m_end_date:
                         try:
                             end_dt = datetime.fromisoformat(m_end_date.replace("Z", "+00:00"))
-                            cutoff = datetime.now(timezone.utc) + timedelta(days=cfg.max_days)
-                            if end_dt > cutoff:
+                            time_left_h = (end_dt - datetime.now(timezone.utc)).total_seconds() / 3600
+                            # Too soon — no time for edge to play out
+                            if time_left_h < cfg.min_hours:
+                                continue
+                            # Too far out
+                            if cfg.max_days > 0 and end_dt > datetime.now(timezone.utc) + timedelta(days=cfg.max_days):
                                 continue
                         except (ValueError, TypeError):
                             continue  # Skip unparseable dates
+                    else:
+                        continue  # No end date = skip (can't assess timing)
 
                     # Build tokens list from Gamma format
                     # Gamma returns these as JSON-encoded strings, not arrays
