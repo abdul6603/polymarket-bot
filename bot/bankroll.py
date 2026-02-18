@@ -16,6 +16,23 @@ DATA_DIR = Path(__file__).parent.parent / "data"
 TRADES_FILE = DATA_DIR / "trades.jsonl"
 
 
+def calculate_trade_pnl(won: bool, probability: float, size_usd: float) -> float:
+    """Calculate P&L for a single Polymarket trade.
+
+    Polymarket mechanics:
+    - Buy tokens at `probability` price, spending `size_usd` dollars
+    - Win: each token pays $1 minus 2% fee = $0.98
+    - Loss: tokens worth $0, lose entire `size_usd`
+
+    Returns profit (positive) or loss (negative) in USD.
+    """
+    if won:
+        if 0.01 < probability < 0.99:
+            return ((0.98 - probability) / probability) * size_usd
+        return 0.0  # Edge case: can't profit at extreme probabilities
+    return -size_usd
+
+
 class BankrollManager:
     INITIAL_BANKROLL = 250.0  # Starting bankroll from .env
     MIN_MULTIPLIER = 0.5      # Floor: never size below 50% of base
@@ -55,20 +72,13 @@ class BankrollManager:
                             continue
 
                         trade_count += 1
-                        size_usd = rec.get("size_usd") or rec.get("edge", 0.1) * 100  # fallback estimate
+                        size_usd = rec.get("size_usd") or 30.0  # fallback to typical base size
                         prob = rec.get("probability", 0.5)
-
-                        if rec.get("won"):
-                            # Win: payout is $1/token minus 2% fee, cost was prob per token
-                            # profit = (0.98 - prob) / prob * size_usd
-                            if 0.01 < prob < 0.99:
-                                profit = ((0.98 - prob) / prob) * size_usd
-                            else:
-                                profit = size_usd * 0.5  # fallback
-                            total_pnl += profit
-                        else:
-                            # Loss: lose entire size
-                            total_pnl -= size_usd
+                        total_pnl += calculate_trade_pnl(
+                            won=rec.get("won", False),
+                            probability=prob,
+                            size_usd=size_usd,
+                        )
 
             except Exception:
                 log.debug("BankrollManager: failed to read trades, using default")

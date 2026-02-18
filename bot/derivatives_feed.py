@@ -136,6 +136,8 @@ class DerivativesFeed:
                     self._handle_message(raw)
             except ConnectionClosed:
                 log.warning("Binance Futures WS connection closed")
+            finally:
+                self._ws = None
 
     def _handle_message(self, raw: str) -> None:
         """Parse and route WebSocket messages."""

@@ -521,9 +521,10 @@ class ConvictionEngine:
 
         aligned_names = "+".join(a.upper()[:3] for a in aligned_assets)
         log.info(
-            "ALL ASSETS ALIGNED: %s all %s with 7+ consensus | "
+            "ALL ASSETS ALIGNED: %s all %s with %d+ consensus | "
             "volume_confirmed=%s arb_confirmed=%s",
-            aligned_names, direction.upper(), has_volume, has_arb,
+            aligned_names, direction.upper(), ALL_ALIGNED_MIN_CONSENSUS,
+            has_volume, has_arb,
         )
         return True
 
@@ -669,8 +670,8 @@ class ConvictionEngine:
                 t = (score - lo) / (hi - lo)
                 return min_usd + t * (max_usd - min_usd)
 
-        # Score is exactly 100
-        return 35.0
+        # Score is exactly 100 — max conviction tier
+        return 50.0
 
     @staticmethod
     def _get_tier_label(score: float) -> str:

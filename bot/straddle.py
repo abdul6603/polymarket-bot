@@ -202,7 +202,23 @@ class StraddleEngine:
                 self._last_straddle = time.time()
                 return (up_id, down_id)
 
-            log.warning("[STRADDLE] Partial fill — one leg failed")
+            # Partial fill — cancel the successful leg to avoid orphan position
+            if up_id and not down_id:
+                log.warning("[STRADDLE] Down leg failed — cancelling orphan up leg %s", up_id)
+                try:
+                    if self.executor.client:
+                        self.executor.client.cancel(up_id)
+                    self.tracker.remove(up_id)
+                except Exception:
+                    log.exception("[STRADDLE] Failed to cancel orphan up leg %s", up_id)
+            elif down_id and not up_id:
+                log.warning("[STRADDLE] Up leg failed — cancelling orphan down leg %s", down_id)
+                try:
+                    if self.executor.client:
+                        self.executor.client.cancel(down_id)
+                    self.tracker.remove(down_id)
+                except Exception:
+                    log.exception("[STRADDLE] Failed to cancel orphan down leg %s", down_id)
             return None
 
         except Exception:

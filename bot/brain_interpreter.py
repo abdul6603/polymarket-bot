@@ -118,7 +118,7 @@ def interpret_note(agent: str, note: dict) -> dict:
             max_tokens=200,
             temperature=0.7,
         )
-        message = resp.choices[0].message.content.strip()
+        message = (resp.choices[0].message.content or "").strip()
         return {"message": message, "status": "ok"}
     except Exception as e:
         log.error("Brain interpreter error for %s: %s", agent, e)

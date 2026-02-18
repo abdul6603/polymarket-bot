@@ -17,6 +17,8 @@ from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from pathlib import Path
 
+from bot.bankroll import calculate_trade_pnl
+
 log = logging.getLogger(__name__)
 
 ET = ZoneInfo("America/New_York")
@@ -33,19 +35,22 @@ def _load_trades() -> list[dict]:
         return []
     trades = []
     seen = set()
-    with open(TRADES_FILE) as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                t = json.loads(line)
-                tid = t.get("trade_id", "")
-                if tid not in seen:
-                    seen.add(tid)
-                    trades.append(t)
-            except json.JSONDecodeError:
-                continue
+    try:
+        with open(TRADES_FILE) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    t = json.loads(line)
+                    tid = t.get("trade_id", "")
+                    if tid not in seen:
+                        seen.add(tid)
+                        trades.append(t)
+                except json.JSONDecodeError:
+                    continue
+    except OSError as e:
+        log.warning("Failed to read trades file: %s", e)
     return trades
 
 
@@ -177,8 +182,8 @@ def _analyze_mistakes(trades: list[dict], resolved: list[dict]) -> list[dict]:
                               f"Signal engine may have a bias issue.",
                 })
 
-    # 7. Check for stale/unresolved trades
-    stale = [t for t in resolved if t.get("outcome") == "unknown"]
+    # 7. Check for stale/unresolved trades (check full trades list, not resolved which filters these out)
+    stale = [t for t in trades if t.get("resolved") and t.get("outcome") == "unknown"]
     if len(stale) > 3:
         mistakes.append({
             "type": "technical",
@@ -242,16 +247,16 @@ def generate_daily_report(date_str: str | None = None) -> dict:
     total_resolved = len(wins) + len(losses)
     win_rate = (len(wins) / total_resolved * 100) if total_resolved > 0 else 0
 
-    # PnL calculation
+    # PnL calculation (uses shared Polymarket-accurate formula)
     total_pnl = 0.0
     for t in resolved:
-        implied = t.get("implied_up_price", 0.5)
-        direction = t.get("direction", "up")
-        entry_price = implied if direction == "up" else (1 - implied)
-        if t.get("won"):
-            total_pnl += stake * (1 - entry_price) - stake * 0.02
-        else:
-            total_pnl += -stake * entry_price
+        size_usd = t.get("size_usd") or stake
+        prob = t.get("probability", 0.5)
+        total_pnl += calculate_trade_pnl(
+            won=t.get("won", False),
+            probability=prob,
+            size_usd=size_usd,
+        )
 
     # By asset breakdown
     by_asset = {}
@@ -259,15 +264,14 @@ def generate_daily_report(date_str: str | None = None) -> dict:
         a = t.get("asset", "unknown")
         if a not in by_asset:
             by_asset[a] = {"wins": 0, "losses": 0, "pnl": 0.0}
-        implied = t.get("implied_up_price", 0.5)
-        direction = t.get("direction", "up")
-        entry_price = implied if direction == "up" else (1 - implied)
+        size_usd = t.get("size_usd") or stake
+        prob = t.get("probability", 0.5)
+        pnl = calculate_trade_pnl(won=t.get("won", False), probability=prob, size_usd=size_usd)
         if t.get("won"):
             by_asset[a]["wins"] += 1
-            by_asset[a]["pnl"] += stake * (1 - entry_price) - stake * 0.02
         else:
             by_asset[a]["losses"] += 1
-            by_asset[a]["pnl"] += -stake * entry_price
+        by_asset[a]["pnl"] += pnl
 
     # By timeframe
     by_tf = {}
@@ -305,8 +309,8 @@ def generate_daily_report(date_str: str | None = None) -> dict:
     strategy = {
         "engine": "11-indicator ensemble + ConvictionEngine",
         "conviction_scoring": "9-layer evidence (0-100)",
-        "safety_rails": "losing streak 0.6x, low WR 0.7x, extreme fear 0.75x, $50 daily loss cap",
-        "sizing": "conviction-based $5-$25",
+        "safety_rails": "losing streak 0.75x, low WR 0.7x, extreme fear 0.90x, $50 daily loss cap",
+        "sizing": "conviction-based $25-$50",
         "assets": list(set(t.get("asset", "?") for t in trades)),
         "timeframes": list(set(t.get("timeframe", "?") for t in trades)),
         "regime": max(regime_dist, key=regime_dist.get) if regime_dist else "unknown",
@@ -359,9 +363,13 @@ def archive_and_reset() -> dict:
     # Keep last 90 days
     reports = reports[-90:]
 
-    # Save
-    with open(DAILY_REPORTS_FILE, "w") as f:
-        json.dump(reports, f, indent=2)
+    # Save daily report
+    try:
+        with open(DAILY_REPORTS_FILE, "w") as f:
+            json.dump(reports, f, indent=2)
+    except OSError as e:
+        log.error("Failed to save daily report: %s — aborting reset to prevent data loss", e)
+        return report
 
     # Archive raw trades to a dated file
     date_str = report["date"]
@@ -373,9 +381,12 @@ def archive_and_reset() -> dict:
         shutil.copy2(TRADES_FILE, archive_file)
         log.info("Archived %d trades to %s", report["summary"]["total_trades"], archive_file)
 
-    # Clear trades.jsonl for a fresh day
-    with open(TRADES_FILE, "w") as f:
-        pass  # empty file
+    # Only clear trades.jsonl AFTER successful archive
+    if archive_file.exists():
+        with open(TRADES_FILE, "w") as f:
+            pass  # empty file
+    else:
+        log.error("Archive file not created — skipping trades.jsonl clear to prevent data loss")
 
     # Record reset timestamp
     now = datetime.now(ET)

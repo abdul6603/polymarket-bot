@@ -107,8 +107,12 @@ def daily_trade_report() -> dict:
     with open(TRADES_FILE) as f:
         for line in f:
             line = line.strip()
-            if line:
+            if not line:
+                continue
+            try:
                 trades.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
 
     now = time.time()
     cutoff = now - 86400

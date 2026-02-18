@@ -20,7 +20,7 @@ from zoneinfo import ZoneInfo
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 TRADES_FILE = DATA_DIR / "trades.jsonl"
-LOG_FILE = DATA_DIR / "bot.log"
+LOG_FILE = Path("/tmp/garves.log")  # LaunchAgent redirects stdout here
 SOREN_QUEUE_FILE = Path(__file__).parent.parent.parent / "soren-content" / "data" / "content_queue.json"
 SOREN_TRENDS_FILE = Path(__file__).parent.parent.parent / "soren-content" / "data" / "trends.json"
 INDICATOR_ACCURACY_FILE = DATA_DIR / "indicator_accuracy.json"
@@ -147,7 +147,7 @@ _AGENT_PROMPTS = {
         "Example: '3 reels posted. IG engagement up 12%. Increasing stoic_lessons frequency. "
         "Schedule locked. Awaiting confirmation.'"
     ),
-    "sentinel": (
+    "robotox": (
         "You are Robotox, The Watchman — vigilant, tireless, protective. "
         "HIERARCHY: Jordan (Owner) → Claude (Godfather) → Shelby (Commander) → you. "
         "You speak in status codes and health checks. Always scanning, always watching. Never sleep. "
