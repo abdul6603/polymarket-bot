@@ -36,6 +36,11 @@ class ProbabilityEstimate:
     news_factor: str = ""
     sportsbook_prob: float | None = None  # V3: sportsbook consensus if available
     sportsbook_books: int = 0  # V3: how many bookmakers contributed
+    # V4: Cross-platform intelligence
+    kalshi_prob: float | None = None
+    metaculus_prob: float | None = None
+    predictit_prob: float | None = None
+    cross_platform_count: int = 0  # How many cross-platform matches found
 
 
 # ─────────────────────────────────────────────────────
@@ -176,6 +181,88 @@ def _get_news_context(market: HawkMarket) -> str:
     return ""
 
 
+def _get_cross_platform_data(market: HawkMarket, yes_price: float) -> tuple[str, dict]:
+    """Gather cross-platform intelligence from Kalshi, PredictIt, Metaculus.
+
+    Returns (context_string, cross_platform_dict).
+    cross_platform_dict has keys: kalshi_prob, metaculus_prob, predictit_prob, count.
+    """
+    context_parts = []
+    cp = {"kalshi_prob": None, "metaculus_prob": None, "predictit_prob": None, "count": 0}
+
+    # Kalshi (all markets)
+    try:
+        from hawk.kalshi import get_kalshi_divergence
+        kalshi = get_kalshi_divergence(market.question, yes_price)
+        if kalshi and kalshi.match_confidence >= 0.55:
+            cp["kalshi_prob"] = kalshi.kalshi_price
+            cp["count"] += 1
+            context_parts.append(
+                f"Kalshi: {kalshi.kalshi_price:.1%} (match: {kalshi.match_confidence:.0%}, "
+                f"divergence: {kalshi.price_divergence:+.1%})"
+            )
+    except Exception:
+        pass
+
+    # PredictIt (political markets only)
+    if market.category == "politics":
+        try:
+            from hawk.predictit import match_political_market
+            pi = match_political_market(market.question, yes_price)
+            if pi and pi.match_confidence >= 0.50:
+                cp["predictit_prob"] = pi.pi_price
+                cp["count"] += 1
+                context_parts.append(
+                    f"PredictIt: {pi.pi_price:.1%} (match: {pi.match_confidence:.0%}, "
+                    f"divergence: {pi.price_divergence:+.1%})"
+                )
+        except Exception:
+            pass
+
+    # Metaculus (non-sports markets)
+    if market.category != "sports":
+        try:
+            from hawk.metaculus import get_crowd_probability
+            mc = get_crowd_probability(market.question, yes_price)
+            if mc and mc.match_confidence >= 0.40:
+                cp["metaculus_prob"] = mc.community_prob
+                cp["count"] += 1
+                context_parts.append(
+                    f"Metaculus: {mc.community_prob:.1%} community median "
+                    f"({mc.num_predictions} predictions, match: {mc.match_confidence:.0%})"
+                )
+        except Exception:
+            pass
+
+    context = ""
+    if context_parts:
+        context = "\n\nCROSS-PLATFORM INTELLIGENCE:\n" + "\n".join(f"- {p}" for p in context_parts)
+
+    return context, cp
+
+
+def _get_weather_context(market: HawkMarket) -> str:
+    """Get weather impact for outdoor sports markets."""
+    try:
+        from hawk.weather import get_game_weather, format_weather_for_gpt
+        # Detect sport key from category/question
+        sport_key = ""
+        q_lower = market.question.lower()
+        if "nfl" in q_lower or "football" in q_lower:
+            sport_key = "americanfootball_nfl"
+        elif "mlb" in q_lower or "baseball" in q_lower:
+            sport_key = "baseball_mlb"
+        else:
+            return ""
+
+        weather = get_game_weather(market.question, sport_key)
+        if weather and weather.impact_level != "none":
+            return format_weather_for_gpt(weather)
+    except Exception:
+        pass
+    return ""
+
+
 def _get_sportsbook_data(cfg: HawkConfig, market: HawkMarket) -> tuple[float | None, int, str]:
     """Get sportsbook consensus probability + ESPN context for a sports market.
 
@@ -285,6 +372,36 @@ def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate |
         if news_context:
             user_msg += news_context
 
+    # V4: Cross-platform intelligence (Kalshi + PredictIt + Metaculus)
+    yes_price = 0.5
+    for t in market.tokens:
+        outcome = (t.get("outcome") or "").lower()
+        if outcome in ("yes", "up"):
+            try:
+                yes_price = float(t.get("price", 0.5))
+            except (ValueError, TypeError):
+                pass
+            break
+
+    cross_context, cross_data = _get_cross_platform_data(market, yes_price)
+    if cross_context:
+        user_msg += cross_context
+
+    # V4: Weather for outdoor sports
+    if is_sports:
+        weather_context = _get_weather_context(market)
+        if weather_context:
+            user_msg += weather_context
+
+    # Atlas KB intelligence — learned patterns from research cycles
+    try:
+        from bot.atlas_feed import get_agent_summary
+        atlas_context = get_agent_summary("hawk")
+        if atlas_context:
+            user_msg += f"\n\n{atlas_context}"
+    except Exception:
+        pass
+
     # ── Call GPT-4o ──
     try:
         client = openai.OpenAI(api_key=cfg.openai_api_key)
@@ -362,6 +479,10 @@ def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate |
         news_factor=parsed["news_factor"],
         sportsbook_prob=sportsbook_prob,
         sportsbook_books=sportsbook_books,
+        kalshi_prob=cross_data.get("kalshi_prob"),
+        metaculus_prob=cross_data.get("metaculus_prob"),
+        predictit_prob=cross_data.get("predictit_prob"),
+        cross_platform_count=cross_data.get("count", 0),
     )
 
 

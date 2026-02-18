@@ -271,6 +271,14 @@ class HawkBot:
                     latest = notes[-1]
                     log.info("Brain note: [%s] %s", latest.get("topic", "?"), latest.get("content", "")[:100])
 
+                # Atlas intelligence feed — learnings from research cycles
+                from bot.atlas_feed import get_actionable_insights
+                atlas_insights = get_actionable_insights("hawk")
+                if atlas_insights:
+                    log.info("[ATLAS] %d actionable insights for Hawk:", len(atlas_insights))
+                    for insight in atlas_insights[:3]:
+                        log.info("[ATLAS] → %s", insight[:150])
+
                 self.risk.daily_reset()
 
                 if self.risk.is_shutdown():

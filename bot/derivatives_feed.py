@@ -18,6 +18,7 @@ FUTURES_SYMBOL_MAP = {
     "BTCUSDT": "bitcoin",
     "ETHUSDT": "ethereum",
     "SOLUSDT": "solana",
+    "XRPUSDT": "xrp",
 }
 
 # Build combined stream URL
@@ -62,6 +63,7 @@ class DerivativesFeed:
             "bitcoin": [],
             "ethereum": [],
             "solana": [],
+            "xrp": [],
         }
 
         # Funding rate: asset -> {"rate": float, "mark_price": float, "index_price": float, "timestamp": float}
@@ -74,28 +76,15 @@ class DerivativesFeed:
         #   "cascade_direction": str,  # "up" (bullish) | "down" (bearish) | ""
         #   "last_cascade_time": float,
         # }
+        _default_liq = {
+            "long_liq_usd_5m": 0.0,
+            "short_liq_usd_5m": 0.0,
+            "cascade_detected": False,
+            "cascade_direction": "",
+            "last_cascade_time": 0.0,
+        }
         self.liq_summary: dict[str, dict[str, Any]] = {
-            "bitcoin": {
-                "long_liq_usd_5m": 0.0,
-                "short_liq_usd_5m": 0.0,
-                "cascade_detected": False,
-                "cascade_direction": "",
-                "last_cascade_time": 0.0,
-            },
-            "ethereum": {
-                "long_liq_usd_5m": 0.0,
-                "short_liq_usd_5m": 0.0,
-                "cascade_detected": False,
-                "cascade_direction": "",
-                "last_cascade_time": 0.0,
-            },
-            "solana": {
-                "long_liq_usd_5m": 0.0,
-                "short_liq_usd_5m": 0.0,
-                "cascade_detected": False,
-                "cascade_direction": "",
-                "last_cascade_time": 0.0,
-            },
+            asset: dict(_default_liq) for asset in self.liquidations
         }
 
     async def start(self) -> None:

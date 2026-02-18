@@ -48,3 +48,10 @@ class HawkConfig:
 
     # V3: Sportsbook Odds API
     odds_api_key: str = _env("ODDS_API_KEY", "")
+
+    # V4: Cross-platform intelligence
+    openweather_api_key: str = _env("OPENWEATHER_API_KEY", "")
+    kalshi_enabled: bool = _env("HAWK_KALSHI_ENABLED", "true").lower() in ("true", "1", "yes")
+    metaculus_enabled: bool = _env("HAWK_METACULUS_ENABLED", "true").lower() in ("true", "1", "yes")
+    predictit_enabled: bool = _env("HAWK_PREDICTIT_ENABLED", "true").lower() in ("true", "1", "yes")
+    weather_enabled: bool = _env("HAWK_WEATHER_ENABLED", "true").lower() in ("true", "1", "yes")

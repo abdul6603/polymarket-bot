@@ -443,6 +443,86 @@ async function loadDerivatives() {
   }
 }
 
+async function loadExternalData() {
+  try {
+    var resp = await fetch('/api/garves/external-data');
+    var data = await resp.json();
+
+    // Macro card
+    var macroEl = document.getElementById('ext-macro');
+    if (macroEl && data.macro) {
+      var m = data.macro;
+      var eventBadge = m.is_event_day
+        ? '<span class="badge" style="background:var(--warning);color:#000;animation:pulse 1s infinite;">' + (m.event_type||'').toUpperCase() + ' DAY</span> '
+        : '<span class="badge badge-success">Normal</span> ';
+      var dxyColor = m.dxy_trend === 'rising' ? 'var(--error)' : m.dxy_trend === 'falling' ? 'var(--success)' : 'var(--text-secondary)';
+      macroEl.innerHTML = '<div class="stat-label">Macro (FRED) ' + eventBadge + '</div>'
+        + '<div style="padding:4px 8px;font-size:0.78rem;">DXY: <span style="color:' + dxyColor + ';">' + (m.dxy_value||0).toFixed(1) + ' (' + (m.dxy_trend||'--') + ')</span></div>'
+        + '<div style="padding:4px 8px;font-size:0.78rem;">VIX: ' + (m.vix_value||0).toFixed(1) + '</div>'
+        + (m.is_event_day ? '<div style="padding:4px 8px;font-size:0.78rem;">Edge mult: <b>' + (m.edge_multiplier||1).toFixed(1) + 'x</b></div>' : '');
+    } else if (macroEl) {
+      macroEl.innerHTML = '<div class="stat-label">Macro (FRED)</div><div class="text-muted" style="padding:8px;font-size:0.78rem;">No API key set</div>';
+    }
+
+    // DeFi card
+    var defiEl = document.getElementById('ext-defi');
+    if (defiEl && data.defi) {
+      var d = data.defi;
+      var scColor = (d.stablecoin_change_7d_pct||0) > 0 ? 'var(--success)' : 'var(--error)';
+      var tvlColor = (d.tvl_change_24h_pct||0) > 0 ? 'var(--success)' : 'var(--error)';
+      defiEl.innerHTML = '<div class="stat-label">DeFi (DeFiLlama)</div>'
+        + '<div style="padding:4px 8px;font-size:0.78rem;">Stablecoin MCap: $' + ((d.stablecoin_mcap_usd||0)/1e9).toFixed(1) + 'B <span style="color:' + scColor + ';">(' + (d.stablecoin_change_7d_pct||0).toFixed(1) + '% 7d)</span></div>'
+        + '<div style="padding:4px 8px;font-size:0.78rem;">TVL: $' + ((d.tvl_usd||0)/1e9).toFixed(1) + 'B <span style="color:' + tvlColor + ';">(' + (d.tvl_change_24h_pct||0).toFixed(1) + '% 24h)</span></div>';
+    } else if (defiEl) {
+      defiEl.innerHTML = '<div class="stat-label">DeFi (DeFiLlama)</div><div class="text-muted" style="padding:8px;font-size:0.78rem;">Waiting for data...</div>';
+    }
+
+    // Mempool card
+    var mpEl = document.getElementById('ext-mempool');
+    if (mpEl && data.mempool) {
+      var mp = data.mempool;
+      var congColor = mp.congestion_level === 'extreme' ? 'var(--error)' : mp.congestion_level === 'high' ? 'var(--warning)' : mp.congestion_level === 'elevated' ? '#ffaa00' : 'var(--success)';
+      mpEl.innerHTML = '<div class="stat-label">Mempool (BTC) <span class="badge" style="background:' + congColor + ';color:#000;font-size:0.6rem;">' + (mp.congestion_level||'--').toUpperCase() + '</span></div>'
+        + '<div style="padding:4px 8px;font-size:0.78rem;">Fee: ' + (mp.fastest_fee||0) + ' sat/vB (ratio: ' + (mp.fee_ratio||1).toFixed(1) + 'x)</div>'
+        + '<div style="padding:4px 8px;font-size:0.78rem;">Pending TX: ' + (mp.tx_count||0).toLocaleString() + '</div>';
+    } else if (mpEl) {
+      mpEl.innerHTML = '<div class="stat-label">Mempool (BTC)</div><div class="text-muted" style="padding:8px;font-size:0.78rem;">Waiting for data...</div>';
+    }
+
+    // Per-asset Coinglass + Whale cards
+    var assetMap = {bitcoin:'btc', ethereum:'eth', solana:'sol', xrp:'xrp'};
+    var assets = data.assets || {};
+    for (var aName in assetMap) {
+      var elId = 'ext-' + assetMap[aName];
+      var el = document.getElementById(elId);
+      if (!el) continue;
+      var ad = assets[aName] || {};
+      var cg = ad.coinglass;
+      var wh = ad.whale;
+      var html = '<div class="stat-label">' + assetMap[aName].toUpperCase() + ' External</div>';
+      if (cg) {
+        var lsColor = cg.long_short_ratio > 1.5 ? 'var(--error)' : cg.long_short_ratio < 0.67 ? 'var(--success)' : 'var(--text-secondary)';
+        var oiColor = cg.oi_change_1h_pct > 1 ? 'var(--success)' : cg.oi_change_1h_pct < -1 ? 'var(--error)' : 'var(--text-secondary)';
+        html += '<div style="padding:2px 8px;font-size:0.72rem;">OI: $' + ((cg.oi_usd||0)/1e6).toFixed(0) + 'M <span style="color:' + oiColor + ';">(' + (cg.oi_change_1h_pct||0).toFixed(1) + '% 1h)</span></div>';
+        html += '<div style="padding:2px 8px;font-size:0.72rem;">L/S: <span style="color:' + lsColor + ';">' + (cg.long_short_ratio||0).toFixed(2) + '</span></div>';
+        if (cg.etf_available) {
+          var etfColor = cg.etf_net_flow_usd > 0 ? 'var(--success)' : 'var(--error)';
+          html += '<div style="padding:2px 8px;font-size:0.72rem;">ETF: <span style="color:' + etfColor + ';">$' + ((cg.etf_net_flow_usd||0)/1e6).toFixed(0) + 'M</span></div>';
+        }
+      } else {
+        html += '<div style="padding:4px 8px;font-size:0.72rem;color:var(--text-secondary);">No Coinglass data</div>';
+      }
+      if (wh && wh.tx_count > 0) {
+        var netColor = wh.net_flow_usd > 0 ? 'var(--error)' : 'var(--success)';
+        html += '<div style="padding:2px 8px;font-size:0.72rem;">Whale: <span style="color:' + netColor + ';">$' + ((wh.net_flow_usd||0)/1e6).toFixed(1) + 'M net</span> (' + wh.tx_count + ' txs)</div>';
+      }
+      el.innerHTML = html;
+    }
+  } catch(e) {
+    console.error('external data error:', e);
+  }
+}
+
 async function loadConvictionData() {
   try {
     var resp = await fetch('/api/garves/conviction');
@@ -3139,6 +3219,7 @@ async function refresh() {
       loadConvictionData();
       loadDailyReports();
       loadDerivatives();
+      loadExternalData();
       loadAgentLearning('garves');
       loadNewsSentiment();
       loadCommandTable('garves');

@@ -520,3 +520,218 @@ def spot_depth_signal(bids: list, asks: list) -> IndicatorVote | None:
     conf = min(abs(imbalance) * 2, 1.0)
 
     return IndicatorVote(direction=direction, confidence=conf, raw_value=imbalance * 100)
+
+
+# ── External Data Indicators (Phase 1 — Multi-API Integration) ──
+
+def open_interest_signal(
+    oi_change_1h_pct: float,
+    oi_change_4h_pct: float,
+) -> IndicatorVote | None:
+    """Cross-exchange Open Interest trend signal (Coinglass).
+
+    Rising OI + price direction = trend confirmation.
+    Falling OI = positions unwinding, trend exhaustion.
+
+    Thresholds: |change| > 1% to generate signal.
+    """
+    # Use 1h change as primary, 4h as confirmation
+    if abs(oi_change_1h_pct) < 1.0:
+        return None
+
+    # Rising OI = trend continuation (bullish in uptrend)
+    # We use OI direction as a momentum confirmation
+    if oi_change_1h_pct > 1.0:
+        # OI rising — trend strengthening
+        direction = "up"
+        conf = min(oi_change_1h_pct / 10.0, 0.9)
+        # If 4h confirms, boost
+        if oi_change_4h_pct > 2.0:
+            conf = min(conf + 0.15, 0.95)
+    elif oi_change_1h_pct < -1.0:
+        # OI falling — positions unwinding, bearish
+        direction = "down"
+        conf = min(abs(oi_change_1h_pct) / 10.0, 0.9)
+        if oi_change_4h_pct < -2.0:
+            conf = min(conf + 0.15, 0.95)
+    else:
+        return None
+
+    return IndicatorVote(direction=direction, confidence=conf, raw_value=oi_change_1h_pct)
+
+
+def long_short_ratio_signal(ratio: float) -> IndicatorVote | None:
+    """Long/Short ratio contrarian signal (Coinglass).
+
+    Ratio >1.5 = too many longs = contrarian bearish.
+    Ratio <0.67 = too many shorts = contrarian bullish.
+    Neutral zone (0.67-1.5) = no signal.
+    """
+    if 0.67 <= ratio <= 1.5:
+        return None
+
+    if ratio > 1.5:
+        # Overleveraged long — contrarian bearish
+        direction = "down"
+        conf = min((ratio - 1.5) / 2.0, 0.9)
+    else:
+        # Overleveraged short — contrarian bullish
+        direction = "up"
+        conf = min((0.67 - ratio) / 0.67, 0.9)
+
+    return IndicatorVote(direction=direction, confidence=conf, raw_value=ratio)
+
+
+def etf_flow_signal(net_flow_usd: float) -> IndicatorVote | None:
+    """BTC ETF flow signal (Coinglass). BTC only.
+
+    Net inflows >$100M = bullish institutional buying.
+    Net outflows <-$100M = bearish institutional selling.
+    """
+    if abs(net_flow_usd) < 100_000_000:  # $100M threshold
+        return None
+
+    if net_flow_usd > 0:
+        direction = "up"
+        conf = min(net_flow_usd / 500_000_000, 0.9)  # $500M = high conf
+    else:
+        direction = "down"
+        conf = min(abs(net_flow_usd) / 500_000_000, 0.9)
+
+    return IndicatorVote(
+        direction=direction, confidence=conf, raw_value=net_flow_usd / 1e6,
+    )
+
+
+def dxy_trend_signal(trend: str, magnitude: float) -> IndicatorVote | None:
+    """DXY (US Dollar Index) trend signal — inverse correlation with crypto.
+
+    DXY rising = bearish for crypto (capital flows into USD).
+    DXY falling = bullish for crypto (capital flows out of USD).
+
+    magnitude: absolute weekly pct change.
+    """
+    if not trend or trend == "flat" or abs(magnitude) < 0.3:
+        return None
+
+    if trend == "rising":
+        direction = "down"  # DXY up = crypto down
+    elif trend == "falling":
+        direction = "up"  # DXY down = crypto up
+    else:
+        return None
+
+    conf = min(abs(magnitude) / 2.0, 0.8)
+    return IndicatorVote(direction=direction, confidence=conf, raw_value=magnitude)
+
+
+def stablecoin_flow_signal(
+    change_7d_usd: float,
+    change_7d_pct: float,
+) -> IndicatorVote | None:
+    """Stablecoin market cap flow signal (DeFiLlama).
+
+    +$1B/week = bullish (fresh capital entering crypto via stablecoins).
+    -$1B/week = bearish (capital exiting crypto ecosystem).
+    """
+    if abs(change_7d_usd) < 500_000_000:  # $500M minimum to signal
+        return None
+
+    if change_7d_usd > 0:
+        direction = "up"
+        conf = min(change_7d_usd / 3_000_000_000, 0.8)  # $3B = high conf
+    else:
+        direction = "down"
+        conf = min(abs(change_7d_usd) / 3_000_000_000, 0.8)
+
+    return IndicatorVote(direction=direction, confidence=conf, raw_value=change_7d_pct)
+
+
+def tvl_momentum_signal(
+    change_24h_pct: float,
+    change_7d_pct: float,
+) -> IndicatorVote | None:
+    """DeFi TVL momentum signal (DeFiLlama).
+
+    TVL dropping >3%/day = bearish (liquidity exodus).
+    TVL rising >3%/day = bullish (liquidity inflow).
+    """
+    # Use 24h as primary, require minimum 1% move
+    if abs(change_24h_pct) < 1.0:
+        return None
+
+    if change_24h_pct > 1.0:
+        direction = "up"
+        conf = min(change_24h_pct / 10.0, 0.8)
+        # 7d confirms
+        if change_7d_pct > 3.0:
+            conf = min(conf + 0.1, 0.85)
+    elif change_24h_pct < -1.0:
+        direction = "down"
+        conf = min(abs(change_24h_pct) / 10.0, 0.8)
+        if change_7d_pct < -3.0:
+            conf = min(conf + 0.1, 0.85)
+    else:
+        return None
+
+    return IndicatorVote(direction=direction, confidence=conf, raw_value=change_24h_pct)
+
+
+def mempool_congestion_signal(
+    fee_ratio: float,
+    pending_tx: int,
+    congestion_level: str,
+) -> IndicatorVote | None:
+    """BTC mempool congestion signal. BTC only.
+
+    Fee spike 3x+ baseline = network stress (high activity, potential volatility).
+    Combined with high pending TX count, signals market stress.
+
+    Interpretation: extreme congestion often precedes price drops (panic selling
+    or exchange deposits), but moderate elevation is neutral.
+    """
+    if fee_ratio < 2.0:
+        return None
+
+    if congestion_level == "extreme" and fee_ratio >= 5.0:
+        # Extreme fee spike = network stress → likely bearish (panic)
+        direction = "down"
+        conf = min(fee_ratio / 10.0, 0.8)
+    elif congestion_level == "high" and fee_ratio >= 3.0:
+        # High fees = elevated activity → mildly bearish
+        direction = "down"
+        conf = min((fee_ratio - 2.0) / 5.0, 0.6)
+    else:
+        return None
+
+    return IndicatorVote(direction=direction, confidence=conf, raw_value=fee_ratio)
+
+
+def whale_flow_signal(
+    deposits_usd: float,
+    withdrawals_usd: float,
+    tx_count: int,
+) -> IndicatorVote | None:
+    """Whale transaction flow signal (Whale Alert).
+
+    Net deposits to exchanges >$10M = sell pressure → bearish.
+    Net withdrawals from exchanges >$10M = accumulation → bullish.
+    """
+    if tx_count == 0:
+        return None
+
+    net = deposits_usd - withdrawals_usd  # positive = sell pressure
+
+    if abs(net) < 10_000_000:  # $10M minimum net flow
+        return None
+
+    if net > 0:
+        # Net deposits = sell pressure
+        direction = "down"
+        conf = min(net / 100_000_000, 0.85)  # $100M = high conf
+    else:
+        # Net withdrawals = accumulation
+        direction = "up"
+        conf = min(abs(net) / 100_000_000, 0.85)
+
+    return IndicatorVote(direction=direction, confidence=conf, raw_value=net / 1e6)

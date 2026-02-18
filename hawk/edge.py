@@ -236,12 +236,26 @@ def calculate_edge(
     if not token_id:
         return None
 
+    # V4: Cross-platform confidence bonus
+    xp_count = getattr(estimate, 'cross_platform_count', 0)
+    if xp_count >= 2:
+        edge *= 1.10  # +10% edge boost with 2+ cross-platform confirmations
+    elif xp_count == 1:
+        edge *= 1.05  # +5% with 1 cross-platform match
+
     kf = kelly_size(true_prob, buy_price, effective_bankroll, cfg.max_bet_usd, cfg.kelly_fraction)
     if kf < 1.0:
         return None
 
     ev = edge * kf
     tlh = market.time_left_hours
+
+    # V4: Adjust risk score based on cross-platform confirmation
+    risk_adj = 0
+    if xp_count >= 2:
+        risk_adj = -2  # Lower risk with multiple platform confirmation
+    elif xp_count == 1:
+        risk_adj = -1
 
     return TradeOpportunity(
         market=market,
@@ -252,7 +266,7 @@ def calculate_edge(
         kelly_fraction=kf / effective_bankroll,
         position_size_usd=kf,
         expected_value=ev,
-        risk_score=calculate_risk_score(edge, tlh, estimate.confidence, market.volume, market.category),
+        risk_score=max(1, calculate_risk_score(edge, tlh, estimate.confidence, market.volume, market.category) + risk_adj),
         time_left_hours=tlh,
         urgency_label=urgency_label(tlh),
     )

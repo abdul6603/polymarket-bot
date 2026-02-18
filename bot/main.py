@@ -26,6 +26,7 @@ from bot.ws_feed import MarketFeed
 from bot.v2_tools import is_emergency_stopped, accept_commands, process_command, daily_trade_report
 from bot.daily_cycle import should_reset, archive_and_reset
 from bot.orderbook_check import check_orderbook_depth
+from bot.macro import get_context as get_macro_context
 
 log = logging.getLogger("bot")
 
@@ -254,6 +255,14 @@ class TradingBot:
             for note in brain_notes:
                 log.info("[BRAIN:%s] %s: %s", note.get("type", "note").upper(), note.get("topic", "?"), note.get("content", "")[:120])
 
+        # Atlas intelligence feed — learnings from research cycles
+        from bot.atlas_feed import get_actionable_insights
+        atlas_insights = get_actionable_insights("garves")
+        if atlas_insights:
+            log.info("[ATLAS] %d actionable insights for Garves:", len(atlas_insights))
+            for insight in atlas_insights[:3]:
+                log.info("[ATLAS] → %s", insight[:150])
+
         # 0. Detect market regime (Fear & Greed based)
         regime = detect_regime()
         self.executor.regime = regime
@@ -307,6 +316,57 @@ class TradingBot:
             )
             log.info("[DERIVATIVES] Funding rates: %d assets | Liquidation events: %d (5m window)",
                      fr_count, liq_total)
+
+        # ── External Data Intelligence (Phase 1 — Multi-API) ──
+        macro_ctx = None
+        try:
+            macro_ctx = get_macro_context()
+            if macro_ctx and macro_ctx.is_event_day:
+                log.info("[MACRO] EVENT DAY: %s — edge_multiplier=%.1fx (require stronger signals)",
+                         macro_ctx.event_type.upper(), macro_ctx.edge_multiplier)
+                # Apply macro edge multiplier on top of regime
+                if regime:
+                    regime = RegimeAdjustment(
+                        label=regime.label,
+                        fng_value=regime.fng_value,
+                        size_multiplier=regime.size_multiplier,
+                        edge_multiplier=regime.edge_multiplier * macro_ctx.edge_multiplier,
+                        confidence_floor=regime.confidence_floor,
+                        consensus_offset=regime.consensus_offset,
+                    )
+        except Exception:
+            log.debug("Macro context fetch failed")
+
+        # Gather external data per asset (cached, won't re-fetch each tick)
+        external_data_cache: dict[str, dict] = {}
+        try:
+            from bot.coinglass import get_data as get_coinglass
+            from bot.defi_data import get_data as get_defi
+            from bot.mempool import get_data as get_mempool
+            from bot.whale_tracker import get_flow as get_whale_flow
+
+            defi = get_defi()
+            mempool_data = get_mempool()
+
+            for asset_name in ("bitcoin", "ethereum", "solana", "xrp"):
+                ext: dict = {}
+                try:
+                    ext["coinglass"] = get_coinglass(asset_name)
+                except Exception:
+                    ext["coinglass"] = None
+                ext["macro"] = macro_ctx
+                ext["defi"] = defi
+                ext["mempool"] = mempool_data
+                try:
+                    ext["whale"] = get_whale_flow(asset_name)
+                except Exception:
+                    ext["whale"] = None
+                external_data_cache[asset_name] = ext
+        except Exception:
+            log.debug("External data import/fetch failed, continuing without")
+
+        # Save external data state for dashboard
+        self._save_external_data_state(external_data_cache, macro_ctx)
 
         # 2. Evaluate each market for signals, trade the best ones
         trades_this_tick = 0
@@ -370,6 +430,7 @@ class TradingBot:
                 regime=regime,
                 derivatives_data=deriv_data,
                 spot_depth=spot_depth,
+                external_data=external_data_cache.get(asset),
             )
             if not sig:
                 continue
@@ -577,6 +638,67 @@ class TradingBot:
                 depth_file = data_dir / "spot_depth.json"
                 with open(depth_file, "w") as f:
                     _json.dump(depth, f)
+        except Exception:
+            pass
+
+    def _save_external_data_state(self, ext_cache: dict, macro_ctx) -> None:
+        """Persist external data state to disk for dashboard access."""
+        import json as _json
+        from dataclasses import asdict
+        data_dir = Path(__file__).parent.parent / "data"
+        try:
+            state = {"timestamp": time.time(), "assets": {}}
+            for asset_name, ext in ext_cache.items():
+                asset_state = {}
+                if ext.get("coinglass"):
+                    cg = ext["coinglass"]
+                    asset_state["coinglass"] = {
+                        "oi_usd": cg.oi_usd,
+                        "oi_change_1h_pct": cg.oi_change_1h_pct,
+                        "long_short_ratio": cg.long_short_ratio,
+                        "avg_funding_rate": cg.avg_funding_rate,
+                        "etf_net_flow_usd": cg.etf_net_flow_usd,
+                        "etf_available": cg.etf_available,
+                    }
+                if ext.get("whale"):
+                    w = ext["whale"]
+                    asset_state["whale"] = {
+                        "deposits_usd": w.deposits_usd,
+                        "withdrawals_usd": w.withdrawals_usd,
+                        "net_flow_usd": w.net_flow_usd,
+                        "tx_count": w.tx_count,
+                    }
+                state["assets"][asset_name] = asset_state
+
+            if ext_cache and next(iter(ext_cache.values()), {}).get("defi"):
+                defi = next(iter(ext_cache.values()))["defi"]
+                state["defi"] = {
+                    "stablecoin_mcap_usd": defi.stablecoin_mcap_usd,
+                    "stablecoin_change_7d_pct": defi.stablecoin_change_7d_pct,
+                    "tvl_usd": defi.tvl_usd,
+                    "tvl_change_24h_pct": defi.tvl_change_24h_pct,
+                }
+            if ext_cache and next(iter(ext_cache.values()), {}).get("mempool"):
+                mp = next(iter(ext_cache.values()))["mempool"]
+                state["mempool"] = {
+                    "fastest_fee": mp.fastest_fee,
+                    "fee_ratio": mp.fee_ratio_vs_baseline,
+                    "tx_count": mp.tx_count,
+                    "congestion_level": mp.congestion_level,
+                }
+            if macro_ctx:
+                state["macro"] = {
+                    "is_event_day": macro_ctx.is_event_day,
+                    "event_type": macro_ctx.event_type,
+                    "edge_multiplier": macro_ctx.edge_multiplier,
+                    "dxy_value": macro_ctx.dxy_value,
+                    "dxy_trend": macro_ctx.dxy_trend,
+                    "vix_value": macro_ctx.vix_value,
+                }
+
+            state_file = data_dir / "external_data_state.json"
+            with open(state_file, "w") as f:
+                _json.dump(state, f)
         except Exception:
             pass
 

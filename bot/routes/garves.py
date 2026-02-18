@@ -766,3 +766,17 @@ def api_garves_orderbook_stats():
         })
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500
+
+
+@garves_bp.route("/api/garves/external-data")
+def api_garves_external_data():
+    """External data intelligence: Coinglass, FRED Macro, DeFiLlama, Mempool, Whale Alert."""
+    result = {"timestamp": 0, "assets": {}, "defi": None, "mempool": None, "macro": None}
+    try:
+        state_file = DATA_DIR / "external_data_state.json"
+        if state_file.exists():
+            with open(state_file) as f:
+                result = json.load(f)
+    except Exception:
+        pass
+    return jsonify(result)
