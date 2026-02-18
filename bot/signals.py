@@ -602,8 +602,9 @@ class SignalEngine:
             edge_up = prob_up - implied_up_price
             edge_down = (1 - prob_up) - (1 - implied_up_price)
         else:
-            edge_up = prob_up - 0.50
-            edge_down = (1 - prob_up) - 0.50
+            # No orderbook price — can't calculate real edge, skip this market
+            log.info("[%s/%s] No implied price — skipping (can't calculate edge)", asset.upper(), timeframe)
+            return None
 
         # ── Subtract Fees from Edge ──
         fees = _estimate_fees(timeframe, implied_up_price)

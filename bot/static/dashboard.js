@@ -212,44 +212,182 @@ function renderLiveBalance(data) {
   }
 }
 
+// === LIVE COUNTDOWN TIMER ENGINE ===
+var _pendingTradesData = [];
+var _countdownInterval = null;
+
+function formatCountdown(seconds) {
+  if (seconds <= 0) return 'RESOLVING...';
+  var h = Math.floor(seconds / 3600);
+  var m = Math.floor((seconds % 3600) / 60);
+  var s = Math.floor(seconds % 60);
+  if (h > 0) return h + 'h ' + String(m).padStart(2, '0') + 'm ' + String(s).padStart(2, '0') + 's';
+  return String(m).padStart(2, '0') + 'm ' + String(s).padStart(2, '0') + 's';
+}
+
+function getCountdownColor(seconds) {
+  if (seconds <= 0) return '#ff6b35';
+  if (seconds < 120) return 'var(--error)';
+  if (seconds < 600) return 'var(--warning)';
+  return 'var(--success)';
+}
+
+function getCountdownPct(seconds, timeframe) {
+  var total = 900;
+  if (timeframe === '1h') total = 3600;
+  else if (timeframe === '4h') total = 14400;
+  else if (timeframe === '15m') total = 900;
+  else if (timeframe === '5m') total = 300;
+  var pct = Math.max(0, Math.min(100, (seconds / total) * 100));
+  return pct;
+}
+
+function updateCountdowns() {
+  var now = Date.now() / 1000;
+  for (var i = 0; i < _pendingTradesData.length; i++) {
+    var t = _pendingTradesData[i];
+    var remaining = (t.market_end_ts || 0) - now;
+    var cdEl = document.getElementById('countdown-' + i);
+    var barEl = document.getElementById('cd-bar-' + i);
+    if (cdEl) {
+      cdEl.textContent = formatCountdown(remaining);
+      cdEl.style.color = getCountdownColor(remaining);
+    }
+    if (barEl) {
+      var pct = getCountdownPct(remaining, t.timeframe);
+      barEl.style.width = pct + '%';
+      barEl.style.background = getCountdownColor(remaining);
+    }
+  }
+}
+
 function renderLivePendingTrades(trades) {
   var el = document.getElementById('live-pending-tbody');
-  if (!trades || trades.length === 0) { el.innerHTML = '<tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No pending live trades</td></tr>'; return; }
+  var countBadge = document.getElementById('pending-count-badge');
+  var exposureEl = document.getElementById('pending-exposure');
+  _pendingTradesData = trades || [];
+
+  if (countBadge) countBadge.textContent = _pendingTradesData.length;
+
+  if (!trades || trades.length === 0) {
+    el.innerHTML = '<tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No pending live trades</td></tr>';
+    if (exposureEl) exposureEl.textContent = 'Exposure: $0.00';
+    return;
+  }
+
+  var totalExposure = 0;
   var html = '';
   for (var i = 0; i < trades.length; i++) {
     var t = trades[i];
-    var tleft = t.time_left || '--';
-    var tleftSec = t.time_left_sec || 0;
-    var tleftColor = tleftSec < 120 ? 'var(--error)' : tleftSec < 600 ? 'var(--warning)' : 'var(--text-muted)';
-    var potProfit = t.est_pnl || 0;
-    html += '<tr><td>' + esc(t.time) + '</td><td>' + esc(t.asset) + ' ' + esc(t.timeframe) + '</td>';
-    html += '<td style="color:' + (t.direction === 'UP' ? 'var(--success)' : 'var(--error)') + '">' + esc(t.direction) + '</td>';
+    var stake = t.stake || 0;
+    var entryPrice = t.entry_price || 0.5;
+    var potProfit = stake * (1 - entryPrice) - stake * 0.02;
+    var potLoss = stake * entryPrice;
+    totalExposure += stake;
+    var now = Date.now() / 1000;
+    var remaining = (t.market_end_ts || 0) - now;
+    var cdPct = getCountdownPct(remaining, t.timeframe);
+
+    html += '<tr>';
+    html += '<td style="font-size:0.72rem;">' + esc(t.time) + '</td>';
+    html += '<td><span style="font-weight:600;">' + esc(t.asset) + '</span> <span class="text-muted">' + esc(t.timeframe) + '</span></td>';
+    html += '<td style="color:' + (t.direction === 'UP' ? 'var(--success)' : 'var(--error)') + ';font-weight:700;">' + esc(t.direction) + '</td>';
+    html += '<td style="font-weight:600;">$' + stake.toFixed(2) + '</td>';
     html += '<td>' + ((t.edge||0)*100).toFixed(1) + '%</td>';
-    html += '<td>' + ((t.confidence||0)*100).toFixed(0) + '%</td>';
-    html += '<td style="color:' + tleftColor + ';font-weight:600;">' + esc(tleft) + '</td>';
-    html += '<td style="color:var(--success);">+$' + potProfit.toFixed(2) + '</td>';
-    html += '<td><span class="badge badge-warning">Pending</span></td></tr>';
+    html += '<td style="min-width:120px;">';
+    html += '<div style="font-weight:700;font-family:var(--font-mono);font-size:0.82rem;" id="countdown-' + i + '">' + formatCountdown(remaining) + '</div>';
+    html += '<div style="background:rgba(255,255,255,0.05);border-radius:3px;height:4px;margin-top:3px;overflow:hidden;">';
+    html += '<div id="cd-bar-' + i + '" style="height:100%;border-radius:3px;background:' + getCountdownColor(remaining) + ';width:' + cdPct + '%;transition:width 1s linear;"></div></div>';
+    html += '<div class="text-muted" style="font-size:0.64rem;margin-top:2px;">Expires ' + esc(t.expires) + '</div>';
+    html += '</td>';
+    html += '<td style="color:var(--success);font-weight:600;">+$' + potProfit.toFixed(2) + '</td>';
+    html += '<td style="color:var(--error);font-weight:600;">-$' + potLoss.toFixed(2) + '</td>';
+    html += '</tr>';
   }
   el.innerHTML = html;
+
+  if (exposureEl) exposureEl.textContent = 'Exposure: $' + totalExposure.toFixed(2);
+
+  // Start countdown timer if not running
+  if (!_countdownInterval) {
+    _countdownInterval = setInterval(updateCountdowns, 1000);
+  }
 }
 
 function renderLiveResolvedTrades(trades) {
   var el = document.getElementById('live-resolved-tbody');
-  if (!trades || trades.length === 0) { el.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No resolved live trades yet</td></tr>'; return; }
+  var summaryEl = document.getElementById('resolved-summary');
+  if (!trades || trades.length === 0) {
+    el.innerHTML = '<tr><td colspan="7" class="text-muted" style="text-align:center;padding:24px;">No resolved live trades yet</td></tr>';
+    if (summaryEl) summaryEl.textContent = '--';
+    return;
+  }
+
+  var totalWon = 0, totalLost = 0, winCount = 0, lossCount = 0;
   var html = '';
   for (var i = 0; i < trades.length; i++) {
     var t = trades[i];
     var won = t.won;
     var pnl = t.est_pnl || 0;
+    var stake = t.stake || 0;
     var pnlStr = (pnl >= 0 ? '+$' : '-$') + Math.abs(pnl).toFixed(2);
     var pnlColor = pnl >= 0 ? 'var(--success)' : 'var(--error)';
-    html += '<tr><td>' + esc(t.time) + '</td><td>' + esc(t.asset) + ' ' + esc(t.timeframe) + '</td>';
-    html += '<td style="color:' + (t.direction === 'UP' ? 'var(--success)' : 'var(--error)') + '">' + esc(t.direction) + '</td>';
+    if (won) { totalWon += pnl; winCount++; } else { totalLost += Math.abs(pnl); lossCount++; }
+
+    html += '<tr>';
+    html += '<td style="font-size:0.72rem;">' + esc(t.time) + '</td>';
+    html += '<td><span style="font-weight:600;">' + esc(t.asset) + '</span> <span class="text-muted">' + esc(t.timeframe) + '</span></td>';
+    html += '<td style="color:' + (t.direction === 'UP' ? 'var(--success)' : 'var(--error)') + ';font-weight:700;">' + esc(t.direction) + '</td>';
+    html += '<td>$' + stake.toFixed(2) + '</td>';
     html += '<td>' + ((t.edge||0)*100).toFixed(1) + '%</td>';
-    html += '<td><span class="badge ' + (won ? 'badge-success' : 'badge-error') + '">' + (won ? 'WIN' : 'LOSS') + '</span></td>';
-    html += '<td style="color:' + pnlColor + ';font-weight:600;">' + pnlStr + '</td></tr>';
+    html += '<td><span class="badge ' + (won ? 'badge-success' : 'badge-error') + '" style="font-weight:700;">' + (won ? 'WIN' : 'LOSS') + '</span></td>';
+    html += '<td style="color:' + pnlColor + ';font-weight:700;font-size:0.88rem;">' + pnlStr + '</td>';
+    html += '</tr>';
   }
   el.innerHTML = html;
+
+  if (summaryEl) {
+    var net = totalWon - totalLost;
+    var netStr = (net >= 0 ? '+$' : '-$') + Math.abs(net).toFixed(2);
+    var netColor = net >= 0 ? 'var(--success)' : 'var(--error)';
+    summaryEl.innerHTML = '<span style="color:var(--success);">' + winCount + 'W</span> / <span style="color:var(--error);">' + lossCount + 'L</span> | Won: <span style="color:var(--success);">+$' + totalWon.toFixed(2) + '</span> Lost: <span style="color:var(--error);">-$' + totalLost.toFixed(2) + '</span> | Net: <span style="color:' + netColor + ';font-weight:700;">' + netStr + '</span>';
+  }
+}
+
+// === ON-CHAIN POSITIONS RENDERER ===
+function renderOnChainPositions(data) {
+  var feed = document.getElementById('onchain-positions-feed');
+  var dot = document.getElementById('positions-live-dot');
+  var totalEl = document.getElementById('positions-total-value');
+  if (!feed) return;
+
+  if (dot) dot.style.background = data.live ? 'var(--success)' : '#555';
+  if (totalEl) totalEl.textContent = data.live ? 'Total Value: $' + (data.total_value || 0).toFixed(2) : 'Offline';
+
+  var positions = data.positions || [];
+  if (positions.length === 0) {
+    feed.innerHTML = '<div class="glass-card text-muted" style="text-align:center;padding:16px;">' + (data.error ? 'Error: ' + esc(data.error) : 'No open positions on-chain') + '</div>';
+    return;
+  }
+
+  var html = '';
+  for (var i = 0; i < positions.length; i++) {
+    var p = positions[i];
+    var pnlColor = p.unrealized_pnl >= 0 ? 'var(--success)' : 'var(--error)';
+    var pnlStr = (p.unrealized_pnl >= 0 ? '+' : '') + '$' + p.unrealized_pnl.toFixed(2);
+    html += '<div class="glass-card" style="padding:10px 14px;border-left:3px solid ' + pnlColor + ';">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">';
+    html += '<div>';
+    html += '<div style="font-weight:600;font-size:0.82rem;">' + esc(p.market || 'Unknown') + '</div>';
+    html += '<div class="text-muted" style="font-size:0.68rem;">Outcome: ' + esc(p.outcome) + ' | Size: ' + p.size.toFixed(2) + ' shares</div>';
+    html += '</div>';
+    html += '<div style="text-align:right;">';
+    html += '<div style="font-size:0.72rem;">Avg: $' + p.avg_price.toFixed(3) + ' &rarr; Now: $' + p.cur_price.toFixed(3) + '</div>';
+    html += '<div style="font-weight:700;color:' + pnlColor + ';">' + pnlStr + '</div>';
+    html += '<div class="text-muted" style="font-size:0.64rem;">Value: $' + p.value.toFixed(2) + '</div>';
+    html += '</div></div></div>';
+  }
+  feed.innerHTML = html;
 }
 
 function renderLiveLogs(lines) {
@@ -3210,6 +3348,7 @@ async function refresh() {
       renderLiveResolvedTrades(data.recent_trades);
       fetch('/api/logs').then(function(r){return r.json();}).then(function(d){renderLiveLogs(d.lines);}).catch(function(){});
       fetch('/api/garves/balance').then(function(r){return r.json();}).then(function(d){renderLiveBalance(d);}).catch(function(){});
+      fetch('/api/garves/positions').then(function(r){return r.json();}).then(function(d){renderOnChainPositions(d);}).catch(function(){});
       fetch('/api/garves/bankroll').then(function(r){return r.json();}).then(function(d){
         var el = document.getElementById('garves-bankroll-label');
         if(el && d.bankroll_usd) el.textContent = '$' + d.bankroll_usd.toFixed(0) + ' bankroll (' + d.multiplier.toFixed(2) + 'x)';

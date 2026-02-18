@@ -186,7 +186,11 @@ def api_trades():
             ).strftime("%I:%M %p") if end_ts else "",
             "time_left": time_left,
             "time_left_sec": time_left_sec,
+            "market_end_ts": end_ts,
+            "entry_price": round(entry_price, 4),
+            "stake": round(stake, 2),
             "est_pnl": round(est_pnl, 2),
+            "signal_rationale": t.get("signal_rationale", ""),
         }
 
     recent_resolved = sorted(resolved, key=lambda t: t.get("resolve_time", 0), reverse=True)[:20]
@@ -313,7 +317,11 @@ def _build_trades_response(trades):
             ).strftime("%I:%M %p") if end_ts else "",
             "time_left": time_left,
             "time_left_sec": time_left_sec,
+            "market_end_ts": end_ts,
+            "entry_price": round(entry_price, 4),
+            "stake": round(stake, 2),
             "est_pnl": round(est_pnl, 2),
+            "signal_rationale": t.get("signal_rationale", ""),
         }
 
     recent_resolved = sorted(resolved, key=lambda t: t.get("resolve_time", 0), reverse=True)[:20]
@@ -779,4 +787,72 @@ def api_garves_external_data():
                 result = json.load(f)
     except Exception:
         pass
+    return jsonify(result)
+
+
+POSITIONS_CACHE_FILE = DATA_DIR / "polymarket_positions.json"
+POSITIONS_CACHE_TTL = 30  # seconds
+
+
+@garves_bp.route("/api/garves/positions")
+def api_garves_positions():
+    """Live on-chain positions from Polymarket data API."""
+    # Check cache
+    if POSITIONS_CACHE_FILE.exists():
+        try:
+            cached = json.loads(POSITIONS_CACHE_FILE.read_text())
+            if time.time() - cached.get("fetched_at", 0) < POSITIONS_CACHE_TTL:
+                return jsonify(cached)
+        except Exception:
+            pass
+
+    wallet = POLYMARKET_WALLET
+    result = {"positions": [], "total_value": 0.0, "live": False, "fetched_at": 0, "error": None}
+
+    try:
+        import urllib.request
+        url = f"https://data-api.polymarket.com/positions?user={wallet.lower()}"
+        req = urllib.request.Request(url, headers={"User-Agent": "Garves/1.0"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode())
+
+        positions = []
+        total_value = 0.0
+        if isinstance(data, list):
+            for pos in data:
+                size = float(pos.get("size", 0))
+                if size <= 0:
+                    continue
+                cur_price = float(pos.get("curPrice", 0))
+                avg_price = float(pos.get("avgPrice", 0))
+                value = size * cur_price
+                cost = size * avg_price
+                unrealized_pnl = value - cost
+                total_value += value
+
+                positions.append({
+                    "market": pos.get("title", pos.get("slug", "Unknown")),
+                    "outcome": pos.get("outcome", ""),
+                    "size": round(size, 4),
+                    "avg_price": round(avg_price, 4),
+                    "cur_price": round(cur_price, 4),
+                    "value": round(value, 2),
+                    "cost": round(cost, 2),
+                    "unrealized_pnl": round(unrealized_pnl, 2),
+                    "condition_id": pos.get("conditionId", ""),
+                    "asset_id": pos.get("asset", ""),
+                })
+
+        result["positions"] = positions
+        result["total_value"] = round(total_value, 2)
+        result["live"] = True
+    except Exception as e:
+        result["error"] = str(e)[:200]
+
+    result["fetched_at"] = time.time()
+    try:
+        POSITIONS_CACHE_FILE.write_text(json.dumps(result, indent=2))
+    except Exception:
+        pass
+
     return jsonify(result)

@@ -66,13 +66,39 @@
       <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Direction</h3><table class="data-table"><thead><tr><th>Dir</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-dir"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
     </div>
   </div>
+  <!-- On-Chain Positions -->
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="warning">Pending Trades</h2>
-    <div class="glass-card"><table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Direction</th><th>Advantage</th><th>Consensus</th><th>Time Left</th><th>Pot. Profit</th><th>Status</th></tr></thead><tbody id="live-pending-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No pending trades</td></tr></tbody></table></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <h2 class="section-title" data-accent="garves" style="margin:0;">On-Chain Positions</h2>
+      <span id="positions-live-dot" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;"></span>
+      <span id="positions-total-value" class="text-muted" style="font-size:0.76rem;margin-left:auto;">--</span>
+    </div>
+    <div id="onchain-positions-feed" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+      <div class="glass-card text-muted" style="text-align:center;padding:16px;">Loading on-chain positions...</div>
+    </div>
   </div>
+
+  <!-- Live Positions (Pending Trades with Countdown Timers) -->
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="garves">Resolved Trades</h2>
-    <div class="glass-card"><table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Direction</th><th>Advantage</th><th>Result</th><th>PnL</th></tr></thead><tbody id="live-resolved-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No resolved trades yet</td></tr></tbody></table></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <h2 class="section-title" data-accent="warning" style="margin:0;">Live Positions</h2>
+      <span id="pending-count-badge" style="background:var(--warning);color:#000;font-weight:700;padding:2px 8px;border-radius:10px;font-size:0.72rem;">0</span>
+      <span id="pending-exposure" class="text-muted" style="font-size:0.76rem;margin-left:auto;">Exposure: --</span>
+    </div>
+    <div id="live-positions-cards" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;"></div>
+    <div class="glass-card" id="live-positions-table-wrap">
+      <table class="data-table"><thead><tr><th>Placed</th><th>Market</th><th>Direction</th><th>Stake</th><th>Edge</th><th style="min-width:100px;">Countdown</th><th>Pot. Profit</th><th>Pot. Loss</th></tr></thead>
+      <tbody id="live-pending-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No pending trades</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- Resolved Trades with Win/Loss Amounts -->
+  <div class="section-spacer">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <h2 class="section-title" data-accent="garves" style="margin:0;">Resolved Trades</h2>
+      <span id="resolved-summary" class="text-muted" style="font-size:0.76rem;margin-left:auto;">--</span>
+    </div>
+    <div class="glass-card"><table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Direction</th><th>Stake</th><th>Edge</th><th>Result</th><th>PnL</th></tr></thead><tbody id="live-resolved-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;padding:24px;">No resolved trades yet</td></tr></tbody></table></div>
   </div>
   <div class="section-spacer">
     <h2 class="section-title" data-accent="garves">Daily Performance History</h2>
