@@ -215,9 +215,14 @@ class Executor:
             try:
                 order = self.client.get_order(pos.order_id)
                 status = order.get("status", "").lower()
-                if status in ("matched", "filled", "canceled", "expired"):
-                    log.info("Order %s status: %s", pos.order_id, status)
+                if status in ("canceled", "expired"):
+                    # Order never filled — remove from tracker (no position held)
+                    log.info("Order %s %s — removing from tracker (no fill)", pos.order_id, status)
                     self.tracker.remove(pos.order_id)
+                elif status in ("matched", "filled"):
+                    # Order filled — position is ACTIVE. Keep in tracker for risk management.
+                    log.info("Order %s FILLED — position active, keeping in tracker ($%.2f)",
+                             pos.order_id, pos.size_usd)
             except Exception:
                 log.debug("Could not check order %s", pos.order_id)
 

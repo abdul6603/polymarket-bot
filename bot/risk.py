@@ -102,6 +102,7 @@ class PositionTracker:
 
         # Query on-chain balance for tokens in OPEN markets only
         synced = 0
+        _market_prices: dict[str, dict[str, float]] = {}  # market_id -> {token_id -> price}
         for token_id, meta in token_meta.items():
             if meta["market_id"] not in open_markets:
                 continue  # skip closed/resolved markets — those are just unclaimed winnings
@@ -117,13 +118,28 @@ class PositionTracker:
                 if shares <= 0.5:  # ignore dust
                     continue
 
-                # Get current price from orderbook for USD value
-                try:
-                    book = client.get_order_book(token_id)
-                    bids = book.bids if hasattr(book, "bids") else []
-                    current_price = float(bids[0].price) if bids else meta["probability"]
-                except Exception:
-                    current_price = meta["probability"]
+                # Get current price from CLOB market endpoint (not orderbook — too thin)
+                current_price = meta["probability"]  # fallback to entry price
+                mid = meta["market_id"]
+                if mid in _market_prices:
+                    # Already fetched this market's prices
+                    current_price = _market_prices[mid].get(token_id, current_price)
+                else:
+                    try:
+                        resp = get_session().get(
+                            f"https://clob.polymarket.com/markets/{mid}", timeout=10,
+                        )
+                        if resp.status_code == 200:
+                            for t in resp.json().get("tokens", []):
+                                tp = t.get("price")
+                                tid_check = t.get("token_id", "")
+                                if tp is not None:
+                                    _market_prices.setdefault(mid, {})[tid_check] = float(tp)
+                            current_price = _market_prices.get(mid, {}).get(
+                                token_id, current_price
+                            )
+                    except Exception:
+                        pass  # keep entry price
 
                 size_usd = shares * current_price
                 pos_key = f"chain_{token_id[:16]}"
