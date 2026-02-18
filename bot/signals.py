@@ -128,8 +128,8 @@ TF_WEIGHT_SCALE = {
 
 MIN_CANDLES = 30
 CONSENSUS_RATIO = 0.70  # Relaxed 0.78→0.70: R:R 1.2+ filter guards quality, let more trades through (7/10 instead of 8/10)
-CONSENSUS_FLOOR = 4     # Hard floor: 4 minimum. With 5 active→need 4 (80%), 9 active→need 7 (78% = Quant optimal).
-MIN_CONSENSUS = CONSENSUS_FLOOR  # backward compat for backtest/quant (absolute floor)
+CONSENSUS_FLOOR = 3     # Lowered 4→3: old floor forced 4/4 unanimous with few indicators. R:R 1.2+ is the real guard now.
+MIN_CONSENSUS = CONSENSUS_FLOOR  # backward compat for backtest/quant
 MIN_ATR_THRESHOLD = 0.00005  # skip if volatility below this (0.005% of price)
 MIN_CONFIDENCE = 0.55  # DATA: conf>=55% = 82.9% WR, conf>=60% = 91.7% WR. Old 0.25 let through garbage.
 
