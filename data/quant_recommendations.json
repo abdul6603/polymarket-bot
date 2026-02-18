@@ -1,30 +1,6 @@
 {
   "recommendations": [
     {
-      "param": "MIN_EDGE_ABSOLUTE",
-      "current": 0.08,
-      "suggested": 0.16,
-      "impact": "Edge floor change filters weak signals",
-      "reasoning": "Tighter edge filter at 0.16 gives WR=70.7%",
-      "confidence": "high"
-    },
-    {
-      "param": "MIN_CONFIDENCE",
-      "current": 0.25,
-      "suggested": 0.30000000000000004,
-      "impact": "Confidence floor adjustment",
-      "reasoning": "Confidence of 0.30000000000000004 with WR=70.7%",
-      "confidence": "high"
-    },
-    {
-      "param": "UP_CONFIDENCE_PREMIUM",
-      "current": 0.08,
-      "suggested": 0.06,
-      "impact": "UP direction premium adjustment",
-      "reasoning": "UP premium of 0.06 optimizes directional bias filter",
-      "confidence": "medium"
-    },
-    {
       "param": "WEIGHTS",
       "current": {
         "volume_spike": 2.5,
@@ -32,120 +8,78 @@
         "temporal_arb": 1.8,
         "price_div": 1.4,
         "macd": 1.1,
-        "order_flow": 1.0,
+        "order_flow": 2.0,
         "news": 1.0,
         "momentum": 0.6,
         "ema": 0.6,
         "heikin_ashi": 0.5,
-        "spot_depth": 0.5,
         "orderbook": 0.5,
         "liquidity": 0.4
       },
       "suggested": {
-        "volume_spike": 6.875,
+        "volume_spike": 2.5,
         "liquidation": 2.0,
         "temporal_arb": 1.8,
         "price_div": 1.4,
-        "macd": 3.025,
-        "order_flow": 2.0,
-        "momentum": 1.8,
-        "ema": 0.45,
-        "heikin_ashi": 1.5,
+        "macd": 1.1,
+        "order_flow": 4.0,
+        "news": 1.0,
+        "momentum": 1.2,
+        "ema": 0.6,
+        "heikin_ashi": 0.5,
         "orderbook": 0.5,
         "liquidity": 0.4
       },
       "changes": [
         {
-          "indicator": "heikin_ashi",
-          "current": 0.5,
-          "suggested": 1.5,
-          "change": "+1.00"
+          "indicator": "momentum",
+          "current": 0.6,
+          "suggested": 1.2,
+          "change": "+0.60"
         },
         {
           "indicator": "order_flow",
-          "current": 1.0,
-          "suggested": 2.0,
-          "change": "+1.00"
-        },
-        {
-          "indicator": "spot_depth",
-          "current": 0.5,
-          "suggested": 0,
-          "change": "-0.50"
-        },
-        {
-          "indicator": "news",
-          "current": 1.0,
-          "suggested": 0,
-          "change": "-1.00"
-        },
-        {
-          "indicator": "momentum",
-          "current": 0.6,
-          "suggested": 1.8,
-          "change": "+1.20"
-        },
-        {
-          "indicator": "ema",
-          "current": 0.6,
-          "suggested": 0.45,
-          "change": "-0.15"
-        },
-        {
-          "indicator": "macd",
-          "current": 1.1,
-          "suggested": 3.025,
-          "change": "+1.92"
-        },
-        {
-          "indicator": "volume_spike",
-          "current": 2.5,
-          "suggested": 6.875,
-          "change": "+4.38"
+          "current": 2.0,
+          "suggested": 4.0,
+          "change": "+2.00"
         }
       ],
-      "impact": "Weight rebalancing improves WR by 15.0pp",
-      "reasoning": "Specific indicator weight changes based on 41 trade replay",
-      "confidence": "medium"
-    },
-    {
-      "param": "WEIGHT_NEWS",
-      "current": "enabled",
-      "suggested": "disable_or_reduce",
-      "impact": "news accuracy is 27.3% across 11 votes",
-      "reasoning": "Below coin-flip accuracy \u2014 this indicator adds noise",
+      "impact": "Weight rebalancing improves WR by 2.5pp",
+      "reasoning": "Specific indicator weight changes based on 97 trade replay",
       "confidence": "medium"
     }
   ],
-  "best_win_rate": 70.7,
-  "baseline_win_rate": 55.7,
-  "improvement": 15.0,
+  "best_win_rate": 70.1,
+  "baseline_win_rate": 67.6,
+  "improvement": 2.5,
   "best_params": {
-    "label": "optuna_t189",
+    "label": "weight_v149",
     "min_consensus": 7,
-    "min_confidence": 0.30000000000000004,
-    "up_confidence_premium": 0.06,
-    "min_edge_absolute": 0.16,
+    "min_confidence": 0.25,
+    "up_confidence_premium": 0.05,
+    "min_edge_absolute": 0.08,
     "asset_edge_premiums": {
       "bitcoin": 1.0,
       "ethereum": 0.9,
-      "solana": 1.5
+      "solana": 1.5,
+      "xrp": 1.0
     },
     "use_regime": true,
     "use_market_safety": true,
     "weights": {
-      "volume_spike": 6.875,
+      "volume_spike": 2.5,
       "liquidation": 2.0,
       "temporal_arb": 1.8,
       "price_div": 1.4,
-      "macd": 3.025,
-      "order_flow": 2.0,
-      "momentum": 1.8,
-      "ema": 0.45,
-      "heikin_ashi": 1.5,
+      "macd": 1.1,
+      "order_flow": 4.0,
+      "news": 1.0,
+      "momentum": 1.2,
+      "ema": 0.6,
+      "heikin_ashi": 0.5,
       "orderbook": 0.5,
       "liquidity": 0.4
     }
   },
-  "updated": "2026-02-17 09:31 AM ET"
+  "updated": "2026-02-17 07:54 PM ET"
 }

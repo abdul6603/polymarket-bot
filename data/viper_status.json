@@ -1,15 +1,15 @@
 {
   "running": true,
   "mode": "intelligence",
-  "cycle": 10,
-  "total_intel": 68,
-  "total_matched": 601,
+  "cycle": 170,
+  "total_intel": 513,
+  "total_matched": 2873,
   "last_scan_items": 93,
-  "last_scan_new": 8,
-  "last_scan_matched": 0,
+  "last_scan_new": 1,
+  "last_scan_matched": 68,
   "sources": {
     "tavily": 48,
     "reddit": 45
   },
-  "last_update": "2026-02-16T23:39:18.816553-05:00"
+  "last_update": "2026-02-17T20:31:24.139779-05:00"
 }

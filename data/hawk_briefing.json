@@ -1,0 +1,167 @@
+{
+  "generated_at": 1771378155.647082,
+  "cycle": 2,
+  "markets": [
+    {
+      "condition_id": "0x3acb42d4a4da859a82ec3c78e6be641489985672ea7f28ae73da7c253af32fa8",
+      "question": "Will Claude 5 be released by April 30, 2026?",
+      "category": "other",
+      "edge": 0.365,
+      "search_queries": [
+        "Claude April 2026 latest news 2026",
+        "Claude April 2026 analysis predictions 2026",
+        "Claude 5 be released by April 30, 2026 latest news"
+      ],
+      "entities": [
+        "Claude",
+        "April",
+        "2026"
+      ],
+      "priority": 1
+    },
+    {
+      "condition_id": "0x235fe3bc4d0d454623a198226f3414cd1a295d2d9ca35ecab67eff2b5e10f097",
+      "question": "North Carolina Tar Heels vs. North Carolina State Wolfpack: O/U 158.5",
+      "category": "other",
+      "edge": 0.33,
+      "search_queries": [
+        "North Carolina Tar Heels North Carolina State Wolfpack: O/U latest news 2026",
+        "North Carolina Tar Heels North Carolina State Wolfpack: O/U analysis predictions 2026",
+        "North Carolina Tar Heels vs. North Carolina State Wolfpack: O/U 158.5 latest news"
+      ],
+      "entities": [
+        "North Carolina Tar Heels",
+        "North Carolina State Wolfpack: O/U"
+      ],
+      "priority": 2
+    },
+    {
+      "condition_id": "0x534f933826463ea9eed59c0052eaed8caf6cf600c074b9988a276964a493605b",
+      "question": "Virginia Tech Hokies vs. Miami Hurricanes",
+      "category": "culture",
+      "edge": 0.22,
+      "search_queries": [
+        "Virginia Tech Hokies Miami Hurricanes latest news 2026",
+        "Virginia Tech Hokies Miami Hurricanes predictions odds 2026",
+        "Virginia Tech Hokies vs. Miami Hurricanes latest news"
+      ],
+      "entities": [
+        "Virginia Tech Hokies",
+        "Miami Hurricanes"
+      ],
+      "priority": 3
+    },
+    {
+      "condition_id": "0xaebb47777170724e3028649418c3579c3b82ff3f6a04b1c8a18726e066971005",
+      "question": "George Washington Revolutionaries vs. VCU Rams",
+      "category": "other",
+      "edge": 0.175,
+      "search_queries": [
+        "VCU George Washington Revolutionaries VCU Rams latest news 2026",
+        "VCU George Washington Revolutionaries VCU Rams analysis predictions 2026",
+        "George Washington Revolutionaries vs. VCU Rams latest news"
+      ],
+      "entities": [
+        "VCU",
+        "George Washington Revolutionaries",
+        "VCU Rams"
+      ],
+      "priority": 4
+    },
+    {
+      "condition_id": "0x40a0354dd6d82a0f3ef4d41a2a0639001374de7d4f8ad83671e79920a2caaeea",
+      "question": "Kent State Golden Flashes vs. Bowling Green Falcons",
+      "category": "other",
+      "edge": 0.175,
+      "search_queries": [
+        "Kent State Golden Flashes Bowling Green Falcons latest news 2026",
+        "Kent State Golden Flashes Bowling Green Falcons analysis predictions 2026",
+        "Kent State Golden Flashes vs. Bowling Green Falcons latest news"
+      ],
+      "entities": [
+        "Kent State Golden Flashes",
+        "Bowling Green Falcons"
+      ],
+      "priority": 5
+    },
+    {
+      "condition_id": "0xab4fc4ada9c56bb191662181ffc8841700941ffce7456ddec3eb2e95bf30e3c2",
+      "question": "Spread: Louisville Cardinals (-4.5)",
+      "category": "other",
+      "edge": 0.135,
+      "search_queries": [
+        "Spread: Louisville Cardinals -4.5 latest news 2026",
+        "Spread: Louisville Cardinals -4.5 analysis predictions 2026",
+        "Spread: Louisville Cardinals (-4.5) latest news"
+      ],
+      "entities": [
+        "Spread: Louisville Cardinals -4.5"
+      ],
+      "priority": 6
+    },
+    {
+      "condition_id": "0x672e2df608cf784913394aa03e5d6cc857b23f96d5927414f23b7a8bf8851a13",
+      "question": "Spread: Louisville Cardinals (-3.5)",
+      "category": "other",
+      "edge": 0.13,
+      "search_queries": [
+        "Spread: Louisville Cardinals -3.5 latest news 2026",
+        "Spread: Louisville Cardinals -3.5 analysis predictions 2026",
+        "Spread: Louisville Cardinals (-3.5) latest news"
+      ],
+      "entities": [
+        "Spread: Louisville Cardinals -3.5"
+      ],
+      "priority": 7
+    },
+    {
+      "condition_id": "0xcfdcad218e6496c30ecbe6914a0f0d665da9ddbdffc8ede9b802b8fb01bd07f3",
+      "question": "Miami (OH) RedHawks vs. Massachusetts Minutemen: O/U 161.5",
+      "category": "other",
+      "edge": 0.095,
+      "search_queries": [
+        "OH Miami OH RedHawks Massachusetts Minutemen: O/U latest news 2026",
+        "OH Miami OH RedHawks Massachusetts Minutemen: O/U analysis predictions 2026",
+        "Miami (OH) RedHawks vs. Massachusetts Minutemen: O/U 161.5 latest news"
+      ],
+      "entities": [
+        "OH",
+        "Miami OH RedHawks",
+        "Massachusetts Minutemen: O/U"
+      ],
+      "priority": 8
+    },
+    {
+      "condition_id": "0xb0ee0e0d4a0671c24b761637f62da2b5235fa85e51fac26f4cab0f11b83fbfa1",
+      "question": "Texas Tech Red Raiders vs. Arizona State Sun Devils: O/U 153.5",
+      "category": "culture",
+      "edge": 0.08,
+      "search_queries": [
+        "Texas Tech Red Raiders Arizona State Sun Devils: O/U latest news 2026",
+        "Texas Tech Red Raiders Arizona State Sun Devils: O/U predictions odds 2026",
+        "Texas Tech Red Raiders vs. Arizona State Sun Devils: O/U 153.5 latest news"
+      ],
+      "entities": [
+        "Texas Tech Red Raiders",
+        "Arizona State Sun Devils: O/U"
+      ],
+      "priority": 9
+    },
+    {
+      "condition_id": "0x3224d9dd84a488f50aa2da6a21ba65298de725aa2a2b1274abcddab75109eec5",
+      "question": "Spread: Wyoming Cowboys (-8.5)",
+      "category": "other",
+      "edge": 0.07,
+      "search_queries": [
+        "Spread: Wyoming Cowboys -8.5 latest news 2026",
+        "Spread: Wyoming Cowboys -8.5 analysis predictions 2026",
+        "Spread: Wyoming Cowboys (-8.5) latest news"
+      ],
+      "entities": [
+        "Spread: Wyoming Cowboys -8.5"
+      ],
+      "priority": 10
+    }
+  ],
+  "briefed_markets": 10
+}

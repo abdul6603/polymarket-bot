@@ -1,52 +1,82 @@
 {
   "macd": {
-    "total_votes": 99,
-    "correct_votes": 51,
-    "accuracy": 0.5151515151515151
+    "total_votes": 227,
+    "correct_votes": 147,
+    "accuracy": 0.6475770925110133
   },
   "ema": {
-    "total_votes": 99,
-    "correct_votes": 51,
-    "accuracy": 0.5151515151515151
+    "total_votes": 227,
+    "correct_votes": 147,
+    "accuracy": 0.6475770925110133
   },
   "heikin_ashi": {
-    "total_votes": 99,
-    "correct_votes": 50,
-    "accuracy": 0.5050505050505051
+    "total_votes": 199,
+    "correct_votes": 119,
+    "accuracy": 0.5979899497487438
   },
   "bollinger": {
-    "total_votes": 80,
-    "correct_votes": 39,
-    "accuracy": 0.4875
+    "total_votes": 183,
+    "correct_votes": 60,
+    "accuracy": 0.32786885245901637
   },
   "momentum": {
-    "total_votes": 99,
-    "correct_votes": 51,
-    "accuracy": 0.5151515151515151
+    "total_votes": 227,
+    "correct_votes": 149,
+    "accuracy": 0.6563876651982379
   },
   "price_div": {
-    "total_votes": 84,
-    "correct_votes": 45,
-    "accuracy": 0.5357142857142857
+    "total_votes": 180,
+    "correct_votes": 116,
+    "accuracy": 0.6444444444444445
   },
   "temporal_arb": {
-    "total_votes": 70,
-    "correct_votes": 39,
-    "accuracy": 0.5571428571428572
+    "total_votes": 151,
+    "correct_votes": 97,
+    "accuracy": 0.6423841059602649
   },
   "order_flow": {
-    "total_votes": 98,
-    "correct_votes": 51,
-    "accuracy": 0.5204081632653061
+    "total_votes": 209,
+    "correct_votes": 128,
+    "accuracy": 0.6124401913875598
   },
   "volume_spike": {
-    "total_votes": 21,
-    "correct_votes": 16,
-    "accuracy": 0.7619047619047619
+    "total_votes": 48,
+    "correct_votes": 42,
+    "accuracy": 0.875
   },
   "rsi": {
-    "total_votes": 44,
-    "correct_votes": 21,
-    "accuracy": 0.4772727272727273
+    "total_votes": 109,
+    "correct_votes": 25,
+    "accuracy": 0.22935779816513763
+  },
+  "news": {
+    "total_votes": 128,
+    "correct_votes": 82,
+    "accuracy": 0.640625
+  },
+  "liquidation": {
+    "total_votes": 68,
+    "correct_votes": 56,
+    "accuracy": 0.8235294117647058
+  },
+  "spot_depth": {
+    "total_votes": 92,
+    "correct_votes": 62,
+    "accuracy": 0.6739130434782609
+  },
+  "funding_rate": {
+    "total_votes": 5,
+    "correct_votes": 0,
+    "accuracy": 0.0
+  },
+  "orderbook": {
+    "total_votes": 5,
+    "correct_votes": 3,
+    "accuracy": 0.6
+  },
+  "liquidity": {
+    "total_votes": 5,
+    "correct_votes": 3,
+    "accuracy": 0.6
   }
 }

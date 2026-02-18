@@ -1,88 +1,114 @@
 {
   "opportunities": [
     {
-      "id": "ad18d6b03bfa6c4a",
-      "source": "tavily",
-      "headline": "Why are Ethereum, XRP, Solana and Dogecoin prices down today ...",
-      "summary": "Regulatory uncertainty linked to the CLARITY Act, Federal Reserve policy expectations, and profit-taking activity pushed crypto prices lower.",
-      "url": "https://m.economictimes.com/news/international/us/why-are-ethereum-xrp-solana-and-dogecoin-prices-down-today-and-will-crypto-market-bounce-back-or-continue-to-fall-crypto-drop-analysts-insights-market-outlook-explained-heres-what-should-investors-do-now/articleshow/128422332.cms",
+      "id": "1f6712ff53a8393a",
+      "source": "reddit/r/politics",
+      "headline": "Trump's election bill tops 50 Senate votes, but Democrats could still block it | The SAVE America Act has passed the House and enjoys President Trump's support, meaning the Senate's 60-vote threshold is the only thing standing in the way of it becoming law.",
+      "summary": "Score: 5266, Comments: 602",
+      "url": "https://reddit.com/r/politics/comments/1r7jxck/trumps_election_bill_tops_50_senate_votes_but/",
       "relevance_tags": [
-        "policy",
-        "ethereum",
-        "crypto",
-        "eth",
-        "sol",
-        "ai",
-        "fed"
+        "trump",
+        "election",
+        "senate",
+        "democrat",
+        "president",
+        "vote"
       ],
-      "sentiment": -1.0,
-      "confidence": 0.7,
-      "timestamp": 1771303145.736686,
+      "sentiment": 1.0,
+      "confidence": 0.8,
+      "timestamp": 1771378281.160117,
       "matched_markets": [],
-      "category": "crypto",
+      "category": "politics",
+      "raw_data": {
+        "score": 5266,
+        "comments": 602,
+        "sub": "politics"
+      },
+      "score": 95
+    },
+    {
+      "id": "bd9e493dfee21d8c",
+      "source": "tavily",
+      "headline": "Politics News: Latest on Trump Administration, Congress, Elections ...",
+      "summary": "Trump's election bill tops 50 Senate votes, but Democrats could still block it. The bill passed the House and enjoys Trump's support, so the Senate's 60-vote",
+      "url": "https://www.nbcnews.com/politics",
+      "relevance_tags": [
+        "trump",
+        "election",
+        "congress",
+        "senate",
+        "democrat",
+        "vote"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771378268.124228,
+      "matched_markets": [],
+      "category": "politics",
       "raw_data": {},
       "score": 92
     },
     {
-      "id": "85c21e5b4dfbc01d",
-      "source": "reddit/r/wallstreetbets",
-      "headline": "$ZIM play and I didn't even know about the buyout rumour lmao",
-      "summary": "https://preview.redd.it/8l3j0kpu1vjg1.png?width=1512&amp;format=png&amp;auto=webp&amp;s=4107cc41791685b2fd778569025942a355e3538d\n\nGuys wtf. My regarded ass entered ZIM calls on Friday. 500 x 24C expiring in Feb 27th to potentially get exposure in ruling decision against tariffs.\n\nLittle did i know, it seems we got something potentially bigger coming up. Potential buyout rumour. German market opene",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1r69zr6/zim_play_and_i_didnt_even_know_about_the_buyout/",
+      "id": "181a17a7f7ef1f78",
+      "source": "reddit/r/politics",
+      "headline": "John Fetterman Hits New Low in Quest for Donald Trump\u2019s Approval: The Pennsylvania Democrat backed voter ID legislation to combat a nonexistent voter fraud problem.",
+      "summary": "Score: 3358, Comments: 412",
+      "url": "https://reddit.com/r/politics/comments/1r7fl1b/john_fetterman_hits_new_low_in_quest_for_donald/",
       "relevance_tags": [
-        "eth",
-        "ai",
-        "market",
-        "tariff"
+        "trump",
+        "democrat",
+        "vote",
+        "legislation"
       ],
-      "sentiment": 1.0,
-      "confidence": 0.732,
-      "timestamp": 1771303157.76327,
+      "sentiment": -1.0,
+      "confidence": 0.8,
+      "timestamp": 1771378281.160494,
       "matched_markets": [],
-      "category": "economy",
+      "category": "politics",
       "raw_data": {
-        "score": 232,
-        "comments": 106,
-        "sub": "wallstreetbets"
+        "score": 3358,
+        "comments": 412,
+        "sub": "politics"
       },
-      "score": 83
+      "score": 85
     },
     {
-      "id": "549e2b90a5f9985b",
+      "id": "34d4bae5715bd22d",
       "source": "tavily",
-      "headline": "Prediction Markets Cool to $5.3B After Super Bowl Surge as 6 ...",
-      "summary": "Super Bowl Fuels Kalshi to Record $2.8B Week as Prediction Markets Hold Near $6.3B. Kalshi, Polymarket Break Records in $5.9B Week for Prediction Markets. Combined weekly notional volume across top prediction market platforms dropped to **$5.3 billion** for the full week following the Super Bowl, a modest dip considering the current concentration of sports volume across the industry. Kalshi and Polymarket combined for **$4.3 billion** in volume in the week ending Feb. 15, according to DeFi Rate\u2019s prediction market tracker, which aggregates real-time data across both platforms. On Kalshi, enter",
-      "url": "https://defirate.com/news/prediction-markets-cool-to-5-3b-after-super-bowl-6-month-growth-hits-13x/",
+      "headline": "Politics, Policy, Political News - POLITICO",
+      "summary": "Trump rages against Gateway tunnel project, threatening to withhold federal assistance \u00b7 Trump called Newsom a 'loser.' Newsom's advisers see that as a win.",
+      "url": "https://www.politico.com/",
       "relevance_tags": [
-        "super bowl",
-        "defi",
-        "market"
+        "trump",
+        "policy",
+        "ai",
+        "fed"
       ],
       "sentiment": 1.0,
       "confidence": 0.7,
-      "timestamp": 1771303147.688479,
+      "timestamp": 1771378268.124152,
       "matched_markets": [],
-      "category": "sports",
+      "category": "politics",
       "raw_data": {},
       "score": 82
     },
     {
-      "id": "a86f65af271cd290",
+      "id": "3c95910a4dc06602",
       "source": "tavily",
-      "headline": "Prediction Markets Are Sucking Huge Numbers of Young People ...",
-      "summary": "Now, the rise of prediction markets like Polymarket and Kalshi to bet on almost any conceivable outcome, ranging from presidential elections to military interventions to celebrity dramas to the return of our lord and savior Jesus Christ. \u201cI wouldn\u2019t describe it as gambling\u201d but a \u201cmix of betting and options trading,\u201d 21-year-old Yadin Eldar, a Florida State University student who\u2019s been betting on prediction markets since 2019, told *The Guardian*. Another survey from this January showed that millennials and Gen Z were more aware of specific prediction markets like Polymarket and Kalshi than o",
-      "url": "https://uk.finance.yahoo.com/news/prediction-markets-sucking-huge-numbers-150000167.html",
+      "headline": "Political Tensions Rise Over SEC's Changing Crypto Strategy",
+      "summary": "SEC eases crypto rules amid political clash. Clear regulations could boost institutional confidence and spark the next Bitcoin rally. U.S.",
+      "url": "https://coinpedia.org/news/crypto-news-today-political-tensions-rise-over-secs-changing-crypto-strategy/",
       "relevance_tags": [
-        "election",
-        "president",
-        "celebrity",
-        "market"
+        "bitcoin",
+        "crypto",
+        "sec",
+        "regulation"
       ],
       "sentiment": 1.0,
       "confidence": 0.7,
-      "timestamp": 1771303147.688884,
+      "timestamp": 1771378271.5138361,
       "matched_markets": [],
-      "category": "politics",
+      "category": "crypto",
       "raw_data": {},
       "score": 82
     },
@@ -103,7 +129,50 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303143.785698,
+      "timestamp": 1771378269.89887,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {},
+      "score": 80
+    },
+    {
+      "id": "8ee9befcdb37ae2c",
+      "source": "tavily",
+      "headline": "USA TODAY Sports Scores and Odds Hub",
+      "summary": "USA TODAY Sports brings you the latest scores, stats, odds, and more. Includes NFL, MLB, NBA, NCAA and NHL.",
+      "url": "https://sportsdata.usatoday.com/",
+      "relevance_tags": [
+        "nba",
+        "nfl",
+        "mlb",
+        "nhl",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771378269.898937,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {},
+      "score": 80
+    },
+    {
+      "id": "e22725dc59d0cc8f",
+      "source": "tavily",
+      "headline": "Livesport.com - Live soccer scores, tennis, basketball and 30+ other ...",
+      "summary": "Fast and accurate live scores from soccer, tennis, basketball, baseball, hockey and many other sports. Livescore, results, statistics.",
+      "url": "https://www.livesport.com/",
+      "relevance_tags": [
+        "soccer",
+        "basketball",
+        "baseball",
+        "hockey",
+        "tennis",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771378269.89912,
       "matched_markets": [],
       "category": "sports",
       "raw_data": {},
@@ -125,7 +194,7 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303143.78618,
+      "timestamp": 1771378269.899272,
       "matched_markets": [],
       "category": "sports",
       "raw_data": {},
@@ -151,186 +220,127 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303143.786444,
+      "timestamp": 1771378269.899342,
       "matched_markets": [],
       "category": "sports",
       "raw_data": {},
       "score": 80
     },
     {
-      "id": "56f363b7e86dea2e",
+      "id": "b6c9d74fe2690f24",
       "source": "tavily",
-      "headline": "Bessent says Congress should pass crypto regulation bill this spring",
-      "summary": "U.S. Treasury Secretary Scott Bessent said on Friday that it was important for Congress to pass a bill to create federal rules for digital",
-      "url": "https://www.reuters.com/sustainability/boards-policy-regulation/bessent-says-congress-should-pass-crypto-regulation-bill-this-spring-2026-02-13/",
-      "relevance_tags": [
-        "congress",
-        "crypto",
-        "sec",
-        "regulation",
-        "ai",
-        "fed"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "timestamp": 1771303145.735604,
-      "matched_markets": [],
-      "category": "crypto",
-      "raw_data": {},
-      "score": 80
-    },
-    {
-      "id": "a252bfb389b18dff",
-      "source": "tavily",
-      "headline": "Trending Markets - Polymarket",
-      "summary": "Polymarket currently hosts 19 active markets for Trending Markets that lets you track or trade on predictions like \"Will the election be called on Nov 5? As of today, the most active market is \"Will Biden finish his term?,\" where the crowd is currently assigning a 100% chance to Yes. These odds update in real-time as new information emerges and users trade, offering a dynamic snapshot of what the market believes will happen compared to traditional bookmaker odds. Each polymarket is a yes/no question, like \"Trump ends Ukraine war in first 90 days?\". Polymarket is the world's largest prediction ",
-      "url": "https://polymarket.com/predictions/trending-markets",
+      "headline": "President Trump Says Crypto Market Structure Bill Will Pass Soon",
+      "summary": "Trump says a major crypto market structure bill is close to passing, ending the SEC\u2013CFTC turf war & reshaping digital asset in the U.S.",
+      "url": "https://finance.yahoo.com/news/president-trump-says-crypto-market-105210143.html",
       "relevance_tags": [
         "trump",
-        "biden",
-        "election",
-        "ai",
+        "president",
+        "crypto",
+        "sec",
         "market"
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303147.686947,
+      "timestamp": 1771378271.514431,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {},
       "score": 80
     },
     {
-      "id": "2583ed8d89f21965",
+      "id": "f79266b62cc07993",
       "source": "tavily",
-      "headline": "Polymarket | The World's Largest Prediction Market",
-      "summary": "# Polymarket | The World's Largest Prediction Market\u2122. ## Fed decision in March? ## What price will Bitcoin hit in February? ## BTC 5 Minute Up or Down. ## US strikes Iran by...? ## Will Logan Paul\u2019s PSA 10 Pok\u00e9mon Illustrator Sale Price be over $4 million? \u00b7La Liga\u00b7 8:00 PM. ## S&P 500 (SPX) Opens Up or Down on February 17? ## 2026 Winter Olympics: Most Gold Medals. ## Who visited Epstein's Island? ## NFL Champion 2027. ## Oscars 2026: Best Picture Winner. ## Which company has the best AI model end of February? ## Starmer out by...?",
-      "url": "https://polymarket.com/",
+      "headline": "Explore Popular Polymarkets",
+      "summary": "# Explore Popular Polymarkets. SportsPoliticsCryptoMiddle EastAITweet MarketsUS ElectionChampions LeagueCrypto PricesTechGlobal ElectionsHockeyFed RatesNBA FinalsOlympicsGeopoliticsMedal CountEconomySoccerUCLTrump PresidencyJerome PowellMaduroRecurringEconomic PolicyWorldBig TechHit PriceMonthlyFIFA World CupWeeklyNBA Champion2026 FIFA World CupEarn 4%Multi StrikesDutch ElectionPresidentTrump MachadoWinter OlympicsClaude 5. Which coalition will form the next Dutch government? Ends in over 2 years. Ends in over 2 years. Elon Musk # tweets February 10 - February 17, 2026? Ends in over 2 years. E",
+      "url": "https://polymarket.com/search",
       "relevance_tags": [
-        "nfl",
-        "winner",
-        "bitcoin",
-        "btc",
-        "oscar",
+        "trump",
+        "election",
+        "president",
+        "policy",
+        "nba",
+        "soccer",
+        "hockey",
+        "world cup",
+        "finals",
+        "crypto",
+        "sol",
         "ai",
         "fed",
         "market"
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303147.6890519,
+      "timestamp": 1771378272.139807,
       "matched_markets": [],
       "category": "sports",
       "raw_data": {},
       "score": 80
     },
     {
-      "id": "af3f4e30d9a81d0e",
+      "id": "30427d1ea83cdb67",
       "source": "reddit/r/wallstreetbets",
-      "headline": "Wendy's $7K Options Position",
-      "summary": "Trump is bringing down the immigration numbers. The food service industry is reliant on immigrant labor. The reduction in the labor supply will put an upward pressure on wages, which means less lower profits. There is an iconic company that is well positioned to resist this wage inflation, because its prestige and dynamic corporate culture make it the employer of choice for members of this subredd",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1r6ssv8/wendys_7k_options_position/",
+      "headline": "$ZIM 20k -&gt;250k in a few trading hours (Friday noon to Tuesday open).",
+      "summary": "https://preview.redd.it/9q534xf1h2kg1.png?width=798&amp;format=png&amp;auto=webp&amp;s=70784e55dec739cc35ca21b9684da7e4a2afa969\n\nThere you go boys. 1275% gain just for my fellow bulls. Some times luck is on our side. Love you all  \n  \nPS: Mods i want my badges and flairs already you owe me big time",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r77tam/zim_20k_250k_in_a_few_trading_hours_friday_noon/",
       "relevance_tags": [
-        "trump",
-        "nfl",
-        "inflation"
-      ],
-      "sentiment": -1.0,
-      "confidence": 0.518,
-      "timestamp": 1771303157.763396,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {
-        "score": 18,
-        "comments": 23,
-        "sub": "wallstreetbets"
-      },
-      "score": 77
-    },
-    {
-      "id": "b80d1df5d40456ef",
-      "source": "reddit/r/politics",
-      "headline": "Bondi Spying on Congressional Epstein Searches Should be a Major Scandal",
-      "summary": "Score: 10366, Comments: 142",
-      "url": "https://reddit.com/r/politics/comments/1r6i04h/bondi_spying_on_congressional_epstein_searches/",
-      "relevance_tags": [
-        "congress"
-      ],
-      "sentiment": -1.0,
-      "confidence": 0.8,
-      "timestamp": 1771303156.748354,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {
-        "score": 10366,
-        "comments": 142,
-        "sub": "politics"
-      },
-      "score": 75
-    },
-    {
-      "id": "3f325335df829151",
-      "source": "reddit/r/wallstreetbets",
-      "headline": "Western Digital says 2026 HDD capacity 100% sold out, hyperscaler AI data center cloud 89% of revenue, consumer 5%, long term deals to 2028",
-      "summary": "Source: [https://wccftech.com/western-digital-has-no-more-hdd-capacity-left-out/](https://wccftech.com/western-digital-has-no-more-hdd-capacity-left-out/)\n\n&gt;HDD capacity from one of the world's largest manufacturers has started to run dry, according to Western Digital's CEO, as major LTAs have been signed out.\n\n&gt;Western Digital's Consumer Share Drops to 5%, as Enterprise Demand Gobbles Up th",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1r69rqb/western_digital_says_2026_hdd_capacity_100_sold/",
-      "relevance_tags": [
-        "sol",
         "ai"
       ],
       "sentiment": 1.0,
       "confidence": 0.8,
-      "timestamp": 1771303157.761268,
+      "timestamp": 1771378282.375672,
       "matched_markets": [],
-      "category": "crypto",
+      "category": "culture",
       "raw_data": {
-        "score": 2543,
-        "comments": 296,
+        "score": 953,
+        "comments": 97,
         "sub": "wallstreetbets"
       },
       "score": 75
     },
     {
-      "id": "7483f00bf7f19247",
-      "source": "reddit/r/wallstreetbets",
-      "headline": "US 2025 jobs numbers revised down by over 1 million",
-      "summary": "Score: 24462, Comments: 1507",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1r5pdcs/us_2025_jobs_numbers_revised_down_by_over_1/",
-      "relevance_tags": [
-        "jobs"
-      ],
-      "sentiment": -1.0,
-      "confidence": 0.8,
-      "timestamp": 1771303157.762908,
-      "matched_markets": [],
-      "category": "economy",
-      "raw_data": {
-        "score": 24462,
-        "comments": 1507,
-        "sub": "wallstreetbets"
-      },
-      "score": 75
-    },
-    {
-      "id": "5dc2991b37d044bb",
+      "id": "bfd691582eb0279b",
       "source": "reddit/r/politics",
-      "headline": "New Evidence Torpedoes Pam Bondi\u2019s Claim About Trump and Epstein | A DOJ slideshow suggests that the FBI spoke with an Epstein victim who accused President Trump of assault.",
-      "summary": "Score: 13215, Comments: 208",
-      "url": "https://reddit.com/r/politics/comments/1r6c6c1/new_evidence_torpedoes_pam_bondis_claim_about/",
+      "headline": "Colbert Exposes CBS for Collaborating With the Trump Administration - The network pulled Stephen Colbert\u2019s interview with Texas Democratic Senate candidate James Talarico amid pressure from the FCC.",
+      "summary": "Score: 8509, Comments: 147",
+      "url": "https://reddit.com/r/politics/comments/1r7cq4g/colbert_exposes_cbs_for_collaborating_with_the/",
       "relevance_tags": [
         "trump",
-        "president",
-        "ai"
+        "senate",
+        "democrat"
       ],
       "sentiment": 0.0,
       "confidence": 0.8,
-      "timestamp": 1771303156.7494311,
+      "timestamp": 1771378281.160324,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {
-        "score": 13215,
-        "comments": 208,
+        "score": 8509,
+        "comments": 147,
         "sub": "politics"
+      },
+      "score": 73
+    },
+    {
+      "id": "392465a745d786ce",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "yolo bet that we smack Iran after market close, few hours before Ramadan. slammed $80k on DHT monthlies this morning",
+      "summary": "https://preview.redd.it/25v5r4duz2kg1.png?width=2190&amp;format=png&amp;auto=webp&amp;s=57fc5ef63aad3a5d83f3be2b2718d92e70b4a9fe\n\nUS is surging way too many ships and aircraft to Iran's doorstep for anything less than Iraq 2.0. Bibi needs military conquest to swing early Israeli elections due in a few months and keep his PM privileges to derail his criminal trial. Iran will rue the day they decide",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r7azho/yolo_bet_that_we_smack_iran_after_market_close/",
+      "relevance_tags": [
+        "election",
+        "ai",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771378282.375413,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 703,
+        "comments": 214,
+        "sub": "wallstreetbets"
       },
       "score": 73
     },
@@ -338,7 +348,7 @@
       "id": "6a146590a7c7165f",
       "source": "reddit/r/cryptocurrency",
       "headline": "Harvard Cuts Bitcoin Holdings by 21%, Opens $87M Ethereum Position",
-      "summary": "Score: 666, Comments: 85",
+      "summary": "Score: 983, Comments: 96",
       "url": "https://reddit.com/r/CryptoCurrency/comments/1r6l0bu/harvard_cuts_bitcoin_holdings_by_21_opens_87m/",
       "relevance_tags": [
         "bitcoin",
@@ -347,12 +357,12 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.8,
-      "timestamp": 1771303158.789958,
+      "timestamp": 1771378284.033576,
       "matched_markets": [],
       "category": "crypto",
       "raw_data": {
-        "score": 666,
-        "comments": 85,
+        "score": 983,
+        "comments": 96,
         "sub": "cryptocurrency"
       },
       "score": 73
@@ -369,43 +379,27 @@
       ],
       "sentiment": 1.0,
       "confidence": 0.7,
-      "timestamp": 1771303147.6881971,
+      "timestamp": 1771378272.13945,
       "matched_markets": [],
       "category": "culture",
       "raw_data": {},
       "score": 72
     },
     {
-      "id": "0744b68ce0e1b37d",
+      "id": "6c14022fd0c6d8d2",
       "source": "tavily",
-      "headline": "CBS News | Breaking news, top stories & today's latest ...",
-      "summary": "The Daily Report \u00b7 Searches for colorectal cancer info on rise \u00b7 Potential 2028 contenders travel to Munich \u00b7 Former FBI official on Nancy Guthrie case \u00b7 Canada",
-      "url": "https://www.cbsnews.com/",
+      "headline": "RealClearPolling: 2025 Latest Election Polls and Political ...",
+      "summary": "Explore up-to-date 2025 election polls on RealClearPolling. Gain valuable insights into the evolving political landscape and stay ahead of the latest",
+      "url": "https://www.realclearpolling.com/",
       "relevance_tags": [
+        "election",
         "ai"
       ],
       "sentiment": 1.0,
       "confidence": 0.7,
-      "timestamp": 1771303149.204979,
+      "timestamp": 1771378275.3404548,
       "matched_markets": [],
-      "category": "culture",
-      "raw_data": {},
-      "score": 72
-    },
-    {
-      "id": "051c0c32c8d395b9",
-      "source": "tavily",
-      "headline": "News Headlines | 9news.com",
-      "summary": "Child killed in hit-and-run crash in Erie, police say \u00b7 Police said the crash happened around 4:40 p.m. Sunday in the neighborhood northeast of Mountain View",
-      "url": "https://www.9news.com/news",
-      "relevance_tags": [
-        "ai"
-      ],
-      "sentiment": -1.0,
-      "confidence": 0.7,
-      "timestamp": 1771303149.205958,
-      "matched_markets": [],
-      "category": "culture",
+      "category": "politics",
       "raw_data": {},
       "score": 72
     },
@@ -421,7 +415,7 @@
       ],
       "sentiment": 1.0,
       "confidence": 0.7,
-      "timestamp": 1771303150.9645782,
+      "timestamp": 1771378275.340544,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {},
@@ -438,125 +432,47 @@
       ],
       "sentiment": 1.0,
       "confidence": 0.7,
-      "timestamp": 1771303150.964811,
+      "timestamp": 1771378275.340776,
       "matched_markets": [],
       "category": "culture",
       "raw_data": {},
       "score": 72
     },
     {
-      "id": "56eee41f5f23fa21",
+      "id": "4b3db55bb1f0856c",
       "source": "tavily",
-      "headline": "Latest and breaking political news today",
-      "summary": "Republicans worry shutdown will overshadow Trump's State of the Union ... President Donald Trump's Feb. 24 address to Congress is set to collide",
-      "url": "https://www.politico.com/politics",
+      "headline": "Regulation News - CryptoSlate",
+      "summary": "Aave cites emerging regulatory clarity as SEC crypto actions reportedly fell in 2025, and DeFi fee switches are reappearing fast.",
+      "url": "https://cryptoslate.com/regulation/",
       "relevance_tags": [
-        "trump",
-        "congress",
-        "republican",
-        "president"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "timestamp": 1771303142.073418,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {},
-      "score": 70
-    },
-    {
-      "id": "211a3ef5dd4b2140",
-      "source": "tavily",
-      "headline": "Axios - Breaking news, U.S. news and politics, and local news",
-      "summary": "Defense Secretary Pete Hegseth is \"close\" to cutting business ties with Anthropic and designating the AI company a \"supply chain risk\" \u2014 meaning anyone who",
-      "url": "https://www.axios.com/",
-      "relevance_tags": [
-        "eth",
+        "crypto",
+        "defi",
         "sec",
-        "ai"
+        "regulation"
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303142.073662,
+      "timestamp": 1771378271.5139542,
       "matched_markets": [],
       "category": "crypto",
       "raw_data": {},
       "score": 70
     },
     {
-      "id": "ada749281b17f189",
+      "id": "5fd5940a1e0487eb",
       "source": "tavily",
-      "headline": "Politics News: Latest on Trump Administration, Congress ...",
-      "summary": "President Donald Trump's pick for a top State Department post is facing bipartisan opposition over past remarks about Israel and the Holocaust.",
-      "url": "https://www.nbcnews.com/politics",
-      "relevance_tags": [
-        "trump",
-        "congress",
-        "president",
-        "partisan"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "timestamp": 1771303142.073727,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {},
-      "score": 70
-    },
-    {
-      "id": "d5fd82832db00f0c",
-      "source": "tavily",
-      "headline": "LiveScore: Live Football Scores, Fixtures & Results",
-      "summary": "Get Live Football Scores and Real-Time Football Results with LiveScore! We cover all Countries, Leagues and Competitions in unbeatable detail. Click Now!",
-      "url": "https://www.livescore.com/en/",
-      "relevance_tags": [
-        "football",
-        "score",
-        "ai"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "timestamp": 1771303143.786365,
-      "matched_markets": [],
-      "category": "sports",
-      "raw_data": {},
-      "score": 70
-    },
-    {
-      "id": "4e398c5b758acdd6",
-      "source": "tavily",
-      "headline": "College Sports Scoreboards - ESPN",
-      "summary": "Visit ESPN to view College Sports Scoreboards for men's and women's baseball/softball, ice hockey, lacrosse, soccer, volleyball, water polo and field",
-      "url": "https://www.espn.com/college-sports/scoreboard",
-      "relevance_tags": [
-        "soccer",
-        "baseball",
-        "hockey",
-        "score"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "timestamp": 1771303143.786596,
-      "matched_markets": [],
-      "category": "sports",
-      "raw_data": {},
-      "score": 70
-    },
-    {
-      "id": "4b3db55bb1f0856c",
-      "source": "tavily",
-      "headline": "Regulation News - CryptoSlate",
-      "summary": "New crypto ban targets Russia rails but one chokepoint decides whether flows die or just relocate offshore. If stablecoin issuers block redemption and the EU",
-      "url": "https://cryptoslate.com/regulation/",
+      "headline": "US CFTC Chair: \"Tighten crypto regulation\u2026won't allow a second ...",
+      "summary": "Michael Selig, chair of the US CFTC, said he would tighten regulation of virtual assets (cryptocurrencies). Selig said he cannot sit back and",
+      "url": "https://en.bloomingbit.io/feed/news/106233",
       "relevance_tags": [
         "crypto",
-        "eth",
+        "sec",
         "regulation",
         "ai"
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303145.735436,
+      "timestamp": 1771378271.514077,
       "matched_markets": [],
       "category": "crypto",
       "raw_data": {},
@@ -576,49 +492,49 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303145.735536,
+      "timestamp": 1771378271.51421,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {},
       "score": 70
     },
     {
-      "id": "acfc4567d613bea0",
+      "id": "622dd470ac4892ee",
       "source": "tavily",
-      "headline": "Regulatory Uncertainty Continues for Crypto-Asset Service Providers",
-      "summary": "With both the First Act and the Second Act vetoed, Poland is back to square one when it comes to the regulation of crypto-assets. It should be",
-      "url": "https://www.twobirds.com/en/insights/2026/poland/the-micar-impasse-in-poland-regulatory-uncertainty-continues-for-crypto-asset-service-providers",
+      "headline": "Crypto regulatory affairs: US Congress pushes for Clarity Act passage",
+      "summary": "White House and Congress push for Clarity Act passage; CFTC updates stablecoin definition; Hong Kong plans to issue first stablecoin licenses",
+      "url": "https://www.elliptic.co/blog/crypto-regulatory-affairs-us-congress-pushes-for-clarity-act-passage",
       "relevance_tags": [
+        "congress",
         "crypto",
-        "sec",
-        "regulation",
+        "defi",
         "ai"
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303145.7360919,
+      "timestamp": 1771378271.5143192,
       "matched_markets": [],
       "category": "crypto",
       "raw_data": {},
       "score": 70
     },
     {
-      "id": "492f451ee05566cf",
+      "id": "a252bfb389b18dff",
       "source": "tavily",
-      "headline": "Regulation | CoinDesk",
-      "summary": "Regulation, derivatives helping drive TradFi institutions into crypto, panellists say \u00b7 Japan ETFs said likely to trade by 2028 as SBI, Nomura ready products.",
-      "url": "https://www.coindesk.com/tag/regulation",
+      "headline": "Trending Markets - Polymarket",
+      "summary": "Polymarket currently hosts 19 active markets for Trending Markets that lets you track or trade on predictions like \"Trump signs national abortion ban?\". Each polymarket is a yes/no question, like \"Trump ends Ukraine war in first 90 days?\". As of today, the most active market is \"Will Biden finish his term?,\" where the crowd is currently assigning a 100% chance to Yes. These odds update in real-time as new information emerges and users trade, offering a dynamic snapshot of what the market believes will happen compared to traditional bookmaker odds. Polymarket is the world's largest prediction m",
+      "url": "https://polymarket.com/predictions/trending-markets",
       "relevance_tags": [
-        "crypto",
-        "etf",
-        "regulation",
-        "ai"
+        "trump",
+        "biden",
+        "ai",
+        "market"
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303145.7362628,
+      "timestamp": 1771378272.138419,
       "matched_markets": [],
-      "category": "crypto",
+      "category": "politics",
       "raw_data": {},
       "score": 70
     },
@@ -635,26 +551,65 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303147.687823,
+      "timestamp": 1771378272.138934,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {},
       "score": 70
     },
     {
-      "id": "a3d8404d95b5becc",
+      "id": "3ddfbc0a88e1aa7c",
       "source": "tavily",
-      "headline": "President Trump Approval Rating: Latest Polls",
-      "summary": "Presidential approval polls. Polls from \u201cselect pollsters\u201d meet certain criteria for reliability and are shown with",
-      "url": "https://www.nytimes.com/interactive/polls/donald-trump-approval-rating-polls.html",
+      "headline": "Polymarket | The World's Largest Prediction Market\u2122",
+      "summary": "[## Fed decision in March?](/event/fed-decision-in-march-885). [Yes1%](/event/fed-decision-in-march-885)[No99%](/event/fed-decision-in-march-885). [Yes7%](/event/fed-decision-in-march-885)[No93%](/event/fed-decision-in-march-885). [Yes1%](/event/fed-decision-in-march-885)[No99%](/event/fed-decision-in-march-885). [Yes7%](/event/fed-decision-in-march-885)[No93%](/event/fed-decision-in-march-885). [## What price will Bitcoin hit in February?](/event/what-price-will-bitcoin-hit-in-february-2026). [\u2191 80,000](/event/what-price-will-bitcoin-hit-in-february-2026/will-bitcoin-reach-80000-in-february-2",
+      "url": "https://polymarket.com/",
+      "relevance_tags": [
+        "bitcoin",
+        "fed",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771378272.1392379,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {},
+      "score": 70
+    },
+    {
+      "id": "28853b029b080987",
+      "source": "tavily",
+      "headline": "Fox News - Breaking News Updates | Latest News Headlines ...",
+      "summary": "Latest Breaking News Today from Fox News \u00b7 Federal judge slams Trump administration, orders Abrego Garcia release \u00b7 One-seat House Republican majority plunges",
+      "url": "https://www.foxnews.com/",
       "relevance_tags": [
         "trump",
-        "president",
+        "republican",
+        "fed"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771378273.671114,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {},
+      "score": 70
+    },
+    {
+      "id": "17404165d0b7ba5c",
+      "source": "tavily",
+      "headline": "NBC News: Breaking Headlines and Video Reports",
+      "summary": "LATEST NEWS. 21h ago. Norway's Tormod Frostad beats out USA's Mac Forehand in freestyle skiing big air final. 21h ago. Trump's election bill tops 50 Senate",
+      "url": "https://www.nbcnews.com/",
+      "relevance_tags": [
+        "trump",
+        "election",
+        "senate",
         "ai"
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303150.9649699,
+      "timestamp": 1771378273.671254,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {},
@@ -673,55 +628,54 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303150.9652421,
+      "timestamp": 1771378275.340947,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {},
       "score": 70
     },
     {
-      "id": "ce8d97ef7253ee6c",
+      "id": "4ab2bd03d00d6f85",
       "source": "reddit/r/cryptocurrency",
-      "headline": "X(Twitter) Goes Down Again - Thousands Report Feed &amp; Login Issues, Cryptobros won't be happy",
-      "summary": "Score: 82, Comments: 48",
-      "url": "https://reddit.com/r/CryptoCurrency/comments/1r6ahyc/xtwitter_goes_down_again_thousands_report_feed/",
+      "headline": "The Dutch passed a 36% tax on unrealized gains for crypto\u2026",
+      "summary": "Score: 121, Comments: 104",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r7c0qu/the_dutch_passed_a_36_tax_on_unrealized_gains_for/",
       "relevance_tags": [
         "crypto",
         "ai"
       ],
-      "sentiment": -1.0,
-      "confidence": 0.582,
-      "timestamp": 1771303158.79071,
+      "sentiment": 1.0,
+      "confidence": 0.621,
+      "timestamp": 1771378284.033359,
       "matched_markets": [],
       "category": "crypto",
       "raw_data": {
-        "score": 82,
-        "comments": 48,
+        "score": 121,
+        "comments": 104,
         "sub": "cryptocurrency"
       },
-      "score": 69
+      "score": 70
     },
     {
-      "id": "0281b17fdea3664f",
-      "source": "reddit/r/sportsbook",
-      "headline": "Missouri Sportsbooks Megathread",
-      "summary": "## Missouri Sportsbooks and Sports Betting Mobile App Sign-Up Bonus Codes &amp; Promos (Launch Discussion)\n\n**Missouri (St. Louis &amp; Kansas City) officially launched sports betting on December 1, 2025 at 12:01 AM CST.**  \nNew users can now sign up and claim **official launch bonuses**. All promotions below are **updated to match the master promotion list exactly**.\n\n---\n\n### Missouri Sportsbook",
-      "url": "https://reddit.com/r/sportsbook/comments/1pb2f0d/missouri_sportsbooks_megathread/",
+      "id": "15e7e95d758657fd",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "Anthony Scaramucci's son buys Logan Paul's previously tokenized Pokemon card for record $16 million",
+      "summary": "Score: 120, Comments: 41",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r71j3q/anthony_scaramuccis_son_buys_logan_pauls/",
       "relevance_tags": [
-        "match",
-        "ai"
+        "token"
       ],
       "sentiment": 1.0,
-      "confidence": 0.523,
-      "timestamp": 1771303155.822817,
+      "confidence": 0.62,
+      "timestamp": 1771378284.03346,
       "matched_markets": [],
-      "category": "sports",
+      "category": "crypto",
       "raw_data": {
-        "score": 23,
-        "comments": 67,
-        "sub": "sportsbook"
+        "score": 120,
+        "comments": 41,
+        "sub": "cryptocurrency"
       },
-      "score": 68
+      "score": 70
     },
     {
       "id": "7a9ed9b3c1e5a39a",
@@ -733,318 +687,334 @@
         "ai"
       ],
       "sentiment": 1.0,
-      "confidence": 0.537,
-      "timestamp": 1771303155.8230028,
+      "confidence": 0.574,
+      "timestamp": 1771378280.278486,
       "matched_markets": [],
       "category": "culture",
       "raw_data": {
-        "score": 37,
-        "comments": 136,
+        "score": 74,
+        "comments": 480,
+        "sub": "sportsbook"
+      },
+      "score": 69
+    },
+    {
+      "id": "c4bab611a7cc5967",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Raspberry Pi is up 40% after TAM expansion overnight from Educational Boards to Mass Producible AI Orchestration Hardware due to OpenClaw",
+      "summary": "Score: 92, Comments: 33",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r7mv0j/raspberry_pi_is_up_40_after_tam_expansion/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.592,
+      "timestamp": 1771378282.376111,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {
+        "score": 92,
+        "comments": 33,
+        "sub": "wallstreetbets"
+      },
+      "score": 69
+    },
+    {
+      "id": "d6999ff957e8d078",
+      "source": "reddit/r/sportsbook",
+      "headline": "Pick of the Day - 2/18/26 (Wednesday)",
+      "summary": "Free Reddit Pick of the Day\n\n* Post **ONE** pick. No side picks in comments. You can provide a link to your other picks in the other daily threads.\n* **TWO** leg parlays and teasers are **allowed**. Must stay within odds requirements. \n* Must be between -200 and +200 (1.5 and 3.0) odds.\n* Bet size should be between 1 and 5 units. No \"100 unit locks\"\n* Provide a write up on why this is your Pick of",
+      "url": "https://reddit.com/r/sportsbook/comments/1r7l1mh/pick_of_the_day_21826_wednesday/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.521,
+      "timestamp": 1771378280.278346,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {
+        "score": 21,
+        "comments": 89,
         "sub": "sportsbook"
       },
       "score": 68
     },
     {
-      "id": "bf1635744bd268fb",
-      "source": "reddit/r/cryptocurrency",
-      "headline": "President Trump Says Crypto Market Structure Bill Will Pass Soon",
-      "summary": "Score: 66, Comments: 43",
-      "url": "https://reddit.com/r/CryptoCurrency/comments/1r6sji6/president_trump_says_crypto_market_structure_bill/",
-      "relevance_tags": [
-        "trump",
-        "president",
-        "crypto",
-        "market"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.5660000000000001,
-      "timestamp": 1771303158.790103,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {
-        "score": 66,
-        "comments": 43,
-        "sub": "cryptocurrency"
-      },
-      "score": 67
-    },
-    {
-      "id": "ab2ce2c7477b10bc",
-      "source": "reddit/r/cryptocurrency",
-      "headline": "Bitcoin\u2019s slide may signal broader market trouble and a U.S. recession, Mike McGlone says",
-      "summary": "Score: 65, Comments: 42",
-      "url": "https://reddit.com/r/CryptoCurrency/comments/1r6d1gi/bitcoins_slide_may_signal_broader_market_trouble/",
-      "relevance_tags": [
-        "bitcoin",
-        "recession",
-        "market"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.565,
-      "timestamp": 1771303158.7906492,
-      "matched_markets": [],
-      "category": "economy",
-      "raw_data": {
-        "score": 65,
-        "comments": 42,
-        "sub": "cryptocurrency"
-      },
-      "score": 67
-    },
-    {
-      "id": "33860a73091c5fae",
+      "id": "6a6f66a115901df9",
       "source": "reddit/r/wallstreetbets",
-      "headline": "PDT rule will not be removed on February 28th, instead SEC wants to consider it until March 14th now.",
-      "summary": "Last year news said that FINDRA proposed to abolish the PDT rule. PDT rule means you have to have at least $25000 to daytrade when you have been flagged as violating the PDT rule.\n\nSeveral weeks ago news said that the proposal will be determined by SEC by Feb. 28th since the proceedings have to end within 45 days of proposal.\n\nAccording to the [old document](https://www.federalregister.gov/documen",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1r6vdqb/pdt_rule_will_not_be_removed_on_february_28th/",
+      "headline": "Tomorrows Plays",
+      "summary": "Okay listen up regards, im back from my spiritual journey (getting margin called) with a message of hope and bad decisions. i know its been a while since ive given a good DD and I was doing some research watching Margin Call. When the guy who plays Scar in The Lion King says, \"I dont hear the music, all i hear is silence.\" that really motivated me to want to help you degens out there who've been p",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r7nibo/tomorrows_plays/",
       "relevance_tags": [
-        "sec",
-        "ai",
-        "fed"
+        "music"
       ],
-      "sentiment": 0.0,
-      "confidence": 0.552,
-      "timestamp": 1771303157.762791,
-      "matched_markets": [],
-      "category": "crypto",
-      "raw_data": {
-        "score": 52,
-        "comments": 24,
-        "sub": "wallstreetbets"
-      },
-      "score": 66
-    },
-    {
-      "id": "9fa8e3c42f50ba01",
-      "source": "reddit/r/politics",
-      "headline": "Republicans Are Suddenly Very, Very Worried About Holding the Senate",
-      "summary": "Score: 15844, Comments: 949",
-      "url": "https://reddit.com/r/politics/comments/1r6pq4l/republicans_are_suddenly_very_very_worried_about/",
-      "relevance_tags": [
-        "senate",
-        "republican"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771303156.748099,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {
-        "score": 15844,
-        "comments": 949,
-        "sub": "politics"
-      },
-      "score": 63
-    },
-    {
-      "id": "8b510d11d9842a47",
-      "source": "reddit/r/politics",
-      "headline": "The Worst President Ever",
-      "summary": "Score: 7359, Comments: 231",
-      "url": "https://reddit.com/r/politics/comments/1r6rw6j/the_worst_president_ever/",
-      "relevance_tags": [
-        "president"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771303156.748139,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {
-        "score": 7359,
-        "comments": 231,
-        "sub": "politics"
-      },
-      "score": 63
-    },
-    {
-      "id": "bfdc3498c0b05274",
-      "source": "reddit/r/politics",
-      "headline": "Senator Mark Kelly says he will 'seriously consider' running for president",
-      "summary": "Score: 4805, Comments: 716",
-      "url": "https://reddit.com/r/politics/comments/1r6uhm3/senator_mark_kelly_says_he_will_seriously/",
-      "relevance_tags": [
-        "president"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771303156.74818,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {
-        "score": 4805,
-        "comments": 716,
-        "sub": "politics"
-      },
-      "score": 63
-    },
-    {
-      "id": "54c88df2079446ae",
-      "source": "reddit/r/politics",
-      "headline": "Billionaire Trump Donor Closing U.S. Plant and Moving Work to China",
-      "summary": "Score: 22586, Comments: 674",
-      "url": "https://reddit.com/r/politics/comments/1r6kgku/billionaire_trump_donor_closing_us_plant_and/",
-      "relevance_tags": [
-        "trump",
-        "ai"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771303156.748242,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {
-        "score": 22586,
-        "comments": 674,
-        "sub": "politics"
-      },
-      "score": 63
-    },
-    {
-      "id": "a73b50be69107b7b",
-      "source": "reddit/r/politics",
-      "headline": "You Know What? Maybe the Time Is Right for an AOC Presidential Bid",
-      "summary": "Score: 5111, Comments: 1278",
-      "url": "https://reddit.com/r/politics/comments/1r6rnjt/you_know_what_maybe_the_time_is_right_for_an_aoc/",
-      "relevance_tags": [
-        "president"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771303156.748304,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {
-        "score": 5111,
-        "comments": 1278,
-        "sub": "politics"
-      },
-      "score": 63
-    },
-    {
-      "id": "dd879a622c103586",
-      "source": "reddit/r/politics",
-      "headline": "Judge quotes Orwell\u2019s 1984 as she orders Trump to restore slavery exhibits in Philadelphia",
-      "summary": "Score: 6090, Comments: 68",
-      "url": "https://reddit.com/r/politics/comments/1r6jd02/judge_quotes_orwells_1984_as_she_orders_trump_to/",
-      "relevance_tags": [
-        "trump"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771303156.748734,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {
-        "score": 6090,
-        "comments": 68,
-        "sub": "politics"
-      },
-      "score": 63
-    },
-    {
-      "id": "9c82da2abd92c157",
-      "source": "reddit/r/politics",
-      "headline": "George W. Bush Subtly Trashes Trump in Presidents Day Message",
-      "summary": "Score: 16142, Comments: 1103",
-      "url": "https://reddit.com/r/politics/comments/1r6bm0x/george_w_bush_subtly_trashes_trump_in_presidents/",
-      "relevance_tags": [
-        "trump",
-        "president"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771303156.7492118,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {
-        "score": 16142,
-        "comments": 1103,
-        "sub": "politics"
-      },
-      "score": 63
-    },
-    {
-      "id": "aeaaa34263375b48",
-      "source": "reddit/r/politics",
-      "headline": "Hakeem Jeffries Plays Dumb on Abolish ICE: \u201cI Don\u2019t Understand\u201d - Democratic leaders are refusing to answer a direct question about the future of ICE.",
-      "summary": "Score: 4388, Comments: 546",
-      "url": "https://reddit.com/r/politics/comments/1r6iljv/hakeem_jeffries_plays_dumb_on_abolish_ice_i_dont/",
-      "relevance_tags": [
-        "democrat"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771303156.749613,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {
-        "score": 4388,
-        "comments": 546,
-        "sub": "politics"
-      },
-      "score": 63
-    },
-    {
-      "id": "3fbfd77a467036b3",
-      "source": "reddit/r/politics",
-      "headline": "Donald Trump Is\u00a0Really\u00a0Racist",
-      "summary": "Score: 2203, Comments: 180",
-      "url": "https://reddit.com/r/politics/comments/1r6ob7q/donald_trump_is_really_racist/",
-      "relevance_tags": [
-        "trump"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771303156.7496939,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {
-        "score": 2203,
-        "comments": 180,
-        "sub": "politics"
-      },
-      "score": 63
-    },
-    {
-      "id": "c976f6873e4aa786",
-      "source": "reddit/r/wallstreetbets",
-      "headline": "Pentagon threatens to label Anthropic AI a \"supply chain risk\"",
-      "summary": "Score: 2151, Comments: 207",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1r6iyqd/pentagon_threatens_to_label_anthropic_ai_a_supply/",
-      "relevance_tags": [
-        "ai"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771303157.760142,
+      "sentiment": 1.0,
+      "confidence": 0.532,
+      "timestamp": 1771378282.3764942,
       "matched_markets": [],
       "category": "culture",
       "raw_data": {
-        "score": 2151,
-        "comments": 207,
+        "score": 32,
+        "comments": 43,
+        "sub": "wallstreetbets"
+      },
+      "score": 68
+    },
+    {
+      "id": "ea1e92eaefa75fe5",
+      "source": "reddit/r/politics",
+      "headline": "Bombshell Epstein File Reveals FBI Interviewed Underage Donald Trump Accuser",
+      "summary": "Score: 31930, Comments: 1170",
+      "url": "https://reddit.com/r/politics/comments/1r7bud7/bombshell_epstein_file_reveals_fbi_interviewed/",
+      "relevance_tags": [
+        "trump"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771378281.159897,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 31930,
+        "comments": 1170,
+        "sub": "politics"
+      },
+      "score": 63
+    },
+    {
+      "id": "481e4ecbeea5785f",
+      "source": "reddit/r/politics",
+      "headline": "Costco defied Trump\u2019s DEI directive as Target and Walmart scaled back. Business is booming",
+      "summary": "Score: 25637, Comments: 778",
+      "url": "https://reddit.com/r/politics/comments/1r7bnmd/costco_defied_trumps_dei_directive_as_target_and/",
+      "relevance_tags": [
+        "trump",
+        "defi"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771378281.160023,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 25637,
+        "comments": 778,
+        "sub": "politics"
+      },
+      "score": 63
+    },
+    {
+      "id": "90947f1d5206c03d",
+      "source": "reddit/r/politics",
+      "headline": "Colbert accuses CBS of blocking on-air interview with Texas Democrat James Talarico",
+      "summary": "Score: 23170, Comments: 666",
+      "url": "https://reddit.com/r/politics/comments/1r78m2l/colbert_accuses_cbs_of_blocking_onair_interview/",
+      "relevance_tags": [
+        "democrat",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771378281.160217,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 23170,
+        "comments": 666,
+        "sub": "politics"
+      },
+      "score": 63
+    },
+    {
+      "id": "0e0a91df21a6ed9c",
+      "source": "reddit/r/politics",
+      "headline": "Watch James Talarico interview Stephen Colbert says CBS refused to air",
+      "summary": "Score: 2172, Comments: 51",
+      "url": "https://reddit.com/r/politics/comments/1r7lqu2/watch_james_talarico_interview_stephen_colbert/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771378281.160363,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {
+        "score": 2172,
+        "comments": 51,
+        "sub": "politics"
+      },
+      "score": 63
+    },
+    {
+      "id": "acbd838133e7ff9d",
+      "source": "reddit/r/politics",
+      "headline": "Uncle Luke Addresses Resurfaced Claim of Nude Minors at Mar-a-Lago",
+      "summary": "Score: 2481, Comments: 108",
+      "url": "https://reddit.com/r/politics/comments/1r7i4cx/uncle_luke_addresses_resurfaced_claim_of_nude/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771378281.160533,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {
+        "score": 2481,
+        "comments": 108,
+        "sub": "politics"
+      },
+      "score": 63
+    },
+    {
+      "id": "2ed3821cc0bc9928",
+      "source": "reddit/r/politics",
+      "headline": "More Americans believe Bad Bunny embodies the country\u2019s values better than Donald Trump",
+      "summary": "Score: 6582, Comments: 82",
+      "url": "https://reddit.com/r/politics/comments/1r7872w/more_americans_believe_bad_bunny_embodies_the/",
+      "relevance_tags": [
+        "trump"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771378281.160584,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 6582,
+        "comments": 82,
+        "sub": "politics"
+      },
+      "score": 63
+    },
+    {
+      "id": "976bd139d7c91f36",
+      "source": "reddit/r/politics",
+      "headline": "Trump is in moment of maximum danger - Epstein testimony could seal his fate",
+      "summary": "Score: 4354, Comments: 503",
+      "url": "https://reddit.com/r/politics/comments/1r79blx/trump_is_in_moment_of_maximum_danger_epstein/",
+      "relevance_tags": [
+        "trump"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771378281.1606631,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 4354,
+        "comments": 503,
+        "sub": "politics"
+      },
+      "score": 63
+    },
+    {
+      "id": "2b5744e61d90c466",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "When companies can't buy hard drives, they'll buy the next best thing (cloud storage)",
+      "summary": "WD is sold out for years. Seagate probably next. Hard drives and SSD prices through the roof.\n\nWhat hasn't changed? Cloud storage prices per GB. Seems like the obvious and price-stable avenue for companies to store data instead of racking out their own servers at 5x the cost.\n\nThere's a ticker below the $500mm market cap requirement that I can't mention here, but also competitors like $AMZN, that ",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r7gukx/when_companies_cant_buy_hard_drives_theyll_buy/",
+      "relevance_tags": [
+        "sol",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771378282.3745542,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 887,
+        "comments": 329,
         "sub": "wallstreetbets"
       },
       "score": 63
     },
     {
-      "id": "bcdc99cf4cc24cd6",
+      "id": "86a96141bbad3457",
       "source": "reddit/r/wallstreetbets",
-      "headline": "Warner Bros reconsiders Paramount $108B sale after revised offer covers $2.8B Netflix breakup fee",
-      "summary": "Source: [https://finance.yahoo.com/news/warner-bros-weighs-reopening-sale-195058251.html](https://finance.yahoo.com/news/warner-bros-weighs-reopening-sale-195058251.html)\n\n&gt;Warner Bros Discovery is considering reopening sale talks with rival Hollywood studio Paramount Skydance after receiving its \u200chostile suitor's most recent amended offer, Bloomberg News reported on \u200cSunday, citing people with",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1r5p75k/warner_bros_reconsiders_paramount_108b_sale_after/",
+      "headline": "Netflix grants Warner Bros. Discovery 7-day waiver to reopen deal talks with Paramount Skydance",
+      "summary": "A confident fianc\u00e9 doesn\u2019t give his bride a 7-day trial date with another guy. That\u2019s what someone does when they\u2019ve already changed their mind about the wedding and want her to be the one who walks away.",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r75b2l/netflix_grants_warner_bros_discovery_7day_waiver/",
       "relevance_tags": [
-        "etf"
+        "etf",
+        "ai"
       ],
       "sentiment": 0.0,
       "confidence": 0.8,
-      "timestamp": 1771303157.7637708,
+      "timestamp": 1771378282.374851,
       "matched_markets": [],
       "category": "crypto",
       "raw_data": {
-        "score": 3133,
-        "comments": 328,
+        "score": 2223,
+        "comments": 217,
         "sub": "wallstreetbets"
+      },
+      "score": 63
+    },
+    {
+      "id": "1fd95848e88af9c7",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Partnership announcement: Meta Builds AI Infrastructure With NVIDIA",
+      "summary": "Score: 401, Comments: 86",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r7k52y/partnership_announcement_meta_builds_ai/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771378282.374951,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {
+        "score": 401,
+        "comments": 86,
+        "sub": "wallstreetbets"
+      },
+      "score": 63
+    },
+    {
+      "id": "8b506ab0a9918577",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "Horrifying New Details Emerge In Case Of Crypto Scammer Found Dismembered With Wife In Dubai",
+      "summary": "Score: 685, Comments: 142",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r7jzos/horrifying_new_details_emerge_in_case_of_crypto/",
+      "relevance_tags": [
+        "crypto",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771378284.0331771,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 685,
+        "comments": 142,
+        "sub": "cryptocurrency"
+      },
+      "score": 63
+    },
+    {
+      "id": "757fac83eb48a95b",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "Strategy Acquires 2,486 BTC for $168.4 Million - Total Holdings Now 717,131 BTC",
+      "summary": "Score: 473, Comments: 76",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r75xaw/strategy_acquires_2486_btc_for_1684_million_total/",
+      "relevance_tags": [
+        "btc"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771378284.0332859,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 473,
+        "comments": 76,
+        "sub": "cryptocurrency"
       },
       "score": 63
     },
@@ -1052,7 +1022,7 @@
       "id": "c069ebde4762d3c0",
       "source": "reddit/r/cryptocurrency",
       "headline": "YouTuber Logan Paul purchased this NFT for $635,000 in 2021 - Today, it's worth $155",
-      "summary": "Score: 1660, Comments: 230",
+      "summary": "Score: 2487, Comments: 301",
       "url": "https://reddit.com/r/CryptoCurrency/comments/1r6flmh/youtuber_logan_paul_purchased_this_nft_for_635000/",
       "relevance_tags": [
         "nft",
@@ -1060,144 +1030,104 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.8,
-      "timestamp": 1771303158.78989,
+      "timestamp": 1771378284.033503,
       "matched_markets": [],
       "category": "crypto",
       "raw_data": {
-        "score": 1660,
-        "comments": 230,
+        "score": 2487,
+        "comments": 301,
         "sub": "cryptocurrency"
       },
       "score": 63
     },
     {
-      "id": "511e0b0d321ad5f9",
-      "source": "reddit/r/cryptocurrency",
-      "headline": "Steak 'n Shake attributes sales increase to accepting Bitcoin payments",
-      "summary": "Score: 362, Comments: 68",
-      "url": "https://reddit.com/r/CryptoCurrency/comments/1r6ktil/steak_n_shake_attributes_sales_increase_to/",
+      "id": "ba20ad448b3ab840",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Daily Discussion Thread for February 17, 2026",
+      "summary": "This post contains content not supported on old Reddit. [Click here to view the full post](https://sh.reddit.com/r/wallstreetbets/comments/1r7457f)",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r7457f/daily_discussion_thread_for_february_17_2026/",
       "relevance_tags": [
-        "bitcoin"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771303158.790051,
-      "matched_markets": [],
-      "category": "crypto",
-      "raw_data": {
-        "score": 362,
-        "comments": 68,
-        "sub": "cryptocurrency"
-      },
-      "score": 63
-    },
-    {
-      "id": "8729595d15fc1127",
-      "source": "reddit/r/cryptocurrency",
-      "headline": "I understand thinking crypto is over in 2014, again in 2018, again in 2022, but at this point saying \"it's over\" after it's dumped and then pumped cyclically is dimwitted",
-      "summary": "No one knew the first time around in 2014, say what you will but by this time in 2026 it's clear that crypto is cyclical and that above all, long-term holders win if you time your exit during the cycle peak. \n\n\n\nIt's not over, it's merely a cycle low. I think regardless in that wall street cheat sheet we're in Depression now. A few more will be rinshed out selling the beginning of the bull when ET",
-      "url": "https://reddit.com/r/CryptoCurrency/comments/1r6m9jl/i_understand_thinking_crypto_is_over_in_2014/",
-      "relevance_tags": [
-        "crypto",
         "ai"
       ],
-      "sentiment": 0.33,
-      "confidence": 0.539,
-      "timestamp": 1771303158.7905622,
+      "sentiment": 0.0,
+      "confidence": 0.77,
+      "timestamp": 1771378282.376771,
       "matched_markets": [],
-      "category": "crypto",
+      "category": "culture",
       "raw_data": {
-        "score": 39,
-        "comments": 37,
-        "sub": "cryptocurrency"
+        "score": 270,
+        "comments": 10876,
+        "sub": "wallstreetbets"
       },
-      "score": 63
+      "score": 62
     },
     {
-      "id": "c422e3956b92d12c",
+      "id": "495c4657ec6ab7be",
       "source": "tavily",
-      "headline": "Punchbowl News - Breaking news, US politics, Congress news",
-      "summary": "The latest news from the Capitol and leadership in Congress. Punchbowl News follows investigations, policies, hearings and more in Washington.",
-      "url": "https://punchbowl.news/",
-      "relevance_tags": [
-        "congress"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "timestamp": 1771303142.073486,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {},
-      "score": 60
-    },
-    {
-      "id": "85edaa795160f8db",
-      "source": "tavily",
-      "headline": "Breaking Political News, Video & Analysis-ABC News",
-      "summary": "Trump says he'll announce $5 billion in donations from members of his Board of Peace \u00b7 Judge orders administration to restore slavery exhibit at President's",
-      "url": "https://abcnews.com/politics",
+      "headline": "Latest and breaking political news today - POLITICO",
+      "summary": "Massie's warning for Trump ... Thomas Massie sees a growing threat ahead for President Donald Trump and Speaker Mike Johnson. Bernie Moreno speaks with reporters.",
+      "url": "https://www.politico.com/politics",
       "relevance_tags": [
         "trump",
         "president"
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303142.0735722,
+      "timestamp": 1771378268.123788,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {},
       "score": 60
     },
     {
-      "id": "543020684275f9b0",
+      "id": "0dec6f4d2cd08cb7",
       "source": "tavily",
-      "headline": "MS NOW - Breaking News and News Today | Latest News",
-      "summary": "Trump publicly condemns Israel's president for the Trumpiest of reasons \u00b7 Steve Benen ; 'Clown show': Obama addresses Trump's racist video depicting him and his",
-      "url": "https://www.ms.now/",
-      "relevance_tags": [
-        "trump",
-        "president"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "timestamp": 1771303142.073824,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {},
-      "score": 60
-    },
-    {
-      "id": "6e1f5f216721d23f",
-      "source": "tavily",
-      "headline": "U.S. Politics",
-      "summary": "After First Big Overseas Trip, Ocasio-Cortez Expresses Frustrations \u00b7 Judge Orders Trump Administration to Restore Displays About Slavery at Washington's House.",
+      "headline": "U.S. Politics - The New York Times",
+      "summary": "Breaking news and analysis on U.S. politics, including the latest coverage of the White House, Congress, the Supreme Court and more.",
       "url": "https://www.nytimes.com/section/politics",
       "relevance_tags": [
-        "trump"
+        "congress",
+        "supreme court"
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303142.073885,
+      "timestamp": 1771378268.1238568,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {},
       "score": 60
     },
     {
-      "id": "74d1a2a4e298c598",
+      "id": "211a3ef5dd4b2140",
       "source": "tavily",
-      "headline": "MLB Scores: Scoreboard, Results and Highlights",
-      "summary": "Yankees. NYY. 0 - 0. 1:05 PM ET. Watch on: Gotham, MASN. Orioles ; Royals. KC. 0 - 0. 3:05 PM ET. Rangers ; White Sox. CWS. 0 - 0. 3:05 PM ET. Watch on: MARQ.",
-      "url": "https://www.mlb.com/scores",
+      "headline": "Axios - Breaking news, U.S. news and politics, and local news",
+      "summary": "1.Zelensky says Ukrainian public won't let him hand Russia territory ; Police say 18-year-old ran at U.S. Capitol with shotgun \u00b7 2.Police say 18-year-old ran at",
+      "url": "https://www.axios.com/",
       "relevance_tags": [
-        "mlb",
-        "score"
+        "ai"
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303143.7857862,
+      "timestamp": 1771378268.1239522,
       "matched_markets": [],
-      "category": "sports",
+      "category": "culture",
+      "raw_data": {},
+      "score": 60
+    },
+    {
+      "id": "799901524cf867e7",
+      "source": "tavily",
+      "headline": "Politics - CNN",
+      "summary": "Latest Headlines \u00b7 New Mexico lawmakers pass measure aimed at investigating Epstein's Zorro Ranch \u00b7 Man in tactical vest with loaded shotgun arrested after",
+      "url": "https://www.cnn.com/politics",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771378268.124015,
+      "matched_markets": [],
+      "category": "culture",
       "raw_data": {},
       "score": 60
     },
@@ -1205,7 +1135,7 @@
       "id": "3bfc6a5ab8ed60a3",
       "source": "tavily",
       "headline": "All Sports Scoreboard - Yahoo Sports",
-      "summary": "Advertisement. Sports Scores. College Basketball. View all \u00b7 Syracuse Orange. SyracuseSYR. 22. Duke Blue Devils.",
+      "summary": "Sports Scores. College Basketball. View all \u00b7 Michigan Wolverines. 1. MichiganMICH. 48. Purdue Boilermakers.",
       "url": "https://sports.yahoo.com/scoreboard/",
       "relevance_tags": [
         "basketball",
@@ -1213,25 +1143,43 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303143.7858481,
+      "timestamp": 1771378269.898994,
       "matched_markets": [],
       "category": "sports",
       "raw_data": {},
       "score": 60
     },
     {
-      "id": "fc8b7739fb8c149a",
+      "id": "74d1a2a4e298c598",
       "source": "tavily",
-      "headline": "Soccer Live Scores, Latest Soccer Results | Flashscore",
-      "summary": "Soccer live scores page on Flashscore offers all the latest soccer results from more than 1000+ soccer leagues all around the world including MLS, Liga MX,",
-      "url": "https://www.flashscoreusa.com/",
+      "headline": "MLB Scores: Scoreboard, Results and Highlights",
+      "summary": "Yankees. NYY. 0 - 0. 1:05 PM ET. Watch on: Gotham, MASN ; Royals. KC. 0 - 0. 3:05 PM ET ; White Sox. CWS. 0 - 0. 3:05 PM ET. Watch on: MARQ ; D-backs. AZ. 0 - 0. 3",
+      "url": "https://www.mlb.com/scores",
       "relevance_tags": [
-        "soccer",
+        "mlb",
         "score"
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303143.7859159,
+      "timestamp": 1771378269.899057,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {},
+      "score": 60
+    },
+    {
+      "id": "60cab2a22fd60af2",
+      "source": "tavily",
+      "headline": "theScore: Sports News & Scores - App Store - Apple",
+      "summary": "theScore delivers real-time scoring updates and alerts, breaking news, the deepest in-game stats, videos, and social content.",
+      "url": "https://apps.apple.com/us/app/thescore-sports-news-scores/id285692706",
+      "relevance_tags": [
+        "game",
+        "score"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771378269.899211,
       "matched_markets": [],
       "category": "sports",
       "raw_data": {},
@@ -1249,7 +1197,7 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303145.736932,
+      "timestamp": 1771378271.5145118,
       "matched_markets": [],
       "category": "crypto",
       "raw_data": {},
@@ -1267,7 +1215,7 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303145.7372532,
+      "timestamp": 1771378271.5146098,
       "matched_markets": [],
       "category": "crypto",
       "raw_data": {},
@@ -1284,16 +1232,16 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303147.6874082,
+      "timestamp": 1771378272.1387289,
       "matched_markets": [],
       "category": "economy",
       "raw_data": {},
       "score": 60
     },
     {
-      "id": "059180e10f570e1a",
+      "id": "87ebc24f37c49115",
       "source": "tavily",
-      "headline": "Polymarket",
+      "headline": "Polymarket - Wikipedia",
       "summary": "Founded in 2020 by Shayne Coplan, Polymarket is a prediction market that allows users to gain/lose on the outcome of world events. Polymarket blocked access to United States customers from 2022 to December 2, 2025, following a settlement with the Commodity Futures Trading Commission, which accused the company of running an unregistered derivatives-trading platform. Polymarket has at some point been banned in a number of countries that regulate gambling and sports betting, including France, Singapore, Switzerland, Poland, and the United States. On November 26, 2024, the Swiss Gambling Superviso",
       "url": "https://en.wikipedia.org/wiki/Polymarket",
       "relevance_tags": [
@@ -1302,61 +1250,61 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303147.688664,
+      "timestamp": 1771378272.139597,
       "matched_markets": [],
       "category": "culture",
       "raw_data": {},
       "score": 60
     },
     {
-      "id": "38d9f343381a626d",
+      "id": "5a3707397770940c",
       "source": "tavily",
-      "headline": "Associated Press News: Breaking News, Latest Headlines",
-      "summary": "North Korea opens a housing district for families of its soldiers killed in Russia-Ukraine war \u00b7 Abduction of Mexican mine workers raises doubts over touted",
-      "url": "https://apnews.com/",
+      "headline": "Polymarket Analytics \u2013 Prediction Market Data, Analytics, and ...",
+      "summary": "Real-time prediction market data, analytics, and dashboards for Polymarket. Track top traders and access powerful research tools for informed",
+      "url": "https://polymarketanalytics.com/",
       "relevance_tags": [
-        "sol",
-        "ai"
+        "market"
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303149.204375,
+      "timestamp": 1771378272.1396742,
       "matched_markets": [],
-      "category": "crypto",
+      "category": "economy",
       "raw_data": {},
       "score": 60
     },
     {
-      "id": "7e3af7f989ef9460",
+      "id": "0744b68ce0e1b37d",
       "source": "tavily",
-      "headline": "World news - breaking news, video, headlines and opinion",
-      "summary": "Austria files charges against suspect over planned 2024 Taylor Swift attack \u00b7 Israeli TV producer of award-winning show 'Tehran' found dead in Athens hotel room.",
-      "url": "https://www.cnn.com/world",
+      "headline": "CBS News | Breaking news, top stories & today's latest ...",
+      "summary": "Jesse Jackson, civil rights leader who ran for president, dies at age 84 \u00b7 Widow of Hugh Hefner alleges his foundation stored thousands of sexual photos of women.",
+      "url": "https://www.cbsnews.com/",
       "relevance_tags": [
-        "ai"
+        "president"
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303149.204575,
+      "timestamp": 1771378273.6713321,
       "matched_markets": [],
-      "category": "culture",
+      "category": "politics",
       "raw_data": {},
       "score": 60
     },
     {
-      "id": "28853b029b080987",
+      "id": "7d9676e0c8dbf921",
       "source": "tavily",
-      "headline": "Fox News - Breaking News Updates | Latest News Headlines ...",
-      "summary": "Latest Breaking News Today from Fox News \u00b7 100 US troops land in Nigeria as Islamic militants threaten West Africa's regional security - Fox \u00b7 Iran shows off",
-      "url": "https://www.foxnews.com/",
+      "headline": "World News: International Headlines, Breaking Reports ...",
+      "summary": "Trump pointed to Ukraine when asked what he was expecting from Tuesday's talks. Kyiv \u201cbetter come to the table fast,\u201d he told reporters on Air Force One.",
+      "url": "https://www.nbcnews.com/world",
       "relevance_tags": [
-        "sec"
+        "trump",
+        "ai"
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303149.20477,
+      "timestamp": 1771378273.671499,
       "matched_markets": [],
-      "category": "crypto",
+      "category": "politics",
       "raw_data": {},
       "score": 60
     },
@@ -1371,7 +1319,7 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303150.96466,
+      "timestamp": 1771378275.340621,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {},
@@ -1388,7 +1336,7 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303150.96474,
+      "timestamp": 1771378275.340704,
       "matched_markets": [],
       "category": "culture",
       "raw_data": {},
@@ -1405,173 +1353,248 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303150.964864,
+      "timestamp": 1771378275.3408298,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {},
       "score": 60
     },
     {
-      "id": "473b3f53342e2bc1",
+      "id": "ba65e5236f7c75b7",
       "source": "tavily",
-      "headline": "Pennsylvania Elections - Summary Results",
-      "summary": "Election Results. Home; Reports. Reporting Center; Election Feed. Elections. {{yearset.year}}. {{electionTypes.type}}. {{election.ElectionName}}. Counties. A-B.",
-      "url": "https://www.electionreturns.pa.gov/",
+      "headline": "Polling for United States presidential elections",
+      "summary": "Gallup was the first polling organization to conduct accurate opinion polling for United States presidential elections. Gallup polling has often been",
+      "url": "https://en.wikipedia.org/wiki/Polling_for_United_States_presidential_elections",
       "relevance_tags": [
         "election",
-        "mma"
+        "president"
       ],
       "sentiment": 0.0,
       "confidence": 0.7,
-      "timestamp": 1771303150.9651258,
+      "timestamp": 1771378275.340899,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {},
       "score": 60
     },
     {
-      "id": "4699996f1bdc89a2",
-      "source": "reddit/r/wallstreetbets",
-      "headline": "What Are Your Moves Tomorrow, February 17, 2026",
-      "summary": "This post contains content not supported on old Reddit. [Click here to view the full post](https://sh.reddit.com/r/wallstreetbets/comments/1r6lptj)",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1r6lptj/what_are_your_moves_tomorrow_february_17_2026/",
-      "relevance_tags": [
-        "ai"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.6799999999999999,
-      "timestamp": 1771303157.7599192,
+      "id": "d8d10abf3e61650d",
+      "source": "reddit/r/politics",
+      "headline": "Mamdani Threatens 9.5% Property Tax Increase if Wealth Tax Is Not Passed",
+      "summary": "Score: 1278, Comments: 364",
+      "url": "https://reddit.com/r/politics/comments/1r7lxeh/mamdani_threatens_95_property_tax_increase_if/",
+      "relevance_tags": [],
+      "sentiment": 1.0,
+      "confidence": 0.8,
+      "timestamp": 1771378281.160625,
       "matched_markets": [],
-      "category": "culture",
+      "category": "other",
       "raw_data": {
-        "score": 180,
-        "comments": 4735,
-        "sub": "wallstreetbets"
+        "score": 1278,
+        "comments": 364,
+        "sub": "politics"
       },
-      "score": 60
+      "score": 59
     },
     {
-      "id": "90926fdf6f66c443",
+      "id": "4b57f9f323415f5b",
       "source": "reddit/r/wallstreetbets",
-      "headline": "SpaceX and xAI to Compete in Pentagon Contest for Autonomous Drone Tech",
-      "summary": "Score: 159, Comments: 37",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1r6i5cm/spacex_and_xai_to_compete_in_pentagon_contest_for/",
+      "headline": "MSFT losses",
+      "summary": "^(no bigger POS stock then this one)",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r7cf34/msft_losses/",
       "relevance_tags": [
-        "ai",
-        "spacex"
+        "stock"
       ],
       "sentiment": 0.0,
-      "confidence": 0.659,
-      "timestamp": 1771303157.762947,
+      "confidence": 0.64,
+      "timestamp": 1771378282.376203,
       "matched_markets": [],
-      "category": "culture",
+      "category": "economy",
       "raw_data": {
-        "score": 159,
-        "comments": 37,
+        "score": 140,
+        "comments": 81,
         "sub": "wallstreetbets"
       },
       "score": 59
     },
     {
-      "id": "037516b6ef59c5b9",
-      "source": "reddit/r/wallstreetbets",
-      "headline": "Dalio\u2019s Bridgewater invests $253 million in NVDA",
-      "summary": "https://stocks.apple.com/AXaABk3b5QT-bKfZrhbuqyQ\n\nInvestment made in 12/25 but disclosure made after Friday close. ",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1r6s8t7/dalios_bridgewater_invests_253_million_in_nvda/",
+      "id": "e670bfabbe4da61e",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "France Becomes Epicenter of Crypto-Related Kidnappings in Early 2026",
+      "summary": "Score: 151, Comments: 22",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r74i6q/france_becomes_epicenter_of_cryptorelated/",
       "relevance_tags": [
-        "stock"
+        "crypto"
       ],
       "sentiment": 0.0,
-      "confidence": 0.575,
-      "timestamp": 1771303157.7628648,
+      "confidence": 0.651,
+      "timestamp": 1771378284.0334048,
       "matched_markets": [],
-      "category": "economy",
+      "category": "crypto",
       "raw_data": {
-        "score": 75,
-        "comments": 30,
-        "sub": "wallstreetbets"
+        "score": 151,
+        "comments": 22,
+        "sub": "cryptocurrency"
       },
-      "score": 57
+      "score": 59
     },
     {
-      "id": "68c1ad96e0362407",
+      "id": "e20f85254799d699",
       "source": "reddit/r/wallstreetbets",
-      "headline": "Analyzing historical drops: is it actually reliable?",
-      "summary": "Hi everyone,\n\nI\u2019m a software engineer with a passion for finance and statistics, and I\u2019m currently working on a small personal project. I\u2019d like to get some feedback from the community to understand how valuable this approach could be in real trading/investing.\n\nIn short: I\u2019m analyzing all the significant single\u2011day drops of a stock (e.g., -6%, -7%, -10%) and measuring how the price behaved in the",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1r6hgqp/analyzing_historical_drops_is_it_actually_reliable/",
+      "headline": "What Are Your Moves Tomorrow, February 18, 2026",
+      "summary": "This post contains content not supported on old Reddit. [Click here to view the full post](https://sh.reddit.com/r/wallstreetbets/comments/1r7iiu1)",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r7iiu1/what_are_your_moves_tomorrow_february_18_2026/",
       "relevance_tags": [
-        "stock"
+        "ai"
       ],
       "sentiment": 0.0,
-      "confidence": 0.571,
-      "timestamp": 1771303157.7636049,
+      "confidence": 0.639,
+      "timestamp": 1771378282.3742101,
       "matched_markets": [],
-      "category": "economy",
+      "category": "culture",
       "raw_data": {
-        "score": 71,
-        "comments": 87,
+        "score": 139,
+        "comments": 2878,
         "sub": "wallstreetbets"
       },
-      "score": 57
+      "score": 58
     },
     {
-      "id": "190f4b1e58306698",
+      "id": "aedd16d4b25aacf7",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "Saylor confirms Strategy will survive Bitcoin crashing to $8,000 \u2013 but can it escape the slow bleed of dilution?",
+      "summary": "Score: 137, Comments: 69",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r7hwin/saylor_confirms_strategy_will_survive_bitcoin/",
+      "relevance_tags": [
+        "bitcoin"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.637,
+      "timestamp": 1771378284.033244,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 137,
+        "comments": 69,
+        "sub": "cryptocurrency"
+      },
+      "score": 58
+    },
+    {
+      "id": "adb9a642fc1522dc",
       "source": "tavily",
-      "headline": "Latest & Breaking US Political News",
+      "headline": "Politics - AP News",
       "summary": "Read breaking political news today from The Associated Press. Get the updates from AP News so you won't miss the latest in US political news.",
       "url": "https://apnews.com/politics",
       "relevance_tags": [],
       "sentiment": -1.0,
       "confidence": 0.7,
-      "timestamp": 1771303142.0733209,
+      "timestamp": 1771378268.123698,
       "matched_markets": [],
       "category": "other",
       "raw_data": {},
       "score": 56
     },
     {
-      "id": "468a142e8525d066",
+      "id": "8ef09e2f93aa9071",
+      "source": "tavily",
+      "headline": "USA TODAY - Breaking News and Latest News Today",
+      "summary": "Fans flock to Yorkshire. Backstreet Boys talk Vegas residency. What happened to Miss J? 'ANTM' star gives health update in docuseries.",
+      "url": "https://www.usatoday.com/",
+      "relevance_tags": [],
+      "sentiment": -1.0,
+      "confidence": 0.7,
+      "timestamp": 1771378273.671005,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {},
+      "score": 56
+    },
+    {
+      "id": "377aa6a067fc2f85",
       "source": "reddit/r/sportsbook",
-      "headline": "Small College Baseball Loophole found with MGM, possibly others?",
-      "summary": "In College baseball, most games have a Mercy Rule. If a team is winning by ten or more after the 7th or 8th inning, the game is ended based on the Mercy Rule. MGM considers these as \u201cno contest\u201d and the wager is cancelled because it did not go the full 9 inning. \n\nIf you bet a team, example Oklahoma -3 (or the opponent +3) and they mercy rule a team after seven innings, you do not win (or lose) yo",
-      "url": "https://reddit.com/r/sportsbook/comments/1r6c27g/small_college_baseball_loophole_found_with_mgm/",
+      "headline": "NCAABB College Basketball Betting and Picks - 2/17/26 (Tuesday)",
+      "summary": "NCAABB College Basketball Betting Picks and College Basketball Sports Betting Odds for Tuesday, February 17, 2026\n\n\n|Time (ET)| Teams | ML | Spread | Total |\n|:-:|:-:|:-:|:-:|:-:|\n|2/17|Boston College|[+550](https://sportsbook.link/)|[+11.5 -115](https://sportsbook.link/)|[o147.5 -115](https://sportsbook.link/)|\n|6:00 PM|Florida State|[-800](https://sportsbook.link/)|[-11.5 -105](https://sportsboo",
+      "url": "https://reddit.com/r/sportsbook/comments/1r6urk9/ncaabb_college_basketball_betting_and_picks_21726/",
       "relevance_tags": [
-        "baseball",
-        "game"
+        "basketball"
       ],
       "sentiment": 0.0,
-      "confidence": 0.521,
-      "timestamp": 1771303155.8237498,
+      "confidence": 0.525,
+      "timestamp": 1771378280.278602,
       "matched_markets": [],
       "category": "sports",
       "raw_data": {
-        "score": 21,
-        "comments": 22,
+        "score": 25,
+        "comments": 554,
         "sub": "sportsbook"
       },
       "score": 56
     },
     {
-      "id": "3dcdc1bc18309f6f",
-      "source": "reddit/r/cryptocurrency",
-      "headline": "Security risks of holding a large amount of USDT long-term?",
-      "summary": "I\u2019m considering holding a significant amount of USDT long term and want to understand the real risks beyond price volatility.\n\nMy concerns are:\n\n\u2013 Risk of issuer freezing funds\n\n\u2013 Exchange account freezes\n\n\u2013 Wallet security and self-custody risks\n\n\u2013 Smart contract risks depending on the chain\n\nFor people experienced with large holdings:\n\n\u2013 What are the biggest real-world risks?\n\n\u2013 What storage set",
-      "url": "https://reddit.com/r/CryptoCurrency/comments/1r6b9g4/security_risks_of_holding_a_large_amount_of_usdt/",
+      "id": "358931c57ecc2b7e",
+      "source": "reddit/r/sportsbook",
+      "headline": "Soccer Betting and Picks Daily Discussion - 2/17/26 (Tuesday)",
+      "summary": "Score: 20, Comments: 165",
+      "url": "https://reddit.com/r/sportsbook/comments/1r6nm58/soccer_betting_and_picks_daily_discussion_21726/",
       "relevance_tags": [
-        "sec",
+        "soccer",
         "ai"
       ],
       "sentiment": 0.0,
-      "confidence": 0.529,
-      "timestamp": 1771303158.791054,
+      "confidence": 0.52,
+      "timestamp": 1771378280.278641,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {
+        "score": 20,
+        "comments": 165,
+        "sub": "sportsbook"
+      },
+      "score": 56
+    },
+    {
+      "id": "1c43efcbb48fcb93",
+      "source": "reddit/r/sportsbook",
+      "headline": "College Baseball Betting and Picks - 2/17/26 (Tuesday)",
+      "summary": "Score: 5, Comments: 23",
+      "url": "https://reddit.com/r/sportsbook/comments/1r6usdt/college_baseball_betting_and_picks_21726_tuesday/",
+      "relevance_tags": [
+        "baseball"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.505,
+      "timestamp": 1771378280.278677,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {
+        "score": 5,
+        "comments": 23,
+        "sub": "sportsbook"
+      },
+      "score": 55
+    },
+    {
+      "id": "3cc4051e94c597e8",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "Privacy Is Crypto's Next Biggest Unlock - AMA with Varun Kabra, CGO at Concordium",
+      "summary": "https://preview.redd.it/r0q0b92p0vjg1.jpg?width=800&amp;format=pjpg&amp;auto=webp&amp;s=ac66c1d277c8895d85cd620e38ac8682e96e717d\n\ngm, Varun from Concordium here (r/ConcordiumCommunity).  \n  \nI\u2019ll keep it short \u2014 you\u2019ve probably seen the privacy conversation is absolutely everywhere rn. Vitalik dropping long essays, CZ tweeting takes, CT shitposting nonstop. Everyone agrees privacy is the next majo",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r69t85/privacy_is_cryptos_next_biggest_unlock_ama_with/",
+      "relevance_tags": [
+        "crypto",
+        "sol"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.513,
+      "timestamp": 1771378284.033109,
       "matched_markets": [],
       "category": "crypto",
       "raw_data": {
-        "score": 29,
-        "comments": 52,
+        "score": 13,
+        "comments": 21,
         "sub": "cryptocurrency"
       },
-      "score": 56
+      "score": 55
     },
     {
       "id": "694133edf9d40b71",
@@ -1581,108 +1604,70 @@
       "url": "https://reddit.com/r/sportsbook/comments/1r67vpj/genesis_invitational_2026_golf/",
       "relevance_tags": [],
       "sentiment": -1.0,
-      "confidence": 0.542,
-      "timestamp": 1771303155.8233411,
+      "confidence": 0.55,
+      "timestamp": 1771378280.278167,
       "matched_markets": [],
       "category": "other",
       "raw_data": {
-        "score": 42,
-        "comments": 69,
+        "score": 50,
+        "comments": 110,
         "sub": "sportsbook"
       },
       "score": 52
     },
     {
-      "id": "a4633ed9c8798b5b",
-      "source": "reddit/r/cryptocurrency",
-      "headline": "The \"Black Box\" Subnet is Here: ICP Enters the Era of Confidential Computing",
-      "summary": "Proposal 140407 has passed, creating the first TEE-enabled subnet. Here is why \"hardware-rooted trust\" is the missing link for enterprise adoption.\n\nThe News\n\n A massive fundamental upgrade just went live on the Internet Computer.\n\nProposal 140407 has successfully executed, creating the network's first TEE-enabled subnet. Starting with a cluster of 7 nodes, this subnet represents a transition from",
-      "url": "https://reddit.com/r/CryptoCurrency/comments/1r6n2gh/the_black_box_subnet_is_here_icp_enters_the_era/",
-      "relevance_tags": [],
-      "sentiment": 1.0,
-      "confidence": 0.548,
-      "timestamp": 1771303158.790327,
-      "matched_markets": [],
-      "category": "other",
-      "raw_data": {
-        "score": 48,
-        "comments": 20,
-        "sub": "cryptocurrency"
-      },
-      "score": 52
-    },
-    {
-      "id": "76e98294dd5dcc88",
+      "id": "39a33f2f7ae23186",
       "source": "reddit/r/politics",
-      "headline": "911 call describes woman screaming to ICE agents that she\u2019s a U.S. citizen",
-      "summary": "Score: 6471, Comments: 200",
-      "url": "https://reddit.com/r/politics/comments/1r6kyrh/911_call_describes_woman_screaming_to_ice_agents/",
+      "headline": "FCC Attempt to Kill Stephen Colbert Interview Completely Backfires",
+      "summary": "Score: 7130, Comments: 187",
+      "url": "https://reddit.com/r/politics/comments/1r7kude/fcc_attempt_to_kill_stephen_colbert_interview/",
       "relevance_tags": [],
       "sentiment": 0.0,
       "confidence": 0.8,
-      "timestamp": 1771303156.748459,
+      "timestamp": 1771378281.159752,
       "matched_markets": [],
       "category": "other",
       "raw_data": {
-        "score": 6471,
-        "comments": 200,
+        "score": 7130,
+        "comments": 187,
         "sub": "politics"
       },
       "score": 47
     },
     {
-      "id": "83fc23d0dcd7fa31",
+      "id": "2875bee4e044832c",
       "source": "reddit/r/politics",
-      "headline": "Conservative leader calls MAGA a \"rotting carcass\" that has already lost the culture war",
-      "summary": "Score: 11645, Comments: 377",
-      "url": "https://reddit.com/r/politics/comments/1r6dyt8/conservative_leader_calls_maga_a_rotting_carcass/",
+      "headline": "$56 trillion national debt leading to a spiraling crisis: Budget watchdog warns the U.S. is walking a crumbling path",
+      "summary": "Score: 5512, Comments: 404",
+      "url": "https://reddit.com/r/politics/comments/1r7izg9/56_trillion_national_debt_leading_to_a_spiraling/",
       "relevance_tags": [],
       "sentiment": 0.0,
       "confidence": 0.8,
-      "timestamp": 1771303156.7488582,
+      "timestamp": 1771378281.160168,
       "matched_markets": [],
       "category": "other",
       "raw_data": {
-        "score": 11645,
-        "comments": 377,
+        "score": 5512,
+        "comments": 404,
         "sub": "politics"
       },
       "score": 47
     },
     {
-      "id": "e0d823d0bb793ee2",
+      "id": "e7a475b773754535",
       "source": "reddit/r/politics",
-      "headline": "Bondi Blasted After Adding Elvis and Marilyn Monroe to Epstein List",
-      "summary": "Score: 9578, Comments: 432",
-      "url": "https://reddit.com/r/politics/comments/1r6elt6/bondi_blasted_after_adding_elvis_and_marilyn/",
+      "headline": "Stephen Colbert Says CBS Blocked James Talarico Interview Over FCC \u2018Equal Time\u2019 Fears",
+      "summary": "Score: 29478, Comments: 1239",
+      "url": "https://reddit.com/r/politics/comments/1r743qw/stephen_colbert_says_cbs_blocked_james_talarico/",
       "relevance_tags": [],
       "sentiment": 0.0,
       "confidence": 0.8,
-      "timestamp": 1771303156.748974,
+      "timestamp": 1771378281.160414,
       "matched_markets": [],
       "category": "other",
       "raw_data": {
-        "score": 9578,
-        "comments": 432,
-        "sub": "politics"
-      },
-      "score": 47
-    },
-    {
-      "id": "0d0c359c5ed9e477",
-      "source": "reddit/r/politics",
-      "headline": "New Mexico Approves Comprehensive Probe of Epstein\u2019s Zorro Ranch",
-      "summary": "Score: 1899, Comments: 47",
-      "url": "https://reddit.com/r/politics/comments/1r6r8zj/new_mexico_approves_comprehensive_probe_of/",
-      "relevance_tags": [],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771303156.7490969,
-      "matched_markets": [],
-      "category": "other",
-      "raw_data": {
-        "score": 1899,
-        "comments": 47,
+        "score": 29478,
+        "comments": 1239,
         "sub": "politics"
       },
       "score": 47
@@ -1691,17 +1676,36 @@
       "id": "01655dbf9087bfa9",
       "source": "reddit/r/wallstreetbets",
       "headline": "Many consumer electronics manufacturers 'will go bankrupt' by the end of 2026 thanks to the RAMpocalypse, Phison CEO reportedly says",
-      "summary": "Score: 1982, Comments: 182",
+      "summary": "Score: 12231, Comments: 856",
       "url": "https://reddit.com/r/wallstreetbets/comments/1r6ud2g/many_consumer_electronics_manufacturers_will_go/",
       "relevance_tags": [],
       "sentiment": 0.0,
       "confidence": 0.8,
-      "timestamp": 1771303157.760094,
+      "timestamp": 1771378282.375082,
       "matched_markets": [],
       "category": "other",
       "raw_data": {
-        "score": 1982,
-        "comments": 182,
+        "score": 12231,
+        "comments": 856,
+        "sub": "wallstreetbets"
+      },
+      "score": 47
+    },
+    {
+      "id": "168b961bd75b676c",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "($11,611.03) CVNA options loss wash sales resulting in tax bill going for $0 to $7,445. Cant make this shit up.",
+      "summary": "Had a $11,611.03 loss trading CVNA call options in 2025. It generated wash sales turning it in to $7,445 taxes owing on this loss. Still trying to process and understand how wash sales can f\\*ck option traders and if im stuck with this tax bill on my loss. \n\nLooking at my fidelity ledger and adding up the net proceeds of buying and selling of all CVNA call options its: -$11,611.03. \n\nLooking at th",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r73yj5/1161103_cvna_options_loss_wash_sales_resulting_in/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771378282.376707,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 300,
+        "comments": 85,
         "sub": "wallstreetbets"
       },
       "score": 47
@@ -1710,142 +1714,138 @@
       "id": "2bb258d3deeb25ac",
       "source": "reddit/r/cryptocurrency",
       "headline": "Same Story, different Cycle",
-      "summary": "Score: 840, Comments: 56",
+      "summary": "Score: 1665, Comments: 64",
       "url": "https://reddit.com/r/CryptoCurrency/comments/1r6gn9q/same_story_different_cycle/",
       "relevance_tags": [],
       "sentiment": 0.0,
       "confidence": 0.8,
-      "timestamp": 1771303158.789998,
+      "timestamp": 1771378284.03354,
       "matched_markets": [],
       "category": "other",
       "raw_data": {
-        "score": 840,
-        "comments": 56,
+        "score": 1665,
+        "comments": 64,
         "sub": "cryptocurrency"
       },
       "score": 47
-    },
-    {
-      "id": "83ac9b30bae8ba18",
-      "source": "reddit/r/cryptocurrency",
-      "headline": "XRP reserves on Binance are collapsing",
-      "summary": "Score: 426, Comments: 96",
-      "url": "https://reddit.com/r/CryptoCurrency/comments/1r67au5/xrp_reserves_on_binance_are_collapsing/",
-      "relevance_tags": [],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771303158.790144,
-      "matched_markets": [],
-      "category": "other",
-      "raw_data": {
-        "score": 426,
-        "comments": 96,
-        "sub": "cryptocurrency"
-      },
-      "score": 47
-    },
-    {
-      "id": "8ef09e2f93aa9071",
-      "source": "tavily",
-      "headline": "USA TODAY - Breaking News and Latest News Today",
-      "summary": "'Pure chaos.' 2 killed, 3 wounded in shooting at... Top Headlines. Ilia Malinin makes first public statement since devastating Olympics",
-      "url": "https://www.usatoday.com/",
-      "relevance_tags": [],
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "timestamp": 1771303149.204133,
-      "matched_markets": [],
-      "category": "other",
-      "raw_data": {},
-      "score": 44
-    },
-    {
-      "id": "51e6e62c6bbe7718",
-      "source": "tavily",
-      "headline": "ABC News - Breaking News, Latest News and Videos",
-      "summary": "2 killed, several injured in 'targeted' shooting at ice skating rink: Police \u00b7 2 passengers banned for life after brawl on plane \u00b7 2 killed, several injured in '",
-      "url": "https://abcnews.com/",
-      "relevance_tags": [],
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "timestamp": 1771303149.205493,
-      "matched_markets": [],
-      "category": "other",
-      "raw_data": {},
-      "score": 44
-    },
-    {
-      "id": "709e3d151e4c2f20",
-      "source": "tavily",
-      "headline": "Latest U.S. News | Top headlines from the USA",
-      "summary": "29 mins ago. New Mexico approves comprehensive probe of Epstein's Zorro Ranch \u00b7 51 mins ago. US judge tells National Park Service to reinstall Philadelphia",
-      "url": "https://www.reuters.com/world/us/",
-      "relevance_tags": [],
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "timestamp": 1771303149.20576,
-      "matched_markets": [],
-      "category": "other",
-      "raw_data": {},
-      "score": 44
     },
     {
       "id": "f56d12e2b0972298",
       "source": "reddit/r/wallstreetbets",
       "headline": "Weekly Earnings Thread 2/16 - 2/20",
-      "summary": "Score: 209, Comments: 287",
+      "summary": "Score: 239, Comments: 515",
       "url": "https://reddit.com/r/wallstreetbets/comments/1r3xxhx/weekly_earnings_thread_216_220/",
       "relevance_tags": [],
       "sentiment": 0.0,
-      "confidence": 0.709,
-      "timestamp": 1771303157.759836,
+      "confidence": 0.739,
+      "timestamp": 1771378282.373996,
       "matched_markets": [],
       "category": "other",
       "raw_data": {
-        "score": 209,
-        "comments": 287,
+        "score": 239,
+        "comments": 515,
         "sub": "wallstreetbets"
       },
+      "score": 45
+    },
+    {
+      "id": "85edaa795160f8db",
+      "source": "tavily",
+      "headline": "Breaking Political News, Video & Analysis-ABC News",
+      "summary": "US military strikes 3 more boats in Eastern Pacific, Caribbean, killing 11: SOUTHCOM. In 19 hours ; Jesse Jackson 'changed American politics,' Al Sharpton says.",
+      "url": "https://abcnews.com/politics",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771378268.124081,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {},
       "score": 44
     },
     {
-      "id": "20374ed3878c4704",
-      "source": "reddit/r/wallstreetbets",
-      "headline": "Bank of America (BAC) just traded 17.76 on Schwab\u2019s 24hr session",
-      "summary": "Classic error by someone.   I logged on and saw BAC was 17.75@17.76.    I thought, \u201cMaybe they just split 3 for 1\u201d, and I started looking for the split news.   \n\nAnd lo and behold it traded there for 2 shares.  ",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1r6tymg/bank_of_america_bac_just_traded_1776_on_schwabs/",
+      "id": "54dddbcfc4793075",
+      "source": "tavily",
+      "headline": "TIME | Current & Breaking News | National & World Updates",
+      "summary": "Investigation Launched into Epstein's Zorro Ranch. New Mexico lawmakers will hear survivor testimony to uncover what happened at Epstein's ranch, where many",
+      "url": "https://time.com/",
       "relevance_tags": [],
       "sentiment": 0.0,
-      "confidence": 0.677,
-      "timestamp": 1771303157.761415,
+      "confidence": 0.7,
+      "timestamp": 1771378273.6711848,
       "matched_markets": [],
       "category": "other",
-      "raw_data": {
-        "score": 177,
-        "comments": 62,
-        "sub": "wallstreetbets"
-      },
-      "score": 43
+      "raw_data": {},
+      "score": 44
     },
     {
-      "id": "bc83de556e001f69",
-      "source": "reddit/r/wallstreetbets",
-      "headline": "[WSB Version] $NVDA Q4 Earnings Analysis &amp; Positions",
-      "summary": "**TL;DR at the bottom--This is the WSB version; if you are more sophisticated, disregard**\n\n# Positions:\n\n[Current Positions Showing 200 Shares and 1 $185 Call](https://preview.redd.it/boyn81kq2yjg1.jpg?width=1179&amp;format=pjpg&amp;auto=webp&amp;s=98f821fe575bb47e79c55330d6cbccf398911b21)\n\nThe plan is simple. This will be the quarter that $NVDA actually surges when the company reports outstandin",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1r6qc24/wsb_version_nvda_q4_earnings_analysis_positions/",
+      "id": "7e3af7f989ef9460",
+      "source": "tavily",
+      "headline": "World news - breaking news, video, headlines and opinion",
+      "summary": "Amazon delivery van gets stuck after following GPS onto 'dangerous' mudflats \u00b7 Israeli move to designate large parts of West Bank as state land condemned as 'de",
+      "url": "https://www.cnn.com/world",
       "relevance_tags": [],
       "sentiment": 0.0,
-      "confidence": 0.55,
-      "timestamp": 1771303157.763061,
+      "confidence": 0.7,
+      "timestamp": 1771378273.671406,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {},
+      "score": 44
+    },
+    {
+      "id": "76074430b8020f8c",
+      "source": "tavily",
+      "headline": "U.S. News | Latest National News, Videos & Photos - ABC News",
+      "summary": "U.S. News | National News \u00b7 Driver fleeing ICE officers crashes, killing a Georgia teacher, authorities say \u00b7 Bayer agrees to $7.25B proposed settlement over",
+      "url": "https://abcnews.com/us",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771378273.671576,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {},
+      "score": 44
+    },
+    {
+      "id": "5f0f68ef38a9c07d",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Palo Alto Networks slumps 6% as third quarter profit guidance falls short",
+      "summary": "Score: 133, Comments: 27",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r7lxvx/palo_alto_networks_slumps_6_as_third_quarter/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.633,
+      "timestamp": 1771378282.375768,
       "matched_markets": [],
       "category": "other",
       "raw_data": {
-        "score": 50,
-        "comments": 47,
+        "score": 133,
+        "comments": 27,
         "sub": "wallstreetbets"
       },
-      "score": 40
+      "score": 42
+    },
+    {
+      "id": "c710eab87cce3a7f",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "What happened to Cathie Wood?",
+      "summary": "What happened to Cathie Wood and her ARK funds? During the pandemic, she was talked about constantly, but now she\u2019s barely mentioned. Meanwhile, her funds seem to keep underperforming.",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r7ognb/what_happened_to_cathie_wood/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.59,
+      "timestamp": 1771378282.375974,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 90,
+        "comments": 102,
+        "sub": "wallstreetbets"
+      },
+      "score": 41
     }
   ],
-  "updated": 1771303158.808928
+  "updated": 1771378284.058387
 }

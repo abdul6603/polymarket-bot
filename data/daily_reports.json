@@ -98,5 +98,86 @@
         "detail": "Hit a 8-trade losing streak. Safety rails should have reduced sizing or paused trading after 3 consecutive losses."
       }
     ]
+  },
+  {
+    "date": "2026-02-17",
+    "generated_at": "2026-02-17T00:00:16.812189-05:00",
+    "summary": {
+      "total_trades": 21,
+      "resolved": 21,
+      "pending": 0,
+      "stale": 0,
+      "wins": 16,
+      "losses": 5,
+      "win_rate": 76.2,
+      "pnl": 32.93,
+      "avg_edge": 17.54,
+      "avg_confidence": 0.5136
+    },
+    "by_asset": {
+      "ethereum": {
+        "wins": 8,
+        "losses": 1,
+        "pnl": 20.9
+      },
+      "bitcoin": {
+        "wins": 7,
+        "losses": 2,
+        "pnl": 12.6
+      },
+      "solana": {
+        "wins": 1,
+        "losses": 2,
+        "pnl": -0.58
+      }
+    },
+    "by_timeframe": {
+      "15m": {
+        "wins": 16,
+        "losses": 5
+      }
+    },
+    "by_direction": {
+      "up": {
+        "wins": 2,
+        "losses": 3
+      },
+      "down": {
+        "wins": 14,
+        "losses": 2
+      }
+    },
+    "regime_distribution": {
+      "extreme_fear": 21
+    },
+    "strategy": {
+      "engine": "11-indicator ensemble + ConvictionEngine",
+      "conviction_scoring": "9-layer evidence (0-100)",
+      "safety_rails": "losing streak 0.6x, low WR 0.7x, extreme fear 0.75x, $50 daily loss cap",
+      "sizing": "conviction-based $5-$25",
+      "assets": [
+        "ethereum",
+        "bitcoin",
+        "solana"
+      ],
+      "timeframes": [
+        "15m"
+      ],
+      "regime": "extreme_fear"
+    },
+    "mistakes": [
+      {
+        "type": "approach",
+        "severity": "high",
+        "title": "Losing Streak of 3",
+        "detail": "Hit a 3-trade losing streak. Safety rails should have reduced sizing or paused trading after 3 consecutive losses."
+      },
+      {
+        "type": "approach",
+        "severity": "high",
+        "title": "SOLANA Underperforming (33% WR)",
+        "detail": "SOLANA: 1W-2L (33%). Consider reducing exposure or disabling this asset."
+      }
+    ]
   }
 ]

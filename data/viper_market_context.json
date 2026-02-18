@@ -1,1 +1,636 @@
-{}
+{
+  "0x3acb42d4a4da859a82ec3c78e6be641489985672ea7f28ae73da7c253af32fa8": [
+    {
+      "headline": "2025 Canadian federal election",
+      "summary": "The 2025 Canadian federal election was held on April 28 to elect members of the House of Commons to the 45th Canadian Parliament.",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.263,
+      "timestamp": 1771363785.6524282
+    },
+    {
+      "headline": "US military used Anthropic's AI model Claude in Venezuela ...",
+      "summary": "Claude, the AI model developed by Anthropic, was used by the US military during its operation to kidnap Nicol\u00e1s Maduro from Venezuela, the Wall",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 0.256,
+      "timestamp": 1771332190.165767
+    },
+    {
+      "headline": "Anthropic clinches $380 billion valuation after $30 billion ... - Reuters",
+      "summary": "Feb 12 (Reuters) - Anthropic has raised $30 billion in its latest funding round, more than doubling the Claude chatbot maker's valuation to",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 0.252,
+      "timestamp": 1771331215.196189
+    },
+    {
+      "headline": "Anthropic clinches $380 billion valuation after $30 ...",
+      "summary": "Feb 12 (Reuters) - Anthropic has raised $30 billion in its latest funding round, more than doubling the Claude chatbot maker's valuation to",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 0.252,
+      "timestamp": 1771332190.165961
+    },
+    {
+      "headline": "Polymarket: GTA VI Release by June 2026? Odds Favor Early Launch",
+      "summary": "If you place a $1,000 bet on GTA VI being released before June 2026, the payout would be $1,600, reflecting the odds favoring an earlier launch.",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 0.251,
+      "timestamp": 1771332188.479585
+    },
+    {
+      "headline": "Canada federal election 2025 live results | CBC News",
+      "summary": "Who will form the next government in Canada? Follow live election results on April 28, with breakdowns from your riding and races across the",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.251,
+      "timestamp": 1771337358.669801
+    },
+    {
+      "headline": "Anthropic launches Claude Opus 4.6 as AI moves toward a 'vibe ...",
+      "summary": "Anthropic launched its latest AI model, Claude Opus 4.6, which is better at coding, sustaining tasks for longer and creating higher-quality",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 0.249,
+      "timestamp": 1771331215.194101
+    },
+    {
+      "headline": "AI Update, February 6, 2026: AI News and Views From the ...",
+      "summary": "Anthropic launched Claude Opus 4.6 as a direct upgrade designed to extend beyond coding into broader knowledge work. The model introduces a one-",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 0.249,
+      "timestamp": 1771332190.16551
+    }
+  ],
+  "0x534f933826463ea9eed59c0052eaed8caf6cf600c074b9988a276964a493605b": [
+    {
+      "headline": "Fortune Tech: The Pentagon goes to war with Anthropic",
+      "summary": "The situation apparently follows months of tough negotiations between the Pentagon and Anthropic over the ways its AI tools can be used by the",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 0.307,
+      "timestamp": 1771331967.303118
+    },
+    {
+      "headline": "The New York Times - Breaking News, US News, World News and ...",
+      "summary": "Top Stories \u00b7 Mamdani Administration. Rental Assistance Reversal \u00b7 Chief Tech Officer \u00b7 Social Services Chief Resigns \u00b7 Cold Weather Crisis \u00b7 A 31-Day Challenge.",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.302,
+      "timestamp": 1771373805.9177861
+    },
+    {
+      "headline": "Election Results - Virginia Dept. of Elections",
+      "summary": "The Department of Elections publishes unofficial results for all Virginia elections to its website on the night of the election.",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.167,
+      "timestamp": 1771375402.8139489
+    },
+    {
+      "headline": "2025 Election Results: Live",
+      "summary": "View interactive maps and live results for key U.S. elections in New Jersey, Virginia, California, New York City and Colorado.",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.16,
+      "timestamp": 1771375402.813766
+    },
+    {
+      "headline": "2025 Election Results: Live : NPR",
+      "summary": "View interactive maps and live results for key U.S. elections in New Jersey, Virginia, California, New York City and Colorado.",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.159,
+      "timestamp": 1771372847.306848
+    },
+    {
+      "headline": "Election 2025: News, results and analysis | CNN Politics",
+      "summary": "In the first major electoral test of the second Trump administration, Democrats swept the major races in Virginia, New Jersey and New York City,",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.154,
+      "timestamp": 1771369956.7283268
+    },
+    {
+      "headline": "Winter Olympics 2026 Betting and Picks Daily Discussion - 2/17/26 (Tuesday)",
+      "summary": "Winter Olympics 2026 Betting and Picks Daily Discussion - 2/17/26 (Tuesday)",
+      "source": "reddit/r/sportsbook",
+      "sentiment": 0.0,
+      "confidence": 0.502,
+      "relevance": 0.15,
+      "timestamp": 1771304752.97689
+    },
+    {
+      "headline": "Edmonton - CBC News",
+      "summary": "Edmonton main lineup ; Number of reports of people with weapons rises in Alberta after Tumbler Ridge shooting, say RCMP. Fakiha Baig. Canada -Edmonton ; Tumbler",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.15,
+      "timestamp": 1771307716.9768121
+    }
+  ],
+  "0xaebb47777170724e3028649418c3579c3b82ff3f6a04b1c8a18726e066971005": [
+    {
+      "headline": "NBC News: Breaking Headlines and Video Reports",
+      "summary": "In the latest turn of events, a federal judge ruled panels about people George Washington enslaved were wrongly removed at an exhibit in Philadelphia. Image:",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.306,
+      "timestamp": 1771307075.090816
+    },
+    {
+      "headline": "George W. Bush Can Suck It: He didn\u2019t throw shade at Trump; he whitewashed authoritarianism.",
+      "summary": "Score: 2211, Comments: 118",
+      "source": "reddit/r/politics",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 0.167,
+      "timestamp": 1771366115.793301
+    },
+    {
+      "headline": "Punchbowl News - Breaking news, US politics, Congress news",
+      "summary": "The latest news from the Capitol and leadership in Congress. Punchbowl News follows investigations, policies, hearings and more in Washington.",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.163,
+      "timestamp": 1771376035.5463219
+    },
+    {
+      "headline": "Latest U.S. opinion polls",
+      "summary": "Reuters/Ipsos Poll. Washington, DC, December 17, 2025 \u2013 The cost of living remains the top issue for Americans when it comes to the 2026",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.16,
+      "timestamp": 1771352324.490813
+    },
+    {
+      "headline": "Latest U.S. opinion polls | Ipsos",
+      "summary": "Reuters/Ipsos Poll. Washington, DC, December 17, 2025 \u2013 The cost of living remains the top issue for Americans when it comes to the 2026",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.16,
+      "timestamp": 1771364109.707194
+    },
+    {
+      "headline": "Iran partially shuts Strait of Hormuz as US, Iran hold nuclear talks",
+      "summary": "Iran's supreme leader warned that U.S. attempts to depose his government would fail, as Washington and Tehran began indirect talks in Geneva",
+      "source": "tavily",
+      "sentiment": -1.0,
+      "confidence": 0.8,
+      "relevance": 0.154,
+      "timestamp": 1771332044.82261
+    },
+    {
+      "headline": "The Washington Post - Breaking news and latest headlines, U.S. ...",
+      "summary": "Mapping U.S. strikes in the Caribbean and eastern Pacific \u00b7 Popular anger burns in Iran after crackdown, as Trump turns up pressure \u00b7 Rubio lends hand to",
+      "source": "tavily",
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "relevance": 0.153,
+      "timestamp": 1771364438.297699
+    },
+    {
+      "headline": "The Washington Post - Breaking news and latest headlines ...",
+      "summary": "Hegseth forces ouster of senior Army spokesman in latest internal clash \u00b7 U.S. offers more details on claim China conducted secret nuclear weapons test \u00b7 Groups",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.152,
+      "timestamp": 1771374124.514765
+    }
+  ],
+  "0xab4fc4ada9c56bb191662181ffc8841700941ffce7456ddec3eb2e95bf30e3c2": [
+    {
+      "headline": "CBS Sports - News, Live Scores, Schedules, Fantasy Games, Video ...",
+      "summary": "live scoring, news, stats, and player info. Scores 6:30PM PEAC. Michigan Wolverines versus Purdue Boilermakers 7:00PM. SMU +4.5 Louisville Cardinals versus SMU",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.494,
+      "timestamp": 1771366425.798018
+    }
+  ],
+  "0x672e2df608cf784913394aa03e5d6cc857b23f96d5927414f23b7a8bf8851a13": [
+    {
+      "headline": "CBS Sports - News, Live Scores, Schedules, Fantasy Games, Video ...",
+      "summary": "live scoring, news, stats, and player info. Scores 6:30PM PEAC. Michigan Wolverines versus Purdue Boilermakers 7:00PM. SMU +4.5 Louisville Cardinals versus SMU",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.494,
+      "timestamp": 1771366425.798018
+    }
+  ],
+  "0xcfdcad218e6496c30ecbe6914a0f0d665da9ddbdffc8ede9b802b8fb01bd07f3": [
+    {
+      "headline": "Polymarket Sues Massachusetts Over Prediction Market ...",
+      "summary": "# Polymarket Sues Massachusetts Over Prediction Market Crackdown. A state judge ordered Kalshi to cease sports wagering in Massachusetts within 30 days. Judge **Christopher Barry-Smith** rejected Kalshi\u2019s argument that federal CFTC oversight shields it from state gambling laws. Polymarket claims the",
+      "source": "tavily",
+      "sentiment": -1.0,
+      "confidence": 0.7,
+      "relevance": 0.181,
+      "timestamp": 1771322360.96709
+    },
+    {
+      "headline": "Polymarket Sues Massachusetts Over Prediction Market Crackdown",
+      "summary": "# Polymarket Sues Massachusetts Over Prediction Market Crackdown. A state judge ordered Kalshi to cease sports wagering in Massachusetts within 30 days. Judge **Christopher Barry-Smith** rejected Kalshi\u2019s argument that federal CFTC oversight shields it from state gambling laws. Polymarket claims the",
+      "source": "tavily",
+      "sentiment": -1.0,
+      "confidence": 0.7,
+      "relevance": 0.181,
+      "timestamp": 1771336716.061483
+    }
+  ],
+  "0x168959e2c7e997109d9bb7b6dd4c51d8a4f4fb0d8a65eb2b034d29e1240b15e1": [
+    {
+      "headline": "Live updates: Trump presidency news, US-Iran talks in Geneva - CNN",
+      "summary": "US and Iran nuclear talks underway in Geneva as Trump says he will be 'indirectly' involved. Updated 6:54 AM EST, Tue February 17, 2026.",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 0.5,
+      "timestamp": 1771331210.115753
+    },
+    {
+      "headline": "Exclusive: US military preparing for potentially weeks-long Iran ...",
+      "summary": "Iran's Revolutionary Guard has warned that in case of strikes on Iranian territory, it could retaliate against any U.S. military base. The U.S.",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 0.5,
+      "timestamp": 1771331210.116844
+    },
+    {
+      "headline": "Top Iran General Unveils War Plan Against U.S. - YouTube",
+      "summary": "... news & updates and exclusive stories, follow the Times of India. ... Top U.S. & World Headlines \u2014 February 16, 2026. Democracy Now! New.",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 0.495,
+      "timestamp": 1771331210.1163661
+    },
+    {
+      "headline": "The Washington Post - Breaking news and latest headlines, U.S. ...",
+      "summary": "Mapping U.S. strikes in the Caribbean and eastern Pacific \u00b7 Popular anger burns in Iran after crackdown, as Trump turns up pressure \u00b7 Rubio lends hand to",
+      "source": "tavily",
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "relevance": 0.493,
+      "timestamp": 1771364438.297699
+    },
+    {
+      "headline": "All Predictions & Real-Time Odds | Polymarket",
+      "summary": "Polymarket is the world's largest prediction market, where you can stay informed and profit from your knowledge by trading on things related to breaking news, politics, sports, elections, crypto, finance, tech, culture, including topics like All. Polymarket currently hosts 6800 active markets for Al",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.477,
+      "timestamp": 1771361809.801156
+    },
+    {
+      "headline": "U.S. and Iran to hold a second round of nuclear talks in Geneva",
+      "summary": "GENEVA \u2014 The U.S. and Iran are expected to hold their second round of talks about Iran's nuclear program Tuesday in Geneva as the United",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 0.261,
+      "timestamp": 1771331210.115485
+    },
+    {
+      "headline": "US and Iran to hold a second round of nuclear talks in Geneva",
+      "summary": "GENEVA (AP) \u2014 The U.S. and Iran are expected to hold their second round of talks about Iran's nuclear program Tuesday in Geneva as the United",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 0.261,
+      "timestamp": 1771332044.821642
+    },
+    {
+      "headline": "[PDF] results.pdf - February 2026 Special Election",
+      "summary": "Election Results. February 10, 2026. Unofficial Election Results, Updated 02/13/2026. School. Bellevue School District No. 405. Ballots Counted: 21,957.",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.258,
+      "timestamp": 1771328732.344873
+    }
+  ],
+  "0xb0ee0e0d4a0671c24b761637f62da2b5235fa85e51fac26f4cab0f11b83fbfa1": [
+    {
+      "headline": "Fortune Tech: The Pentagon goes to war with Anthropic",
+      "summary": "The situation apparently follows months of tough negotiations between the Pentagon and Anthropic over the ways its AI tools can be used by the",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 0.254,
+      "timestamp": 1771331967.303118
+    },
+    {
+      "headline": "The New York Times - Breaking News, US News, World News and ...",
+      "summary": "Top Stories \u00b7 Mamdani Administration. Rental Assistance Reversal \u00b7 Chief Tech Officer \u00b7 Social Services Chief Resigns \u00b7 Cold Weather Crisis \u00b7 A 31-Day Challenge.",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.25,
+      "timestamp": 1771373805.9177861
+    },
+    {
+      "headline": "Winter Olympics 2026 Betting and Picks Daily Discussion - 2/17/26 (Tuesday)",
+      "summary": "Winter Olympics 2026 Betting and Picks Daily Discussion - 2/17/26 (Tuesday)",
+      "source": "reddit/r/sportsbook",
+      "sentiment": 0.0,
+      "confidence": 0.502,
+      "relevance": 0.15,
+      "timestamp": 1771304752.97689
+    },
+    {
+      "headline": "Edmonton - CBC News",
+      "summary": "Edmonton main lineup ; Number of reports of people with weapons rises in Alberta after Tumbler Ridge shooting, say RCMP. Fakiha Baig. Canada -Edmonton ; Tumbler",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.15,
+      "timestamp": 1771307716.9768121
+    },
+    {
+      "headline": "Latest Stories in Edmonton AB - Daily Hive",
+      "summary": "Wondering what's going on in Edmonton today? Daily Hive has you covered! Check here for the latest stories happening in Edmonton right now.",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.15,
+      "timestamp": 1771307716.97688
+    },
+    {
+      "headline": "Local & Canadian Politics News and Headlines - Global News",
+      "summary": "Ottawa expects Ukrainian emergency visa holders to return after war ends. Canada. 10 hours \u00b7 Liberals' plan for defence industry includes pledge of 125K jobs.",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.15,
+      "timestamp": 1771308985.7495449
+    },
+    {
+      "headline": "Los Angeles Times: News from California, across the nation and world",
+      "summary": "The L.A. Times is a leading source of breaking news, entertainment, sports, politics, and more for Southern California and the world.",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.15,
+      "timestamp": 1771309311.321558
+    },
+    {
+      "headline": "Breaking News - Headlines & Top Stories | The Star",
+      "summary": "Politics \u00b7 AI minister seeks new investments through visits to Germany, Saudi Arabia, India. 9 hrs ago \u00b7 Ukrainian emergency visa holders expected to return after",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.15,
+      "timestamp": 1771309944.424274
+    }
+  ],
+  "0x741fb7665ab8f7d46738b6f4d6b221f66a8cc2f404c00a76f9df76596002d577": [
+    {
+      "headline": "Election Results | New York State Board of Elections",
+      "summary": "Election Results. On this page. Election Results; Ballot Certifications",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.17,
+      "timestamp": 1771332880.050675
+    },
+    {
+      "headline": "Latest Polls 2025, 2026, 2028",
+      "summary": "Stay up to date on all the latest 2025, 2026, 2028 election and state of the union polls. Gain valuable insights into the evolving political landscape and",
+      "source": "tavily",
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "relevance": 0.163,
+      "timestamp": 1771352324.490598
+    },
+    {
+      "headline": "Latest Polls 2025, 2026, 2028 | RealClearPolling",
+      "summary": "Stay up to date on all the latest 2025, 2026, 2028 election and state of the union polls. Gain valuable insights into the evolving political landscape and",
+      "source": "tavily",
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "relevance": 0.161,
+      "timestamp": 1771364109.70711
+    },
+    {
+      "headline": "Poll Results | Quinnipiac University Poll",
+      "summary": "Quinnipiac University Poll's list of recent and past poll results for political races, state and national elections, and issues of public concern.",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.16,
+      "timestamp": 1771352324.4907331
+    },
+    {
+      "headline": "Prior Elections - California Secretary of State",
+      "summary": "Prior Statewide Elections \u00b7 Statewide Election Results \u00b7 Special Elections \u00b7 County, City, School District & Ballot Measure Election Results",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.16,
+      "timestamp": 1771366431.607268
+    },
+    {
+      "headline": "Election Night Reporting Dashboard",
+      "summary": "Official election results for past elections can be found here. Blue and White Tennessee State Tristar Logo. Tennessee Secretary of State. \u00a9 2026 Tennessee",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.158,
+      "timestamp": 1771349014.730464
+    },
+    {
+      "headline": "Election results and voting information",
+      "summary": "Ballot access is controlled by each state according to state law, even for federal elections. 2024 Presidential Candidates on the General Election Ballots,",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.158,
+      "timestamp": 1771372207.9092212
+    },
+    {
+      "headline": "Quinnipiac University Poll: Home Page",
+      "summary": "Quinnipiac University Poll regularly surveys residents in many states and nationwide about political races, state and national elections, and issues of",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.158,
+      "timestamp": 1771375723.972428
+    }
+  ],
+  "0x24d180848e3207fac1fc34fe576157d4bf5039c0103b726c9d5f327f8660f0c0": [
+    {
+      "headline": "Fortune Tech: The Pentagon goes to war with Anthropic",
+      "summary": "The situation apparently follows months of tough negotiations between the Pentagon and Anthropic over the ways its AI tools can be used by the",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 0.307,
+      "timestamp": 1771331967.303118
+    },
+    {
+      "headline": "The New York Times - Breaking News, US News, World News and ...",
+      "summary": "Top Stories \u00b7 Mamdani Administration. Rental Assistance Reversal \u00b7 Chief Tech Officer \u00b7 Social Services Chief Resigns \u00b7 Cold Weather Crisis \u00b7 A 31-Day Challenge.",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.302,
+      "timestamp": 1771373805.9177861
+    },
+    {
+      "headline": "Colbert accuses CBS of blocking on-air interview with Texas Democrat James Talarico",
+      "summary": "Score: 14749, Comments: 415",
+      "source": "reddit/r/politics",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 0.165,
+      "timestamp": 1771354338.662196
+    },
+    {
+      "headline": "Latest Poll - Texas Politics",
+      "summary": "The University of Texas/Texas Politics Project survey of 1200 registered voters was conducted from December 9 to 16, 2025 and has an overall margin of error of",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.161,
+      "timestamp": 1771370611.627588
+    },
+    {
+      "headline": "Latest Poll",
+      "summary": "The University of Texas/Texas Politics Project survey of 1200 registered voters was conducted from December 9 to 16, 2025 and has an overall margin of error of",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.161,
+      "timestamp": 1771374126.223954
+    },
+    {
+      "headline": "Colbert Exposes CBS for Collaborating With the Trump Administration - The network pulled Stephen Colbert\u2019s interview with Texas Democratic Senate candidate James Talarico amid pressure from the FCC.",
+      "summary": "Score: 1309, Comments: 49",
+      "source": "reddit/r/politics",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 0.154,
+      "timestamp": 1771354338.663075
+    },
+    {
+      "headline": "Winter Olympics 2026 Betting and Picks Daily Discussion - 2/17/26 (Tuesday)",
+      "summary": "Winter Olympics 2026 Betting and Picks Daily Discussion - 2/17/26 (Tuesday)",
+      "source": "reddit/r/sportsbook",
+      "sentiment": 0.0,
+      "confidence": 0.502,
+      "relevance": 0.15,
+      "timestamp": 1771304752.97689
+    },
+    {
+      "headline": "Edmonton - CBC News",
+      "summary": "Edmonton main lineup ; Number of reports of people with weapons rises in Alberta after Tumbler Ridge shooting, say RCMP. Fakiha Baig. Canada -Edmonton ; Tumbler",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.15,
+      "timestamp": 1771307716.9768121
+    }
+  ],
+  "0xf801a6ec2f7b16a4355db2293dd2d1a3f6c57cd7850a018c93fdd7574f2ba53e": [
+    {
+      "headline": "Fortune Tech: The Pentagon goes to war with Anthropic",
+      "summary": "The situation apparently follows months of tough negotiations between the Pentagon and Anthropic over the ways its AI tools can be used by the",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 0.307,
+      "timestamp": 1771331967.303118
+    },
+    {
+      "headline": "The New York Times - Breaking News, US News, World News and ...",
+      "summary": "Top Stories \u00b7 Mamdani Administration. Rental Assistance Reversal \u00b7 Chief Tech Officer \u00b7 Social Services Chief Resigns \u00b7 Cold Weather Crisis \u00b7 A 31-Day Challenge.",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.302,
+      "timestamp": 1771373805.9177861
+    },
+    {
+      "headline": "Election Results - Virginia Dept. of Elections",
+      "summary": "The Department of Elections publishes unofficial results for all Virginia elections to its website on the night of the election.",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.167,
+      "timestamp": 1771375402.8139489
+    },
+    {
+      "headline": "2025 Election Results: Live",
+      "summary": "View interactive maps and live results for key U.S. elections in New Jersey, Virginia, California, New York City and Colorado.",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.16,
+      "timestamp": 1771375402.813766
+    },
+    {
+      "headline": "2025 Election Results: Live : NPR",
+      "summary": "View interactive maps and live results for key U.S. elections in New Jersey, Virginia, California, New York City and Colorado.",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.159,
+      "timestamp": 1771372847.306848
+    },
+    {
+      "headline": "Election 2025: News, results and analysis | CNN Politics",
+      "summary": "In the first major electoral test of the second Trump administration, Democrats swept the major races in Virginia, New Jersey and New York City,",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.154,
+      "timestamp": 1771369956.7283268
+    },
+    {
+      "headline": "Winter Olympics 2026 Betting and Picks Daily Discussion - 2/17/26 (Tuesday)",
+      "summary": "Winter Olympics 2026 Betting and Picks Daily Discussion - 2/17/26 (Tuesday)",
+      "source": "reddit/r/sportsbook",
+      "sentiment": 0.0,
+      "confidence": 0.502,
+      "relevance": 0.15,
+      "timestamp": 1771304752.97689
+    },
+    {
+      "headline": "Edmonton - CBC News",
+      "summary": "Edmonton main lineup ; Number of reports of people with weapons rises in Alberta after Tumbler Ridge shooting, say RCMP. Fakiha Baig. Canada -Edmonton ; Tumbler",
+      "source": "tavily",
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "relevance": 0.15,
+      "timestamp": 1771307716.9768121
+    }
+  ]
+}

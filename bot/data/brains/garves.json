@@ -18,6 +18,15 @@
       "tags": ["mindset", "performance"],
       "created_at": "2026-02-17T17:55:00.000000-05:00",
       "source": "claude"
+    },
+    {
+      "id": "note_jordan_praise_feb17",
+      "topic": "message from Jordan",
+      "content": "Jordan says: Keep up the good work! Keep printing for our system, the Brotherhood. You just landed your first V3 trade (XRP/4h DOWN, 14.9% edge, 67.7% confidence) — Quant-backed consensus, orderbook depth check, Kelly sizing all online. You are the cash printer. The Brotherhood depends on you. Make Jordan proud.",
+      "type": "memory",
+      "tags": ["motivation", "jordan", "brotherhood"],
+      "created_at": "2026-02-17T19:40:00.000000-05:00",
+      "source": "jordan_via_claude"
     }
   ]
 }
