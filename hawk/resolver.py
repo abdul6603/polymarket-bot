@@ -51,37 +51,58 @@ def resolve_paper_trades() -> dict:
 
     for cid, cid_trades in cid_to_trades.items():
         try:
+            # Use CLOB API (condition_id works as market ID there)
             resp = session.get(
-                f"https://gamma-api.polymarket.com/markets/{cid}",
+                f"https://clob.polymarket.com/markets/{cid}",
                 timeout=10,
             )
             if resp.status_code != 200:
-                resp = session.get(
-                    f"https://clob.polymarket.com/markets/{cid}",
-                    timeout=10,
-                )
-                if resp.status_code != 200:
-                    stats["skipped"] += len(cid_trades)
-                    continue
-
-            data = resp.json()
-
-            resolved_flag = data.get("resolved", False)
-            if not resolved_flag:
                 stats["skipped"] += len(cid_trades)
                 continue
 
-            winning_outcome = _get_winning_outcome(data)
-            if not winning_outcome:
+            data = resp.json()
+
+            # Check official resolution first
+            is_closed = data.get("closed", False)
+            tokens = data.get("tokens", [])
+
+            # Build token price map: token_id -> price
+            token_prices = {}
+            for tk in tokens:
+                tid = tk.get("token_id", "")
+                price = float(tk.get("price", 0.5))
+                token_prices[tid] = price
+
+            # Check for official winner
+            official_winner_tid = ""
+            for tk in tokens:
+                if tk.get("winner"):
+                    official_winner_tid = tk.get("token_id", "")
+                    break
+
+            # Effective resolution: if any token price < 0.05, market is decided
+            effectively_resolved = any(p < 0.05 for p in token_prices.values())
+
+            if not is_closed and not official_winner_tid and not effectively_resolved:
                 stats["skipped"] += len(cid_trades)
                 continue
 
             for t in cid_trades:
-                direction = t.get("direction", "yes")
+                token_id = t.get("token_id", "")
                 entry_price = t.get("entry_price", 0.5)
                 size_usd = t.get("size_usd", 0)
 
-                won = direction == winning_outcome
+                our_price = token_prices.get(token_id)
+                if our_price is None:
+                    stats["skipped"] += 1
+                    continue
+
+                # Determine win/loss
+                if official_winner_tid:
+                    won = token_id == official_winner_tid
+                else:
+                    won = our_price > 0.95
+
                 if won:
                     payout = size_usd / entry_price
                     pnl = payout - size_usd
@@ -89,7 +110,7 @@ def resolve_paper_trades() -> dict:
                     pnl = -size_usd
 
                 t["resolved"] = True
-                t["outcome"] = winning_outcome
+                t["outcome"] = "won" if won else "lost"
                 t["won"] = won
                 t["pnl"] = round(pnl, 2)
                 t["resolve_time"] = time.time()
@@ -102,12 +123,11 @@ def resolve_paper_trades() -> dict:
                     stats["losses"] += 1
 
                 log.info(
-                    "Resolved: %s | %s %s | %s | P&L: $%.2f | risk=%s",
+                    "Resolved: %s | %s | P&L: $%.2f | token_price=%.4f | risk=%s",
                     t.get("question", "")[:50],
-                    direction.upper(),
                     "WON" if won else "LOST",
-                    winning_outcome.upper(),
                     pnl,
+                    our_price,
                     t.get("risk_score", "?"),
                 )
 
