@@ -20,22 +20,142 @@ class Position:
     market_id: str
     token_id: str
     direction: str
-    size_usd: float
+    size_usd: float          # actual USD value of position (shares * current_price)
     entry_price: float
     order_id: str
+    shares: float = 0.0      # actual share count from chain
     opened_at: float = field(default_factory=time.time)
     strategy: str = "directional"  # "directional" or "straddle"
 
 
 class PositionTracker:
-    """In-memory tracker for open positions, seeded from disk on startup."""
+    """In-memory tracker for open positions, synced from real Polymarket balances."""
 
     def __init__(self):
         self._positions: dict[str, Position] = {}  # order_id -> Position
-        self._seed_from_trades()
+
+    def sync_from_chain(self, client) -> None:
+        """Sync positions from real on-chain Polymarket token balances.
+
+        Queries the CLOB API for actual share balances of all tokens
+        we've ever traded, so the tracker matches reality.
+        """
+        if client is None:
+            log.info("No CLOB client — skipping chain sync, falling back to trades.jsonl")
+            self._seed_from_trades()
+            return
+
+        try:
+            from py_clob_client.clob_types import BalanceAllowanceParams, AssetType
+        except ImportError:
+            log.warning("py_clob_client not available — falling back to trades.jsonl")
+            self._seed_from_trades()
+            return
+
+        # Collect unique token_ids from recent trades (last 200)
+        token_meta = {}  # token_id -> {asset, direction, market_id, question}
+        if TRADES_FILE.exists():
+            try:
+                with open(TRADES_FILE) as f:
+                    for line in f:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        rec = json.loads(line)
+                        if rec.get("dry_run", True):
+                            continue
+                        tid = rec.get("token_id", "")
+                        if tid and tid not in token_meta:
+                            token_meta[tid] = {
+                                "asset": rec.get("asset", "unknown"),
+                                "direction": rec.get("direction", "unknown"),
+                                "market_id": rec.get("market_id", ""),
+                                "question": rec.get("question", ""),
+                                "probability": rec.get("probability", 0.5),
+                            }
+            except Exception:
+                log.exception("Failed to read trades for chain sync")
+
+        if not token_meta:
+            log.info("No trade history — tracker starts empty")
+            return
+
+        # Check which markets are still open (only count active risk)
+        from bot.http_session import get_session
+        open_markets: set[str] = set()
+        checked_markets: set[str] = set()
+        for meta in token_meta.values():
+            mid = meta["market_id"]
+            if mid in checked_markets:
+                continue
+            checked_markets.add(mid)
+            try:
+                resp = get_session().get(
+                    f"https://clob.polymarket.com/markets/{mid}", timeout=10,
+                )
+                if resp.status_code == 200 and not resp.json().get("closed", True):
+                    open_markets.add(mid)
+            except Exception:
+                pass
+
+        log.info("[CHAIN SYNC] %d/%d markets still open", len(open_markets), len(checked_markets))
+
+        # Query on-chain balance for tokens in OPEN markets only
+        synced = 0
+        for token_id, meta in token_meta.items():
+            if meta["market_id"] not in open_markets:
+                continue  # skip closed/resolved markets — those are just unclaimed winnings
+
+            try:
+                params = BalanceAllowanceParams(
+                    asset_type=AssetType.CONDITIONAL,
+                    token_id=token_id,
+                )
+                result = client.get_balance_allowance(params)
+                shares = int(result.get("balance", "0")) / 1e6
+
+                if shares <= 0.5:  # ignore dust
+                    continue
+
+                # Get current price from orderbook for USD value
+                try:
+                    book = client.get_order_book(token_id)
+                    bids = book.bids if hasattr(book, "bids") else []
+                    current_price = float(bids[0].price) if bids else meta["probability"]
+                except Exception:
+                    current_price = meta["probability"]
+
+                size_usd = shares * current_price
+                pos_key = f"chain_{token_id[:16]}"
+
+                self._positions[pos_key] = Position(
+                    market_id=meta["market_id"],
+                    token_id=token_id,
+                    direction=meta["direction"],
+                    size_usd=round(size_usd, 2),
+                    entry_price=meta["probability"],
+                    order_id=pos_key,
+                    shares=round(shares, 1),
+                )
+                synced += 1
+                log.info(
+                    "[CHAIN SYNC] %s %s: %.1f shares @ $%.3f = $%.2f | %s",
+                    meta["asset"].upper(), meta["direction"],
+                    shares, current_price, size_usd,
+                    meta["question"][:50],
+                )
+
+            except Exception as e:
+                log.debug("Chain sync failed for token %s: %s", token_id[:16], str(e)[:100])
+
+        total_exp = self.total_exposure
+        log.info(
+            "[CHAIN SYNC] Synced %d real positions from Polymarket (total exposure: $%.2f)",
+            synced, total_exp,
+        )
 
     def _seed_from_trades(self) -> None:
-        """Load unresolved live trades from trades.jsonl so restarts don't reset exposure."""
+        """Fallback: load unresolved trades from disk when no CLOB client available."""
         if not TRADES_FILE.exists():
             return
         try:
@@ -47,30 +167,24 @@ class PositionTracker:
                     rec = json.loads(line)
                     if rec.get("dry_run", True) or rec.get("resolved", False):
                         continue
-                    # Estimate size from probability and edge
-                    prob = rec.get("probability", 0.5)
                     order_id = rec.get("trade_id", "")
-                    market_id = rec.get("market_id", "")
                     if order_id in self._positions:
                         continue
-                    # Use a conservative estimate of trade size
-                    # (actual size not stored in trades.jsonl, use $25-50 range)
-                    estimated_size = 35.0  # midpoint of TRADE_MIN/MAX
                     self._positions[order_id] = Position(
-                        market_id=market_id,
+                        market_id=rec.get("market_id", ""),
                         token_id=rec.get("token_id", ""),
                         direction=rec.get("direction", ""),
-                        size_usd=estimated_size,
-                        entry_price=prob,
+                        size_usd=35.0,
+                        entry_price=rec.get("probability", 0.5),
                         order_id=order_id,
                     )
             if self._positions:
                 log.info(
-                    "Seeded %d unresolved positions from disk (est. exposure: $%.0f)",
+                    "Seeded %d positions from trades.jsonl (est. exposure: $%.0f)",
                     len(self._positions), self.total_exposure,
                 )
         except Exception:
-            log.exception("Failed to seed positions from trades.jsonl")
+            log.exception("Failed to seed from trades.jsonl")
 
     @property
     def open_positions(self) -> list[Position]:
@@ -102,20 +216,22 @@ class PositionTracker:
         if trade_id in self._positions:
             del self._positions[trade_id]
 
+    def remove_by_token(self, token_id: str) -> None:
+        """Remove all positions for a token (used when chain sync detects 0 balance)."""
+        to_remove = [k for k, p in self._positions.items() if p.token_id == token_id]
+        for k in to_remove:
+            del self._positions[k]
+
     def has_position_for_market(self, market_id: str) -> bool:
         return any(p.market_id == market_id for p in self._positions.values())
 
 
 def _get_real_positions_value() -> float | None:
-    """Read the cached Polymarket positions value from the balance file.
-
-    Returns the on-chain positions_value or None if unavailable/stale.
-    """
+    """Read the cached Polymarket positions value from the balance file."""
     try:
         if not BALANCE_CACHE_FILE.exists():
             return None
         cached = json.loads(BALANCE_CACHE_FILE.read_text())
-        # Only trust cache if less than 5 min old
         if time.time() - cached.get("fetched_at", 0) > 300:
             return None
         return cached.get("positions_value")
@@ -138,12 +254,6 @@ def check_risk(
 
     Uses BOTH in-memory tracker AND real Polymarket positions to prevent
     exposure from exceeding limits even after restarts.
-
-    Args:
-        trade_size_usd: Actual trade size from ConvictionEngine. Falls back to cfg.order_size_usd.
-
-    Returns:
-        (allowed, reason) — True if trade is allowed, otherwise reason string.
     """
     size = trade_size_usd if trade_size_usd is not None else cfg.order_size_usd
 

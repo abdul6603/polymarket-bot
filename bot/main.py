@@ -100,6 +100,9 @@ class TradingBot:
             else:
                 log.warning("No private key configured")
 
+        # Sync tracker with real Polymarket positions
+        self.tracker.sync_from_chain(self.client)
+
         self.derivatives_feed = DerivativesFeed(cfg)
         self.executor = Executor(cfg, self.client, self.tracker)
         self.conviction_engine = ConvictionEngine()
