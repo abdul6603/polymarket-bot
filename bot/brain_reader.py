@@ -41,7 +41,8 @@ def read_brain_notes(agent: str, note_type: str | None = None) -> list[dict]:
         if note_type:
             notes = [n for n in notes if n.get("type", "note") == note_type]
         return notes
-    except Exception:
+    except Exception as e:
+        log.warning("Failed to read brain notes for %s: %s", agent, e)
         return []
 
 

@@ -72,7 +72,8 @@ def _classify_timeframe(question: str) -> Timeframe | None:
         if duration < 0:
             duration += 24 * 60  # crosses midnight
         if duration <= 5:
-            return None  # Skip 5m — too noisy, 25% win rate
+            log.debug("Skipping 5m market (too noisy, 25%% WR)")
+            return None
         elif duration <= 15:
             return TF_15M
         elif duration <= 60:
@@ -414,6 +415,5 @@ def rank_markets(markets: list[DiscoveredMarket]) -> list[DiscoveredMarket]:
     if not markets:
         return []
 
-    # Sort by: highest priority first, then soonest expiry
-    markets.sort(key=lambda dm: (-dm.timeframe.priority, dm.remaining_s))
-    return markets
+    # Sort by: highest priority first, then soonest expiry (return new list, don't mutate input)
+    return sorted(markets, key=lambda dm: (-dm.timeframe.priority, dm.remaining_s))

@@ -23,7 +23,7 @@ from bot.bankroll import BankrollManager
 from bot.straddle import StraddleEngine
 from bot.tracker import PerformanceTracker
 from bot.ws_feed import MarketFeed
-from bot.v2_tools import is_emergency_stopped, accept_commands, process_command, daily_trade_report
+from bot.v2_tools import is_emergency_stopped, accept_commands, process_command
 from bot.daily_cycle import should_reset, archive_and_reset
 from bot.orderbook_check import check_orderbook_depth
 from bot.macro import get_context as get_macro_context
@@ -118,7 +118,7 @@ class TradingBot:
         # Track when tokens were first subscribed (for warmup)
         self._subscribe_time: dict[str, float] = {}
 
-        # Agent Hub heartbeat
+        # Agent Hub heartbeat (optional integration — add ~/.agent-hub to path for import)
         self._hub = None
         try:
             import sys as _sys
@@ -136,7 +136,7 @@ class TradingBot:
         self.COOLDOWN_SECONDS = 90  # 1.5 min cooldown after trading a market
         # Per-market stacking cap: market_id -> trade count (prevents concentrated risk)
         self._market_trade_count: dict[str, int] = {}
-        self.MAX_TRADES_PER_MARKET = 3  # Max 3 trades per unique market (was unlimited — 9x stacking seen)
+        self.MAX_TRADES_PER_MARKET = 1  # Max 1 trade per market — no stacking (was 3, caused $73 concentrated loss)
         # Smart stacking: escalating conviction for each additional bet in same window
         self.STACK_EDGE_ESCALATION = 0.02       # +2% edge per stacked bet
         self.STACK_CONFIDENCE_ESCALATION = 0.05  # +5% confidence per stacked bet
@@ -647,7 +647,7 @@ class TradingBot:
         try:
             # Derivatives state (funding rates + liquidations)
             state = deriv_data or {"funding_rates": {}, "liquidations": {}}
-            state["connected"] = self.derivatives_feed._running and self.derivatives_feed._ws is not None
+            state["connected"] = self.derivatives_feed.get_status().get("connected", False)
             state["timestamp"] = time.time()
             state_file = data_dir / "derivatives_state.json"
             with open(state_file, "w") as f:

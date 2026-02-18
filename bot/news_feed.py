@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 import time
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree as ElementTree
 from dataclasses import dataclass
 from typing import Optional
 
@@ -115,9 +115,6 @@ class CryptoNewsFeed:
                 top_score = score
                 top_headline = h["title"]
 
-        if not relevant:
-            return None
-
         avg_sentiment = total_score / len(relevant)
         # Clamp to [-1, 1]
         avg_sentiment = max(-1.0, min(1.0, avg_sentiment))
@@ -162,7 +159,7 @@ class CryptoNewsFeed:
                 if resp.status_code != 200:
                     continue
 
-                root = ET.fromstring(resp.content)
+                root = ElementTree.fromstring(resp.content)
                 # Standard RSS format: channel > item > title + pubDate
                 for item in root.iter("item"):
                     title_el = item.find("title")

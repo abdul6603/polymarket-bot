@@ -79,6 +79,10 @@ class PriceCache:
             self._current_sell[asset] = 0.0 if is_buy else volume
             return
 
+        if minute < self._current_minute[asset]:
+            # Out-of-order tick (delayed network message) — drop to avoid corrupting candle
+            return
+
         if minute > self._current_minute[asset]:
             # Finalize candle
             old = self._building[asset]

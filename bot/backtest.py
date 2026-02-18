@@ -133,10 +133,11 @@ def fetch_binance_klines(asset: str, days: int, interval: str = "1m") -> list[Ca
     all_candles: list[Candle] = []
     cursor = start_ms
     request_count = 0
+    max_requests = 2000  # Safety guard: prevent infinite loop on API issues
 
     log.info("Fetching %d days of %s klines for %s...", days, interval, symbol)
 
-    while cursor < end_ms:
+    while cursor < end_ms and request_count < max_requests:
         try:
             resp = http_requests.get(
                 BINANCE_KLINES_URL,
@@ -553,7 +554,7 @@ class BacktestEngine:
         for t in trades:
             day = datetime.fromtimestamp(t.timestamp, tz=timezone.utc).strftime("%Y-%m-%d")
             daily_pnl[day] += t.pnl
-        if len(daily_pnl) > 1:
+        if len(daily_pnl) >= 5:  # Need 5+ days for meaningful Sharpe estimate
             rets = list(daily_pnl.values())
             sharpe = float(np.mean(rets) / np.std(rets) * np.sqrt(365)) if np.std(rets) > 0 else 0.0
         else:

@@ -146,7 +146,7 @@ def _get_dxy_trend() -> tuple[float, str, float]:
         return 0.0, "", 0.0
 
     params = {
-        "series_id": "DTWEXBGS",  # Broad trade-weighted USD index
+        "series_id": "DTWEXBGS",  # FRED broad trade-weighted USD index (proxy for DXY; ICE DXY not on FRED)
         "api_key": _FRED_API_KEY,
         "file_type": "json",
         "sort_order": "desc",

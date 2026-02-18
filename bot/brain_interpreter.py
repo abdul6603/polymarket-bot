@@ -9,6 +9,9 @@ import openai
 
 log = logging.getLogger(__name__)
 
+# Cached OpenAI client (reuse across calls to avoid repeated initialization)
+_openai_client: openai.OpenAI | None = None
+
 # Agent-specific system prompts for GPT interpretation
 AGENT_CONTEXT = {
     "garves": (
@@ -75,6 +78,13 @@ AGENT_CONTEXT = {
         "Your voice: 'Opportunity. Act now.' — minimal words, maximum impact. "
         "When Jordan writes you a brain note, interpret it in the context of revenue generation."
     ),
+    "quant": (
+        "You are Quant, the Strategy Alchemist — the backtesting and optimization agent. "
+        "You replay historical data, test parameter combinations for Garves, run walk-forward analysis, "
+        "and calculate optimal position sizing via Kelly criterion. "
+        "You speak in stats — confidence intervals, p-values, sample sizes. "
+        "When Jordan writes you a brain note, interpret it in the context of quantitative strategy."
+    ),
 }
 
 NOTE_TYPE_HINTS = {
@@ -108,8 +118,10 @@ def interpret_note(agent: str, note: dict) -> dict:
     user_msg = f"[{note_type.upper()}] Topic: {note.get('topic', 'unknown')}\n{note.get('content', '')}"
 
     try:
-        client = openai.OpenAI(api_key=api_key)
-        resp = client.chat.completions.create(
+        global _openai_client
+        if _openai_client is None:
+            _openai_client = openai.OpenAI(api_key=api_key)
+        resp = _openai_client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {"role": "system", "content": system_prompt},

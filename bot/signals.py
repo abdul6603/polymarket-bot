@@ -66,8 +66,8 @@ WEIGHTS = {
     "temporal_arb": 1.8,
     "price_div": 1.4,
     "macd": 1.1,
-    "order_flow": 4.0,  # Quant V4: 3.0→4.0 (every top-20 config uses 4.0, catches reversals via real-time Binance volume delta)
-    "news": 0.0,         # DISABLED: 47.1% accuracy = below coin flip. Atlas+Quant+Bottleneck all agree
+    "order_flow": 2.5,  # Rebalanced: was 4.0 (dominated 40-50% of ensemble). 60.4% accuracy doesn't justify 4x weight
+    "news": 0.4,         # Re-enabled: live accuracy 58.6% (140 samples). Was 0.0 from stale 47% data, weight_learner auto-adjusts
     # LOW TIER — marginal (50-55%)
     "momentum": 1.2,    # Quant V4: 1.0→1.2 (#1 config uses 1.2, 63.2% accuracy)
     "ema": 0.6,           # Quant: 1.1→0.6 (weight_v171)
@@ -209,7 +209,7 @@ def _estimate_fees(timeframe: str, implied_price: float | None) -> float:
     # Base taker fee peaks at 3% for 50/50, drops to 0% at extreme prices
     base_taker = 0.03 * max(1.0 - distance * 2, 0)
     # Shorter timeframes have wider spreads -> slightly higher effective taker fee
-    tf_multiplier = {"5m": 1.0, "15m": 1.0, "1h": 0.8, "4h": 0.6}.get(timeframe, 0.8)
+    tf_multiplier = {"5m": 1.0, "15m": 1.0, "1h": 0.8, "4h": 0.6, "weekly": 0.4}.get(timeframe, 0.8)
     taker_fee = base_taker * tf_multiplier
 
     return winner_fee + taker_fee
@@ -637,8 +637,8 @@ class SignalEngine:
             " ".join(vote_strs),
         )
         log.info(
-            "[%s/%s] Consensus: %d/%d agree | Binance: $%s | Poly implied: %s | edge_up=%.3f edge_down=%.3f (after fees)",
-            asset.upper(), timeframe, agree_count, total_indicators,
+            "[%s/%s] Consensus: %d/%d agree (%d active) | Binance: $%s | Poly implied: %s | edge_up=%.3f edge_down=%.3f (after fees)",
+            asset.upper(), timeframe, agree_count, active_count, total_indicators,
             f"{binance_price:,.2f}" if binance_price else "N/A",
             f"{implied_up_price:.3f}" if implied_up_price else "N/A",
             edge_up, edge_down,
@@ -688,7 +688,11 @@ class SignalEngine:
         regime_floor = regime.confidence_floor if regime else MIN_CONFIDENCE
         effective_conf_floor = max(regime_floor, MIN_CONFIDENCE)
         if consensus_dir == "up":
-            effective_conf_floor += UP_CONFIDENCE_PREMIUM
+            up_premium = UP_CONFIDENCE_PREMIUM
+            # Halve UP penalty in fear — contrarian buying IS the strategy in fear regimes
+            if regime and regime.label in ("extreme_fear", "fear"):
+                up_premium *= 0.5
+            effective_conf_floor += up_premium
         # ETH confidence premium: weakest asset (72% WR vs BTC 79%, XRP 100%)
         if asset == "ethereum":
             effective_conf_floor += 0.03  # +3% for ETH — 9 of 12 losses were ETH

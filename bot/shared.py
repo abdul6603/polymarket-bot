@@ -10,6 +10,7 @@ Nothing in this file imports from bot.live_dashboard or bot.routes.*.
 from __future__ import annotations
 
 import json
+import logging
 import sys
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
@@ -201,6 +202,7 @@ _AGENT_PROMPTS = {
 
 # ── Atlas singleton ──
 
+_log = logging.getLogger(__name__)
 _atlas = None
 
 
@@ -210,7 +212,8 @@ def get_atlas():
         try:
             from atlas.atlas import Atlas
             _atlas = Atlas()
-        except Exception as e:
+        except Exception:
+            _log.debug("Failed to initialize Atlas singleton")
             return None
     return _atlas
 
@@ -231,8 +234,9 @@ def _load_trades() -> list[dict]:
                 try:
                     t = json.loads(line)
                     tid = t.get("trade_id", "")
-                    if tid not in seen:
-                        seen.add(tid)
+                    if not tid or tid not in seen:
+                        if tid:
+                            seen.add(tid)
                         trades.append(t)
                 except json.JSONDecodeError:
                     continue

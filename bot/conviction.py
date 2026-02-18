@@ -59,7 +59,8 @@ EXTREME_FEAR_PENALTY = 0.90         # Reduced 0.75→0.90: live data shows 70% W
 
 # ── Conviction Component Weights ──
 # Each evidence layer contributes a weighted score to the total.
-# Total weights sum to ~100 so raw score is already 0-100.
+# Total weights sum to exactly 100 so raw score maps directly to 0-100.
+# If you add/remove components, adjust weights to maintain sum=100.
 COMPONENT_WEIGHTS = {
     "consensus_ratio":      20,  # How many indicators agree (most reliable factor)
     "edge_magnitude":       15,  # How large the expected edge is
@@ -459,7 +460,7 @@ class ConvictionEngine:
     def _check_cross_asset_alignment(
         self, target_direction: str
     ) -> tuple[bool, str, int, dict]:
-        """Check how many of BTC/ETH/SOL agree on the same direction.
+        """Check how many of BTC/ETH/SOL/XRP agree on the same direction.
 
         Returns:
             (all_aligned, direction, count, details)

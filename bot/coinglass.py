@@ -110,8 +110,8 @@ def get_data(asset: str) -> CoinglassData | None:
             total_oi = sum(float(ex.get("openInterest", 0)) for ex in oi_data)
             result.oi_usd = total_oi
             any_success = True
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug("Coinglass OI fetch failed for %s: %s", symbol, str(e)[:80])
 
     # 2. OI change over time (1h candles: -2 = 1h ago, -5 = 4h ago)
     try:
@@ -126,9 +126,13 @@ def get_data(asset: str) -> CoinglassData | None:
                     result.oi_change_1h_pct = (current - h1_ago) / h1_ago * 100
                 if h4_ago > 0:
                     result.oi_change_4h_pct = (current - h4_ago) / h4_ago * 100
+                # 24h change (index -25 if available)
+                h24_ago = float(prices[-25][-1]) if len(prices) > 24 and prices[-25] else current
+                if h24_ago > 0:
+                    result.oi_change_24h_pct = (current - h24_ago) / h24_ago * 100
                 any_success = True
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug("Coinglass OI history failed for %s: %s", symbol, str(e)[:80])
 
     # 3. Long/Short ratio
     try:
@@ -138,8 +142,8 @@ def get_data(asset: str) -> CoinglassData | None:
             ratio = float(latest.get("longRate", 50)) / max(float(latest.get("shortRate", 50)), 0.01)
             result.long_short_ratio = ratio
             any_success = True
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug("Coinglass L/S ratio failed for %s: %s", symbol, str(e)[:80])
 
     # 4. Aggregated funding rate
     try:
@@ -149,8 +153,8 @@ def get_data(asset: str) -> CoinglassData | None:
             if rates:
                 result.avg_funding_rate = sum(rates) / len(rates)
                 any_success = True
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug("Coinglass funding rate failed for %s: %s", symbol, str(e)[:80])
 
     # 5. ETF flows (BTC only)
     if symbol == "BTC":
@@ -165,8 +169,8 @@ def get_data(asset: str) -> CoinglassData | None:
                 result.etf_net_flow_usd = float(latest.get("netflow", latest.get("value", 0)))
                 result.etf_available = True
                 any_success = True
-        except Exception:
-            pass
+        except Exception as e:
+            log.debug("Coinglass ETF flow failed: %s", str(e)[:80])
 
     # 6. Liquidation data (24h)
     try:
@@ -176,8 +180,8 @@ def get_data(asset: str) -> CoinglassData | None:
             result.liq_long_24h_usd = float(latest.get("longLiquidationUsd", 0))
             result.liq_short_24h_usd = float(latest.get("shortLiquidationUsd", 0))
             any_success = True
-    except Exception:
-        pass
+    except Exception as e:
+        log.debug("Coinglass liquidation data failed for %s: %s", symbol, str(e)[:80])
 
     if not any_success:
         _cache[asset] = (None, now)

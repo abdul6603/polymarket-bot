@@ -11,6 +11,8 @@ import logging
 import time
 from dataclasses import dataclass
 
+from collections import deque
+
 from bot.http_session import get_session
 
 log = logging.getLogger(__name__)
@@ -41,9 +43,8 @@ class MempoolData:
     timestamp: float = 0.0
 
 
-# Rolling baseline for fee comparison
-_fee_history: list[float] = []
-_FEE_HISTORY_MAX = 360  # ~3 hours at 30s intervals
+# Rolling baseline for fee comparison (deque for O(1) eviction)
+_fee_history: deque[float] = deque(maxlen=360)  # ~3 hours at 30s intervals
 
 
 def get_data() -> MempoolData | None:
@@ -90,8 +91,6 @@ def get_data() -> MempoolData | None:
     # Calculate fee ratio vs rolling baseline
     current_fee = result.fastest_fee
     _fee_history.append(current_fee)
-    if len(_fee_history) > _FEE_HISTORY_MAX:
-        _fee_history.pop(0)
 
     if len(_fee_history) >= 10:
         baseline = sum(_fee_history) / len(_fee_history)

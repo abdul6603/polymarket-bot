@@ -70,6 +70,12 @@ REGIME_TABLE = {
 
 
 def _classify_fng(value: int) -> str:
+    """Classify Fear & Greed index into regime buckets.
+
+    Note: boundaries (20/40/60/80) intentionally differ from the standard
+    FnG scale (25/50/75) to give wider neutral and fear bands, which better
+    suit crypto prediction market volatility patterns.
+    """
     if value < 20:
         return "extreme_fear"
     elif value < 40:

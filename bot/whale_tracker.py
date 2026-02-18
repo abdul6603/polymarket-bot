@@ -34,7 +34,7 @@ BLOCKCHAIN_MAP = {
 # Known exchange wallets (partial list — Whale Alert labels them)
 EXCHANGE_LABELS = {"binance", "coinbase", "kraken", "bitfinex", "okx", "bybit",
                    "huobi", "kucoin", "gemini", "bitstamp", "gate.io",
-                   "crypto.com", "upbit", "bithumb", "mexc"}
+                   "crypto.com", "upbit", "bithumb", "mexc", "bitget"}
 
 
 @dataclass

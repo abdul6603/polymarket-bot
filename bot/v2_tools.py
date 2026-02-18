@@ -294,7 +294,8 @@ def process_command(cmd: dict, bot=None) -> dict:
     ts = datetime.now(ET).isoformat()
 
     if action == "status":
-        positions = get_open_positions(bot.tracker) if bot else {"error": "no bot ref"}
+        tracker = getattr(bot, "tracker", None) if bot else None
+        positions = get_open_positions(tracker) if tracker else {"error": "no bot ref"}
         report = daily_trade_report()
         return {
             "action": "status",
@@ -339,9 +340,9 @@ def generate_signal_rationale(
         return f"{direction.upper()} signal on {asset.upper()}/{timeframe}. No indicator detail."
 
     agreeing = [name for name, vote in indicator_votes.items()
-                if vote.lower() == direction.lower()]
+                if str(vote).lower() == direction.lower()]
     dissenting = [name for name, vote in indicator_votes.items()
-                  if vote.lower() != direction.lower()]
+                  if str(vote).lower() != direction.lower()]
 
     parts = []
 

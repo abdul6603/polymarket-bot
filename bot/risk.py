@@ -142,8 +142,8 @@ class PositionTracker:
                     except Exception:
                         pass  # keep entry price
 
-                # Skip resolved positions (price hit $1 or $0 = already won/lost)
-                if current_price >= 0.99 or current_price <= 0.01:
+                # Skip near-resolved positions (price >95% or <5% = effectively won/lost)
+                if current_price >= 0.95 or current_price <= 0.05:
                     log.info(
                         "[CHAIN SYNC] %s %s: %.1f shares @ $%.3f — RESOLVED (not counting as exposure)",
                         meta["asset"].upper(), meta["direction"], shares, current_price,
@@ -199,7 +199,7 @@ class PositionTracker:
                         market_id=rec.get("market_id", ""),
                         token_id=rec.get("token_id", ""),
                         direction=rec.get("direction", ""),
-                        size_usd=35.0,
+                        size_usd=rec.get("size_usd", 35.0),
                         entry_price=rec.get("probability", 0.5),
                         order_id=order_id,
                     )

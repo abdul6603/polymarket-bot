@@ -342,7 +342,7 @@ class DerivativesFeed:
                 or summary["cascade_direction"] != cascade_direction
             ):
                 log.info(
-                    "🚨 Liquidation cascade detected: %s → %s | Long: $%.0f (%d events/2m) | Short: $%.0f (%d events/2m)",
+                    "LIQUIDATION CASCADE: %s -> %s | Long: $%.0f (%d events/2m) | Short: $%.0f (%d events/2m)",
                     asset.upper(),
                     cascade_direction.upper(),
                     long_liq_usd_5m,

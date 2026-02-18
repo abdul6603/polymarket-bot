@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from pathlib import Path
 
 log = logging.getLogger(__name__)
@@ -25,7 +26,6 @@ _CACHE_TTL = 300  # seconds
 def _load_kb() -> dict:
     """Load KB with in-memory cache (5 min TTL)."""
     global _cache, _cache_ts
-    import time
     now = time.time()
     if _cache and now - _cache_ts < _CACHE_TTL:
         return _cache
@@ -36,6 +36,7 @@ def _load_kb() -> dict:
         _cache_ts = now
         return _cache
     except Exception:
+        log.debug("Failed to read Atlas KB, using cached data")
         return _cache or {}
 
 
@@ -96,16 +97,29 @@ def get_agent_summary(agent: str) -> str:
     return "ATLAS INTELLIGENCE:\n" + "\n".join(lines[-5:])  # Last 5 most recent
 
 
+# Improvements cache (separate from KB cache)
+_imp_cache: dict = {}
+_imp_cache_ts: float = 0.0
+_IMP_CACHE_TTL = 300  # 5 minutes
+
+
 def get_improvements(agent: str) -> list[dict]:
     """Get Atlas improvement suggestions for an agent.
 
-    Reads from ~/atlas/data/improvements.json
+    Reads from ~/atlas/data/improvements.json (cached 5 min).
     """
+    global _imp_cache, _imp_cache_ts
+    now = time.time()
+    if _imp_cache and now - _imp_cache_ts < _IMP_CACHE_TTL:
+        return _imp_cache.get(agent, [])
+
     imp_file = Path.home() / "atlas" / "data" / "improvements.json"
     if not imp_file.exists():
         return []
     try:
-        data = json.loads(imp_file.read_text())
-        return data.get(agent, [])
+        _imp_cache = json.loads(imp_file.read_text())
+        _imp_cache_ts = now
+        return _imp_cache.get(agent, [])
     except Exception:
+        log.debug("Failed to read Atlas improvements file")
         return []

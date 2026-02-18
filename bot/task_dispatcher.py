@@ -20,7 +20,7 @@ import re
 import sys
 import threading
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Shelby core for task updates
@@ -91,6 +91,10 @@ _AGENT_ACTIONS = {
 
 # Agents that support dispatch
 _DISPATCHABLE_AGENTS = set(_AGENT_ACTIONS.keys())
+
+# Track in-flight dispatches to prevent double-dispatch of the same task
+_dispatched_lock = threading.Lock()
+_dispatched_tasks: set[int] = set()
 
 
 def _match_action(agent: str, title: str) -> str | None:
@@ -491,7 +495,7 @@ def _exec_hawk_scan() -> str:
             opp_file = Path.home() / "polymarket-bot" / "data" / "hawk_opportunities.json"
             opp_file.write_text(json.dumps({
                 "opportunities": opp_data,
-                "scan_time": datetime.now().isoformat(),
+                "scan_time": datetime.now(timezone.utc).isoformat(),
                 "markets_scanned": len(markets),
                 "contested": len(contested),
                 "analyzed": len(target),
@@ -861,9 +865,23 @@ def dispatch_task(task_dict: dict) -> bool:
     if not action:
         return False
 
+    # Prevent duplicate concurrent dispatch of the same task
+    task_id = task_dict.get("id")
+    with _dispatched_lock:
+        if task_id in _dispatched_tasks:
+            print(f"[dispatcher] Task #{task_id} already dispatched — skipping")
+            return False
+        _dispatched_tasks.add(task_id)
+
+    def _thread_wrapper():
+        try:
+            _dispatch_thread(task_dict, action)
+        finally:
+            with _dispatched_lock:
+                _dispatched_tasks.discard(task_id)
+
     thread = threading.Thread(
-        target=_dispatch_thread,
-        args=(task_dict, action),
+        target=_thread_wrapper,
         daemon=True,
         name=f"dispatch-{task_dict.get('id', 0)}-{action}",
     )
