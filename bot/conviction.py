@@ -38,17 +38,17 @@ TRADES_FILE = DATA_DIR / "trades.jsonl"
 # Conviction maps to these tiers with smooth interpolation within each band.
 SIZE_TIERS = {
     # (min_conviction, max_conviction): (min_usd, max_usd)
-    # V3 Kelly-backed: $31.25 recommended, $30 base. Consensus=7 + conf=0.55 = quality trades only.
+    # $30 max loss cap per position — Jordan's rule. Spread across conviction tiers.
     (0, 15):   (0.0, 0.0),      # DON'T TRADE — truly insufficient evidence
-    (15, 30):  (25.0, 30.0),    # Micro — passed all filters, Kelly floor
-    (30, 50):  (30.0, 35.0),    # Small — solid signal, Kelly base
-    (50, 70):  (35.0, 40.0),    # Standard — strong consensus
-    (70, 85):  (40.0, 45.0),    # Increased — strong multi-factor alignment
-    (85, 100): (45.0, 50.0),    # Maximum conviction — nearly everything aligns
+    (15, 30):  (10.0, 15.0),    # Micro — passed all filters, minimum size
+    (30, 50):  (15.0, 20.0),    # Small — solid signal
+    (50, 70):  (20.0, 25.0),    # Standard — strong consensus
+    (70, 85):  (25.0, 28.0),    # Increased — strong multi-factor alignment
+    (85, 100): (28.0, 30.0),    # Maximum conviction — nearly everything aligns
 }
 
 # ── Safety Rails ──
-ABSOLUTE_MAX_PER_TRADE = 50.0       # Max per trade — Kelly-backed ceiling
+ABSOLUTE_MAX_PER_TRADE = 30.0       # Max per trade — $30 max loss cap per position
 ABSOLUTE_MAX_DAILY_LOSS = 50.0      # Stop trading if daily loss hits $50
 LOSING_STREAK_THRESHOLD = 3         # Scale down after 3 consecutive losses
 LOSING_STREAK_PENALTY = 0.75        # Multiply conviction by 0.75 during losing streak (0.6 was too crushing)
@@ -84,7 +84,7 @@ BAD_HOURS_ET = {5, 6, 7, 18, 19, 20, 21, 22, 23}
 # ── All Assets Aligned Mode thresholds ──
 ALL_ALIGNED_MIN_CONSENSUS = 4       # Each asset must have 4+ non-disabled indicators agreeing
 ALL_ALIGNED_MIN_ASSETS = 3          # 3 of 4 assets must agree
-ALL_ALIGNED_SIZE = 35.0             # Max size when all-aligned fires
+ALL_ALIGNED_SIZE = 30.0             # Max size when all-aligned fires (capped at $30)
 
 
 @dataclass
@@ -672,7 +672,7 @@ class ConvictionEngine:
                 return min_usd + t * (max_usd - min_usd)
 
         # Score is exactly 100 — max conviction tier
-        return 50.0
+        return 30.0
 
     @staticmethod
     def _get_tier_label(score: float) -> str:
