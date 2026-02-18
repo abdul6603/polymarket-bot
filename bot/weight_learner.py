@@ -2,12 +2,17 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from pathlib import Path
 
 log = logging.getLogger(__name__)
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 ACCURACY_FILE = DATA_DIR / "indicator_accuracy.json"
+
+# Cache to avoid reading from disk on every call (24+ times per tick)
+_weights_cache: dict = {"weights": None, "timestamp": 0.0}
+_WEIGHTS_CACHE_TTL = 30  # seconds
 
 
 def _load_accuracy() -> dict:
@@ -76,6 +81,10 @@ def get_dynamic_weights(base_weights: dict) -> dict:
     - >30 samples and >55% accuracy: boost weight by 30%
     - Clamp adjustments to [0.0x, 2.5x] of base weight
     """
+    now = time.time()
+    if _weights_cache["weights"] is not None and now - _weights_cache["timestamp"] < _WEIGHTS_CACHE_TTL:
+        return _weights_cache["weights"]
+
     data = _load_accuracy()
     if not data:
         return dict(base_weights)
@@ -117,4 +126,6 @@ def get_dynamic_weights(base_weights: dict) -> dict:
 
         adjusted[name] = new_w
 
+    _weights_cache["weights"] = adjusted
+    _weights_cache["timestamp"] = now
     return adjusted

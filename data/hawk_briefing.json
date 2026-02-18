@@ -1,164 +1,163 @@
 {
-  "generated_at": 1771378155.647082,
-  "cycle": 2,
+  "generated_at": 1771432076.28266,
+  "cycle": 16,
   "markets": [
     {
-      "condition_id": "0x3acb42d4a4da859a82ec3c78e6be641489985672ea7f28ae73da7c253af32fa8",
-      "question": "Will Claude 5 be released by April 30, 2026?",
-      "category": "other",
-      "edge": 0.365,
+      "condition_id": "0xcc50462aed8b6f537847a1314a651c83f91be2786280a2785b65895972c40484",
+      "question": "Will the price of Ethereum be above $1,900 on February 19?",
+      "category": "crypto_event",
+      "edge": 0.43,
       "search_queries": [
-        "Claude April 2026 latest news 2026",
-        "Claude April 2026 analysis predictions 2026",
-        "Claude 5 be released by April 30, 2026 latest news"
+        "Ethereum February crypto news today 2026",
+        "Ethereum February market analysis 2026",
+        "the price of Ethereum be above $1,900 on February 19 latest news"
       ],
       "entities": [
-        "Claude",
-        "April",
-        "2026"
+        "Ethereum",
+        "February"
       ],
       "priority": 1
     },
     {
-      "condition_id": "0x235fe3bc4d0d454623a198226f3414cd1a295d2d9ca35ecab67eff2b5e10f097",
-      "question": "North Carolina Tar Heels vs. North Carolina State Wolfpack: O/U 158.5",
-      "category": "other",
-      "edge": 0.33,
+      "condition_id": "0xe33720074e2a51b89fdaa0c67e8d4a66d795a584327d92bdd366ea4795f5c966",
+      "question": "Suns vs. Spurs",
+      "category": "sports",
+      "edge": 0.385,
       "search_queries": [
-        "North Carolina Tar Heels North Carolina State Wolfpack: O/U latest news 2026",
-        "North Carolina Tar Heels North Carolina State Wolfpack: O/U analysis predictions 2026",
-        "North Carolina Tar Heels vs. North Carolina State Wolfpack: O/U 158.5 latest news"
+        "Suns Spurs latest news 2026",
+        "Suns Spurs odds predictions 2026"
       ],
       "entities": [
-        "North Carolina Tar Heels",
-        "North Carolina State Wolfpack: O/U"
+        "Suns",
+        "Spurs"
       ],
       "priority": 2
     },
     {
-      "condition_id": "0x534f933826463ea9eed59c0052eaed8caf6cf600c074b9988a276964a493605b",
-      "question": "Virginia Tech Hokies vs. Miami Hurricanes",
-      "category": "culture",
-      "edge": 0.22,
+      "condition_id": "0x2cdb4368cf40772af15618288c21671af59d0f9cdaceb34e532780de02177355",
+      "question": "Men's Quarterfinals - Canada vs. Czechia",
+      "category": "sports",
+      "edge": 0.315,
       "search_queries": [
-        "Virginia Tech Hokies Miami Hurricanes latest news 2026",
-        "Virginia Tech Hokies Miami Hurricanes predictions odds 2026",
-        "Virginia Tech Hokies vs. Miami Hurricanes latest news"
+        "Men's Quarterfinals - Canada Czechia latest news 2026",
+        "Men's Quarterfinals - Canada Czechia odds predictions 2026",
+        "Men's Quarterfinals - Canada vs. Czechia latest news"
       ],
       "entities": [
-        "Virginia Tech Hokies",
-        "Miami Hurricanes"
+        "Men's Quarterfinals - Canada",
+        "Czechia"
       ],
       "priority": 3
     },
     {
-      "condition_id": "0xaebb47777170724e3028649418c3579c3b82ff3f6a04b1c8a18726e066971005",
-      "question": "George Washington Revolutionaries vs. VCU Rams",
-      "category": "other",
-      "edge": 0.175,
+      "condition_id": "0xf972542880343e9bb9fc75aec332b34d1becf0e0b8a7aee37b3c6f43f694ce7a",
+      "question": "Will the price of Bitcoin be above $66,000 on February 19?",
+      "category": "crypto_event",
+      "edge": 0.305,
       "search_queries": [
-        "VCU George Washington Revolutionaries VCU Rams latest news 2026",
-        "VCU George Washington Revolutionaries VCU Rams analysis predictions 2026",
-        "George Washington Revolutionaries vs. VCU Rams latest news"
+        "Bitcoin February crypto news today 2026",
+        "Bitcoin February market analysis 2026",
+        "the price of Bitcoin be above $66,000 on February 19 latest news"
       ],
       "entities": [
-        "VCU",
-        "George Washington Revolutionaries",
-        "VCU Rams"
+        "Bitcoin",
+        "February"
       ],
       "priority": 4
     },
     {
-      "condition_id": "0x40a0354dd6d82a0f3ef4d41a2a0639001374de7d4f8ad83671e79920a2caaeea",
-      "question": "Kent State Golden Flashes vs. Bowling Green Falcons",
-      "category": "other",
-      "edge": 0.175,
+      "condition_id": "0xfe0dd8d584ba331c35833b315f62607c90213959f3193d32737aff8bc7059a97",
+      "question": "Will the price of Bitcoin be between $66,000 and $68,000 on February 19?",
+      "category": "crypto_event",
+      "edge": 0.295,
       "search_queries": [
-        "Kent State Golden Flashes Bowling Green Falcons latest news 2026",
-        "Kent State Golden Flashes Bowling Green Falcons analysis predictions 2026",
-        "Kent State Golden Flashes vs. Bowling Green Falcons latest news"
+        "Bitcoin February crypto news today 2026",
+        "Bitcoin February market analysis 2026",
+        "the price of Bitcoin be between $66,000 and $68,000 on February 19 latest news"
       ],
       "entities": [
-        "Kent State Golden Flashes",
-        "Bowling Green Falcons"
+        "Bitcoin",
+        "February"
       ],
       "priority": 5
     },
     {
-      "condition_id": "0xab4fc4ada9c56bb191662181ffc8841700941ffce7456ddec3eb2e95bf30e3c2",
-      "question": "Spread: Louisville Cardinals (-4.5)",
+      "condition_id": "0x7eab6e959abfd65beccb5277319249f04a3f2ca3e7e433fdae789a8cca9c1075",
+      "question": "Will ETSY (ETSY) beat quarterly earnings?",
       "category": "other",
-      "edge": 0.135,
+      "edge": 0.265,
       "search_queries": [
-        "Spread: Louisville Cardinals -4.5 latest news 2026",
-        "Spread: Louisville Cardinals -4.5 analysis predictions 2026",
-        "Spread: Louisville Cardinals (-4.5) latest news"
+        "ETSY ETSY ETSY latest news 2026",
+        "ETSY ETSY ETSY analysis predictions 2026",
+        "ETSY (ETSY) beat quarterly earnings latest news"
       ],
       "entities": [
-        "Spread: Louisville Cardinals -4.5"
+        "ETSY",
+        "ETSY ETSY"
       ],
       "priority": 6
     },
     {
-      "condition_id": "0x672e2df608cf784913394aa03e5d6cc857b23f96d5927414f23b7a8bf8851a13",
-      "question": "Spread: Louisville Cardinals (-3.5)",
-      "category": "other",
-      "edge": 0.13,
+      "condition_id": "0xb8b15979fdd4fcbdff0615305fd71d807ebd6262ffd7bbce6eb2fc712a1b5702",
+      "question": "Games Total: O/U 3.5",
+      "category": "sports",
+      "edge": 0.255,
       "search_queries": [
-        "Spread: Louisville Cardinals -3.5 latest news 2026",
-        "Spread: Louisville Cardinals -3.5 analysis predictions 2026",
-        "Spread: Louisville Cardinals (-3.5) latest news"
+        "Games Total: O/U latest news 2026",
+        "Games Total: O/U odds predictions 2026"
       ],
       "entities": [
-        "Spread: Louisville Cardinals -3.5"
+        "Games Total: O/U"
       ],
       "priority": 7
     },
     {
-      "condition_id": "0xcfdcad218e6496c30ecbe6914a0f0d665da9ddbdffc8ede9b802b8fb01bd07f3",
-      "question": "Miami (OH) RedHawks vs. Massachusetts Minutemen: O/U 161.5",
-      "category": "other",
-      "edge": 0.095,
+      "condition_id": "0x47446ab3dfd976b1deb6761c53f7d2e1ab5f20eae908c3ef4355849aa83b8b17",
+      "question": "Wolverhampton Wanderers FC vs. Arsenal FC: Both Teams to Score",
+      "category": "sports",
+      "edge": 0.225,
       "search_queries": [
-        "OH Miami OH RedHawks Massachusetts Minutemen: O/U latest news 2026",
-        "OH Miami OH RedHawks Massachusetts Minutemen: O/U analysis predictions 2026",
-        "Miami (OH) RedHawks vs. Massachusetts Minutemen: O/U 161.5 latest news"
+        "FC Wolverhampton Wanderers FC Arsenal FC: Both Teams latest news 2026",
+        "FC Wolverhampton Wanderers FC Arsenal FC: Both Teams odds predictions 2026",
+        "Wolverhampton Wanderers FC vs. Arsenal FC: Both Teams to Score latest news"
       ],
       "entities": [
-        "OH",
-        "Miami OH RedHawks",
-        "Massachusetts Minutemen: O/U"
+        "FC",
+        "Wolverhampton Wanderers FC",
+        "Arsenal FC: Both Teams",
+        "Score"
       ],
       "priority": 8
     },
     {
-      "condition_id": "0xb0ee0e0d4a0671c24b761637f62da2b5235fa85e51fac26f4cab0f11b83fbfa1",
-      "question": "Texas Tech Red Raiders vs. Arizona State Sun Devils: O/U 153.5",
-      "category": "culture",
-      "edge": 0.08,
+      "condition_id": "0x796bbae003c45d5331faf0b42e65aac70b6ef18a7453154216bcf12aeee74c2f",
+      "question": "Will the price of Ethereum be above $2,000 on February 19?",
+      "category": "crypto_event",
+      "edge": 0.21,
       "search_queries": [
-        "Texas Tech Red Raiders Arizona State Sun Devils: O/U latest news 2026",
-        "Texas Tech Red Raiders Arizona State Sun Devils: O/U predictions odds 2026",
-        "Texas Tech Red Raiders vs. Arizona State Sun Devils: O/U 153.5 latest news"
+        "Ethereum February crypto news today 2026",
+        "Ethereum February market analysis 2026",
+        "the price of Ethereum be above $2,000 on February 19 latest news"
       ],
       "entities": [
-        "Texas Tech Red Raiders",
-        "Arizona State Sun Devils: O/U"
+        "Ethereum",
+        "February"
       ],
       "priority": 9
     },
     {
-      "condition_id": "0x3224d9dd84a488f50aa2da6a21ba65298de725aa2a2b1274abcddab75109eec5",
-      "question": "Spread: Wyoming Cowboys (-8.5)",
-      "category": "other",
-      "edge": 0.07,
+      "condition_id": "0x6900b9aeaa078af6deafe53d1b7a08f28fbedd3f4dee887095ec7f938956f4c9",
+      "question": "Will the price of Bitcoin be between $68,000 and $70,000 on February 19?",
+      "category": "crypto_event",
+      "edge": 0.17,
       "search_queries": [
-        "Spread: Wyoming Cowboys -8.5 latest news 2026",
-        "Spread: Wyoming Cowboys -8.5 analysis predictions 2026",
-        "Spread: Wyoming Cowboys (-8.5) latest news"
+        "Bitcoin February crypto news today 2026",
+        "Bitcoin February market analysis 2026",
+        "the price of Bitcoin be between $68,000 and $70,000 on February 19 latest news"
       ],
       "entities": [
-        "Spread: Wyoming Cowboys -8.5"
+        "Bitcoin",
+        "February"
       ],
       "priority": 10
     }

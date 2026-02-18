@@ -44,14 +44,14 @@
           "change": "+2.00"
         }
       ],
-      "impact": "Weight rebalancing improves WR by 2.5pp",
-      "reasoning": "Specific indicator weight changes based on 97 trade replay",
+      "impact": "Weight rebalancing improves WR by 2.9pp",
+      "reasoning": "Specific indicator weight changes based on 63 trade replay",
       "confidence": "medium"
     }
   ],
-  "best_win_rate": 70.1,
-  "baseline_win_rate": 67.6,
-  "improvement": 2.5,
+  "best_win_rate": 63.5,
+  "baseline_win_rate": 60.6,
+  "improvement": 2.9,
   "best_params": {
     "label": "weight_v149",
     "min_consensus": 7,
@@ -81,5 +81,5 @@
       "liquidity": 0.4
     }
   },
-  "updated": "2026-02-17 07:54 PM ET"
+  "updated": "2026-02-18 06:33 AM ET"
 }

@@ -1,73 +1,73 @@
 {
   "macd": {
-    "total_votes": 227,
-    "correct_votes": 147,
-    "accuracy": 0.6475770925110133
+    "total_votes": 266,
+    "correct_votes": 174,
+    "accuracy": 0.6541353383458647
   },
   "ema": {
-    "total_votes": 227,
-    "correct_votes": 147,
-    "accuracy": 0.6475770925110133
+    "total_votes": 266,
+    "correct_votes": 178,
+    "accuracy": 0.6691729323308271
   },
   "heikin_ashi": {
-    "total_votes": 199,
-    "correct_votes": 119,
-    "accuracy": 0.5979899497487438
+    "total_votes": 234,
+    "correct_votes": 142,
+    "accuracy": 0.6068376068376068
   },
   "bollinger": {
-    "total_votes": 183,
-    "correct_votes": 60,
-    "accuracy": 0.32786885245901637
+    "total_votes": 210,
+    "correct_votes": 66,
+    "accuracy": 0.3142857142857143
   },
   "momentum": {
-    "total_votes": 227,
-    "correct_votes": 149,
-    "accuracy": 0.6563876651982379
+    "total_votes": 266,
+    "correct_votes": 180,
+    "accuracy": 0.6766917293233082
   },
   "price_div": {
-    "total_votes": 180,
-    "correct_votes": 116,
-    "accuracy": 0.6444444444444445
+    "total_votes": 211,
+    "correct_votes": 137,
+    "accuracy": 0.6492890995260664
   },
   "temporal_arb": {
-    "total_votes": 151,
-    "correct_votes": 97,
-    "accuracy": 0.6423841059602649
+    "total_votes": 174,
+    "correct_votes": 110,
+    "accuracy": 0.632183908045977
   },
   "order_flow": {
-    "total_votes": 209,
-    "correct_votes": 128,
-    "accuracy": 0.6124401913875598
+    "total_votes": 241,
+    "correct_votes": 148,
+    "accuracy": 0.6141078838174274
   },
   "volume_spike": {
-    "total_votes": 48,
-    "correct_votes": 42,
-    "accuracy": 0.875
+    "total_votes": 51,
+    "correct_votes": 43,
+    "accuracy": 0.8431372549019608
   },
   "rsi": {
-    "total_votes": 109,
-    "correct_votes": 25,
-    "accuracy": 0.22935779816513763
+    "total_votes": 119,
+    "correct_votes": 29,
+    "accuracy": 0.24369747899159663
   },
   "news": {
-    "total_votes": 128,
-    "correct_votes": 82,
-    "accuracy": 0.640625
+    "total_votes": 141,
+    "correct_votes": 83,
+    "accuracy": 0.5886524822695035
   },
   "liquidation": {
-    "total_votes": 68,
-    "correct_votes": 56,
-    "accuracy": 0.8235294117647058
+    "total_votes": 79,
+    "correct_votes": 63,
+    "accuracy": 0.7974683544303798
   },
   "spot_depth": {
-    "total_votes": 92,
-    "correct_votes": 62,
-    "accuracy": 0.6739130434782609
+    "total_votes": 103,
+    "correct_votes": 68,
+    "accuracy": 0.6601941747572816
   },
   "funding_rate": {
-    "total_votes": 5,
-    "correct_votes": 0,
-    "accuracy": 0.0
+    "total_votes": 14,
+    "correct_votes": 2,
+    "accuracy": 0.14285714285714285
   },
   "orderbook": {
     "total_votes": 5,
@@ -78,5 +78,10 @@
     "total_votes": 5,
     "correct_votes": 3,
     "accuracy": 0.6
+  },
+  "tvl_momentum": {
+    "total_votes": 1,
+    "correct_votes": 1,
+    "accuracy": 1.0
   }
 }

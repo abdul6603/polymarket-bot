@@ -1,0 +1,245 @@
+{
+  "total_reviewed": 8,
+  "wins": 2,
+  "losses": 6,
+  "win_rate": 25.0,
+  "total_pnl": -37.13,
+  "win_rate_by_category": {
+    "sports": {
+      "wins": 2,
+      "losses": 2,
+      "pnl": 22.87,
+      "win_rate": 50.0
+    },
+    "other": {
+      "wins": 0,
+      "losses": 2,
+      "pnl": -30.0,
+      "win_rate": 0.0
+    },
+    "crypto_event": {
+      "wins": 0,
+      "losses": 2,
+      "pnl": -30.0,
+      "win_rate": 0.0
+    }
+  },
+  "win_rate_by_risk_level": {
+    "low (1-3)": {
+      "wins": 1,
+      "losses": 4,
+      "pnl": -26.61,
+      "win_rate": 20.0
+    },
+    "medium (4-6)": {
+      "wins": 1,
+      "losses": 2,
+      "pnl": -10.52,
+      "win_rate": 33.3
+    }
+  },
+  "win_rate_by_edge_range": {
+    "20%+": {
+      "wins": 2,
+      "losses": 6,
+      "pnl": -37.13,
+      "win_rate": 25.0
+    }
+  },
+  "direction_stats": {
+    "yes": {
+      "wins": 2,
+      "losses": 2
+    },
+    "no": {
+      "wins": 0,
+      "losses": 4
+    }
+  },
+  "calibration_score": 0.259,
+  "losing_patterns": {
+    "avg_edge_on_losses": 0.487,
+    "top_losing_categories": [
+      {
+        "item": "sports",
+        "count": 2
+      },
+      {
+        "item": "other",
+        "count": 2
+      },
+      {
+        "item": "crypto_event",
+        "count": 2
+      }
+    ],
+    "direction_bias": [
+      {
+        "item": "no",
+        "count": 4
+      },
+      {
+        "item": "yes",
+        "count": 2
+      }
+    ]
+  },
+  "recommendations": [
+    "Win rate below 50% \u2014 consider raising min_edge threshold"
+  ],
+  "reviewed_at": "2026-02-18T11:27:59.011982-05:00",
+  "trade_reviews": [
+    {
+      "question": "Spread: Wisconsin Badgers (-1.5)",
+      "category": "sports",
+      "direction": "yes",
+      "outcome": "other",
+      "won": false,
+      "pnl": -15.0,
+      "edge": 0.425,
+      "estimated_prob": 0.7,
+      "entry_price": 0.275,
+      "risk_score": 1,
+      "verdict": "Wrong call \u2014 bet YES, lost",
+      "direction_correct": false,
+      "prob_calibration": "poor",
+      "prob_error": 0.7,
+      "reasoning": "The sportsbook consensus probability of 70.4% reflects a strong confidence in Wisconsin's ability to cover the spread against Ohio State. There are no significant injuries or breaking news affecting e",
+      "edge_source": "sportsbook_divergence",
+      "time_str": "2026-02-17 09:00PM"
+    },
+    {
+      "question": "Spread: Miami (OH) RedHawks (-3.5)",
+      "category": "sports",
+      "direction": "yes",
+      "outcome": "our_token",
+      "won": true,
+      "pnl": 19.48,
+      "edge": 0.315,
+      "estimated_prob": 0.75,
+      "entry_price": 0.435,
+      "risk_score": 4,
+      "verdict": "Correct call",
+      "direction_correct": true,
+      "prob_calibration": "decent",
+      "prob_error": 0.25,
+      "reasoning": "Miami (OH) RedHawks have an impressive undefeated record of 25-0, indicating a strong team performance throughout the season. In contrast, the Massachusetts Minutemen have a less dominant record of 15",
+      "edge_source": "base_rate",
+      "time_str": "2026-02-17 09:00PM"
+    },
+    {
+      "question": "Spread: Wyoming Cowboys (-8.5)",
+      "category": "sports",
+      "direction": "yes",
+      "outcome": "our_token",
+      "won": true,
+      "pnl": 33.39,
+      "edge": 0.311,
+      "estimated_prob": 0.621,
+      "entry_price": 0.31,
+      "risk_score": 1,
+      "verdict": "Correct call",
+      "direction_correct": true,
+      "prob_calibration": "poor",
+      "prob_error": 0.379,
+      "reasoning": "There is no new information from the breaking news that suggests any significant changes to the current consensus probability. The articles listed are neutral and do not provide any insights into inju",
+      "edge_source": "sportsbook_divergence",
+      "time_str": "2026-02-17 09:00PM"
+    },
+    {
+      "question": "North Carolina Tar Heels vs. North Carolina State Wolfpack: O/U 157.5",
+      "category": "sports",
+      "direction": "yes",
+      "outcome": "other",
+      "won": false,
+      "pnl": -15.0,
+      "edge": 0.32,
+      "estimated_prob": 0.54,
+      "entry_price": 0.22,
+      "risk_score": 2,
+      "verdict": "Wrong call \u2014 bet YES, lost",
+      "direction_correct": false,
+      "prob_calibration": "poor",
+      "prob_error": 0.54,
+      "reasoning": "The sportsbook consensus probability is 54.9% for the over/under of 157.5 points. The only notable news is that UNC's Veesaar is out, but this is not a significant enough factor to warrant a major adj",
+      "edge_source": "sportsbook_divergence",
+      "time_str": "2026-02-17 09:00PM"
+    },
+    {
+      "question": "Will the price of XRP be between $1.40 and $1.50 on February 18?",
+      "category": "other",
+      "direction": "no",
+      "outcome": "lost",
+      "won": false,
+      "pnl": -15.0,
+      "edge": 0.6,
+      "estimated_prob": 0.05,
+      "entry_price": 0.35,
+      "risk_score": 3,
+      "verdict": "Wrong call \u2014 bet NO, lost",
+      "direction_correct": false,
+      "prob_calibration": "excellent",
+      "prob_error": 0.05,
+      "reasoning": "XRP's price is highly volatile, and predicting a narrow price range like $1.40 to $1.50 is inherently difficult. Historically, cryptocurrencies exhibit significant price swings, and without any specif",
+      "edge_source": "base_rate",
+      "time_str": "2026-02-17 11:14PM"
+    },
+    {
+      "question": "Will the price of Bitcoin be between $66,000 and $68,000 on February 18?",
+      "category": "crypto_event",
+      "direction": "no",
+      "outcome": "lost",
+      "won": false,
+      "pnl": -15.0,
+      "edge": 0.49,
+      "estimated_prob": 0.05,
+      "entry_price": 0.46,
+      "risk_score": 4,
+      "verdict": "Wrong call \u2014 bet NO, lost",
+      "direction_correct": false,
+      "prob_calibration": "excellent",
+      "prob_error": 0.05,
+      "reasoning": "Bitcoin's price is highly volatile, and predicting a specific price range on a specific date is inherently difficult. Historically, Bitcoin's price has shown significant fluctuations, and the probabil",
+      "edge_source": "base_rate",
+      "time_str": "2026-02-17 11:14PM"
+    },
+    {
+      "question": "Will the price of XRP be between $1.40 and $1.50 on February 18?",
+      "category": "other",
+      "direction": "no",
+      "outcome": "lost",
+      "won": false,
+      "pnl": -15.0,
+      "edge": 0.6,
+      "estimated_prob": 0.05,
+      "entry_price": 0.35,
+      "risk_score": 3,
+      "verdict": "Wrong call \u2014 bet NO, lost",
+      "direction_correct": false,
+      "prob_calibration": "excellent",
+      "prob_error": 0.05,
+      "reasoning": "The price of XRP fluctuates significantly due to market volatility and regulatory news. Historically, XRP has experienced large price swings, making it unlikely to remain within a narrow range like $1",
+      "edge_source": "base_rate",
+      "time_str": "2026-02-17 11:14PM"
+    },
+    {
+      "question": "Will the price of Bitcoin be between $66,000 and $68,000 on February 18?",
+      "category": "crypto_event",
+      "direction": "no",
+      "outcome": "lost",
+      "won": false,
+      "pnl": -15.0,
+      "edge": 0.49,
+      "estimated_prob": 0.05,
+      "entry_price": 0.46,
+      "risk_score": 4,
+      "verdict": "Wrong call \u2014 bet NO, lost",
+      "direction_correct": false,
+      "prob_calibration": "excellent",
+      "prob_error": 0.05,
+      "reasoning": "Bitcoin's price is highly volatile, and the likelihood of it landing within a narrow $2,000 range on a specific day is low. Historically, Bitcoin's daily price movements often exceed this range, makin",
+      "edge_source": "base_rate",
+      "time_str": "2026-02-17 11:14PM"
+    }
+  ]
+}

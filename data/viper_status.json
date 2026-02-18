@@ -1,15 +1,16 @@
 {
   "running": true,
   "mode": "intelligence",
-  "cycle": 170,
-  "total_intel": 513,
-  "total_matched": 2873,
-  "last_scan_items": 93,
-  "last_scan_new": 1,
-  "last_scan_matched": 68,
-  "sources": {
-    "tavily": 48,
-    "reddit": 45
-  },
-  "last_update": "2026-02-17T20:31:24.139779-05:00"
+  "cycle": 83,
+  "total_intel": 245,
+  "total_matched": 3235,
+  "last_scan_items": 0,
+  "last_scan_new": 0,
+  "last_scan_matched": 41,
+  "sources": {},
+  "briefing_active": false,
+  "briefed_markets": 10,
+  "tavily_ran": false,
+  "soren_opportunities": null,
+  "last_update": "2026-02-18T17:30:22.250297-05:00"
 }

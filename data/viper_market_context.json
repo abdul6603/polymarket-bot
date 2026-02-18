@@ -1,636 +1,465 @@
 {
-  "0x3acb42d4a4da859a82ec3c78e6be641489985672ea7f28ae73da7c253af32fa8": [
+  "0xcc50462aed8b6f537847a1314a651c83f91be2786280a2785b65895972c40484": [
     {
-      "headline": "2025 Canadian federal election",
-      "summary": "The 2025 Canadian federal election was held on April 28 to elect members of the House of Commons to the 45th Canadian Parliament.",
+      "headline": "Daily General Discussion February 18, 2026 : r/ethereum - Reddit",
+      "summary": "Peter Thiel's Founders Fund has fully exited its ETHZilla stake, selling down from ~7.5% to zero. ETHZilla pivoted to an Ethereum-heavy treasury",
       "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.263,
-      "timestamp": 1771363785.6524282
-    },
-    {
-      "headline": "US military used Anthropic's AI model Claude in Venezuela ...",
-      "summary": "Claude, the AI model developed by Anthropic, was used by the US military during its operation to kidnap Nicol\u00e1s Maduro from Venezuela, the Wall",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 0.256,
-      "timestamp": 1771332190.165767
-    },
-    {
-      "headline": "Anthropic clinches $380 billion valuation after $30 billion ... - Reuters",
-      "summary": "Feb 12 (Reuters) - Anthropic has raised $30 billion in its latest funding round, more than doubling the Claude chatbot maker's valuation to",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 0.252,
-      "timestamp": 1771331215.196189
-    },
-    {
-      "headline": "Anthropic clinches $380 billion valuation after $30 ...",
-      "summary": "Feb 12 (Reuters) - Anthropic has raised $30 billion in its latest funding round, more than doubling the Claude chatbot maker's valuation to",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 0.252,
-      "timestamp": 1771332190.165961
-    },
-    {
-      "headline": "Polymarket: GTA VI Release by June 2026? Odds Favor Early Launch",
-      "summary": "If you place a $1,000 bet on GTA VI being released before June 2026, the payout would be $1,600, reflecting the odds favoring an earlier launch.",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 0.251,
-      "timestamp": 1771332188.479585
-    },
-    {
-      "headline": "Canada federal election 2025 live results | CBC News",
-      "summary": "Who will form the next government in Canada? Follow live election results on April 28, with breakdowns from your riding and races across the",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.251,
-      "timestamp": 1771337358.669801
-    },
-    {
-      "headline": "Anthropic launches Claude Opus 4.6 as AI moves toward a 'vibe ...",
-      "summary": "Anthropic launched its latest AI model, Claude Opus 4.6, which is better at coding, sustaining tasks for longer and creating higher-quality",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 0.249,
-      "timestamp": 1771331215.194101
-    },
-    {
-      "headline": "AI Update, February 6, 2026: AI News and Views From the ...",
-      "summary": "Anthropic launched Claude Opus 4.6 as a direct upgrade designed to extend beyond coding into broader knowledge work. The model introduces a one-",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 0.249,
-      "timestamp": 1771332190.16551
-    }
-  ],
-  "0x534f933826463ea9eed59c0052eaed8caf6cf600c074b9988a276964a493605b": [
-    {
-      "headline": "Fortune Tech: The Pentagon goes to war with Anthropic",
-      "summary": "The situation apparently follows months of tough negotiations between the Pentagon and Anthropic over the ways its AI tools can be used by the",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 0.307,
-      "timestamp": 1771331967.303118
-    },
-    {
-      "headline": "The New York Times - Breaking News, US News, World News and ...",
-      "summary": "Top Stories \u00b7 Mamdani Administration. Rental Assistance Reversal \u00b7 Chief Tech Officer \u00b7 Social Services Chief Resigns \u00b7 Cold Weather Crisis \u00b7 A 31-Day Challenge.",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.302,
-      "timestamp": 1771373805.9177861
-    },
-    {
-      "headline": "Election Results - Virginia Dept. of Elections",
-      "summary": "The Department of Elections publishes unofficial results for all Virginia elections to its website on the night of the election.",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.167,
-      "timestamp": 1771375402.8139489
-    },
-    {
-      "headline": "2025 Election Results: Live",
-      "summary": "View interactive maps and live results for key U.S. elections in New Jersey, Virginia, California, New York City and Colorado.",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.16,
-      "timestamp": 1771375402.813766
-    },
-    {
-      "headline": "2025 Election Results: Live : NPR",
-      "summary": "View interactive maps and live results for key U.S. elections in New Jersey, Virginia, California, New York City and Colorado.",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.159,
-      "timestamp": 1771372847.306848
-    },
-    {
-      "headline": "Election 2025: News, results and analysis | CNN Politics",
-      "summary": "In the first major electoral test of the second Trump administration, Democrats swept the major races in Virginia, New Jersey and New York City,",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.154,
-      "timestamp": 1771369956.7283268
-    },
-    {
-      "headline": "Winter Olympics 2026 Betting and Picks Daily Discussion - 2/17/26 (Tuesday)",
-      "summary": "Winter Olympics 2026 Betting and Picks Daily Discussion - 2/17/26 (Tuesday)",
-      "source": "reddit/r/sportsbook",
-      "sentiment": 0.0,
-      "confidence": 0.502,
-      "relevance": 0.15,
-      "timestamp": 1771304752.97689
-    },
-    {
-      "headline": "Edmonton - CBC News",
-      "summary": "Edmonton main lineup ; Number of reports of people with weapons rises in Alberta after Tumbler Ridge shooting, say RCMP. Fakiha Baig. Canada -Edmonton ; Tumbler",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.15,
-      "timestamp": 1771307716.9768121
-    }
-  ],
-  "0xaebb47777170724e3028649418c3579c3b82ff3f6a04b1c8a18726e066971005": [
-    {
-      "headline": "NBC News: Breaking Headlines and Video Reports",
-      "summary": "In the latest turn of events, a federal judge ruled panels about people George Washington enslaved were wrongly removed at an exhibit in Philadelphia. Image:",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.306,
-      "timestamp": 1771307075.090816
-    },
-    {
-      "headline": "George W. Bush Can Suck It: He didn\u2019t throw shade at Trump; he whitewashed authoritarianism.",
-      "summary": "Score: 2211, Comments: 118",
-      "source": "reddit/r/politics",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 0.167,
-      "timestamp": 1771366115.793301
-    },
-    {
-      "headline": "Punchbowl News - Breaking news, US politics, Congress news",
-      "summary": "The latest news from the Capitol and leadership in Congress. Punchbowl News follows investigations, policies, hearings and more in Washington.",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.163,
-      "timestamp": 1771376035.5463219
-    },
-    {
-      "headline": "Latest U.S. opinion polls",
-      "summary": "Reuters/Ipsos Poll. Washington, DC, December 17, 2025 \u2013 The cost of living remains the top issue for Americans when it comes to the 2026",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.16,
-      "timestamp": 1771352324.490813
-    },
-    {
-      "headline": "Latest U.S. opinion polls | Ipsos",
-      "summary": "Reuters/Ipsos Poll. Washington, DC, December 17, 2025 \u2013 The cost of living remains the top issue for Americans when it comes to the 2026",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.16,
-      "timestamp": 1771364109.707194
-    },
-    {
-      "headline": "Iran partially shuts Strait of Hormuz as US, Iran hold nuclear talks",
-      "summary": "Iran's supreme leader warned that U.S. attempts to depose his government would fail, as Washington and Tehran began indirect talks in Geneva",
-      "source": "tavily",
+      "url": "https://www.reddit.com/r/ethereum/comments/1r7v1qw/daily_general_discussion_february_18_2026/",
       "sentiment": -1.0,
       "confidence": 0.8,
-      "relevance": 0.154,
-      "timestamp": 1771332044.82261
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771418062.243221
     },
     {
-      "headline": "The Washington Post - Breaking news and latest headlines, U.S. ...",
-      "summary": "Mapping U.S. strikes in the Caribbean and eastern Pacific \u00b7 Popular anger burns in Iran after crackdown, as Trump turns up pressure \u00b7 Rubio lends hand to",
+      "headline": "Ethereum price prediction 2026\u20132030 | Future Forecast - Capital.com",
+      "summary": "Galaxy's research team states, in its crypto predictions report, that Ether is expected to trade above $5,500 at some point in 2025, framing",
       "source": "tavily",
+      "url": "https://capital.com/en-int/market-updates/eth-stock-forecast-13-02-2026",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771418062.2434208
+    },
+    {
+      "headline": "What does the price of Ethereum hold for February 2026? - Binance",
+      "summary": "The price of Ethereum approaches February 2026 at a decisive crossroads. Indeed, after losing nearly 7% in January, ETH finishes the month",
+      "source": "tavily",
+      "url": "https://www.binance.com/en/square/post/35793906416409",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771418062.243499
+    },
+    {
+      "headline": "Gareth Soloway Shares What's Next for Bitcoin, Ethereum, XRP ...",
+      "summary": "... cryptosrus, coin bureau, altcoin news, bitcoin today, markets, investing ... Politics Chat, February 17, 2026. Heather Cox Richardson. New.",
+      "source": "tavily",
+      "url": "https://www.youtube.com/watch?v=Lm-H37evXF8",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771418062.243573
+    },
+    {
+      "headline": "Prediction: 2026 Will Be the Year of Ethereum (ETH)",
+      "summary": "Key Points \u00b7 A change in market sentiment \u00b7 Growth in DeFi \u00b7 New crypto market legislation on the way \u00b7 Can Ethereum reclaim the $5,000 price level?",
+      "source": "tavily",
+      "url": "https://www.theglobeandmail.com/investing/markets/stocks/BMNR/pressreleases/276443/prediction-2026-will-be-the-year-of-ethereum-eth/",
       "sentiment": 1.0,
-      "confidence": 0.7,
-      "relevance": 0.153,
-      "timestamp": 1771364438.297699
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771418062.243659
     },
     {
-      "headline": "The Washington Post - Breaking news and latest headlines ...",
-      "summary": "Hegseth forces ouster of senior Army spokesman in latest internal clash \u00b7 U.S. offers more details on claim China conducted secret nuclear weapons test \u00b7 Groups",
+      "headline": "Prediction: 2026 Will Be the Year of Ethereum (ETH) | The Motley Fool",
+      "summary": "Ethereum could more than double in price in 2026 to reclaim its all-time high near $5,000. It's been a rough start to the year for Ethereum (ETH",
       "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.152,
-      "timestamp": 1771374124.514765
-    }
-  ],
-  "0xab4fc4ada9c56bb191662181ffc8841700941ffce7456ddec3eb2e95bf30e3c2": [
+      "url": "https://www.fool.com/investing/2026/02/18/prediction-2026-will-be-the-year-of-ethereum-eth/",
+      "sentiment": 1.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771418062.2437382
+    },
     {
-      "headline": "CBS Sports - News, Live Scores, Schedules, Fantasy Games, Video ...",
-      "summary": "live scoring, news, stats, and player info. Scores 6:30PM PEAC. Michigan Wolverines versus Purdue Boilermakers 7:00PM. SMU +4.5 Louisville Cardinals versus SMU",
+      "headline": "Tom Lee Calls 2026 a 'Defining Year' for Ethereum - Yahoo Finance",
+      "summary": "Tom Lee Calls 2026 a 'Defining Year' for Ethereum: Here's What That Means. Something went wrong. Skip to main content. News \u00b7 Today's news \u00b7 US",
       "source": "tavily",
+      "url": "https://finance.yahoo.com/news/tom-lee-calls-2026-defining-193500840.html",
       "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.494,
-      "timestamp": 1771366425.798018
-    }
-  ],
-  "0x672e2df608cf784913394aa03e5d6cc857b23f96d5927414f23b7a8bf8851a13": [
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771418062.2438242
+    },
     {
-      "headline": "CBS Sports - News, Live Scores, Schedules, Fantasy Games, Video ...",
-      "summary": "live scoring, news, stats, and player info. Scores 6:30PM PEAC. Michigan Wolverines versus Purdue Boilermakers 7:00PM. SMU +4.5 Louisville Cardinals versus SMU",
+      "headline": "Daily General Discussion February 17, 2026 : r/ethereum - Reddit",
+      "summary": "QQQ down 1% today. ETH price action in comparison is great! Now really is the time to accumulate.",
       "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.494,
-      "timestamp": 1771366425.798018
-    }
-  ],
-  "0xcfdcad218e6496c30ecbe6914a0f0d665da9ddbdffc8ede9b802b8fb01bd07f3": [
-    {
-      "headline": "Polymarket Sues Massachusetts Over Prediction Market ...",
-      "summary": "# Polymarket Sues Massachusetts Over Prediction Market Crackdown. A state judge ordered Kalshi to cease sports wagering in Massachusetts within 30 days. Judge **Christopher Barry-Smith** rejected Kalshi\u2019s argument that federal CFTC oversight shields it from state gambling laws. Polymarket claims the",
-      "source": "tavily",
+      "url": "https://www.reddit.com/r/ethereum/comments/1r6y4bq/daily_general_discussion_february_17_2026/",
       "sentiment": -1.0,
-      "confidence": 0.7,
-      "relevance": 0.181,
-      "timestamp": 1771322360.96709
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771426927.607771
+    }
+  ],
+  "0xe33720074e2a51b89fdaa0c67e8d4a66d795a584327d92bdd366ea4795f5c966": [
+    {
+      "headline": "Suns vs. Spurs (Mar 19, 2026) Live Score - ESPN",
+      "summary": "The 76ers plan to sign two-way forward Jabari Walker to a new two-year contract and veteran guard Cam Payne for the remainder of the season,",
+      "source": "tavily",
+      "url": "https://www.espn.com/nba/game/_/gameId/401810868/suns-spurs",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771428142.90005
     },
     {
-      "headline": "Polymarket Sues Massachusetts Over Prediction Market Crackdown",
-      "summary": "# Polymarket Sues Massachusetts Over Prediction Market Crackdown. A state judge ordered Kalshi to cease sports wagering in Massachusetts within 30 days. Judge **Christopher Barry-Smith** rejected Kalshi\u2019s argument that federal CFTC oversight shields it from state gambling laws. Polymarket claims the",
+      "headline": "Spurs vs. Suns Prediction, Odds, Picks - Feb. 19 - FOX Sports",
+      "summary": "The San Antonio Spurs (38-16) will attempt to extend a six-game winning stretch when they host the Phoenix Suns (32-23) on February 19, 2026",
       "source": "tavily",
+      "url": "https://www.foxsports.com/articles/nba/spurs-vs-suns-prediction-odds-picks-feb-19",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771428142.9002728
+    },
+    {
+      "headline": "Spurs vs. Suns Prediction, Odds, Picks, Best Bets for Feb. 19",
+      "summary": "Spurs vs. Suns Game Info. Date: Thursday, February 19, 2026; Time: 8:30 p.m. ET ; Spurs vs. Suns Betting Trends. The Spurs are 28-22-4 against",
+      "source": "tavily",
+      "url": "https://www.fanduel.com/research/spurs-vs-suns-prediction-nba-odds-spread-best-bets-for-2-19-2026",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771428142.900465
+    },
+    {
+      "headline": "Phoenix Suns Rumors, Trades, Free Agency - Valley of the Suns",
+      "summary": "Free Agency ; Suns sign perfect forward while rest of league is watching All-Star Weekend. Luke Duffy \u00b7 Feb 14, 2026 ; Suns are winning because they hit the",
+      "source": "tavily",
+      "url": "https://valleyofthesuns.com/",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771428142.900664
+    },
+    {
+      "headline": "Air Alamo: San Antonio Spurs News, Rumors, Draft, Free Agency ...",
+      "summary": "Bismack Biyombo's days are numbered after Spurs' latest signing \u00b7 The Spurs are drawing closer to a complete NBA power rankings takeover \u00b7 Unsung Spurs hero has",
+      "source": "tavily",
+      "url": "https://airalamo.com/",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771428142.9008682
+    },
+    {
+      "headline": "San Antonio faces Phoenix, seeks 7th straight victory | ktvb.com",
+      "summary": "The Suns are shooting 46.0% from the field, 0.4% higher than the 45.6% the Spurs' opponents have shot this season. The teams meet for the third",
+      "source": "tavily",
+      "url": "https://www.ktvb.com/article/syndication/associatedpress/san-antonio-faces-phoenix-seeks-7th-straight-victory/616-46b969f1-34ae-4e47-816d-f3d076375d61",
+      "sentiment": 1.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771428142.901074
+    },
+    {
+      "headline": "Why Jeremy Sochan is not the answer for the Suns frontcourt",
+      "summary": "The San Antonio Spurs have released Jeremy Sochan. They are allowing him an opportunity to test the market and find a home. I am here to tell",
+      "source": "tavily",
+      "url": "https://www.brightsideofthesun.com/suns-roster/98617/jeremy-sochan-released-spurs-free-agency-suns-rumors-roster-fit-ryan-dunn-stats-analysis",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771428142.901264
+    },
+    {
+      "headline": "Spurs Sign 13-Year NBA Center to 10-Day Contract - Yahoo Sports",
+      "summary": "The San Antonio Spurs added an extra body before NBA action returns following the All-Star break. San Antonio already has four centers on",
+      "source": "tavily",
+      "url": "https://sports.yahoo.com/articles/spurs-sign-13-nba-center-043742658.html",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771428142.901454
+    }
+  ],
+  "0x2cdb4368cf40772af15618288c21671af59d0f9cdaceb34e532780de02177355": [
+    {
+      "headline": "Czechia leads 2-1 over Canada in first period of win-or-go-home game",
+      "summary": "The Latest\u200b\u200b Czechia leads Canada 2-1 in a quarterfinal, win-or-go-home men's hockey game. Canada's men's curling team cruised to an 8-3 victory",
+      "source": "tavily",
+      "url": "https://www.cbc.ca/sports/olympics/winter/livestory/olympics-2026-milano-cortina-winter-olympic-games-day-12-team-canada-live-updates-9.7094485",
+      "sentiment": 1.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771432852.32782
+    },
+    {
+      "headline": "Canada vs Czechia Olympics Quarterfinals Live Updates, Score and ...",
+      "summary": "Canada and Czechia opened their 2026 Winter Olympics with a preliminary round game last Thursday, Feb. 12. Canada won handily, 5-0, with Macklin",
+      "source": "tavily",
+      "url": "https://www.flohockey.tv/articles/15450552-canada-vs-czechia-olympics-quarterfinals-live-updates-score-and-highlights",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771432852.328036
+    },
+    {
+      "headline": "Canada faces Czechia in men's hockey quarters; 'Beat-up' McMorris ...",
+      "summary": "Winter Olympics 2026 live updates: Canada faces Czechia in men's hockey quarters; 'Beat-up' McMorris finishes 8th in slopestyle. Sarault",
+      "source": "tavily",
+      "url": "https://www.theglobeandmail.com/sports/olympics/article-winter-olympics-2026-canada-vs-czechia-mens-hockey-quarterfinal-score/",
+      "sentiment": 1.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771432852.328209
+    },
+    {
+      "headline": "Canada vs Czechia Projected Lines For Olympic Hockey Today",
+      "summary": "See the official projected lines for the Canada vs Czechia quarterfinals game on Wednesday, Feb. 18 at the 2026 Winter Olympics in Milan.",
+      "source": "tavily",
+      "url": "https://www.flohockey.tv/articles/15450614-canada-vs-czechia-projected-lines-for-olympic-hockey-today-marchands-back",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771432852.328371
+    },
+    {
+      "headline": "What happens if Team Canada loses, wins or ties vs Czechia today ...",
+      "summary": "Canada and Czechia collide in a quarterfinal at the 2026 Winter Olympics after contrasting paths \u2014 dominant Canadians and gritty Czech underdogs",
+      "source": "tavily",
+      "url": "https://bolavip.com/en/nhl/what-happens-if-team-canada-loses-wins-or-ties-vs-czechia-today-in-2026-winter-olympics-quarterfinals",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771432852.3285928
+    },
+    {
+      "headline": "Canada vs. Czechia box score: Full stats from 2026 Olympic men's ...",
+      "summary": "Czechian star David Pastrnak said ahead of Wednesday's quarterfinal matchup that Canada \"might be the best team ever,\" indicating his team knows",
+      "source": "tavily",
+      "url": "https://www.sportingnews.com/us/nhl/news/canada-czechia-box-score-stats-2026-olympic-hockey/489ca339c1e11264b592473e",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771432852.3287628
+    },
+    {
+      "headline": "2026 Winter Olympics Day 12 recap: Team Canada's men's hockey ...",
+      "summary": "2026 Winter Olympics Day 12 recap: Team Canada's men's hockey faces Czechia in quarterfinals, as short-track stars push for the podium again.",
+      "source": "tavily",
+      "url": "https://ca.news.yahoo.com/2026-winter-olympics-day-12-recap-team-canadas-mens-hockey-faces-czechia-in-quarterfinals-as-short-track-stars-push-for-the-podium-again-122206655.html",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771432852.328943
+    },
+    {
+      "headline": "Necas powers Czechia into Olympic quarterfinal rematch with Canada",
+      "summary": "MILAN \u2013 Martin Necas brought his game and his confidence to the Olympic Winter Games Milano Cortina 2026.",
+      "source": "tavily",
+      "url": "https://www.nhl.com/news/martin-necas-powers-team-czechia-into-olympic-quarterfinals",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771432852.3291311
+    }
+  ],
+  "0xf972542880343e9bb9fc75aec332b34d1becf0e0b8a7aee37b3c6f43f694ce7a": [
+    {
+      "headline": "Bitcoin Forecast Lowered, Bitcoin Price Diverging From Gold",
+      "summary": "Bitcoin Forecast Lowered, Bitcoin Price Diverging From Gold | Bloomberg Crypto 2/17/2026 ... 02/18/2026. Bloomberg Television. New. 1.1K views.",
+      "source": "tavily",
+      "url": "https://www.youtube.com/watch?v=Cnrbgx8P6_M",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771416790.103668
+    },
+    {
+      "headline": "What Triggered Bitcoin's Major Selloff in February 2026? | VanEck",
+      "summary": "Bitcoin's February selloff reflects orderly deleveraging rather than capitulation. Despite a roughly 20% YTD decline, leverage has",
+      "source": "tavily",
+      "url": "https://www.vaneck.com/us/en/blogs/digital-assets/matthew-sigel-what-triggered-bitcoins-major-selloff-in-february-2026/",
       "sentiment": -1.0,
-      "confidence": 0.7,
-      "relevance": 0.181,
-      "timestamp": 1771336716.061483
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771416790.104029
+    },
+    {
+      "headline": "Prediction: Bitcoin Will Hit $150,000 By the End of 2026",
+      "summary": "Bitcoin has the potential to double in value this year. Here's why.",
+      "source": "tavily",
+      "url": "https://finance.yahoo.com/news/prediction-bitcoin-hit-150-000-110500127.html",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771416790.104175
+    },
+    {
+      "headline": "BTC price news: bitcoin claws back to $70,000 after $8.7 ... - CoinDesk",
+      "summary": "Bitcoin's price recovered above $70,000 after a drop, driven by cooler-than-expected U.S. inflation data and increased risk appetite.",
+      "source": "tavily",
+      "url": "https://www.coindesk.com/markets/2026/02/14/bitcoin-claws-back-to-usd70-000-on-cooling-inflation-after-usd8-7-billion-wipeout",
+      "sentiment": -1.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771428141.1881568
+    },
+    {
+      "headline": "No, but seriously: What's going on with bitcoin? | CNN Business",
+      "summary": "Bitcoin is acting weird. The world's most famous cryptocurrency has tumbled 44% from its October peak, falling below $70000 Thursday for the",
+      "source": "tavily",
+      "url": "https://www.cnn.com/2026/02/05/investing/bitcoin-price",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771428141.1883252
+    },
+    {
+      "headline": "Bitcoin on pace for fourth negative week in a row, here's ... - YouTube",
+      "summary": "On today's episode of CNBC Crypto World, experts weigh in on recent crypto market pressure as bitcoin heads for its fourth negative week in",
+      "source": "tavily",
+      "url": "https://www.youtube.com/watch?v=r5YUljbPCfk",
+      "sentiment": -1.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771428141.189257
+    },
+    {
+      "headline": "My Trading Game Plan | February 18, 2026 - YouTube",
+      "summary": "... crypto and will walk you through everything you need to be a ... Macro Cycle 2026\u2014Bitcoin, Gold, Stocks, Commodities, Bonds: Mike",
+      "source": "tavily",
+      "url": "https://www.youtube.com/watch?v=N_N6ziCzXe0",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771429069.961658
+    },
+    {
+      "headline": "$10,000 in XRP or Bitcoin for 2026? 3 AI Models Pick the Winner",
+      "summary": "ChatGPT favors XRP for a $10,000 investment through 2026. The AI model projects the XRP price at $2.50 to $3.50, implying 56% to 119% upside",
+      "source": "tavily",
+      "url": "https://247wallst.com/investing/2026/02/18/10000-in-xrp-or-bitcoin-for-2026-3-ai-models-pick-the-winner/",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771429069.962017
     }
   ],
-  "0x168959e2c7e997109d9bb7b6dd4c51d8a4f4fb0d8a65eb2b034d29e1240b15e1": [
+  "0xfe0dd8d584ba331c35833b315f62607c90213959f3193d32737aff8bc7059a97": [
     {
-      "headline": "Live updates: Trump presidency news, US-Iran talks in Geneva - CNN",
-      "summary": "US and Iran nuclear talks underway in Geneva as Trump says he will be 'indirectly' involved. Updated 6:54 AM EST, Tue February 17, 2026.",
+      "headline": "Bitcoin bounce fades as it hovers around $66,000 - CNBC",
+      "summary": "Bitcoin has remained volatile, recovering from its early February low to $70,000 before falling back down under that mark.",
       "source": "tavily",
-      "sentiment": 0.0,
+      "url": "https://www.cnbc.com/2026/02/11/bitcoin-price-today-crypto-volatility.html",
+      "sentiment": -1.0,
       "confidence": 0.8,
-      "relevance": 0.5,
-      "timestamp": 1771331210.115753
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771415826.063714
     },
     {
-      "headline": "Exclusive: US military preparing for potentially weeks-long Iran ...",
-      "summary": "Iran's Revolutionary Guard has warned that in case of strikes on Iranian territory, it could retaliate against any U.S. military base. The U.S.",
+      "headline": "Bitcoin stuck in tight range; WLFI rallies ahead of crypto forum",
+      "summary": "Bitcoin is up 0.9% on Wednesday to around $68,000, holding between $65,100 and $72,000 since Feb. 6 as volatility and funding rates cool.",
       "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 0.5,
-      "timestamp": 1771331210.116844
-    },
-    {
-      "headline": "Top Iran General Unveils War Plan Against U.S. - YouTube",
-      "summary": "... news & updates and exclusive stories, follow the Times of India. ... Top U.S. & World Headlines \u2014 February 16, 2026. Democracy Now! New.",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 0.495,
-      "timestamp": 1771331210.1163661
-    },
-    {
-      "headline": "The Washington Post - Breaking news and latest headlines, U.S. ...",
-      "summary": "Mapping U.S. strikes in the Caribbean and eastern Pacific \u00b7 Popular anger burns in Iran after crackdown, as Trump turns up pressure \u00b7 Rubio lends hand to",
-      "source": "tavily",
+      "url": "https://www.coindesk.com/markets/2026/02/18/bitcoin-holds-near-usd68-000-as-volatility-cools-wlfi-jumps-ahead-of-mar-a-lago-forum",
       "sentiment": 1.0,
-      "confidence": 0.7,
-      "relevance": 0.493,
-      "timestamp": 1771364438.297699
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771415826.063785
     },
     {
-      "headline": "All Predictions & Real-Time Odds | Polymarket",
-      "summary": "Polymarket is the world's largest prediction market, where you can stay informed and profit from your knowledge by trading on things related to breaking news, politics, sports, elections, crypto, finance, tech, culture, including topics like All. Polymarket currently hosts 6800 active markets for Al",
+      "headline": "$695K bitcoin? $21K ether? Here's where 21 experts think crypto is ...",
+      "summary": "\"Bitcoin clearing $200,000 in 2026 and moving toward $1 million ... This story was originally published February 17, 2026 at 10:00 AM.",
       "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.477,
-      "timestamp": 1771361809.801156
-    },
-    {
-      "headline": "U.S. and Iran to hold a second round of nuclear talks in Geneva",
-      "summary": "GENEVA \u2014 The U.S. and Iran are expected to hold their second round of talks about Iran's nuclear program Tuesday in Geneva as the United",
-      "source": "tavily",
+      "url": "https://www.charlotteobserver.com/news/business/article314741042.html",
       "sentiment": 0.0,
       "confidence": 0.8,
-      "relevance": 0.261,
-      "timestamp": 1771331210.115485
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771415826.063848
     },
     {
-      "headline": "US and Iran to hold a second round of nuclear talks in Geneva",
-      "summary": "GENEVA (AP) \u2014 The U.S. and Iran are expected to hold their second round of talks about Iran's nuclear program Tuesday in Geneva as the United",
+      "headline": "Daily Crypto Discussion - February 18, 2026 (GMT+0) - Reddit",
+      "summary": "The leading community for cryptocurrency news, discussion, and analysis. 904K Weekly visitors 14K Weekly contributions.",
       "source": "tavily",
+      "url": "https://www.reddit.com/r/CryptoCurrency/comments/1r7om6p/daily_crypto_discussion_february_18_2026_gmt0/",
       "sentiment": 0.0,
       "confidence": 0.8,
-      "relevance": 0.261,
-      "timestamp": 1771332044.821642
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771415826.0639338
     },
     {
-      "headline": "[PDF] results.pdf - February 2026 Special Election",
-      "summary": "Election Results. February 10, 2026. Unofficial Election Results, Updated 02/13/2026. School. Bellevue School District No. 405. Ballots Counted: 21,957.",
+      "headline": "Prediction: Bitcoin Will Hit $150000 By the End of 2026",
+      "summary": "With Bitcoin (BTC 0.07%) currently trading for less than $70,000, it might seem inconceivable that it could more than double in value to hit",
       "source": "tavily",
+      "url": "https://www.fool.com/investing/2026/02/18/prediction-bitcoin-will-hit-150000-by-the-end-of-2/",
       "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.258,
-      "timestamp": 1771328732.344873
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771415826.063972
+    },
+    {
+      "headline": "Stocks, Metals, Bitcoin - Rolling Down The Risk Curve - YouTube",
+      "summary": "Crypto Banter. New. 1.8K views \u00b7 35:55 \u00b7 Go to channel David Lin ... Politics Chat, February 17, 2026. Heather Cox Richardson. New. 210K",
+      "source": "tavily",
+      "url": "https://www.youtube.com/watch?v=X_rFEH24Ebg",
+      "sentiment": -1.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771415826.0640142
+    },
+    {
+      "headline": "Despite Bitcoin's Plunge, These Crypto IPOs Are Seen on Deck for ...",
+      "summary": "Despite Bitcoin's Plunge, These Crypto IPOs Are Seen on Deck for 2026. Investors are nursing huge losses on 2025 crypto IPOs, but stablecoin",
+      "source": "tavily",
+      "url": "https://global.morningstar.com/en-eu/stocks/despite-bitcoins-plunge-these-crypto-ipos-are-seen-deck-2026",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771415826.0640519
+    },
+    {
+      "headline": "Will Bitcoin drop again? Cryptocurrencies try to stabilize after the sell ...",
+      "summary": "Cryptocurrencies are trying to \u201cstabilize\u201d after the recent, sharp sell-off, while Bitcoin continues to consolidate between $65,000 and",
+      "source": "tavily",
+      "url": "https://www.xtb.com/int/market-analysis/news-and-research/crypto-news-will-bitcoin-drop-again-cryptocurrencies-try-to-stabilize-after-the-sell-off",
+      "sentiment": -1.0,
+      "confidence": 0.8,
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771415826.064131
     }
   ],
-  "0xb0ee0e0d4a0671c24b761637f62da2b5235fa85e51fac26f4cab0f11b83fbfa1": [
+  "0x6900b9aeaa078af6deafe53d1b7a08f28fbedd3f4dee887095ec7f938956f4c9": [
     {
-      "headline": "Fortune Tech: The Pentagon goes to war with Anthropic",
-      "summary": "The situation apparently follows months of tough negotiations between the Pentagon and Anthropic over the ways its AI tools can be used by the",
+      "headline": "Bitcoin Won Over Wall Street and Now It's Paying the Price",
+      "summary": "The Coinbase premium \u2014 negative for most of 2026 \u2014 suggests that demand has yet to materialize. Coinbase Premium Turns Deeply Negative Since",
       "source": "tavily",
-      "sentiment": 0.0,
+      "url": "https://www.bloomberg.com/news/articles/2026-02-18/bitcoin-won-over-wall-street-and-now-it-s-paying-the-price",
+      "sentiment": -1.0,
       "confidence": 0.8,
-      "relevance": 0.254,
-      "timestamp": 1771331967.303118
-    },
-    {
-      "headline": "The New York Times - Breaking News, US News, World News and ...",
-      "summary": "Top Stories \u00b7 Mamdani Administration. Rental Assistance Reversal \u00b7 Chief Tech Officer \u00b7 Social Services Chief Resigns \u00b7 Cold Weather Crisis \u00b7 A 31-Day Challenge.",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.25,
-      "timestamp": 1771373805.9177861
-    },
-    {
-      "headline": "Winter Olympics 2026 Betting and Picks Daily Discussion - 2/17/26 (Tuesday)",
-      "summary": "Winter Olympics 2026 Betting and Picks Daily Discussion - 2/17/26 (Tuesday)",
-      "source": "reddit/r/sportsbook",
-      "sentiment": 0.0,
-      "confidence": 0.502,
-      "relevance": 0.15,
-      "timestamp": 1771304752.97689
-    },
-    {
-      "headline": "Edmonton - CBC News",
-      "summary": "Edmonton main lineup ; Number of reports of people with weapons rises in Alberta after Tumbler Ridge shooting, say RCMP. Fakiha Baig. Canada -Edmonton ; Tumbler",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.15,
-      "timestamp": 1771307716.9768121
-    },
-    {
-      "headline": "Latest Stories in Edmonton AB - Daily Hive",
-      "summary": "Wondering what's going on in Edmonton today? Daily Hive has you covered! Check here for the latest stories happening in Edmonton right now.",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.15,
-      "timestamp": 1771307716.97688
-    },
-    {
-      "headline": "Local & Canadian Politics News and Headlines - Global News",
-      "summary": "Ottawa expects Ukrainian emergency visa holders to return after war ends. Canada. 10 hours \u00b7 Liberals' plan for defence industry includes pledge of 125K jobs.",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.15,
-      "timestamp": 1771308985.7495449
-    },
-    {
-      "headline": "Los Angeles Times: News from California, across the nation and world",
-      "summary": "The L.A. Times is a leading source of breaking news, entertainment, sports, politics, and more for Southern California and the world.",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.15,
-      "timestamp": 1771309311.321558
-    },
-    {
-      "headline": "Breaking News - Headlines & Top Stories | The Star",
-      "summary": "Politics \u00b7 AI minister seeks new investments through visits to Germany, Saudi Arabia, India. 9 hrs ago \u00b7 Ukrainian emergency visa holders expected to return after",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.15,
-      "timestamp": 1771309944.424274
-    }
-  ],
-  "0x741fb7665ab8f7d46738b6f4d6b221f66a8cc2f404c00a76f9df76596002d577": [
-    {
-      "headline": "Election Results | New York State Board of Elections",
-      "summary": "Election Results. On this page. Election Results; Ballot Certifications",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.17,
-      "timestamp": 1771332880.050675
-    },
-    {
-      "headline": "Latest Polls 2025, 2026, 2028",
-      "summary": "Stay up to date on all the latest 2025, 2026, 2028 election and state of the union polls. Gain valuable insights into the evolving political landscape and",
-      "source": "tavily",
-      "sentiment": 1.0,
-      "confidence": 0.7,
-      "relevance": 0.163,
-      "timestamp": 1771352324.490598
-    },
-    {
-      "headline": "Latest Polls 2025, 2026, 2028 | RealClearPolling",
-      "summary": "Stay up to date on all the latest 2025, 2026, 2028 election and state of the union polls. Gain valuable insights into the evolving political landscape and",
-      "source": "tavily",
-      "sentiment": 1.0,
-      "confidence": 0.7,
-      "relevance": 0.161,
-      "timestamp": 1771364109.70711
-    },
-    {
-      "headline": "Poll Results | Quinnipiac University Poll",
-      "summary": "Quinnipiac University Poll's list of recent and past poll results for political races, state and national elections, and issues of public concern.",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.16,
-      "timestamp": 1771352324.4907331
-    },
-    {
-      "headline": "Prior Elections - California Secretary of State",
-      "summary": "Prior Statewide Elections \u00b7 Statewide Election Results \u00b7 Special Elections \u00b7 County, City, School District & Ballot Measure Election Results",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.16,
-      "timestamp": 1771366431.607268
-    },
-    {
-      "headline": "Election Night Reporting Dashboard",
-      "summary": "Official election results for past elections can be found here. Blue and White Tennessee State Tristar Logo. Tennessee Secretary of State. \u00a9 2026 Tennessee",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.158,
-      "timestamp": 1771349014.730464
-    },
-    {
-      "headline": "Election results and voting information",
-      "summary": "Ballot access is controlled by each state according to state law, even for federal elections. 2024 Presidential Candidates on the General Election Ballots,",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.158,
-      "timestamp": 1771372207.9092212
-    },
-    {
-      "headline": "Quinnipiac University Poll: Home Page",
-      "summary": "Quinnipiac University Poll regularly surveys residents in many states and nationwide about political races, state and national elections, and issues of",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.158,
-      "timestamp": 1771375723.972428
-    }
-  ],
-  "0x24d180848e3207fac1fc34fe576157d4bf5039c0103b726c9d5f327f8660f0c0": [
-    {
-      "headline": "Fortune Tech: The Pentagon goes to war with Anthropic",
-      "summary": "The situation apparently follows months of tough negotiations between the Pentagon and Anthropic over the ways its AI tools can be used by the",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 0.307,
-      "timestamp": 1771331967.303118
-    },
-    {
-      "headline": "The New York Times - Breaking News, US News, World News and ...",
-      "summary": "Top Stories \u00b7 Mamdani Administration. Rental Assistance Reversal \u00b7 Chief Tech Officer \u00b7 Social Services Chief Resigns \u00b7 Cold Weather Crisis \u00b7 A 31-Day Challenge.",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.302,
-      "timestamp": 1771373805.9177861
-    },
-    {
-      "headline": "Colbert accuses CBS of blocking on-air interview with Texas Democrat James Talarico",
-      "summary": "Score: 14749, Comments: 415",
-      "source": "reddit/r/politics",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 0.165,
-      "timestamp": 1771354338.662196
-    },
-    {
-      "headline": "Latest Poll - Texas Politics",
-      "summary": "The University of Texas/Texas Politics Project survey of 1200 registered voters was conducted from December 9 to 16, 2025 and has an overall margin of error of",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.161,
-      "timestamp": 1771370611.627588
-    },
-    {
-      "headline": "Latest Poll",
-      "summary": "The University of Texas/Texas Politics Project survey of 1200 registered voters was conducted from December 9 to 16, 2025 and has an overall margin of error of",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.161,
-      "timestamp": 1771374126.223954
-    },
-    {
-      "headline": "Colbert Exposes CBS for Collaborating With the Trump Administration - The network pulled Stephen Colbert\u2019s interview with Texas Democratic Senate candidate James Talarico amid pressure from the FCC.",
-      "summary": "Score: 1309, Comments: 49",
-      "source": "reddit/r/politics",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 0.154,
-      "timestamp": 1771354338.663075
-    },
-    {
-      "headline": "Winter Olympics 2026 Betting and Picks Daily Discussion - 2/17/26 (Tuesday)",
-      "summary": "Winter Olympics 2026 Betting and Picks Daily Discussion - 2/17/26 (Tuesday)",
-      "source": "reddit/r/sportsbook",
-      "sentiment": 0.0,
-      "confidence": 0.502,
-      "relevance": 0.15,
-      "timestamp": 1771304752.97689
-    },
-    {
-      "headline": "Edmonton - CBC News",
-      "summary": "Edmonton main lineup ; Number of reports of people with weapons rises in Alberta after Tumbler Ridge shooting, say RCMP. Fakiha Baig. Canada -Edmonton ; Tumbler",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.15,
-      "timestamp": 1771307716.9768121
-    }
-  ],
-  "0xf801a6ec2f7b16a4355db2293dd2d1a3f6c57cd7850a018c93fdd7574f2ba53e": [
-    {
-      "headline": "Fortune Tech: The Pentagon goes to war with Anthropic",
-      "summary": "The situation apparently follows months of tough negotiations between the Pentagon and Anthropic over the ways its AI tools can be used by the",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 0.307,
-      "timestamp": 1771331967.303118
-    },
-    {
-      "headline": "The New York Times - Breaking News, US News, World News and ...",
-      "summary": "Top Stories \u00b7 Mamdani Administration. Rental Assistance Reversal \u00b7 Chief Tech Officer \u00b7 Social Services Chief Resigns \u00b7 Cold Weather Crisis \u00b7 A 31-Day Challenge.",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.302,
-      "timestamp": 1771373805.9177861
-    },
-    {
-      "headline": "Election Results - Virginia Dept. of Elections",
-      "summary": "The Department of Elections publishes unofficial results for all Virginia elections to its website on the night of the election.",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.167,
-      "timestamp": 1771375402.8139489
-    },
-    {
-      "headline": "2025 Election Results: Live",
-      "summary": "View interactive maps and live results for key U.S. elections in New Jersey, Virginia, California, New York City and Colorado.",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.16,
-      "timestamp": 1771375402.813766
-    },
-    {
-      "headline": "2025 Election Results: Live : NPR",
-      "summary": "View interactive maps and live results for key U.S. elections in New Jersey, Virginia, California, New York City and Colorado.",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.159,
-      "timestamp": 1771372847.306848
-    },
-    {
-      "headline": "Election 2025: News, results and analysis | CNN Politics",
-      "summary": "In the first major electoral test of the second Trump administration, Democrats swept the major races in Virginia, New Jersey and New York City,",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.154,
-      "timestamp": 1771369956.7283268
-    },
-    {
-      "headline": "Winter Olympics 2026 Betting and Picks Daily Discussion - 2/17/26 (Tuesday)",
-      "summary": "Winter Olympics 2026 Betting and Picks Daily Discussion - 2/17/26 (Tuesday)",
-      "source": "reddit/r/sportsbook",
-      "sentiment": 0.0,
-      "confidence": 0.502,
-      "relevance": 0.15,
-      "timestamp": 1771304752.97689
-    },
-    {
-      "headline": "Edmonton - CBC News",
-      "summary": "Edmonton main lineup ; Number of reports of people with weapons rises in Alberta after Tumbler Ridge shooting, say RCMP. Fakiha Baig. Canada -Edmonton ; Tumbler",
-      "source": "tavily",
-      "sentiment": 0.0,
-      "confidence": 0.7,
-      "relevance": 0.15,
-      "timestamp": 1771307716.9768121
+      "relevance": 1.0,
+      "match_type": "pre_linked",
+      "timestamp": 1771430958.4239302
     }
   ]
 }

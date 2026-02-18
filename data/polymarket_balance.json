@@ -1,10 +1,10 @@
 {
-  "portfolio": 307.68,
-  "cash": 187.68,
-  "positions_value": 120.0,
-  "pnl": 57.68,
+  "portfolio": 138.37,
+  "cash": 0.0,
+  "positions_value": 138.37,
+  "pnl": -111.63,
   "bankroll": 250.0,
   "live": true,
-  "error": null,
-  "fetched_at": 1771377074.136173
+  "error": "USDC: HTTP Error 401: Unauthorized",
+  "fetched_at": 1771453370.482087
 }
