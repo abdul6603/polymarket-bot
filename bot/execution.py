@@ -280,6 +280,17 @@ class Executor:
                 if best_bid <= 0:
                     continue
 
+                # Skip tokens that are essentially worthless (market resolved or near-zero)
+                # Can't sell for < $0.01 and CLOB requires price >= 0.001
+                if best_bid < 0.02:
+                    # Token is dead — just remove from tracker, nothing to recover
+                    if best_bid < 0.005:
+                        log.info("STOP-LOSS: %s token worthless (bid=$%.3f), removing from tracker",
+                                 pos.order_id[:16], best_bid)
+                        self.tracker.remove(pos.order_id)
+                        stopped += 1
+                    continue
+
                 # Check if price has collapsed below threshold
                 stop_price = pos.entry_price * STOP_LOSS_THRESHOLD
                 if best_bid < stop_price:
@@ -292,8 +303,9 @@ class Executor:
                     # Sell the position
                     try:
                         shares = pos.shares if pos.shares > 0 else pos.size_usd / pos.entry_price
+                        sell_price = max(0.01, min(0.99, round(best_bid, 2)))
                         sell_args = OrderArgs(
-                            price=round(best_bid, 2),
+                            price=sell_price,
                             size=shares,
                             side=SELL,
                             token_id=pos.token_id,
