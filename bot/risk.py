@@ -141,6 +141,14 @@ class PositionTracker:
                     except Exception:
                         pass  # keep entry price
 
+                # Skip resolved positions (price hit $1 or $0 = already won/lost)
+                if current_price >= 0.99 or current_price <= 0.01:
+                    log.info(
+                        "[CHAIN SYNC] %s %s: %.1f shares @ $%.3f — RESOLVED (not counting as exposure)",
+                        meta["asset"].upper(), meta["direction"], shares, current_price,
+                    )
+                    continue
+
                 size_usd = shares * current_price
                 pos_key = f"chain_{token_id[:16]}"
 
