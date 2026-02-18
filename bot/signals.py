@@ -139,7 +139,7 @@ UP_CONFIDENCE_PREMIUM = 0.12  # Quant optimal: 0.12. UP bets need higher bar —
 # Time-of-day filter: block hours with <30% WR across 140+ trades
 # Good hours: 00,02,10,12,16,17 (79.5% WR combined)
 # Bad hours: 05 (0%), 18 (17%), 19 (29%), 20 (13%), 21 (0%), 22 (12%), 23 (22%)
-AVOID_HOURS_ET = {1, 3, 4, 5, 6, 7, 8, 23}  # 8AM = 50% WR (6W/6L coin flip). Trade 9AM-10PM ET + keep 0,2
+AVOID_HOURS_ET = {6, 7}  # Only block hours with proven poor data (original design)
 
 # Timeframe-specific minimum edge — must exceed estimated fees
 # Data: 0-8% edge = 20% WR, 8-11% = 62.5% WR — 8% is the breakeven floor
