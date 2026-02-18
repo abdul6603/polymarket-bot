@@ -808,7 +808,8 @@ def _dispatch_thread(task_dict: dict, action: str):
         error_msg = f"Dispatch failed: {str(e)[:300]}"
         print(f"[dispatcher] Task #{task_id} error: {error_msg}")
         traceback.print_exc()
-        _update_task(task_id, status="pending", notes=error_msg)
+        # Mark as "done" with error instead of "pending" to prevent infinite retry loop
+        _update_task(task_id, status="done", notes=error_msg)
 
 
 def dispatch_task(task_dict: dict) -> bool:

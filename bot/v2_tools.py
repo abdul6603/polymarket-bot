@@ -196,7 +196,8 @@ def daily_trade_report() -> dict:
 # ═══════════════════════════════════════════
 
 def push_trade_alert(trade_data: dict, event_type: str = "new_trade") -> bool:
-    """Push a trade event to Shelby's intel file."""
+    """Push a trade event to Shelby's intel file (atomic write)."""
+    import os
     try:
         ts = datetime.now(ET).isoformat()
         alert = {
@@ -218,8 +219,11 @@ def push_trade_alert(trade_data: dict, event_type: str = "new_trade") -> bool:
         existing = existing[-50:]
 
         SHELBY_INTEL.parent.mkdir(parents=True, exist_ok=True)
-        with open(SHELBY_INTEL, "w") as f:
+        # Atomic write to prevent TOCTOU race with Shelby reading
+        tmp_path = SHELBY_INTEL.with_suffix(".json.tmp")
+        with open(tmp_path, "w") as f:
             json.dump(existing, f, indent=2)
+        os.replace(str(tmp_path), str(SHELBY_INTEL))
 
         return True
     except Exception as e:

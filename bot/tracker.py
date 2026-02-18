@@ -284,7 +284,7 @@ class PerformanceTracker:
             log.exception("Failed to write trade record")
 
     def _rewrite_file(self, resolved_records: dict[str, "TradeRecord"] | None = None) -> None:
-        """Rewrite entire file with updated resolution data."""
+        """Rewrite entire file with updated resolution data (atomic via temp file)."""
         try:
             all_records = []
             if TRADES_FILE.exists():
@@ -314,9 +314,13 @@ class PerformanceTracker:
                 else:
                     updated.append(rec_dict)
 
-            with open(TRADES_FILE, "w") as f:
+            # Atomic write: temp file + rename prevents data loss on crash
+            import os
+            tmp_path = TRADES_FILE.with_suffix(".jsonl.tmp")
+            with open(tmp_path, "w") as f:
                 for rec_dict in updated:
                     f.write(json.dumps(rec_dict) + "\n")
+            os.replace(str(tmp_path), str(TRADES_FILE))
         except Exception:
             log.exception("Failed to rewrite trade file")
 

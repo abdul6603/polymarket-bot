@@ -115,8 +115,13 @@ def _parse_candle_end_time(question: str, end_date_iso: str) -> float | None:
         return None
 
     year = now.year
-    if month_num < now.month - 1:
+    # If the market month is far behind the current month, it's likely next year
+    # Handle January wrap: month_num=12 when now.month=1 should NOT advance year
+    months_behind = now.month - month_num
+    if months_behind > 6:
         year += 1
+    elif months_behind < -6:
+        year -= 1
 
     # Get the end time of the candle
     m = _RANGE_RE.search(question)

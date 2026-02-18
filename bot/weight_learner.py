@@ -23,11 +23,14 @@ def _load_accuracy() -> dict:
 
 
 def _save_accuracy(data: dict) -> None:
-    """Save per-indicator accuracy data to disk."""
+    """Save per-indicator accuracy data to disk (atomic via temp file)."""
     DATA_DIR.mkdir(exist_ok=True)
+    import os
+    tmp_path = ACCURACY_FILE.with_suffix(".json.tmp")
     try:
-        with open(ACCURACY_FILE, "w") as f:
+        with open(tmp_path, "w") as f:
             json.dump(data, f, indent=2)
+        os.replace(str(tmp_path), str(ACCURACY_FILE))
     except Exception:
         log.exception("Failed to save indicator accuracy file")
 

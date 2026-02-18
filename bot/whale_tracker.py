@@ -33,7 +33,7 @@ BLOCKCHAIN_MAP = {
 
 # Known exchange wallets (partial list — Whale Alert labels them)
 EXCHANGE_LABELS = {"binance", "coinbase", "kraken", "bitfinex", "okx", "bybit",
-                   "huobi", "kucoin", "gemini", "bitstamp", "ftx", "gate.io",
+                   "huobi", "kucoin", "gemini", "bitstamp", "gate.io",
                    "crypto.com", "upbit", "bithumb", "mexc"}
 
 
@@ -115,7 +115,10 @@ def get_flow(asset: str) -> WhaleFlowData | None:
         from_exchange = _is_exchange(from_info)
         to_exchange = _is_exchange(to_info)
 
-        if to_exchange and not from_exchange:
+        if to_exchange and from_exchange:
+            # Exchange-to-exchange transfer — neutral, skip
+            continue
+        elif to_exchange and not from_exchange:
             # Deposit to exchange = sell pressure
             result.deposits_usd += amount_usd
             if amount_usd > result.largest_tx_usd:

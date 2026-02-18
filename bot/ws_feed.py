@@ -90,10 +90,18 @@ class MarketFeed:
         self._running = False
         if self._ping_task and not self._ping_task.done():
             self._ping_task.cancel()
+            try:
+                await self._ping_task
+            except asyncio.CancelledError:
+                pass
         if self._ws and not _ws_is_closed(self._ws):
             await self._ws.close()
         if self._task and not self._task.done():
             self._task.cancel()
+            try:
+                await self._task
+            except asyncio.CancelledError:
+                pass
 
     async def _run_loop(self) -> None:
         while self._running:

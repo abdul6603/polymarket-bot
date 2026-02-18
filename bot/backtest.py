@@ -168,7 +168,14 @@ def fetch_binance_klines(asset: str, days: int, interval: str = "1m") -> list[Ca
                     volume=float(k[5]),
                 ))
 
-            cursor = int(data[-1][0]) + 60000
+            # Advance cursor past the last candle's open time
+            # For 1m candles: +60s; for other intervals, use the interval gap
+            last_open_ms = int(data[-1][0])
+            if len(data) >= 2:
+                gap = int(data[-1][0]) - int(data[-2][0])
+                cursor = last_open_ms + max(gap, 60000)
+            else:
+                cursor = last_open_ms + 60000
             request_count += 1
             if request_count % 10 == 0:
                 log.info("  ... %d candles fetched", len(all_candles))
@@ -616,6 +623,8 @@ def run_sweep(asset: str, days: int) -> list[tuple[str, BacktestResult]]:
 
     results: list[tuple[str, BacktestResult]] = []
     for name, params in configs:
+        # Copy params to avoid mutating the config dicts
+        params = dict(params)
         tfs = params.pop("timeframes", None)
         engine = BacktestEngine(
             asset=asset, timeframes=tfs or ["5m", "15m"], days=days,

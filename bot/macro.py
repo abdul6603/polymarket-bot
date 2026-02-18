@@ -197,6 +197,11 @@ def get_context() -> MacroContext:
         return cached[0]
 
     today = datetime.now(ET).date()
+
+    # Warn if macro event dates are stale (only cover 2026)
+    if today.year > 2026:
+        log.warning("[MACRO] FOMC/CPI/NFP dates only cover 2026 — event detection disabled for %d", today.year)
+
     is_event, event_type, edge_mult = _is_event_day(today)
 
     ctx = MacroContext(

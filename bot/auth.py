@@ -10,8 +10,11 @@ from bot.config import Config
 log = logging.getLogger(__name__)
 
 
-def build_client(cfg: Config) -> ClobClient:
-    """Create and verify a ClobClient with L1/L2 authentication."""
+def build_client(cfg: Config) -> ClobClient | None:
+    """Create and verify a ClobClient with L1/L2 authentication.
+
+    Returns None if the connection check fails (e.g. geo-blocked, no VPN).
+    """
     client = ClobClient(
         cfg.clob_host,
         key=cfg.private_key,
@@ -34,6 +37,7 @@ def build_client(cfg: Config) -> ClobClient:
         resp = client.get_ok()
         log.info("CLOB connection OK: %s", resp)
     except Exception:
-        log.exception("CLOB connection check failed")
+        log.exception("CLOB connection check failed — returning None")
+        return None
 
     return client

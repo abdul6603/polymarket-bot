@@ -106,7 +106,8 @@ def get_data() -> DefiFlowData | None:
         log.debug("DeFiLlama TVL fetch failed: %s", str(e)[:100])
 
     if not any_success:
-        _cache["defi"] = (None, now)
+        # Shorter TTL for failures — retry sooner instead of caching error for 1h
+        _cache["defi"] = (None, now - _CACHE_TTL + 120)  # retry in 2 minutes
         return None
 
     _cache["defi"] = (result, now)

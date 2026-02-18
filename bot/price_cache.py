@@ -142,14 +142,20 @@ class PriceCache:
         return sum(buys[-window:]), sum(sells[-window:])
 
     def get_price_ago(self, asset: str, minutes: int) -> float | None:
-        """Return close price from approximately N minutes ago."""
+        """Return close price from approximately N minutes ago.
+
+        Includes the building candle for consistency with get_closes/get_candles.
+        """
         candles = list(self._candles.get(asset, []))
+        building = self._building.get(asset)
+        if building:
+            candles.append(building)
         if not candles:
             return None
-        idx = len(candles) - minutes
+        idx = len(candles) - 1 - minutes
         if idx < 0:
             return candles[0].close
-        return candles[min(idx, len(candles) - 1)].close
+        return candles[idx].close
 
     def candle_count(self, asset: str) -> int:
         """Total candles available (completed + building)."""
@@ -181,12 +187,15 @@ class PriceCache:
             # Add new candles
             for c in candle_deque:
                 existing[c.timestamp] = asdict(c)
-            # Write sorted by timestamp
+            # Write sorted by timestamp (atomic via temp file)
             sorted_candles = sorted(existing.values(), key=lambda x: x["timestamp"])
             try:
-                with open(fpath, "w") as f:
+                import os
+                tmp_path = fpath.with_suffix(".jsonl.tmp")
+                with open(tmp_path, "w") as f:
                     for c in sorted_candles:
                         f.write(json.dumps(c) + "\n")
+                os.replace(str(tmp_path), str(fpath))
                 log.debug("Saved %d candles for %s", len(sorted_candles), asset)
             except Exception as e:
                 log.error("Failed to write candles for %s: %s", asset, e)

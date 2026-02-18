@@ -36,6 +36,7 @@ _MAX_BACKOFF = 300  # 5 min max between retries when geo-blocked
 CASCADE_USD_THRESHOLD = 500_000  # $500K in 5 minutes
 CASCADE_EVENT_THRESHOLD = 10  # 10 events in 2 minutes
 LIQUIDATION_RETENTION_SECONDS = 300  # 5 minutes
+MAX_LIQUIDATION_EVENTS = 500  # hard cap per asset to prevent unbounded memory
 
 
 class DerivativesFeed:
@@ -263,13 +264,17 @@ class DerivativesFeed:
         )
 
     def _cleanup_old_liquidations(self, asset: str) -> None:
-        """Remove liquidation events older than 5 minutes."""
+        """Remove liquidation events older than 5 minutes and enforce hard cap."""
         now = time.time()
         cutoff = now - LIQUIDATION_RETENTION_SECONDS
-        self.liquidations[asset] = [
+        events = [
             event for event in self.liquidations[asset]
             if event["timestamp"] >= cutoff
         ]
+        # Hard cap: keep only the most recent events during extreme cascades
+        if len(events) > MAX_LIQUIDATION_EVENTS:
+            events = events[-MAX_LIQUIDATION_EVENTS:]
+        self.liquidations[asset] = events
 
     def _detect_cascade(self, asset: str) -> None:
         """

@@ -91,10 +91,12 @@ def get_data(asset: str) -> CoinglassData | None:
     if not symbol:
         return None
 
-    # Check cache
+    # Check cache — stagger TTL by asset to avoid simultaneous API bursts
+    _ASSET_OFFSETS = {"bitcoin": 0, "ethereum": 15, "solana": 30, "xrp": 45}
     now = time.time()
+    ttl = _CACHE_TTL + _ASSET_OFFSETS.get(asset, 0)
     cached = _cache.get(asset)
-    if cached and now - cached[1] < _CACHE_TTL:
+    if cached and now - cached[1] < ttl:
         return cached[0]
 
     result = CoinglassData()
