@@ -8,7 +8,7 @@ from pathlib import Path
 
 from py_clob_client.client import ClobClient
 from py_clob_client.clob_types import OrderArgs, OrderType
-from py_clob_client.order_builder.constants import BUY
+from py_clob_client.order_builder.constants import BUY, SELL
 
 from bot.config import Config
 from bot.regime import RegimeAdjustment
@@ -28,6 +28,10 @@ KELLY_MAX_SIZE_FRAC = 2.50   # Never size above 250% of base
 # Dynamic sizing: V3 Kelly-backed — $25-$50 per trade, consensus=7 + conf=0.55 filter
 TRADE_MIN_USD = 25.0
 TRADE_MAX_USD = 50.0
+
+# Stop-Loss: sell positions when token price drops below this fraction of entry
+STOP_LOSS_THRESHOLD = 0.50  # Sell if current price < 50% of entry price
+STOP_LOSS_MIN_AGE_S = 60    # Don't stop-loss in first 60 seconds (let order settle)
 
 
 class Executor:
@@ -226,6 +230,153 @@ class Executor:
                              pos.order_id, pos.size_usd)
             except Exception:
                 log.debug("Could not check order %s", pos.order_id)
+
+    def check_stop_losses(self) -> int:
+        """Check filled positions and sell any where token price collapsed.
+
+        Queries the CLOB API for current market prices. If a position's token
+        price has dropped below STOP_LOSS_THRESHOLD of entry, sell to recover
+        partial stake instead of losing 100%.
+
+        Returns number of positions stopped out.
+        """
+        if self.cfg.dry_run:
+            # In dry-run, simulate stop-loss by checking market mid-price
+            return self._check_stop_losses_dry_run()
+
+        if not self.client:
+            return 0
+
+        from bot.http_session import get_session
+
+        stopped = 0
+        now = time.time()
+
+        for pos in list(self.tracker.open_positions):
+            # Skip very new positions (let them settle)
+            if now - pos.opened_at < STOP_LOSS_MIN_AGE_S:
+                continue
+
+            # Skip straddle positions (different exit logic)
+            if pos.strategy == "straddle":
+                continue
+
+            try:
+                # Fetch current market price for this token
+                resp = get_session().get(
+                    f"{self.cfg.clob_host}/book?token_id={pos.token_id}",
+                    timeout=5,
+                )
+                if resp.status_code != 200:
+                    continue
+
+                book = resp.json()
+                # Best bid is what we'd sell at
+                bids = book.get("bids", [])
+                if not bids:
+                    continue
+
+                best_bid = float(bids[0].get("price", 0))
+                if best_bid <= 0:
+                    continue
+
+                # Check if price has collapsed below threshold
+                stop_price = pos.entry_price * STOP_LOSS_THRESHOLD
+                if best_bid < stop_price:
+                    log.warning(
+                        "STOP-LOSS triggered: %s | entry=$%.3f → bid=$%.3f (%.0f%% of entry, threshold=%.0f%%)",
+                        pos.order_id[:16], pos.entry_price, best_bid,
+                        (best_bid / pos.entry_price) * 100, STOP_LOSS_THRESHOLD * 100,
+                    )
+
+                    # Sell the position
+                    try:
+                        shares = pos.shares if pos.shares > 0 else pos.size_usd / pos.entry_price
+                        sell_args = OrderArgs(
+                            price=round(best_bid, 2),
+                            size=shares,
+                            side=SELL,
+                            token_id=pos.token_id,
+                        )
+                        signed_order = self.client.create_order(sell_args)
+                        sell_resp = self.client.post_order(signed_order, OrderType.GTC)
+                        sell_id = sell_resp.get("orderID") or sell_resp.get("id", "unknown")
+                        recovery = best_bid * shares
+                        loss_saved = pos.size_usd - recovery
+
+                        log.info(
+                            "STOP-LOSS SOLD: %s | recovered $%.2f of $%.2f (saved $%.2f vs full loss)",
+                            sell_id, recovery, pos.size_usd, loss_saved,
+                        )
+                        self.tracker.remove(pos.order_id)
+                        stopped += 1
+
+                        # Store stop-loss event for Telegram alert from main loop
+                        self._last_stop_loss = {
+                            "direction": pos.direction,
+                            "entry_price": pos.entry_price,
+                            "bid": best_bid,
+                            "recovery": recovery,
+                            "size_usd": pos.size_usd,
+                            "loss_saved": loss_saved,
+                        }
+
+                    except Exception:
+                        log.exception("Failed to execute stop-loss sell for %s", pos.order_id)
+
+            except Exception:
+                log.debug("Stop-loss check failed for %s", pos.order_id)
+
+        if stopped:
+            log.info("Stop-loss: %d position(s) exited early", stopped)
+        return stopped
+
+    def _check_stop_losses_dry_run(self) -> int:
+        """Dry-run stop-loss: check mid-price and simulate exit."""
+        from bot.http_session import get_session
+
+        stopped = 0
+        now = time.time()
+
+        for pos in list(self.tracker.open_positions):
+            if now - pos.opened_at < STOP_LOSS_MIN_AGE_S:
+                continue
+            if pos.strategy == "straddle":
+                continue
+
+            try:
+                resp = get_session().get(
+                    f"{self.cfg.clob_host}/book?token_id={pos.token_id}",
+                    timeout=5,
+                )
+                if resp.status_code != 200:
+                    continue
+
+                book = resp.json()
+                bids = book.get("bids", [])
+                if not bids:
+                    continue
+
+                best_bid = float(bids[0].get("price", 0))
+                if best_bid <= 0:
+                    continue
+
+                stop_price = pos.entry_price * STOP_LOSS_THRESHOLD
+                if best_bid < stop_price:
+                    shares = pos.size_usd / pos.entry_price
+                    recovery = best_bid * shares
+                    log.warning(
+                        "[DRY RUN] STOP-LOSS: %s | entry=$%.3f → bid=$%.3f | "
+                        "would recover $%.2f of $%.2f",
+                        pos.order_id[:16], pos.entry_price, best_bid,
+                        recovery, pos.size_usd,
+                    )
+                    self.tracker.remove(pos.order_id)
+                    stopped += 1
+            except Exception:
+                pass
+
+        return stopped
 
     def cancel_all_open(self) -> None:
         """Cancel unfilled open orders for shutdown cleanup.

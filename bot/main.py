@@ -617,6 +617,20 @@ class TradingBot:
         # Save derivatives + depth state for dashboard
         self._save_derivatives_state(deriv_data)
 
+        # Stop-loss: check if any positions need early exit
+        stopped = self.executor.check_stop_losses()
+        if stopped:
+            log.info("Stop-loss exited %d position(s) this tick", stopped)
+            sl = getattr(self.executor, '_last_stop_loss', None)
+            if sl:
+                _send_telegram(
+                    f"*STOP-LOSS* {sl['direction'].upper()}\n"
+                    f"Entry: ${sl['entry_price']:.3f} -> Bid: ${sl['bid']:.3f}\n"
+                    f"Recovered: *${sl['recovery']:.2f}* of ${sl['size_usd']:.2f}\n"
+                    f"Saved vs full loss: *${sl['loss_saved']:.2f}*"
+                )
+                self.executor._last_stop_loss = None
+
         # Check existing fills (+ expire dry-run positions)
         self.executor.check_fills()
 

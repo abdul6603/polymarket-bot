@@ -155,7 +155,8 @@ MIN_EDGE_ABSOLUTE = 0.08  # 8% — never trade below this regardless of regime
 
 # Reward-to-Risk ratio filter
 # R:R = ((1-P) * 0.98) / P  where P = token price, 0.98 = payout after 2% winner fee
-MIN_RR_RATIO = 0.8  # reject signals where R:R < 0.8 (too skewed against us)
+MIN_RR_RATIO = 1.2  # reject signals where R:R < 1.2 (only bet when win > loss)
+MAX_TOKEN_PRICE = 0.50  # Never buy tokens above $0.50 — forces cheap side with R:R > 0.96
 
 # Minimum confidence to count toward consensus vote
 # Indicators below this confidence are basically guessing — don't let them inflate head count
@@ -170,10 +171,10 @@ REVERSAL_SENTINEL_PENALTY = 0.10  # +10% confidence floor when triggered
 
 # Asset-specific edge premium — weaker assets need higher edge to trade
 ASSET_EDGE_PREMIUM = {
-    "bitcoin": 1.0,    # baseline (33.9% WR — needs filtering not premium)
-    "ethereum": 0.9,   # slight discount (best performer: 41.3% WR)
-    "solana": 1.2,     # reduced 1.5→1.2: old 31.6% WR data stale, 1.5x was blocking most SOL signals
-    "xrp": 1.0,        # baseline — no data yet, start neutral
+    "bitcoin": 1.5,    # raised 1.0→1.5: 40% WR, -$221 PnL — must prove high edge to trade
+    "ethereum": 1.3,   # raised 0.9→1.3: 54% WR but -$15 PnL — needs higher bar
+    "solana": 1.5,     # raised 1.2→1.5: 33% WR, -$179 PnL — hardest bar
+    "xrp": 0.9,        # slight discount: 61% WR, best performer — give it more room
 }
 
 
@@ -710,6 +711,16 @@ class SignalEngine:
             rr_ratio = None
             token_price = implied_up_price if consensus_dir == "up" else (1 - implied_up_price if implied_up_price is not None else None)
             if token_price is not None and 0.01 < token_price < 0.99:
+                # ── Max Token Price Cap ──
+                # Never buy tokens above $0.50 — guarantees R:R > 0.96
+                # Forces us to bet the cheap (underdog) side with favorable payouts
+                if token_price > MAX_TOKEN_PRICE:
+                    log.info(
+                        "[%s/%s] Token price cap: %.3f > %.2f, skipping (only bet cheap side)",
+                        asset.upper(), timeframe, token_price, MAX_TOKEN_PRICE,
+                    )
+                    return None
+
                 rr_ratio = ((1 - token_price) * 0.98) / token_price
                 if rr_ratio < MIN_RR_RATIO:
                     log.info(
