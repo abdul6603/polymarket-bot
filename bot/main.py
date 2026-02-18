@@ -104,7 +104,7 @@ class TradingBot:
         self.executor = Executor(cfg, self.client, self.tracker)
         self.conviction_engine = ConvictionEngine()
         self.straddle_engine = StraddleEngine(cfg, self.executor, self.tracker, self.price_cache)
-        self.perf_tracker = PerformanceTracker(cfg)
+        self.perf_tracker = PerformanceTracker(cfg, position_tracker=self.tracker)
         self.bankroll_manager = BankrollManager()
         self._shutdown_event = asyncio.Event()
         self._subscribed_tokens: set[str] = set()
@@ -227,7 +227,7 @@ class TradingBot:
                     s.get("win_rate", 0), s.get("pnl", 0),
                 )
                 # Reload tracker with empty state
-                self.perf_tracker = PerformanceTracker(self.cfg)
+                self.perf_tracker = PerformanceTracker(self.cfg, position_tracker=self.tracker)
             except Exception as e:
                 log.error("Daily reset failed: %s", str(e)[:200])
 

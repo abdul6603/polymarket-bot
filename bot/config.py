@@ -28,9 +28,9 @@ class Config:
     coingecko_url: str = _env("COINGECKO_URL", "https://api.coingecko.com/api/v3")
     binance_ws_url: str = _env("BINANCE_WS_URL", "wss://stream.binance.com:9443")
 
-    # Risk — $250 bankroll, $25 max per trade
-    max_position_usd: float = float(_env("MAX_POSITION_USD", "25.0"))
-    max_concurrent_positions: int = int(_env("MAX_CONCURRENT_POSITIONS", "3"))
+    # Risk — $250 bankroll, $150 total exposure cap
+    max_position_usd: float = float(_env("MAX_POSITION_USD", "150.0"))
+    max_concurrent_positions: int = int(_env("MAX_CONCURRENT_POSITIONS", "5"))
     min_edge_pct: float = float(_env("MIN_EDGE_PCT", "8.0"))
     order_size_usd: float = float(_env("ORDER_SIZE_USD", "10.0"))
     max_daily_loss_usd: float = float(_env("MAX_DAILY_LOSS_USD", "50.0"))

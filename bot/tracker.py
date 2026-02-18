@@ -73,8 +73,9 @@ class TradeRecord:
 class PerformanceTracker:
     """Records every signal prediction and checks market resolution to compute win rate."""
 
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg: Config, position_tracker=None):
         self.cfg = cfg
+        self._position_tracker = position_tracker  # PositionTracker to clean up on resolution
         DATA_DIR.mkdir(exist_ok=True)
         self._pending: dict[str, TradeRecord] = {}  # trade_id -> record
         self._load_pending()
@@ -198,6 +199,10 @@ class PerformanceTracker:
                 result, rec.direction.upper(), outcome.upper(),
                 rec.question[:50],
             )
+
+            # Clean up resolved position from PositionTracker
+            if self._position_tracker:
+                self._position_tracker.remove_resolved_trade(trade_id)
 
             # Record indicator accuracy for dynamic weight learning
             if rec.indicator_votes:
