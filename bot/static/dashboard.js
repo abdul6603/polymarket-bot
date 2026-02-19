@@ -2095,50 +2095,14 @@ function lisaScoreBadge(score) {
 }
 
 function renderLisa(data) {
-  document.getElementById('lisa-outbox-stat').textContent = data.outbox_count || 0;
-  document.getElementById('lisa-total-posted').textContent = data.total_posts || 0;
-  var platforms = data.platforms || {};
-  document.getElementById('lisa-platforms-count').textContent = Object.keys(platforms).length || 0;
+  // Stats row
+  var todayPosts = (data.recent_posts || []).filter(function(p) {
+    return p.posted_at && p.posted_at.startsWith(new Date().toISOString().slice(0,10)) && p.status === 'posted';
+  }).length;
+  var el = document.getElementById('lisa-posted-today');
+  if (el) el.textContent = todayPosts;
 
-  // Review stats
-  var rs = data.review_stats || {};
-  var avgEl = document.getElementById('lisa-review-avg');
-  var statsEl = document.getElementById('lisa-review-stats');
-  if (rs.total_reviewed) {
-    avgEl.textContent = rs.avg_score + '/10';
-    avgEl.style.color = rs.avg_score >= 7 ? '#22aa44' : rs.avg_score >= 4 ? '#ffaa00' : '#ff4444';
-    statsEl.innerHTML = '<span style="color:#22aa44;">Passed: ' + rs.passed + '</span>' +
-      '<span style="color:#ffaa00;">Warned: ' + rs.warned + '</span>' +
-      '<span style="color:#ff4444;">Failed: ' + rs.failed + '</span>' +
-      '<span class="text-muted">Total: ' + rs.total_reviewed + '</span>';
-  } else {
-    avgEl.textContent = '--';
-    avgEl.style.color = '';
-    statsEl.innerHTML = '<span class="text-muted">No reviews yet</span>';
-  }
-
-  // Outbox with review buttons
-  var outbox = data.outbox || [];
-  var obEl = document.getElementById('lisa-outbox-review');
-  if (outbox.length === 0) {
-    obEl.innerHTML = '<div class="text-muted">No approved items in outbox.</div>';
-  } else {
-    var obHtml = '<table class="data-table"><thead><tr><th>Pillar</th><th>Caption</th><th>Review</th></tr></thead><tbody>';
-    for (var i = 0; i < outbox.length && i < 15; i++) {
-      var item = outbox[i];
-      var iid = item.id || '';
-      var cap = (item.caption || item.content || '').substring(0, 80);
-      obHtml += '<tr><td style="white-space:nowrap;">' + esc(item.pillar || '--') + '</td>';
-      obHtml += '<td style="font-size:0.74rem;">' + esc(cap) + '</td>';
-      obHtml += '<td style="white-space:nowrap;"><span id="ob-review-' + esc(iid) + '">';
-      obHtml += '<button class="btn" style="font-size:0.7rem;padding:2px 8px;" onclick="lisaReviewItem(&apos;' + esc(iid) + '&apos;)">Review</button>';
-      obHtml += '</span></td></tr>';
-    }
-    obHtml += '</tbody></table>';
-    obEl.innerHTML = obHtml;
-  }
-
-  // Recent posts with score column
+  // Recent posts
   var posts = data.recent_posts || [];
   var tbody = document.getElementById('lisa-posts-tbody');
   if (posts.length === 0) { tbody.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No posts yet</td></tr>'; return; }
@@ -2149,10 +2113,310 @@ function renderLisa(data) {
     html += '<tr><td style="white-space:nowrap;font-size:0.72rem;">' + esc(timeStr) + '</td>';
     html += '<td>' + esc(p.platform || '--') + '</td>';
     html += '<td style="font-size:0.74rem;">' + esc((p.caption || p.content || '').substring(0,60)) + '</td>';
-    html += '<td>' + lisaScoreBadge(p.review_score !== undefined ? p.review_score : null) + '</td>';
+    html += '<td>' + (p.had_image ? '<span style="color:#22aa44;">Yes</span>' : '<span class="text-muted">No</span>') + '</td>';
     html += '<td><span class="badge badge-success">' + esc(p.status || 'posted') + '</span></td></tr>';
   }
   tbody.innerHTML = html;
+}
+
+// ── Lisa X Integration JS Functions ──
+
+async function testXConnection() {
+  var statusEl = document.getElementById('x-connection-status');
+  var detailsEl = document.getElementById('x-connection-details');
+  statusEl.textContent = 'Testing...';
+  statusEl.style.color = '#ffaa00';
+  try {
+    var resp = await fetch('/api/lisa/x-test');
+    var data = await resp.json();
+    if (data.ok) {
+      statusEl.textContent = 'Connected';
+      statusEl.style.color = '#22aa44';
+      detailsEl.innerHTML = '<span style="color:#22aa44;">@' + esc(data.username) + '</span>' +
+        ' | <span class="text-muted">Followers: ' + (data.followers || 0) + '</span>' +
+        ' | <span class="text-muted">Tweets: ' + (data.tweets || 0) + '</span>';
+    } else {
+      statusEl.textContent = 'Error';
+      statusEl.style.color = '#ff4444';
+      detailsEl.innerHTML = '<span style="color:#ff4444;">' + esc(data.error || 'Connection failed') + '</span>';
+    }
+  } catch(e) {
+    statusEl.textContent = 'Error';
+    statusEl.style.color = '#ff4444';
+    detailsEl.innerHTML = '<span style="color:#ff4444;">Request failed</span>';
+  }
+}
+
+async function generateXImage(style) {
+  var resultEl = document.getElementById('img-result');
+  resultEl.innerHTML = '<span class="text-muted">Generating ' + style + ' image...</span>';
+  try {
+    var resp = await fetch('/api/lisa/generate-image', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({style: style, caption: 'dark motivation lone wolf', pillar: 'dark_motivation'})
+    });
+    var data = await resp.json();
+    if (data.ok) {
+      resultEl.innerHTML = '<span style="color:#22aa44;">Generated: ' + esc(data.filename) + '</span>';
+      loadImageCosts();
+    } else {
+      resultEl.innerHTML = '<span style="color:#ff4444;">' + esc(data.error || 'Failed') + '</span>';
+    }
+  } catch(e) {
+    resultEl.innerHTML = '<span style="color:#ff4444;">Request failed</span>';
+  }
+}
+
+async function generateXImageCustom() {
+  var pillar = document.getElementById('img-pillar').value;
+  var style = document.getElementById('img-style').value;
+  var caption = document.getElementById('img-caption').value || 'dark motivation';
+  var resultEl = document.getElementById('img-result');
+  resultEl.innerHTML = '<span class="text-muted">Generating...</span>';
+  try {
+    var resp = await fetch('/api/lisa/generate-image', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({style: style, caption: caption, pillar: pillar})
+    });
+    var data = await resp.json();
+    if (data.ok) {
+      resultEl.innerHTML = '<span style="color:#22aa44;">Generated: ' + esc(data.filename) + '</span>';
+      loadImageCosts();
+    } else {
+      resultEl.innerHTML = '<span style="color:#ff4444;">' + esc(data.error || 'Failed') + '</span>';
+    }
+  } catch(e) {
+    resultEl.innerHTML = '<span style="color:#ff4444;">Request failed</span>';
+  }
+}
+
+async function scanXCompetitors() {
+  var hooksEl = document.getElementById('x-viral-hooks');
+  hooksEl.innerHTML = '<span class="text-muted">Scanning competitors...</span>';
+  try {
+    var resp = await fetch('/api/lisa/x-competitors/scan', {method:'POST'});
+    var data = await resp.json();
+    loadXCompetitorIntel();
+  } catch(e) {
+    hooksEl.innerHTML = '<span style="color:#ff4444;">Scan failed</span>';
+  }
+}
+
+async function loadXCompetitorIntel() {
+  try {
+    var resp = await fetch('/api/lisa/x-competitors');
+    var data = await resp.json();
+    var usage = data.usage || {};
+    var el1 = document.getElementById('x-comp-accounts');
+    var el2 = document.getElementById('x-comp-hooks');
+    var el3 = document.getElementById('x-comp-reads');
+    if (el1) el1.textContent = (data.account_data || []).length;
+    if (el2) el2.textContent = (data.viral_hooks || []).length;
+    if (el3) el3.textContent = (usage.monthly_reads || 0) + '/' + (usage.monthly_budget || 1500);
+
+    var hooks = data.viral_hooks || [];
+    var hooksEl = document.getElementById('x-viral-hooks');
+    if (hooks.length === 0) {
+      hooksEl.innerHTML = '<span class="text-muted">No hooks found. Click "Scan Competitors" to fetch.</span>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < hooks.length && i < 10; i++) {
+      var h = hooks[i];
+      html += '<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);">';
+      html += '<div style="color:var(--text);">"' + esc(h.hook || h.full_text || '') + '"</div>';
+      html += '<div style="color:var(--text-muted);font-size:0.68rem;">@' + esc(h.author || '') + ' | ❤ ' + (h.likes || 0) + ' | 🔄 ' + (h.retweets || 0) + '</div>';
+      html += '</div>';
+    }
+    hooksEl.innerHTML = html;
+  } catch(e) {}
+}
+
+async function loadXMentions() {
+  var feedEl = document.getElementById('x-mentions-feed');
+  feedEl.innerHTML = '<span class="text-muted">Loading mentions...</span>';
+  try {
+    var resp = await fetch('/api/lisa/x-mentions');
+    var data = await resp.json();
+    var mentions = data.mentions || [];
+    var el = document.getElementById('lisa-mentions-count');
+    if (el) el.textContent = mentions.length;
+
+    if (mentions.length === 0) {
+      feedEl.innerHTML = '<span class="text-muted">No recent mentions</span>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < mentions.length && i < 15; i++) {
+      var m = mentions[i];
+      html += '<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);">';
+      html += '<div style="display:flex;justify-content:space-between;">';
+      html += '<span style="color:#1DA1F2;font-weight:600;">@' + esc(m.author_username || '') + '</span>';
+      html += '<span style="font-size:0.66rem;color:var(--text-muted);">' + esc((m.created_at || '').substring(0,16)) + '</span>';
+      html += '</div>';
+      html += '<div style="color:var(--text);margin:4px 0;">' + esc(m.text || '') + '</div>';
+      html += '<div style="display:flex;gap:8px;">';
+      html += '<button class="btn" style="font-size:0.68rem;padding:2px 8px;" onclick="replyToMention(\'' + esc(m.tweet_id) + '\')">Reply</button>';
+      html += '</div></div>';
+    }
+    feedEl.innerHTML = html;
+  } catch(e) {
+    feedEl.innerHTML = '<span style="color:#ff4444;">Failed to load mentions</span>';
+  }
+}
+
+async function replyToMention(tweetId) {
+  var reply = prompt('Reply as Soren:');
+  if (!reply) return;
+  try {
+    await fetch('/api/lisa/x-reply/' + tweetId, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({tweet_id: tweetId, reply_text: reply})
+    });
+    loadXMentions();
+  } catch(e) {}
+}
+
+async function postNowToX(itemId) {
+  try {
+    var resp = await fetch('/api/lisa/post-now/' + encodeURIComponent(itemId), {method:'POST'});
+    var data = await resp.json();
+    if (data.ok) {
+      alert('Posted! Tweet: ' + (data.tweet_url || data.tweet_id));
+      loadJordanQueue();
+    } else {
+      alert('Failed: ' + (data.error || 'Unknown error'));
+    }
+  } catch(e) { alert('Request failed'); }
+}
+
+async function postNextToX() {
+  try {
+    var resp = await fetch('/api/lisa/posting-schedule');
+    var data = await resp.json();
+    var schedule = data.schedule || [];
+    if (schedule.length === 0) { alert('No scheduled items'); return; }
+    var first = schedule[0];
+    postNowToX(first.id || first.item_id || '');
+  } catch(e) { alert('Failed to get schedule'); }
+}
+
+async function loadAutoPostStatus() {
+  try {
+    var resp = await fetch('/api/lisa/auto-poster-status');
+    var data = await resp.json();
+    var badge = document.getElementById('x-auto-poster-badge');
+    if (badge) {
+      if (data.running) {
+        badge.textContent = 'Auto-poster: ON';
+        badge.style.color = '#22aa44';
+        badge.style.background = 'rgba(34,170,68,0.1)';
+      } else {
+        badge.textContent = 'Auto-poster: OFF';
+        badge.style.color = 'var(--text-muted)';
+      }
+    }
+  } catch(e) {}
+}
+
+async function loadImageCosts() {
+  try {
+    var resp = await fetch('/api/lisa/image-costs');
+    var data = await resp.json();
+    var budgetEl = document.getElementById('lisa-image-budget');
+    if (budgetEl) budgetEl.textContent = data.today_count + '/' + data.max_per_day;
+    var barEl = document.getElementById('img-cost-bar');
+    if (barEl) {
+      barEl.textContent = 'Budget: $' + data.today_spent.toFixed(2) + '/$' + data.today_budget.toFixed(2) +
+        ' | Week: $' + data.week_spent.toFixed(2) + ' | Total: $' + data.total_spent.toFixed(2);
+    }
+  } catch(e) {}
+}
+
+async function huntReplies() {
+  var listEl = document.getElementById('reply-opportunities-list');
+  listEl.innerHTML = '<div class="text-muted" style="padding:var(--space-4);text-align:center;">Hunting for reply opportunities...</div>';
+  try {
+    var resp = await fetch('/api/lisa/reply-hunt', {method:'POST'});
+    var data = await resp.json();
+    loadReplyOpportunities();
+  } catch(e) {
+    listEl.innerHTML = '<div style="color:#ff4444;padding:var(--space-4);text-align:center;">Hunt failed</div>';
+  }
+}
+
+async function loadReplyOpportunities() {
+  try {
+    var resp = await fetch('/api/lisa/reply-opportunities');
+    var data = await resp.json();
+    var opps = data.opportunities || [];
+    var status = data.status || {};
+
+    var counterEl = document.getElementById('reply-counter');
+    if (counterEl) counterEl.textContent = (status.replies_today || 0) + '/' + (status.max_replies || 10) + ' today';
+
+    var listEl = document.getElementById('reply-opportunities-list');
+    if (opps.length === 0) {
+      listEl.innerHTML = '<div class="text-muted" style="padding:var(--space-4);text-align:center;">No opportunities yet. Click "Hunt Replies" to scan.</div>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < opps.length && i < 10; i++) {
+      var o = opps[i];
+      html += '<div class="glass-card" style="margin-bottom:8px;border-left:3px solid #1DA1F2;padding:10px 14px;">';
+      html += '<div style="display:flex;justify-content:space-between;margin-bottom:4px;">';
+      html += '<span style="color:#1DA1F2;font-weight:600;font-size:0.74rem;">@' + esc(o.author_username || '') +
+        ' <span class="text-muted" style="font-weight:400;">(' + (o.author_followers || 0).toLocaleString() + ' followers)</span></span>';
+      html += '<span style="font-size:0.68rem;color:var(--text-muted);">Score: ' + (o.score || 0) +
+        ' | ❤ ' + (o.likes || 0) + ' | 🔄 ' + (o.retweets || 0) + '</span>';
+      html += '</div>';
+      html += '<div style="font-family:var(--font-mono);font-size:0.74rem;color:var(--text);margin-bottom:8px;">"' + esc(o.text || '') + '"</div>';
+
+      var replies = o.suggested_replies || [];
+      if (replies.length > 0) {
+        html += '<div style="margin-left:12px;border-left:2px solid rgba(29,161,242,0.3);padding-left:10px;">';
+        for (var j = 0; j < replies.length; j++) {
+          var r = replies[j];
+          var confColor = r.confidence >= 0.85 ? '#22aa44' : r.confidence >= 0.7 ? '#ffaa00' : 'var(--text-muted)';
+          html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;gap:8px;">';
+          html += '<span style="font-size:0.72rem;color:var(--text-secondary);">' + esc(r.text || '') + '</span>';
+          html += '<div style="display:flex;gap:4px;flex-shrink:0;">';
+          html += '<span style="font-size:0.66rem;color:' + confColor + ';">' + ((r.confidence || 0) * 100).toFixed(0) + '%</span>';
+          html += '<button class="btn" style="font-size:0.66rem;padding:1px 6px;" onclick="postReplyToX(\'' + esc(o.id) + '\',' + j + ')">Post</button>';
+          html += '</div></div>';
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+    listEl.innerHTML = html;
+  } catch(e) {}
+}
+
+async function postReplyToX(oppId, replyIdx) {
+  if (!confirm('Post this reply to X?')) return;
+  try {
+    var resp = await fetch('/api/lisa/reply-post/' + oppId, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({reply_idx: replyIdx})
+    });
+    var data = await resp.json();
+    if (data.ok) {
+      alert('Reply posted!');
+      loadReplyOpportunities();
+    } else {
+      alert('Failed: ' + (data.error || 'Unknown'));
+    }
+  } catch(e) { alert('Request failed'); }
+}
+
+async function loadLisaScheduledCount() {
+  try {
+    var resp = await fetch('/api/lisa/posting-schedule');
+    var data = await resp.json();
+    var el = document.getElementById('lisa-scheduled-count');
+    if (el) el.textContent = data.count || 0;
+  } catch(e) {}
 }
 
 async function lisaReviewCaption() {
@@ -3434,18 +3698,15 @@ async function refresh() {
       renderLisa(await resp.json());
       loadJordanQueue();
       loadPostingSchedule();
-      loadLisaPlan();
-      loadLisaKnowledge();
       loadPipelineStats();
-      loadTimingPanel();
-      loadAlgorithmPanel();
       loadAgentLearning('lisa');
       loadLisaGoLive();
-      loadLisaPlatformStatus();
-      loadLisaCommentStats();
-      loadCommandTable('lisa');
-      loadAgentSmartActions('lisa');
       loadAgentActivity('lisa');
+      loadAutoPostStatus();
+      loadImageCosts();
+      loadXCompetitorIntel();
+      loadReplyOpportunities();
+      loadLisaScheduledCount();
     } else if (currentTab === 'sentinel') {
       var resp = await fetch('/api/sentinel');
       renderSentinel(await resp.json());

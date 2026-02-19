@@ -197,7 +197,31 @@ if __name__ == "__main__":
 
     threading.Thread(target=_broadcast_processor, daemon=True, name="broadcast-ack").start()
 
+    # Auto-start Lisa auto-poster daemon
+    def _auto_start_lisa_poster():
+        try:
+            from mercury.core.auto_poster import AutoPoster
+            poster = AutoPoster()
+            if not poster.is_running():
+                poster.start()
+                print("[Dashboard] Lisa auto-poster daemon started")
+        except Exception as e:
+            print(f"[Dashboard] Lisa auto-poster start failed: {e}")
+
+    # Auto-start Lisa reply hunter
+    def _auto_start_reply_hunter():
+        try:
+            from mercury.core.reply_hunter import ReplyHunter
+            hunter = ReplyHunter()
+            if not hunter._thread or not hunter._thread.is_alive():
+                hunter.start(interval=1800)
+                print("[Dashboard] Lisa reply hunter started (30min cycle)")
+        except Exception as e:
+            print(f"[Dashboard] Lisa reply hunter start failed: {e}")
+
     threading.Timer(2.0, _auto_start_atlas).start()
+    threading.Timer(5.0, _auto_start_lisa_poster).start()
+    threading.Timer(8.0, _auto_start_reply_hunter).start()
     threading.Timer(1.0, lambda: webbrowser.open("http://localhost:8877")).start()
 
     if socketio:

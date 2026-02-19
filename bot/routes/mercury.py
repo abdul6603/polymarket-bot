@@ -491,3 +491,234 @@ def api_lisa_broadcasts():
         return jsonify({"processed": len(unread), "agent": "lisa"})
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500
+
+
+# ── X Integration Routes ──
+
+
+@mercury_bp.route("/api/lisa/x-test")
+def api_lisa_x_test():
+    """Test X API credentials."""
+    try:
+        from mercury.core.x_client import XClient
+        xclient = XClient()
+        return jsonify(xclient.test_connection())
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)[:200]}), 500
+
+
+@mercury_bp.route("/api/lisa/x-mentions")
+def api_lisa_x_mentions():
+    """Fetch recent X mentions."""
+    try:
+        from mercury.core.x_client import XClient
+        xclient = XClient()
+        since_id = request.args.get("since_id")
+        limit = int(request.args.get("limit", "20"))
+        mentions = xclient.get_mentions(since_id=since_id, max_results=limit)
+        return jsonify({"mentions": mentions, "count": len(mentions)})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@mercury_bp.route("/api/lisa/x-competitors")
+def api_lisa_x_competitors():
+    """Get competitor intel data."""
+    try:
+        from mercury.core.x_scanner import XCompetitorScanner
+        scanner = XCompetitorScanner()
+        data = scanner.get_latest()
+        usage = scanner.get_usage_stats()
+        return jsonify({**data, "usage": usage})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@mercury_bp.route("/api/lisa/x-competitors/scan", methods=["POST"])
+def api_lisa_x_competitors_scan():
+    """Trigger competitor scan."""
+    try:
+        from mercury.core.x_scanner import XCompetitorScanner
+        scanner = XCompetitorScanner()
+        results = scanner.scan_cycle()
+        # Feed results to Lisa's brain
+        try:
+            from mercury.core.brain import MercuryBrain
+            brain = MercuryBrain()
+            brain.ingest_x_competitor_intel(results)
+        except Exception:
+            pass
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@mercury_bp.route("/api/lisa/generate-image", methods=["POST"])
+def api_lisa_generate_image():
+    """Generate a branded X image."""
+    try:
+        from mercury.core.x_image_gen import XImageGenerator
+        img_gen = XImageGenerator()
+        data = request.json or {}
+        style = data.get("style", "cinematic")
+        caption = data.get("caption", "dark motivation")
+        pillar = data.get("pillar", "dark_motivation")
+
+        if style == "quote":
+            path = img_gen.generate_quote_card(caption, pillar)
+        else:
+            path = img_gen.generate_post_image(caption, pillar, style)
+
+        if path:
+            return jsonify({
+                "ok": True,
+                "filename": path.name,
+                "path": str(path),
+                "costs": img_gen.get_cost_summary(),
+            })
+        return jsonify({"ok": False, "error": "Budget exceeded or generation failed",
+                        "costs": img_gen.get_cost_summary()})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)[:200]}), 500
+
+
+@mercury_bp.route("/api/lisa/image-costs")
+def api_lisa_image_costs():
+    """Image generation cost summary."""
+    try:
+        from mercury.core.x_image_gen import XImageGenerator
+        img_gen = XImageGenerator()
+        return jsonify(img_gen.get_cost_summary())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@mercury_bp.route("/api/lisa/post-now/<item_id>", methods=["POST"])
+def api_lisa_post_now(item_id):
+    """Immediately post an approved item to X."""
+    try:
+        from mercury.core.auto_poster import AutoPoster
+        poster = AutoPoster()
+        result = poster.post_single(item_id)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)[:200]}), 500
+
+
+@mercury_bp.route("/api/lisa/auto-poster-status")
+def api_lisa_auto_poster_status():
+    """Auto-poster daemon status."""
+    try:
+        status_file = MERCURY_ROOT / "data" / "auto_poster_status.json"
+        if status_file.exists():
+            data = json.loads(status_file.read_text())
+        else:
+            data = {"running": False, "posts_made": 0}
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@mercury_bp.route("/api/lisa/x-reply/<comment_id>", methods=["POST"])
+def api_lisa_x_reply(comment_id):
+    """Post an approved reply to X."""
+    try:
+        from mercury.core.x_client import XClient
+        from mercury.core.comment_ai import CommentAnalyzer
+
+        analyzer = CommentAnalyzer()
+        data = request.json or {}
+        reply_text = data.get("reply_text", "")
+        tweet_id = data.get("tweet_id", comment_id)
+
+        if not reply_text:
+            return jsonify({"ok": False, "error": "No reply text provided"}), 400
+
+        xclient = XClient()
+        result = xclient.reply_to_tweet(tweet_id, reply_text)
+
+        if result.get("ok"):
+            analyzer.update_status(comment_id, "posted")
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)[:200]}), 500
+
+
+@mercury_bp.route("/api/lisa/reply-opportunities")
+def api_lisa_reply_opportunities():
+    """Get current reply opportunities from Reply Hunter."""
+    try:
+        from mercury.core.reply_hunter import ReplyHunter
+        hunter = ReplyHunter()
+        opps = hunter.get_opportunities(limit=20)
+        status = hunter.get_status()
+        return jsonify({"opportunities": opps, "status": status})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@mercury_bp.route("/api/lisa/reply-hunt", methods=["POST"])
+def api_lisa_reply_hunt():
+    """Trigger a reply hunter scan cycle."""
+    try:
+        from mercury.core.reply_hunter import ReplyHunter
+        hunter = ReplyHunter()
+        result = hunter.run_cycle()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@mercury_bp.route("/api/lisa/reply-post/<opp_id>", methods=["POST"])
+def api_lisa_reply_post(opp_id):
+    """Post a reply to a target tweet from Reply Hunter."""
+    try:
+        from mercury.core.reply_hunter import ReplyHunter
+        hunter = ReplyHunter()
+        data = request.json or {}
+        reply_idx = data.get("reply_idx", 0)
+
+        # Find the opportunity
+        opps = hunter.get_opportunities(limit=50)
+        opp = next((o for o in opps if o.get("id") == opp_id), None)
+        if not opp:
+            return jsonify({"ok": False, "error": f"Opportunity {opp_id} not found"}), 404
+
+        replies = opp.get("suggested_replies", [])
+        if not replies or reply_idx >= len(replies):
+            # Use custom reply text if provided
+            reply_text = data.get("reply_text", "")
+            if not reply_text:
+                return jsonify({"ok": False, "error": "No reply available"}), 400
+        else:
+            reply_text = replies[reply_idx].get("text", "")
+
+        result = hunter.post_reply(opp["tweet_id"], reply_text)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)[:200]}), 500
+
+
+@mercury_bp.route("/api/lisa/reply-history")
+def api_lisa_reply_history():
+    """Reply hunter log + engagement results."""
+    try:
+        from mercury.core.reply_hunter import ReplyHunter
+        hunter = ReplyHunter()
+        history = hunter.get_reply_history(limit=50)
+        status = hunter.get_status()
+        return jsonify({"history": history, "status": status})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@mercury_bp.route("/api/lisa/competitor-playbook")
+def api_lisa_competitor_playbook():
+    """Get Lisa's compiled competitor playbook."""
+    try:
+        from mercury.core.brain import MercuryBrain
+        brain = MercuryBrain()
+        return jsonify(brain.get_competitor_playbook())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500

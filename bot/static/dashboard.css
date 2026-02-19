@@ -1023,6 +1023,11 @@
   }
   .atlas-action-btn--scan .action-title { color:var(--agent-atlas); }
   .atlas-action-btn--scan:hover { box-shadow:0 4px 20px rgba(34,204,85,0.12); border-color:rgba(34,204,85,0.2); }
+  .atlas-action-btn--x {
+    border-left-color:#1DA1F2;
+  }
+  .atlas-action-btn--x .action-title { color:#1DA1F2; }
+  .atlas-action-btn--x:hover { box-shadow:0 4px 20px rgba(29,161,242,0.12); border-color:rgba(29,161,242,0.2); }
 
   @media (max-width:900px) { .atlas-content-actions { grid-template-columns:repeat(2,1fr); } }
   @media (max-width:640px) { .atlas-content-actions { grid-template-columns:1fr; } }

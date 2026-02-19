@@ -897,6 +897,26 @@ def api_atlas_content_intel():
     feed_log = _load_feed_log()
     recent_feeds = feed_log.get("feeds", [])[-5:]
 
+    # X competitor intel from Lisa's scanner
+    x_competitor_data = {}
+    x_intel_file = Path.home() / "mercury" / "data" / "x_competitor_intel.json"
+    if x_intel_file.exists():
+        try:
+            with open(x_intel_file) as f:
+                x_competitor_data = json.load(f)
+        except Exception:
+            pass
+
+    # X competitor playbook from Lisa's brain
+    x_playbook = {}
+    x_playbook_file = Path.home() / "mercury" / "data" / "x_competitor_playbook.json"
+    if x_playbook_file.exists():
+        try:
+            with open(x_playbook_file) as f:
+                x_playbook = json.load(f)
+        except Exception:
+            pass
+
     return jsonify({
         "content_findings": content_findings[:10],
         "soren_competitors": soren_competitors[:10],
@@ -906,6 +926,9 @@ def api_atlas_content_intel():
         "recent_feeds": recent_feeds,
         "feed_stats": feed_log.get("stats", {}),
         "last_scan": None,
+        "x_competitor_hooks": x_competitor_data.get("viral_hooks", [])[:10],
+        "x_competitor_accounts": x_competitor_data.get("account_data", [])[:10],
+        "x_playbook_takeaways": x_playbook.get("takeaways", [])[-10:],
     })
 
 
