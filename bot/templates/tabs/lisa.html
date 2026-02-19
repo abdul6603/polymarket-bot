@@ -90,6 +90,57 @@
     <div class="stat-card" data-accent="lisa"><div class="stat-value" id="lisa-image-budget">--</div><div class="stat-label">Image Budget</div></div>
   </div>
 
+  <!-- LISA'S INTELLIGENCE — What She's Learned -->
+  <div class="section-spacer">
+    <h2 class="section-title" style="color:var(--agent-lisa);">Lisa's Intelligence</h2>
+    <div class="glass-card" style="border-left:3px solid var(--agent-lisa);">
+      <!-- Intelligence Stats Row -->
+      <div class="grid-4" style="margin-bottom:var(--space-4);">
+        <div class="stat-card" data-accent="lisa"><div class="stat-value" id="intel-users-remembered">0</div><div class="stat-label">Users Remembered</div></div>
+        <div class="stat-card" data-accent="lisa"><div class="stat-value" id="intel-total-interactions">0</div><div class="stat-label">Interactions</div></div>
+        <div class="stat-card" data-accent="lisa"><div class="stat-value" id="intel-loyal-fans">0</div><div class="stat-label">Loyal Fans</div></div>
+        <div class="stat-card" data-accent="lisa"><div class="stat-value" id="intel-engagement-rate">0%</div><div class="stat-label">Engagement Rate</div></div>
+      </div>
+
+      <!-- Learning Insights -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <!-- Reply Guidance -->
+        <div style="background:rgba(255,255,255,0.02);border-radius:6px;padding:10px;">
+          <div style="font-family:var(--font-mono);font-size:0.68rem;color:var(--agent-lisa);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Reply Strategy</div>
+          <div id="intel-reply-guidance" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-secondary);">
+            Not enough data yet - keep replying!
+          </div>
+        </div>
+        <!-- Posting Guidance -->
+        <div style="background:rgba(255,255,255,0.02);border-radius:6px;padding:10px;">
+          <div style="font-family:var(--font-mono);font-size:0.68rem;color:var(--agent-lisa);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Best Posting Times</div>
+          <div id="intel-posting-guidance" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-secondary);">
+            Not enough data yet - keep posting!
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Engagers -->
+      <div style="background:rgba(255,255,255,0.02);border-radius:6px;padding:10px;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-family:var(--font-mono);font-size:0.68rem;color:var(--agent-lisa);text-transform:uppercase;letter-spacing:0.08em;">Top Engagers</span>
+          <button class="btn" onclick="checkEngagement()" style="font-size:0.66rem;padding:2px 8px;">Refresh Engagement</button>
+        </div>
+        <div id="intel-top-engagers" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-secondary);">
+          No interactions tracked yet
+        </div>
+      </div>
+
+      <!-- Content Guidance -->
+      <div style="background:rgba(255,255,255,0.02);border-radius:6px;padding:10px;">
+        <div style="font-family:var(--font-mono);font-size:0.68rem;color:var(--agent-lisa);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Content Intelligence</div>
+        <div id="intel-content-guidance" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-secondary);">
+          Not enough data yet - keep posting!
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- JORDAN'S APPROVAL QUEUE -->
   <div class="section-spacer">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">

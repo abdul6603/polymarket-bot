@@ -722,3 +722,92 @@ def api_lisa_competitor_playbook():
         return jsonify(brain.get_competitor_playbook())
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500
+
+
+# ── Intelligence Routes ──
+
+
+@mercury_bp.route("/api/lisa/intelligence")
+def api_lisa_intelligence():
+    """Lisa's full intelligence dashboard — learnings, memory, guidance."""
+    try:
+        result = {}
+
+        # Engagement learnings
+        try:
+            from mercury.core.engagement_learner import EngagementLearner
+            learner = EngagementLearner()
+            result["engagement"] = learner.get_full_insights()
+            result["performance"] = learner.get_performance_summary()
+        except Exception:
+            result["engagement"] = {}
+            result["performance"] = {}
+
+        # Conversation memory
+        try:
+            from mercury.core.memory import ConversationMemory
+            mem = ConversationMemory()
+            result["memory"] = mem.get_stats()
+            result["top_engagers"] = mem.get_top_engagers(10)
+            result["collab_candidates"] = mem.get_collab_candidates()
+        except Exception:
+            result["memory"] = {}
+            result["top_engagers"] = []
+            result["collab_candidates"] = []
+
+        # Reply guidance
+        try:
+            from mercury.core.engagement_learner import EngagementLearner
+            learner = EngagementLearner()
+            result["reply_guidance"] = learner.get_reply_guidance()
+            result["posting_guidance"] = learner.get_posting_guidance()
+            result["content_guidance"] = learner.get_content_guidance()
+        except Exception:
+            result["reply_guidance"] = {}
+            result["posting_guidance"] = {}
+            result["content_guidance"] = {}
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@mercury_bp.route("/api/lisa/intelligence/check-engagement", methods=["POST"])
+def api_lisa_check_engagement():
+    """Trigger engagement checking for recent posts/replies."""
+    try:
+        from mercury.core.engagement_learner import EngagementLearner
+        learner = EngagementLearner()
+        result = learner.check_engagement()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@mercury_bp.route("/api/lisa/intelligence/memory")
+def api_lisa_memory():
+    """Conversation memory details."""
+    try:
+        from mercury.core.memory import ConversationMemory
+        mem = ConversationMemory()
+        return jsonify({
+            "stats": mem.get_stats(),
+            "top_engagers": mem.get_top_engagers(20),
+            "collab_candidates": mem.get_collab_candidates(),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@mercury_bp.route("/api/lisa/intelligence/user/<username>")
+def api_lisa_user_context(username):
+    """Get Lisa's memory of a specific user."""
+    try:
+        from mercury.core.memory import ConversationMemory
+        mem = ConversationMemory()
+        ctx = mem.get_user_context(username)
+        if ctx:
+            return jsonify(ctx)
+        return jsonify({"error": f"No memory of @{username}"}), 404
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500

@@ -2419,6 +2419,109 @@ async function loadLisaScheduledCount() {
   } catch(e) {}
 }
 
+async function loadLisaIntelligence() {
+  try {
+    var resp = await fetch('/api/lisa/intelligence');
+    var data = await resp.json();
+    if (data.error) return;
+
+    // Stats
+    var mem = data.memory || {};
+    var perf = data.performance || {};
+    setTextSafe('intel-users-remembered', mem.total_users_remembered || 0);
+    setTextSafe('intel-total-interactions', mem.total_interactions || 0);
+    setTextSafe('intel-loyal-fans', mem.loyal_fans || 0);
+    setTextSafe('intel-engagement-rate', (perf.engagement_rate || 0) + '%');
+
+    // Reply guidance
+    var rg = data.reply_guidance || {};
+    var rgEl = document.getElementById('intel-reply-guidance');
+    if (rgEl) {
+      if (rg.tip) {
+        var html = '<div style="color:var(--text-primary);margin-bottom:4px;">' + esc(rg.tip) + '</div>';
+        if (rg.style_rankings && rg.style_rankings.length > 0) {
+          html += '<div style="color:var(--text-muted);font-size:0.68rem;">';
+          for (var i = 0; i < Math.min(3, rg.style_rankings.length); i++) {
+            var s = rg.style_rankings[i];
+            html += s.style + ': ' + s.avg_engagement.toFixed(0) + ' avg (' + s.sample_size + ' replies)' + (i < 2 ? ' | ' : '');
+          }
+          html += '</div>';
+        }
+        rgEl.innerHTML = html;
+      }
+    }
+
+    // Posting guidance
+    var pg = data.posting_guidance || {};
+    var pgEl = document.getElementById('intel-posting-guidance');
+    if (pgEl && pg.tip) {
+      var html = '<div style="color:var(--text-primary);margin-bottom:4px;">' + esc(pg.tip) + '</div>';
+      if (pg.best_hours && pg.best_hours.length > 0) {
+        html += '<div style="color:var(--text-muted);font-size:0.68rem;">Best hours: ' + pg.best_hours.map(function(h) { return h + ':00 ET'; }).join(', ') + '</div>';
+      }
+      if (pg.best_days && pg.best_days.length > 0) {
+        html += '<div style="color:var(--text-muted);font-size:0.68rem;">Best days: ' + pg.best_days.join(', ') + '</div>';
+      }
+      pgEl.innerHTML = html;
+    }
+
+    // Top engagers
+    var te = data.top_engagers || [];
+    var teEl = document.getElementById('intel-top-engagers');
+    if (teEl) {
+      if (te.length === 0) {
+        teEl.innerHTML = '<span class="text-muted">No interactions tracked yet</span>';
+      } else {
+        var html = '<div style="display:flex;flex-wrap:wrap;gap:6px;">';
+        for (var i = 0; i < Math.min(10, te.length); i++) {
+          var u = te[i];
+          var tagColor = u.tags && u.tags.indexOf('loyal_fan') !== -1 ? '#22aa44' : u.tags && u.tags.indexOf('high_value') !== -1 ? '#ffaa00' : 'var(--text-muted)';
+          html += '<span style="padding:2px 8px;border-radius:99px;background:rgba(255,255,255,0.05);border:1px solid ' + tagColor + ';font-size:0.68rem;">';
+          html += '@' + esc(u.username) + ' <span style="color:' + tagColor + ';">' + u.interactions + 'x</span></span>';
+        }
+        html += '</div>';
+        teEl.innerHTML = html;
+      }
+    }
+
+    // Content guidance
+    var cg = data.content_guidance || {};
+    var cgEl = document.getElementById('intel-content-guidance');
+    if (cgEl && cg.tip) {
+      var html = '<div style="color:var(--text-primary);margin-bottom:4px;">' + esc(cg.tip) + '</div>';
+      var iv = cg.image_vs_text || {};
+      if (iv.image_boost) {
+        html += '<div style="color:var(--text-muted);font-size:0.68rem;">' + esc(iv.image_boost);
+        if (iv.with_image_avg > 0) html += ' (img: ' + iv.with_image_avg + ' vs text: ' + iv.without_image_avg + ')';
+        html += '</div>';
+      }
+      cgEl.innerHTML = html;
+    }
+  } catch(e) { console.error('loadLisaIntelligence:', e); }
+}
+
+async function checkEngagement() {
+  try {
+    var btn = event.target;
+    btn.textContent = 'Checking...';
+    btn.disabled = true;
+    var resp = await fetch('/api/lisa/intelligence/check-engagement', {method:'POST'});
+    var data = await resp.json();
+    btn.textContent = 'Checked ' + (data.checked || 0) + ' items';
+    btn.disabled = false;
+    setTimeout(function() { btn.textContent = 'Refresh Engagement'; }, 3000);
+    loadLisaIntelligence();
+  } catch(e) {
+    btn.textContent = 'Error';
+    btn.disabled = false;
+  }
+}
+
+function setTextSafe(id, val) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
 async function lisaReviewCaption() {
   var textarea = document.getElementById('lisa-review-caption');
   var platform = document.getElementById('lisa-review-platform').value;
@@ -3707,6 +3810,7 @@ async function refresh() {
       loadXCompetitorIntel();
       loadReplyOpportunities();
       loadLisaScheduledCount();
+      loadLisaIntelligence();
     } else if (currentTab === 'sentinel') {
       var resp = await fetch('/api/sentinel');
       renderSentinel(await resp.json());
