@@ -2148,22 +2148,30 @@ async function testXConnection() {
 }
 
 async function generateXImage(style) {
+  var caption = style === 'quote' ? prompt('Enter quote text for the card:') : '';
+  if (style === 'quote' && !caption) return;
+  if (!caption) caption = 'dark motivation lone wolf';
   var resultEl = document.getElementById('img-result');
-  resultEl.innerHTML = '<span class="text-muted">Generating ' + style + ' image...</span>';
+  if (resultEl) resultEl.innerHTML = '<span class="text-muted">Generating ' + style + ' image...</span>';
   try {
     var resp = await fetch('/api/lisa/generate-image', {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({style: style, caption: 'dark motivation lone wolf', pillar: 'dark_motivation'})
+      body: JSON.stringify({style: style, caption: caption, pillar: 'dark_motivation'})
     });
     var data = await resp.json();
     if (data.ok) {
-      resultEl.innerHTML = '<span style="color:#22aa44;">Generated: ' + esc(data.filename) + '</span>';
+      var msg = '<span style="color:#22aa44;">Generated: ' + esc(data.filename) + '</span>';
+      if (resultEl) resultEl.innerHTML = msg;
+      alert('Image generated: ' + data.filename);
       loadImageCosts();
     } else {
-      resultEl.innerHTML = '<span style="color:#ff4444;">' + esc(data.error || 'Failed') + '</span>';
+      var err = esc(data.error || 'Failed');
+      if (resultEl) resultEl.innerHTML = '<span style="color:#ff4444;">' + err + '</span>';
+      alert('Image failed: ' + (data.error || 'Unknown error'));
     }
   } catch(e) {
-    resultEl.innerHTML = '<span style="color:#ff4444;">Request failed</span>';
+    if (resultEl) resultEl.innerHTML = '<span style="color:#ff4444;">Request failed</span>';
+    alert('Image generation request failed');
   }
 }
 
@@ -2710,13 +2718,10 @@ async function lisaTestReply() {
 // ── Pipeline, Rating, Writing, Timing, Algorithm panels ──
 
 async function runPipeline() {
-  var btn = document.getElementById('pipeline-run-btn');
   var resultEl = document.getElementById('pipeline-results');
-  btn.disabled = true;
-  btn.textContent = 'Running...';
-  resultEl.innerHTML = '<span class="text-muted">Processing pending items...</span>';
+  if (resultEl) resultEl.innerHTML = '<span class="text-muted">Processing pending items...</span>';
   try {
-    var resp = await fetch('/api/lisa/pipeline/run', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({platform:'instagram'})});
+    var resp = await fetch('/api/lisa/pipeline/run', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({platform:'x'})});
     var data = await resp.json();
     if (data.error) { resultEl.innerHTML = '<span style="color:#ff4444;">' + esc(data.error) + '</span>'; return; }
     var html = '<div style="margin-bottom:6px;">Processed: <strong>' + (data.processed||0) + '</strong> items</div>';
@@ -2739,8 +2744,8 @@ async function runPipeline() {
     if (data.processed === 0) html = '<span class="text-muted">No pending items to process.</span>';
     resultEl.innerHTML = html;
     loadPipelineStats();
-  } catch (e) { resultEl.innerHTML = '<span style="color:#ff4444;">Error: ' + esc(e.message) + '</span>'; }
-  finally { btn.disabled = false; btn.textContent = 'Run Pipeline'; }
+    loadJordanQueue();
+  } catch (e) { if (resultEl) resultEl.innerHTML = '<span style="color:#ff4444;">Error: ' + esc(e.message) + '</span>'; }
 }
 
 async function loadPipelineStats() {
@@ -3127,6 +3132,8 @@ async function loadPillarDistribution() {
 
 // ── Lisa Tab — Jordan Approval Queue & Posting Schedule ──
 
+var _jordanQueueFilter = 'all';
+
 async function loadJordanQueue() {
   var el = document.getElementById('jordan-approval-queue');
   var countEl = document.getElementById('jordan-queue-count');
@@ -3134,65 +3141,87 @@ async function loadJordanQueue() {
   try {
     var resp = await fetch('/api/lisa/jordan-queue');
     var data = await resp.json();
-    var items = data.items || [];
-    if (countEl) countEl.textContent = items.length > 0 ? items.length + ' awaiting' : '';
+    var allItems = data.items || [];
+
+    // Platform filter
+    var items = _jordanQueueFilter === 'all' ? allItems : allItems.filter(function(i) { return i.platform === _jordanQueueFilter; });
+    var xCount = allItems.filter(function(i) { return i.platform === 'x'; }).length;
+    var igCount = allItems.filter(function(i) { return i.platform === 'instagram' || i.platform === 'all'; }).length;
+
+    if (countEl) countEl.textContent = items.length > 0 ? items.length + ' items' : '';
+
+    // Filter tabs
+    var html = '<div style="display:flex;gap:6px;margin-bottom:12px;">';
+    var filters = [['all','All (' + allItems.length + ')'],['x','X (' + xCount + ')'],['instagram','IG (' + igCount + ')']];
+    for (var f = 0; f < filters.length; f++) {
+      var fk = filters[f][0], fl = filters[f][1];
+      var active = _jordanQueueFilter === fk;
+      html += '<button onclick="_jordanQueueFilter=\'' + fk + '\';loadJordanQueue();" style="font-size:0.72rem;padding:3px 10px;border-radius:99px;border:1px solid ' + (active ? '#1DA1F2' : 'rgba(255,255,255,0.1)') + ';background:' + (active ? 'rgba(29,161,242,0.15)' : 'transparent') + ';color:' + (active ? '#1DA1F2' : 'var(--text-muted)') + ';cursor:pointer;">' + fl + '</button>';
+    }
+    html += '</div>';
+
     if (items.length === 0) {
-      el.innerHTML = '<div class="glass-card" style="text-align:center;padding:var(--space-6);"><div style="font-size:1.2rem;color:var(--text-muted);margin-bottom:4px;">No items pending</div><div style="font-size:0.72rem;color:var(--text-secondary);">Run the pipeline on pending Soren content to populate this queue</div></div>';
+      html += '<div class="glass-card" style="text-align:center;padding:var(--space-6);"><div style="font-size:1rem;color:var(--text-muted);margin-bottom:4px;">No items in this filter</div><div style="font-size:0.72rem;color:var(--text-secondary);">Generate X content or run the pipeline to populate</div></div>';
+      el.innerHTML = html;
       return;
     }
-    var html = '';
+
     for (var i = 0; i < items.length; i++) {
       var item = items[i];
-      var isApproved = item.status === 'lisa_approved';
+      var isApproved = item.status === 'lisa_approved' || item.status === 'jordan_approved';
       var borderColor = isApproved ? '#22aa44' : '#ffaa00';
-      var tierLabel = isApproved ? 'LISA APPROVED' : 'NEEDS REVIEW';
-      html += '<div class="glass-card" style="border-left:3px solid ' + borderColor + ';margin-bottom:8px;">';
+      var tierLabel = item.status === 'jordan_approved' ? 'APPROVED' : item.status === 'lisa_approved' ? 'LISA APPROVED' : 'NEEDS REVIEW';
+      var platColor = item.platform === 'x' ? '#1DA1F2' : item.platform === 'instagram' ? '#E1306C' : 'var(--text-muted)';
+      var platIcon = item.platform === 'x' ? '𝕏' : item.platform === 'instagram' ? 'IG' : item.platform === 'tiktok' ? 'TT' : '•';
+
+      html += '<div class="glass-card" style="border-left:3px solid ' + borderColor + ';margin-bottom:8px;padding:10px 14px;">';
+
+      // Top row: pillar + badges + score
       html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">';
       html += '<div>';
-      html += '<div style="font-weight:600;font-size:0.78rem;color:var(--text-primary);margin-bottom:2px;">' + esc(item.title || item.pillar || 'Content') + '</div>';
-      html += '<div style="display:flex;gap:4px;flex-wrap:wrap;">';
-      html += '<span class="badge" style="background:' + borderColor + '22;color:' + borderColor + ';border:1px solid ' + borderColor + '44;">' + tierLabel + '</span>';
-      if (item.pillar) html += '<span class="badge badge-neutral">' + esc(item.pillar.replace(/_/g, ' ')) + '</span>';
-      if (item.platform) html += '<span class="badge badge-neutral">' + esc(item.platform) + '</span>';
-      if (item.format) html += '<span class="badge badge-neutral">' + esc(item.format) + '</span>';
+      html += '<div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center;">';
+      html += '<span style="font-size:0.72rem;font-weight:700;color:' + platColor + ';padding:1px 6px;border:1px solid ' + platColor + '44;border-radius:4px;">' + platIcon + '</span>';
+      html += '<span class="badge" style="background:' + borderColor + '22;color:' + borderColor + ';border:1px solid ' + borderColor + '44;font-size:0.66rem;">' + tierLabel + '</span>';
+      if (item.pillar) html += '<span class="badge badge-neutral" style="font-size:0.66rem;">' + esc(item.pillar.replace(/_/g, ' ')) + '</span>';
       html += '</div></div>';
       if (item.rating_score) {
         var scoreColor = item.rating_score >= 80 ? '#22aa44' : item.rating_score >= 60 ? '#ffaa00' : '#ff4444';
-        html += '<div style="text-align:right;"><div style="font-size:1.1rem;font-weight:700;color:' + scoreColor + ';">' + item.rating_score + '</div><div style="font-size:0.66rem;color:var(--text-muted);">/100</div></div>';
+        html += '<div style="text-align:right;"><div style="font-size:1.1rem;font-weight:700;color:' + scoreColor + ';">' + item.rating_score + '</div><div style="font-size:0.62rem;color:var(--text-muted);">/100</div></div>';
       }
       html += '</div>';
+
       // Caption preview
-      if (item.caption) html += '<div style="font-family:var(--font-mono);font-size:0.74rem;color:var(--text-secondary);margin-bottom:8px;padding:6px 8px;background:rgba(255,255,255,0.03);border-radius:4px;">' + esc(item.caption) + '</div>';
-      // Rating dimensions mini-bars
+      if (item.caption) {
+        html += '<div style="font-family:var(--font-mono);font-size:0.76rem;color:var(--text-primary);margin-bottom:8px;padding:8px 10px;background:rgba(255,255,255,0.04);border-radius:6px;border:1px solid rgba(255,255,255,0.06);">';
+        html += esc(item.caption);
+        html += '<div style="text-align:right;font-size:0.64rem;color:var(--text-muted);margin-top:4px;">' + (item.caption || '').length + ' chars</div>';
+        html += '</div>';
+      }
+
+      // Rating dimensions as compact bar
       var dims = item.rating_dimensions || {};
       var dk = Object.keys(dims);
       if (dk.length > 0) {
-        html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;">';
+        html += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">';
         var dimNames = {brand_voice:'Voice',hook_power:'Hook',engagement_potential:'Engage',platform_fit:'Platform',emotional_impact:'Emotion',authenticity:'Auth',pillar_relevance:'Pillar',timing_fit:'Timing'};
         for (var d = 0; d < dk.length; d++) {
           var k = dk[d];
           var v = dims[k] || 0;
           var dc = v >= 7 ? '#22aa44' : v >= 4 ? '#ffaa00' : '#ff4444';
-          html += '<span style="font-size:0.66rem;color:' + dc + ';">' + (dimNames[k]||k) + ':' + v + '</span>';
+          html += '<span style="font-size:0.64rem;padding:1px 5px;border-radius:3px;background:' + dc + '15;color:' + dc + ';">' + (dimNames[k]||k) + ' ' + v + '</span>';
         }
         html += '</div>';
       }
-      // Issues and suggestions
-      if (item.rating_issues && item.rating_issues.length > 0) {
-        html += '<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:4px;">';
-        for (var r = 0; r < item.rating_issues.length; r++) html += '<div style="padding-left:8px;">- ' + esc(item.rating_issues[r]) + '</div>';
-        html += '</div>';
-      }
-      // Suggested time
-      if (item.suggested_time) {
-        html += '<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:6px;">Suggested: <span style="color:var(--agent-lisa);">' + esc(item.suggested_time.replace('T', ' ')) + '</span>';
-        if (item.suggested_reason) html += ' — ' + esc(item.suggested_reason);
-        html += '</div>';
-      }
+
       // Action buttons
-      html += '<div style="display:flex;gap:6px;margin-top:4px;">';
-      html += '<button class="btn btn-primary" onclick="jordanApproveItem(\'' + esc(item.id) + '\',\'' + esc(item.platform || 'instagram') + '\')" style="font-size:0.72rem;">Approve</button>';
-      html += '<button class="btn btn-error" onclick="jordanRejectItem(\'' + esc(item.id) + '\')" style="font-size:0.72rem;">Reject</button>';
+      html += '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">';
+      if (item.status !== 'jordan_approved') {
+        html += '<button class="btn btn-primary" onclick="jordanApproveItem(\'' + esc(item.id) + '\',\'' + esc(item.platform || 'x') + '\')" style="font-size:0.72rem;padding:4px 12px;">Approve</button>';
+      }
+      if (item.platform === 'x' && (isApproved || item.status === 'needs_review')) {
+        html += '<button class="btn" onclick="postNowToX(\'' + esc(item.id) + '\')" style="font-size:0.72rem;padding:4px 12px;border-color:#1DA1F2;color:#1DA1F2;">Post to X Now</button>';
+      }
+      html += '<button class="btn btn-error" onclick="jordanRejectItem(\'' + esc(item.id) + '\')" style="font-size:0.72rem;padding:4px 12px;">Reject</button>';
       html += '</div>';
       html += '</div>';
     }
@@ -3204,11 +3233,11 @@ async function jordanApproveItem(itemId, platform) {
   try {
     var resp = await fetch('/api/lisa/jordan-approve/' + encodeURIComponent(itemId), {
       method: 'POST', headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({platform: platform || 'instagram'})
+      body: JSON.stringify({platform: platform || 'x'})
     });
     var data = await resp.json();
     if (data.error) { alert('Error: ' + data.error); return; }
-    refresh();
+    loadJordanQueue();
   } catch(e) { alert('Error: ' + e.message); }
 }
 
@@ -3811,6 +3840,7 @@ async function refresh() {
       loadReplyOpportunities();
       loadLisaScheduledCount();
       loadLisaIntelligence();
+      testXConnection();
     } else if (currentTab === 'sentinel') {
       var resp = await fetch('/api/sentinel');
       renderSentinel(await resp.json());
@@ -6327,11 +6357,87 @@ async function loadHawkTab() {
     renderHawkReviews(revData);
   } catch(e) {}
 
+  // Arbitrage Engine
+  loadHawkArb();
+
   // Mode badge
   loadHawkMode();
 
   // Trade suggestions
   loadHawkSuggestions();
+}
+
+async function loadHawkArb() {
+  try {
+    var resp = await fetch('/api/hawk/arb');
+    var d = await resp.json();
+    var sm = d.summary || {};
+    var bankEl = document.getElementById('hawk-arb-bankroll');
+    var openEl = document.getElementById('hawk-arb-open');
+    var profEl = document.getElementById('hawk-arb-profit');
+    var execEl = document.getElementById('hawk-arb-executed');
+    if (bankEl) {
+      var exposure = sm.open_exposure || 0;
+      bankEl.textContent = '$' + ((d.status || {}).bankroll || 800).toFixed(0);
+      if (exposure > 0) bankEl.textContent += ' ($' + exposure.toFixed(0) + ' deployed)';
+    }
+    if (openEl) openEl.textContent = sm.open_arbs || 0;
+    if (profEl) { profEl.textContent = '$' + (sm.total_profit || 0).toFixed(2); profEl.style.color = (sm.total_profit || 0) >= 0 ? '#00ff44' : 'var(--error)'; }
+    if (execEl) execEl.textContent = sm.total_executed || 0;
+    renderHawkArbOpen(d.open_positions || []);
+  } catch(e) { console.error('hawk arb:', e); }
+  try {
+    var hResp = await fetch('/api/hawk/arb/history');
+    var hData = await hResp.json();
+    renderHawkArbHistory(hData.trades || []);
+  } catch(e) {}
+}
+
+function renderHawkArbOpen(positions) {
+  var tbody = document.getElementById('hawk-arb-open-tbody');
+  if (!tbody) return;
+  if (positions.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="text-muted" style="text-align:center;padding:16px;">No open arb positions</td></tr>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < positions.length; i++) {
+    var p = positions[i];
+    html += '<tr>';
+    html += '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(p.question) + '">' + esc(p.question) + '</td>';
+    html += '<td>' + esc(p.outcome_a) + ' <span style="color:#00d4ff;">$' + (p.ask_a || 0).toFixed(4) + '</span></td>';
+    html += '<td>' + esc(p.outcome_b) + ' <span style="color:#00d4ff;">$' + (p.ask_b || 0).toFixed(4) + '</span></td>';
+    html += '<td style="color:#FFD700;font-weight:600;">$' + (p.combined_cost || 0).toFixed(4) + '</td>';
+    html += '<td style="color:#00ff44;font-weight:600;">$' + (p.profit_per_share || 0).toFixed(4) + '</td>';
+    html += '<td>' + (p.shares || 0).toFixed(1) + '</td>';
+    html += '<td style="color:#00ff44;font-weight:700;">$' + (p.expected_profit || 0).toFixed(2) + '</td>';
+    html += '<td style="font-size:0.72rem;color:var(--text-muted);">' + esc(p.time_str) + '</td>';
+    html += '</tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+function renderHawkArbHistory(trades) {
+  var tbody = document.getElementById('hawk-arb-hist-tbody');
+  if (!tbody) return;
+  if (trades.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:16px;">No resolved arbs yet</td></tr>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < trades.length; i++) {
+    var t = trades[i];
+    var profitColor = (t.profit || 0) >= 0 ? '#00ff44' : 'var(--error)';
+    html += '<tr>';
+    html += '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(t.question) + '">' + esc(t.question) + '</td>';
+    html += '<td>$' + (t.combined_cost || 0).toFixed(4) + '</td>';
+    html += '<td>' + (t.shares || 0).toFixed(1) + '</td>';
+    html += '<td>$' + (t.position_usd || 0).toFixed(2) + '</td>';
+    html += '<td style="color:' + profitColor + ';font-weight:700;">$' + (t.profit || 0).toFixed(2) + '</td>';
+    html += '<td style="font-size:0.72rem;color:var(--text-muted);">' + esc(t.time_str) + '</td>';
+    html += '</tr>';
+  }
+  tbody.innerHTML = html;
 }
 
 function renderHawkReviews(data) {

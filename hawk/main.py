@@ -17,6 +17,7 @@ from hawk.tracker import HawkTracker
 from hawk.risk import HawkRiskManager
 from hawk.resolver import resolve_paper_trades
 from hawk.briefing import generate_briefing
+from hawk.arb import ArbEngine
 
 log = logging.getLogger(__name__)
 
@@ -44,7 +45,8 @@ def _load_brain_notes() -> list[dict]:
 
 
 def _save_status(tracker: HawkTracker, risk: HawkRiskManager | None = None,
-                 running: bool = True, cycle: int = 0) -> None:
+                 running: bool = True, cycle: int = 0,
+                 arb_engine: ArbEngine | None = None) -> None:
     """Save current status to data/hawk_status.json for dashboard."""
     DATA_DIR.mkdir(exist_ok=True)
     summary = tracker.summary()
@@ -54,6 +56,8 @@ def _save_status(tracker: HawkTracker, risk: HawkRiskManager | None = None,
     if risk:
         summary["effective_bankroll"] = round(risk.effective_bankroll(), 2)
         summary["consecutive_losses"] = risk.consecutive_losses
+    if arb_engine:
+        summary.update(arb_engine.summary())
     try:
         STATUS_FILE.write_text(json.dumps(summary, indent=2))
     except Exception:
@@ -208,7 +212,18 @@ class HawkBot:
         self.tracker = HawkTracker()
         self.risk = HawkRiskManager(self.cfg, self.tracker)
         self.executor: HawkExecutor | None = None
+        self.arb: ArbEngine | None = None
         self.cycle = 0
+
+        # Agent Brain — learning memory
+        self._brain = None
+        try:
+            import sys as _sys
+            _sys.path.insert(0, str(Path.home() / "shared"))
+            from agent_brain import AgentBrain
+            self._brain = AgentBrain("hawk", system_prompt="You are Hawk, a prediction market analyst.", task_type="analysis")
+        except Exception:
+            pass
 
     def _check_mode_toggle(self) -> None:
         """Check if mode was toggled via dashboard and update cfg accordingly."""
@@ -239,6 +254,7 @@ class HawkBot:
             except Exception:
                 log.warning("Could not initialize CLOB client, running in dry-run mode")
         self.executor = HawkExecutor(self.cfg, client, self.tracker)
+        self.arb = ArbEngine(self.cfg, client)
 
     async def run(self) -> None:
         """Main loop — V2 Smart Degen."""
@@ -257,7 +273,7 @@ class HawkBot:
         log.info("Mode: %s", "DRY RUN" if self.cfg.dry_run else "LIVE TRADING")
 
         self._init_executor()
-        _save_status(self.tracker, self.risk, running=True, cycle=0)
+        _save_status(self.tracker, self.risk, running=True, cycle=0, arb_engine=self.arb)
 
         while True:
             self.cycle += 1
@@ -283,7 +299,7 @@ class HawkBot:
 
                 if self.risk.is_shutdown():
                     log.warning("Daily loss cap hit — skipping cycle")
-                    _save_status(self.tracker, self.risk, running=True, cycle=self.cycle)
+                    _save_status(self.tracker, self.risk, running=True, cycle=self.cycle, arb_engine=self.arb)
                     await asyncio.sleep(self.cfg.cycle_minutes * 60)
                     continue
 
@@ -293,9 +309,30 @@ class HawkBot:
                 log.info("Found %d eligible markets", len(markets))
 
                 if not markets:
-                    _save_status(self.tracker, self.risk, running=True, cycle=self.cycle)
+                    _save_status(self.tracker, self.risk, running=True, cycle=self.cycle, arb_engine=self.arb)
                     await asyncio.sleep(self.cfg.cycle_minutes * 60)
                     continue
+
+                # 1b. ARB SCAN — guaranteed profit before speculative directional bets
+                if self.arb and self.cfg.arb_enabled:
+                    try:
+                        log.info("Scanning for binary arbitrage opportunities...")
+                        arb_opps = self.arb.scan(markets)
+                        arb_executed = 0
+                        for arb_opp in arb_opps[:self.cfg.arb_max_concurrent]:
+                            result = self.arb.execute(arb_opp)
+                            if result:
+                                arb_executed += 1
+                        if arb_executed:
+                            log.info("[ARB] Executed %d arb trades this cycle", arb_executed)
+                        # Resolve settled arbs
+                        arb_res = self.arb.resolve()
+                        if arb_res["resolved"] > 0:
+                            log.info("[ARB] Resolved %d arbs | profit: $%.2f",
+                                     arb_res["resolved"], arb_res["profit"])
+                        self.arb.save_status()
+                    except Exception:
+                        log.exception("Arb engine error")
 
                 # 2. Filter contested (12-88% YES price)
                 contested = []
@@ -423,6 +460,16 @@ class HawkBot:
                             log.info("TRADE PLACED: %s %s | $%.2f | edge=%.1f%% | %s",
                                      opp.direction.upper(), opp.market.question[:60],
                                      opp.position_size_usd, opp.edge * 100, order_id)
+                            # Brain: record trade decision
+                            if self._brain:
+                                try:
+                                    _ctx = f"{opp.market.category}: {opp.market.question[:100]} | price={_get_yes_price(opp.market):.2f} edge={opp.edge*100:.1f}%"
+                                    _dec = f"{opp.direction.upper()} ${opp.position_size_usd:.2f} | est_prob={opp.estimate.estimated_prob:.2f} conf={opp.estimate.confidence}"
+                                    _did = self._brain.remember_decision(_ctx, _dec, reasoning=opp.estimate.reasoning[:200], confidence=opp.estimate.confidence / 10.0 if opp.estimate.confidence > 1 else opp.estimate.confidence, tags=[opp.market.category, opp.direction])
+                                    # Store for outcome tracking
+                                    self.tracker.set_decision_id(opp.market.condition_id, _did)
+                                except Exception:
+                                    pass
 
                 _save_suggestions(suggestions)
                 log.info("Saved %d trade suggestions (HIGH: %d, MEDIUM: %d, SPEC: %d)",
@@ -449,6 +496,19 @@ class HawkBot:
                         # Record per-trade PnL for accurate streak detection
                         for trade_pnl in res.get("per_trade_pnl", []):
                             self.risk.record_pnl(trade_pnl)
+                        # Brain: record resolved outcomes
+                        if self._brain:
+                            try:
+                                for resolved_trade in res.get("resolved_trades", []):
+                                    _did = self.tracker.get_decision_id(resolved_trade.get("condition_id", ""))
+                                    if _did:
+                                        _won = resolved_trade.get("won", False)
+                                        _pnl = resolved_trade.get("pnl", 0)
+                                        self._brain.remember_outcome(_did, f"{'WIN' if _won else 'LOSS'} PnL=${_pnl:.2f}", score=1.0 if _won else -1.0)
+                                        cat = resolved_trade.get("category", "unknown")
+                                        self._brain.learn_pattern("hawk_category_outcome", f"Category '{cat}': {'WON' if _won else 'LOST'}", confidence=0.6 if _won else 0.4)
+                            except Exception:
+                                pass
                         # Reload tracker
                         self.tracker._positions = []
                         self.tracker._load_positions()
@@ -467,11 +527,11 @@ class HawkBot:
                         except Exception:
                             log.exception("Post-trade review failed")
 
-                _save_status(self.tracker, self.risk, running=True, cycle=self.cycle)
+                _save_status(self.tracker, self.risk, running=True, cycle=self.cycle, arb_engine=self.arb)
 
             except Exception:
                 log.exception("Hawk V2 cycle %d failed", self.cycle)
-                _save_status(self.tracker, self.risk, running=True, cycle=self.cycle)
+                _save_status(self.tracker, self.risk, running=True, cycle=self.cycle, arb_engine=self.arb)
 
             log.info("Hawk V2 cycle %d complete. Sleeping %d minutes...", self.cycle, self.cfg.cycle_minutes)
             await asyncio.sleep(self.cfg.cycle_minutes * 60)

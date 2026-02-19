@@ -55,3 +55,11 @@ class HawkConfig:
     metaculus_enabled: bool = _env("HAWK_METACULUS_ENABLED", "true").lower() in ("true", "1", "yes")
     predictit_enabled: bool = _env("HAWK_PREDICTIT_ENABLED", "true").lower() in ("true", "1", "yes")
     weather_enabled: bool = _env("HAWK_WEATHER_ENABLED", "true").lower() in ("true", "1", "yes")
+
+    # V5: Arbitrage engine — buy both sides when combined ask < $0.98
+    arb_enabled: bool = _env("HAWK_ARB_ENABLED", "true").lower() in ("true", "1", "yes")
+    arb_bankroll_usd: float = float(_env("HAWK_ARB_BANKROLL_USD", "800"))
+    arb_max_per_trade: float = float(_env("HAWK_ARB_MAX_PER_TRADE", "100"))
+    arb_min_profit_pct: float = float(_env("HAWK_ARB_MIN_PROFIT_PCT", "0.005"))
+    arb_max_concurrent: int = int(_env("HAWK_ARB_MAX_CONCURRENT", "10"))
+    arb_min_depth_usd: float = float(_env("HAWK_ARB_MIN_DEPTH_USD", "500"))

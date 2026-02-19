@@ -41,6 +41,33 @@
     <div class="widget-badge"><span class="wb-label"></span> <span id="hawk-risk-extreme" style="color:#ff3333;">0 Extreme</span></div>
     <div class="widget-badge"><span class="wb-label">Avg Risk:</span> <span id="hawk-avg-risk" style="color:var(--text-secondary);">--</span></div>
   </div>
+  <!-- Arbitrage Engine -->
+  <div class="section-spacer" id="hawk-arb-section">
+    <h2 class="section-title" style="color:#FFD700;">Arbitrage Engine <span style="font-size:0.68rem;color:#00ff44;font-weight:400;margin-left:6px;">guaranteed profit</span></h2>
+    <div class="grid-4" style="margin-bottom:12px;">
+      <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-arb-bankroll" style="color:#FFD700;">$800</div><div class="stat-label">Arb Bankroll</div></div>
+      <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-arb-open" style="color:#00d4ff;">0</div><div class="stat-label">Open Arbs</div></div>
+      <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-arb-profit" style="color:#00ff44;">$0.00</div><div class="stat-label">Total Profit</div></div>
+      <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-arb-executed">0</div><div class="stat-label">Arbs Executed</div></div>
+    </div>
+    <!-- Open Arb Positions Table -->
+    <div class="glass-card" style="margin-bottom:12px;">
+      <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Open Arb Positions</h3>
+      <table class="data-table">
+        <thead><tr><th>Market</th><th>Leg A</th><th>Leg B</th><th>Combined</th><th>Profit/Share</th><th>Shares</th><th>Exp. Profit</th><th>Time</th></tr></thead>
+        <tbody id="hawk-arb-open-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:16px;">No open arb positions</td></tr></tbody>
+      </table>
+    </div>
+    <!-- Resolved Arbs Table -->
+    <div class="glass-card">
+      <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Resolved Arbs</h3>
+      <table class="data-table">
+        <thead><tr><th>Market</th><th>Combined Cost</th><th>Shares</th><th>Invested</th><th>Profit</th><th>Time</th></tr></thead>
+        <tbody id="hawk-arb-hist-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:16px;">No resolved arbs yet</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- Scan Summary -->
   <div id="hawk-scan-summary" style="display:none;margin-bottom:12px;">
     <div style="display:flex;gap:10px;flex-wrap:wrap;">
