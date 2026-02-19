@@ -426,7 +426,7 @@ def audit_all() -> dict:
     for c in costs:
         agent_totals[c["agent"]] = agent_totals.get(c["agent"], 0) + c["cost_usd"]
 
-    return {
+    result = {
         "total_monthly": round(total_monthly, 2),
         "costs": paid + free,
         "agent_totals": {k: round(v, 2) for k, v in sorted(agent_totals.items(), key=lambda x: x[1], reverse=True)},
@@ -435,6 +435,25 @@ def audit_all() -> dict:
         "waste_flags": [c for c in paid if c["cost_usd"] > 50],
         "last_computed": datetime.now().isoformat(),
     }
+
+    # Publish cost_audit_completed to the shared event bus
+    try:
+        from shared.events import publish as bus_publish
+        top_spender = max(agent_totals, key=agent_totals.get) if agent_totals else "none"
+        bus_publish(
+            agent="viper",
+            event_type="cost_audit_completed",
+            data={
+                "total_cost": result["total_monthly"],
+                "top_spender": top_spender,
+                "savings_found": len(result["waste_flags"]),
+            },
+            summary=f"Cost audit: ${result['total_monthly']:.2f}/mo, top spender: {top_spender}",
+        )
+    except Exception:
+        pass  # Never let bus failure crash Viper
+
+    return result
 
 
 def find_waste() -> list[dict]:

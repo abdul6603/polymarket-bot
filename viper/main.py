@@ -182,6 +182,7 @@ class ViperBot:
 
         while True:
             self.cycle += 1
+            cycle_start = time.time()
             log.info("=== Viper Cycle %d ===", self.cycle)
 
             try:
@@ -227,6 +228,25 @@ class ViperBot:
                     "tavily_ran": result.get("tavily_ran", False),
                     "soren_opportunities": soren_count if soren_count >= 0 else None,
                 })
+
+                # Publish cycle_completed to the shared event bus
+                scan_duration = round(time.time() - cycle_start, 1)
+                try:
+                    from shared.events import publish as bus_publish
+                    bus_publish(
+                        agent="viper",
+                        event_type="cycle_completed",
+                        data={
+                            "cycle": self.cycle,
+                            "opportunities_count": result.get("new_items", 0),
+                            "scan_duration": scan_duration,
+                            "total_scanned": result["intel_count"],
+                            "matched": result["matched"],
+                        },
+                        summary=f"Viper cycle {self.cycle}: {result.get('new_items', 0)} new items in {scan_duration}s",
+                    )
+                except Exception:
+                    pass  # Never let bus failure crash Viper
 
             except Exception:
                 log.exception("Viper cycle %d failed", self.cycle)

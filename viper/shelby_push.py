@@ -55,6 +55,24 @@ def push_to_shelby(cfg: ViperConfig, item: IntelItem, score: int) -> bool:
         tasks_file.parent.mkdir(parents=True, exist_ok=True)
         tasks_file.write_text(json.dumps(tasks, indent=2))
         log.info("Pushed to Shelby: [VIPER] %s (score=%d)", item.headline[:50], score)
+
+        # Publish shelby_push event to the shared event bus
+        try:
+            from shared.events import publish as bus_publish
+            bus_publish(
+                agent="viper",
+                event_type="shelby_push",
+                data={
+                    "title": item.headline[:200],
+                    "source": item.source,
+                    "score": score,
+                    "category": item.category,
+                },
+                summary=f"Pushed to Shelby: {item.headline[:80]} (score={score})",
+            )
+        except Exception:
+            pass  # Never let bus failure crash Viper
+
         return True
     except Exception:
         log.exception("Failed to push to Shelby")

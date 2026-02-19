@@ -219,6 +219,26 @@ class PerformanceTracker:
             # V2: Push resolution alert to Shelby
             push_trade_alert(format_trade_alert(asdict(rec), "resolution"), "resolution")
 
+            # Publish trade_resolved to shared event bus
+            try:
+                from shared.events import publish as bus_publish
+                bus_publish(
+                    agent="garves",
+                    event_type="trade_resolved",
+                    data={
+                        "asset": rec.asset,
+                        "direction": rec.direction,
+                        "timeframe": rec.timeframe,
+                        "outcome": "win" if rec.won else "loss",
+                        "actual_result": rec.outcome,
+                        "trade_id": trade_id,
+                        "market_id": rec.market_id,
+                    },
+                    summary=f"{'WIN' if rec.won else 'LOSS'}: {rec.asset.upper()}/{rec.timeframe} predicted={rec.direction.upper()} actual={rec.outcome.upper()}",
+                )
+            except Exception:
+                pass
+
             # macOS notification (Feature 2: Trade Alerts)
             try:
                 subprocess.run(

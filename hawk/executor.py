@@ -44,6 +44,7 @@ class HawkExecutor:
             order_id = f"hawk-dry-{opp.market.condition_id[:8]}-{int(time.time())}"
             log.info("[DRY RUN] Simulated order: %s", order_id)
             self.tracker.record_trade(opp, order_id)
+            _bus_trade_placed(opp, order_id)
             return order_id
 
         if not self.client:
@@ -62,6 +63,7 @@ class HawkExecutor:
             order_id = resp.get("orderID") or resp.get("id", "unknown")
             log.info("Order placed: %s", order_id)
             self.tracker.record_trade(opp, order_id)
+            _bus_trade_placed(opp, order_id)
             return order_id
         except Exception:
             log.exception("Failed to place order")
@@ -129,3 +131,26 @@ def _get_entry_price(opp: TradeOpportunity) -> float:
         except (ValueError, TypeError):
             return 0.5
     return 0.5
+
+
+def _bus_trade_placed(opp: TradeOpportunity, order_id: str) -> None:
+    """Publish trade_placed event to the shared event bus (fire-and-forget)."""
+    try:
+        from shared.events import publish as bus_publish
+        bus_publish(
+            agent="hawk",
+            event_type="trade_placed",
+            data={
+                "order_id": order_id,
+                "market_question": opp.market.question[:200],
+                "direction": opp.direction,
+                "size_usd": round(opp.position_size_usd, 2),
+                "edge": round(opp.edge, 4),
+                "probability": round(opp.estimate.estimated_prob, 4),
+                "category": opp.market.category,
+                "condition_id": opp.market.condition_id,
+            },
+            summary=f"Hawk placed ${opp.position_size_usd:.2f} {opp.direction.upper()} on: {opp.market.question[:80]}",
+        )
+    except Exception:
+        log.debug("Event bus publish failed for trade_placed (non-fatal)")

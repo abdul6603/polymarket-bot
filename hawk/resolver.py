@@ -132,6 +132,25 @@ def resolve_paper_trades() -> dict:
                     t.get("risk_score", "?"),
                 )
 
+                # Publish to shared event bus
+                try:
+                    from shared.events import publish as bus_publish
+                    bus_publish(
+                        agent="hawk",
+                        event_type="trade_resolved",
+                        data={
+                            "market_question": t.get("question", "")[:200],
+                            "outcome": "won" if won else "lost",
+                            "pnl_usd": round(pnl, 2),
+                            "direction": t.get("direction", ""),
+                            "category": t.get("category", ""),
+                            "condition_id": cid,
+                        },
+                        summary=f"Hawk trade {'WON' if won else 'LOST'}: ${pnl:+.2f} on: {t.get('question', '')[:80]}",
+                    )
+                except Exception:
+                    pass  # Bus failure must never crash resolver
+
         except Exception:
             log.exception("Failed to check market %s", cid[:12])
             stats["skipped"] += len(cid_trades)

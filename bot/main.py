@@ -565,6 +565,28 @@ class TradingBot:
                     " ALL-ALIGNED" if conviction.all_assets_aligned else "",
                 )
 
+                # Publish trade_placed to shared event bus
+                try:
+                    from shared.events import publish as bus_publish
+                    bus_publish(
+                        agent="garves",
+                        event_type="trade_placed",
+                        data={
+                            "asset": asset,
+                            "direction": sig.direction,
+                            "timeframe": timeframe,
+                            "size_usd": round(conviction.position_size_usd, 2),
+                            "edge": round(sig.edge, 4),
+                            "conviction_score": round(conviction.total_score, 1),
+                            "order_id": order_id,
+                            "market_id": market_id,
+                            "dry_run": self.cfg.dry_run,
+                        },
+                        summary=f"{sig.direction.upper()} {asset.upper()}/{timeframe} ${conviction.position_size_usd:.2f} (edge={sig.edge*100:.1f}%)",
+                    )
+                except Exception:
+                    pass
+
                 # Telegram alert for live trades
                 if not self.cfg.dry_run:
                     try:

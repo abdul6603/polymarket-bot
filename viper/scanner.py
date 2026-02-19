@@ -338,6 +338,26 @@ def scan_all(tavily_key: str, clob_host: str = "https://clob.polymarket.com") ->
             all_items.append(item)
 
     log.info("Total intel items: %d (Tavily + Polymarket + Reddit)", len(all_items))
+
+    # Publish each new intel item to the shared event bus
+    for item in all_items:
+        try:
+            from shared.events import publish as bus_publish
+            bus_publish(
+                agent="viper",
+                event_type="opportunity_found",
+                data={
+                    "source": item.source,
+                    "title": item.headline[:200],
+                    "estimated_value": 0,
+                    "category": item.category,
+                    "confidence": item.confidence,
+                },
+                summary=f"Intel found: {item.headline[:100]}",
+            )
+        except Exception:
+            pass  # Never let bus failure crash Viper
+
     return all_items
 
 
