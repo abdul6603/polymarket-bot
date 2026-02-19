@@ -498,6 +498,16 @@ def batch_analyze(
     log.info("Analyzing %d markets: %d sports (sportsbook-first), %d non-sports (GPT primary)",
              len(markets), len(sports), len(non_sports))
 
+    # Prefetch sportsbook data BEFORE parallel GPT analysis
+    # This avoids cache race conditions and saves API quota
+    if sports:
+        try:
+            from hawk.odds import prefetch_sports
+            odds_key = getattr(cfg, 'odds_api_key', '')
+            prefetch_sports(odds_key, [m.question for m in sports])
+        except Exception:
+            log.debug("Sportsbook prefetch failed — GPT will run without sportsbook data")
+
     estimates: list[ProbabilityEstimate] = []
 
     with ThreadPoolExecutor(max_workers=max_concurrent) as pool:
