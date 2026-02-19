@@ -40,16 +40,18 @@ TRADES_FILE = DATA_DIR / "trades.jsonl"
 # on the high-quality trades that pass. R:R 1.2+ guarantees wins > losses.
 SIZE_TIERS = {
     # (min_conviction, max_conviction): (min_usd, max_usd)
+    # Bumped per Quant Kelly analysis: recommended $26.52/trade at 64% WR.
+    # Old tiers were too conservative for a 64% win rate strategy.
     (0, 15):   (0.0, 0.0),      # DON'T TRADE — truly insufficient evidence
-    (15, 30):  (15.0, 20.0),    # Micro — passed all strict filters, decent size
-    (30, 50):  (20.0, 28.0),    # Small — solid signal with good R:R
-    (50, 70):  (28.0, 35.0),    # Standard — strong consensus
-    (70, 85):  (35.0, 42.0),    # Increased — strong multi-factor alignment
-    (85, 100): (42.0, 50.0),    # Maximum conviction — nearly everything aligns
+    (15, 30):  (20.0, 26.0),    # Micro — was $15-20, bumped to Kelly baseline
+    (30, 50):  (26.0, 35.0),    # Small — was $20-28, bumped
+    (50, 70):  (35.0, 45.0),    # Standard — was $28-35, bumped
+    (70, 85):  (45.0, 55.0),    # Increased — was $35-42, bumped
+    (85, 100): (55.0, 65.0),    # Maximum conviction — was $42-50, bumped
 }
 
 # ── Safety Rails ──
-ABSOLUTE_MAX_PER_TRADE = 50.0       # Max per trade — raised from $30 (fewer but bigger bets)
+ABSOLUTE_MAX_PER_TRADE = 65.0       # Max per trade — bumped from $50 (Kelly says we're under-betting)
 ABSOLUTE_MAX_DAILY_LOSS = 50.0      # Stop trading if daily loss hits $50
 LOSING_STREAK_THRESHOLD = 3         # Scale down after 3 consecutive losses
 LOSING_STREAK_PENALTY = 0.75        # Multiply conviction by 0.75 during losing streak (0.6 was too crushing)
@@ -74,18 +76,18 @@ COMPONENT_WEIGHTS = {
     "cross_timeframe":       5,  # 5m and 15m agree
 }
 
-# Good hours (ET) with historically high WR from 140+ trade analysis
-# 00,02,10,12,16,17 = 79.5% WR combined
-GOOD_HOURS_ET = {0, 2, 10, 12, 16, 17}
+# Good hours (ET) — updated 2026-02-18 from 25+ resolved trade data
+# 0h=67%, 6h=75%, 11h=70%, 12h=80%, 13h=67%, 14h=71%
+GOOD_HOURS_ET = {0, 6, 11, 12, 13, 14}
 # Decent hours (not great, not terrible)
-OKAY_HOURS_ET = {1, 3, 4, 8, 9, 11, 13, 14, 15}
-# Bad hours already filtered by SignalEngine, but if a signal leaks through:
-BAD_HOURS_ET = {5, 6, 7, 18, 19, 20, 21, 22, 23}
+OKAY_HOURS_ET = {1, 2, 3, 4, 8, 9, 10, 15, 16, 17}
+# Bad hours — 5AM is 0W/3L dead zone (also filtered in signals.py)
+BAD_HOURS_ET = {5, 7, 18, 19, 20, 21, 22, 23}
 
 # ── All Assets Aligned Mode thresholds ──
 ALL_ALIGNED_MIN_CONSENSUS = 4       # Each asset must have 4+ non-disabled indicators agreeing
 ALL_ALIGNED_MIN_ASSETS = 3          # 3 of 4 assets must agree
-ALL_ALIGNED_SIZE = 50.0             # Max size when all-aligned fires (capped at $50)
+ALL_ALIGNED_SIZE = 65.0             # Max size when all-aligned fires — bumped from $50 (Kelly-aligned)
 
 
 @dataclass
@@ -381,10 +383,8 @@ class ConvictionEngine:
                 f"daily_loss=${daily_loss:.2f} >= ${ABSOLUTE_MAX_DAILY_LOSS} STOP"
             )
 
-        # Safety 5: SOL asset penalty — consistently underperforming (33% WR, negative P/L)
-        if signal.asset and signal.asset.lower() in ("solana", "sol"):
-            multiplier *= 0.4
-            safety_adjustments.append("sol_penalty (0.4x — consistently low WR)")
+        # Safety 5: SOL penalty REMOVED 2026-02-18 — SOL is now 5W/0L (100% WR)
+        # Old data was from early calibration period. No longer penalizing.
 
         # Apply multiplier to raw score
         final_score = max(0.0, min(100.0, raw_score * multiplier))
@@ -673,7 +673,7 @@ class ConvictionEngine:
                 return min_usd + t * (max_usd - min_usd)
 
         # Score is exactly 100 — max conviction tier
-        return 30.0
+        return 65.0
 
     @staticmethod
     def _get_tier_label(score: float) -> str:

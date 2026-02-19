@@ -65,6 +65,14 @@ INDICATOR_GROUPS = {
 }
 MAX_GROUP_WEIGHT_FRACTION = 0.35  # No single group can contribute > 35% of total weight
 
+# ── Consensus Clusters: de-duplicate correlated indicators ──
+# These pairs agree 95-100% of the time. Counting both inflates consensus.
+# When counting votes, only count ONE vote per cluster (highest confidence wins).
+CONSENSUS_CLUSTERS = {
+    "price_momentum": {"price_div", "temporal_arb"},  # 100% agreement on 74 trades
+    "trend_slope": {"ema", "momentum"},               # 95% agreement
+}
+
 # ── Regime-Aware Indicator Scaling ──
 # In extreme fear, trend-following indicators measure the fear itself, not predict the future.
 # Demote them. In extreme greed, same logic — trend follows euphoria.
@@ -278,15 +286,23 @@ class SignalEngine:
             )
             return None
 
-        # ── NY Open Manipulation Window: 9:30-10:15 AM ET ──
+        # ── Time-of-Day Avoidance Windows ──
         from datetime import datetime as _dt
         from zoneinfo import ZoneInfo
         _now_et = _dt.now(ZoneInfo("America/New_York"))
         current_hour_et = _now_et.hour
         current_min_et = _now_et.minute
         now_hm = (current_hour_et, current_min_et)
+
+        # NY Open: 9:30-10:15 AM ET — manipulation
         if NY_OPEN_AVOID_START <= now_hm <= NY_OPEN_AVOID_END:
             log.info("[%s/%s] NY open manipulation window (%d:%02d ET), skipping",
+                     asset.upper(), timeframe, current_hour_et, current_min_et)
+            return None
+
+        # 5 AM dead zone: 0W/3L in live data
+        if current_hour_et == 5:
+            log.info("[%s/%s] 5 AM dead zone (%d:%02d ET), skipping",
                      asset.upper(), timeframe, current_hour_et, current_min_et)
             return None
 
@@ -560,6 +576,15 @@ class SignalEngine:
         up_count = 0
         down_count = 0
 
+        # Build reverse map: indicator -> cluster name (if any)
+        ind_to_cluster = {}
+        for cluster_name, members in CONSENSUS_CLUSTERS.items():
+            for m in members:
+                ind_to_cluster[m] = cluster_name
+
+        # Track which clusters already voted (for consensus de-duplication)
+        cluster_voted: dict[str, tuple[str, float]] = {}  # cluster -> (direction, confidence)
+
         for name, vote in active.items():
             if name in disabled or name not in indicator_weights:
                 continue
@@ -568,11 +593,36 @@ class SignalEngine:
             weighted_sum += w * vote.confidence * sign
             weight_total += w
 
+            # De-duplicated consensus: if this indicator belongs to a cluster,
+            # only count the FIRST vote (highest confidence wins since we process all)
             if vote.confidence >= MIN_VOTE_CONFIDENCE:
-                if vote.direction == "up":
-                    up_count += 1
+                cluster = ind_to_cluster.get(name)
+                if cluster:
+                    if cluster not in cluster_voted:
+                        cluster_voted[cluster] = (vote.direction, vote.confidence)
+                        if vote.direction == "up":
+                            up_count += 1
+                        else:
+                            down_count += 1
+                    elif vote.confidence > cluster_voted[cluster][1]:
+                        # Higher confidence — replace the cluster's vote
+                        old_dir = cluster_voted[cluster][0]
+                        if old_dir == "up":
+                            up_count -= 1
+                        else:
+                            down_count -= 1
+                        cluster_voted[cluster] = (vote.direction, vote.confidence)
+                        if vote.direction == "up":
+                            up_count += 1
+                        else:
+                            down_count += 1
+                    # else: lower confidence, skip (cluster already voted)
                 else:
-                    down_count += 1
+                    # Not in any cluster — count normally
+                    if vote.direction == "up":
+                        up_count += 1
+                    else:
+                        down_count += 1
 
         if disabled:
             log.info("[%s/%s] Disabled anti-signals (accuracy <40%%): %s",
@@ -582,6 +632,20 @@ class SignalEngine:
             return None
 
         score = weighted_sum / weight_total  # -1 to +1
+
+        # ── Regime Directional Bias ──
+        # Extreme fear = oversold = bias toward UP (bounces likely)
+        # Extreme greed = overbought = bias toward DOWN (corrections likely)
+        # This treats regime as a first-class directional signal, not just a threshold modifier.
+        if regime:
+            regime_bias = {"extreme_fear": 0.08, "fear": 0.03,
+                           "neutral": 0.0,
+                           "greed": -0.03, "extreme_greed": -0.08}.get(regime.label, 0.0)
+            if regime_bias != 0.0:
+                score += regime_bias
+                score = max(-1.0, min(1.0, score))  # keep in bounds
+                log.info("[%s/%s] Regime bias: %+.2f (%s FnG=%d)",
+                         asset.upper(), timeframe, regime_bias, regime.label, regime.fng_value)
 
         # ── Consensus Filter (proportional) ──
         majority_dir = "up" if up_count >= down_count else "down"
