@@ -40,18 +40,18 @@ TRADES_FILE = DATA_DIR / "trades.jsonl"
 # on the high-quality trades that pass. R:R 1.2+ guarantees wins > losses.
 SIZE_TIERS = {
     # (min_conviction, max_conviction): (min_usd, max_usd)
-    # Bumped per Quant Kelly analysis: recommended $26.52/trade at 64% WR.
-    # Old tiers were too conservative for a 64% win rate strategy.
+    # Scaled back from Kelly-optimal — yesterday's big bets lost. Smaller bets survive drawdowns.
+    # With $243 bankroll, max $30/trade means a 5-trade losing streak costs ~$150, not $325.
     (0, 15):   (0.0, 0.0),      # DON'T TRADE — truly insufficient evidence
-    (15, 30):  (20.0, 26.0),    # Micro — was $15-20, bumped to Kelly baseline
-    (30, 50):  (26.0, 35.0),    # Small — was $20-28, bumped
-    (50, 70):  (35.0, 45.0),    # Standard — was $28-35, bumped
-    (70, 85):  (45.0, 55.0),    # Increased — was $35-42, bumped
-    (85, 100): (55.0, 65.0),    # Maximum conviction — was $42-50, bumped
+    (15, 30):  (10.0, 15.0),    # Micro — small exploratory bets
+    (30, 50):  (15.0, 20.0),    # Small — moderate conviction
+    (50, 70):  (20.0, 25.0),    # Standard — solid signal
+    (70, 85):  (25.0, 30.0),    # Increased — strong conviction
+    (85, 100): (30.0, 35.0),    # Maximum conviction — highest tier
 }
 
 # ── Safety Rails ──
-ABSOLUTE_MAX_PER_TRADE = 65.0       # Max per trade — bumped from $50 (Kelly says we're under-betting)
+ABSOLUTE_MAX_PER_TRADE = 35.0       # Max per trade — scaled back from $65 to survive drawdowns
 ABSOLUTE_MAX_DAILY_LOSS = 50.0      # Stop trading if daily loss hits $50
 LOSING_STREAK_THRESHOLD = 3         # Scale down after 3 consecutive losses
 LOSING_STREAK_PENALTY = 0.75        # Multiply conviction by 0.75 during losing streak (0.6 was too crushing)
@@ -87,7 +87,7 @@ BAD_HOURS_ET = {5, 7, 18, 19, 20, 21, 22, 23}
 # ── All Assets Aligned Mode thresholds ──
 ALL_ALIGNED_MIN_CONSENSUS = 4       # Each asset must have 4+ non-disabled indicators agreeing
 ALL_ALIGNED_MIN_ASSETS = 3          # 3 of 4 assets must agree
-ALL_ALIGNED_SIZE = 65.0             # Max size when all-aligned fires — bumped from $50 (Kelly-aligned)
+ALL_ALIGNED_SIZE = 35.0             # Max size when all-aligned fires — capped same as ABSOLUTE_MAX
 
 
 @dataclass

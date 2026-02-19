@@ -170,13 +170,13 @@ TF_WEIGHT_SCALE = {
 
 MIN_CANDLES = 30
 CONSENSUS_RATIO = 0.70  # Relaxed 0.78→0.70: R:R 1.2+ filter guards quality, let more trades through (7/10 instead of 8/10)
-CONSENSUS_FLOOR = 3     # Lowered 4→3: old floor forced 4/4 unanimous with few indicators. R:R 1.2+ is the real guard now.
+CONSENSUS_FLOOR = 2     # Lowered 3→2: floor of 3 forced 3/3 unanimous when anti-signals disabled indicators. 2/3 (67%) is reasonable.
 MIN_CONSENSUS = CONSENSUS_FLOOR  # backward compat for backtest/quant
 MIN_ATR_THRESHOLD = 0.00005  # skip if volatility below this (0.005% of price)
 MIN_CONFIDENCE = 0.55  # DATA: conf>=55% = 82.9% WR, conf>=60% = 91.7% WR. Old 0.25 let through garbage.
 
 # Directional bias: UP predictions have 47.3% WR vs DOWN 63% — require higher confidence for UP
-UP_CONFIDENCE_PREMIUM = 0.12  # Quant optimal: 0.12. UP bets need higher bar — forces only high-conviction UP trades through.
+UP_CONFIDENCE_PREMIUM = 0.06  # Lowered 0.12→0.06: old 0.12 + ETH 0.03 stacked to 0.64 floor in extreme_fear, blocking every contrarian UP trade. Edge+consensus are the real guards.
 
 # NY market open manipulation window: 9:30-10:15 AM ET — high manipulation, skip
 NY_OPEN_AVOID_START = (9, 30)   # 9:30 AM ET
@@ -193,11 +193,11 @@ MIN_EDGE_BY_TF = {
 }
 
 # Hard floor — regime adjustments cannot lower edge below this
-MIN_EDGE_ABSOLUTE = 0.08  # 8% — never trade below this regardless of regime
+MIN_EDGE_ABSOLUTE = 0.05  # 5% — lowered from 8%. Old floor was crushing 4h/1h trades (XRP/4h had 7.5% edge, blocked). TF-specific floors still protect short timeframes.
 
 # Reward-to-Risk ratio filter
 # R:R = ((1-P) * 0.98) / P  where P = token price, 0.98 = payout after 2% winner fee
-MIN_RR_RATIO = 1.2  # reject signals where R:R < 1.2 (only bet when win > loss)
+MIN_RR_RATIO = 1.0  # Lowered 1.2→1.0: old 1.2 required token≤$0.45, but most crypto markets price $0.47-0.50. Edge+confidence are the real guards.
 MAX_TOKEN_PRICE = 0.50  # Never buy tokens above $0.50 — forces cheap side with R:R > 0.96
 
 # Minimum confidence to count toward consensus vote
@@ -831,7 +831,10 @@ class SignalEngine:
             effective_conf_floor += up_premium
         # ETH confidence premium: weakest asset (72% WR vs BTC 79%, XRP 100%)
         if asset == "ethereum":
-            effective_conf_floor += 0.03  # +3% for ETH — 9 of 12 losses were ETH
+            eth_penalty = 0.03
+            if regime and regime.label in ("extreme_fear", "fear"):
+                eth_penalty *= 0.5  # Halve ETH penalty in fear — contrarian buying shouldn't be penalized per-asset
+            effective_conf_floor += eth_penalty
         # Reversal sentinel penalty: raise floor when disabled indicators signal reversal
         effective_conf_floor += reversal_penalty
         if confidence < effective_conf_floor:
