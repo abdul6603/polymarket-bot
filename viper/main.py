@@ -207,15 +207,28 @@ class ViperBot:
                 self.total_intel += result.get("new_items", 0)
                 self.total_matched += result.get("matched", 0)
 
-                # Brain: record scan cycle
+                # Brain: record scan cycle + outcome
                 if _viper_brain:
                     try:
-                        _viper_brain.remember_decision(
+                        _intel = result.get('intel_count', 0)
+                        _matched = result.get('matched', 0)
+                        _did = _viper_brain.remember_decision(
                             context=f"Cycle {self.cycle}: scanned sources",
-                            decision=f"Found {result.get('intel_count', 0)} intel items, {result.get('matched', 0)} matched to markets",
+                            decision=f"Found {_intel} intel items, {_matched} matched to markets",
                             confidence=0.5,
                             tags=["scan_cycle"],
                         )
+                        # Record outcome — matches are the success metric
+                        _score = min(1.0, _matched / 5.0) if _matched > 0 else -0.2
+                        _viper_brain.remember_outcome(
+                            _did, f"Intel={_intel}, matched={_matched}, tavily={'on' if result.get('tavily_ran') else 'off'}",
+                            score=_score,
+                        )
+                        if _matched >= 3:
+                            _viper_brain.learn_pattern(
+                                "good_scan", f"Cycle with {_matched} market matches (tavily={'on' if result.get('tavily_ran') else 'off'})",
+                                evidence_count=1, confidence=0.6,
+                            )
                     except Exception:
                         pass
 

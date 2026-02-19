@@ -135,15 +135,27 @@ class QuantBot:
         log.info("Best found: WR=%.1f%% | Walk-forward OOS: %.1f%% (overfit=%.1fpp)",
                  best_wr, wf_result.test_win_rate, wf_result.overfit_drop)
 
-        # Brain: record backtest findings
+        # Brain: record backtest findings + outcome
         if _quant_brain:
             try:
-                _quant_brain.remember_decision(
+                _did = _quant_brain.remember_decision(
                     context=f"Backtest cycle {self.cycle}: tested {len(scored)} parameter combinations on {len(trades)} trades",
                     decision=f"Baseline WR={baseline.win_rate:.1f}%, best WR={best_wr:.1f}%, walk-forward OOS={wf_result.test_win_rate:.1f}%",
                     confidence=0.5,
                     tags=["backtest"],
                 )
+                # Record outcome — did we find improvement over baseline?
+                _improvement = best_wr - baseline.win_rate
+                _score = min(1.0, _improvement / 10.0) if _improvement > 0 else -0.5
+                _quant_brain.remember_outcome(
+                    _did, f"Improvement={_improvement:+.1f}pp, OOS={wf_result.test_win_rate:.1f}%, overfit={wf_result.overfit_drop:.1f}pp",
+                    score=_score,
+                )
+                if _improvement > 2.0 and wf_result.overfit_drop < 5.0:
+                    _quant_brain.learn_pattern(
+                        "strong_backtest", f"Found +{_improvement:.1f}pp improvement with low overfit ({wf_result.overfit_drop:.1f}pp)",
+                        evidence_count=1, confidence=0.65,
+                    )
             except Exception:
                 pass
 

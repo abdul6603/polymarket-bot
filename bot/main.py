@@ -521,6 +521,69 @@ class TradingBot:
                 dm.question[:50],
             )
 
+            # ── Brain Pre-Decision: consult learned patterns before trading ──
+            try:
+                if self._brain:
+                    _brain_adj = 0.0
+                    _brain_reasons = []
+                    _situation = f"{asset.upper()}/{timeframe} regime={regime.label} dir={sig.direction}"
+
+                    # 1. Check learned patterns for relevant win/loss signals
+                    _patterns = self._brain.memory.get_active_patterns(min_confidence=0.5)
+                    for _p in _patterns:
+                        _desc = _p.get("description", "").lower()
+                        _asset_match = asset.lower() in _desc
+                        _tf_match = timeframe.lower() in _desc
+                        _regime_match = regime.label.lower() in _desc
+                        _dir_match = sig.direction.lower() in _desc
+                        # Pattern must match at least asset + one other factor
+                        if _asset_match and (_tf_match or _regime_match or _dir_match):
+                            _ev = _p.get("evidence_count", 1)
+                            _conf = _p.get("confidence", 0.5)
+                            # Only trust patterns with meaningful evidence
+                            if _ev >= 3:
+                                _is_loss = any(w in _desc for w in ("loss", "lose", "bad", "avoid", "fail", "negative"))
+                                _is_win = any(w in _desc for w in ("win", "profit", "good", "strong", "positive"))
+                                if _is_loss:
+                                    _penalty = min(0.05, _conf * 0.05)
+                                    _brain_adj -= _penalty
+                                    _brain_reasons.append(f"loss_pattern({_ev}ev,{_conf:.0%})")
+                                elif _is_win:
+                                    _boost = min(0.05, _conf * 0.04)
+                                    _brain_adj += _boost
+                                    _brain_reasons.append(f"win_pattern({_ev}ev,{_conf:.0%})")
+
+                    # 2. Check similar past decisions for win/loss track record
+                    _past = self._brain.memory.get_relevant_context(_situation, limit=10)
+                    if _past:
+                        _resolved = [d for d in _past if d.get("resolved")]
+                        if len(_resolved) >= 3:
+                            _wins = sum(1 for d in _resolved if d.get("outcome_score", 0) > 0)
+                            _losses = sum(1 for d in _resolved if d.get("outcome_score", 0) < 0)
+                            _total = _wins + _losses
+                            if _total >= 3:
+                                _wr = _wins / _total
+                                if _wr < 0.35:
+                                    # This combo mostly loses — reduce confidence
+                                    _brain_adj -= 0.03
+                                    _brain_reasons.append(f"history({_wins}W/{_losses}L={_wr:.0%})")
+                                elif _wr > 0.65:
+                                    # This combo mostly wins — small boost
+                                    _brain_adj += 0.02
+                                    _brain_reasons.append(f"history({_wins}W/{_losses}L={_wr:.0%})")
+
+                    # 3. Apply adjustment (capped at +/- 0.05)
+                    if _brain_adj != 0.0:
+                        _brain_adj = max(-0.05, min(0.05, _brain_adj))
+                        _old_conf = sig.confidence
+                        sig.confidence = max(0.0, min(1.0, sig.confidence + _brain_adj))
+                        log.info(
+                            "  -> [BRAIN] Confidence adjusted %.2f -> %.2f (%+.3f) | Reasons: %s",
+                            _old_conf, sig.confidence, _brain_adj, ", ".join(_brain_reasons),
+                        )
+            except Exception as _brain_err:
+                log.debug("Brain pre-decision failed (non-fatal): %s", str(_brain_err)[:100])
+
             # ── ConvictionEngine: register signal + score conviction ──
             votes = sig.indicator_votes or {}
             # Filter out disabled indicators (weight=0) for accurate conviction scoring

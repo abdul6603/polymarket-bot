@@ -451,15 +451,96 @@ class HawkBot:
                         "news_factor": opp.estimate.news_factor[:300],
                     })
 
+                    # ── Brain Memory Consultation (pre-decision) ──
+                    # Query learned patterns + past decisions BEFORE placing bet
+                    brain_edge_adj = 0.0
+                    if self._brain:
+                        try:
+                            category = opp.market.category or "unknown"
+
+                            # 1. Check category-level patterns (e.g., "Category 'politics': LOST")
+                            cat_patterns = self._brain.memory.get_active_patterns(
+                                pattern_type="hawk_category_outcome"
+                            )
+                            cat_wins = 0
+                            cat_losses = 0
+                            cat_avg_conf = 0.0
+                            cat_count = 0
+                            for pat in cat_patterns:
+                                desc = pat.get("description", "")
+                                if f"'{category}'" in desc.lower() or f"'{category}'" in desc:
+                                    cat_count += 1
+                                    cat_avg_conf += pat.get("confidence", 0.5)
+                                    if "WON" in desc.upper():
+                                        cat_wins += 1
+                                    elif "LOST" in desc.upper():
+                                        cat_losses += 1
+
+                            if cat_count > 0:
+                                cat_avg_conf /= cat_count
+
+                                # Losing category (avg confidence < 0.5) → penalize edge
+                                # Winning category (avg confidence >= 0.5) → small boost
+                                if cat_avg_conf < 0.45 and cat_losses > cat_wins:
+                                    brain_edge_adj = -0.03  # Max penalty
+                                    log.info("[BRAIN] Category '%s' losing pattern (conf=%.2f, W=%d L=%d) → edge penalty %.1f%%",
+                                             category, cat_avg_conf, cat_wins, cat_losses, brain_edge_adj * 100)
+                                elif cat_avg_conf < 0.5 and cat_losses > cat_wins:
+                                    brain_edge_adj = -0.015
+                                    log.info("[BRAIN] Category '%s' weak pattern (conf=%.2f, W=%d L=%d) → edge penalty %.1f%%",
+                                             category, cat_avg_conf, cat_wins, cat_losses, brain_edge_adj * 100)
+                                elif cat_avg_conf >= 0.55 and cat_wins > cat_losses:
+                                    brain_edge_adj = 0.02  # Small boost for winning categories
+                                    log.info("[BRAIN] Category '%s' winning pattern (conf=%.2f, W=%d L=%d) → edge boost +%.1f%%",
+                                             category, cat_avg_conf, cat_wins, cat_losses, brain_edge_adj * 100)
+
+                            # 2. Check similar past decisions for this market
+                            situation_str = f"{category}: {opp.market.question[:120]}"
+                            similar = self._brain.memory.get_relevant_context(situation_str, limit=5)
+                            if similar:
+                                resolved = [d for d in similar if d.get("resolved")]
+                                if resolved:
+                                    avg_score = sum(d.get("outcome_score", 0) for d in resolved) / len(resolved)
+                                    # Similar markets that lost → additional penalty (up to -0.015)
+                                    # Similar markets that won → additional boost (up to +0.01)
+                                    if avg_score < -0.3:
+                                        sim_adj = -0.015
+                                    elif avg_score < 0:
+                                        sim_adj = -0.008
+                                    elif avg_score > 0.3:
+                                        sim_adj = 0.01
+                                    else:
+                                        sim_adj = 0.0
+
+                                    if sim_adj != 0:
+                                        # Clamp total adjustment to +/- 0.03
+                                        brain_edge_adj = max(-0.03, min(0.03, brain_edge_adj + sim_adj))
+                                        log.info("[BRAIN] %d similar past decisions (avg_score=%.2f) → adj %.1f%% | total brain adj: %.1f%%",
+                                                 len(resolved), avg_score, sim_adj * 100, brain_edge_adj * 100)
+
+                            # 3. Apply brain adjustment — skip trade if edge no longer sufficient
+                            if brain_edge_adj < 0:
+                                effective_edge = opp.edge + brain_edge_adj  # brain_edge_adj is negative
+                                if effective_edge < self.cfg.min_edge:
+                                    log.info("[BRAIN] BLOCKED trade: edge %.1f%% + brain adj %.1f%% = %.1f%% < min_edge %.1f%% | %s",
+                                             opp.edge * 100, brain_edge_adj * 100, effective_edge * 100,
+                                             self.cfg.min_edge * 100, opp.market.question[:60])
+                                    continue
+
+                        except Exception:
+                            log.debug("[BRAIN] Memory consultation failed (non-fatal)")
+                            brain_edge_adj = 0.0
+
                     # Auto-execute immediately after risk approval
                     if self.executor:
                         order_id = self.executor.place_order(opp)
                         if order_id:
                             placed_cids.add(cid)
                             trades_placed += 1
-                            log.info("TRADE PLACED: %s %s | $%.2f | edge=%.1f%% | %s",
+                            brain_tag = f" | brain_adj={brain_edge_adj*100:+.1f}%" if brain_edge_adj != 0 else ""
+                            log.info("TRADE PLACED: %s %s | $%.2f | edge=%.1f%%%s | %s",
                                      opp.direction.upper(), opp.market.question[:60],
-                                     opp.position_size_usd, opp.edge * 100, order_id)
+                                     opp.position_size_usd, opp.edge * 100, brain_tag, order_id)
                             # Brain: record trade decision
                             if self._brain:
                                 try:
