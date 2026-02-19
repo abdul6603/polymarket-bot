@@ -40,18 +40,18 @@ TRADES_FILE = DATA_DIR / "trades.jsonl"
 # on the high-quality trades that pass. R:R 1.2+ guarantees wins > losses.
 SIZE_TIERS = {
     # (min_conviction, max_conviction): (min_usd, max_usd)
-    # Scaled back from Kelly-optimal — yesterday's big bets lost. Smaller bets survive drawdowns.
-    # With $243 bankroll, max $30/trade means a 5-trade losing streak costs ~$150, not $325.
+    # Bumped +$5 each: tighter filters (conf 0.60, no 1h, fewer indicators) mean fewer but
+    # higher-quality trades — bet harder on them. 5-trade loss streak = ~$175 max.
     (0, 15):   (0.0, 0.0),      # DON'T TRADE — truly insufficient evidence
-    (15, 30):  (10.0, 15.0),    # Micro — small exploratory bets
-    (30, 50):  (15.0, 20.0),    # Small — moderate conviction
-    (50, 70):  (20.0, 25.0),    # Standard — solid signal
-    (70, 85):  (25.0, 30.0),    # Increased — strong conviction
-    (85, 100): (30.0, 35.0),    # Maximum conviction — highest tier
+    (15, 30):  (15.0, 20.0),    # Micro — small exploratory bets
+    (30, 50):  (20.0, 25.0),    # Small — moderate conviction
+    (50, 70):  (25.0, 30.0),    # Standard — solid signal
+    (70, 85):  (30.0, 35.0),    # Increased — strong conviction
+    (85, 100): (35.0, 40.0),    # Maximum conviction — highest tier
 }
 
 # ── Safety Rails ──
-ABSOLUTE_MAX_PER_TRADE = 35.0       # Max per trade — scaled back from $65 to survive drawdowns
+ABSOLUTE_MAX_PER_TRADE = 40.0       # Max per trade — bumped from $35 to match tighter signal filters
 ABSOLUTE_MAX_DAILY_LOSS = 50.0      # Stop trading if daily loss hits $50
 LOSING_STREAK_THRESHOLD = 3         # Scale down after 3 consecutive losses
 LOSING_STREAK_PENALTY = 0.75        # Multiply conviction by 0.75 during losing streak (0.6 was too crushing)
@@ -79,15 +79,14 @@ COMPONENT_WEIGHTS = {
 # Good hours (ET) — updated 2026-02-18 from 25+ resolved trade data
 # 0h=67%, 6h=75%, 11h=70%, 12h=80%, 13h=67%, 14h=71%
 GOOD_HOURS_ET = {0, 6, 11, 12, 13, 14}
-# Decent hours (not great, not terrible)
-OKAY_HOURS_ET = {1, 2, 3, 4, 8, 9, 10, 15, 16, 17}
-# Bad hours — 5AM is 0W/3L dead zone (also filtered in signals.py)
-BAD_HOURS_ET = {5, 7, 18, 19, 20, 21, 22, 23}
+# All other hours are "okay" — no bad hours. Signal quality filters handle trade selection.
+OKAY_HOURS_ET = {1, 2, 3, 4, 5, 7, 8, 9, 10, 15, 16, 17, 18, 19, 20, 21, 22, 23}
+BAD_HOURS_ET: set[int] = set()  # Empty — removed time blocks per Jordan's directive
 
 # ── All Assets Aligned Mode thresholds ──
 ALL_ALIGNED_MIN_CONSENSUS = 4       # Each asset must have 4+ non-disabled indicators agreeing
 ALL_ALIGNED_MIN_ASSETS = 3          # 3 of 4 assets must agree
-ALL_ALIGNED_SIZE = 35.0             # Max size when all-aligned fires — capped same as ABSOLUTE_MAX
+ALL_ALIGNED_SIZE = 40.0             # Max size when all-aligned fires — capped same as ABSOLUTE_MAX
 
 
 @dataclass

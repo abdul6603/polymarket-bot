@@ -135,19 +135,36 @@ class TradingBot:
         self._market_cooldown: dict[str, float] = {}
         self.COOLDOWN_SECONDS = 90  # 1.5 min cooldown after trading a market
         # Per-market stacking cap: market_id -> trade count (prevents concentrated risk)
-        # Initialized from pending trades so restarts don't reset the count
-        self._market_trade_count: dict[str, int] = {}
-        for _tid, _prec in self.perf_tracker._pending.items():
-            mid = _prec.market_id
-            self._market_trade_count[mid] = self._market_trade_count.get(mid, 0) + 1
+        # Loaded from trades.jsonl so counts survive bot restarts mid-day
+        self._market_trade_count: dict[str, int] = self._load_market_counts()
         if self._market_trade_count:
-            log.info("Loaded market trade counts from %d pending trades: %s",
-                     sum(self._market_trade_count.values()),
-                     {k[:10]: v for k, v in self._market_trade_count.items()})
+            log.info("Loaded market trade counts from trades file: %d markets, %d total trades",
+                     len(self._market_trade_count),
+                     sum(self._market_trade_count.values()))
         self.MAX_TRADES_PER_MARKET = 1  # Max 1 trade per market — no stacking (was 3, caused $73 concentrated loss)
         # Smart stacking: escalating conviction for each additional bet in same window
         self.STACK_EDGE_ESCALATION = 0.02       # +2% edge per stacked bet
         self.STACK_CONFIDENCE_ESCALATION = 0.05  # +5% confidence per stacked bet
+
+    def _load_market_counts(self) -> dict[str, int]:
+        """Load market trade counts from today's trades file to survive restarts."""
+        import json as _json
+        trades_file = Path(__file__).parent.parent / "data" / "trades.jsonl"
+        counts: dict[str, int] = {}
+        if not trades_file.exists():
+            return counts
+        try:
+            for line in trades_file.read_text().splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                trade = _json.loads(line)
+                mid = trade.get("market_id", "")
+                if mid:
+                    counts[mid] = counts.get(mid, 0) + 1
+        except Exception as e:
+            log.warning("Failed to load market counts from trades: %s", str(e)[:100])
+        return counts
 
     def _setup_logging(self) -> None:
         logging.basicConfig(

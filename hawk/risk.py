@@ -8,6 +8,7 @@ from datetime import datetime
 from hawk.config import HawkConfig
 from hawk.edge import TradeOpportunity
 from hawk.tracker import HawkTracker
+from hawk.scanner import _is_updown_price_market
 
 log = logging.getLogger(__name__)
 
@@ -106,6 +107,10 @@ class HawkRiskManager:
         """
         if self._shutdown:
             return False, "Daily loss cap hit — trading paused until midnight ET"
+
+        # Belt-and-suspenders: block crypto price markets even if scanner missed them
+        if _is_updown_price_market(opp.market.question):
+            return False, f"Blocked crypto price market: {opp.market.question[:60]}"
 
         if opp.edge < self.cfg.min_edge:
             return False, f"Edge {opp.edge:.3f} below minimum {self.cfg.min_edge:.3f}"

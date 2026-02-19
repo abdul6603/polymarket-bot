@@ -109,12 +109,12 @@ WEIGHTS = {
     "price_div": 1.4,
     "macd": 1.1,
     "order_flow": 2.5,  # Rebalanced: was 4.0 (dominated 40-50% of ensemble). 60.4% accuracy doesn't justify 4x weight
-    "news": 0.4,         # Re-enabled: live accuracy 58.6% (140 samples). Was 0.0 from stale 47% data, weight_learner auto-adjusts
+    "news": 0.0,         # Disabled: 20% accuracy in 155-trade analysis (Feb 19). Was 0.4.
     # LOW TIER — marginal (50-55%)
     "momentum": 1.2,    # Quant V4: 1.0→1.2 (#1 config uses 1.2, 63.2% accuracy)
     "ema": 0.6,           # Quant: 1.1→0.6 (weight_v171)
     "heikin_ashi": 0.5,
-    "spot_depth": 0.6,  # Re-enabled: 63.0% accuracy on 54 votes (was wrongly disabled for "insufficient data")
+    "spot_depth": 0.0,  # Disabled: 30.8% accuracy in 155-trade analysis (Feb 19). Was 0.6.
     "orderbook": 0.5,
     "liquidity": 0.4,
     # DISABLED — below coin flip (harmful)
@@ -173,7 +173,7 @@ CONSENSUS_RATIO = 0.70  # Relaxed 0.78→0.70: R:R 1.2+ filter guards quality, l
 CONSENSUS_FLOOR = 2     # Lowered 3→2: floor of 3 forced 3/3 unanimous when anti-signals disabled indicators. 2/3 (67%) is reasonable.
 MIN_CONSENSUS = CONSENSUS_FLOOR  # backward compat for backtest/quant
 MIN_ATR_THRESHOLD = 0.00005  # skip if volatility below this (0.005% of price)
-MIN_CONFIDENCE = 0.55  # DATA: conf>=55% = 82.9% WR, conf>=60% = 91.7% WR. Old 0.25 let through garbage.
+MIN_CONFIDENCE = 0.60  # Raised: conf>=60% = 91.7% WR. Was 0.55 (82.9%). Fewer trades but much higher quality.
 
 # Directional bias: UP predictions have 47.3% WR vs DOWN 63% — require higher confidence for UP
 UP_CONFIDENCE_PREMIUM = 0.06  # Lowered 0.12→0.06: old 0.12 + ETH 0.03 stacked to 0.64 floor in extreme_fear, blocking every contrarian UP trade. Edge+consensus are the real guards.
@@ -187,7 +187,7 @@ NY_OPEN_AVOID_END = (10, 15)    # 10:15 AM ET
 MIN_EDGE_BY_TF = {
     "5m": 0.08,     # 8% — raised from 6% (below 8% = 20% WR)
     "15m": 0.08,    # 8% — raised from 9% regime-adjusted (0.7x was dropping to 6.3%)
-    "1h": 0.05,     # 5% — raised from 3%
+    "1h": 0.99,     # DISABLED — 14% WR (2W/12L), broken resolution. Effectively unreachable edge.
     "4h": 0.04,     # 4% — raised from 3%
     "weekly": 0.03, # 3% — lowest edge floor for longest timeframe
 }
@@ -286,25 +286,7 @@ class SignalEngine:
             )
             return None
 
-        # ── Time-of-Day Avoidance Windows ──
-        from datetime import datetime as _dt
-        from zoneinfo import ZoneInfo
-        _now_et = _dt.now(ZoneInfo("America/New_York"))
-        current_hour_et = _now_et.hour
-        current_min_et = _now_et.minute
-        now_hm = (current_hour_et, current_min_et)
-
-        # NY Open: 9:30-10:15 AM ET — manipulation
-        if NY_OPEN_AVOID_START <= now_hm <= NY_OPEN_AVOID_END:
-            log.info("[%s/%s] NY open manipulation window (%d:%02d ET), skipping",
-                     asset.upper(), timeframe, current_hour_et, current_min_et)
-            return None
-
-        # 5 AM dead zone: 0W/3L in live data
-        if current_hour_et == 5:
-            log.info("[%s/%s] 5 AM dead zone (%d:%02d ET), skipping",
-                     asset.upper(), timeframe, current_hour_et, current_min_et)
-            return None
+        # Time-of-day blocks removed — let signal quality filter trades at all hours
 
         candles = self._cache.get_candles(asset, 200)
         binance_price = self._cache.get_price(asset)

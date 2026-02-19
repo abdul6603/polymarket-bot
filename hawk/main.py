@@ -369,7 +369,13 @@ class HawkBot:
                 intel_ctx = _load_all_intel(target_markets)
                 suggestions = []
                 trades_placed = 0
+                placed_cids: set[str] = set()  # Per-cycle dedup
                 for opp in ranked:
+                    # Per-cycle duplicate guard
+                    if opp.market.condition_id in placed_cids:
+                        log.info("Cycle dedup: already placed trade for %s", opp.market.condition_id[:12])
+                        continue
+
                     allowed, reason = self.risk.check_trade(opp)
                     if not allowed:
                         log.info("Risk blocked: %s", reason)
@@ -412,6 +418,7 @@ class HawkBot:
                     if self.executor:
                         order_id = self.executor.place_order(opp)
                         if order_id:
+                            placed_cids.add(cid)
                             trades_placed += 1
                             log.info("TRADE PLACED: %s %s | $%.2f | edge=%.1f%% | %s",
                                      opp.direction.upper(), opp.market.question[:60],
