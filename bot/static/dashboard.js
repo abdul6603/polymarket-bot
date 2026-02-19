@@ -3423,13 +3423,12 @@ async function refresh() {
       } catch(e) {}
       renderAtlas(atlasData);
       loadAtlasBgStatus();
-      loadCompetitorIntel();
       loadAgentLearning('atlas');
       loadCommandTable('atlas');
       loadAgentSmartActions('atlas');
       loadAgentActivity('atlas');
       loadAtlasKBHealth();
-      loadAtlasCompetitorSummary();
+      loadAtlasContentPipeline();
     } else if (currentTab === 'lisa') {
       var resp = await fetch('/api/lisa');
       renderLisa(await resp.json());
@@ -5775,6 +5774,105 @@ async function atlasEventBus() {
   } catch(e) {
     reportEl.innerHTML = '<div class="text-muted" style="text-align:center;padding:var(--space-6);">Failed to load event bus: ' + esc(e.message) + '</div>';
   }
+}
+
+// ══════════════════════════════════════
+// CONTENT INTELLIGENCE PIPELINE
+// ══════════════════════════════════════
+
+async function atlasContentFeed(target, feedType) {
+  var resultEl = document.getElementById('atlas-content-feed-result');
+  if (!resultEl) return;
+  resultEl.style.display = 'block';
+  var targetLabel = target === 'soren' ? 'Soren' : 'Lisa';
+  var typeLabel = {niche_trends:'Niche Trends',viral_hooks:'Viral Hooks',strategy:'Strategy',revenue:'Revenue Intel'}[feedType] || feedType;
+  resultEl.innerHTML = '<div style="color:var(--agent-atlas);display:flex;align-items:center;gap:8px;"><div class="spinner" style="width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--agent-atlas);border-radius:50%;animation:atlas-spin 0.8s linear infinite;"></div>Pushing ' + esc(typeLabel) + ' to ' + esc(targetLabel) + '...</div>';
+  try {
+    var resp = await fetch('/api/atlas/feed-content', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({target:target,type:feedType})
+    });
+    var data = await resp.json();
+    if (data.error) {
+      resultEl.innerHTML = '<div style="color:var(--error);">' + esc(data.error) + '</div>';
+      return;
+    }
+    var color = target === 'soren' ? 'var(--agent-soren)' : 'var(--agent-lisa)';
+    resultEl.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="color:' + color + ';font-weight:600;">&#x2713; ' + esc(data.message || 'Intel pushed') + '</span></div>'
+      + '<div style="font-size:0.72rem;color:var(--text-muted);">Topic: ' + esc(data.topic || '') + '</div>';
+    // Refresh pipeline status
+    loadAtlasContentPipeline();
+  } catch(e) {
+    resultEl.innerHTML = '<div style="color:var(--error);">Failed: ' + esc(e.message) + '</div>';
+  }
+}
+
+async function atlasNicheScan() {
+  var resultEl = document.getElementById('atlas-content-feed-result');
+  if (!resultEl) return;
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = '<div style="color:var(--agent-atlas);display:flex;align-items:center;gap:8px;"><div class="spinner" style="width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--agent-atlas);border-radius:50%;animation:atlas-spin 0.8s linear infinite;"></div>Scanning dark motivation niche...</div>';
+  try {
+    var resp = await fetch('/api/atlas/niche-scan', {method:'POST'});
+    var data = await resp.json();
+    if (data.error) {
+      resultEl.innerHTML = '<div style="color:var(--error);">' + esc(data.error) + '</div>';
+      return;
+    }
+    var html = '<div style="color:var(--agent-atlas);font-weight:600;margin-bottom:6px;">&#x2713; Niche Scan Complete — ' + (data.total || 0) + ' found, ' + (data.new_count || 0) + ' new</div>';
+    if (data.takeaways && data.takeaways.length > 0) {
+      html += '<div style="margin-top:6px;">';
+      data.takeaways.forEach(function(t) {
+        html += '<div style="padding:3px 0;padding-left:10px;border-left:2px solid var(--agent-soren);margin-bottom:4px;font-size:0.74rem;color:var(--text-secondary);">' + esc(t) + '</div>';
+      });
+      html += '</div>';
+    }
+    resultEl.innerHTML = html;
+  } catch(e) {
+    resultEl.innerHTML = '<div style="color:var(--error);">Scan failed: ' + esc(e.message) + '</div>';
+  }
+}
+
+async function loadAtlasContentPipeline() {
+  try {
+    var resp = await fetch('/api/atlas/content-pipeline');
+    var data = await resp.json();
+    var stats = data.stats || {};
+    var totalEl = document.getElementById('atlas-pipe-total');
+    var sorenEl = document.getElementById('atlas-pipe-soren');
+    var lisaEl = document.getElementById('atlas-pipe-lisa');
+    var lastEl = document.getElementById('atlas-pipe-last');
+    if (totalEl) totalEl.textContent = stats.total_feeds || 0;
+    if (sorenEl) sorenEl.textContent = stats.soren_feeds || 0;
+    if (lisaEl) lisaEl.textContent = stats.lisa_feeds || 0;
+    if (lastEl) {
+      var feeds = data.recent_feeds || [];
+      if (feeds.length > 0) {
+        var last = feeds[feeds.length - 1];
+        var ts = last.timestamp ? new Date(last.timestamp) : null;
+        var ago = ts ? Math.round((Date.now() - ts.getTime()) / 60000) : null;
+        var agoStr = ago !== null ? (ago < 60 ? ago + 'm ago' : Math.round(ago/60) + 'h ago') : '';
+        lastEl.textContent = 'Last: ' + (last.type || '').replace(/_/g,' ') + ' \u2192 ' + (last.target || '') + (agoStr ? ' (' + agoStr + ')' : '');
+      }
+    }
+    // Render recent feeds log
+    var feedsEl = document.getElementById('atlas-recent-feeds');
+    if (feedsEl && data.recent_feeds && data.recent_feeds.length > 0) {
+      var html = '<div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Recent Feeds</div>';
+      data.recent_feeds.slice().reverse().forEach(function(f) {
+        var color = f.target === 'soren' ? 'var(--agent-soren)' : 'var(--agent-lisa)';
+        var ts = f.timestamp ? new Date(f.timestamp) : null;
+        var timeStr = ts ? ts.toLocaleTimeString('en-US', {hour:'numeric',minute:'2-digit',hour12:true}) : '';
+        html += '<div style="display:flex;gap:8px;align-items:center;padding:3px 0;font-size:0.72rem;border-bottom:1px solid rgba(255,255,255,0.03);">';
+        html += '<span style="color:' + color + ';font-weight:600;min-width:50px;">' + esc(f.target || '') + '</span>';
+        html += '<span style="color:var(--text-secondary);">' + esc((f.type || '').replace(/_/g,' ')) + '</span>';
+        html += '<span style="color:var(--text-muted);margin-left:auto;font-size:0.66rem;">' + esc(timeStr) + '</span>';
+        html += '</div>';
+      });
+      feedsEl.innerHTML = html;
+    }
+  } catch(e) { /* silent */ }
 }
 
 // ══════════════════════════════════════

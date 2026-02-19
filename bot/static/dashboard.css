@@ -972,6 +972,61 @@
   }
   @keyframes atlas-spin { to { transform:rotate(360deg); } }
 
+  /* Atlas Category Labels */
+  .atlas-cat-label {
+    font-family:var(--font-mono); font-size:0.68rem; font-weight:600;
+    text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px;
+    padding-left:2px; display:flex; align-items:center; gap:6px;
+  }
+  .atlas-cat-label::before {
+    content:''; display:inline-block; width:3px; height:12px;
+    background:currentColor; border-radius:2px;
+  }
+
+  /* Content Intelligence Action Buttons */
+  .atlas-content-actions {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:8px;
+  }
+  .atlas-action-btn {
+    display:flex; align-items:center; gap:10px; padding:10px 14px;
+    background:var(--surface-secondary); border:1px solid rgba(255,255,255,0.06);
+    border-left:3px solid transparent; border-radius:8px; cursor:pointer;
+    transition:all 0.2s ease; text-align:left;
+  }
+  .atlas-action-btn:hover {
+    background:rgba(255,255,255,0.06); transform:translateY(-1px);
+    box-shadow:0 4px 16px rgba(0,0,0,0.2);
+  }
+  .atlas-action-btn:active { transform:translateY(0); }
+  .atlas-action-btn .action-icon { font-size:1.1rem; flex-shrink:0; }
+  .atlas-action-btn .action-text { display:flex; flex-direction:column; gap:1px; min-width:0; }
+  .atlas-action-btn .action-title {
+    font-family:var(--font-heading); font-size:0.74rem; font-weight:600;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .atlas-action-btn .action-sub {
+    font-size:0.64rem; color:var(--text-muted);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .atlas-action-btn--soren {
+    border-left-color:var(--agent-soren);
+  }
+  .atlas-action-btn--soren .action-title { color:var(--agent-soren); }
+  .atlas-action-btn--soren:hover { box-shadow:0 4px 20px rgba(204,102,255,0.12); border-color:rgba(204,102,255,0.2); }
+  .atlas-action-btn--lisa {
+    border-left-color:var(--agent-lisa);
+  }
+  .atlas-action-btn--lisa .action-title { color:var(--agent-lisa); }
+  .atlas-action-btn--lisa:hover { box-shadow:0 4px 20px rgba(255,136,0,0.12); border-color:rgba(255,136,0,0.2); }
+  .atlas-action-btn--scan {
+    border-left-color:var(--agent-atlas);
+  }
+  .atlas-action-btn--scan .action-title { color:var(--agent-atlas); }
+  .atlas-action-btn--scan:hover { box-shadow:0 4px 20px rgba(34,204,85,0.12); border-color:rgba(34,204,85,0.2); }
+
+  @media (max-width:900px) { .atlas-content-actions { grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:640px) { .atlas-content-actions { grid-template-columns:1fr; } }
+
   /* Agent Chat Popup */
   .agent-chat-popup {
     position:fixed; bottom:20px; right:20px; width:360px; max-height:480px;
