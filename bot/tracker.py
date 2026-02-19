@@ -59,6 +59,11 @@ class TradeRecord:
     ob_spread: float = 0.0
     ob_slippage_pct: float = 0.0
 
+    # Execution data (for P&L tracking)
+    size_usd: float = 0.0
+    entry_price: float = 0.0
+    pnl: float = 0.0
+
     # Resolution (filled in later)
     resolved: bool = False
     outcome: str = ""       # "up" or "down" — actual market result
@@ -120,6 +125,8 @@ class PerformanceTracker:
         ob_liquidity_usd: float = 0.0,
         ob_spread: float = 0.0,
         ob_slippage_pct: float = 0.0,
+        size_usd: float = 0.0,
+        entry_price: float = 0.0,
     ) -> None:
         """Record a new signal prediction."""
         trade_id = f"{market_id[:12]}_{int(time.time())}"
@@ -159,6 +166,8 @@ class PerformanceTracker:
             ob_liquidity_usd=ob_liquidity_usd,
             ob_spread=ob_spread,
             ob_slippage_pct=ob_slippage_pct,
+            size_usd=size_usd,
+            entry_price=entry_price,
             dry_run=self.cfg.dry_run,
         )
         self._pending[trade_id] = rec
@@ -203,6 +212,12 @@ class PerformanceTracker:
             rec.outcome = outcome
             rec.won = (rec.direction == outcome)
             rec.resolve_time = now
+            if rec.entry_price > 0 and rec.size_usd > 0:
+                shares = rec.size_usd / rec.entry_price
+                if rec.won:
+                    rec.pnl = round(shares * 1.0 - rec.size_usd, 2)
+                else:
+                    rec.pnl = round(-rec.size_usd, 2)
             resolved_ids.append(trade_id)
 
             result = "WIN" if rec.won else "LOSS"

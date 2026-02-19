@@ -723,6 +723,8 @@ class TradingBot:
                     ob_liquidity_usd=ob_analysis.total_liquidity_usd if ob_analysis else 0.0,
                     ob_spread=ob_analysis.spread if ob_analysis else 0.0,
                     ob_slippage_pct=ob_analysis.estimated_slippage_pct if ob_analysis else 0.0,
+                    size_usd=conviction.position_size_usd,
+                    entry_price=round(sig.probability, 4),
                 )
 
         # ── Straddle Engine: if no directional trades and regime is fear ──
