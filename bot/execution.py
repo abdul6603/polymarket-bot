@@ -273,17 +273,52 @@ class Executor:
                 book = resp.json()
                 # Best bid is what we'd sell at
                 bids = book.get("bids", [])
+
+                # NO BIDS = danger signal. Track consecutive no-bid ticks.
+                # If empty book persists for 3+ checks (~15s), treat as collapsing.
                 if not bids:
+                    no_bid_key = f"_no_bid_{pos.order_id}"
+                    prev = getattr(self, no_bid_key, 0)
+                    setattr(self, no_bid_key, prev + 1)
+                    if prev + 1 >= 3:
+                        # 3 consecutive no-bid checks — liquidity gone, sell at any price
+                        log.warning(
+                            "STOP-LOSS: %s no bids for %d checks — emergency sell at $0.01",
+                            pos.order_id[:16], prev + 1,
+                        )
+                        try:
+                            shares = pos.shares if pos.shares > 0 else pos.size_usd / pos.entry_price
+                            sell_args = OrderArgs(
+                                price=0.01, size=shares, side=SELL, token_id=pos.token_id,
+                            )
+                            signed_order = self.client.create_order(sell_args)
+                            sell_resp = self.client.post_order(signed_order, OrderType.GTC)
+                            sell_id = sell_resp.get("orderID") or sell_resp.get("id", "unknown")
+                            log.info("STOP-LOSS EMERGENCY SOLD: %s | shares=%.1f @ $0.01", sell_id, shares)
+                            self.tracker.remove(pos.order_id)
+                            stopped += 1
+                            self._last_stop_loss = {
+                                "direction": pos.direction, "entry_price": pos.entry_price,
+                                "bid": 0.01, "recovery": 0.01 * shares,
+                                "size_usd": pos.size_usd, "loss_saved": 0.0,
+                            }
+                        except Exception:
+                            log.exception("Failed emergency sell for %s", pos.order_id)
+                    else:
+                        log.info("STOP-LOSS: %s no bids (%d/3 checks)", pos.order_id[:16], prev + 1)
                     continue
+                else:
+                    # Reset no-bid counter when bids exist
+                    no_bid_key = f"_no_bid_{pos.order_id}"
+                    if hasattr(self, no_bid_key):
+                        delattr(self, no_bid_key)
 
                 best_bid = float(bids[0].get("price", 0))
                 if best_bid <= 0:
                     continue
 
-                # Skip tokens that are essentially worthless (market resolved or near-zero)
-                # Can't sell for < $0.01 and CLOB requires price >= 0.001
+                # Token essentially worthless (market resolved or near-zero)
                 if best_bid < 0.02:
-                    # Token is dead — just remove from tracker, nothing to recover
                     if best_bid < 0.005:
                         log.info("STOP-LOSS: %s token worthless (bid=$%.3f), removing from tracker",
                                  pos.order_id[:16], best_bid)
