@@ -26,6 +26,13 @@ class TradeOpportunity:
     urgency_label: str = ""
 
 
+# Fix 2: R:R ratio filter — only bet when potential win > 1.2x potential loss
+MIN_RR_RATIO = 1.2
+MAX_TOKEN_PRICE = 0.50  # Never buy tokens above $0.50 (asymmetric R:R)
+
+# Fix 5: Confidence floor — reject GPT guesses (sportsbook-backed exempt)
+MIN_CONFIDENCE = 0.45
+
 _YES_OUTCOMES = {"yes", "up", "over"}
 _NO_OUTCOMES = {"no", "down", "under"}
 
@@ -235,6 +242,27 @@ def calculate_edge(
 
     if not token_id:
         return None
+
+    # Fix 5: Confidence floor — reject low-confidence GPT guesses
+    if not has_sportsbook and estimate.confidence < MIN_CONFIDENCE:
+        log.info("Rejected low-confidence trade: conf=%.2f < %.2f | %s",
+                 estimate.confidence, MIN_CONFIDENCE, market.question[:50])
+        return None
+
+    # Fix 2: R:R ratio filter — potential win must exceed 1.2x potential loss
+    if buy_price > MAX_TOKEN_PRICE:
+        log.info("Rejected high-price token: $%.2f > $%.2f | %s",
+                 buy_price, MAX_TOKEN_PRICE, market.question[:50])
+        return None
+
+    potential_win = (1.0 - buy_price)  # Win payout per $1 token
+    potential_loss = buy_price          # Loss = price paid
+    if potential_loss > 0:
+        rr_ratio = potential_win / potential_loss
+        if rr_ratio < MIN_RR_RATIO:
+            log.info("Rejected bad R:R: %.2f < %.2f | price=%.2f | %s",
+                     rr_ratio, MIN_RR_RATIO, buy_price, market.question[:50])
+            return None
 
     # V4: Cross-platform intelligence (used for risk adjustment, NOT edge inflation)
     xp_count = getattr(estimate, 'cross_platform_count', 0)

@@ -30,10 +30,10 @@ class HawkConfig:
     # Hawk-specific risk params — V3 precision defaults (targeting 70% WR)
     bankroll_usd: float = float(_env("HAWK_BANKROLL_USD", "250"))
     max_bet_usd: float = float(_env("HAWK_MAX_BET_USD", "25"))
-    max_concurrent: int = int(_env("HAWK_MAX_CONCURRENT", "8"))
+    max_concurrent: int = int(_env("HAWK_MAX_CONCURRENT", "5"))
     daily_loss_cap: float = float(_env("HAWK_DAILY_LOSS_CAP", "50"))
     cycle_minutes: int = int(_env("HAWK_CYCLE_MINUTES", "15"))
-    min_edge: float = float(_env("HAWK_MIN_EDGE", "0.10"))
+    min_edge: float = float(_env("HAWK_MIN_EDGE", "0.15"))
     min_volume: int = int(_env("HAWK_MIN_VOLUME", "5000"))
     min_liquidity: int = int(_env("HAWK_MIN_LIQUIDITY", "1000"))
     max_days: int = int(_env("HAWK_MAX_DAYS", "7"))
@@ -41,7 +41,7 @@ class HawkConfig:
     dry_run: bool = _env("HAWK_DRY_RUN", "true").lower() in ("true", "1", "yes")
 
     # V3 precision params
-    kelly_fraction: float = float(_env("HAWK_KELLY_FRACTION", "0.25"))
+    kelly_fraction: float = float(_env("HAWK_KELLY_FRACTION", "0.20"))
     max_risk_score: int = int(_env("HAWK_MAX_RISK_SCORE", "6"))
     compound_bankroll: bool = _env("HAWK_COMPOUND_BANKROLL", "true").lower() in ("true", "1", "yes")
     news_enrichment: bool = _env("HAWK_NEWS_ENRICHMENT", "true").lower() in ("true", "1", "yes")

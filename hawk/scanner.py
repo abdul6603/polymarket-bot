@@ -15,6 +15,22 @@ log = logging.getLogger(__name__)
 # Keywords that indicate Garves's territory — exclude these
 _UPDOWN_RE = re.compile(r"(bitcoin|ethereum|solana|btc|eth|sol|xrp)\s+(up or down)", re.IGNORECASE)
 
+# Broader crypto price market filter — blocks ALL "price of X above/below/between $Y" markets
+# These are markets where GPT-4o guesses with no real data (6/10 losses came from these)
+_CRYPTO_PRICE_RE = re.compile(
+    r"(price\s+of\s+)?(bitcoin|ethereum|solana|xrp|bnb|cardano|ada|dogecoin|doge|"
+    r"avalanche|avax|polkadot|dot|polygon|matic|chainlink|link|litecoin|ltc|"
+    r"btc|eth|sol|crypto)\s*"
+    r"(be\s+)?(above|below|between|over|under|higher|lower|reach|hit|exceed|"
+    r"break|surpass|fall|drop|rise|close)",
+    re.IGNORECASE,
+)
+# Also catch "$X,XXX" price target patterns in crypto context
+_CRYPTO_PRICE_TARGET_RE = re.compile(
+    r"(bitcoin|ethereum|solana|xrp|bnb|btc|eth|sol|crypto).*\$[\d,]+",
+    re.IGNORECASE,
+)
+
 # Sports detection patterns — regex for high-confidence sports identification
 _SPORTS_RE = re.compile(
     r"(spread:\s|o/u\s?\d|over/under|moneyline|"
@@ -89,8 +105,18 @@ def _categorize_market(question: str) -> str:
 
 
 def _is_updown_price_market(question: str) -> bool:
-    """Return True if this is a crypto Up/Down price market (Garves's territory)."""
-    return bool(_UPDOWN_RE.search(question))
+    """Return True if this is ANY crypto price prediction market.
+
+    Blocks: Up/Down (Garves territory), price above/below/between $X,
+    and crypto + price target patterns. GPT-4o has no real data for these.
+    """
+    if _UPDOWN_RE.search(question):
+        return True
+    if _CRYPTO_PRICE_RE.search(question):
+        return True
+    if _CRYPTO_PRICE_TARGET_RE.search(question):
+        return True
+    return False
 
 
 def scan_all_markets(cfg: HawkConfig) -> list[HawkMarket]:
@@ -145,8 +171,9 @@ def scan_all_markets(cfg: HawkConfig) -> list[HawkMarket]:
                         continue
                     seen_ids.add(cid)
 
-                    # Skip Garves's territory
+                    # Skip ALL crypto price markets (Up/Down + price target + above/below)
                     if _is_updown_price_market(question):
+                        log.debug("Blocked crypto price market: %s", question[:80])
                         continue
 
                     # Skip closed/inactive

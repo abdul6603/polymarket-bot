@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime
 
 from hawk.config import HawkConfig
@@ -9,6 +10,37 @@ from hawk.edge import TradeOpportunity
 from hawk.tracker import HawkTracker
 
 log = logging.getLogger(__name__)
+
+# Fix 3: Extract underlying asset from market questions to detect correlated positions
+_ASSET_PATTERNS = [
+    # "price of Bitcoin" / "Will Bitcoin"
+    re.compile(r"(?:price\s+of\s+|will\s+)(bitcoin|ethereum|solana|xrp|bnb|cardano|dogecoin|avalanche|polkadot|polygon|chainlink|litecoin)", re.IGNORECASE),
+    # Ticker symbols: "BTC", "ETH", "SOL"
+    re.compile(r"\b(btc|eth|sol|xrp|bnb|ada|doge|avax|dot|matic|link|ltc)\b", re.IGNORECASE),
+    # Team names for sports
+    re.compile(r"(?:will\s+the\s+|will\s+)([\w\s]+?)\s+(?:win|beat|defeat|cover|score)", re.IGNORECASE),
+]
+
+# Normalize ticker aliases to canonical asset names
+_ASSET_ALIASES = {
+    "btc": "bitcoin", "eth": "ethereum", "sol": "solana",
+    "ada": "cardano", "doge": "dogecoin", "avax": "avalanche",
+    "dot": "polkadot", "matic": "polygon", "link": "chainlink",
+    "ltc": "litecoin",
+}
+
+
+def extract_underlying(question: str) -> str | None:
+    """Extract the underlying asset/entity from a market question.
+
+    Returns normalized lowercase string or None if no recognizable underlying.
+    """
+    for pattern in _ASSET_PATTERNS:
+        m = pattern.search(question)
+        if m:
+            raw = m.group(1).strip().lower()
+            return _ASSET_ALIASES.get(raw, raw)
+    return None
 
 from zoneinfo import ZoneInfo
 ET = ZoneInfo("America/New_York")
@@ -98,6 +130,17 @@ class HawkRiskManager:
 
         if self.tracker.has_position_for_market(opp.market.condition_id):
             return False, f"Already have position in market {opp.market.condition_id[:12]}"
+
+        # Fix 3: Position correlation — block trades on same underlying asset
+        new_underlying = extract_underlying(opp.market.question)
+        if new_underlying:
+            for pos in self.tracker.open_positions:
+                existing_underlying = extract_underlying(pos.get("question", ""))
+                if existing_underlying and existing_underlying == new_underlying:
+                    return False, (
+                        f"Correlated position blocked: already holding '{new_underlying}' "
+                        f"via {pos.get('condition_id', '???')[:12]}"
+                    )
 
         if opp.position_size_usd > self.cfg.max_bet_usd:
             return False, f"Position size ${opp.position_size_usd:.2f} exceeds max bet ${self.cfg.max_bet_usd:.2f}"
