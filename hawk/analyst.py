@@ -2,22 +2,36 @@
 
 Architecture:
   Sports markets  → Sportsbook consensus (The Odds API) + ESPN data → GPT adjusts ±5%
-  Non-sports      → GPT-4o primary with confidence gate + news enrichment
+  Non-sports      → Local LLM primary (via shared router) with confidence gate
 
-GPT-4o is NO LONGER the probability estimator for sports. The sportsbook consensus
-(averaged from 40+ bookmakers) IS the probability. GPT-4o's role is to adjust
-±5% based on qualitative factors the books might miss.
+Routes through shared/llm_client: non-sports → local 14B, sports → cloud GPT-4o.
+Falls back to direct OpenAI if shared module unavailable.
 """
 from __future__ import annotations
 
 import logging
+import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
+from pathlib import Path
 
 import openai
 
 from hawk.config import HawkConfig
 from hawk.scanner import HawkMarket
+
+# Wire up shared intelligence layer
+sys.path.insert(0, str(Path.home() / "shared"))
+_USE_SHARED_LLM = False
+_shared_llm_call = None
+_hawk_brain = None
+try:
+    from llm_client import llm_call
+    from agent_brain import AgentBrain
+    _shared_llm_call = llm_call
+    _USE_SHARED_LLM = True
+except ImportError:
+    pass
 
 log = logging.getLogger(__name__)
 
@@ -402,23 +416,36 @@ def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate |
     except Exception:
         pass
 
-    # ── Call GPT-4o ──
+    # ── Call LLM (shared router: non-sports → local, sports → cloud GPT-4o) ──
     try:
-        client = openai.OpenAI(api_key=cfg.openai_api_key)
-        resp = client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_msg},
-            ],
-            max_tokens=700,
-            temperature=0.2,
-        )
-        text = resp.choices[0].message.content.strip()
+        text = ""
+        if _USE_SHARED_LLM and _shared_llm_call:
+            # Sports → cloud GPT-4o (per routing config)
+            # Non-sports → local 14B (per routing config)
+            task = "sports_analysis" if is_sports else "analysis"
+            text = _shared_llm_call(
+                system=system_prompt, user=user_msg, agent="hawk",
+                task_type=task, max_tokens=700, temperature=0.2,
+            )
+
+        if not text:
+            # Fallback: direct OpenAI
+            client = openai.OpenAI(api_key=cfg.openai_api_key)
+            resp = client.chat.completions.create(
+                model="gpt-4o",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_msg},
+                ],
+                max_tokens=700,
+                temperature=0.2,
+            )
+            text = resp.choices[0].message.content.strip()
+
         parsed = _parse_response(text)
 
     except Exception:
-        log.exception("GPT analysis failed for %s", market.condition_id[:12])
+        log.exception("LLM analysis failed for %s", market.condition_id[:12])
         # If we have sportsbook data, use that directly without GPT
         if sportsbook_prob is not None:
             log.info("Using raw sportsbook prob (GPT failed): %.2f for %s",

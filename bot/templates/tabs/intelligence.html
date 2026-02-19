@@ -1,0 +1,278 @@
+<div id="tab-intelligence" class="tab-content">
+  <!-- Agent Badge Row -->
+  <div class="d-flex align-center gap-3 mb-4">
+    <div class="agent-card-initial" style="background:#9B59B622;color:#9B59B6;font-size:1.1rem;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:10px;">AI</div>
+    <div>
+      <div style="font-weight:600;color:var(--text-primary);">Intelligence — Local AI & Agent Memory</div>
+      <div class="text-muted" style="font-size:0.72rem;">LLM Server: <span id="llm-server-status" style="color:var(--text-muted);">--</span> | Total Calls (24h): <span id="llm-total-calls">--</span> | Savings: <span id="llm-savings" style="color:var(--success);">--</span></div>
+    </div>
+    <div style="margin-left:auto;display:flex;gap:8px;">
+      <button class="btn btn-primary" onclick="refreshIntelligence()" style="font-size:0.72rem;padding:6px 14px;">Refresh</button>
+    </div>
+  </div>
+
+  <!-- Top Row: Server Status + Cost Summary -->
+  <div class="stat-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:12px;">
+    <div class="stat-card">
+      <div class="stat-label">LLM Server</div>
+      <div class="stat-value" id="llm-server-badge" style="font-size:0.9rem;">--</div>
+      <div class="text-muted" style="font-size:0.6rem;" id="llm-model-name">Model: --</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Local Calls (24h)</div>
+      <div class="stat-value" id="llm-local-calls" style="color:#9B59B6;">--</div>
+      <div class="text-muted" style="font-size:0.6rem;">Free inference on M3 Pro</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Cloud Calls (24h)</div>
+      <div class="stat-value" id="llm-cloud-calls" style="color:var(--warning);">--</div>
+      <div class="text-muted" style="font-size:0.6rem;">OpenAI + Claude API</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Cost (24h)</div>
+      <div class="stat-value" id="llm-cost-24h" style="color:var(--error);">--</div>
+      <div class="text-muted" style="font-size:0.6rem;">Cloud API spend</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Est. Savings (24h)</div>
+      <div class="stat-value" id="llm-savings-24h" style="color:var(--success);">--</div>
+      <div class="text-muted" style="font-size:0.6rem;">Local vs cloud offset</div>
+    </div>
+  </div>
+
+  <!-- Memory Stats Row -->
+  <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:12px;">
+    <div class="stat-card">
+      <div class="stat-label">Total Decisions</div>
+      <div class="stat-value" id="llm-total-decisions" style="color:#9B59B6;">--</div>
+      <div class="text-muted" style="font-size:0.6rem;">Across all agents</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Active Patterns</div>
+      <div class="stat-value" id="llm-total-patterns" style="color:var(--success);">--</div>
+      <div class="text-muted" style="font-size:0.6rem;">Learned rules</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Knowledge Facts</div>
+      <div class="stat-value" id="llm-total-knowledge" style="color:#3498DB;">--</div>
+      <div class="text-muted" style="font-size:0.6rem;">Agent-specific facts</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Agents w/ Memory</div>
+      <div class="stat-value" id="llm-agents-with-memory" style="color:var(--warning);">--</div>
+      <div class="text-muted" style="font-size:0.6rem;">Out of 10</div>
+    </div>
+  </div>
+
+  <!-- Two Column Layout: Routing Table + Per-Agent Memory -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+    <!-- Routing Table -->
+    <div class="stat-card" style="padding:14px;">
+      <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">LLM Routing Table</div>
+      <table style="width:100%;border-collapse:collapse;font-size:0.7rem;">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border-color);">
+            <th style="text-align:left;padding:4px;color:var(--text-muted);">Task Type</th>
+            <th style="text-align:left;padding:4px;color:var(--text-muted);">Route</th>
+          </tr>
+        </thead>
+        <tbody id="llm-routing-table">
+          <tr><td colspan="2" class="text-muted">Loading...</td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:10px;font-weight:600;color:var(--text-primary);font-size:0.74rem;">Agent Overrides</div>
+      <div id="llm-agent-overrides" class="text-muted" style="font-size:0.68rem;margin-top:4px;">Loading...</div>
+    </div>
+
+    <!-- Per-Agent Memory -->
+    <div class="stat-card" style="padding:14px;">
+      <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Per-Agent Memory</div>
+      <table style="width:100%;border-collapse:collapse;font-size:0.7rem;">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border-color);">
+            <th style="text-align:left;padding:4px;color:var(--text-muted);">Agent</th>
+            <th style="text-align:center;padding:4px;color:var(--text-muted);">Decisions</th>
+            <th style="text-align:center;padding:4px;color:var(--text-muted);">Patterns</th>
+            <th style="text-align:center;padding:4px;color:var(--text-muted);">WR</th>
+            <th style="text-align:center;padding:4px;color:var(--text-muted);">DB</th>
+          </tr>
+        </thead>
+        <tbody id="llm-memory-table">
+          <tr><td colspan="5" class="text-muted">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent LLM Calls Activity Feed -->
+  <div class="stat-card" style="padding:14px;margin-bottom:12px;">
+    <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Recent LLM Calls</div>
+    <div id="llm-activity-feed" style="max-height:280px;overflow-y:auto;font-size:0.68rem;">
+      <span class="text-muted">Loading...</span>
+    </div>
+  </div>
+
+  <!-- Cost Breakdown by Agent -->
+  <div class="stat-card" style="padding:14px;">
+    <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Cost by Agent (24h)</div>
+    <div id="llm-cost-by-agent" style="font-size:0.7rem;">
+      <span class="text-muted">Loading...</span>
+    </div>
+  </div>
+</div>
+
+<script>
+function refreshIntelligence() {
+  // Fetch all intelligence data in parallel
+  Promise.all([
+    fetch('/api/llm/status').then(r => r.json()).catch(() => ({})),
+    fetch('/api/llm/costs').then(r => r.json()).catch(() => ({})),
+    fetch('/api/llm/memory-all').then(r => r.json()).catch(() => ({})),
+    fetch('/api/llm/routing').then(r => r.json()).catch(() => ({})),
+    fetch('/api/llm/recent-calls').then(r => r.json()).catch(() => ({calls:[]})),
+  ]).then(([status, costs, memoryAll, routing, recentCalls]) => {
+    // Server status
+    var online = status.server_online;
+    var badge = document.getElementById('llm-server-badge');
+    var statusEl = document.getElementById('llm-server-status');
+    if (badge) {
+      badge.textContent = online ? 'ONLINE' : 'OFFLINE';
+      badge.style.color = online ? 'var(--success)' : 'var(--error)';
+    }
+    if (statusEl) statusEl.textContent = online ? 'Online' : 'Offline';
+    statusEl.style.color = online ? 'var(--success)' : 'var(--error)';
+
+    var modelEl = document.getElementById('llm-model-name');
+    if (modelEl && status.models) {
+      var m = status.models.local_large || '';
+      modelEl.textContent = 'Model: ' + (m.split('/').pop() || '--');
+    }
+
+    // Cost data
+    var c24 = costs.last_24h || {};
+    var byProv = c24.by_provider || {};
+    var localCalls = (byProv.local || {}).calls || 0;
+    var cloudCalls = (c24.total_calls || 0) - localCalls;
+
+    setTextSafe('llm-total-calls', c24.total_calls || 0);
+    setTextSafe('llm-local-calls', localCalls);
+    setTextSafe('llm-cloud-calls', cloudCalls);
+    setTextSafe('llm-cost-24h', '$' + (c24.total_cost || 0).toFixed(4));
+    setTextSafe('llm-savings-24h', '$' + (costs.estimated_savings_24h || 0).toFixed(4));
+    setTextSafe('llm-savings', '$' + (costs.estimated_savings_24h || 0).toFixed(2));
+
+    // Memory stats
+    var totals = (memoryAll.totals || {});
+    setTextSafe('llm-total-decisions', totals.decisions || 0);
+    setTextSafe('llm-total-patterns', totals.patterns || 0);
+    setTextSafe('llm-total-knowledge', totals.knowledge || 0);
+    setTextSafe('llm-agents-with-memory', (totals.agents_with_memory || 0) + '/10');
+
+    // Per-agent memory table
+    var memTable = document.getElementById('llm-memory-table');
+    if (memTable && memoryAll.agents) {
+      var agentColors = {
+        shelby:'#FFAA00', atlas:'#22AA44', lisa:'#FF8800', hawk:'#FFD700',
+        soren:'#CC66FF', garves:'#00D4FF', quant:'#00BFFF', viper:'#00FF88',
+        robotox:'#00FF44', thor:'#FF6600'
+      };
+      var rows = '';
+      var agents = ['shelby','atlas','hawk','garves','soren','lisa','thor','quant','viper','robotox'];
+      agents.forEach(function(ag) {
+        var s = memoryAll.agents[ag] || {};
+        if (s.error) return;
+        var c = agentColors[ag] || '#888';
+        var wr = s.total_decisions > 0 ? (s.win_rate || 0).toFixed(1) + '%' : '--';
+        rows += '<tr>' +
+          '<td style="padding:3px 4px;color:'+c+';font-weight:600;text-transform:capitalize;">'+ag+'</td>' +
+          '<td style="text-align:center;padding:3px;">'+(s.total_decisions||0)+'</td>' +
+          '<td style="text-align:center;padding:3px;">'+(s.active_patterns||0)+'</td>' +
+          '<td style="text-align:center;padding:3px;">'+wr+'</td>' +
+          '<td style="text-align:center;padding:3px;color:var(--text-muted);">'+(s.db_size_kb||0).toFixed(0)+'KB</td>' +
+          '</tr>';
+      });
+      memTable.innerHTML = rows || '<tr><td colspan="5" class="text-muted">No memory data yet</td></tr>';
+    }
+
+    // Routing table
+    var routeTable = document.getElementById('llm-routing-table');
+    if (routeTable && routing.routing) {
+      var routeColors = {local_large:'#9B59B6',local_small:'#3498DB',cloud_openai:'#E67E22',cloud_claude:'#E74C3C',cloud_gpt4o:'#F39C12'};
+      var rRows = '';
+      Object.keys(routing.routing).forEach(function(tt) {
+        var route = routing.routing[tt];
+        var rc = routeColors[route] || '#888';
+        rRows += '<tr><td style="padding:3px 4px;">'+tt+'</td>' +
+          '<td style="padding:3px 4px;color:'+rc+';font-weight:500;">'+route.replace('_',' ')+'</td></tr>';
+      });
+      routeTable.innerHTML = rRows;
+    }
+
+    // Agent overrides
+    var overEl = document.getElementById('llm-agent-overrides');
+    if (overEl && routing.agent_overrides) {
+      var overHtml = '';
+      Object.keys(routing.agent_overrides).forEach(function(ag) {
+        var ov = routing.agent_overrides[ag];
+        overHtml += '<div style="margin-bottom:2px;"><span style="color:var(--text-primary);font-weight:500;text-transform:capitalize;">'+ag+':</span> ';
+        Object.keys(ov).forEach(function(k) {
+          overHtml += k + ' → <span style="color:#E67E22;">'+ov[k]+'</span> ';
+        });
+        overHtml += '</div>';
+      });
+      overEl.innerHTML = overHtml || 'None configured';
+    }
+
+    // Recent calls feed
+    var feedEl = document.getElementById('llm-activity-feed');
+    if (feedEl && recentCalls.calls) {
+      var fHtml = '';
+      recentCalls.calls.slice(0, 30).forEach(function(call) {
+        var provColor = call.provider === 'local' ? '#9B59B6' : '#E67E22';
+        var ts = call.ts ? call.ts.split('T')[1].split('.')[0] : '--';
+        var fb = call.fallback ? ' <span style="color:var(--error);font-size:0.6rem;">[FALLBACK]</span>' : '';
+        fHtml += '<div style="padding:3px 0;border-bottom:1px solid var(--border-color);display:flex;gap:8px;align-items:center;">' +
+          '<span style="color:var(--text-muted);min-width:55px;">'+ts+'</span>' +
+          '<span style="color:'+provColor+';min-width:45px;font-weight:500;">'+call.provider+'</span>' +
+          '<span style="min-width:45px;text-transform:capitalize;">'+call.agent+'</span>' +
+          '<span style="color:var(--text-muted);">'+call.task_type+'</span>' +
+          '<span style="margin-left:auto;color:var(--text-muted);">'+call.latency_ms+'ms</span>' +
+          '<span style="color:'+(call.cost_usd > 0 ? 'var(--warning)' : 'var(--success)')+';">$'+call.cost_usd.toFixed(4)+'</span>' +
+          fb + '</div>';
+      });
+      feedEl.innerHTML = fHtml || '<span class="text-muted">No calls recorded yet</span>';
+    }
+
+    // Cost by agent
+    var costEl = document.getElementById('llm-cost-by-agent');
+    if (costEl && c24.by_agent) {
+      var cHtml = '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+      Object.keys(c24.by_agent).sort(function(a,b) { return (c24.by_agent[b].cost||0)-(c24.by_agent[a].cost||0); }).forEach(function(ag) {
+        var d = c24.by_agent[ag];
+        var agColor = {shelby:'#FFAA00',atlas:'#22AA44',lisa:'#FF8800',hawk:'#FFD700',soren:'#CC66FF',garves:'#00D4FF',quant:'#00BFFF',viper:'#00FF88',robotox:'#00FF44',thor:'#FF6600'}[ag] || '#888';
+        cHtml += '<div style="background:var(--card-bg);padding:6px 10px;border-radius:6px;border:1px solid var(--border-color);">' +
+          '<div style="color:'+agColor+';font-weight:600;text-transform:capitalize;font-size:0.72rem;">'+ag+'</div>' +
+          '<div style="font-size:0.68rem;">'+d.calls+' calls | $'+(d.cost||0).toFixed(4)+'</div></div>';
+      });
+      cHtml += '</div>';
+      costEl.innerHTML = cHtml;
+    }
+  });
+}
+
+function setTextSafe(id, val) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+// Auto-refresh when Intelligence tab is active
+(function() {
+  var origSwitch = window.switchTab;
+  if (origSwitch) {
+    window.switchTab = function(tab) {
+      origSwitch(tab);
+      if (tab === 'intelligence') refreshIntelligence();
+    };
+  }
+})();
+</script>

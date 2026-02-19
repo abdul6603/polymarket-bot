@@ -58,6 +58,11 @@
     <span class="sidebar-icon" style="background:var(--agent-viper);">VP</span><span class="sidebar-label">Viper</span>
   </button>
   <div class="sidebar-divider"></div>
+  <div class="sidebar-section-label">INFRA</div>
+  <button class="sidebar-btn" data-tab="intelligence" onclick="switchTab('intelligence')" title="Intelligence">
+    <span class="sidebar-icon" style="background:#9B59B6;">AI</span><span class="sidebar-label">Intelligence</span>
+  </button>
+  <div class="sidebar-divider"></div>
   <button class="sidebar-btn" data-tab="chat" onclick="switchTab('chat')" title="Chat">
     <span class="sidebar-icon" style="background:#888;">CH</span><span class="sidebar-label">Chat</span>
   </button>
@@ -85,6 +90,7 @@
   {% include 'tabs/viper.html' %}
   {% include 'tabs/quant.html' %}
   {% include 'tabs/system.html' %}
+  {% include 'tabs/intelligence.html' %}
   {% include 'tabs/chat.html' %}
 
   <!-- Agent Chat Popup -->

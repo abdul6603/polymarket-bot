@@ -24,6 +24,7 @@ def register_all_blueprints(app: Flask) -> None:
     from bot.routes.hawk import hawk_bp
     from bot.routes.viper import viper_bp
     from bot.routes.quant import quant_bp
+    from bot.routes.llm import llm_bp
 
     app.register_blueprint(garves_bp)
     app.register_blueprint(soren_bp)
@@ -40,3 +41,4 @@ def register_all_blueprints(app: Flask) -> None:
     app.register_blueprint(hawk_bp)
     app.register_blueprint(viper_bp)
     app.register_blueprint(quant_bp)
+    app.register_blueprint(llm_bp)
