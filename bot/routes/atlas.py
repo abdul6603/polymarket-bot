@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import uuid
 from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from pathlib import Path
@@ -13,6 +14,38 @@ from bot.shared import (
     ATLAS_ROOT,
     COMPETITOR_INTEL_FILE,
 )
+
+# Brain write helpers (shared with brain routes)
+_BRAIN_DIR = Path(__file__).parent.parent / "data" / "brains"
+
+
+def _add_brain_note(agent: str, topic: str, content: str, note_type: str = "note", tags: list | None = None) -> str:
+    """Add a note to an agent's brain and return the note ID."""
+    _BRAIN_DIR.mkdir(parents=True, exist_ok=True)
+    brain_file = _BRAIN_DIR / f"{agent}.json"
+    if brain_file.exists():
+        try:
+            data = json.loads(brain_file.read_text())
+        except Exception:
+            data = {"agent": agent, "notes": []}
+    else:
+        data = {"agent": agent, "notes": []}
+
+    note_id = f"note_{uuid.uuid4().hex[:8]}"
+    et = ZoneInfo("America/New_York")
+    note = {
+        "id": note_id,
+        "topic": topic[:200],
+        "content": content[:5000],
+        "type": note_type,
+        "tags": (tags or [])[:10],
+        "created_at": datetime.now(et).isoformat(),
+        "source": "atlas-pipeline",
+    }
+    data["notes"].append(note)
+    data["notes"] = data["notes"][-500:]
+    brain_file.write_text(json.dumps(data, indent=2, default=str))
+    return note_id
 
 atlas_bp = Blueprint("atlas", __name__)
 
@@ -647,9 +680,6 @@ def api_atlas_hub_eval():
         if not has_event_bus:
             gaps.append("No inter-agent direct messaging (agents go through Atlas/Shelby)")
             gaps.append("Limited real-time collaboration between agents")
-        gaps.append("No ML-based anomaly detection (rule-based patterns only)")
-        gaps.append("No A/B testing framework for agent configurations")
-        gaps.append("No automated rollback on failed deployments")
 
         # Pull gap insights from Atlas learnings
         try:
@@ -780,6 +810,306 @@ def api_atlas_competitor_summary():
         })
     except Exception as e:
         return jsonify({"error": str(e)[:200], "bullets": [], "has_data": False}), 500
+
+
+# ── Content Intelligence Pipeline ──
+
+CONTENT_FEED_LOG = ATLAS_ROOT / "data" / "content_feed_log.json"
+
+
+def _load_feed_log() -> dict:
+    if CONTENT_FEED_LOG.exists():
+        try:
+            with open(CONTENT_FEED_LOG) as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"feeds": [], "stats": {"total_feeds": 0, "soren_feeds": 0, "lisa_feeds": 0}}
+
+
+def _save_feed_log(log: dict) -> None:
+    CONTENT_FEED_LOG.parent.mkdir(parents=True, exist_ok=True)
+    with open(CONTENT_FEED_LOG, "w") as f:
+        json.dump(log, f, indent=2)
+
+
+@atlas_bp.route("/api/atlas/content-intel")
+def api_atlas_content_intel():
+    """Content intelligence for Soren/Lisa — niche trends, viral hooks, strategy."""
+    et = ZoneInfo("America/New_York")
+    # Gather content competitor intel
+    content_findings = []
+    if COMPETITOR_INTEL_FILE.exists():
+        try:
+            with open(COMPETITOR_INTEL_FILE) as f:
+                comp = json.load(f)
+            content_findings = comp.get("content", [])
+        except Exception:
+            pass
+
+    # Gather Soren-specific competitor data
+    soren_competitors = []
+    soren_comp_file = ATLAS_ROOT / "data" / "soren_competitors.json"
+    if soren_comp_file.exists():
+        try:
+            with open(soren_comp_file) as f:
+                sc = json.load(f)
+            soren_competitors = sc.get("competitors", [])
+        except Exception:
+            pass
+
+    # Get Atlas KB learnings related to content
+    content_learnings = []
+    kb_file = ATLAS_ROOT / "data" / "knowledge_base.json"
+    if kb_file.exists():
+        try:
+            with open(kb_file) as f:
+                kb = json.load(f)
+            for learning in kb.get("learnings", []):
+                tags = str(learning.get("tags", "")).lower()
+                agent = learning.get("agent", "").lower()
+                insight = learning.get("insight", learning.get("learning", ""))
+                if agent in ("soren", "lisa", "mercury") or any(
+                    kw in tags for kw in ("content", "tiktok", "instagram", "viral", "engagement", "posting")
+                ):
+                    content_learnings.append({
+                        "insight": insight[:200],
+                        "confidence": learning.get("confidence", 0),
+                        "agent": agent,
+                    })
+        except Exception:
+            pass
+
+    # Get Atlas improvements for Soren/Lisa
+    soren_improvements = []
+    lisa_improvements = []
+    imp_file = ATLAS_ROOT / "data" / "improvements.json"
+    if imp_file.exists():
+        try:
+            with open(imp_file) as f:
+                improvements = json.load(f)
+            soren_improvements = improvements.get("soren", [])[:5]
+            lisa_improvements = improvements.get("lisa", improvements.get("mercury", []))[:5]
+        except Exception:
+            pass
+
+    # Feed log status
+    feed_log = _load_feed_log()
+    recent_feeds = feed_log.get("feeds", [])[-5:]
+
+    return jsonify({
+        "content_findings": content_findings[:10],
+        "soren_competitors": soren_competitors[:10],
+        "content_learnings": sorted(content_learnings, key=lambda x: x.get("confidence", 0), reverse=True)[:10],
+        "soren_improvements": soren_improvements,
+        "lisa_improvements": lisa_improvements,
+        "recent_feeds": recent_feeds,
+        "feed_stats": feed_log.get("stats", {}),
+        "last_scan": None,
+    })
+
+
+@atlas_bp.route("/api/atlas/feed-content", methods=["POST"])
+def api_atlas_feed_content():
+    """Push content intelligence to Soren or Lisa's brain — one-click action."""
+    try:
+        body = request.get_json(silent=True) or {}
+        target = body.get("target", "soren")  # soren or lisa
+        feed_type = body.get("type", "niche_trends")  # niche_trends, viral_hooks, strategy, improvements
+        et = ZoneInfo("America/New_York")
+
+        # Build the intel package based on type
+        intel_content = ""
+        intel_topic = ""
+
+        if feed_type == "niche_trends":
+            intel_topic = "Niche Trend Intelligence from Atlas"
+            # Pull content competitor findings
+            findings = []
+            if COMPETITOR_INTEL_FILE.exists():
+                try:
+                    with open(COMPETITOR_INTEL_FILE) as f:
+                        comp = json.load(f)
+                    findings = comp.get("content", [])[:8]
+                except Exception:
+                    pass
+            soren_comp_file = ATLAS_ROOT / "data" / "soren_competitors.json"
+            if soren_comp_file.exists():
+                try:
+                    with open(soren_comp_file) as f:
+                        sc = json.load(f)
+                    findings.extend(sc.get("competitors", [])[:5])
+                except Exception:
+                    pass
+            if findings:
+                intel_content = "TRENDING IN YOUR NICHE:\n" + "\n".join(
+                    f"- {f.get('title', '')}: {f.get('snippet', f.get('description', ''))[:120]}"
+                    for f in findings[:10]
+                )
+            else:
+                intel_content = "No niche trend data available yet. Atlas needs to run a scan cycle first."
+
+        elif feed_type == "viral_hooks":
+            intel_topic = "Viral Hook Patterns from Atlas Research"
+            kb_file = ATLAS_ROOT / "data" / "knowledge_base.json"
+            hooks = []
+            if kb_file.exists():
+                try:
+                    with open(kb_file) as f:
+                        kb = json.load(f)
+                    for l in kb.get("learnings", []):
+                        text = l.get("insight", l.get("learning", "")).lower()
+                        if any(kw in text for kw in ("hook", "viral", "engage", "retention", "caption", "thumbnail")):
+                            hooks.append(l.get("insight", l.get("learning", ""))[:150])
+                except Exception:
+                    pass
+            # Also pull from research log
+            rl_path = ATLAS_ROOT / "data" / "research_log.json"
+            if rl_path.exists():
+                try:
+                    with open(rl_path) as f:
+                        rl = json.load(f)
+                    for r in (rl if isinstance(rl, list) else []):
+                        text = str(r).lower()
+                        if any(kw in text for kw in ("hook", "viral", "engage", "retention")):
+                            hooks.append(r.get("insight", r.get("summary", ""))[:150])
+                except Exception:
+                    pass
+            if hooks:
+                intel_content = "VIRAL HOOK PATTERNS:\n" + "\n".join(f"- {h}" for h in hooks[:10])
+            else:
+                intel_content = "No viral hook data yet. Run Atlas deep research on 'viral hooks dark motivation content' to gather data."
+
+        elif feed_type == "strategy":
+            intel_topic = "Content Strategy Intel from Atlas"
+            # Pull improvements for the target agent
+            imp_file = ATLAS_ROOT / "data" / "improvements.json"
+            items = []
+            if imp_file.exists():
+                try:
+                    with open(imp_file) as f:
+                        improvements = json.load(f)
+                    key = target if target != "lisa" else "mercury"
+                    items = improvements.get(key, improvements.get(target, []))[:8]
+                except Exception:
+                    pass
+            if items:
+                intel_content = "STRATEGY RECOMMENDATIONS:\n" + "\n".join(
+                    f"- [{i.get('priority', 'medium').upper()}] {i.get('title', i.get('suggestion', i.get('description', '')))[:120]}"
+                    for i in items
+                )
+            else:
+                intel_content = "No strategy improvements available. Run an Atlas improvement scan first."
+
+        elif feed_type == "revenue":
+            intel_topic = "Revenue & Monetization Intel from Atlas"
+            # Pull from KB and research related to monetization
+            revenue_intel = []
+            kb_file = ATLAS_ROOT / "data" / "knowledge_base.json"
+            if kb_file.exists():
+                try:
+                    with open(kb_file) as f:
+                        kb = json.load(f)
+                    for l in kb.get("learnings", []):
+                        text = l.get("insight", l.get("learning", "")).lower()
+                        if any(kw in text for kw in ("revenue", "monetiz", "income", "sponsor", "affiliate", "merch", "money")):
+                            revenue_intel.append(l.get("insight", l.get("learning", ""))[:150])
+                except Exception:
+                    pass
+            if revenue_intel:
+                intel_content = "REVENUE OPPORTUNITIES:\n" + "\n".join(f"- {r}" for r in revenue_intel[:8])
+            else:
+                intel_content = "No revenue intelligence yet. Run Atlas deep research on 'dark motivation content monetization strategies' to gather data."
+
+        if not intel_content:
+            return jsonify({"error": "No intelligence available for this feed type"}), 400
+
+        # Push to agent brain
+        note_id = _add_brain_note(
+            agent=target,
+            topic=intel_topic,
+            content=intel_content[:2000],
+            note_type="note",
+            tags=["atlas", "content-intel", feed_type],
+        )
+
+        # Log the feed
+        feed_log = _load_feed_log()
+        feed_log["feeds"].append({
+            "target": target,
+            "type": feed_type,
+            "topic": intel_topic,
+            "timestamp": datetime.now(et).isoformat(),
+            "note_id": note_id,
+            "content_preview": intel_content[:100],
+        })
+        feed_log["feeds"] = feed_log["feeds"][-50:]  # Keep last 50
+        stats = feed_log.get("stats", {"total_feeds": 0, "soren_feeds": 0, "lisa_feeds": 0})
+        stats["total_feeds"] = stats.get("total_feeds", 0) + 1
+        if target == "soren":
+            stats["soren_feeds"] = stats.get("soren_feeds", 0) + 1
+        elif target == "lisa":
+            stats["lisa_feeds"] = stats.get("lisa_feeds", 0) + 1
+        feed_log["stats"] = stats
+        _save_feed_log(feed_log)
+
+        return jsonify({
+            "success": True,
+            "target": target,
+            "type": feed_type,
+            "topic": intel_topic,
+            "note_id": note_id,
+            "message": f"Intel pushed to {target.title()}'s brain",
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@atlas_bp.route("/api/atlas/niche-scan", methods=["POST"])
+def api_atlas_niche_scan():
+    """Trigger a focused niche scan for Soren's dark motivation content space."""
+    atlas = get_atlas()
+    if not atlas:
+        return jsonify({"error": "Atlas not available"}), 503
+    try:
+        # Use competitor spy to scan Soren's niche
+        result = atlas.spy.scan_soren_competitors()
+        return jsonify({
+            "success": True,
+            "total": result.get("total", 0),
+            "new_count": result.get("new_count", 0),
+            "takeaways": result.get("takeaways", []),
+            "scanned_at": result.get("scanned_at"),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@atlas_bp.route("/api/atlas/content-pipeline")
+def api_atlas_content_pipeline():
+    """Status of the content intelligence pipeline — what's been fed, when, to whom."""
+    feed_log = _load_feed_log()
+    feeds = feed_log.get("feeds", [])
+    stats = feed_log.get("stats", {})
+
+    # Last feed per agent
+    last_soren = None
+    last_lisa = None
+    for f in reversed(feeds):
+        if f.get("target") == "soren" and not last_soren:
+            last_soren = f
+        elif f.get("target") == "lisa" and not last_lisa:
+            last_lisa = f
+        if last_soren and last_lisa:
+            break
+
+    return jsonify({
+        "stats": stats,
+        "recent_feeds": feeds[-8:],
+        "last_soren_feed": last_soren,
+        "last_lisa_feed": last_lisa,
+        "total_feeds": len(feeds),
+    })
 
 
 @atlas_bp.route("/api/atlas/suggest-agent")
