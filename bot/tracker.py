@@ -78,7 +78,13 @@ class PerformanceTracker:
         self._position_tracker = position_tracker  # PositionTracker to clean up on resolution
         DATA_DIR.mkdir(exist_ok=True)
         self._pending: dict[str, TradeRecord] = {}  # trade_id -> record
+        self._decision_ids: dict[str, str] = {}  # trade_id -> brain decision_id
         self._load_pending()
+
+    def set_decision_id(self, trade_id: str, decision_id: str) -> None:
+        """Map a trade_id to an AgentBrain decision_id for outcome tracking."""
+        if decision_id:
+            self._decision_ids[trade_id] = decision_id
 
     def _load_pending(self) -> None:
         """Load unresolved trades from disk on startup."""
@@ -236,6 +242,27 @@ class PerformanceTracker:
                     },
                     summary=f"{'WIN' if rec.won else 'LOSS'}: {rec.asset.upper()}/{rec.timeframe} predicted={rec.direction.upper()} actual={rec.outcome.upper()}",
                 )
+            except Exception:
+                pass
+
+            # Brain: record outcome
+            try:
+                import sys as _sys2
+                _sys2.path.insert(0, str(Path.home() / "shared"))
+                from agent_brain import AgentBrain
+                _brain = AgentBrain("garves")
+                _did = self._decision_ids.get(trade_id)
+                if _did:
+                    _score = 1.0 if rec.won else -1.0
+                    _brain.remember_outcome(_did, f"{'WIN' if rec.won else 'LOSS'}: predicted={rec.direction} actual={outcome}", score=_score)
+                    # Learn pattern from outcome
+                    if rec.regime_label:
+                        _brain.learn_pattern(
+                            "trade_outcome",
+                            f"{rec.asset}/{rec.timeframe} in {rec.regime_label}: {'WON' if rec.won else 'LOST'} predicting {rec.direction}",
+                            evidence_count=1,
+                            confidence=0.6 if rec.won else 0.4,
+                        )
             except Exception:
                 pass
 

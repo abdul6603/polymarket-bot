@@ -25,6 +25,7 @@ class HawkTracker:
     def __init__(self):
         DATA_DIR.mkdir(exist_ok=True)
         self._positions: list[dict] = []
+        self._decision_ids: dict[str, str] = {}
         self._load_positions()
 
     def _load_positions(self) -> None:
@@ -110,6 +111,14 @@ class HawkTracker:
             opp.position_size_usd, opp.edge * 100,
             opp.risk_score, opp.urgency_label or "no-urgency", opp.market.category,
         )
+
+    def set_decision_id(self, condition_id: str, decision_id: str) -> None:
+        """Map a condition_id to a brain decision_id for outcome tracking."""
+        self._decision_ids[condition_id] = decision_id
+
+    def get_decision_id(self, condition_id: str) -> str:
+        """Get brain decision_id for a condition_id, or empty string."""
+        return self._decision_ids.get(condition_id, "")
 
     def remove_position(self, order_id: str) -> None:
         """Remove a position by order ID."""

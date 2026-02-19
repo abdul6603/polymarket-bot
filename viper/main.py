@@ -26,6 +26,16 @@ from viper.scorer import score_intel
 
 log = logging.getLogger(__name__)
 
+# Agent Brain — learning memory
+_viper_brain = None
+try:
+    import sys as _sys
+    _sys.path.insert(0, str(Path.home() / "shared"))
+    from agent_brain import AgentBrain
+    _viper_brain = AgentBrain("viper", system_prompt="You are Viper, a market intelligence scanner.", task_type="fast")
+except Exception:
+    pass
+
 DATA_DIR = Path(__file__).parent.parent / "data"
 STATUS_FILE = DATA_DIR / "viper_status.json"
 OPPS_FILE = DATA_DIR / "viper_opportunities.json"
@@ -196,6 +206,18 @@ class ViperBot:
                 result = run_single_scan(self.cfg, cycle=self.cycle)
                 self.total_intel += result.get("new_items", 0)
                 self.total_matched += result.get("matched", 0)
+
+                # Brain: record scan cycle
+                if _viper_brain:
+                    try:
+                        _viper_brain.remember_decision(
+                            context=f"Cycle {self.cycle}: scanned sources",
+                            decision=f"Found {result.get('intel_count', 0)} intel items, {result.get('matched', 0)} matched to markets",
+                            confidence=0.5,
+                            tags=["scan_cycle"],
+                        )
+                    except Exception:
+                        pass
 
                 tavily_note = " (Tavily: ON)" if result.get("tavily_ran") else " (Tavily: skipped)"
                 briefing_note = f" | Briefing: {result.get('briefed_markets', 0)} markets" if result.get("briefing_active") else ""

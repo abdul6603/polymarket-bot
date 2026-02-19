@@ -131,6 +131,16 @@ class TradingBot:
             ])
         except Exception:
             pass
+        # Agent Brain — learning memory
+        self._brain = None
+        try:
+            import sys as _sys2
+            _sys2.path.insert(0, str(Path.home() / "shared"))
+            from agent_brain import AgentBrain
+            self._brain = AgentBrain("garves", system_prompt="You are Garves, a crypto prediction market trader.", task_type="analysis")
+        except Exception:
+            pass
+
         # Per-market cooldown: market_id -> last trade timestamp
         self._market_cooldown: dict[str, float] = {}
         self.COOLDOWN_SECONDS = 90  # 1.5 min cooldown after trading a market
@@ -603,6 +613,18 @@ class TradingBot:
                     )
                 except Exception:
                     pass
+
+                # Brain: record trade decision
+                if self._brain:
+                    try:
+                        _ctx = f"{asset.upper()}/{timeframe} regime={regime.label} FnG={regime.fng_value} edge={sig.edge*100:.1f}% conf={sig.confidence:.2f}"
+                        _dec = f"{sig.direction.upper()} size=${conviction.position_size_usd:.2f} conviction={conviction.total_score:.0f}"
+                        _reason = f"Indicators: {str({k:v for k,v in (sig.indicator_votes or {}).items()})[:200]}"
+                        _did = self._brain.remember_decision(_ctx, _dec, reasoning=_reason, confidence=sig.confidence, tags=[asset, timeframe, regime.label])
+                        # Store decision_id on the trade for outcome tracking
+                        self.perf_tracker.set_decision_id(f"{market_id[:12]}_{int(time.time())}", _did)
+                    except Exception:
+                        pass
 
                 # Telegram alert for live trades
                 if not self.cfg.dry_run:

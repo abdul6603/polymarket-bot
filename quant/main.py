@@ -23,6 +23,16 @@ from quant.scorer import score_result
 
 log = logging.getLogger(__name__)
 
+# Agent Brain — learning memory
+_quant_brain = None
+try:
+    import sys as _sys
+    _sys.path.insert(0, str(Path.home() / "shared"))
+    from agent_brain import AgentBrain
+    _quant_brain = AgentBrain("quant", system_prompt="You are Quant, a backtesting and strategy optimization agent.", task_type="analysis")
+except Exception:
+    pass
+
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 
@@ -124,6 +134,18 @@ class QuantBot:
                  baseline_ci.ci_lower, baseline_ci.ci_upper)
         log.info("Best found: WR=%.1f%% | Walk-forward OOS: %.1f%% (overfit=%.1fpp)",
                  best_wr, wf_result.test_win_rate, wf_result.overfit_drop)
+
+        # Brain: record backtest findings
+        if _quant_brain:
+            try:
+                _quant_brain.remember_decision(
+                    context=f"Backtest cycle {self.cycle}: tested {len(scored)} parameter combinations on {len(trades)} trades",
+                    decision=f"Baseline WR={baseline.win_rate:.1f}%, best WR={best_wr:.1f}%, walk-forward OOS={wf_result.test_win_rate:.1f}%",
+                    confidence=0.5,
+                    tags=["backtest"],
+                )
+            except Exception:
+                pass
 
     def _load_hawk_trades(self) -> list[dict]:
         """Load Hawk trades for calibration review."""
