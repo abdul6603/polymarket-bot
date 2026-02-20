@@ -211,7 +211,7 @@ MIN_EDGE_BY_TF = {
 }
 
 # Hard floor — regime adjustments cannot lower edge below this
-MIN_EDGE_ABSOLUTE = 0.07  # 7% — Quant moderate: 5%→7%. Filters out marginal-edge trades. TF-specific floors still protect short timeframes.
+MIN_EDGE_ABSOLUTE = 0.05  # 5% — Reverted from 7% (was blocking 4h trades with 4-6% edge). TF-specific floors (5m=8%, 15m=8%) already protect short timeframes.
 
 # Reward-to-Risk ratio filter
 # R:R = ((1-P) * 0.98) / P  where P = token price, 0.98 = payout after 2% winner fee
