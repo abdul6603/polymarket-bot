@@ -24,12 +24,48 @@
     <div id="intel-action-result" style="font-size:0.68rem;color:var(--text-muted);min-height:20px;"></div>
   </div>
 
-  <!-- INTELLIGENCE METERS — Real Learning Progress -->
-  <div class="stat-card" style="padding:14px;margin-bottom:12px;">
-    <div style="font-weight:600;color:var(--text-primary);margin-bottom:10px;font-size:0.82rem;">Agent Intelligence Meters</div>
-    <div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:12px;">Score = Experience (decisions) + Knowledge (patterns) + Accuracy (win rate) + Maturity (resolved ratio) + Recency (7d activity)</div>
-    <div id="intel-meters-container">
-      <span class="text-muted" style="font-size:0.72rem;">Waiting for refresh...</span>
+  <!-- Intelligence Overview: Meters + Per-Agent Memory -->
+  <div style="display:grid;grid-template-columns:3fr 2fr;gap:12px;margin-bottom:12px;">
+    <!-- Left: Intelligence Meters -->
+    <div class="stat-card" style="padding:16px 18px;border-top:2px solid #9B59B6;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div>
+          <div style="font-weight:700;color:var(--text-primary);font-size:0.84rem;letter-spacing:0.02em;">Agent Intelligence</div>
+          <div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;">EXP + Knowledge + Accuracy + Maturity + Recency</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span id="intel-avg-score" style="font-size:1.1rem;font-weight:800;color:#9B59B6;">--</span>
+          <span style="font-size:0.58rem;color:var(--text-muted);line-height:1.2;">AVG<br>SCORE</span>
+        </div>
+      </div>
+      <div id="intel-meters-container">
+        <span class="text-muted" style="font-size:0.72rem;">Waiting for refresh...</span>
+      </div>
+    </div>
+    <!-- Right: Per-Agent Memory -->
+    <div class="stat-card" style="padding:16px 18px;border-top:2px solid #3498DB;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div>
+          <div style="font-weight:700;color:var(--text-primary);font-size:0.84rem;letter-spacing:0.02em;">Per-Agent Memory</div>
+          <div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;">Decisions, patterns, win rates, DB sizes</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span id="intel-total-patterns-badge" style="font-size:1.1rem;font-weight:800;color:#3498DB;">--</span>
+          <span style="font-size:0.58rem;color:var(--text-muted);line-height:1.2;">TOTAL<br>PATTERNS</span>
+        </div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:0.7rem;">
+        <thead>
+          <tr style="border-bottom:2px solid var(--border-color);">
+            <th style="text-align:left;padding:6px;color:var(--text-muted);font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Agent</th>
+            <th style="text-align:center;padding:6px;color:var(--text-muted);font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Dec</th>
+            <th style="text-align:center;padding:6px;color:var(--text-muted);font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Pat</th>
+            <th style="text-align:center;padding:6px;color:var(--text-muted);font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">WR</th>
+            <th style="text-align:center;padding:6px;color:var(--text-muted);font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">DB</th>
+          </tr>
+        </thead>
+        <tbody id="llm-memory-table"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:12px;">Loading...</td></tr></tbody>
+      </table>
     </div>
   </div>
 
@@ -86,23 +122,20 @@
     </div>
   </div>
 
-  <!-- Two Column: Routing + Per-Agent Memory -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-    <div class="stat-card" style="padding:14px;">
-      <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">LLM Routing Table</div>
-      <table style="width:100%;border-collapse:collapse;font-size:0.7rem;">
-        <thead><tr style="border-bottom:1px solid var(--border-color);"><th style="text-align:left;padding:4px;color:var(--text-muted);">Task Type</th><th style="text-align:left;padding:4px;color:var(--text-muted);">Route</th></tr></thead>
-        <tbody id="llm-routing-table"><tr><td colspan="2" class="text-muted">Loading...</td></tr></tbody>
-      </table>
-      <div style="margin-top:10px;font-weight:600;color:var(--text-primary);font-size:0.74rem;">Agent Overrides</div>
-      <div id="llm-agent-overrides" class="text-muted" style="font-size:0.68rem;margin-top:4px;">Loading...</div>
-    </div>
-    <div class="stat-card" style="padding:14px;">
-      <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Per-Agent Memory</div>
-      <table style="width:100%;border-collapse:collapse;font-size:0.7rem;">
-        <thead><tr style="border-bottom:1px solid var(--border-color);"><th style="text-align:left;padding:4px;color:var(--text-muted);">Agent</th><th style="text-align:center;padding:4px;color:var(--text-muted);">Decisions</th><th style="text-align:center;padding:4px;color:var(--text-muted);">Patterns</th><th style="text-align:center;padding:4px;color:var(--text-muted);">WR</th><th style="text-align:center;padding:4px;color:var(--text-muted);">DB</th></tr></thead>
-        <tbody id="llm-memory-table"><tr><td colspan="5" class="text-muted">Loading...</td></tr></tbody>
-      </table>
+  <!-- LLM Routing -->
+  <div class="stat-card" style="padding:14px;margin-bottom:12px;">
+    <div style="display:flex;gap:24px;flex-wrap:wrap;">
+      <div style="flex:1;min-width:250px;">
+        <div style="font-weight:700;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">LLM Routing Table</div>
+        <table style="width:100%;border-collapse:collapse;font-size:0.7rem;">
+          <thead><tr style="border-bottom:1px solid var(--border-color);"><th style="text-align:left;padding:4px;color:var(--text-muted);">Task Type</th><th style="text-align:left;padding:4px;color:var(--text-muted);">Route</th></tr></thead>
+          <tbody id="llm-routing-table"><tr><td colspan="2" class="text-muted">Loading...</td></tr></tbody>
+        </table>
+      </div>
+      <div style="flex:1;min-width:200px;">
+        <div style="font-weight:700;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Agent Overrides</div>
+        <div id="llm-agent-overrides" class="text-muted" style="font-size:0.68rem;">Loading...</div>
+      </div>
     </div>
   </div>
 
@@ -444,46 +477,35 @@ function renderIntelMeters(agents) {
   var el = document.getElementById('intel-meters-container');
   if (!el) return;
   var html = '';
+  var totalScore = 0, scoreCount = 0, totalPat = 0;
   _INTEL_AGENT_ORDER.forEach(function(ag) {
     var s = (agents || {})[ag] || {};
     var r = calcIntelScore(s);
     var g = getIntelGrade(r.score);
     var c = _INTEL_AGENT_COLORS[ag] || '#888';
-    var barColor = r.score >= 60 ? 'var(--success)' : r.score >= 30 ? '#3498DB' : r.score > 0 ? 'var(--warning)' : 'var(--border-color)';
+    totalScore += r.score; scoreCount++;
+    totalPat += (s.active_patterns || 0);
 
-    html += '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border-color);">';
-    // Agent name
-    html += '<div style="min-width:70px;color:'+c+';font-weight:600;font-size:0.74rem;text-transform:capitalize;">'+ag+'</div>';
-    // Score number
-    html += '<div style="min-width:32px;text-align:right;font-weight:700;font-size:0.82rem;color:'+g.color+';">'+r.score+'</div>';
+    html += '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);" title="EXP:'+r.exp+' KNW:'+r.know+' ACC:'+r.acc+' MAT:'+r.mat+' REC:'+r.rec+'">';
+    // Agent dot + name
+    html += '<div style="width:6px;height:6px;border-radius:50%;background:'+c+';flex-shrink:0;"></div>';
+    html += '<div style="min-width:58px;color:'+c+';font-weight:600;font-size:0.72rem;text-transform:capitalize;">'+ag+'</div>';
+    // Score
+    html += '<div style="min-width:26px;text-align:right;font-weight:700;font-size:0.76rem;color:'+g.color+';font-family:var(--font-mono);">'+r.score+'</div>';
     // Progress bar
-    html += '<div style="flex:1;background:var(--card-bg);border-radius:6px;height:18px;position:relative;overflow:hidden;border:1px solid var(--border-color);">';
-    html += '<div style="width:'+r.score+'%;height:100%;border-radius:5px;background:linear-gradient(90deg,'+barColor+','+c+');transition:width 0.8s ease;"></div>';
-    // Segment markers inside bar
-    if (r.score > 0) {
-      var segs = [
-        {w: r.exp, label:'EXP', col:'rgba(255,255,255,0.9)'},
-        {w: r.know, label:'KNW', col:'rgba(255,255,255,0.7)'},
-        {w: r.acc, label:'ACC', col:'rgba(255,255,255,0.7)'},
-      ];
-      var offset = 0;
-      segs.forEach(function(seg) {
-        if (seg.w > 0) {
-          html += '<span style="position:absolute;left:'+(offset + seg.w/2)+'%;top:50%;transform:translate(-50%,-50%);font-size:0.5rem;font-weight:600;color:'+seg.col+';text-shadow:0 1px 2px rgba(0,0,0,0.8);pointer-events:none;">'+seg.label+'</span>';
-          offset += seg.w;
-        }
-      });
-    }
+    html += '<div style="flex:1;background:rgba(255,255,255,0.04);border-radius:4px;height:14px;position:relative;overflow:hidden;">';
+    html += '<div style="width:'+r.score+'%;height:100%;border-radius:3px;background:linear-gradient(90deg,'+c+'88,'+c+');transition:width 0.6s ease;"></div>';
     html += '</div>';
-    // Grade label
-    html += '<div style="min-width:60px;text-align:center;font-size:0.62rem;font-weight:700;color:'+g.color+';letter-spacing:0.5px;">'+g.label+'</div>';
-    // Breakdown tooltip
-    html += '<div style="min-width:140px;font-size:0.58rem;color:var(--text-muted);">';
-    html += (s.total_decisions||0)+' dec | '+(s.active_patterns||0)+' pat | '+(s.win_rate||0).toFixed(0)+'% WR';
-    html += '</div>';
+    // Grade pill
+    html += '<div style="min-width:52px;text-align:center;font-size:0.56rem;font-weight:700;color:'+g.color+';letter-spacing:0.04em;background:'+g.color+'15;padding:2px 6px;border-radius:3px;">'+g.label+'</div>';
     html += '</div>';
   });
   el.innerHTML = html || '<span class="text-muted">No data yet</span>';
+  // Update avg score badge
+  var avgEl = document.getElementById('intel-avg-score');
+  if (avgEl && scoreCount > 0) avgEl.textContent = Math.round(totalScore / scoreCount);
+  var patEl = document.getElementById('intel-total-patterns-badge');
+  if (patEl) patEl.textContent = totalPat;
 }
 
 function refreshIntelligence() {
@@ -554,14 +576,16 @@ function refreshIntelligence() {
         var c = _INTEL_AGENT_COLORS[ag] || '#888';
         var wr = s.total_decisions > 0 ? (s.win_rate || 0).toFixed(1) + '%' : '--';
         var wrColor = (s.win_rate || 0) >= 50 ? 'var(--success)' : (s.win_rate || 0) > 0 ? 'var(--error)' : 'var(--text-muted)';
-        rows += '<tr style="border-bottom:1px solid var(--border-color);">' +
-          '<td style="padding:4px 6px;color:'+c+';font-weight:600;text-transform:capitalize;">'+ag+'</td>' +
-          '<td style="text-align:center;padding:4px;">'+(s.total_decisions||0)+'</td>' +
-          '<td style="text-align:center;padding:4px;">'+(s.active_patterns||0)+'</td>' +
-          '<td style="text-align:center;padding:4px;color:'+wrColor+';">'+wr+'</td>' +
-          '<td style="text-align:center;padding:4px;color:var(--text-muted);">'+((s.db_size_kb||0)>0?(s.db_size_kb).toFixed(0)+'KB':'--')+'</td></tr>';
+        var dec = s.total_decisions || 0;
+        var pat = s.active_patterns || 0;
+        rows += '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">' +
+          '<td style="padding:5px 6px;font-size:0.7rem;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:'+c+';margin-right:5px;vertical-align:middle;"></span><span style="color:'+c+';font-weight:600;text-transform:capitalize;">'+ag+'</span></td>' +
+          '<td style="text-align:center;padding:5px 4px;font-family:var(--font-mono);font-size:0.7rem;">'+(dec > 0 ? dec : '<span style="color:var(--text-muted);">-</span>')+'</td>' +
+          '<td style="text-align:center;padding:5px 4px;font-family:var(--font-mono);font-size:0.7rem;">'+(pat > 0 ? '<span style="color:var(--success);">'+pat+'</span>' : '<span style="color:var(--text-muted);">-</span>')+'</td>' +
+          '<td style="text-align:center;padding:5px 4px;font-family:var(--font-mono);font-size:0.7rem;color:'+wrColor+';">'+wr+'</td>' +
+          '<td style="text-align:center;padding:5px 4px;font-family:var(--font-mono);font-size:0.68rem;color:var(--text-muted);">'+((s.db_size_kb||0)>0?(s.db_size_kb).toFixed(0)+'KB':'--')+'</td></tr>';
       });
-      memTable.innerHTML = rows || '<tr><td colspan="5" class="text-muted">No memory data</td></tr>';
+      memTable.innerHTML = rows || '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:12px;">No memory data</td></tr>';
     }
 
     // Routing table
