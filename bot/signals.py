@@ -50,6 +50,7 @@ from bot.indicators import (
     whale_flow_signal,
 )
 from bot.news_feed import get_news_feed
+from bot.poly_flow import get_flow_tracker
 from bot.price_cache import PriceCache
 
 log = logging.getLogger(__name__)
@@ -72,7 +73,7 @@ PROB_CLAMP = {
 # from one signal counted 4 times. Cap each group's weight contribution.
 INDICATOR_GROUPS = {
     "trend": {"macd", "ema", "heikin_ashi", "momentum"},
-    "flow": {"order_flow", "spot_depth", "orderbook", "liquidity"},
+    "flow": {"order_flow", "spot_depth", "orderbook", "liquidity", "poly_flow"},
     "external": {"open_interest", "long_short_ratio", "etf_flow", "whale_flow"},
     "price_action": {"temporal_arb", "price_div", "volume_spike"},
     "macro": {"news", "dxy_trend", "stablecoin_flow", "tvl_momentum", "mempool"},
@@ -126,7 +127,7 @@ WEIGHTS = {
     "price_div": 1.4,
     "macd": 1.1,
     "order_flow": 4.5,  # Quant moderate: 2.5→4.5. Volume+flow are strongest leading signals. Was 4.0→2.5→4.5.
-    "news": 0.0,         # Disabled: 20% accuracy in 155-trade analysis (Feb 19). Was 0.4.
+    "news": 0.5,         # Re-enabled: LLM sentiment (Qwen 3B) replaces keyword matching. Expected 65-70% accuracy.
     # LOW TIER — marginal (50-55%)
     "momentum": 2.0,    # Quant moderate: 1.2→2.0. Strong confirming signal per backtest.
     "ema": 0.6,           # Quant: 1.1→0.6 (weight_v171)
@@ -147,6 +148,8 @@ WEIGHTS = {
     "tvl_momentum": 0.4,      # DeFiLlama: DeFi TVL shifts
     "mempool": 0.5,           # Mempool.space: BTC network congestion
     "whale_flow": 0.7,        # Whale Alert: large exchange flows
+    # POLYMARKET FLOW — proprietary orderbook change tracking
+    "poly_flow": 1.0,         # Polymarket book flow: depth velocity, spread compression, whale detection
     # NEURAL — PyTorch LSTM price direction predictor
     "lstm": 0.0,              # DISABLED — 52.5% accuracy = coin flip noise. Used as reversal sentinel instead.
 }
@@ -364,6 +367,17 @@ class SignalEngine:
         else:
             votes["orderbook"] = None
             votes["liquidity"] = None
+
+        # ── Polymarket Order Book Flow (depth velocity, spread compression, whales) ──
+        try:
+            _flow_tracker = get_flow_tracker()
+            # Try both up and down token IDs — use whichever has flow data
+            _flow_vote = _flow_tracker.get_signal(up_token_id)
+            if _flow_vote is None:
+                _flow_vote = _flow_tracker.get_signal(down_token_id)
+            votes["poly_flow"] = _flow_vote
+        except Exception:
+            votes["poly_flow"] = None
 
         # ── Price Divergence: Binance momentum vs Polymarket (FIXED) ──
         if binance_price and price_3m_ago:
@@ -966,6 +980,44 @@ class SignalEngine:
                         asset.upper(), timeframe, rr_ratio, MIN_RR_RATIO, token_price,
                     )
                     return None
+
+            # ── ML Veto Gate ──
+            # RF model can't cause a trade, but CAN prevent one.
+            # If ML predicts <40% win probability, block the trade.
+            try:
+                from bot.ml_predictor import GarvesMLPredictor
+                _ml = getattr(self, "_ml_veto", None)
+                if _ml is None:
+                    _ml = GarvesMLPredictor()
+                    self._ml_veto = _ml
+                if _ml._model is not None:
+                    # Build a minimal signal-like object for prediction
+                    _temp_signal = Signal(
+                        direction=consensus_dir, edge=consensus_edge,
+                        probability=consensus_prob, token_id=consensus_token,
+                        confidence=confidence, timeframe=timeframe, asset=asset,
+                        indicator_votes=ind_votes, atr_value=atr_val,
+                        reward_risk_ratio=rr_ratio,
+                    )
+                    from bot.conviction import AssetSignalSnapshot
+                    _temp_snap = AssetSignalSnapshot(
+                        asset=asset, direction=consensus_dir,
+                        consensus_count=agree_count, total_indicators=active_count,
+                        edge=consensus_edge, confidence=confidence,
+                        has_volume_spike=False, has_temporal_arb=False,
+                        indicator_votes=ind_votes,
+                    )
+                    _ml_prob = _ml.predict(_temp_signal, _temp_snap)
+                    if _ml_prob is not None and _ml_prob < 0.40:
+                        log.info(
+                            "[%s/%s] ML VETO: win_prob=%.3f < 0.40, blocking trade",
+                            asset.upper(), timeframe, _ml_prob,
+                        )
+                        return None
+                    if _ml_prob is not None:
+                        log.info("[%s/%s] ML gate passed: win_prob=%.3f", asset.upper(), timeframe, _ml_prob)
+            except Exception:
+                pass  # ML failure never blocks trading
 
             # Cache this signal direction for cross-TF lookups
             self._signal_history[(asset, timeframe)] = (consensus_dir, now_ts)

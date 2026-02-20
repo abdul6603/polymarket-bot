@@ -65,17 +65,19 @@ EXTREME_FEAR_PENALTY = 0.90         # Reduced 0.75→0.90: live data shows 70% W
 # Total weights sum to exactly 100 so raw score maps directly to 0-100.
 # If you add/remove components, adjust weights to maintain sum=100.
 COMPONENT_WEIGHTS = {
-    "consensus_ratio":      18,  # How many indicators agree (most reliable factor)
-    "edge_magnitude":       13,  # How large the expected edge is
-    "cross_asset_alignment": 12, # BTC/ETH/SOL all moving the same direction
-    "volatility_clarity":   10,  # Clear trend vs noisy chop
-    "streak_bonus":          8,  # On a hot streak = conditions are working
-    "time_quality":          8,  # Are we in a historically good hour?
-    "volume_confirmation":  10,  # Volume spike in direction of bet
-    "temporal_arb_strength": 12, # Binance already confirmed the move
-    "cross_timeframe":       5,  # 5m and 15m agree
-    "ml_win_probability":    4,  # ML Random Forest win prediction
+    "consensus_ratio":       13,  # Was 18 — still important but less dominant
+    "edge_magnitude":        14,  # Was 13 — edge is THE most predictive factor
+    "cross_asset_alignment":  9,  # Was 12
+    "volatility_clarity":     7,  # Was 10
+    "streak_bonus":           5,  # Was 8
+    "time_quality":           7,  # Was 8
+    "volume_confirmation":   11,  # Was 10 — volume_spike is 76.5% accurate
+    "temporal_arb_strength": 11,  # Was 12
+    "cross_timeframe":        5,  # Was 5 — keep
+    "ml_win_probability":     8,  # Was 4 — boost now that ML is veto gate (65.7% CV accuracy)
+    "historical_wr":          10, # NEW — rolling WR from pattern gate for this combo
 }
+# Sum = 100
 
 # Good hours (ET) — updated 2026-02-18 from 25+ resolved trade data
 # 0h=67%, 6h=75%, 11h=70%, 12h=80%, 13h=67%, 14h=71%
@@ -381,6 +383,36 @@ class ConvictionEngine:
             # Model unavailable — give neutral score (don't penalize)
             components["ml_win_probability"] = 0.5 * COMPONENT_WEIGHTS["ml_win_probability"]
 
+        # ── 11. Historical Win Rate (0-10 points) ──
+        # Rolling WR from pattern gate for this (asset, timeframe, direction) combo
+        try:
+            from bot.pattern_gate import get_pattern_gate
+            _gate = get_pattern_gate()
+            _gate_decision = _gate.evaluate(signal.asset, signal.timeframe, signal.direction)
+            hist_wr = _gate_decision.win_rate
+            hist_n = _gate_decision.sample_size
+
+            if hist_n >= 15:
+                # Strong data — use actual WR
+                if hist_wr >= 0.70:
+                    hist_score = 1.0
+                elif hist_wr >= 0.55:
+                    hist_score = 0.5 + (hist_wr - 0.55) / 0.15 * 0.5
+                elif hist_wr >= 0.45:
+                    hist_score = 0.3 + (hist_wr - 0.45) / 0.10 * 0.2
+                else:
+                    hist_score = max(0.0, hist_wr)
+            elif hist_n >= 5:
+                # Some data — moderate weighting
+                hist_score = 0.4 + (hist_wr - 0.5) * 0.6  # centered on 0.4
+                hist_score = max(0.0, min(1.0, hist_score))
+            else:
+                # Insufficient data — neutral
+                hist_score = 0.5
+            components["historical_wr"] = hist_score * COMPONENT_WEIGHTS["historical_wr"]
+        except Exception:
+            components["historical_wr"] = 0.5 * COMPONENT_WEIGHTS["historical_wr"]
+
         # ── Sum Raw Score ──
         raw_score = sum(components.values())
 
@@ -474,7 +506,7 @@ class ConvictionEngine:
         log.info(
             "CONVICTION: %s %s/%s score=%.0f/100 -> $%.2f [%s] | "
             "consensus=%.1f edge=%.1f cross_asset=%.1f vol_clarity=%.1f "
-            "streak=%.1f time=%.1f volume=%.1f arb=%.1f ctf=%.1f%s",
+            "streak=%.1f time=%.1f volume=%.1f arb=%.1f ctf=%.1f ml=%.1f hist_wr=%.1f%s",
             signal.asset.upper(), signal.timeframe, signal.direction.upper(),
             final_score, position_size, tier_label,
             components.get("consensus_ratio", 0),
@@ -486,6 +518,8 @@ class ConvictionEngine:
             components.get("volume_confirmation", 0),
             components.get("temporal_arb_strength", 0),
             components.get("cross_timeframe", 0),
+            components.get("ml_win_probability", 0),
+            components.get("historical_wr", 0),
             f" | safety: {', '.join(safety_adjustments)}" if safety_adjustments else "",
         )
 

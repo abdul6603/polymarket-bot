@@ -224,5 +224,19 @@ class MarketFeed:
                 best_ask=best_ask,
                 spread=spread,
             )
+
+            # Record snapshot for Polymarket flow tracking
+            try:
+                from bot.poly_flow import get_flow_tracker
+                get_flow_tracker().record_snapshot(
+                    token_id=token_id,
+                    buy_pressure=buy_pressure,
+                    sell_pressure=sell_pressure,
+                    best_bid=best_bid,
+                    best_ask=best_ask,
+                    spread=spread,
+                )
+            except Exception:
+                pass  # Flow tracking failure never blocks the feed
         except (ValueError, TypeError, IndexError):
             pass
