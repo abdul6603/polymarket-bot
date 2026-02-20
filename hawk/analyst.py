@@ -429,18 +429,32 @@ def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate |
             )
 
         if not text:
-            # Fallback: direct OpenAI
-            client = openai.OpenAI(api_key=cfg.openai_api_key)
-            resp = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_msg},
-                ],
-                max_tokens=700,
-                temperature=0.2,
-            )
-            text = resp.choices[0].message.content.strip()
+            # Fallback: direct OpenAI → Claude chain
+            try:
+                client = openai.OpenAI(api_key=cfg.openai_api_key)
+                resp = client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_msg},
+                    ],
+                    max_tokens=700,
+                    temperature=0.2,
+                )
+                text = resp.choices[0].message.content.strip()
+            except Exception:
+                log.warning("OpenAI fallback failed, trying Claude...")
+                import anthropic
+                import os
+                a_client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
+                a_resp = a_client.messages.create(
+                    model="claude-sonnet-4-20250514",
+                    max_tokens=700,
+                    system=system_prompt,
+                    messages=[{"role": "user", "content": user_msg}],
+                    temperature=0.2,
+                )
+                text = a_resp.content[0].text.strip()
 
         parsed = _parse_response(text)
 
