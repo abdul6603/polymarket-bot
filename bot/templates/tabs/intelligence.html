@@ -11,7 +11,68 @@
     </div>
   </div>
 
-  <!-- Smart Actions (TOP) -->
+  <!-- System Stats Bar -->
+  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+    <!-- LLM Server -->
+    <div style="flex:1;min-width:130px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
+      <div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--text-muted);" id="llm-server-dot"></div>
+      <div>
+        <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">LLM Server</div>
+        <div style="font-size:0.88rem;font-weight:800;font-family:var(--font-mono);" id="llm-server-badge">--</div>
+        <div style="font-size:0.54rem;color:var(--text-muted);" id="llm-model-name">Model: --</div>
+      </div>
+    </div>
+    <!-- Local Calls -->
+    <div style="flex:1;min-width:100px;background:rgba(155,89,182,0.06);border:1px solid rgba(155,89,182,0.15);border-radius:8px;padding:10px 14px;">
+      <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Local 24h</div>
+      <div style="font-size:1rem;font-weight:800;color:#9B59B6;font-family:var(--font-mono);" id="llm-local-calls">--</div>
+      <div style="font-size:0.54rem;color:var(--text-muted);">Free / M3 Pro</div>
+    </div>
+    <!-- Cloud Calls -->
+    <div style="flex:1;min-width:100px;background:rgba(230,126,34,0.06);border:1px solid rgba(230,126,34,0.15);border-radius:8px;padding:10px 14px;">
+      <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Cloud 24h</div>
+      <div style="font-size:1rem;font-weight:800;color:var(--warning);font-family:var(--font-mono);" id="llm-cloud-calls">--</div>
+      <div style="font-size:0.54rem;color:var(--text-muted);">OpenAI + Claude</div>
+    </div>
+    <!-- Cost -->
+    <div style="flex:1;min-width:100px;background:rgba(231,76,60,0.06);border:1px solid rgba(231,76,60,0.15);border-radius:8px;padding:10px 14px;">
+      <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Cost 24h</div>
+      <div style="font-size:1rem;font-weight:800;color:var(--error);font-family:var(--font-mono);" id="llm-cost-24h">--</div>
+      <div style="font-size:0.54rem;color:var(--text-muted);">Cloud API spend</div>
+    </div>
+    <!-- Savings -->
+    <div style="flex:1;min-width:100px;background:rgba(34,170,68,0.06);border:1px solid rgba(34,170,68,0.15);border-radius:8px;padding:10px 14px;">
+      <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Savings 24h</div>
+      <div style="font-size:1rem;font-weight:800;color:var(--success);font-family:var(--font-mono);" id="llm-savings-24h">--</div>
+      <div style="font-size:0.54rem;color:var(--text-muted);">Local vs cloud</div>
+    </div>
+    <!-- Decisions -->
+    <div style="flex:1;min-width:90px;background:rgba(155,89,182,0.04);border:1px solid rgba(155,89,182,0.1);border-radius:8px;padding:10px 14px;">
+      <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Decisions</div>
+      <div style="font-size:1rem;font-weight:800;color:#9B59B6;font-family:var(--font-mono);" id="llm-total-decisions">--</div>
+      <div style="font-size:0.54rem;color:var(--text-muted);">All agents</div>
+    </div>
+    <!-- Patterns -->
+    <div style="flex:1;min-width:90px;background:rgba(34,170,68,0.04);border:1px solid rgba(34,170,68,0.1);border-radius:8px;padding:10px 14px;">
+      <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Patterns</div>
+      <div style="font-size:1rem;font-weight:800;color:var(--success);font-family:var(--font-mono);" id="llm-total-patterns">--</div>
+      <div style="font-size:0.54rem;color:var(--text-muted);">Learned rules</div>
+    </div>
+    <!-- Knowledge -->
+    <div style="flex:1;min-width:90px;background:rgba(52,152,219,0.04);border:1px solid rgba(52,152,219,0.1);border-radius:8px;padding:10px 14px;">
+      <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Knowledge</div>
+      <div style="font-size:1rem;font-weight:800;color:#3498DB;font-family:var(--font-mono);" id="llm-total-knowledge">--</div>
+      <div style="font-size:0.54rem;color:var(--text-muted);">Facts stored</div>
+    </div>
+    <!-- Agents w/ Memory -->
+    <div style="flex:1;min-width:90px;background:rgba(243,156,18,0.04);border:1px solid rgba(243,156,18,0.1);border-radius:8px;padding:10px 14px;">
+      <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Memory</div>
+      <div style="font-size:1rem;font-weight:800;color:var(--warning);font-family:var(--font-mono);" id="llm-agents-with-memory">--</div>
+      <div style="font-size:0.54rem;color:var(--text-muted);">Agents active</div>
+    </div>
+  </div>
+
+  <!-- Smart Actions -->
   <div class="stat-card" style="padding:14px;margin-bottom:12px;">
     <div style="font-weight:600;color:var(--text-primary);margin-bottom:10px;font-size:0.78rem;">Smart Actions</div>
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
@@ -69,58 +130,6 @@
     </div>
   </div>
 
-  <!-- Top Row: Server Status + Cost Summary -->
-  <div class="stat-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:12px;">
-    <div class="stat-card">
-      <div class="stat-label">LLM Server</div>
-      <div class="stat-value" id="llm-server-badge" style="font-size:0.9rem;">--</div>
-      <div class="text-muted" style="font-size:0.6rem;" id="llm-model-name">Model: --</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Local Calls (24h)</div>
-      <div class="stat-value" id="llm-local-calls" style="color:#9B59B6;">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Free inference on M3 Pro</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Cloud Calls (24h)</div>
-      <div class="stat-value" id="llm-cloud-calls" style="color:var(--warning);">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">OpenAI + Claude API</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Cost (24h)</div>
-      <div class="stat-value" id="llm-cost-24h" style="color:var(--error);">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Cloud API spend</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Est. Savings (24h)</div>
-      <div class="stat-value" id="llm-savings-24h" style="color:var(--success);">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Local vs cloud offset</div>
-    </div>
-  </div>
-
-  <!-- Memory Stats Row -->
-  <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:12px;">
-    <div class="stat-card">
-      <div class="stat-label">Total Decisions</div>
-      <div class="stat-value" id="llm-total-decisions" style="color:#9B59B6;">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Across all agents</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Active Patterns</div>
-      <div class="stat-value" id="llm-total-patterns" style="color:var(--success);">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Learned rules</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Knowledge Facts</div>
-      <div class="stat-value" id="llm-total-knowledge" style="color:#3498DB;">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Agent-specific facts</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Agents w/ Memory</div>
-      <div class="stat-value" id="llm-agents-with-memory" style="color:var(--warning);">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Out of 10</div>
-    </div>
-  </div>
 
   <!-- LLM Routing -->
   <div class="stat-card" style="padding:14px;margin-bottom:12px;">
@@ -544,6 +553,8 @@ function refreshIntelligence() {
     var statusEl = document.getElementById('llm-server-status');
     if (badge) { badge.textContent = online ? 'ONLINE' : 'OFFLINE'; badge.style.color = online ? 'var(--success)' : 'var(--error)'; }
     if (statusEl) { statusEl.textContent = online ? 'Online' : 'Offline'; statusEl.style.color = online ? 'var(--success)' : 'var(--error)'; }
+    var dotEl = document.getElementById('llm-server-dot');
+    if (dotEl) { dotEl.style.background = online ? 'var(--success)' : 'var(--error)'; dotEl.style.boxShadow = online ? '0 0 6px rgba(34,170,68,0.6)' : '0 0 6px rgba(231,76,60,0.6)'; }
     var modelEl = document.getElementById('llm-model-name');
     if (modelEl && status.models) { var m = status.models.local_large || ''; modelEl.textContent = 'Model: ' + (m.split('/').pop() || '--'); }
 
