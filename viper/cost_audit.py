@@ -9,10 +9,22 @@ from __future__ import annotations
 import json
 import logging
 import os
+import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
 log = logging.getLogger(__name__)
+
+# ── Shared Intelligence Layer (MLX routing) ──
+_USE_SHARED_LLM = False
+_shared_llm_call = None
+try:
+    sys.path.insert(0, str(Path.home() / "shared"))
+    from llm_client import llm_call as _llm_call
+    _shared_llm_call = _llm_call
+    _USE_SHARED_LLM = True
+except ImportError:
+    pass
 
 # ── Directories ──────────────────────────────────────────────────
 BOT_DATA = Path(__file__).parent.parent / "data"
@@ -466,3 +478,39 @@ def find_waste() -> list[dict]:
         for c in audit["costs"]
         if c["cost_usd"] > 30
     ]
+
+
+def get_llm_cost_recommendations() -> str:
+    """LLM-powered cost analysis — identifies optimization opportunities.
+    Runs on reasoning (14B) task type. Called hourly by Viper main loop."""
+    if not (_USE_SHARED_LLM and _shared_llm_call):
+        return ""
+    try:
+        audit = audit_all()
+        cost_summary = json.dumps({
+            "total_monthly": audit["total_monthly"],
+            "agent_totals": audit["agent_totals"],
+            "top_costs": [
+                {"agent": c["agent"], "service": c["service"],
+                 "monthly": c["cost_usd"], "daily_calls": c["daily_calls"]}
+                for c in audit["costs"] if c["cost_usd"] > 5
+            ],
+        }, indent=2)
+
+        result = _shared_llm_call(
+            system=(
+                "You are a cost optimization analyst for a multi-agent AI system. "
+                "Analyze API costs and suggest specific, actionable optimizations. "
+                "Consider: batch processing, caching, model downgrades, reducing call frequency, "
+                "switching to local LLM where possible. Be specific and quantify potential savings."
+            ),
+            user=f"Analyze these monthly API costs and suggest top 3 optimizations:\n{cost_summary}",
+            agent="viper",
+            task_type="reasoning",
+            max_tokens=500,
+            temperature=0.3,
+        )
+        return result.strip() if result else ""
+    except Exception as e:
+        log.debug("LLM cost recommendation failed: %s", e)
+        return ""

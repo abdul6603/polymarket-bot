@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import sys
 import time
 from pathlib import Path
 
@@ -15,6 +16,17 @@ from bot.http_session import get_session
 from viper.intel import IntelItem, make_intel_id
 
 log = logging.getLogger(__name__)
+
+# ── Shared Intelligence Layer (MLX routing) ──
+_USE_SHARED_LLM = False
+_shared_llm_call = None
+try:
+    sys.path.insert(0, str(Path.home() / "shared"))
+    from llm_client import llm_call as _llm_call
+    _shared_llm_call = _llm_call
+    _USE_SHARED_LLM = True
+except ImportError:
+    pass
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 
@@ -398,7 +410,26 @@ def _extract_tags(text: str) -> list[str]:
 
 
 def _categorize_intel(text: str) -> str:
-    """Categorize intel item."""
+    """Categorize intel item — LLM-enhanced with keyword fallback."""
+    # Try LLM categorization (fast -> 3B for speed)
+    if _USE_SHARED_LLM and _shared_llm_call:
+        try:
+            result = _shared_llm_call(
+                system="You categorize news/intel items. Reply with EXACTLY one word: politics, sports, crypto, culture, economy, or other.",
+                user=f"Categorize this: {text[:300]}",
+                agent="viper",
+                task_type="fast",
+                max_tokens=10,
+                temperature=0.1,
+            )
+            if result:
+                cat = result.strip().lower().rstrip(".")
+                if cat in ("politics", "sports", "crypto", "culture", "economy", "other"):
+                    return cat
+        except Exception:
+            pass
+
+    # Fallback: keyword counting
     text_lower = text.lower()
     scores = {}
     for category, keywords in _TAG_KEYWORDS.items():
@@ -415,7 +446,25 @@ _NEGATIVE_WORDS = {"lose", "crash", "fall", "drop", "down", "bear", "fail", "los
 
 
 def _estimate_sentiment(text: str) -> float:
-    """Quick sentiment estimate from -1 to 1."""
+    """Sentiment estimate from -1 to 1 — LLM-enhanced with keyword fallback."""
+    # Try LLM sentiment (fast -> 3B for speed on many items)
+    if _USE_SHARED_LLM and _shared_llm_call:
+        try:
+            result = _shared_llm_call(
+                system="You score sentiment of news items. Reply with ONLY a number from -1.0 (very negative) to 1.0 (very positive). Example: 0.6",
+                user=f"Score sentiment: {text[:300]}",
+                agent="viper",
+                task_type="fast",
+                max_tokens=10,
+                temperature=0.1,
+            )
+            if result:
+                score = float(result.strip())
+                return round(max(-1.0, min(1.0, score)), 2)
+        except (ValueError, TypeError, Exception):
+            pass
+
+    # Fallback: keyword-based
     words = set(re.findall(r'\b\w+\b', text.lower()))
     pos = len(words & _POSITIVE_WORDS)
     neg = len(words & _NEGATIVE_WORDS)

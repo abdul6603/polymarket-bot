@@ -1078,6 +1078,151 @@
   }
   .agent-chat-trigger:hover { background:rgba(255,255,255,0.1); color:var(--text-primary); }
 
+  /* ═══════════════════════════════════════════
+     Toast Notifications
+     ═══════════════════════════════════════════ */
+  .toast-container {
+    position:fixed; bottom:20px; right:20px; z-index:9999;
+    display:flex; flex-direction:column-reverse; gap:8px; pointer-events:none;
+  }
+  .toast {
+    pointer-events:auto; padding:10px 16px; border-radius:var(--radius-sm);
+    font-family:var(--font-ui); font-size:0.78rem; display:flex; align-items:center; gap:8px;
+    background:var(--surface-elevated); border:1px solid var(--border);
+    color:var(--text); box-shadow:0 4px 20px rgba(0,0,0,0.6);
+    transform:translateX(110%); transition:transform 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.3s;
+    opacity:0; max-width:360px;
+  }
+  .toast-show { transform:translateX(0); opacity:1; }
+  .toast-hide { transform:translateX(110%); opacity:0; }
+  .toast-info { border-left:3px solid var(--agent-garves); }
+  .toast-success { border-left:3px solid var(--success); }
+  .toast-warning { border-left:3px solid var(--warning); }
+  .toast-error { border-left:3px solid var(--error); }
+  .toast-trade { border-left:3px solid var(--agent-hawk); }
+  .toast-icon { font-size:1rem; }
+  .toast-msg { flex:1; }
+
+  /* ═══════════════════════════════════════════
+     Loading Skeletons
+     ═══════════════════════════════════════════ */
+  .skeleton-container { display:flex; flex-direction:column; gap:8px; padding:8px 0; }
+  .skeleton-line {
+    height:12px; border-radius:6px;
+    background:linear-gradient(90deg, var(--surface) 25%, var(--surface-elevated) 50%, var(--surface) 75%);
+    background-size:200% 100%;
+    animation:shimmer 1.5s infinite;
+  }
+  .skeleton-card { display:flex; gap:12px; align-items:center; padding:8px 0; }
+  .skeleton-circle {
+    width:36px; height:36px; border-radius:50%;
+    background:linear-gradient(90deg, var(--surface) 25%, var(--surface-elevated) 50%, var(--surface) 75%);
+    background-size:200% 100%; animation:shimmer 1.5s infinite; flex-shrink:0;
+  }
+  .skeleton-lines { flex:1; display:flex; flex-direction:column; gap:6px; }
+  @keyframes shimmer { 0% { background-position:200% 0; } 100% { background-position:-200% 0; } }
+
+  /* ═══════════════════════════════════════════
+     Status Pulse Animations
+     ═══════════════════════════════════════════ */
+  .pulse-running {
+    background:var(--success) !important;
+    animation:pulseGlow 2s infinite;
+  }
+  .pulse-error {
+    background:var(--error) !important;
+    animation:pulseError 1s infinite;
+  }
+  .pulse-idle { background:var(--text-muted) !important; }
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow:0 0 4px var(--success); }
+    50% { box-shadow:0 0 12px var(--success), 0 0 20px rgba(0,255,136,0.3); }
+  }
+  @keyframes pulseError {
+    0%, 100% { box-shadow:0 0 4px var(--error); }
+    50% { box-shadow:0 0 12px var(--error), 0 0 20px rgba(255,68,68,0.3); }
+  }
+
+  /* ═══════════════════════════════════════════
+     Brain Activity Indicators
+     ═══════════════════════════════════════════ */
+  .brain-activity-grid {
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(120px, 1fr)); gap:8px;
+  }
+  .brain-agent {
+    display:flex; align-items:center; gap:6px; padding:6px 10px;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm);
+    font-size:0.72rem; color:var(--text-secondary); transition:all var(--transition-base);
+    position:relative; overflow:hidden;
+  }
+  .brain-agent.brain-active {
+    border-color:rgba(255,255,255,0.12);
+    background:var(--surface-elevated);
+  }
+  .brain-dot {
+    width:8px; height:8px; border-radius:50%;
+    background:var(--agent-color, var(--text-muted));
+    flex-shrink:0; opacity:0.4;
+  }
+  .brain-active .brain-dot { opacity:1; animation:pulseGlow 2s infinite; }
+  .brain-name { flex:1; font-weight:500; color:var(--text); }
+  .brain-calls { font-family:var(--font-mono); color:var(--agent-garves); font-size:0.68rem; }
+  .brain-thinking {
+    position:absolute; bottom:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg, transparent, var(--agent-garves), transparent);
+    animation:brainThink 1.5s infinite;
+  }
+  @keyframes brainThink {
+    0% { transform:translateX(-100%); }
+    100% { transform:translateX(100%); }
+  }
+
+  /* ═══════════════════════════════════════════
+     Pattern Learnings Feed
+     ═══════════════════════════════════════════ */
+  .pattern-item {
+    display:flex; flex-wrap:wrap; gap:6px; padding:6px 0;
+    border-bottom:1px solid var(--border); font-size:0.72rem;
+  }
+  .pattern-item:last-child { border-bottom:none; }
+  .pattern-agent { font-weight:600; font-family:var(--font-mono); min-width:60px; }
+  .pattern-type { color:var(--text-muted); font-style:italic; }
+  .pattern-desc { color:var(--text-secondary); flex:1; min-width:200px; }
+  .pattern-meta { color:var(--text-muted); font-family:var(--font-mono); font-size:0.68rem; }
+  .empty-state { text-align:center; color:var(--text-muted); padding:24px; font-size:0.8rem; }
+
+  /* ═══════════════════════════════════════════
+     Chart Containers
+     ═══════════════════════════════════════════ */
+  .chart-container { position:relative; width:100%; }
+  .chart-sm { height:120px; }
+  .chart-md { height:200px; }
+  .chart-lg { height:300px; }
+  .chart-container canvas { width:100% !important; }
+
+  /* ═══════════════════════════════════════════
+     Smooth Tab Transitions
+     ═══════════════════════════════════════════ */
+  .tab-content {
+    animation:none;
+  }
+  .tab-content.active {
+    animation:fadeSlideIn 0.25s ease;
+  }
+  @keyframes fadeSlideIn {
+    0% { opacity:0; transform:translateY(6px); }
+    100% { opacity:1; transform:translateY(0); }
+  }
+
+  /* Card hover enhancement */
+  .glass-card {
+    transition:border-color var(--transition-base), box-shadow var(--transition-base);
+  }
+  .glass-card:hover {
+    border-color:rgba(255,255,255,0.08);
+    box-shadow:0 4px 24px rgba(0,0,0,0.3);
+  }
+
   @media (max-width:1200px) { .grid-4,.grid-6 { grid-template-columns:repeat(3,1fr); } .team-agents-row { grid-template-columns:repeat(3,1fr); } }
   @media (max-width:900px) { .grid-3,.grid-4,.grid-6 { grid-template-columns:repeat(2,1fr); } .main { padding:0 var(--space-4); } .intel-meter { flex-direction:column; align-items:stretch; } .team-agents-row { grid-template-columns:repeat(3,1fr); } }
   @media (max-width:640px) { .grid-2,.grid-3,.grid-4,.grid-6 { grid-template-columns:1fr; } .sidebar { display:none; } .main { margin-left:0; } .kpi-grid { grid-template-columns:1fr; } .team-agents-row { grid-template-columns:repeat(2,1fr); } .atlas-cmd-grid { grid-template-columns:1fr; } .atlas-cmd-card--wide { grid-column:span 1; } }

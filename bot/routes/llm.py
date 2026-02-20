@@ -153,3 +153,113 @@ def llm_recent_calls():
         except Exception:
             pass
     return jsonify({"calls": calls[:50]})
+
+
+@llm_bp.route("/api/llm/brain-activity")
+def llm_brain_activity():
+    """Per-agent brain activity — recent LLM calls per agent (last 5 min)."""
+    import time
+    activity = {}
+    cutoff = time.time() - 300  # last 5 min
+    agents_list = [
+        "shelby", "atlas", "lisa", "hawk", "soren",
+        "garves", "quant", "viper", "robotox", "thor",
+    ]
+    for a in agents_list:
+        activity[a] = {"calls": 0, "last_call": None, "active": False}
+
+    if COSTS_FILE.exists():
+        try:
+            lines = COSTS_FILE.read_text().strip().split("\n")
+            for line in reversed(lines[-200:]):
+                if not line.strip():
+                    continue
+                try:
+                    entry = json.loads(line)
+                    ts = entry.get("timestamp", 0)
+                    agent = entry.get("agent", "unknown")
+                    if isinstance(ts, str):
+                        from datetime import datetime
+                        ts = datetime.fromisoformat(ts.replace("Z", "+00:00")).timestamp()
+                    if ts > cutoff and agent in activity:
+                        activity[agent]["calls"] += 1
+                        if not activity[agent]["last_call"]:
+                            activity[agent]["last_call"] = entry.get("timestamp")
+                        activity[agent]["active"] = True
+                except (json.JSONDecodeError, Exception):
+                    continue
+        except Exception:
+            pass
+
+    return jsonify({"activity": activity})
+
+
+@llm_bp.route("/api/llm/pattern-feed")
+def llm_pattern_feed():
+    """Recent learned patterns across all agents — for the learnings feed."""
+    all_patterns = []
+    agents_list = [
+        "shelby", "atlas", "lisa", "hawk", "soren",
+        "garves", "quant", "viper", "robotox", "thor",
+    ]
+    try:
+        sys.path.insert(0, str(SHARED_DIR))
+        from agent_memory import AgentMemory
+        for agent in agents_list:
+            db_path = MEMORY_DIR / f"{agent}.db"
+            if not db_path.exists():
+                continue
+            try:
+                mem = AgentMemory(agent)
+                patterns = mem.get_active_patterns(min_confidence=0.3)
+                for p in patterns[:5]:
+                    p["agent"] = agent
+                    all_patterns.append(p)
+                mem.close()
+            except Exception:
+                continue
+    except Exception:
+        pass
+
+    # Sort by most recent
+    all_patterns.sort(key=lambda p: p.get("updated_at", ""), reverse=True)
+    return jsonify({"patterns": all_patterns[:30]})
+
+
+@llm_bp.route("/api/llm/cost-savings")
+def llm_cost_savings():
+    """Running total of money saved by using local MLX vs cloud."""
+    total_local_calls = 0
+    total_cloud_calls = 0
+    total_cloud_cost = 0.0
+    estimated_savings = 0.0
+
+    if COSTS_FILE.exists():
+        try:
+            lines = COSTS_FILE.read_text().strip().split("\n")
+            for line in lines:
+                if not line.strip():
+                    continue
+                try:
+                    entry = json.loads(line)
+                    provider = entry.get("provider", "")
+                    cost = entry.get("cost", 0)
+                    if "local" in provider.lower():
+                        total_local_calls += 1
+                        # Estimated cloud cost if this had been a cloud call
+                        estimated_savings += 0.002  # ~$0.002 per call saved
+                    else:
+                        total_cloud_calls += 1
+                        total_cloud_cost += cost if isinstance(cost, (int, float)) else 0
+                except (json.JSONDecodeError, Exception):
+                    continue
+        except Exception:
+            pass
+
+    return jsonify({
+        "local_calls": total_local_calls,
+        "cloud_calls": total_cloud_calls,
+        "cloud_cost": round(total_cloud_cost, 4),
+        "estimated_savings": round(estimated_savings, 4),
+        "total_calls": total_local_calls + total_cloud_calls,
+    })

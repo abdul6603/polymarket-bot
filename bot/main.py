@@ -131,15 +131,19 @@ class TradingBot:
             ])
         except Exception:
             pass
-        # Agent Brain — learning memory
+        # Agent Brain — learning memory + LLM reasoning
         self._brain = None
+        self._shared_llm_call = None
         try:
             import sys as _sys2
             _sys2.path.insert(0, str(Path.home() / "shared"))
             from agent_brain import AgentBrain
-            self._brain = AgentBrain("garves", system_prompt="You are Garves, a crypto prediction market trader.", task_type="analysis")
+            from llm_client import llm_call as _garves_llm
+            self._brain = AgentBrain("garves", system_prompt="You are Garves, a crypto prediction market trader on Polymarket. You analyze BTC/ETH/SOL up-or-down markets.", task_type="analysis")
+            self._shared_llm_call = _garves_llm
         except Exception:
             pass
+        self._trade_journal_counter = 0  # Counts resolved trades for LLM analysis trigger
 
         # Per-market cooldown: market_id -> last trade timestamp
         self._market_cooldown: dict[str, float] = {}
@@ -521,7 +525,7 @@ class TradingBot:
                 dm.question[:50],
             )
 
-            # ── Brain Pre-Decision: consult learned patterns before trading ──
+            # ── Brain Pre-Decision: consult learned patterns + LLM reasoning ──
             try:
                 if self._brain:
                     _brain_adj = 0.0
@@ -536,11 +540,9 @@ class TradingBot:
                         _tf_match = timeframe.lower() in _desc
                         _regime_match = regime.label.lower() in _desc
                         _dir_match = sig.direction.lower() in _desc
-                        # Pattern must match at least asset + one other factor
                         if _asset_match and (_tf_match or _regime_match or _dir_match):
                             _ev = _p.get("evidence_count", 1)
                             _conf = _p.get("confidence", 0.5)
-                            # Only trust patterns with meaningful evidence
                             if _ev >= 3:
                                 _is_loss = any(w in _desc for w in ("loss", "lose", "bad", "avoid", "fail", "negative"))
                                 _is_win = any(w in _desc for w in ("win", "profit", "good", "strong", "positive"))
@@ -564,17 +566,39 @@ class TradingBot:
                             if _total >= 3:
                                 _wr = _wins / _total
                                 if _wr < 0.35:
-                                    # This combo mostly loses — reduce confidence
                                     _brain_adj -= 0.03
                                     _brain_reasons.append(f"history({_wins}W/{_losses}L={_wr:.0%})")
                                 elif _wr > 0.65:
-                                    # This combo mostly wins — small boost
                                     _brain_adj += 0.02
                                     _brain_reasons.append(f"history({_wins}W/{_losses}L={_wr:.0%})")
 
-                    # 3. Apply adjustment (capped at +/- 0.05)
+                    # 3. LLM brain.think() for contextual reasoning (fast -> 3B for latency)
+                    if self._shared_llm_call:
+                        try:
+                            _t0 = time.time()
+                            _think = self._brain.think(
+                                situation=f"{_situation} edge={sig.edge:.3f} confidence={sig.confidence:.2f}",
+                                question="Should confidence be adjusted? Reply ONLY: +0.XX, -0.XX, or 0 (max +/-0.05). One number only.",
+                                task_type="fast",
+                                max_tokens=15,
+                                temperature=0.1,
+                            )
+                            _think_elapsed = time.time() - _t0
+                            if _think and _think.content and _think_elapsed < 3.0:
+                                try:
+                                    _llm_adj = float(_think.content.strip())
+                                    _llm_adj = max(-0.05, min(0.05, _llm_adj))
+                                    if _llm_adj != 0.0:
+                                        _brain_adj += _llm_adj
+                                        _brain_reasons.append(f"llm_think({_llm_adj:+.3f},{_think_elapsed:.1f}s)")
+                                except (ValueError, TypeError):
+                                    pass
+                        except Exception:
+                            pass  # LLM never blocks trading
+
+                    # 4. Apply adjustment (capped at +/- 0.10 with LLM, was 0.05)
                     if _brain_adj != 0.0:
-                        _brain_adj = max(-0.05, min(0.05, _brain_adj))
+                        _brain_adj = max(-0.10, min(0.10, _brain_adj))
                         _old_conf = sig.confidence
                         sig.confidence = max(0.0, min(1.0, sig.confidence + _brain_adj))
                         log.info(
@@ -769,9 +793,49 @@ class TradingBot:
         self.executor.check_fills()
 
         # Check market resolutions for performance tracking
+        _prev_resolved = getattr(self.perf_tracker, '_total_resolved', 0)
         self.perf_tracker.check_resolutions()
+        _new_resolved = getattr(self.perf_tracker, '_total_resolved', 0)
+        _just_resolved = _new_resolved - _prev_resolved
+        if _just_resolved > 0:
+            self._trade_journal_counter += _just_resolved
+
         if self.perf_tracker.pending_count > 0:
             log.info("Performance tracker: %d trades pending resolution", self.perf_tracker.pending_count)
+
+        # ── Trade Journal Analysis: every 10 resolved trades, LLM analyzes patterns ──
+        if self._trade_journal_counter >= 10 and self._brain and self._shared_llm_call:
+            self._trade_journal_counter = 0
+            try:
+                _stats = self.perf_tracker.quick_stats() if hasattr(self.perf_tracker, 'quick_stats') else {}
+                _wr = _stats.get("win_rate", 0)
+                _pnl = _stats.get("total_pnl", 0)
+                _total = _stats.get("total_trades", 0)
+                _analysis = self._shared_llm_call(
+                    system=(
+                        "You are Garves's trade journal analyst. Analyze recent trading performance "
+                        "and identify 1-2 actionable patterns. Be specific about what to keep doing "
+                        "and what to change. Max 3 sentences."
+                    ),
+                    user=(
+                        f"Last 10 trades resolved. Overall stats: {_total} trades, "
+                        f"{_wr:.0%} win rate, ${_pnl:.2f} PnL. "
+                        f"Regime: {regime.label if regime else 'unknown'}."
+                    ),
+                    agent="garves",
+                    task_type="reasoning",
+                    max_tokens=150,
+                    temperature=0.3,
+                )
+                if _analysis:
+                    log.info("[TRADE JOURNAL] LLM analysis: %s", _analysis.strip()[:300])
+                    self._brain.learn_pattern(
+                        "trade_journal",
+                        _analysis.strip()[:200],
+                        evidence_count=10, confidence=0.6,
+                    )
+            except Exception as _je:
+                log.debug("Trade journal analysis failed: %s", str(_je)[:100])
 
         # Send heartbeat with live trading metrics
         if self._hub:

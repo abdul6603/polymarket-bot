@@ -104,6 +104,52 @@
     </div>
   </div>
 
+  <!-- Brain Activity + Charts Row -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+    <!-- Brain Activity Indicator -->
+    <div class="stat-card" style="padding:14px;">
+      <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Brain Activity (Last 5 min)</div>
+      <div id="brain-activity-container">
+        <span class="text-muted" style="font-size:0.72rem;">Loading...</span>
+      </div>
+    </div>
+
+    <!-- Cost Savings Donut -->
+    <div class="stat-card" style="padding:14px;">
+      <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Local vs Cloud Calls</div>
+      <div class="chart-container chart-sm">
+        <canvas id="chart-cost-pie"></canvas>
+      </div>
+      <div style="text-align:center;margin-top:6px;font-size:0.68rem;">
+        <span style="color:var(--success);">Total Saved: </span><span id="llm-total-saved" style="color:var(--success);font-weight:600;">$0.00</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Call Volume Timeline + Memory Growth -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+    <div class="stat-card" style="padding:14px;">
+      <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">LLM Call Volume (by hour)</div>
+      <div class="chart-container chart-md">
+        <canvas id="chart-call-timeline"></canvas>
+      </div>
+    </div>
+    <div class="stat-card" style="padding:14px;">
+      <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Agent Memory Growth</div>
+      <div class="chart-container chart-md">
+        <canvas id="chart-memory-bars"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pattern Learnings Feed -->
+  <div class="stat-card" style="padding:14px;margin-bottom:12px;">
+    <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Recent Pattern Learnings</div>
+    <div id="pattern-feed-container" style="max-height:250px;overflow-y:auto;">
+      <span class="text-muted" style="font-size:0.72rem;">Loading...</span>
+    </div>
+  </div>
+
   <!-- Recent LLM Calls Activity Feed -->
   <div class="stat-card" style="padding:14px;margin-bottom:12px;">
     <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Recent LLM Calls</div>
@@ -123,14 +169,39 @@
 
 <script>
 function refreshIntelligence() {
-  // Fetch all intelligence data in parallel
+  // Fetch all intelligence data in parallel (including new endpoints)
   Promise.all([
     fetch('/api/llm/status').then(r => r.json()).catch(() => ({})),
     fetch('/api/llm/costs').then(r => r.json()).catch(() => ({})),
     fetch('/api/llm/memory-all').then(r => r.json()).catch(() => ({})),
     fetch('/api/llm/routing').then(r => r.json()).catch(() => ({})),
     fetch('/api/llm/recent-calls').then(r => r.json()).catch(() => ({calls:[]})),
-  ]).then(([status, costs, memoryAll, routing, recentCalls]) => {
+    fetch('/api/llm/brain-activity').then(r => r.json()).catch(() => ({activity:{}})),
+    fetch('/api/llm/pattern-feed').then(r => r.json()).catch(() => ({patterns:[]})),
+    fetch('/api/llm/cost-savings').then(r => r.json()).catch(() => ({})),
+  ]).then(([status, costs, memoryAll, routing, recentCalls, brainActivity, patternFeed, costSavings]) => {
+    // Render new chart components
+    if (typeof renderBrainActivity === 'function') {
+      renderBrainActivity('brain-activity-container', brainActivity.activity || {});
+    }
+    if (typeof renderPatternFeed === 'function') {
+      renderPatternFeed('pattern-feed-container', patternFeed.patterns || []);
+    }
+    // Cost savings donut
+    var csLocal = costSavings.local_calls || 0;
+    var csCloud = costSavings.cloud_calls || 0;
+    if (typeof renderCostPie === 'function' && (csLocal + csCloud) > 0) {
+      renderCostPie('chart-cost-pie', csLocal, csCloud);
+    }
+    setTextSafe('llm-total-saved', '$' + (costSavings.estimated_savings || 0).toFixed(2));
+    // Call volume timeline
+    if (typeof renderCallTimeline === 'function' && recentCalls.calls) {
+      renderCallTimeline('chart-call-timeline', recentCalls.calls);
+    }
+    // Memory growth bars
+    if (typeof renderMemoryBars === 'function' && memoryAll.agents) {
+      renderMemoryBars('chart-memory-bars', memoryAll.agents);
+    }
     // Server status
     var online = status.server_online;
     var badge = document.getElementById('llm-server-badge');

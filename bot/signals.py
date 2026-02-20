@@ -1,11 +1,25 @@
 from __future__ import annotations
 
 import logging
+import sys
+import time
 from dataclasses import dataclass
+from pathlib import Path
 
 from bot.config import Config
 from bot.regime import RegimeAdjustment
 from bot.weight_learner import get_dynamic_weights
+
+# ── Shared Intelligence Layer (MLX routing for signal synthesis) ──
+_USE_SHARED_LLM = False
+_shared_llm_call = None
+try:
+    sys.path.insert(0, str(Path.home() / "shared"))
+    from llm_client import llm_call as _llm_call
+    _shared_llm_call = _llm_call
+    _USE_SHARED_LLM = True
+except ImportError:
+    pass
 from bot.indicators import (
     IndicatorVote,
     atr,
@@ -628,6 +642,50 @@ class SignalEngine:
                 score = max(-1.0, min(1.0, score))  # keep in bounds
                 log.info("[%s/%s] Regime bias: %+.2f (%s FnG=%d)",
                          asset.upper(), timeframe, regime_bias, regime.label, regime.fng_value)
+
+        # ── LLM Signal Synthesis (close calls only — margin < 3 votes) ──
+        _llm_adj = 0.0
+        vote_margin = abs(up_count - down_count)
+        if _USE_SHARED_LLM and _shared_llm_call and vote_margin < 3 and active_count >= 5:
+            try:
+                _t0 = time.time()
+                _vote_summary = ", ".join(
+                    f"{n}={v.direction}({v.confidence:.2f})" for n, v in active.items()
+                    if n not in disabled
+                )[:500]
+                _regime_str = f"{regime.label} (FnG={regime.fng_value})" if regime else "unknown"
+                _result = _shared_llm_call(
+                    system=(
+                        "You analyze conflicting trading indicator signals. "
+                        "Reply with ONLY a number from -0.10 to +0.10 representing your score adjustment. "
+                        "Positive = lean UP, negative = lean DOWN, 0 = no opinion."
+                    ),
+                    user=(
+                        f"Asset: {asset.upper()}/{timeframe}, Regime: {_regime_str}, Score: {score:.3f}\n"
+                        f"Votes UP: {up_count}, DOWN: {down_count} (margin: {vote_margin})\n"
+                        f"Indicators: {_vote_summary}"
+                    ),
+                    agent="garves",
+                    task_type="analysis",
+                    max_tokens=15,
+                    temperature=0.1,
+                )
+                _elapsed = time.time() - _t0
+                if _result and _elapsed < 3.0:  # Guard: skip if too slow
+                    try:
+                        _llm_adj = float(_result.strip())
+                        _llm_adj = max(-0.10, min(0.10, _llm_adj))
+                        if _llm_adj != 0.0:
+                            score += _llm_adj
+                            score = max(-1.0, min(1.0, score))
+                            log.info("[%s/%s] LLM synthesis: %+.3f adjustment (margin=%d, %.1fs)",
+                                     asset.upper(), timeframe, _llm_adj, vote_margin, _elapsed)
+                    except (ValueError, TypeError):
+                        pass
+                elif _elapsed >= 3.0:
+                    log.debug("[%s/%s] LLM synthesis skipped: too slow (%.1fs)", asset.upper(), timeframe, _elapsed)
+            except Exception:
+                pass  # LLM failure never blocks trading
 
         # ── Consensus Filter (proportional) ──
         majority_dir = "up" if up_count >= down_count else "down"
