@@ -117,16 +117,17 @@ REGIME_INDICATOR_SCALE = {
 #   ema demoted: 55.2% accuracy, marginal contributor
 WEIGHTS = {
     # TOP TIER — proven edge (>70% accuracy)
-    "volume_spike": 2.5,
+    # Feb 20 Quant moderate tune: volume_spike 2.5→4.5, order_flow 2.5→4.5, momentum 1.2→2.0
+    "volume_spike": 4.5,
     "liquidation": 2.0,
     # MID TIER — above coin flip (55-60%)
     "temporal_arb": 1.8,
     "price_div": 1.4,
     "macd": 1.1,
-    "order_flow": 2.5,  # Rebalanced: was 4.0 (dominated 40-50% of ensemble). 60.4% accuracy doesn't justify 4x weight
+    "order_flow": 4.5,  # Quant moderate: 2.5→4.5. Volume+flow are strongest leading signals. Was 4.0→2.5→4.5.
     "news": 0.0,         # Disabled: 20% accuracy in 155-trade analysis (Feb 19). Was 0.4.
     # LOW TIER — marginal (50-55%)
-    "momentum": 1.2,    # Quant V4: 1.0→1.2 (#1 config uses 1.2, 63.2% accuracy)
+    "momentum": 2.0,    # Quant moderate: 1.2→2.0. Strong confirming signal per backtest.
     "ema": 0.6,           # Quant: 1.1→0.6 (weight_v171)
     "heikin_ashi": 0.5,
     "spot_depth": 0.0,  # Disabled: 30.8% accuracy in 155-trade analysis (Feb 19). Was 0.6.
@@ -187,7 +188,7 @@ TF_WEIGHT_SCALE = {
 
 MIN_CANDLES = 30
 CONSENSUS_RATIO = 0.70  # Relaxed 0.78→0.70: R:R 1.2+ filter guards quality, let more trades through (7/10 instead of 8/10)
-CONSENSUS_FLOOR = 2     # Lowered 3→2: floor of 3 forced 3/3 unanimous when anti-signals disabled indicators. 2/3 (67%) is reasonable.
+CONSENSUS_FLOOR = 4     # Raised 2→4: Quant backtest (97 trades) — consensus 7 best but too aggressive. 4 = moderate improvement, filters coin-flip trades.
 MIN_CONSENSUS = CONSENSUS_FLOOR  # backward compat for backtest/quant
 MIN_ATR_THRESHOLD = 0.00005  # skip if volatility below this (0.005% of price)
 MIN_CONFIDENCE = 0.60  # Raised: conf>=60% = 91.7% WR. Was 0.55 (82.9%). Fewer trades but much higher quality.
@@ -210,7 +211,7 @@ MIN_EDGE_BY_TF = {
 }
 
 # Hard floor — regime adjustments cannot lower edge below this
-MIN_EDGE_ABSOLUTE = 0.05  # 5% — lowered from 8%. Old floor was crushing 4h/1h trades (XRP/4h had 7.5% edge, blocked). TF-specific floors still protect short timeframes.
+MIN_EDGE_ABSOLUTE = 0.07  # 7% — Quant moderate: 5%→7%. Filters out marginal-edge trades. TF-specific floors still protect short timeframes.
 
 # Reward-to-Risk ratio filter
 # R:R = ((1-P) * 0.98) / P  where P = token price, 0.98 = payout after 2% winner fee
