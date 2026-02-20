@@ -27,6 +27,7 @@ from bot.v2_tools import is_emergency_stopped, accept_commands, process_command
 from bot.daily_cycle import should_reset, archive_and_reset
 from bot.orderbook_check import check_orderbook_depth
 from bot.macro import get_context as get_macro_context
+from bot.maker_engine import MakerEngine
 
 log = logging.getLogger("bot")
 
@@ -113,6 +114,7 @@ class TradingBot:
         self.executor = Executor(cfg, self.client, self.tracker)
         self.conviction_engine = ConvictionEngine()
         self.straddle_engine = StraddleEngine(cfg, self.executor, self.tracker, self.price_cache)
+        self.maker_engine = MakerEngine(cfg, self.client, self.price_cache)
         self.perf_tracker = PerformanceTracker(cfg, position_tracker=self.tracker)
         self.bankroll_manager = BankrollManager()
         self._shutdown_event = asyncio.Event()
@@ -147,6 +149,7 @@ class TradingBot:
         except Exception:
             pass
         self._trade_journal_counter = 0  # Counts resolved trades for LLM analysis trigger
+        self._tick_counter = 0  # For periodic cache clearing (fee rates TTL)
 
         # Per-market cooldown: market_id -> last trade timestamp
         self._market_cooldown: dict[str, float] = {}
@@ -253,6 +256,12 @@ class TradingBot:
                  bankroll_status["bankroll_usd"], bankroll_status["pnl_usd"],
                  bankroll_status["multiplier"])
         log.info("V2: emergency_stop, trade_journal, shelby_commands, trade_alerts")
+        if self.maker_engine.enabled:
+            log.info("MakerEngine: ENABLED (quote=$%.0f, max_inv=$%.0f, exposure=$%.0f, tick=%.0fs)",
+                     self.maker_engine.quote_size_usd, self.maker_engine.max_inventory_usd,
+                     self.maker_engine.max_total_exposure, self.maker_engine.tick_interval_s)
+        else:
+            log.info("MakerEngine: disabled (set MAKER_ENABLED=true to activate)")
         log.info("=" * 60)
 
         # Start Binance real-time price feed + derivatives feed + Polymarket WebSocket feed
@@ -265,17 +274,77 @@ class TradingBot:
             loop.add_signal_handler(sig, self._handle_shutdown)
 
         try:
-            while not self._shutdown_event.is_set():
-                await self._tick()
-                try:
-                    await asyncio.wait_for(
-                        self._shutdown_event.wait(),
-                        timeout=self.cfg.tick_interval_s,
-                    )
-                except asyncio.TimeoutError:
-                    pass
+            # Run taker loop + maker loop concurrently
+            taker_task = asyncio.create_task(self._taker_loop())
+            maker_task = asyncio.create_task(self._maker_loop())
+            await asyncio.gather(taker_task, maker_task)
         finally:
             await self._cleanup()
+
+    async def _taker_loop(self) -> None:
+        """Taker strategy loop: evaluate markets every tick_interval_s."""
+        while not self._shutdown_event.is_set():
+            await self._tick()
+            try:
+                await asyncio.wait_for(
+                    self._shutdown_event.wait(),
+                    timeout=self.cfg.tick_interval_s,
+                )
+            except asyncio.TimeoutError:
+                pass
+
+    async def _maker_loop(self) -> None:
+        """Maker strategy loop: refresh quotes every maker_tick_interval_s."""
+        if not self.maker_engine.enabled:
+            return
+
+        log.info("[MAKER] Maker loop started (%.0fs interval)", self.maker_engine.tick_interval_s)
+
+        # Cache of discovered markets for maker quoting
+        _maker_markets: list[dict] = []
+        _last_discovery = 0.0
+
+        while not self._shutdown_event.is_set():
+            try:
+                now = time.time()
+
+                # Re-discover markets every 60s (don't spam Gamma API)
+                if now - _last_discovery > 60:
+                    try:
+                        all_markets = fetch_markets(self.cfg)
+                        ranked = rank_markets(all_markets)
+                        _maker_markets = []
+                        for dm in ranked:
+                            _maker_markets.append({
+                                "market_id": dm.market_id,
+                                "tokens": dm.raw.get("tokens", []),
+                                "asset": dm.asset,
+                                "timeframe": dm.timeframe.name,
+                            })
+                        _last_discovery = now
+                    except Exception as e:
+                        log.debug("[MAKER] Market discovery failed: %s", str(e)[:100])
+
+                # Get current regime for spread computation
+                regime_label = "neutral"
+                try:
+                    regime = detect_regime()
+                    regime_label = regime.label
+                except Exception:
+                    pass
+
+                self.maker_engine.tick(_maker_markets, regime_label)
+
+            except Exception as e:
+                log.warning("[MAKER] Tick error: %s", str(e)[:200])
+
+            try:
+                await asyncio.wait_for(
+                    self._shutdown_event.wait(),
+                    timeout=self.maker_engine.tick_interval_s,
+                )
+            except asyncio.TimeoutError:
+                pass
 
     def _handle_shutdown(self) -> None:
         log.info("Shutdown signal received")
@@ -308,6 +377,16 @@ class TradingBot:
     async def _tick(self) -> None:
         """Single tick: evaluate ALL discovered markets, trade any with edge."""
         log.info("--- Tick ---")
+        self._tick_counter += 1
+
+        # Clear SDK fee rate cache every 60 ticks (~30 min) to avoid stale rates
+        if self.client and self._tick_counter % 60 == 0:
+            try:
+                if hasattr(self.client, '_fee_rates'):
+                    self.client._fee_rates.clear()
+                    log.info("[SDK] Cleared fee rate cache (tick %d)", self._tick_counter)
+            except Exception:
+                pass
 
         # Check mode toggle from dashboard
         self._check_mode_toggle()
@@ -1014,6 +1093,7 @@ class TradingBot:
 
     async def _cleanup(self) -> None:
         log.info("Shutting down...")
+        self.maker_engine.cancel_all()
         self.executor.cancel_all_open()
         await self.binance_feed.stop()
         await self.derivatives_feed.stop()

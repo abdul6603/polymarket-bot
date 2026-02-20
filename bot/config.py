@@ -42,6 +42,13 @@ class Config:
     dry_run: bool = _env("DRY_RUN", "true").lower() in ("true", "1", "yes")
     log_level: str = _env("LOG_LEVEL", "INFO")
 
+    # Maker engine (disabled by default)
+    maker_enabled: bool = _env("MAKER_ENABLED", "false").lower() in ("true", "1", "yes")
+    maker_quote_size_usd: float = float(_env("MAKER_QUOTE_SIZE_USD", "8.0"))
+    maker_max_inventory_usd: float = float(_env("MAKER_MAX_INVENTORY_USD", "30.0"))
+    maker_max_total_exposure: float = float(_env("MAKER_MAX_TOTAL_EXPOSURE", "60.0"))
+    maker_tick_interval_s: float = float(_env("MAKER_TICK_INTERVAL_S", "5.0"))
+
 
 # ── Brotherhood Hierarchy ──
 # Jordan (Owner) → Claude (Godfather) → Shelby (Commander) → Agents

@@ -96,18 +96,23 @@ class BacktestResult:
     params: dict = field(default_factory=dict)
 
 
-def _estimate_fees(timeframe: str, implied_up_price: float | None) -> float:
+def _estimate_fees(timeframe: str, implied_up_price: float | None, is_maker: bool = False) -> float:
     """Estimate total Polymarket fees — matches bot/signals.py _estimate_fees().
 
     - 2% winner fee (always, on payout)
-    - Up to 3% taker fee on 15m markets (peaks at 50/50 odds)
+    - Taker fee: Polymarket's quadratic formula = 0.25 * (p * (1-p))^2
+      Applied to ALL crypto timeframes (not just 15m).
+    - Maker orders: zero taker fee.
     """
     winner_fee = 0.02
-    taker_fee = 0.0
-    if timeframe == "15m":
-        ip = implied_up_price if implied_up_price is not None else 0.5
-        distance = abs(ip - 0.5)
-        taker_fee = 0.03 * max(1.0 - distance * 2, 0)
+
+    if is_maker:
+        return winner_fee
+
+    ip = implied_up_price if implied_up_price is not None else 0.5
+    ip = max(0.01, min(0.99, ip))
+    taker_fee = 0.25 * (ip * (1 - ip)) ** 2
+
     return winner_fee + taker_fee
 
 

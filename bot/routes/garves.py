@@ -555,6 +555,26 @@ def api_garves_conviction():
         return jsonify({"error": str(e)[:200]}), 500
 
 
+@garves_bp.route("/api/garves/maker")
+def api_garves_maker():
+    """MakerEngine status — active quotes, inventory, estimated rebates."""
+    maker_state_file = DATA_DIR / "maker_state.json"
+    if maker_state_file.exists():
+        try:
+            data = json.loads(maker_state_file.read_text())
+            return jsonify(data)
+        except Exception as e:
+            return jsonify({"error": str(e)[:200], "enabled": False}), 500
+    return jsonify({
+        "enabled": False,
+        "active_quotes": [],
+        "inventory": {},
+        "config": {},
+        "stats": {"fills_today": 0, "estimated_rebate_today": 0, "active_quote_count": 0},
+        "message": "MakerEngine not active (set MAKER_ENABLED=true)",
+    })
+
+
 @garves_bp.route("/api/garves/daily-reports")
 def api_garves_daily_reports():
     """Get the daily performance history table."""
