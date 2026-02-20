@@ -880,7 +880,30 @@ class TradingBot:
         log.info("Shutdown complete")
 
 
+def _kill_orphans() -> None:
+    """Kill any other bot.main processes to prevent orphan buildup."""
+    import subprocess
+    my_pid = os.getpid()
+    try:
+        result = subprocess.run(
+            ["pgrep", "-f", "bot.main"],
+            capture_output=True, text=True, timeout=5,
+        )
+        for line in result.stdout.strip().split("\n"):
+            if not line.strip():
+                continue
+            pid = int(line.strip())
+            if pid != my_pid:
+                try:
+                    os.kill(pid, 9)
+                except ProcessLookupError:
+                    pass
+    except Exception:
+        pass
+
+
 def main() -> None:
+    _kill_orphans()
     cfg = Config()
     bot = TradingBot(cfg)
     try:
