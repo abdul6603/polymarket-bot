@@ -20,6 +20,7 @@ from quant.reporter import (
 )
 from quant.analytics import compute_kelly, analyze_indicator_diversity, detect_strategy_decay
 from quant.scorer import score_result
+from quant.ml_predictor import retrain_model
 
 log = logging.getLogger(__name__)
 
@@ -123,7 +124,20 @@ class QuantBot:
         if self.cfg.hawk_review:
             write_hawk_review(hawk_trades)
 
-        # 7. Publish to event bus
+        # 7. ML Model retrain (XGBoost on resolved trades)
+        try:
+            ml_metrics = retrain_model()
+            if ml_metrics.get("status") == "trained":
+                log.info("ML model retrained: acc=%.3f, f1=%.3f, samples=%d",
+                         ml_metrics["accuracy"], ml_metrics["f1"], ml_metrics["num_samples"])
+            else:
+                log.info("ML model: %s (%d/%d samples)",
+                         ml_metrics.get("status"), ml_metrics.get("num_samples", 0),
+                         ml_metrics.get("min_required", 30))
+        except Exception:
+            log.exception("ML model retrain failed (non-fatal)")
+
+        # 8. Publish to event bus
         publish_events(baseline, scored)
 
         # 8. Log summary

@@ -76,6 +76,7 @@ INDICATOR_GROUPS = {
     "price_action": {"temporal_arb", "price_div", "volume_spike"},
     "macro": {"news", "dxy_trend", "stablecoin_flow", "tvl_momentum", "mempool"},
     "derivatives": {"funding_rate", "liquidation"},
+    "neural": {"lstm"},
 }
 MAX_GROUP_WEIGHT_FRACTION = 0.35  # No single group can contribute > 35% of total weight
 
@@ -144,6 +145,8 @@ WEIGHTS = {
     "tvl_momentum": 0.4,      # DeFiLlama: DeFi TVL shifts
     "mempool": 0.5,           # Mempool.space: BTC network congestion
     "whale_flow": 0.7,        # Whale Alert: large exchange flows
+    # NEURAL — PyTorch LSTM price direction predictor
+    "lstm": 1.5,              # Start mid-tier, weight_learner will adjust based on accuracy
 }
 
 # Timeframe-dependent weight scaling
@@ -514,6 +517,21 @@ class SignalEngine:
                 votes["whale_flow"] = None
         else:
             votes["whale_flow"] = None
+
+        # ── LSTM Neural Predictor ──
+        try:
+            from bot.lstm_predictor import predict_direction
+            lstm_result = predict_direction(asset, candles)
+            if lstm_result and lstm_result["confidence"] >= 0.55:
+                votes["lstm"] = IndicatorVote(
+                    direction=lstm_result["direction"],
+                    confidence=lstm_result["confidence"],
+                    raw_value=lstm_result["raw_prob"] * 100,
+                )
+            else:
+                votes["lstm"] = None
+        except Exception:
+            votes["lstm"] = None
 
         # Filter to non-None votes
         active: dict[str, IndicatorVote] = {

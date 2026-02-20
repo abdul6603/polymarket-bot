@@ -446,8 +446,17 @@ _NEGATIVE_WORDS = {"lose", "crash", "fall", "drop", "down", "bear", "fail", "los
 
 
 def _estimate_sentiment(text: str) -> float:
-    """Sentiment estimate from -1 to 1 — LLM-enhanced with keyword fallback."""
-    # Try LLM sentiment (fast -> 3B for speed on many items)
+    """Sentiment estimate from -1 to 1 — FinBERT primary, LLM/keyword fallback."""
+    # Try FinBERT first (free, local, financial-domain trained)
+    try:
+        from shared.sentiment import score_headline, sentiment_to_float
+        result = score_headline(text[:512])
+        if result is not None:
+            return sentiment_to_float(result)
+    except Exception:
+        pass
+
+    # Fallback: LLM sentiment (cloud API cost)
     if _USE_SHARED_LLM and _shared_llm_call:
         try:
             result = _shared_llm_call(
@@ -464,7 +473,7 @@ def _estimate_sentiment(text: str) -> float:
         except (ValueError, TypeError, Exception):
             pass
 
-    # Fallback: keyword-based
+    # Last resort: keyword-based
     words = set(re.findall(r'\b\w+\b', text.lower()))
     pos = len(words & _POSITIVE_WORDS)
     neg = len(words & _NEGATIVE_WORDS)

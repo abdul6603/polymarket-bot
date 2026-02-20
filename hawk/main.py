@@ -403,6 +403,32 @@ class HawkBot:
                     log.exception("Failed to generate Hawk briefing")
 
                 # 6. Build suggestions + auto-execute in single pass (one risk check per opp)
+                # ML scoring — predict win probability with XGBoost
+                try:
+                    from quant.ml_predictor import predict_trade
+                    for opp in ranked:
+                        ml_prob = predict_trade({
+                            "edge": opp.edge,
+                            "confidence": opp.estimate.confidence,
+                            "category": opp.market.category,
+                            "direction": opp.direction,
+                            "entry_price": _get_yes_price(opp.market),
+                            "size_usd": opp.position_size_usd,
+                            "risk_score": opp.risk_score,
+                            "time_left_hours": opp.time_left_hours,
+                            "estimated_prob": opp.estimate.estimated_prob,
+                            "expected_value": opp.expected_value,
+                            "edge_source": opp.estimate.edge_source,
+                            "volume": opp.market.volume,
+                            "kelly_fraction": getattr(self.cfg, 'kelly_fraction', 0.2),
+                        })
+                        if ml_prob is not None:
+                            opp._ml_win_prob = ml_prob
+                            log.info("[ML] %s: win_prob=%.1f%% | %s",
+                                     opp.direction.upper(), ml_prob * 100, opp.market.question[:50])
+                except Exception:
+                    pass
+
                 intel_ctx = _load_all_intel(target_markets)
                 suggestions = []
                 trades_placed = 0
