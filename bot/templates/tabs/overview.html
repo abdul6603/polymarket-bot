@@ -12,6 +12,28 @@
       <div class="stat-card" data-accent="atlas"><div class="stat-value" id="infra-events-today">--</div><div class="stat-label">Events (24h)</div></div>
       <div class="stat-card" data-accent="error"><div class="stat-value" id="infra-errors-today">--</div><div class="stat-label">Log Alerts (24h)</div></div>
     </div>
+    <div class="glass-card mt-3" id="today-activity-panel">
+      <h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">Today's Activity</h3>
+      <div class="grid-4" id="today-stats" style="gap:8px;">
+        <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:10px;text-align:center;">
+          <div style="font-size:1.1rem;font-weight:700;color:var(--success);" id="today-portfolio">--</div>
+          <div style="font-size:0.68rem;color:var(--text-muted);">Portfolio</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:10px;text-align:center;">
+          <div style="font-size:1.1rem;font-weight:700;" id="today-trades">--</div>
+          <div style="font-size:0.68rem;color:var(--text-muted);">Trades Today</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:10px;text-align:center;">
+          <div style="font-size:1.1rem;font-weight:700;" id="today-content">--</div>
+          <div style="font-size:0.68rem;color:var(--text-muted);">Content Queued</div>
+        </div>
+        <div style="background:rgba(255,255,255,0.03);border-radius:8px;padding:10px;text-align:center;">
+          <div style="font-size:1.1rem;font-weight:700;color:var(--success);" id="today-llm-cost">--</div>
+          <div style="font-size:0.68rem;color:var(--text-muted);">LLM Cost</div>
+        </div>
+      </div>
+      <div id="today-detail" style="margin-top:8px;font-size:0.72rem;color:var(--text-muted);"></div>
+    </div>
     <div class="glass-card mt-3">
       <h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">Agent Comms</h3>
       <div id="agent-comms-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:320px;overflow-y:auto;"><span class="text-muted">Loading agent communications...</span></div>

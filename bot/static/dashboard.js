@@ -4442,6 +4442,50 @@ async function loadInfrastructure() {
 
   // Agent Comms — event bus events in chat-like format
   loadAgentComms();
+
+  // Today's Activity summary
+  loadTodayActivity();
+}
+
+async function loadTodayActivity() {
+  try {
+    var resp = await fetch('/api/system-summary');
+    var d = await resp.json();
+
+    var portfolioEl = document.getElementById('today-portfolio');
+    if (portfolioEl && d.portfolio) {
+      portfolioEl.textContent = '$' + d.portfolio.total_usd.toFixed(2);
+    }
+
+    var tradesEl = document.getElementById('today-trades');
+    if (tradesEl) {
+      var gt = d.garves ? d.garves.trades : 0;
+      var ht = d.hawk ? d.hawk.trades : 0;
+      tradesEl.textContent = gt + ht;
+    }
+
+    var contentEl = document.getElementById('today-content');
+    if (contentEl && d.soren) {
+      contentEl.textContent = d.soren.generated;
+    }
+
+    var costEl = document.getElementById('today-llm-cost');
+    if (costEl && d.llm) {
+      costEl.textContent = d.llm.cost_usd < 0.01 ? '$0.00' : '$' + d.llm.cost_usd.toFixed(2);
+      costEl.style.color = d.llm.cost_usd < 1 ? 'var(--success)' : 'var(--warning)';
+    }
+
+    var detailEl = document.getElementById('today-detail');
+    if (detailEl) {
+      var parts = [];
+      if (d.garves && d.garves.trades > 0) parts.push('Garves: ' + d.garves.trades + ' trades ($' + d.garves.pnl.toFixed(2) + ')');
+      if (d.hawk && d.hawk.trades > 0) parts.push('Hawk: ' + d.hawk.trades + ' trades ($' + d.hawk.pnl.toFixed(2) + ')');
+      if (d.llm) parts.push('LLM: ' + d.llm.local_calls + ' local / ' + d.llm.cloud_calls + ' cloud');
+      if (d.atlas) parts.push('Atlas: ' + d.atlas.cycles + ' cycles, ' + d.atlas.patterns + ' patterns');
+      if (d.events) parts.push('Events: ' + d.events.total + ' total');
+      detailEl.textContent = parts.join(' | ');
+    }
+  } catch(e) {}
 }
 
 // ═══════════════════════════════════════════════════════

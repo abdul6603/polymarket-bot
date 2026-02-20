@@ -73,42 +73,111 @@ def api_hub_config():
 
 @infra_bp.route("/api/health")
 def api_health():
-    """Aggregated health status for all agents."""
-    from pathlib import Path
+    """Live health: process detection + log recency + status files."""
     import json
+    import subprocess
+    import time
+    from pathlib import Path
 
-    health_paths = {
-        "garves": Path.home() / "polymarket-bot" / "data" / "health.json",
-        "shelby": Path.home() / "shelby" / "data" / "health.json",
-        "atlas": Path.home() / "atlas" / "data" / "health.json",
-        "lisa": Path.home() / "mercury" / "data" / "health.json",
-        "robotox": Path.home() / "sentinel" / "data" / "health.json",
-        "thor": Path.home() / "thor" / "data" / "health.json",
-        "soren": Path.home() / "soren-content" / "data" / "health.json",
+    AGENTS = {
+        "garves":  {"plist": "com.garves.agent",  "log": "/tmp/garves.log",  "status": Path.home() / "polymarket-bot" / "data" / "garves_status.json"},
+        "hawk":    {"plist": "com.hawk.agent",     "log": "/tmp/hawk.log",    "status": Path.home() / "polymarket-bot" / "data" / "hawk_status.json"},
+        "shelby":  {"plist": "com.shelby.assistant",   "log": "/tmp/shelby.log",  "status": Path.home() / "shelby" / "data" / "health.json"},
+        "atlas":   {"plist": "com.atlas.agent",   "log": "/tmp/atlas.log",   "status": Path.home() / "atlas" / "data" / "background_status.json"},
+        "soren":   {"plist": "com.soren.agent",    "log": "/tmp/soren.log",   "status": None},
+        "quant":   {"plist": "com.quant.agent",    "log": "/tmp/quant.log",   "status": Path.home() / "polymarket-bot" / "data" / "quant_status.json"},
+        "robotox": {"plist": "com.robotox.agent",  "log": "/tmp/robotox.log", "status": Path.home() / "sentinel" / "data" / "health.json"},
+        "thor":    {"plist": "com.thor.agent",     "log": "/tmp/thor.log",    "status": Path.home() / "thor" / "data" / "status.json"},
+        "viper":   {"plist": "com.viper.agent",    "log": "/tmp/viper.log",   "status": Path.home() / "polymarket-bot" / "data" / "viper_status.json"},
+        "lisa":    {"plist": "com.lisa.agent",      "log": "/tmp/lisa.log",    "status": Path.home() / "mercury" / "data" / "health.json"},
     }
 
+    try:
+        result = subprocess.run(["launchctl", "list"], capture_output=True, text=True, timeout=5)
+        launchctl_output = result.stdout
+    except Exception:
+        launchctl_output = ""
+
+    now = time.time()
     agents = {}
-    for agent, path in health_paths.items():
-        if path.exists():
+
+    for name, info in AGENTS.items():
+        pid = None
+        exit_code = None
+        process_running = False
+
+        for line in launchctl_output.splitlines():
+            if info["plist"] in line:
+                parts = line.split()
+                if len(parts) >= 3:
+                    pid_str = parts[0]
+                    exit_str = parts[1]
+                    pid = int(pid_str) if pid_str != "-" else None
+                    exit_code = int(exit_str) if exit_str != "-" else None
+                    process_running = pid is not None and pid > 0
+                break
+
+        log_path = Path(info["log"])
+        log_age_min = None
+        last_log = None
+        if log_path.exists():
+            mtime = log_path.stat().st_mtime
+            log_age_min = round((now - mtime) / 60, 1)
+            last_log = time.strftime("%H:%M:%S", time.localtime(mtime))
+
+        status_data = None
+        if info["status"] and info["status"].exists():
             try:
-                with open(path) as f:
-                    agents[agent] = json.load(f)
+                with open(info["status"]) as f:
+                    status_data = json.load(f)
             except Exception:
-                agents[agent] = {"status": "error", "message": "Failed to read health file"}
+                pass
+
+        if process_running and log_age_min is not None and log_age_min < 10:
+            status = "healthy"
+        elif process_running and (log_age_min is None or log_age_min < 60):
+            status = "healthy"
+        elif process_running:
+            status = "degraded"
+        elif not process_running and pid is None:
+            status = "offline"
         else:
-            agents[agent] = {"status": "unknown", "message": "No health file"}
+            status = "error"
 
-    healthy = sum(1 for a in agents.values() if a.get("status") == "healthy")
-    degraded = sum(1 for a in agents.values() if a.get("status") == "degraded")
-    errored = sum(1 for a in agents.values() if a.get("status") in ("error", "unknown"))
+        agents[name] = {
+            "status": status,
+            "pid": pid,
+            "process_running": process_running,
+            "log_age_min": log_age_min,
+            "last_log": last_log,
+            "exit_code": exit_code,
+        }
+        if status_data and isinstance(status_data, dict):
+            for key in ("win_rate", "pnl", "cycle", "state", "running", "last_cycle"):
+                if key in status_data:
+                    agents[name][key] = status_data[key]
 
-    overall = "healthy" if errored == 0 and degraded == 0 else "degraded" if errored == 0 else "unhealthy"
+    healthy = sum(1 for a in agents.values() if a["status"] == "healthy")
+    degraded = sum(1 for a in agents.values() if a["status"] == "degraded")
+    offline = sum(1 for a in agents.values() if a["status"] == "offline")
+    errored = sum(1 for a in agents.values() if a["status"] == "error")
+
+    if errored > 0:
+        overall = "unhealthy"
+    elif offline > 2:
+        overall = "degraded"
+    elif degraded > 0:
+        overall = "degraded"
+    else:
+        overall = "healthy"
 
     return jsonify({
         "overall": overall,
         "healthy": healthy,
         "degraded": degraded,
+        "offline": offline,
         "error": errored,
+        "total": len(agents),
         "agents": agents,
     })
 
@@ -184,6 +253,169 @@ def api_agent_logs(agent_name: str):
         return jsonify({"agent": agent_name, "logs": lines[-50:]})
     except Exception as e:
         return jsonify({"agent": agent_name, "logs": [], "error": str(e)[:200]})
+
+
+
+
+@infra_bp.route("/api/system-summary")
+def api_system_summary():
+    """Today's activity summary across all agents."""
+    import json
+    import time
+    from datetime import datetime, timedelta
+    from zoneinfo import ZoneInfo
+    from pathlib import Path
+
+    ET = ZoneInfo("America/New_York")
+    today = datetime.now(ET).strftime("%Y-%m-%d")
+    now = time.time()
+    day_start = datetime.now(ET).replace(hour=0, minute=0, second=0).timestamp()
+
+    summary = {}
+
+    # Garves trades today
+    trades_file = Path.home() / "polymarket-bot" / "data" / "trades.jsonl"
+    garves_today = {"trades": 0, "wins": 0, "pnl": 0.0}
+    if trades_file.exists():
+        try:
+            with open(trades_file) as f:
+                for line in f:
+                    if not line.strip():
+                        continue
+                    t = json.loads(line)
+                    ts = t.get("timestamp", 0)
+                    if ts > day_start:
+                        garves_today["trades"] += 1
+                        pnl = t.get("pnl", 0)
+                        if pnl and pnl > 0:
+                            garves_today["wins"] += 1
+                        garves_today["pnl"] += pnl or 0
+        except Exception:
+            pass
+    summary["garves"] = garves_today
+
+    # Hawk trades today
+    hawk_file = Path.home() / "polymarket-bot" / "data" / "hawk_trades.jsonl"
+    hawk_today = {"trades": 0, "wins": 0, "pnl": 0.0}
+    if hawk_file.exists():
+        try:
+            with open(hawk_file) as f:
+                for line in f:
+                    if not line.strip():
+                        continue
+                    t = json.loads(line)
+                    ts = t.get("timestamp", 0)
+                    if ts > day_start:
+                        hawk_today["trades"] += 1
+                        pnl = t.get("pnl", 0)
+                        if pnl and pnl > 0:
+                            hawk_today["wins"] += 1
+                        hawk_today["pnl"] += pnl or 0
+        except Exception:
+            pass
+    summary["hawk"] = hawk_today
+
+    # Soren content today
+    queue_file = Path.home() / "soren-content" / "data" / "content_queue.json"
+    soren_today = {"generated": 0, "approved": 0, "posted": 0}
+    if queue_file.exists():
+        try:
+            with open(queue_file) as f:
+                items = json.load(f)
+            for item in items:
+                created = item.get("created_at", "")
+                if today in created:
+                    soren_today["generated"] += 1
+                if item.get("status") == "approved":
+                    soren_today["approved"] += 1
+                if item.get("status") == "posted":
+                    soren_today["posted"] += 1
+        except Exception:
+            pass
+    summary["soren"] = soren_today
+
+    # LLM costs today
+    costs_file = Path.home() / "shared" / "llm_costs.jsonl"
+    llm_today = {"calls": 0, "cost_usd": 0.0, "local_calls": 0, "cloud_calls": 0}
+    if costs_file.exists():
+        try:
+            with open(costs_file) as f:
+                for line in f:
+                    if not line.strip():
+                        continue
+                    entry = json.loads(line)
+                    ts = entry.get("timestamp", 0)
+                    if ts > day_start:
+                        llm_today["calls"] += 1
+                        llm_today["cost_usd"] += entry.get("cost_usd", 0)
+                        if entry.get("model", "").startswith("mlx"):
+                            llm_today["local_calls"] += 1
+                        else:
+                            llm_today["cloud_calls"] += 1
+        except Exception:
+            pass
+    llm_today["cost_usd"] = round(llm_today["cost_usd"], 4)
+    summary["llm"] = llm_today
+
+    # Event bus today
+    events_file = Path.home() / "shared" / "events.jsonl"
+    events_today = {"total": 0, "by_agent": {}}
+    if events_file.exists():
+        try:
+            with open(events_file) as f:
+                for line in f:
+                    if not line.strip():
+                        continue
+                    ev = json.loads(line)
+                    ts = ev.get("timestamp", 0)
+                    if ts > day_start:
+                        events_today["total"] += 1
+                        agent = ev.get("agent", "unknown")
+                        events_today["by_agent"][agent] = events_today["by_agent"].get(agent, 0) + 1
+        except Exception:
+            pass
+    summary["events"] = events_today
+
+    # Atlas cycles today
+    atlas_status = Path.home() / "atlas" / "data" / "background_status.json"
+    atlas_today = {"cycles": 0, "patterns": 0}
+    if atlas_status.exists():
+        try:
+            with open(atlas_status) as f:
+                data = json.load(f)
+            atlas_today["cycles"] = data.get("cycles_completed", 0)
+            atlas_today["patterns"] = data.get("patterns_mined", 0)
+        except Exception:
+            pass
+    summary["atlas"] = atlas_today
+
+    # Portfolio totals
+    garves_bal = 88.81  # Default
+    hawk_bal = 173.85
+    try:
+        gs = Path.home() / "polymarket-bot" / "data" / "garves_status.json"
+        if gs.exists():
+            with open(gs) as f:
+                gd = json.load(f)
+            garves_bal = gd.get("portfolio_value", garves_bal)
+    except Exception:
+        pass
+    try:
+        hs = Path.home() / "polymarket-bot" / "data" / "hawk_status.json"
+        if hs.exists():
+            with open(hs) as f:
+                hd = json.load(f)
+            hawk_bal = hd.get("effective_bankroll", hawk_bal)
+    except Exception:
+        pass
+
+    summary["portfolio"] = {
+        "garves_usd": round(garves_bal, 2),
+        "hawk_usd": round(hawk_bal, 2),
+        "total_usd": round(garves_bal + hawk_bal, 2),
+    }
+
+    return jsonify(summary)
 
 
 # ── Shared Event Bus ──
