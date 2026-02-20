@@ -65,8 +65,8 @@ EXTREME_FEAR_PENALTY = 0.90         # Reduced 0.75→0.90: live data shows 70% W
 # Total weights sum to exactly 100 so raw score maps directly to 0-100.
 # If you add/remove components, adjust weights to maintain sum=100.
 COMPONENT_WEIGHTS = {
-    "consensus_ratio":      20,  # How many indicators agree (most reliable factor)
-    "edge_magnitude":       15,  # How large the expected edge is
+    "consensus_ratio":      18,  # How many indicators agree (most reliable factor)
+    "edge_magnitude":       13,  # How large the expected edge is
     "cross_asset_alignment": 12, # BTC/ETH/SOL all moving the same direction
     "volatility_clarity":   10,  # Clear trend vs noisy chop
     "streak_bonus":          8,  # On a hot streak = conditions are working
@@ -74,6 +74,7 @@ COMPONENT_WEIGHTS = {
     "volume_confirmation":  10,  # Volume spike in direction of bet
     "temporal_arb_strength": 12, # Binance already confirmed the move
     "cross_timeframe":       5,  # 5m and 15m agree
+    "ml_win_probability":    4,  # ML Random Forest win prediction
 }
 
 # Good hours (ET) — updated 2026-02-18 from 25+ resolved trade data
@@ -99,6 +100,7 @@ class ConvictionResult:
     components: dict                # Breakdown of each scoring component
     safety_adjustments: list        # List of safety rails that were applied
     tier_label: str                 # "no_trade", "small", "standard", "increased", "max_conviction"
+    ml_win_prob: float | None = None  # ML predicted win probability (0-1)
 
     def __repr__(self) -> str:
         return (
@@ -157,6 +159,18 @@ class ConvictionEngine:
         # Rolling performance cache (loaded from trades.jsonl)
         self._perf_cache: dict = {"loaded_at": 0.0}
         self._PERF_CACHE_TTL = 60  # Refresh every 60 seconds
+
+        # ML Win Predictor (loaded once, never blocks if unavailable)
+        self._ml_predictor = None
+        try:
+            from bot.ml_predictor import GarvesMLPredictor
+            self._ml_predictor = GarvesMLPredictor()
+            if self._ml_predictor._model is not None:
+                log.info("ML Win Predictor loaded successfully")
+            else:
+                log.info("ML Win Predictor: no trained model (run scripts/train_ml_model.py)")
+        except Exception as e:
+            log.debug("ML Win Predictor unavailable: %s", str(e)[:100])
 
     # ──────────────────────────────────────────────────────────────
     # Signal Registration (called for every signal across all assets)
@@ -344,6 +358,29 @@ class ConvictionEngine:
         ctf_score = self._check_cross_timeframe(signal.asset, signal.direction)
         components["cross_timeframe"] = ctf_score * COMPONENT_WEIGHTS["cross_timeframe"]
 
+        # ── 10. ML Win Probability (0-4 points) ──
+        # Random Forest prediction trained on historical trade outcomes
+        ml_win_prob = None
+        if self._ml_predictor is not None:
+            try:
+                ml_win_prob = self._ml_predictor.predict(signal, asset_snapshot)
+            except Exception:
+                pass
+
+        if ml_win_prob is not None:
+            if ml_win_prob < 0.35:
+                ml_score = 0.0
+            elif ml_win_prob < 0.50:
+                ml_score = (ml_win_prob - 0.35) / 0.15 * 0.3
+            elif ml_win_prob < 0.65:
+                ml_score = 0.3 + (ml_win_prob - 0.50) / 0.15 * 0.4
+            else:
+                ml_score = 0.7 + min((ml_win_prob - 0.65) / 0.20, 1.0) * 0.3
+            components["ml_win_probability"] = ml_score * COMPONENT_WEIGHTS["ml_win_probability"]
+        else:
+            # Model unavailable — give neutral score (don't penalize)
+            components["ml_win_probability"] = 0.5 * COMPONENT_WEIGHTS["ml_win_probability"]
+
         # ── Sum Raw Score ──
         raw_score = sum(components.values())
 
@@ -431,6 +468,7 @@ class ConvictionEngine:
             components=components,
             safety_adjustments=safety_adjustments,
             tier_label=tier_label,
+            ml_win_prob=ml_win_prob,
         )
 
         log.info(
@@ -528,6 +566,12 @@ class ConvictionEngine:
             has_volume, has_arb,
         )
         return True
+
+    def reload_ml_model(self) -> bool:
+        """Reload ML model from disk (called after retrain)."""
+        if self._ml_predictor is not None:
+            return self._ml_predictor.reload()
+        return False
 
     def _check_cross_timeframe(self, asset: str, direction: str) -> float:
         """Score cross-timeframe agreement (0-1).

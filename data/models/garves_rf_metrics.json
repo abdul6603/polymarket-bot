@@ -1,0 +1,96 @@
+{
+  "status": "trained",
+  "num_samples": 423,
+  "win_rate": 0.5697399527186762,
+  "accuracy": 0.9054373522458629,
+  "cv_accuracy": 0.6569187675070028,
+  "cv_std": 0.05586017124685518,
+  "precision": 0.935064935064935,
+  "recall": 0.8962655601659751,
+  "f1": 0.9152542372881356,
+  "num_features": 36,
+  "top_features": [
+    [
+      "hour_sin",
+      0.13959286564582565
+    ],
+    [
+      "hour_cos",
+      0.09833397150606685
+    ],
+    [
+      "probability",
+      0.091442662046495
+    ],
+    [
+      "confidence",
+      0.07123255416450763
+    ],
+    [
+      "edge",
+      0.06297735694430319
+    ],
+    [
+      "consensus_ratio",
+      0.0599330536463514
+    ],
+    [
+      "implied_up_price",
+      0.054208508862770045
+    ],
+    [
+      "num_agreeing",
+      0.044555499545249844
+    ],
+    [
+      "num_indicators",
+      0.03514187503188481
+    ],
+    [
+      "reward_risk_ratio",
+      0.03262026696086089
+    ],
+    [
+      "num_disagreeing",
+      0.028089735585745738
+    ],
+    [
+      "ind_rsi",
+      0.02432970087450679
+    ],
+    [
+      "ob_liquidity_log",
+      0.02332271506483636
+    ],
+    [
+      "timeframe",
+      0.022448256450559898
+    ],
+    [
+      "regime_fng",
+      0.020872886485865765
+    ],
+    [
+      "ind_volume_spike",
+      0.02018845565371911
+    ],
+    [
+      "asset",
+      0.019678642595745106
+    ],
+    [
+      "ind_vwap",
+      0.017876533049655672
+    ],
+    [
+      "ind_news",
+      0.01613683878936086
+    ],
+    [
+      "ind_order_flow",
+      0.011900618777208757
+    ]
+  ],
+  "model_path": "/Users/abdallaalhamdan/polymarket-bot/data/models/garves_rf_model.joblib",
+  "trained_at": 1771576195.945732
+}

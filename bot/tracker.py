@@ -64,6 +64,9 @@ class TradeRecord:
     entry_price: float = 0.0
     pnl: float = 0.0
 
+    # ML prediction at trade time
+    ml_win_prob: float = 0.0
+
     # Resolution (filled in later)
     resolved: bool = False
     outcome: str = ""       # "up" or "down" — actual market result
@@ -127,6 +130,7 @@ class PerformanceTracker:
         ob_slippage_pct: float = 0.0,
         size_usd: float = 0.0,
         entry_price: float = 0.0,
+        ml_win_prob: float = 0.0,
     ) -> None:
         """Record a new signal prediction."""
         trade_id = f"{market_id[:12]}_{int(time.time())}"
@@ -168,6 +172,7 @@ class PerformanceTracker:
             ob_slippage_pct=ob_slippage_pct,
             size_usd=size_usd,
             entry_price=entry_price,
+            ml_win_prob=ml_win_prob,
             dry_run=self.cfg.dry_run,
         )
         self._pending[trade_id] = rec

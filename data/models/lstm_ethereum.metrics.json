@@ -1,0 +1,10 @@
+{
+  "status": "trained",
+  "asset": "ethereum",
+  "candles": 1765,
+  "sequences": 1714,
+  "train_acc": 0.5069,
+  "val_acc": 0.5073,
+  "epochs": 11,
+  "device": "mps"
+}

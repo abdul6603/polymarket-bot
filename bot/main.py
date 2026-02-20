@@ -685,6 +685,11 @@ class TradingBot:
                 atr_value=sig.atr_value,
             )
 
+            if conviction.ml_win_prob is not None:
+                log.info("  -> [ML] Win prob: %.1f%% | ML pts: %.1f/4",
+                         conviction.ml_win_prob * 100,
+                         conviction.components.get("ml_win_probability", 0))
+
             if conviction.position_size_usd <= 0:
                 log.info("  -> ConvictionEngine: score=%.0f [%s] -> $0 (NO TRADE)",
                          conviction.total_score, conviction.tier_label)
@@ -800,6 +805,7 @@ class TradingBot:
                     ob_slippage_pct=ob_analysis.estimated_slippage_pct if ob_analysis else 0.0,
                     size_usd=conviction.position_size_usd,
                     entry_price=round(sig.probability, 4),
+                    ml_win_prob=conviction.ml_win_prob or 0.0,
                 )
 
         # ── Straddle Engine: if no directional trades and regime is fear ──

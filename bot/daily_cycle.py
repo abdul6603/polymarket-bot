@@ -400,6 +400,18 @@ def archive_and_reset() -> dict:
     log.info("Daily reset complete: archived %d trades for %s, trades.jsonl cleared",
              report["summary"]["total_trades"], date_str)
 
+    # Auto-retrain ML model with accumulated data
+    try:
+        from bot.ml_predictor import GarvesMLPredictor
+        metrics = GarvesMLPredictor.train()
+        if metrics.get("status") == "trained":
+            log.info("[ML] Model retrained: %d samples, CV=%.1f%%",
+                     metrics["num_samples"], (metrics.get("cv_accuracy", 0) or 0) * 100)
+        else:
+            log.info("[ML] Retrain skipped: %s", metrics.get("status", "unknown"))
+    except Exception as e:
+        log.warning("[ML] Retrain failed (non-fatal): %s", str(e)[:100])
+
     return report
 
 
