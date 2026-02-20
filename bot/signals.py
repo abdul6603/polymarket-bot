@@ -188,7 +188,7 @@ TF_WEIGHT_SCALE = {
 
 MIN_CANDLES = 30
 CONSENSUS_RATIO = 0.70  # Relaxed 0.78→0.70: R:R 1.2+ filter guards quality, let more trades through (7/10 instead of 8/10)
-CONSENSUS_FLOOR = 4     # Raised 2→4: Quant backtest (97 trades) — consensus 7 best but too aggressive. 4 = moderate improvement, filters coin-flip trades.
+CONSENSUS_FLOOR = 3     # Raised 2→3: Quant suggested 7 (too aggressive), tried 4 but caused 100% unanimity requirement on low-indicator pairs (SOL/15m has only 4 active). 3 = meaningful filter without deadlock.
 MIN_CONSENSUS = CONSENSUS_FLOOR  # backward compat for backtest/quant
 MIN_ATR_THRESHOLD = 0.00005  # skip if volatility below this (0.005% of price)
 MIN_CONFIDENCE = 0.60  # Raised: conf>=60% = 91.7% WR. Was 0.55 (82.9%). Fewer trades but much higher quality.
