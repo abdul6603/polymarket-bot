@@ -256,6 +256,41 @@ class HawkBot:
         self.executor = HawkExecutor(self.cfg, client, self.tracker)
         self.arb = ArbEngine(self.cfg, client)
 
+    async def _fast_arb_loop(self) -> None:
+        """Independent fast arb scanner — runs every 60s, zero GPT cost.
+
+        Scans Polymarket binary markets for price mismatches where buying
+        both sides guarantees profit. Uses only Gamma API + CLOB orderbook
+        (both free). Completely independent from the main GPT analysis cycle.
+        """
+        log.info("[ARB] Fast arb loop started — scanning every %ds", self.cfg.arb_scan_interval)
+        while True:
+            try:
+                if not self.cfg.arb_enabled or self.risk.is_shutdown():
+                    await asyncio.sleep(self.cfg.arb_scan_interval)
+                    continue
+
+                markets = scan_all_markets(self.cfg)
+                if markets:
+                    arb_opps = self.arb.scan(markets)
+                    for arb_opp in arb_opps[:self.cfg.arb_max_concurrent]:
+                        result = self.arb.execute(arb_opp)
+                        if result:
+                            log.info("[ARB] Executed arb trade! profit=$%.2f", arb_opp.expected_profit_usd)
+
+                    # Resolve settled arbs
+                    arb_res = self.arb.resolve()
+                    if arb_res["resolved"] > 0:
+                        log.info("[ARB] Resolved %d arbs | profit: $%.2f",
+                                 arb_res["resolved"], arb_res["profit"])
+                    self.arb.save_status()
+                    _save_status(self.tracker, self.risk, running=True, cycle=self.cycle, arb_engine=self.arb)
+
+            except Exception:
+                log.exception("[ARB] Fast arb loop error")
+
+            await asyncio.sleep(self.cfg.arb_scan_interval)
+
     async def run(self) -> None:
         """Main loop — V2 Smart Degen."""
         logging.basicConfig(
@@ -267,13 +302,16 @@ class HawkBot:
         log.info("Config: bankroll=$%.0f, max_bet=$%.0f, kelly=%.0f%%, min_edge=%.0f%%",
                  self.cfg.bankroll_usd, self.cfg.max_bet_usd,
                  self.cfg.kelly_fraction * 100, self.cfg.min_edge * 100)
-        log.info("V2 features: compound=%s, news=%s, max_risk=%d, cycle=%dm",
+        log.info("V2 features: compound=%s, news=%s, max_risk=%d, cycle=%dm, arb_interval=%ds",
                  self.cfg.compound_bankroll, self.cfg.news_enrichment,
-                 self.cfg.max_risk_score, self.cfg.cycle_minutes)
+                 self.cfg.max_risk_score, self.cfg.cycle_minutes, self.cfg.arb_scan_interval)
         log.info("Mode: %s", "DRY RUN" if self.cfg.dry_run else "LIVE TRADING")
 
         self._init_executor()
         _save_status(self.tracker, self.risk, running=True, cycle=0, arb_engine=self.arb)
+
+        # Launch fast arb scanner as independent background task
+        asyncio.create_task(self._fast_arb_loop())
 
         while True:
             self.cycle += 1
@@ -313,26 +351,8 @@ class HawkBot:
                     await asyncio.sleep(self.cfg.cycle_minutes * 60)
                     continue
 
-                # 1b. ARB SCAN — guaranteed profit before speculative directional bets
-                if self.arb and self.cfg.arb_enabled:
-                    try:
-                        log.info("Scanning for binary arbitrage opportunities...")
-                        arb_opps = self.arb.scan(markets)
-                        arb_executed = 0
-                        for arb_opp in arb_opps[:self.cfg.arb_max_concurrent]:
-                            result = self.arb.execute(arb_opp)
-                            if result:
-                                arb_executed += 1
-                        if arb_executed:
-                            log.info("[ARB] Executed %d arb trades this cycle", arb_executed)
-                        # Resolve settled arbs
-                        arb_res = self.arb.resolve()
-                        if arb_res["resolved"] > 0:
-                            log.info("[ARB] Resolved %d arbs | profit: $%.2f",
-                                     arb_res["resolved"], arb_res["profit"])
-                        self.arb.save_status()
-                    except Exception:
-                        log.exception("Arb engine error")
+                # NOTE: Arb scanning moved to independent fast loop (_fast_arb_loop)
+                # running every 60s — no longer tied to the main GPT cycle.
 
                 # 2. Filter contested (12-88% YES price)
                 contested = []

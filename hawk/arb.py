@@ -90,7 +90,7 @@ class ArbEngine:
 
         candidates = self._gamma_prefilter(markets)
         if not candidates:
-            log.info("[ARB] No binary arb candidates (all price sums >= 0.97)")
+            log.info("[ARB] No binary arb candidates (all price sums >= 0.985)")
             return []
 
         log.info("[ARB] Scanning %d candidates with CLOB orderbook...", len(candidates))
@@ -115,7 +115,11 @@ class ArbEngine:
         return opportunities
 
     def _gamma_prefilter(self, markets) -> list:
-        """Filter to binary markets where Gamma price sum < 0.97."""
+        """Filter to binary markets where Gamma price sum < 0.985.
+
+        Loosened from 0.97 to catch more candidates — Gamma prices are
+        rough estimates; CLOB asks may be significantly lower.
+        """
         candidates = []
         for m in markets:
             tokens = m.tokens
@@ -129,10 +133,10 @@ class ArbEngine:
                 continue
 
             price_sum = sum(prices)
-            if price_sum < 0.97:
+            if price_sum < 0.985:
                 candidates.append(m)
 
-        log.info("[ARB] Gamma pre-filter: %d binary markets with price sum < 0.97", len(candidates))
+        log.info("[ARB] Gamma pre-filter: %d binary markets with price sum < 0.985", len(candidates))
         return candidates
 
     def _clob_deep_check(self, market) -> ArbOpportunity | None:

@@ -176,6 +176,11 @@ def scan_all_markets(cfg: HawkConfig) -> list[HawkMarket]:
                         log.debug("Blocked crypto price market: %s", question[:80])
                         continue
 
+                    # Skip ALL crypto_event markets — 11% WR, -$128 PnL historically
+                    if _categorize_market(question) == "crypto_event":
+                        log.debug("Blocked crypto_event market: %s", question[:80])
+                        continue
+
                     # Skip closed/inactive
                     if m.get("closed") or not m.get("active", True):
                         continue

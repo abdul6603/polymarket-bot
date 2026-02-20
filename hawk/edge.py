@@ -31,7 +31,7 @@ MIN_RR_RATIO = 1.2
 MAX_TOKEN_PRICE = 0.50  # Never buy tokens above $0.50 (asymmetric R:R)
 
 # Fix 5: Confidence floor — reject GPT guesses (sportsbook-backed exempt)
-MIN_CONFIDENCE = 0.45
+MIN_CONFIDENCE = 0.55
 
 _YES_OUTCOMES = {"yes", "up", "over"}
 _NO_OUTCOMES = {"no", "down", "under"}
@@ -126,6 +126,8 @@ def calculate_risk_score(
     # Category volatility
     if category == "politics":
         score += 1
+    elif category == "crypto_event":
+        score += 2  # Crypto events highly volatile, poor WR historically
 
     return max(1, min(10, score))
 

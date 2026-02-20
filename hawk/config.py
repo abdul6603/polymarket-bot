@@ -32,7 +32,7 @@ class HawkConfig:
     max_bet_usd: float = float(_env("HAWK_MAX_BET_USD", "25"))
     max_concurrent: int = int(_env("HAWK_MAX_CONCURRENT", "5"))
     daily_loss_cap: float = float(_env("HAWK_DAILY_LOSS_CAP", "50"))
-    cycle_minutes: int = int(_env("HAWK_CYCLE_MINUTES", "15"))
+    cycle_minutes: int = int(_env("HAWK_CYCLE_MINUTES", "60"))
     min_edge: float = float(_env("HAWK_MIN_EDGE", "0.15"))
     min_volume: int = int(_env("HAWK_MIN_VOLUME", "5000"))
     min_liquidity: int = int(_env("HAWK_MIN_LIQUIDITY", "1000"))
@@ -60,6 +60,7 @@ class HawkConfig:
     arb_enabled: bool = _env("HAWK_ARB_ENABLED", "true").lower() in ("true", "1", "yes")
     arb_bankroll_usd: float = float(_env("HAWK_ARB_BANKROLL_USD", "800"))
     arb_max_per_trade: float = float(_env("HAWK_ARB_MAX_PER_TRADE", "100"))
-    arb_min_profit_pct: float = float(_env("HAWK_ARB_MIN_PROFIT_PCT", "0.005"))
+    arb_min_profit_pct: float = float(_env("HAWK_ARB_MIN_PROFIT_PCT", "0.002"))
     arb_max_concurrent: int = int(_env("HAWK_ARB_MAX_CONCURRENT", "10"))
-    arb_min_depth_usd: float = float(_env("HAWK_ARB_MIN_DEPTH_USD", "500"))
+    arb_min_depth_usd: float = float(_env("HAWK_ARB_MIN_DEPTH_USD", "100"))
+    arb_scan_interval: int = int(_env("HAWK_ARB_SCAN_INTERVAL", "60"))  # Fast arb loop: every 60s
