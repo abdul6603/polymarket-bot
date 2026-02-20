@@ -3874,6 +3874,8 @@ async function refresh() {
     } else if (currentTab === 'quant') {
       loadQuantTab();
       loadQuantSmartActions();
+    } else if (currentTab === 'intelligence') {
+      if (typeof refreshIntelligence === 'function') refreshIntelligence();
     } else if (currentTab === 'system') {
       loadSystemTab();
     } else if (currentTab === 'chat') {

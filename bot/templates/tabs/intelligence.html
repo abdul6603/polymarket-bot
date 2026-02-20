@@ -64,6 +64,29 @@
     </div>
   </div>
 
+  <!-- Smart Actions -->
+  <div class="stat-card" style="padding:14px;margin-bottom:12px;">
+    <div style="font-weight:600;color:var(--text-primary);margin-bottom:10px;font-size:0.78rem;">Smart Actions</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+      <button class="btn" onclick="intelAction('health-check')" id="btn-health-check" style="font-size:0.7rem;padding:5px 12px;background:#9B59B622;border:1px solid #9B59B6;color:#9B59B6;">
+        Test LLM Connectivity
+      </button>
+      <button class="btn" onclick="intelAction('prune-patterns')" id="btn-prune" style="font-size:0.7rem;padding:5px 12px;background:#E67E2222;border:1px solid #E67E22;color:#E67E22;">
+        Prune Weak Patterns
+      </button>
+      <button class="btn" onclick="intelAction('export-learnings')" id="btn-export" style="font-size:0.7rem;padding:5px 12px;background:#22AA4422;border:1px solid #22AA44;color:#22AA44;">
+        Export All Learnings
+      </button>
+      <button class="btn" onclick="intelAction('compact-costs')" id="btn-compact" style="font-size:0.7rem;padding:5px 12px;background:#3498DB22;border:1px solid #3498DB;color:#3498DB;">
+        Compact Cost Log
+      </button>
+      <button class="btn" onclick="intelResetPrompt()" id="btn-reset" style="font-size:0.7rem;padding:5px 12px;background:#E74C3C22;border:1px solid #E74C3C;color:#E74C3C;">
+        Reset Agent Memory
+      </button>
+    </div>
+    <div id="intel-action-result" style="font-size:0.68rem;color:var(--text-muted);min-height:20px;"></div>
+  </div>
+
   <!-- Two Column Layout: Routing Table + Per-Agent Memory -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
     <!-- Routing Table -->
@@ -150,6 +173,110 @@
     </div>
   </div>
 
+  <!-- Brotherhood Frameworks Table -->
+  <div class="stat-card" style="padding:14px;margin-bottom:12px;">
+    <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Brotherhood Tech Stack</div>
+    <table style="width:100%;border-collapse:collapse;font-size:0.7rem;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <th style="text-align:left;padding:6px;color:var(--text-muted);">Agent</th>
+          <th style="text-align:left;padding:6px;color:var(--text-muted);">Language</th>
+          <th style="text-align:left;padding:6px;color:var(--text-muted);">AI/LLM</th>
+          <th style="text-align:left;padding:6px;color:var(--text-muted);">Data</th>
+          <th style="text-align:left;padding:6px;color:var(--text-muted);">APIs</th>
+          <th style="text-align:left;padding:6px;color:var(--text-muted);">MLX</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:5px 6px;color:#00D4FF;font-weight:600;">Garves</td>
+          <td style="padding:5px 6px;">Python 3.12</td>
+          <td style="padding:5px 6px;">Qwen 14B/3B, GPT-4o-mini</td>
+          <td style="padding:5px 6px;">JSONL, SQLite</td>
+          <td style="padding:5px 6px;">Binance WS, Polymarket CLOB</td>
+          <td style="padding:5px 6px;color:var(--success);">Wired</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:5px 6px;color:#FFD700;font-weight:600;">Hawk</td>
+          <td style="padding:5px 6px;">Python 3.12</td>
+          <td style="padding:5px 6px;">GPT-4o (sports), Qwen 14B</td>
+          <td style="padding:5px 6px;">JSONL, SQLite</td>
+          <td style="padding:5px 6px;">Polymarket CLOB, OpenAI</td>
+          <td style="padding:5px 6px;color:var(--success);">Wired</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:5px 6px;color:#CC66FF;font-weight:600;">Soren</td>
+          <td style="padding:5px 6px;">Python 3.9</td>
+          <td style="padding:5px 6px;">Qwen 14B (writing), GPT-4</td>
+          <td style="padding:5px 6px;">JSON, SQLite</td>
+          <td style="padding:5px 6px;">OpenAI, DALL-E 3, ElevenLabs</td>
+          <td style="padding:5px 6px;color:var(--success);">Wired</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:5px 6px;color:#FF8800;font-weight:600;">Lisa</td>
+          <td style="padding:5px 6px;">Python 3.9</td>
+          <td style="padding:5px 6px;">Qwen 14B, GPT-4o-mini</td>
+          <td style="padding:5px 6px;">JSON, SQLite</td>
+          <td style="padding:5px 6px;">X/Twitter API, OpenAI</td>
+          <td style="padding:5px 6px;color:var(--success);">Wired</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:5px 6px;color:#FFAA00;font-weight:600;">Shelby</td>
+          <td style="padding:5px 6px;">Python 3.9</td>
+          <td style="padding:5px 6px;">Qwen 14B (reasoning)</td>
+          <td style="padding:5px 6px;">JSON, SQLite</td>
+          <td style="padding:5px 6px;">Telegram Bot API</td>
+          <td style="padding:5px 6px;color:var(--success);">Wired</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:5px 6px;color:#22AA44;font-weight:600;">Atlas</td>
+          <td style="padding:5px 6px;">Python 3.9</td>
+          <td style="padding:5px 6px;">Qwen 14B, GPT-4o-mini</td>
+          <td style="padding:5px 6px;">JSON, SQLite, KB</td>
+          <td style="padding:5px 6px;">Tavily Search API</td>
+          <td style="padding:5px 6px;color:var(--success);">Wired</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:5px 6px;color:#FF6600;font-weight:600;">Thor</td>
+          <td style="padding:5px 6px;">Python 3.9</td>
+          <td style="padding:5px 6px;">Claude Sonnet/Opus</td>
+          <td style="padding:5px 6px;">JSON, SQLite</td>
+          <td style="padding:5px 6px;">Anthropic API</td>
+          <td style="padding:5px 6px;color:var(--success);">Wired</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:5px 6px;color:#00FF88;font-weight:600;">Viper</td>
+          <td style="padding:5px 6px;">Python 3.12</td>
+          <td style="padding:5px 6px;">Qwen 3B/14B</td>
+          <td style="padding:5px 6px;">JSONL, SQLite</td>
+          <td style="padding:5px 6px;">Tavily, Reddit, Polymarket</td>
+          <td style="padding:5px 6px;color:var(--success);">Wired</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:5px 6px;color:#00FF44;font-weight:600;">Robotox</td>
+          <td style="padding:5px 6px;">Python 3.9</td>
+          <td style="padding:5px 6px;">Qwen 14B/3B</td>
+          <td style="padding:5px 6px;">JSON, SQLite</td>
+          <td style="padding:5px 6px;">System (ps, lsof, launchctl)</td>
+          <td style="padding:5px 6px;color:var(--success);">Wired</td>
+        </tr>
+        <tr>
+          <td style="padding:5px 6px;color:#00BFFF;font-weight:600;">Quant</td>
+          <td style="padding:5px 6px;">Python 3.9</td>
+          <td style="padding:5px 6px;">None (pure math)</td>
+          <td style="padding:5px 6px;">JSON, CSV</td>
+          <td style="padding:5px 6px;">None (backtesting only)</td>
+          <td style="padding:5px 6px;color:var(--text-muted);">N/A</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:8px;font-size:0.65rem;color:var(--text-muted);">
+      Shared Layer: <span style="color:#9B59B6;">~/shared/</span> — llm_client.py (router), agent_brain.py (memory+LLM), agent_memory.py (SQLite), events.py (bus) |
+      Dashboard: <span style="color:#9B59B6;">Flask + Socket.IO + Chart.js</span> |
+      Infra: <span style="color:#9B59B6;">LaunchAgents + Git Deploy + Tailscale SSH</span>
+    </div>
+  </div>
+
   <!-- Recent LLM Calls Activity Feed -->
   <div class="stat-card" style="padding:14px;margin-bottom:12px;">
     <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Recent LLM Calls</div>
@@ -169,21 +296,30 @@
 
 <script>
 function refreshIntelligence() {
-  // Fetch all intelligence data in parallel (including new endpoints)
   Promise.all([
-    fetch('/api/llm/status').then(r => r.json()).catch(() => ({})),
-    fetch('/api/llm/costs').then(r => r.json()).catch(() => ({})),
-    fetch('/api/llm/memory-all').then(r => r.json()).catch(() => ({})),
-    fetch('/api/llm/routing').then(r => r.json()).catch(() => ({})),
-    fetch('/api/llm/recent-calls').then(r => r.json()).catch(() => ({calls:[]})),
-    fetch('/api/llm/brain-activity').then(r => r.json()).catch(() => ({activity:{}})),
-    fetch('/api/llm/pattern-feed').then(r => r.json()).catch(() => ({patterns:[]})),
-    fetch('/api/llm/cost-savings').then(r => r.json()).catch(() => ({})),
-  ]).then(([status, costs, memoryAll, routing, recentCalls, brainActivity, patternFeed, costSavings]) => {
-    // Render new chart components
+    fetch('/api/llm/status').then(function(r){return r.json();}).catch(function(){return {};}),
+    fetch('/api/llm/costs').then(function(r){return r.json();}).catch(function(){return {};}),
+    fetch('/api/llm/memory-all').then(function(r){return r.json();}).catch(function(){return {};}),
+    fetch('/api/llm/routing').then(function(r){return r.json();}).catch(function(){return {};}),
+    fetch('/api/llm/recent-calls').then(function(r){return r.json();}).catch(function(){return {calls:[]};}),
+    fetch('/api/llm/brain-activity').then(function(r){return r.json();}).catch(function(){return {activity:{}};}),
+    fetch('/api/llm/pattern-feed').then(function(r){return r.json();}).catch(function(){return {patterns:[]};}),
+    fetch('/api/llm/cost-savings').then(function(r){return r.json();}).catch(function(){return {};}),
+  ]).then(function(results) {
+    var status = results[0];
+    var costs = results[1];
+    var memoryAll = results[2];
+    var routing = results[3];
+    var recentCalls = results[4];
+    var brainActivity = results[5];
+    var patternFeed = results[6];
+    var costSavings = results[7];
+
+    // Brain activity grid
     if (typeof renderBrainActivity === 'function') {
       renderBrainActivity('brain-activity-container', brainActivity.activity || {});
     }
+    // Pattern learnings feed
     if (typeof renderPatternFeed === 'function') {
       renderPatternFeed('pattern-feed-container', patternFeed.patterns || []);
     }
@@ -202,6 +338,7 @@ function refreshIntelligence() {
     if (typeof renderMemoryBars === 'function' && memoryAll.agents) {
       renderMemoryBars('chart-memory-bars', memoryAll.agents);
     }
+
     // Server status
     var online = status.server_online;
     var badge = document.getElementById('llm-server-badge');
@@ -210,8 +347,10 @@ function refreshIntelligence() {
       badge.textContent = online ? 'ONLINE' : 'OFFLINE';
       badge.style.color = online ? 'var(--success)' : 'var(--error)';
     }
-    if (statusEl) statusEl.textContent = online ? 'Online' : 'Offline';
-    statusEl.style.color = online ? 'var(--success)' : 'var(--error)';
+    if (statusEl) {
+      statusEl.textContent = online ? 'Online' : 'Offline';
+      statusEl.style.color = online ? 'var(--success)' : 'var(--error)';
+    }
 
     var modelEl = document.getElementById('llm-model-name');
     if (modelEl && status.models) {
@@ -254,12 +393,13 @@ function refreshIntelligence() {
         if (s.error) return;
         var c = agentColors[ag] || '#888';
         var wr = s.total_decisions > 0 ? (s.win_rate || 0).toFixed(1) + '%' : '--';
-        rows += '<tr>' +
-          '<td style="padding:3px 4px;color:'+c+';font-weight:600;text-transform:capitalize;">'+ag+'</td>' +
-          '<td style="text-align:center;padding:3px;">'+(s.total_decisions||0)+'</td>' +
-          '<td style="text-align:center;padding:3px;">'+(s.active_patterns||0)+'</td>' +
-          '<td style="text-align:center;padding:3px;">'+wr+'</td>' +
-          '<td style="text-align:center;padding:3px;color:var(--text-muted);">'+(s.db_size_kb||0).toFixed(0)+'KB</td>' +
+        var wrColor = (s.win_rate || 0) >= 50 ? 'var(--success)' : (s.win_rate || 0) > 0 ? 'var(--error)' : 'var(--text-muted)';
+        rows += '<tr style="border-bottom:1px solid var(--border-color);">' +
+          '<td style="padding:4px 6px;color:'+c+';font-weight:600;text-transform:capitalize;">'+ag+'</td>' +
+          '<td style="text-align:center;padding:4px;">'+((s.total_decisions||0) > 0 ? s.total_decisions : '<span class="text-muted">0</span>')+'</td>' +
+          '<td style="text-align:center;padding:4px;">'+((s.active_patterns||0) > 0 ? s.active_patterns : '<span class="text-muted">0</span>')+'</td>' +
+          '<td style="text-align:center;padding:4px;color:'+wrColor+';">'+wr+'</td>' +
+          '<td style="text-align:center;padding:4px;color:var(--text-muted);">'+((s.db_size_kb||0) > 0 ? (s.db_size_kb).toFixed(0)+'KB' : '--')+'</td>' +
           '</tr>';
       });
       memTable.innerHTML = rows || '<tr><td colspan="5" class="text-muted">No memory data yet</td></tr>';
@@ -273,8 +413,8 @@ function refreshIntelligence() {
       Object.keys(routing.routing).forEach(function(tt) {
         var route = routing.routing[tt];
         var rc = routeColors[route] || '#888';
-        rRows += '<tr><td style="padding:3px 4px;">'+tt+'</td>' +
-          '<td style="padding:3px 4px;color:'+rc+';font-weight:500;">'+route.replace('_',' ')+'</td></tr>';
+        rRows += '<tr style="border-bottom:1px solid var(--border-color);"><td style="padding:4px 6px;">'+tt+'</td>' +
+          '<td style="padding:4px 6px;color:'+rc+';font-weight:500;">'+route.replace(/_/g,' ')+'</td></tr>';
       });
       routeTable.innerHTML = rRows;
     }
@@ -287,7 +427,7 @@ function refreshIntelligence() {
         var ov = routing.agent_overrides[ag];
         overHtml += '<div style="margin-bottom:2px;"><span style="color:var(--text-primary);font-weight:500;text-transform:capitalize;">'+ag+':</span> ';
         Object.keys(ov).forEach(function(k) {
-          overHtml += k + ' → <span style="color:#E67E22;">'+ov[k]+'</span> ';
+          overHtml += k + ' &rarr; <span style="color:#E67E22;">'+ov[k]+'</span> ';
         });
         overHtml += '</div>';
       });
@@ -299,16 +439,16 @@ function refreshIntelligence() {
     if (feedEl && recentCalls.calls) {
       var fHtml = '';
       recentCalls.calls.slice(0, 30).forEach(function(call) {
-        var provColor = call.provider === 'local' ? '#9B59B6' : '#E67E22';
+        var provColor = (call.provider || '').indexOf('local') >= 0 ? '#9B59B6' : '#E67E22';
         var ts = call.ts ? call.ts.split('T')[1].split('.')[0] : '--';
         var fb = call.fallback ? ' <span style="color:var(--error);font-size:0.6rem;">[FALLBACK]</span>' : '';
         fHtml += '<div style="padding:3px 0;border-bottom:1px solid var(--border-color);display:flex;gap:8px;align-items:center;">' +
           '<span style="color:var(--text-muted);min-width:55px;">'+ts+'</span>' +
-          '<span style="color:'+provColor+';min-width:45px;font-weight:500;">'+call.provider+'</span>' +
-          '<span style="min-width:45px;text-transform:capitalize;">'+call.agent+'</span>' +
-          '<span style="color:var(--text-muted);">'+call.task_type+'</span>' +
-          '<span style="margin-left:auto;color:var(--text-muted);">'+call.latency_ms+'ms</span>' +
-          '<span style="color:'+(call.cost_usd > 0 ? 'var(--warning)' : 'var(--success)')+';">$'+call.cost_usd.toFixed(4)+'</span>' +
+          '<span style="color:'+provColor+';min-width:50px;font-weight:500;">'+(call.provider||'--')+'</span>' +
+          '<span style="min-width:50px;text-transform:capitalize;">'+(call.agent||'--')+'</span>' +
+          '<span style="color:var(--text-muted);">'+(call.task_type||'--')+'</span>' +
+          '<span style="margin-left:auto;color:var(--text-muted);">'+(call.latency_ms||0)+'ms</span>' +
+          '<span style="color:'+((call.cost_usd||0) > 0 ? 'var(--warning)' : 'var(--success)')+';">$'+(call.cost_usd||0).toFixed(4)+'</span>' +
           fb + '</div>';
       });
       feedEl.innerHTML = fHtml || '<span class="text-muted">No calls recorded yet</span>';
@@ -318,12 +458,13 @@ function refreshIntelligence() {
     var costEl = document.getElementById('llm-cost-by-agent');
     if (costEl && c24.by_agent) {
       var cHtml = '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+      var agentColors2 = {shelby:'#FFAA00',atlas:'#22AA44',lisa:'#FF8800',hawk:'#FFD700',soren:'#CC66FF',garves:'#00D4FF',quant:'#00BFFF',viper:'#00FF88',robotox:'#00FF44',thor:'#FF6600'};
       Object.keys(c24.by_agent).sort(function(a,b) { return (c24.by_agent[b].cost||0)-(c24.by_agent[a].cost||0); }).forEach(function(ag) {
         var d = c24.by_agent[ag];
-        var agColor = {shelby:'#FFAA00',atlas:'#22AA44',lisa:'#FF8800',hawk:'#FFD700',soren:'#CC66FF',garves:'#00D4FF',quant:'#00BFFF',viper:'#00FF88',robotox:'#00FF44',thor:'#FF6600'}[ag] || '#888';
+        var agColor = agentColors2[ag] || '#888';
         cHtml += '<div style="background:var(--card-bg);padding:6px 10px;border-radius:6px;border:1px solid var(--border-color);">' +
           '<div style="color:'+agColor+';font-weight:600;text-transform:capitalize;font-size:0.72rem;">'+ag+'</div>' +
-          '<div style="font-size:0.68rem;">'+d.calls+' calls | $'+(d.cost||0).toFixed(4)+'</div></div>';
+          '<div style="font-size:0.68rem;">'+(d.calls||0)+' calls | $'+((d.cost||0)).toFixed(4)+'</div></div>';
       });
       cHtml += '</div>';
       costEl.innerHTML = cHtml;
@@ -336,14 +477,71 @@ function setTextSafe(id, val) {
   if (el) el.textContent = val;
 }
 
-// Auto-refresh when Intelligence tab is active
-(function() {
-  var origSwitch = window.switchTab;
-  if (origSwitch) {
-    window.switchTab = function(tab) {
-      origSwitch(tab);
-      if (tab === 'intelligence') refreshIntelligence();
-    };
-  }
-})();
+function intelAction(action) {
+  var resultEl = document.getElementById('intel-action-result');
+  if (resultEl) resultEl.innerHTML = '<span style="color:#9B59B6;">Running ' + action + '...</span>';
+
+  fetch('/api/llm/actions/' + action, {method: 'POST'})
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var msg = '';
+      if (action === 'health-check') {
+        var localStatus = data.local_server ? '<span style="color:var(--success);">ONLINE</span>' : '<span style="color:var(--error);">OFFLINE</span>';
+        var cloudStatus = data.cloud_fallback ? '<span style="color:var(--success);">OK</span> (' + (data.cloud_latency_ms||0) + 'ms)' : '<span style="color:var(--error);">FAILED</span>';
+        msg = 'Local: ' + localStatus + ' | Cloud: ' + cloudStatus + ' | Memory DBs: ' + (data.memory_dbs||0) + ' (' + (data.memory_size_mb||0) + 'MB) | Log: ' + (data.total_logged_calls||0) + ' calls';
+      } else if (action === 'prune-patterns') {
+        msg = '<span style="color:var(--success);">Pruned ' + (data.total_pruned||0) + ' weak patterns</span>';
+        if (data.pruned) {
+          Object.keys(data.pruned).forEach(function(ag) {
+            msg += ' | ' + ag + ': ' + data.pruned[ag];
+          });
+        }
+        refreshIntelligence();
+      } else if (action === 'export-learnings') {
+        msg = '<span style="color:var(--success);">Exported ' + (data.total_patterns||0) + ' patterns from ' + (data.agents_exported||0) + ' agents</span> &rarr; ~/shared/learnings_export.json';
+      } else if (action === 'compact-costs') {
+        msg = '<span style="color:var(--success);">Compacted:</span> kept ' + (data.kept||0) + ' | archived ' + (data.archived||0) + ' (was ' + (data.original_lines||0) + ')';
+        refreshIntelligence();
+      }
+      if (resultEl) resultEl.innerHTML = msg || JSON.stringify(data);
+    })
+    .catch(function(e) {
+      if (resultEl) resultEl.innerHTML = '<span style="color:var(--error);">Error: ' + e.message + '</span>';
+    });
+}
+
+function intelResetPrompt() {
+  var resultEl = document.getElementById('intel-action-result');
+  var agents = ['shelby','atlas','lisa','hawk','soren','garves','quant','viper','robotox','thor'];
+  var select = '<span style="color:#E74C3C;">Reset memory for: </span>';
+  agents.forEach(function(ag) {
+    select += '<button onclick="intelResetConfirm(\'' + ag + '\')" style="background:#E74C3C22;border:1px solid #E74C3C;color:#E74C3C;padding:2px 8px;margin:2px;border-radius:4px;font-size:0.66rem;cursor:pointer;">' + ag + '</button>';
+  });
+  select += ' <button onclick="document.getElementById(\'intel-action-result\').innerHTML=\'\'" style="background:var(--card-bg);border:1px solid var(--border-color);color:var(--text-muted);padding:2px 8px;margin:2px;border-radius:4px;font-size:0.66rem;cursor:pointer;">Cancel</button>';
+  if (resultEl) resultEl.innerHTML = select;
+}
+
+function intelResetConfirm(agent) {
+  if (!confirm('Reset ALL memory for ' + agent + '? This will backup the DB first.')) return;
+  var resultEl = document.getElementById('intel-action-result');
+  if (resultEl) resultEl.innerHTML = '<span style="color:#E74C3C;">Resetting ' + agent + '...</span>';
+
+  fetch('/api/llm/actions/reset-agent-memory', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({agent: agent})
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.success) {
+      if (resultEl) resultEl.innerHTML = '<span style="color:var(--success);">Reset ' + agent + ' memory. Backup at ' + (data.backup||'') + '</span>';
+      refreshIntelligence();
+    } else {
+      if (resultEl) resultEl.innerHTML = '<span style="color:var(--error);">' + (data.error||'Failed') + '</span>';
+    }
+  })
+  .catch(function(e) {
+    if (resultEl) resultEl.innerHTML = '<span style="color:var(--error);">Error: ' + e.message + '</span>';
+  });
+}
 </script>

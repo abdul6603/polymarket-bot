@@ -135,6 +135,7 @@ if __name__ == "__main__":
 
     # ── Guard: exit immediately if port 8877 is already in use ──
     _sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    _sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     try:
         _sock.bind(("127.0.0.1", 8877))
         _sock.close()

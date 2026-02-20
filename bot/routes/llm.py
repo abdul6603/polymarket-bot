@@ -4,9 +4,10 @@ from __future__ import annotations
 import json
 import logging
 import sys
+import time
 from pathlib import Path
 
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 
 log = logging.getLogger(__name__)
 llm_bp = Blueprint("llm", __name__)
@@ -263,3 +264,235 @@ def llm_cost_savings():
         "estimated_savings": round(estimated_savings, 4),
         "total_calls": total_local_calls + total_cloud_calls,
     })
+
+
+# ═══════════════════════════════════════════
+#  Smart Action Endpoints
+# ═══════════════════════════════════════════
+
+
+@llm_bp.route("/api/llm/actions/prune-patterns", methods=["POST"])
+def llm_prune_patterns():
+    """Prune low-confidence patterns (< 0.3) across all agents."""
+    pruned = {}
+    agents_list = [
+        "shelby", "atlas", "lisa", "hawk", "soren",
+        "garves", "quant", "viper", "robotox", "thor",
+    ]
+    try:
+        sys.path.insert(0, str(SHARED_DIR))
+        from agent_memory import AgentMemory
+        for agent in agents_list:
+            db_path = MEMORY_DIR / f"{agent}.db"
+            if not db_path.exists():
+                continue
+            try:
+                mem = AgentMemory(agent)
+                # Get low-confidence patterns
+                conn = mem.conn
+                cursor = conn.execute(
+                    "UPDATE patterns SET active = 0 WHERE confidence < 0.3 AND active = 1"
+                )
+                count = cursor.rowcount
+                conn.commit()
+                if count > 0:
+                    pruned[agent] = count
+                mem.close()
+            except Exception:
+                continue
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+    total = sum(pruned.values())
+    return jsonify({"pruned": pruned, "total_pruned": total})
+
+
+@llm_bp.route("/api/llm/actions/health-check", methods=["POST"])
+def llm_health_check():
+    """Test LLM connectivity — local + cloud fallback."""
+    results = {}
+
+    # Test local server
+    try:
+        sys.path.insert(0, str(SHARED_DIR))
+        from llm_client import _load_config, _is_local_server_up, llm_call
+        cfg = _load_config()
+        results["local_server"] = _is_local_server_up(cfg)
+    except Exception as e:
+        results["local_server"] = False
+        results["local_error"] = str(e)[:100]
+
+    # Test a quick cloud call
+    try:
+        start = time.time()
+        resp = llm_call(
+            system="You are a test.",
+            user="Respond with only: OK",
+            agent="dashboard",
+            task_type="fast",
+            max_tokens=5,
+        )
+        latency = round((time.time() - start) * 1000)
+        results["cloud_fallback"] = bool(resp and len(resp) > 0)
+        results["cloud_response"] = resp[:50] if resp else ""
+        results["cloud_latency_ms"] = latency
+    except Exception as e:
+        results["cloud_fallback"] = False
+        results["cloud_error"] = str(e)[:100]
+
+    # Check memory DBs
+    db_count = 0
+    total_size = 0
+    for f in MEMORY_DIR.glob("*.db"):
+        db_count += 1
+        total_size += f.stat().st_size
+    results["memory_dbs"] = db_count
+    results["memory_size_mb"] = round(total_size / 1024 / 1024, 2)
+
+    # Check cost log
+    if COSTS_FILE.exists():
+        results["cost_log_size_kb"] = round(COSTS_FILE.stat().st_size / 1024, 1)
+        try:
+            lines = COSTS_FILE.read_text().strip().split("\n")
+            results["total_logged_calls"] = len(lines)
+        except Exception:
+            results["total_logged_calls"] = 0
+    else:
+        results["cost_log_size_kb"] = 0
+        results["total_logged_calls"] = 0
+
+    return jsonify(results)
+
+
+@llm_bp.route("/api/llm/actions/export-learnings", methods=["POST"])
+def llm_export_learnings():
+    """Export all patterns and high-value decisions to a JSON summary."""
+    export = {"exported_at": time.strftime("%Y-%m-%d %H:%M:%S"), "agents": {}}
+    agents_list = [
+        "shelby", "atlas", "lisa", "hawk", "soren",
+        "garves", "quant", "viper", "robotox", "thor",
+    ]
+    try:
+        sys.path.insert(0, str(SHARED_DIR))
+        from agent_memory import AgentMemory
+        for agent in agents_list:
+            db_path = MEMORY_DIR / f"{agent}.db"
+            if not db_path.exists():
+                continue
+            try:
+                mem = AgentMemory(agent)
+                patterns = mem.get_active_patterns(min_confidence=0.4)
+                decisions = mem.get_recent_decisions(limit=20)
+                stats = mem.get_stats()
+                export["agents"][agent] = {
+                    "stats": stats,
+                    "patterns": patterns,
+                    "recent_decisions": decisions,
+                }
+                mem.close()
+            except Exception:
+                continue
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+    # Save to file
+    export_path = Path.home() / "shared" / "learnings_export.json"
+    export_path.write_text(json.dumps(export, indent=2, default=str))
+
+    return jsonify({
+        "success": True,
+        "path": str(export_path),
+        "agents_exported": len(export["agents"]),
+        "total_patterns": sum(
+            len(a.get("patterns", [])) for a in export["agents"].values()
+        ),
+    })
+
+
+@llm_bp.route("/api/llm/actions/reset-agent-memory", methods=["POST"])
+def llm_reset_agent_memory():
+    """Reset memory for a specific agent (requires agent param)."""
+    agent = request.json.get("agent") if request.is_json else request.args.get("agent")
+    if not agent:
+        return jsonify({"error": "agent parameter required"}), 400
+
+    allowed = [
+        "shelby", "atlas", "lisa", "hawk", "soren",
+        "garves", "quant", "viper", "robotox", "thor",
+    ]
+    if agent not in allowed:
+        return jsonify({"error": f"Unknown agent: {agent}"}), 400
+
+    db_path = MEMORY_DIR / f"{agent}.db"
+    if not db_path.exists():
+        return jsonify({"error": f"No memory DB for {agent}"}), 404
+
+    try:
+        # Backup first
+        backup_path = MEMORY_DIR / f"{agent}.db.bak"
+        import shutil
+        shutil.copy2(db_path, backup_path)
+
+        sys.path.insert(0, str(SHARED_DIR))
+        from agent_memory import AgentMemory
+        mem = AgentMemory(agent)
+        mem.conn.execute("DELETE FROM decisions")
+        mem.conn.execute("DELETE FROM patterns")
+        mem.conn.execute("DELETE FROM knowledge")
+        mem.conn.commit()
+        mem.close()
+        return jsonify({
+            "success": True,
+            "agent": agent,
+            "backup": str(backup_path),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@llm_bp.route("/api/llm/actions/compact-costs", methods=["POST"])
+def llm_compact_costs():
+    """Compact cost log — keep last 7 days, archive the rest."""
+    if not COSTS_FILE.exists():
+        return jsonify({"message": "No cost log to compact"})
+
+    try:
+        lines = COSTS_FILE.read_text().strip().split("\n")
+        original_count = len(lines)
+        cutoff = time.time() - (7 * 86400)
+
+        kept = []
+        archived = []
+        for line in lines:
+            if not line.strip():
+                continue
+            try:
+                entry = json.loads(line)
+                ts = entry.get("timestamp", "")
+                if isinstance(ts, str) and ts:
+                    from datetime import datetime
+                    ts_epoch = datetime.fromisoformat(
+                        ts.replace("Z", "+00:00")
+                    ).timestamp()
+                else:
+                    ts_epoch = ts if isinstance(ts, (int, float)) else 0
+                if ts_epoch > cutoff:
+                    kept.append(line)
+                else:
+                    archived.append(line)
+            except Exception:
+                kept.append(line)  # Keep unparseable lines
+
+        if archived:
+            archive_path = SHARED_DIR / "llm_costs_archive.jsonl"
+            with open(archive_path, "a") as f:
+                f.write("\n".join(archived) + "\n")
+            COSTS_FILE.write_text("\n".join(kept) + "\n")
+
+        return jsonify({
+            "original_lines": original_count,
+            "kept": len(kept),
+            "archived": len(archived),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
