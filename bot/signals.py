@@ -193,7 +193,7 @@ TF_WEIGHT_SCALE = {
 
 MIN_CANDLES = 30
 CONSENSUS_RATIO = 0.70  # 70% of active indicators must agree
-CONSENSUS_FLOOR = 3     # Lowered 7→3: with RSI+Bollinger disabled, only 3-5 active indicators. Floor=7 forced unanimous (capped to active_count). Edge+weight_learner are the real guards now.
+CONSENSUS_FLOOR = 2     # Lowered 7→2: cluster de-duplication + disabled anti-signals reduce active to 2-4 votes. Floor must be ≤ min active count. Edge floor (8%) + weight_learner are the real quality gates.
 MIN_CONSENSUS = CONSENSUS_FLOOR  # backward compat for backtest/quant
 MIN_ATR_THRESHOLD = 0.00005  # skip if volatility below this (0.005% of price)
 MIN_CONFIDENCE = 0.20  # Lowered 0.60→0.20: Quant backtest shows 61.4% WR at 0.2. Consensus=7 and edge=8% are the real quality gates; 0.60 was filtering out winners.
@@ -236,10 +236,10 @@ REVERSAL_SENTINEL_PENALTY = 0.10  # +10% confidence floor when triggered
 
 # Asset-specific edge premium — weaker assets need higher edge to trade
 ASSET_EDGE_PREMIUM = {
-    "bitcoin": 1.5,    # raised 1.0→1.5: 40% WR, -$221 PnL — must prove high edge to trade
-    "ethereum": 1.3,   # raised 0.9→1.3: 54% WR but -$15 PnL — needs higher bar
-    "solana": 2.0,     # raised 1.5→2.0: SOL/15m has 43% WR — requires 16% edge to trade
-    "xrp": 0.9,        # slight discount: 61% WR, best performer — give it more room
+    "bitcoin": 1.0,    # Lowered 1.5→1.0: old WR was pre-weight-learner. Need volume to test new indicator weights.
+    "ethereum": 1.0,   # Lowered 1.3→1.0: best asset at 54% WR per brain notes. No penalty needed.
+    "solana": 1.3,     # Lowered 2.0→1.3: weakest asset (46% WR), slight caution but not impossible.
+    "xrp": 0.9,        # Keep 0.9: best performer, give room.
 }
 
 
@@ -257,22 +257,22 @@ class Signal:
     reward_risk_ratio: float | None = None  # R:R = ((1-P)*0.98)/P
 
 
-def _estimate_fees(timeframe: str, implied_price: float | None) -> float:
+def _estimate_fees(timeframe: str, implied_price: float | None, is_maker: bool = False) -> float:
     """Estimate total Polymarket fees as fraction to subtract from edge.
 
     - 2% winner fee (always, on payout)
-    - Up to 3% taker fee on ALL timeframes (peaks at 50/50 odds, scales with proximity)
-      Shorter timeframes get slightly higher taker fees due to wider spreads.
+    - Taker fee: Polymarket's quadratic formula = 0.25 * (p * (1-p))^2
+      Peaks at ~1.56% for 50/50, drops to near-zero at extreme prices.
+    - Maker orders: zero taker fee (only winner fee applies)
     """
     winner_fee = 0.02
 
+    if is_maker:
+        return winner_fee
+
     ip = implied_price if implied_price is not None else 0.5
-    distance = abs(ip - 0.5)
-    # Base taker fee peaks at 3% for 50/50, drops to 0% at extreme prices
-    base_taker = 0.03 * max(1.0 - distance * 2, 0)
-    # Shorter timeframes have wider spreads -> slightly higher effective taker fee
-    tf_multiplier = {"5m": 1.0, "15m": 1.0, "1h": 0.8, "4h": 0.6, "weekly": 0.4}.get(timeframe, 0.8)
-    taker_fee = base_taker * tf_multiplier
+    ip = max(0.01, min(0.99, ip))
+    taker_fee = 0.25 * (ip * (1 - ip)) ** 2
 
     return winner_fee + taker_fee
 
