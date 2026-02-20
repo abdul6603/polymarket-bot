@@ -131,17 +131,31 @@ def get_dimension_adjustments(trade_context: dict) -> tuple[float, list[str]]:
     blocked = []
     adjustments_log = []
 
+    # Primary dimensions (category, edge_source) are genuinely segmented —
+    # sports trades DON'T overlap with crypto trades here. These can be
+    # trusted at lower sample sizes for blocking and penalties.
+    #
+    # Secondary dimensions (time_band, direction, confidence_band, risk_band)
+    # overlap heavily across categories. With 16 trades (13 crypto losses),
+    # a "today" time band picks up all the crypto garbage. These need many
+    # more samples before we trust them.
+    primary_dims = {"category", "edge_source"}
+    min_samples_primary = 8   # penalties + blocks
+    min_samples_secondary = 15  # penalties only, no blocks
+
     for dim_name, dim_value in dims.items():
         dim_data = data.get(dim_name, {})
         entry = dim_data.get(dim_value)
-        if not entry or entry["total"] < 5:
+        is_primary = dim_name in primary_dims
+        min_n = min_samples_primary if is_primary else min_samples_secondary
+        if not entry or entry["total"] < min_n:
             continue
 
         accuracy = entry["accuracy"]
         total = entry["total"]
 
-        # Truly toxic: block outright
-        if total >= 5 and accuracy < 0.20:
+        # Truly toxic: block outright (only primary dims, need 8+ samples)
+        if is_primary and total >= min_samples_primary and accuracy < 0.20:
             blocked.append(f"{dim_name}={dim_value}")
             adjustments_log.append(f"{dim_name}={dim_value}: BLOCKED (acc={accuracy:.0%}, n={total})")
             continue
