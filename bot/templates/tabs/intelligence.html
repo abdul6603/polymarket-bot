@@ -497,9 +497,12 @@ function refreshIntelligence() {
     fetch('/api/llm/pattern-feed').then(function(r){return r.json();}).catch(function(){return {patterns:[]};}),
     fetch('/api/llm/cost-savings').then(function(r){return r.json();}).catch(function(){return {};}),
   ]).then(function(results) {
+    try {
     var status = results[0], costs = results[1], memoryAll = results[2],
         routing = results[3], recentCalls = results[4], brainActivity = results[5],
         patternFeed = results[6], costSavings = results[7];
+
+    console.log('[Intelligence] Data loaded:', {status: !!status, costs: !!costs, memoryAll: !!memoryAll, agents: Object.keys(memoryAll.agents || {})});
 
     // INTELLIGENCE METERS
     renderIntelMeters(memoryAll.agents || {});
@@ -617,6 +620,11 @@ function refreshIntelligence() {
       });
       costEl.innerHTML = cHtml + '</div>';
     }
+  } catch(e) { console.error('[Intelligence] render error:', e); }
+  }).catch(function(err) {
+    console.error('[Intelligence] refreshIntelligence error:', err);
+    var el = document.getElementById('intel-meters-container');
+    if (el) el.innerHTML = '<span style="color:var(--error);font-size:0.72rem;">Error loading: ' + (err.message || err) + '</span>';
   });
 }
 
