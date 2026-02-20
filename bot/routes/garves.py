@@ -736,6 +736,28 @@ def api_garves_bankroll():
         return jsonify({"error": str(e)[:200]}), 500
 
 
+@garves_bp.route("/api/garves/ml-status")
+def api_garves_ml_status():
+    """ML Win Predictor status — model metrics and feature importances."""
+    try:
+        metrics_file = DATA_DIR / "models" / "garves_rf_metrics.json"
+        model_file = DATA_DIR / "models" / "garves_rf_model.joblib"
+
+        metrics = {}
+        if metrics_file.exists():
+            metrics = json.loads(metrics_file.read_text())
+
+        return jsonify({
+            "model_loaded": model_file.exists(),
+            "metrics": metrics,
+            "training_samples": metrics.get("num_samples", 0),
+            "cv_accuracy": metrics.get("cv_accuracy", 0),
+            "f1": metrics.get("f1", 0),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200], "model_loaded": False}), 500
+
+
 @garves_bp.route("/api/garves/orderbook-stats")
 def api_garves_orderbook_stats():
     """Orderbook depth stats from recent trades."""
@@ -971,3 +993,67 @@ def api_garves_positions():
         pass
 
     return jsonify(result)
+
+
+# ── ML Intelligence Endpoints ──
+
+@garves_bp.route("/api/ml/status")
+def ml_status():
+    """Return status of all ML models (LSTM, XGBoost, FinBERT)."""
+    models_dir = DATA_DIR / "models"
+    status = {"lstm": {}, "xgboost": {}, "finbert": {}}
+
+    # LSTM models per asset
+    for asset in ["bitcoin", "ethereum", "solana", "xrp"]:
+        metrics_file = models_dir / f"lstm_{asset}.metrics.json"
+        if metrics_file.exists():
+            try:
+                m = json.loads(metrics_file.read_text())
+                model_file = models_dir / f"lstm_{asset}.pt"
+                age_hours = (time.time() - model_file.stat().st_mtime) / 3600 if model_file.exists() else 0
+                status["lstm"][asset] = {
+                    "val_acc": m.get("val_acc", 0),
+                    "train_acc": m.get("train_acc", 0),
+                    "candles": m.get("candles", 0),
+                    "epochs": m.get("epochs", 0),
+                    "device": m.get("device", "cpu"),
+                    "age_hours": round(age_hours, 1),
+                }
+            except Exception:
+                pass
+
+    # XGBoost model
+    xgb_metrics = models_dir / "xgb_trade_predictor.metrics.json"
+    if xgb_metrics.exists():
+        try:
+            status["xgboost"] = json.loads(xgb_metrics.read_text())
+        except Exception:
+            pass
+    else:
+        # Check how many resolved trades we have
+        hawk_file = DATA_DIR / "hawk_trades.jsonl"
+        garves_file = DATA_DIR / "trades.jsonl"
+        resolved = 0
+        for f in [hawk_file, garves_file]:
+            if f.exists():
+                for line in open(f):
+                    try:
+                        if json.loads(line.strip()).get("resolved"):
+                            resolved += 1
+                    except Exception:
+                        pass
+        status["xgboost"] = {"status": "waiting", "resolved_trades": resolved, "min_required": 30}
+
+    # FinBERT
+    try:
+        from shared.sentiment import _pipeline, _load_attempted
+        if _pipeline is not None:
+            status["finbert"] = {"status": "loaded", "model": "ProsusAI/finbert"}
+        elif _load_attempted:
+            status["finbert"] = {"status": "failed"}
+        else:
+            status["finbert"] = {"status": "not_loaded"}
+    except Exception:
+        status["finbert"] = {"status": "unavailable"}
+
+    return jsonify(status)

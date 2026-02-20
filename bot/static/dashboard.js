@@ -724,6 +724,41 @@ async function loadExternalData() {
   }
 }
 
+async function loadMLStatus() {
+  try {
+    var resp = await fetch('/api/garves/ml-status');
+    var d = await resp.json();
+    var statusEl = document.getElementById('ml-status');
+    var accEl = document.getElementById('ml-accuracy');
+    var samplesEl = document.getElementById('ml-samples');
+    var f1El = document.getElementById('ml-f1');
+    if (statusEl) {
+      statusEl.textContent = d.model_loaded ? 'ACTIVE' : 'NOT TRAINED';
+      statusEl.style.color = d.model_loaded ? 'var(--success)' : 'var(--warning)';
+    }
+    var m = d.metrics || {};
+    if (accEl) accEl.textContent = m.cv_accuracy ? (m.cv_accuracy * 100).toFixed(1) + '%' : '--';
+    if (samplesEl) samplesEl.textContent = m.num_samples || '--';
+    if (f1El) f1El.textContent = m.f1 ? m.f1.toFixed(3) : '--';
+    var barsEl = document.getElementById('ml-feature-bars');
+    if (barsEl && m.top_features && m.top_features.length > 0) {
+      var maxImp = m.top_features[0][1];
+      var html = '';
+      for (var i = 0; i < Math.min(m.top_features.length, 15); i++) {
+        var f = m.top_features[i];
+        var pct = (f[1] / maxImp * 100).toFixed(0);
+        html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">';
+        html += '<span style="min-width:180px;text-align:right;color:var(--text-muted);">' + f[0] + '</span>';
+        html += '<div style="flex:1;background:rgba(255,255,255,0.05);border-radius:3px;height:14px;overflow:hidden;">';
+        html += '<div style="width:' + pct + '%;height:100%;background:var(--agent-garves);border-radius:3px;"></div></div>';
+        html += '<span style="min-width:50px;color:var(--text-muted);">' + (f[1] * 100).toFixed(1) + '%</span>';
+        html += '</div>';
+      }
+      barsEl.innerHTML = html;
+    }
+  } catch(e) { console.error('ML status:', e); }
+}
+
 async function loadConvictionData() {
   try {
     var resp = await fetch('/api/garves/conviction');
@@ -764,6 +799,50 @@ async function loadRegimeBadge() {
     else if (label === 'greed' || label === 'extreme_greed') cls = 'badge-success';
     else if (label === 'neutral') cls = 'badge-warning';
     document.getElementById('garves-regime-badge').innerHTML = '<span class="badge ' + cls + '">Regime: ' + label.replace(/_/g, ' ').toUpperCase() + ' (FnG: ' + fng + ')</span>';
+  } catch (e) {}
+}
+
+async function loadMLStatus() {
+  try {
+    var r = await fetch('/api/ml/status');
+    var d = await r.json();
+    // LSTM
+    var lstmEl = document.getElementById('ml-lstm-status');
+    if (lstmEl && d.lstm) {
+      var assets = Object.keys(d.lstm);
+      if (assets.length > 0) {
+        var html = assets.map(function(a) {
+          var m = d.lstm[a];
+          var accPct = (m.val_acc * 100).toFixed(1);
+          var color = m.val_acc >= 0.55 ? 'var(--success)' : 'var(--text-muted)';
+          return '<div style="display:flex;justify-content:space-between;"><span>' + a.charAt(0).toUpperCase() + a.slice(1) + '</span><span style="color:' + color + '">' + accPct + '% acc</span><span style="color:var(--text-muted)">' + m.candles + ' candles</span></div>';
+        }).join('');
+        lstmEl.innerHTML = html;
+      } else {
+        lstmEl.innerHTML = '<span style="color:var(--text-muted)">No models trained yet</span>';
+      }
+    }
+    // XGBoost
+    var xgbEl = document.getElementById('ml-xgb-status');
+    if (xgbEl && d.xgboost) {
+      if (d.xgboost.status === 'trained') {
+        xgbEl.innerHTML = '<div style="color:var(--success)">Active</div><div>Accuracy: ' + (d.xgboost.accuracy * 100).toFixed(1) + '%</div><div>F1: ' + (d.xgboost.f1 * 100).toFixed(1) + '%</div><div>' + d.xgboost.num_samples + ' trades</div>';
+      } else {
+        var resolved = d.xgboost.resolved_trades || d.xgboost.num_samples || 0;
+        xgbEl.innerHTML = '<div style="color:var(--warning)">Waiting for data</div><div>' + resolved + '/30 resolved trades</div>';
+      }
+    }
+    // FinBERT
+    var fbEl = document.getElementById('ml-finbert-status');
+    if (fbEl && d.finbert) {
+      if (d.finbert.status === 'loaded') {
+        fbEl.innerHTML = '<div style="color:var(--success)">Active</div><div>ProsusAI/finbert</div><div>MPS accelerated</div>';
+      } else if (d.finbert.status === 'not_loaded') {
+        fbEl.innerHTML = '<div style="color:var(--text-muted)">Idle (loads on first use)</div>';
+      } else {
+        fbEl.innerHTML = '<div style="color:var(--text-muted)">' + d.finbert.status + '</div>';
+      }
+    }
   } catch (e) {}
 }
 
@@ -3789,6 +3868,7 @@ async function refresh() {
       loadNewsSentiment();
       loadCommandTable('garves');
       loadAgentSmartActions('garves');
+      loadMLStatus();
     } else if (currentTab === 'soren') {
       var resp = await fetch('/api/soren');
       renderSoren(await resp.json());

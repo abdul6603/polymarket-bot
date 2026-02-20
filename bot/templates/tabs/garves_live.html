@@ -42,6 +42,25 @@
   </div>
   <div class="mt-6" id="garves-regime-badge"><span class="badge badge-info">Regime: --</span></div>
 
+  <!-- ML Intelligence -->
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="garves">ML Intelligence</h2>
+    <div class="grid-3" id="ml-models-grid">
+      <div class="glass-card" style="border-left:3px solid #ff6600;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px;">LSTM Neural Predictor</div>
+        <div id="ml-lstm-status" style="font-size:0.76rem;">Loading...</div>
+      </div>
+      <div class="glass-card" style="border-left:3px solid #00BFFF;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px;">XGBoost Trade Predictor</div>
+        <div id="ml-xgb-status" style="font-size:0.76rem;">Loading...</div>
+      </div>
+      <div class="glass-card" style="border-left:3px solid #00ff88;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px;">FinBERT Sentiment</div>
+        <div id="ml-finbert-status" style="font-size:0.76rem;">Loading...</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Portfolio -->
   <div class="section-spacer">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
@@ -71,6 +90,21 @@
       </div>
       <div class="glass-card"><table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Bet</th><th>Cost</th><th>Result</th><th>P&L</th></tr></thead>
       <tbody id="oc-history-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:16px;">No trade history</td></tr></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- ML Win Predictor -->
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="garves">ML Win Predictor</h2>
+    <div class="grid-4" id="ml-summary-cards">
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="ml-status">--</div><div class="stat-label">Model Status</div></div>
+      <div class="stat-card" data-accent="success"><div class="stat-value" id="ml-accuracy">--</div><div class="stat-label">CV Accuracy</div></div>
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="ml-samples">--</div><div class="stat-label">Training Samples</div></div>
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="ml-f1">--</div><div class="stat-label">F1 Score</div></div>
+    </div>
+    <div class="glass-card" style="margin-top:10px;">
+      <h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-2);">Top Feature Importances</h3>
+      <div id="ml-feature-bars" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">Loading...</span></div>
     </div>
   </div>
 
