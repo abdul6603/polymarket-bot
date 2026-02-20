@@ -161,6 +161,7 @@ class Executor:
                 entry_price=price,
                 order_id=order_id,
                 timeframe=getattr(signal, "timeframe", ""),
+                asset=getattr(signal, "asset", ""),
             )
             self.tracker.add(pos)
             return order_id
@@ -189,6 +190,7 @@ class Executor:
                 size_usd=order_size_usd,
                 entry_price=price,
                 order_id=order_id,
+                asset=getattr(signal, "asset", ""),
             )
             self.tracker.add(pos)
             return order_id

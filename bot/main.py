@@ -17,7 +17,7 @@ from bot.execution import Executor
 from bot.market_discovery import fetch_markets, rank_markets
 from bot.price_cache import PriceCache
 from bot.regime import RegimeAdjustment, detect_regime
-from bot.risk import PositionTracker, check_risk
+from bot.risk import PositionTracker, DrawdownBreaker, check_risk
 from bot.signals import SignalEngine
 from bot.bankroll import BankrollManager
 from bot.straddle import StraddleEngine
@@ -88,6 +88,8 @@ class TradingBot:
         self._setup_logging()
 
         self.tracker = PositionTracker()
+        self.drawdown_breaker = DrawdownBreaker()
+        self.drawdown_breaker.update()  # scan trades on startup
         self.price_cache = PriceCache()
         self.price_cache.preload_from_disk()
         self.signal_engine = SignalEngine(cfg, self.price_cache)
@@ -698,7 +700,8 @@ class TradingBot:
 
             # Risk check (pass actual conviction size, not default $10)
             allowed, reason = check_risk(self.cfg, sig, self.tracker, market_id,
-                                         trade_size_usd=conviction.position_size_usd)
+                                         trade_size_usd=conviction.position_size_usd,
+                                         drawdown_breaker=self.drawdown_breaker)
             if not allowed:
                 log.info("  -> Blocked: %s", reason)
                 continue
@@ -857,6 +860,8 @@ class TradingBot:
         _just_resolved = _new_resolved - _prev_resolved
         if _just_resolved > 0:
             self._trade_journal_counter += _just_resolved
+            # Update drawdown breaker after new resolutions
+            self.drawdown_breaker.update()
 
         if self.perf_tracker.pending_count > 0:
             log.info("Performance tracker: %d trades pending resolution", self.perf_tracker.pending_count)

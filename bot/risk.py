@@ -27,6 +27,7 @@ class Position:
     opened_at: float = field(default_factory=time.time)
     strategy: str = "directional"  # "directional" or "straddle"
     timeframe: str = ""      # signal timeframe for dry-run expiry timing
+    asset: str = ""          # "bitcoin", "ethereum", "solana", "xrp"
 
 
 class PositionTracker:
@@ -161,6 +162,7 @@ class PositionTracker:
                     entry_price=meta["probability"],
                     order_id=pos_key,
                     shares=round(shares, 1),
+                    asset=meta["asset"],
                 )
                 synced += 1
                 log.info(
@@ -202,6 +204,7 @@ class PositionTracker:
                         size_usd=rec.get("size_usd", 35.0),
                         entry_price=rec.get("probability", 0.5),
                         order_id=order_id,
+                        asset=rec.get("asset", ""),
                     )
             if self._positions:
                 log.info(
@@ -279,6 +282,100 @@ def _get_real_positions_value() -> float | None:
 MAX_TOTAL_EXPOSURE = 150.0  # Hard cap — never exceed $150 in total positions
 MAX_SINGLE_POSITION = 50.0  # Hard cap — no single trade > $50
 
+# ── Correlation Guard ──
+CORRELATION_GROUPS = {
+    "crypto_major": {"bitcoin", "ethereum", "solana"},
+}
+MAX_CORRELATED_SAME_DIR = 1  # max positions in same direction within a group
+
+# ── Drawdown Circuit Breaker ──
+MAX_CONSECUTIVE_LOSSES = 3
+LOSS_STREAK_COOLDOWN_S = 7200  # 2 hours
+DAILY_LOSS_LIMIT_USD = -30.0   # halt if daily PnL drops below this
+
+
+class DrawdownBreaker:
+    """Auto-halt trading after consecutive losses or daily loss threshold."""
+
+    def __init__(self):
+        self._halted_until = 0.0
+        self._halt_reason = ""
+
+    def update(self, trades_file: Path | None = None) -> None:
+        """Scan recent trades to check for halt conditions."""
+        tf = trades_file or TRADES_FILE
+        if not tf.exists():
+            return
+
+        now = time.time()
+        day_start = now - 86400  # last 24h
+
+        recent_trades: list[dict] = []
+        try:
+            with open(tf) as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    rec = json.loads(line)
+                    if not rec.get("resolved"):
+                        continue
+                    ts = rec.get("resolved_at", rec.get("timestamp", 0))
+                    if ts >= day_start:
+                        recent_trades.append(rec)
+        except Exception:
+            log.debug("DrawdownBreaker: failed to read trades file")
+            return
+
+        if not recent_trades:
+            return
+
+        # Sort by resolution time (most recent last)
+        recent_trades.sort(key=lambda r: r.get("resolved_at", r.get("timestamp", 0)))
+
+        # Check 1: Consecutive losses (count from most recent backwards)
+        consecutive_losses = 0
+        for trade in reversed(recent_trades):
+            pnl = trade.get("pnl", 0)
+            if pnl < 0:
+                consecutive_losses += 1
+            else:
+                break
+
+        if consecutive_losses >= MAX_CONSECUTIVE_LOSSES:
+            last_loss_ts = recent_trades[-1].get("resolved_at", recent_trades[-1].get("timestamp", now))
+            resume_at = last_loss_ts + LOSS_STREAK_COOLDOWN_S
+            if now < resume_at:
+                self._halted_until = resume_at
+                self._halt_reason = (
+                    f"{consecutive_losses} consecutive losses — "
+                    f"cooldown until {time.strftime('%H:%M:%S', time.localtime(resume_at))}"
+                )
+                return
+
+        # Check 2: Daily realized PnL
+        daily_pnl = sum(t.get("pnl", 0) for t in recent_trades)
+        if daily_pnl <= DAILY_LOSS_LIMIT_USD:
+            # Halt for rest of the day (or at least 2h cooldown)
+            resume_at = now + LOSS_STREAK_COOLDOWN_S
+            self._halted_until = resume_at
+            self._halt_reason = (
+                f"Daily PnL ${daily_pnl:.2f} breached ${DAILY_LOSS_LIMIT_USD:.2f} limit — "
+                f"cooldown until {time.strftime('%H:%M:%S', time.localtime(resume_at))}"
+            )
+            return
+
+        # No halt conditions — clear any stale halt
+        if now >= self._halted_until:
+            self._halted_until = 0.0
+            self._halt_reason = ""
+
+    def can_trade(self) -> tuple[bool, str]:
+        """Returns (allowed, reason)."""
+        if self._halted_until > 0 and time.time() < self._halted_until:
+            return False, self._halt_reason
+        return True, "ok"
+
 
 def check_risk(
     cfg: Config,
@@ -286,28 +383,57 @@ def check_risk(
     tracker: PositionTracker,
     market_id: str,
     trade_size_usd: float | None = None,
+    drawdown_breaker: DrawdownBreaker | None = None,
 ) -> tuple[bool, str]:
     """Gate a trade on risk limits.
 
     Uses BOTH in-memory tracker AND real Polymarket positions to prevent
     exposure from exceeding limits even after restarts.
     """
+    # Check 0a: Drawdown circuit breaker (most urgent — halt everything)
+    if drawdown_breaker is not None:
+        allowed, reason = drawdown_breaker.can_trade()
+        if not allowed:
+            log.warning("CIRCUIT BREAKER: %s — trading paused", reason)
+            return False, f"Circuit breaker: {reason}"
+
     size = trade_size_usd if trade_size_usd is not None else cfg.order_size_usd
 
-    # Check 0: Single position cap
+    # Check 0b: Single position cap
     if size > MAX_SINGLE_POSITION:
         return False, f"Single position ${size:.2f} exceeds ${MAX_SINGLE_POSITION:.2f} cap"
 
-    # Check 1: Max concurrent positions (in-memory)
+    # Check 1: Correlation guard — prevent correlated same-direction bets
+    sig_asset = signal.asset.lower()
+    sig_dir = signal.direction.lower()
+    for group_name, group_assets in CORRELATION_GROUPS.items():
+        if sig_asset not in group_assets:
+            continue
+        # Count open same-direction positions in this group
+        same_dir_in_group = [
+            p for p in tracker.open_positions
+            if p.asset.lower() in group_assets
+            and p.direction.lower() == sig_dir
+        ]
+        if len(same_dir_in_group) >= MAX_CORRELATED_SAME_DIR:
+            existing = same_dir_in_group[0]
+            msg = (
+                f"Correlation guard: already have {existing.asset} {existing.direction} open, "
+                f"blocking {sig_asset} {sig_dir} (group: {group_name})"
+            )
+            log.info(msg)
+            return False, msg
+
+    # Check 2: Max concurrent positions (in-memory)
     if tracker.count >= cfg.max_concurrent_positions:
         return False, f"Max concurrent positions reached ({cfg.max_concurrent_positions})"
 
-    # Check 2: In-memory exposure cap
+    # Check 3: In-memory exposure cap
     new_exposure = tracker.total_exposure + size
     if new_exposure > MAX_TOTAL_EXPOSURE:
         return False, f"Would exceed max exposure: ${new_exposure:.2f} > ${MAX_TOTAL_EXPOSURE:.2f}"
 
-    # Check 3: Real Polymarket positions value (survives restarts)
+    # Check 4: Real Polymarket positions value (survives restarts)
     real_positions = _get_real_positions_value()
     if real_positions is not None and real_positions + size > MAX_TOTAL_EXPOSURE:
         return False, (
@@ -315,7 +441,7 @@ def check_risk(
             f"= ${real_positions + size:.2f} > ${MAX_TOTAL_EXPOSURE:.2f}"
         )
 
-    # Check 4: Duplicate market guard moved to main.py _market_trade_count
+    # Check 5: Duplicate market guard moved to main.py _market_trade_count
     # (smart stacking allows up to MAX_TRADES_PER_MARKET per market)
 
     log.info(
