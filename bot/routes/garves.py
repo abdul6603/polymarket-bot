@@ -80,19 +80,23 @@ def api_trades():
     total_resolved = len(wins) + len(losses)
     win_rate = (len(wins) / total_resolved * 100) if total_resolved > 0 else 0
 
-    # PnL estimate
+    # PnL — use actual trade data when available
     total_pnl = 0.0
     stake = float(os.getenv("ORDER_SIZE_USD", "5.0"))
     for t in resolved:
         if t.get("outcome") == "unknown":
             continue
-        implied = t.get("implied_up_price", 0.5)
-        direction = t.get("direction", "up")
-        entry_price = implied if direction == "up" else (1 - implied)
-        if t.get("won"):
-            total_pnl += stake * (1 - entry_price) - stake * 0.02
+        if t.get("pnl") is not None:
+            total_pnl += t["pnl"]
         else:
-            total_pnl += -stake * entry_price
+            s = t.get("size_usd", stake)
+            implied = t.get("implied_up_price", 0.5)
+            direction = t.get("direction", "up")
+            entry_price = implied if direction == "up" else (1 - implied)
+            if t.get("won"):
+                total_pnl += s * (1 - entry_price) - s * 0.02
+            else:
+                total_pnl += -s * entry_price
 
     # By asset
     by_asset = {}
@@ -157,15 +161,18 @@ def api_trades():
         implied = t.get("implied_up_price", 0.5)
         direction = t.get("direction", "up")
         entry_price = implied if direction == "up" else (1 - implied)
+        trade_stake = t.get("size_usd", stake)
         if t.get("resolved"):
             if t.get("outcome") == "unknown":
                 est_pnl = 0.0
+            elif t.get("pnl") is not None:
+                est_pnl = t["pnl"]
             elif t.get("won"):
-                est_pnl = stake * (1 - entry_price) - stake * 0.02
+                est_pnl = trade_stake * (1 - entry_price) - trade_stake * 0.02
             else:
-                est_pnl = -stake * entry_price
+                est_pnl = -trade_stake * entry_price
         else:
-            est_pnl = stake * (1 - entry_price) - stake * 0.02
+            est_pnl = trade_stake * (1 - entry_price) - trade_stake * 0.02
         return {
             "trade_id": t.get("trade_id", ""),
             "time": dt.strftime("%I:%M:%S %p"),
@@ -188,7 +195,7 @@ def api_trades():
             "time_left_sec": time_left_sec,
             "market_end_ts": end_ts,
             "entry_price": round(entry_price, 4),
-            "stake": round(stake, 2),
+            "stake": round(trade_stake, 2),
             "est_pnl": round(est_pnl, 2),
             "signal_rationale": t.get("signal_rationale", ""),
         }
@@ -248,13 +255,19 @@ def _build_trades_response(trades):
     for t in resolved:
         if t.get("outcome") == "unknown":
             continue
-        implied = t.get("implied_up_price", 0.5)
-        direction = t.get("direction", "up")
-        entry_price = implied if direction == "up" else (1 - implied)
-        if t.get("won"):
-            total_pnl += stake * (1 - entry_price) - stake * 0.02
+        # Use actual pnl from trade if available (real on-chain data)
+        if t.get("pnl") is not None:
+            total_pnl += t["pnl"]
         else:
-            total_pnl += -stake * entry_price
+            # Fallback: estimate using actual size_usd or env var
+            s = t.get("size_usd", stake)
+            implied = t.get("implied_up_price", 0.5)
+            direction = t.get("direction", "up")
+            entry_price = implied if direction == "up" else (1 - implied)
+            if t.get("won"):
+                total_pnl += s * (1 - entry_price) - s * 0.02
+            else:
+                total_pnl += -s * entry_price
 
     by_asset, by_tf, by_dir = {}, {}, {}
     for t in resolved:
@@ -288,15 +301,18 @@ def _build_trades_response(trades):
         implied = t.get("implied_up_price", 0.5)
         direction = t.get("direction", "up")
         entry_price = implied if direction == "up" else (1 - implied)
+        trade_stake = t.get("size_usd", stake)
         if t.get("resolved"):
             if t.get("outcome") == "unknown":
                 est_pnl = 0.0
+            elif t.get("pnl") is not None:
+                est_pnl = t["pnl"]
             elif t.get("won"):
-                est_pnl = stake * (1 - entry_price) - stake * 0.02
+                est_pnl = trade_stake * (1 - entry_price) - trade_stake * 0.02
             else:
-                est_pnl = -stake * entry_price
+                est_pnl = -trade_stake * entry_price
         else:
-            est_pnl = stake * (1 - entry_price) - stake * 0.02
+            est_pnl = trade_stake * (1 - entry_price) - trade_stake * 0.02
         return {
             "trade_id": t.get("trade_id", ""),
             "time": dt.strftime("%I:%M:%S %p"),
@@ -319,7 +335,7 @@ def _build_trades_response(trades):
             "time_left_sec": time_left_sec,
             "market_end_ts": end_ts,
             "entry_price": round(entry_price, 4),
-            "stake": round(stake, 2),
+            "stake": round(trade_stake, 2),
             "est_pnl": round(est_pnl, 2),
             "signal_rationale": t.get("signal_rationale", ""),
         }
@@ -390,13 +406,17 @@ def api_garves_report_4h():
 
         pnl = 0.0
         for t in resolved:
-            implied = t.get("implied_up_price", 0.5)
-            d = t.get("direction", "up")
-            ep = implied if d == "up" else (1 - implied)
-            if t.get("won"):
-                pnl += stake * (1 - ep) - stake * 0.02
+            if t.get("pnl") is not None:
+                pnl += t["pnl"]
             else:
-                pnl += -stake * ep
+                s = t.get("size_usd", stake)
+                implied = t.get("implied_up_price", 0.5)
+                d = t.get("direction", "up")
+                ep = implied if d == "up" else (1 - implied)
+                if t.get("won"):
+                    pnl += s * (1 - ep) - s * 0.02
+                else:
+                    pnl += -s * ep
 
         # Best/worst trade
         best_edge = max((t.get("edge", 0) for t in w_trades), default=0)
@@ -671,50 +691,66 @@ def _fetch_position_value(wallet: str) -> float:
 
 @garves_bp.route("/api/garves/balance")
 def api_garves_balance():
-    """Live Polymarket portfolio balance — read from bot's balance cache."""
-    bankroll = float(os.getenv("BANKROLL_USD", "250.0"))
+    """Live Polymarket portfolio balance.
 
-    # Primary: read cache written by Garves bot (which has VPN access to CLOB API)
+    Priority chain:
+    1. Fresh cache from Garves bot on Pro (< 5 min old)
+    2. Public data-api for position value (always works, no VPN)
+       + CLOB API for USDC cash (needs VPN, best-effort)
+    3. Stale cache as last resort
+    """
+    bankroll = float(os.getenv("BANKROLL_USD", "250.0"))
+    wallet = POLYMARKET_WALLET
+
+    # 1. Try fresh cache first
+    stale_cached = None
     if BALANCE_CACHE_FILE.exists():
         try:
             cached = json.loads(BALANCE_CACHE_FILE.read_text())
             age = time.time() - cached.get("fetched_at", 0)
-            # Accept bot-written cache up to 5 min old
             if age < 300:
                 cached["bankroll"] = bankroll
                 cached["pnl"] = round(cached.get("portfolio", 0) - bankroll, 2)
                 cached["cache_age_s"] = round(age)
                 return jsonify(cached)
+            # Keep stale cache for fallback
+            stale_cached = cached
         except Exception:
             pass
 
-    # Fallback: try CLOB API directly (works if VPN is active on this machine)
+    # 2. Fetch live from public APIs (no VPN needed for position value)
     result = {"portfolio": 0.0, "cash": 0.0, "positions_value": 0.0,
               "pnl": 0.0, "bankroll": bankroll, "live": False, "error": None}
-    wallet = POLYMARKET_WALLET
-    errors = []
 
-    try:
-        cash = _fetch_usdc_balance(wallet)
-        result["cash"] = round(cash, 2)
-        result["live"] = True
-    except Exception as e:
-        errors.append(f"USDC: {str(e)[:80]}")
-
+    # Position value — public data-api, always works
     try:
         pos_val = _fetch_position_value(wallet)
         result["positions_value"] = round(pos_val, 2)
         result["live"] = True
     except Exception as e:
-        errors.append(f"Positions: {str(e)[:80]}")
+        result["error"] = f"Position value fetch failed: {str(e)[:80]}"
+
+    # USDC cash — CLOB API, needs VPN (best-effort)
+    try:
+        cash = _fetch_usdc_balance(wallet)
+        result["cash"] = round(cash, 2)
+    except Exception:
+        # No VPN — use stale cache value if available
+        if stale_cached and stale_cached.get("cash") is not None:
+            result["cash"] = stale_cached["cash"]
 
     if result["live"]:
         result["portfolio"] = round(result["cash"] + result["positions_value"], 2)
         result["pnl"] = round(result["portfolio"] - bankroll, 2)
+    elif stale_cached:
+        # 3. Fall back to stale cache
+        stale_cached["bankroll"] = bankroll
+        stale_cached["pnl"] = round(stale_cached.get("portfolio", 0) - bankroll, 2)
+        stale_cached["cache_age_s"] = round(time.time() - stale_cached.get("fetched_at", 0))
+        stale_cached["stale"] = True
+        return jsonify(stale_cached)
     else:
-        result["error"] = "Balance unavailable — Garves bot not running or VPN down"
-        if errors:
-            result["error"] += " (" + "; ".join(errors) + ")"
+        result["error"] = "Balance unavailable — no cache and API unreachable"
 
     result["fetched_at"] = time.time()
     try:

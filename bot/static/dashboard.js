@@ -186,8 +186,9 @@ function renderLiveStats(data) {
   var s = data.summary || {};
   document.getElementById('live-winrate').textContent = (s.win_rate || 0) + '%';
   document.getElementById('live-winrate').style.color = wrColor(s.win_rate || 0);
-  document.getElementById('live-pnl').textContent = '$' + (s.pnl || 0).toFixed(2);
-  document.getElementById('live-pnl').style.color = (s.pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)';
+  var pnl = s.pnl || 0;
+  document.getElementById('live-pnl').textContent = (pnl >= 0 ? '+$' : '-$') + Math.abs(pnl).toFixed(2);
+  document.getElementById('live-pnl').style.color = pnl >= 0 ? 'var(--success)' : 'var(--error)';
   document.getElementById('live-wins-losses').textContent = (s.wins || 0) + ' / ' + (s.losses || 0);
   document.getElementById('live-total').textContent = s.total_trades || 0;
   document.getElementById('live-resolved').textContent = s.resolved || 0;
@@ -200,16 +201,20 @@ function renderLiveBalance(data) {
   var pnlEl = document.getElementById('live-real-pnl');
   if (!portEl) return;
   portEl.textContent = '$' + (data.portfolio || 0).toFixed(2);
-  portEl.style.color = 'var(--success)';
+  portEl.style.color = (data.portfolio || 0) > 0 ? 'var(--success)' : 'var(--error)';
   cashEl.textContent = '$' + (data.cash || 0).toFixed(2);
-  cashEl.style.color = 'var(--success)';
+  cashEl.style.color = (data.cash || 0) > 0 ? 'var(--success)' : 'var(--text-muted)';
   var pnl = data.pnl || 0;
   pnlEl.textContent = (pnl >= 0 ? '+$' : '-$') + Math.abs(pnl).toFixed(2);
   pnlEl.style.color = pnl >= 0 ? 'var(--success)' : 'var(--error)';
-  // Show live indicator if data is from chain
-  if (data.live) {
-    portEl.parentElement.querySelector('.stat-label').innerHTML = 'Portfolio <span style="color:var(--success);font-size:0.6rem;">LIVE</span>';
+  // Show live/stale indicator
+  var label = 'Portfolio';
+  if (data.live && !data.stale) {
+    label += ' <span style="color:var(--success);font-size:0.6rem;">LIVE</span>';
+  } else if (data.stale) {
+    label += ' <span style="color:var(--warning);font-size:0.6rem;">STALE</span>';
   }
+  portEl.parentElement.querySelector('.stat-label').innerHTML = label;
 }
 
 // === LIVE COUNTDOWN TIMER ENGINE ===
