@@ -24,6 +24,15 @@
     <div id="intel-action-result" style="font-size:0.68rem;color:var(--text-muted);min-height:20px;"></div>
   </div>
 
+  <!-- INTELLIGENCE METERS — Real Learning Progress -->
+  <div class="stat-card" style="padding:14px;margin-bottom:12px;">
+    <div style="font-weight:600;color:var(--text-primary);margin-bottom:10px;font-size:0.82rem;">Agent Intelligence Meters</div>
+    <div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:12px;">Score = Experience (decisions) + Knowledge (patterns) + Accuracy (win rate) + Maturity (resolved ratio) + Recency (7d activity)</div>
+    <div id="intel-meters-container">
+      <span class="text-muted" style="font-size:0.72rem;">Waiting for refresh...</span>
+    </div>
+  </div>
+
   <!-- Top Row: Server Status + Cost Summary -->
   <div class="stat-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:12px;">
     <div class="stat-card">
@@ -50,15 +59,6 @@
       <div class="stat-label">Est. Savings (24h)</div>
       <div class="stat-value" id="llm-savings-24h" style="color:var(--success);">--</div>
       <div class="text-muted" style="font-size:0.6rem;">Local vs cloud offset</div>
-    </div>
-  </div>
-
-  <!-- INTELLIGENCE METERS — Real Learning Progress -->
-  <div class="stat-card" style="padding:14px;margin-bottom:12px;">
-    <div style="font-weight:600;color:var(--text-primary);margin-bottom:10px;font-size:0.82rem;">Agent Intelligence Meters</div>
-    <div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:12px;">Score = Experience (decisions) + Knowledge (patterns) + Accuracy (win rate) + Maturity (resolved ratio) + Recency (7d activity)</div>
-    <div id="intel-meters-container">
-      <span class="text-muted" style="font-size:0.72rem;">Waiting for refresh...</span>
     </div>
   </div>
 
