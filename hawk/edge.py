@@ -27,11 +27,11 @@ class TradeOpportunity:
 
 
 # Fix 2: R:R ratio filter — only bet when potential win > 1.2x potential loss
-MIN_RR_RATIO = 1.2
-MAX_TOKEN_PRICE = 0.50  # Never buy tokens above $0.50 (asymmetric R:R)
+MIN_RR_RATIO = 1.5
+MAX_TOKEN_PRICE = 0.40  # Never buy tokens above $0.40 (need 2.5:1 minimum)
 
 # Fix 5: Confidence floor — reject GPT guesses (sportsbook-backed exempt)
-MIN_CONFIDENCE = 0.55
+MIN_CONFIDENCE = 0.60
 
 _YES_OUTCOMES = {"yes", "up", "over"}
 _NO_OUTCOMES = {"no", "down", "under"}

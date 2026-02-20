@@ -352,16 +352,22 @@ def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate |
                 sportsbook_books=sportsbook_books,
             )
 
-        # V4: Sports WITHOUT sportsbook data → skip entirely (GPT guesses are -EV)
-        log.info("[V4] No sportsbook data — skipping sports market: %s", market.question[:60])
+        # V5: Sports WITHOUT sportsbook data → skip (GPT guesses are -EV, confirmed by trade history)
+        log.info("[V5] No sportsbook data — skipping sports: %s", market.question[:60])
         return None
 
-    # V4: Non-sports markets — SKIP (Hawk is sports-only now)
-    log.info("[V4] Skipping non-sports market (sports-only mode): %s", market.question[:60])
-    return None
+    # V5: Non-sports markets — analyze with local LLM ($0 cost)
+    # Filter out crypto price range markets (Garves territory)
+    q_lower = market.question.lower()
+    _CRYPTO_RANGE_KEYWORDS = ["price of bitcoin", "price of btc", "price of ethereum",
+                               "price of eth", "price of xrp", "price of sol",
+                               "price of doge", "price of bnb", "price of ada",
+                               "between $", "between \u00a3"]
+    if any(kw in q_lower for kw in _CRYPTO_RANGE_KEYWORDS):
+        log.info("[V5] Skipping crypto price range (Garves territory): %s", market.question[:60])
+        return None
 
-    # ── DEAD CODE below — kept for future re-enable if needed ──
-    # ── Build GPT prompt (non-sports only) ──
+    # ── Build LLM prompt ──
     time_info = ""
     if market.time_left_hours > 0:
         if market.time_left_hours < 24:
@@ -585,10 +591,14 @@ def batch_analyze(
         if result is not None:
             estimates.append(result)
 
-    # Non-sports: skipped in V4 (Hawk is sports-only, zero GPT cost)
-    if non_sports:
-        log.info("Skipping %d non-sports markets (sports-only mode)", len(non_sports))
+    # V5: Non-sports — analyze with local LLM ($0 cost via shared router)
+    for m in non_sports:
+        result = analyze_market(cfg, m)
+        if result is not None:
+            estimates.append(result)
 
-    log.info("V4 Analysis: %d/%d markets | %d sportsbook-pure ($0) | 0 GPT",
-             len(estimates), len(markets), len(estimates))
+    sports_count = sum(1 for e in estimates if e.category == "sports")
+    other_count = len(estimates) - sports_count
+    log.info("V5 Analysis: %d/%d markets | %d sports | %d non-sports",
+             len(estimates), len(markets), sports_count, other_count)
     return estimates

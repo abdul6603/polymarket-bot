@@ -9,6 +9,7 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from difflib import SequenceMatcher
 from hawk.edge import TradeOpportunity
 
 log = logging.getLogger(__name__)
@@ -64,16 +65,24 @@ class HawkTracker:
     def count(self) -> int:
         return len(self._positions)
 
-    def has_position_for_market(self, condition_id: str) -> bool:
-        """Check by condition_id (V2 standardized) with fallback to market_id."""
-        return any(
-            p.get("condition_id") == condition_id or p.get("market_id") == condition_id
-            for p in self._positions
-        )
+    def has_position_for_market(self, condition_id: str, question: str = "") -> bool:
+        """Check by condition_id + question similarity (blocks near-duplicate bets)."""
+        for p in self._positions:
+            # Exact ID match
+            if p.get("condition_id") == condition_id or p.get("market_id") == condition_id:
+                return True
+            # Question similarity check (blocks "BTC $66-68k" vs "BTC $68-70k" type dupes)
+            if question and p.get("question"):
+                ratio = SequenceMatcher(None, question.lower()[:80], p["question"].lower()[:80]).ratio()
+                if ratio > 0.75:
+                    log.warning("Similar market blocked (%.0f%% match): %s ~ %s",
+                                ratio * 100, question[:50], p["question"][:50])
+                    return True
+        return False
 
     def record_trade(self, opp: TradeOpportunity, order_id: str) -> None:
         """Append trade to JSONL and track in memory."""
-        if self.has_position_for_market(opp.market.condition_id):
+        if self.has_position_for_market(opp.market.condition_id, opp.market.question):
             log.warning("Duplicate trade blocked: already have position for %s", opp.market.condition_id[:12])
             return
         rec = {
