@@ -242,11 +242,11 @@ if __name__ == "__main__":
     threading.Timer(2.0, _auto_start_atlas).start()
     threading.Timer(5.0, _auto_start_lisa_poster).start()
     threading.Timer(8.0, _auto_start_reply_hunter).start()
-    threading.Timer(1.0, lambda: webbrowser.open("http://localhost:8877")).start()
+    # threading.Timer(1.0, lambda: webbrowser.open("http://localhost:8877")).start()
 
     if socketio:
         print("[Dashboard] Running with Flask-SocketIO (WebSocket support)")
-        socketio.run(app, host="127.0.0.1", port=8877, debug=False, allow_unsafe_werkzeug=True)
+        socketio.run(app, host="0.0.0.0", port=8877, debug=False, allow_unsafe_werkzeug=True)
     else:
         print("[Dashboard] Running without SocketIO (polling only)")
-        app.run(host="127.0.0.1", port=8877, debug=False, threaded=True)
+        app.run(host="0.0.0.0", port=8877, debug=False, threaded=True)
