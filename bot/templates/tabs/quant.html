@@ -1,5 +1,6 @@
 <div id="tab-quant" class="tab-content">
   <div id="intel-quant" class="intel-meter" style="margin-bottom:12px;"></div>
+
   <!-- Agent Badge Row -->
   <div class="d-flex align-center gap-3 mb-4">
     <div class="agent-card-initial" style="background:#00BFFF22;color:#00BFFF;font-size:1.1rem;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:10px;">QT</div>
@@ -26,33 +27,42 @@
     <div class="text-muted" style="font-size:0.65rem;margin-top:2px;" id="quant-progress-detail"></div>
   </div>
 
-  <!-- Smart Actions -->
+  <!-- Strategy Verdict Banner -->
+  <div id="quant-verdict-banner" style="background:var(--card-bg);border:2px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:16px;display:none;">
+    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+      <div style="text-align:center;min-width:80px;">
+        <div class="text-muted" style="font-size:0.65rem;margin-bottom:2px;">Current WR</div>
+        <div id="quant-verdict-current" style="font-size:1.8rem;font-weight:700;">--</div>
+      </div>
+      <div style="font-size:1.6rem;color:var(--text-muted);">&rarr;</div>
+      <div style="text-align:center;min-width:80px;">
+        <div class="text-muted" style="font-size:0.65rem;margin-bottom:2px;">Best WR</div>
+        <div id="quant-verdict-best" style="font-size:1.8rem;font-weight:700;">--</div>
+      </div>
+      <div id="quant-verdict-delta" style="font-size:1.2rem;font-weight:700;padding:6px 14px;border-radius:8px;">--</div>
+      <div style="flex:1;min-width:200px;margin-left:12px;">
+        <div id="quant-verdict-text" style="font-size:0.82rem;font-weight:500;line-height:1.4;color:var(--text-secondary);">Loading strategy assessment...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Smart Actions (moved after verdict for visibility) -->
   <div class="section-spacer" style="margin-top:0;margin-bottom:16px;">
     <h2 class="section-title" style="color:#00BFFF;">Suggested Actions</h2>
     <div id="quant-smart-actions" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"><span class="text-muted" style="font-size:0.76rem;">Loading...</span></div>
   </div>
 
-  <!-- Stat Cards Row 1: Core metrics -->
-  <div class="stat-grid" style="grid-template-columns:repeat(6,1fr);margin-bottom:12px;">
+  <!-- Key Numbers Row 1: Performance -->
+  <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:12px;">
     <div class="stat-card">
-      <div class="stat-label">Combos Tested</div>
-      <div class="stat-value" id="quant-total-combos" style="color:#00BFFF;">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Parameter combinations evaluated</div>
+      <div class="stat-label">Current Live WR</div>
+      <div class="stat-value" id="quant-baseline-wr" style="color:var(--warning);">--</div>
+      <div class="text-muted" style="font-size:0.6rem;">Garves's current win rate</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Best WR Found</div>
       <div class="stat-value" id="quant-best-wr" style="color:var(--success);">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Highest win rate from backtests</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Current Live WR</div>
-      <div class="stat-value" id="quant-baseline-wr" style="color:var(--warning);">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Garves's current live win rate</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">95% Confidence</div>
-      <div class="stat-value" id="quant-ci" style="color:#00BFFF;font-size:0.85rem;">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Statistical confidence range</div>
+      <div class="text-muted" style="font-size:0.6rem;">Optimal from backtests</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Out-of-Sample WR</div>
@@ -60,28 +70,18 @@
       <div class="text-muted" style="font-size:0.6rem;">Walk-forward test accuracy</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Overfit Drop</div>
+      <div class="stat-label">Overfit Gap</div>
       <div class="stat-value" id="quant-overfit">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Gap between train &amp; test WR</div>
+      <div class="text-muted" style="font-size:0.6rem;">Train vs test WR drop</div>
     </div>
   </div>
 
-  <!-- Stat Cards Row 2: Analytics -->
-  <div class="stat-grid" style="grid-template-columns:repeat(6,1fr);margin-bottom:20px;">
+  <!-- Key Numbers Row 2: Sizing & Health -->
+  <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;">
     <div class="stat-card">
-      <div class="stat-label">Trades Loaded</div>
-      <div class="stat-value" id="quant-trades" style="color:var(--text-muted);">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Historical trades for replay</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Avg Edge</div>
-      <div class="stat-value" id="quant-avg-edge" style="color:var(--success);">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Mean price advantage per trade</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Kelly (Half)</div>
+      <div class="stat-label">Kelly Size</div>
       <div class="stat-value" id="quant-kelly" style="color:#00BFFF;">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Optimal position size %</div>
+      <div class="text-muted" style="font-size:0.6rem;">Optimal position size</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Diversity Score</div>
@@ -94,68 +94,49 @@
       <div class="text-muted" style="font-size:0.6rem;">Is strategy still working?</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Filter Losses</div>
-      <div class="stat-value" id="quant-filtered" style="color:var(--text-muted);">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Trades rejected by filters</div>
+      <div class="stat-label">Trades Analyzed</div>
+      <div class="stat-value" id="quant-trades" style="color:var(--text-muted);">--</div>
+      <div class="text-muted" style="font-size:0.6rem;">Historical trades replayed</div>
     </div>
   </div>
 
-  <!-- Row: Walk-Forward + Kelly -->
+  <!-- What To Change (merged Current vs Best + Recommendations) -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-header">What To Change <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">Current params vs backtest optimal — with reasoning</span></div>
+    <table class="table">
+      <thead><tr><th>Parameter</th><th>Current</th><th>Optimal</th><th>Delta</th></tr></thead>
+      <tbody id="quant-params-tbody">
+        <tr><td colspan="4" class="text-muted" style="text-align:center;padding:20px;">Run a backtest to see comparison</td></tr>
+      </tbody>
+    </table>
+    <div id="quant-recommendations" style="padding:0;">
+      <div class="text-muted" style="text-align:center;padding:16px;font-size:0.72rem;">Recommendations appear after backtesting</div>
+    </div>
+  </div>
+
+  <!-- Walk-Forward Validation + Position Sizing & Strategy Health -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
-    <!-- Walk-Forward Results -->
     <div class="card">
-      <div class="card-header">Walk-Forward Validation <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">Tests strategy on unseen data to check for overfitting</span></div>
+      <div class="card-header">Walk-Forward Validation <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">Does the strategy work on unseen data?</span></div>
       <table class="table">
-        <thead><tr><th>Fold</th><th>Train Size</th><th>Train WR</th><th>Test Size</th><th>Test WR</th></tr></thead>
+        <thead><tr><th>Fold</th><th>Train</th><th>Train WR</th><th>Test</th><th>Test WR</th><th>Status</th></tr></thead>
         <tbody id="quant-wf-tbody">
-          <tr><td colspan="5" class="text-muted" style="text-align:center;padding:20px;">Run a backtest to see walk-forward results</td></tr>
+          <tr><td colspan="6" class="text-muted" style="text-align:center;padding:20px;">Run a backtest to see walk-forward results</td></tr>
         </tbody>
       </table>
     </div>
-
-    <!-- Kelly + Decay -->
     <div class="card">
-      <div class="card-header">Position Sizing &amp; Strategy Health <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">How much to bet and is the strategy still working?</span></div>
+      <div class="card-header">Position Sizing &amp; Strategy Health <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">How much to bet and decay detection</span></div>
       <div id="quant-analytics-detail" style="padding:12px;">
         <div class="text-muted" style="text-align:center;padding:20px;">No analytics data yet</div>
       </div>
     </div>
   </div>
 
-  <!-- Row: Current vs Best + Recommendations -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
-    <!-- Current vs Best Strategy -->
-    <div class="card">
-      <div class="card-header">Current vs Best Strategy <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">Live params vs what backtest found optimal</span></div>
-      <table class="table">
-        <thead><tr><th>Parameter</th><th>Current</th><th>Best</th><th>Delta</th></tr></thead>
-        <tbody id="quant-params-tbody">
-          <tr><td colspan="4" class="text-muted" style="text-align:center;padding:20px;">Run a backtest to see comparison</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Recommendations -->
-    <div class="card">
-      <div class="card-header">Recommendations</div>
-      <div id="quant-recommendations" style="padding:12px;">
-        <div class="text-muted" style="text-align:center;padding:20px;">No recommendations yet</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Indicator Diversity -->
-  <div class="card" style="margin-bottom:20px;">
-    <div class="card-header">Indicator Diversity Analysis <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">Are indicators independent or just saying the same thing?</span></div>
-    <div id="quant-diversity-detail" style="padding:12px;">
-      <div class="text-muted" style="text-align:center;padding:20px;">No diversity data yet</div>
-    </div>
-  </div>
-
   <!-- Parameter Sensitivity -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
     <div class="card">
-      <div class="card-header">Consensus Sensitivity <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">How WR changes at different agreement thresholds</span></div>
+      <div class="card-header">Consensus Sensitivity <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">WR at different agreement thresholds</span></div>
       <table class="table">
         <thead><tr><th>Min Consensus</th><th>Avg WR</th><th>Avg Signals</th><th>Combos</th></tr></thead>
         <tbody id="quant-consensus-tbody">
@@ -164,7 +145,7 @@
       </table>
     </div>
     <div class="card">
-      <div class="card-header">Edge Sensitivity <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">How WR changes at different minimum edge levels</span></div>
+      <div class="card-header">Edge Sensitivity <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">WR at different minimum edge levels</span></div>
       <table class="table">
         <thead><tr><th>Min Edge</th><th>Avg WR</th><th>Avg Signals</th><th>Combos</th></tr></thead>
         <tbody id="quant-edge-tbody">
@@ -174,9 +155,17 @@
     </div>
   </div>
 
+  <!-- Indicator Diversity -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-header">Indicator Diversity <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">Are indicators independent or echoing each other?</span></div>
+    <div id="quant-diversity-detail" style="padding:12px;">
+      <div class="text-muted" style="text-align:center;padding:20px;">No diversity data yet</div>
+    </div>
+  </div>
+
   <!-- Top Backtest Results -->
   <div class="card" style="margin-bottom:20px;">
-    <div class="card-header">Top Backtest Results <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">Best parameter combinations ranked by score</span></div>
+    <div class="card-header">Top Backtest Results <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">Best parameter combos ranked by score (top 10)</span></div>
     <table class="table">
       <thead><tr><th>#</th><th>Label</th><th>Score</th><th>Win Rate</th><th>PF</th><th>Signals</th><th>W/L</th><th>Avg Edge</th></tr></thead>
       <tbody id="quant-results-tbody">
@@ -193,6 +182,13 @@
     </div>
   </div>
 
+  <!-- Hidden elements for JS compatibility (removed from visible layout) -->
+  <div style="display:none;">
+    <span id="quant-total-combos">--</span>
+    <span id="quant-ci">--</span>
+    <span id="quant-avg-edge">--</span>
+    <span id="quant-filtered">--</span>
+  </div>
 
   <!-- Last updated -->
   <div class="text-muted" style="font-size:0.65rem;margin-top:12px;text-align:right;">

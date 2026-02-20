@@ -4101,8 +4101,8 @@ function renderTeamIntelligence(data) {
 
   el.innerHTML = html;
 }
-var _intelAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',lisa:'lisa',sentinel:'robotox',thor:'thor',hawk:'hawk',viper:'viper'};
-var _intelColors = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',robotox:'#00ff44',thor:'#ff6600',hawk:'#FFD700',viper:'#00ff88'};
+var _intelAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',lisa:'lisa',sentinel:'robotox',thor:'thor',hawk:'hawk',viper:'viper',quant:'quant'};
+var _intelColors = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',robotox:'#00ff44',thor:'#ff6600',hawk:'#FFD700',viper:'#00ff88',quant:'#00BFFF'};
 
 function radarSVG(size, values, labels, color) {
   var cx = size / 2, cy = size / 2;
@@ -8260,6 +8260,31 @@ async function loadQuantTab() {
     var totalFiltered = 0;
     for (var k in fr) totalFiltered += fr[k];
     document.getElementById('quant-filtered').textContent = totalFiltered || '--';
+
+    // Strategy Verdict Banner
+    var banner = document.getElementById('quant-verdict-banner');
+    var currentWR = data.baseline_win_rate || 0;
+    var bestWR = data.best_win_rate || 0;
+    if (currentWR || bestWR) {
+      banner.style.display = 'block';
+      var delta = bestWR - currentWR;
+      var bannerColor = currentWR >= 60 ? 'var(--success)' : currentWR >= 50 ? 'var(--warning)' : 'var(--error)';
+      banner.style.borderColor = bannerColor;
+      document.getElementById('quant-verdict-current').textContent = currentWR + '%';
+      document.getElementById('quant-verdict-current').style.color = wrColor(currentWR);
+      document.getElementById('quant-verdict-best').textContent = bestWR + '%';
+      document.getElementById('quant-verdict-best').style.color = wrColor(bestWR);
+      var deltaEl = document.getElementById('quant-verdict-delta');
+      deltaEl.textContent = (delta > 0 ? '+' : '') + delta.toFixed(1) + 'pp';
+      deltaEl.style.background = delta > 0 ? 'rgba(34,170,68,0.13)' : 'rgba(255,85,85,0.13)';
+      deltaEl.style.color = delta > 0 ? 'var(--success)' : 'var(--error)';
+      var verdictText = '';
+      if (currentWR >= 60) verdictText = 'Strategy is performing well. Current parameters are near optimal.';
+      else if (currentWR >= 50) verdictText = 'Strategy is profitable but has room to improve. Consider applying recommended changes.';
+      else verdictText = 'Strategy is underperforming. Parameter optimization strongly recommended.';
+      if (delta > 5) verdictText += ' Backtest found +' + delta.toFixed(1) + 'pp improvement available.';
+      document.getElementById('quant-verdict-text').textContent = verdictText;
+    }
   } catch(e) { console.error('quant status:', e); }
 
   loadQuantResults();
@@ -8286,7 +8311,8 @@ function renderQuantResults(results) {
     return;
   }
   var html = '';
-  for (var i = 0; i < results.length; i++) {
+  var max = Math.min(results.length, 10);
+  for (var i = 0; i < max; i++) {
     var r = results[i];
     html += '<tr>';
     html += '<td>' + r.rank + '</td>';
@@ -8466,18 +8492,24 @@ async function loadQuantWalkForward() {
     var folds = wf.fold_results || [];
     var tbody = document.getElementById('quant-wf-tbody');
     if (folds.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:20px;">Run a backtest to see walk-forward results</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:20px;">Run a backtest to see walk-forward results</td></tr>';
       return;
     }
     var html = '';
     for (var i = 0; i < folds.length; i++) {
       var f = folds[i];
+      var foldDrop = f.train_wr - f.test_wr;
+      var foldStatus, foldColor;
+      if (f.test_wr > f.train_wr + 5) { foldStatus = 'LUCKY'; foldColor = 'var(--warning)'; }
+      else if (foldDrop > 15) { foldStatus = 'OVERFIT'; foldColor = 'var(--error)'; }
+      else { foldStatus = 'PASS'; foldColor = 'var(--success)'; }
       html += '<tr>';
       html += '<td>Fold ' + f.fold + '</td>';
       html += '<td>' + f.train_size + ' (' + f.train_signals + ' sig)</td>';
       html += '<td style="color:' + wrColor(f.train_wr) + ';">' + f.train_wr + '%</td>';
       html += '<td>' + f.test_size + ' (' + f.test_signals + ' sig)</td>';
       html += '<td style="color:' + wrColor(f.test_wr) + ';">' + f.test_wr + '%</td>';
+      html += '<td><span style="padding:2px 8px;border-radius:4px;font-size:0.65rem;font-weight:600;background:' + foldColor + '22;color:' + foldColor + ';">' + foldStatus + '</span></td>';
       html += '</tr>';
     }
     // Summary row
@@ -8487,6 +8519,7 @@ async function loadQuantWalkForward() {
     html += '<td style="color:' + wrColor(wf.train_win_rate) + ';">' + wf.train_win_rate + '%</td>';
     html += '<td>--</td>';
     html += '<td style="color:' + wrColor(wf.test_win_rate) + ';">' + wf.test_win_rate + '%</td>';
+    html += '<td>--</td>';
     html += '</tr>';
     tbody.innerHTML = html;
   } catch(e) { console.error('quant walk-forward:', e); }

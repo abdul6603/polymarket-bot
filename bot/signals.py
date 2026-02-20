@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from bot.config import Config
+from bot.pattern_gate import get_pattern_gate
 from bot.regime import RegimeAdjustment
 from bot.weight_learner import get_dynamic_weights
 
@@ -130,7 +131,7 @@ WEIGHTS = {
     "momentum": 2.0,    # Quant moderate: 1.2→2.0. Strong confirming signal per backtest.
     "ema": 0.6,           # Quant: 1.1→0.6 (weight_v171)
     "heikin_ashi": 0.5,
-    "spot_depth": 0.0,  # Disabled: 30.8% accuracy in 155-trade analysis (Feb 19). Was 0.6.
+    "spot_depth": 0.5,  # Re-enabled: 60.1% accuracy over 148 votes (longer window). Noise-filtered: only signals when depth > $500K.
     "orderbook": 0.5,
     "liquidity": 0.4,
     # DISABLED — below coin flip (harmful)
@@ -147,7 +148,7 @@ WEIGHTS = {
     "mempool": 0.5,           # Mempool.space: BTC network congestion
     "whale_flow": 0.7,        # Whale Alert: large exchange flows
     # NEURAL — PyTorch LSTM price direction predictor
-    "lstm": 1.5,              # Start mid-tier, weight_learner will adjust based on accuracy
+    "lstm": 0.0,              # DISABLED — 52.5% accuracy = coin flip noise. Used as reversal sentinel instead.
 }
 
 # Timeframe-dependent weight scaling
@@ -191,10 +192,10 @@ CONSENSUS_RATIO = 0.70  # Relaxed 0.78→0.70: R:R 1.2+ filter guards quality, l
 CONSENSUS_FLOOR = 3     # Raised 2→3: Quant suggested 7 (too aggressive), tried 4 but caused 100% unanimity requirement on low-indicator pairs (SOL/15m has only 4 active). 3 = meaningful filter without deadlock.
 MIN_CONSENSUS = CONSENSUS_FLOOR  # backward compat for backtest/quant
 MIN_ATR_THRESHOLD = 0.00005  # skip if volatility below this (0.005% of price)
-MIN_CONFIDENCE = 0.60  # Raised: conf>=60% = 91.7% WR. Was 0.55 (82.9%). Fewer trades but much higher quality.
+MIN_CONFIDENCE = 0.20  # Lowered 0.60→0.20: Quant backtest shows 61.4% WR at 0.2. Consensus=7 and edge=8% are the real quality gates; 0.60 was filtering out winners.
 
 # Directional bias: UP predictions have 47.3% WR vs DOWN 63% — require higher confidence for UP
-UP_CONFIDENCE_PREMIUM = 0.06  # Lowered 0.12→0.06: old 0.12 + ETH 0.03 stacked to 0.64 floor in extreme_fear, blocking every contrarian UP trade. Edge+consensus are the real guards.
+UP_CONFIDENCE_PREMIUM = 0.0  # Removed 0.06→0.0: Top 16 backtest combos all have premium=0. No value when consensus is strict (7/10).
 
 # NY market open manipulation window: 9:30-10:15 AM ET — high manipulation, skip
 NY_OPEN_AVOID_START = (9, 30)   # 9:30 AM ET
@@ -206,12 +207,12 @@ MIN_EDGE_BY_TF = {
     "5m": 0.08,     # 8% — raised from 6% (below 8% = 20% WR)
     "15m": 0.08,    # 8% — raised from 9% regime-adjusted (0.7x was dropping to 6.3%)
     "1h": 0.99,     # DISABLED — 14% WR (2W/12L), broken resolution. Effectively unreachable edge.
-    "4h": 0.04,     # 4% — raised from 3%
+    "4h": 0.99,     # DISABLED — 27.7% WR across 83 trades. Effectively unreachable edge.
     "weekly": 0.03, # 3% — lowest edge floor for longest timeframe
 }
 
 # Hard floor — regime adjustments cannot lower edge below this
-MIN_EDGE_ABSOLUTE = 0.05  # 5% — Reverted from 7% (was blocking 4h trades with 4-6% edge). TF-specific floors (5m=8%, 15m=8%) already protect short timeframes.
+MIN_EDGE_ABSOLUTE = 0.08  # 8% — Data: edge<8% has 6-27% WR (79 trades, only 18 wins). 8% is the breakeven floor.
 
 # Reward-to-Risk ratio filter
 # R:R = ((1-P) * 0.98) / P  where P = token price, 0.98 = payout after 2% winner fee
@@ -225,7 +226,7 @@ MIN_VOTE_CONFIDENCE = 0.15  # 15% — below this, vote doesn't count for consens
 
 # Reversal Sentinel — disabled indicators act as reversal canaries
 # When 2+ disabled indicators disagree with majority, raise the bar
-REVERSAL_SENTINEL_INDICATORS = {"rsi", "bollinger", "heikin_ashi", "funding_rate"}
+REVERSAL_SENTINEL_INDICATORS = {"rsi", "bollinger", "heikin_ashi", "funding_rate", "lstm"}
 REVERSAL_SENTINEL_THRESHOLD = 2   # how many dissenters needed to trigger
 REVERSAL_SENTINEL_PENALTY = 0.10  # +10% confidence floor when triggered
 
@@ -233,7 +234,7 @@ REVERSAL_SENTINEL_PENALTY = 0.10  # +10% confidence floor when triggered
 ASSET_EDGE_PREMIUM = {
     "bitcoin": 1.5,    # raised 1.0→1.5: 40% WR, -$221 PnL — must prove high edge to trade
     "ethereum": 1.3,   # raised 0.9→1.3: 54% WR but -$15 PnL — needs higher bar
-    "solana": 1.5,     # raised 1.2→1.5: 33% WR, -$179 PnL — hardest bar
+    "solana": 2.0,     # raised 1.5→2.0: SOL/15m has 43% WR — requires 16% edge to trade
     "xrp": 0.9,        # slight discount: 61% WR, best performer — give it more room
 }
 
@@ -427,12 +428,22 @@ class SignalEngine:
             votes["funding_rate"] = None
             votes["liquidation"] = None
 
-        # ── Binance Spot Order Book Depth ──
+        # ── Binance Spot Order Book Depth (noise-filtered: $500K+ total depth only) ──
         if spot_depth:
-            votes["spot_depth"] = spot_depth_signal(
-                bids=spot_depth.get("bids", []),
-                asks=spot_depth.get("asks", []),
-            )
+            _bids = spot_depth.get("bids", [])
+            _asks = spot_depth.get("asks", [])
+            # Only signal when orderbook is deep enough to be meaningful
+            try:
+                _total_depth = (
+                    sum(float(b[0]) * float(b[1]) for b in _bids)
+                    + sum(float(a[0]) * float(a[1]) for a in _asks)
+                )
+            except (ValueError, TypeError, IndexError):
+                _total_depth = 0
+            if _total_depth >= 500_000:  # $500K minimum depth
+                votes["spot_depth"] = spot_depth_signal(bids=_bids, asks=_asks)
+            else:
+                votes["spot_depth"] = None
         else:
             votes["spot_depth"] = None
 
@@ -868,11 +879,31 @@ class SignalEngine:
                     )
                     return None
 
+        # ── Historical Pattern Gate ──
+        # Block combos with proven losing track records
+        _gate = get_pattern_gate()
+        _gate_decision = _gate.evaluate(asset, timeframe, consensus_dir)
+        if not _gate_decision.allowed:
+            log.info(
+                "[%s/%s] PATTERN GATE BLOCKED: %s (%.0f%% WR over %d trades)",
+                asset.upper(), timeframe, _gate_decision.reason,
+                _gate_decision.win_rate * 100, _gate_decision.sample_size,
+            )
+            return None
+
         # ── Timeframe-Specific Minimum Edge (regime-adjusted + asset premium) ──
         asset_premium = ASSET_EDGE_PREMIUM.get(asset, 1.0)
         min_edge = MIN_EDGE_BY_TF.get(timeframe, 0.05) * (regime.edge_multiplier if regime else 1.0) * asset_premium
         # Hard floor — regime cannot lower edge below absolute minimum
         min_edge = max(min_edge, MIN_EDGE_ABSOLUTE)
+        # Pattern gate edge adjustment: raise bar for losing combos, lower for winning ones
+        if _gate_decision.edge_adjustment > 0:
+            min_edge = max(min_edge, _gate_decision.edge_adjustment)
+            log.info("[%s/%s] Pattern gate raised edge to %.0f%% (%.0f%% WR over %d trades)",
+                     asset.upper(), timeframe, min_edge * 100,
+                     _gate_decision.win_rate * 100, _gate_decision.sample_size)
+        elif _gate_decision.edge_adjustment < 0:
+            min_edge = max(0.05, min_edge + _gate_decision.edge_adjustment)  # Never below 5%
         if consensus_edge < min_edge:
             log.info(
                 "[%s/%s] Edge too low: %.3f < %.3f (asset_premium=%.1fx)",
