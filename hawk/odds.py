@@ -45,7 +45,7 @@ _SPORT_KEYS = {
 
 # Cache: {sport_key: (timestamp, events_list)}
 _cache: dict[str, tuple[float, list[dict]]] = {}
-_CACHE_TTL = 900  # 15 minutes — matches Hawk cycle
+_CACHE_TTL = 300  # 5 minutes — matches Hawk cycle
 
 
 @dataclass
