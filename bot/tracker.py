@@ -20,6 +20,7 @@ log = logging.getLogger(__name__)
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 TRADES_FILE = DATA_DIR / "trades.jsonl"
+DECISION_IDS_FILE = DATA_DIR / "decision_ids.json"
 
 
 @dataclass
@@ -87,12 +88,33 @@ class PerformanceTracker:
         DATA_DIR.mkdir(exist_ok=True)
         self._pending: dict[str, TradeRecord] = {}  # trade_id -> record
         self._decision_ids: dict[str, str] = {}  # trade_id -> brain decision_id
+        self._load_decision_ids()
         self._load_pending()
+
+    def _load_decision_ids(self) -> None:
+        """Load persisted decision_id mappings from disk."""
+        if not DECISION_IDS_FILE.exists():
+            return
+        try:
+            with open(DECISION_IDS_FILE) as f:
+                self._decision_ids = json.load(f)
+            log.info("Loaded %d decision_id mappings from disk", len(self._decision_ids))
+        except Exception:
+            log.exception("Failed to load decision_ids")
+
+    def _save_decision_ids(self) -> None:
+        """Persist decision_id mappings to disk so they survive restarts."""
+        try:
+            with open(DECISION_IDS_FILE, "w") as f:
+                json.dump(self._decision_ids, f)
+        except Exception:
+            log.exception("Failed to save decision_ids")
 
     def set_decision_id(self, trade_id: str, decision_id: str) -> None:
         """Map a trade_id to an AgentBrain decision_id for outcome tracking."""
         if decision_id:
             self._decision_ids[trade_id] = decision_id
+            self._save_decision_ids()
 
     def _load_pending(self) -> None:
         """Load unresolved trades from disk on startup."""
@@ -283,6 +305,9 @@ class PerformanceTracker:
                             evidence_count=1,
                             confidence=0.6 if rec.won else 0.4,
                         )
+                    # Clean up resolved mapping
+                    self._decision_ids.pop(trade_id, None)
+                    self._save_decision_ids()
             except Exception:
                 pass
 
