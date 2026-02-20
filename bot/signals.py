@@ -192,8 +192,8 @@ TF_WEIGHT_SCALE = {
 }
 
 MIN_CANDLES = 30
-CONSENSUS_RATIO = 0.70  # Relaxed 0.78→0.70: R:R 1.2+ filter guards quality, let more trades through (7/10 instead of 8/10)
-CONSENSUS_FLOOR = 7     # Raised 3→7: stricter consensus floor — require strong indicator agreement before trading.
+CONSENSUS_RATIO = 0.70  # 70% of active indicators must agree
+CONSENSUS_FLOOR = 3     # Lowered 7→3: with RSI+Bollinger disabled, only 3-5 active indicators. Floor=7 forced unanimous (capped to active_count). Edge+weight_learner are the real guards now.
 MIN_CONSENSUS = CONSENSUS_FLOOR  # backward compat for backtest/quant
 MIN_ATR_THRESHOLD = 0.00005  # skip if volatility below this (0.005% of price)
 MIN_CONFIDENCE = 0.20  # Lowered 0.60→0.20: Quant backtest shows 61.4% WR at 0.2. Consensus=7 and edge=8% are the real quality gates; 0.60 was filtering out winners.
@@ -209,9 +209,9 @@ NY_OPEN_AVOID_END = (10, 15)    # 10:15 AM ET
 # Data: 0-8% edge = 20% WR, 8-11% = 62.5% WR — 8% is the breakeven floor
 MIN_EDGE_BY_TF = {
     "5m": 0.08,     # 8% — raised from 6% (below 8% = 20% WR)
-    "15m": 0.08,    # 8% — raised from 9% regime-adjusted (0.7x was dropping to 6.3%)
-    "1h": 0.99,     # DISABLED — 14% WR (2W/12L), broken resolution. Effectively unreachable edge.
-    "4h": 0.99,     # DISABLED — 27.7% WR across 83 trades. Effectively unreachable edge.
+    "15m": 0.08,    # 8% — data-backed breakeven floor
+    "1h": 0.10,     # Re-enabled: was 0.99 (disabled). Weight learner fixed bad indicators. 10% edge = conservative re-entry.
+    "4h": 0.08,     # Re-enabled: was 0.99 (disabled). Brain notes show 74% WR on 4h recent trades. 8% edge floor.
     "weekly": 0.03, # 3% — lowest edge floor for longest timeframe
 }
 
@@ -806,8 +806,8 @@ class SignalEngine:
             trend_dir = "up" if short_trend > long_trend else "down"
 
             if majority_dir != trend_dir:
-                # Going against the trend — require 80% of active indicators to agree
-                anti_trend_min = max(effective_consensus + 1, int(active_count * 0.80))
+                # Going against the trend — require 70% of active indicators to agree
+                anti_trend_min = max(effective_consensus + 1, int(active_count * 0.70))
                 if agree_count < anti_trend_min:
                     log.info(
                         "[%s/%s] Anti-trend filter: signal=%s but trend=%s, need %d/%d (have %d)",
