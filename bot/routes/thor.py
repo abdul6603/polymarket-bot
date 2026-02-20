@@ -332,6 +332,97 @@ def _load_action_learnings() -> list[dict]:
     return []
 
 
+def _detect_installed_infrastructure() -> set[str]:
+    """Detect what infrastructure/features are already built.
+
+    Returns a set of lowercase keyword phrases. Any suggestion whose title or
+    description matches multiple keywords is considered 'already built' and
+    should be filtered out of smart actions.
+    """
+    installed = set()
+    home = Path.home()
+    checks = {
+        # Garves features
+        "regime detection":          home / "polymarket-bot" / "bot" / "regime.py",
+        "fear greed":                home / "polymarket-bot" / "bot" / "regime.py",
+        "sentiment correlation":     home / "polymarket-bot" / "bot" / "regime.py",
+        "risk management":           home / "polymarket-bot" / "bot" / "risk.py",
+        "position sizing":           home / "polymarket-bot" / "bot" / "risk.py",
+        "adaptive risk":             home / "polymarket-bot" / "bot" / "risk.py",
+        "conviction engine":         home / "polymarket-bot" / "bot" / "conviction.py",
+        "ml predictor":              home / "polymarket-bot" / "bot" / "ml_predictor.py",
+        "machine learning predictor": home / "polymarket-bot" / "bot" / "ml_predictor.py",
+        "weight learner":            home / "polymarket-bot" / "bot" / "weight_learner.py",
+        "straddle engine":           home / "polymarket-bot" / "bot" / "straddle.py",
+        "indicator ensemble":        home / "polymarket-bot" / "bot" / "indicators.py",
+        "orderbook":                 home / "polymarket-bot" / "bot" / "orderbook.py",
+        "daily cycle":               home / "polymarket-bot" / "bot" / "daily_cycle.py",
+        # Quant
+        "backtesting":               home / "polymarket-bot" / "quant" / "main.py",
+        "backtest":                  home / "polymarket-bot" / "quant" / "main.py",
+        # Hawk
+        "non-crypto market":         home / "polymarket-bot" / "hawk" / "main.py",
+        # Atlas features
+        "centralized data analytics": home / "atlas" / "brain.py",
+        "data analytics module":     home / "atlas" / "brain.py",
+        "knowledge base":            home / "atlas" / "brain.py",
+        "research engine":           home / "atlas" / "researcher.py",
+        "competitor spy":            home / "atlas" / "competitor_spy.py",
+        "competitor benchmark":      home / "atlas" / "competitor_spy.py",
+        # Shared intelligence
+        "event bus":                 home / "shared" / "events.py",
+        "feedback loop":             home / "shared" / "events.py",
+        "agent memory":              home / "shared" / "agent_memory.py",
+        "agent brain":               home / "shared" / "agent_brain.py",
+        "llm router":                home / "shared" / "llm_client.py",
+        "cost tracking":             home / "shared" / "llm_costs.jsonl",
+        # Shelby features
+        "task management":           home / "shelby" / "core" / "tools.py",
+        "agent orchestration":       home / "shelby" / "shelby.py",
+        "scheduler":                 home / "shelby" / "core" / "scheduler.py",
+        # Robotox features
+        "log watcher":               home / "sentinel" / "core" / "log_watcher.py",
+        "health monitor":            home / "sentinel" / "sentinel.py",
+        "process monitoring":        home / "sentinel" / "sentinel.py",
+        "dependency checker":        home / "sentinel" / "core" / "dep_checker.py",
+        # Lisa features
+        "reply intelligence":        home / "mercury" / "core" / "brain.py",
+        "posting scheduler":         home / "mercury" / "core" / "scheduler.py",
+        # Soren features
+        "a/b testing":               home / "soren-content" / "ab_testing.py",
+        "ab testing":                home / "soren-content" / "ab_testing.py",
+        "trend generator":           home / "soren-content" / "trend_generator.py",
+        "trend analysis":            home / "soren-content" / "trend_generator.py",
+        # Dashboard features
+        "command center":            home / "polymarket-bot" / "bot" / "live_dashboard.py",
+        "real-time dashboard":       home / "polymarket-bot" / "bot" / "live_dashboard.py",
+        "analytics dashboard":       home / "polymarket-bot" / "bot" / "live_dashboard.py",
+    }
+    for keyword, path in checks.items():
+        if path.exists():
+            installed.add(keyword)
+    return installed
+
+
+def _is_suggestion_stale(title: str, description: str, installed: set[str]) -> bool:
+    """Check if a suggestion describes something already built.
+
+    Returns True if 2+ installed keyword phrases appear in the title+desc,
+    or if any single phrase is an exact substring of the title.
+    """
+    text = (title + " " + description).lower()
+    title_lower = title.lower()
+
+    # Exact match in title — single hit is enough
+    for keyword in installed:
+        if keyword in title_lower:
+            return True
+
+    # Fuzzy: 2+ keyword hits in full text
+    hits = sum(1 for keyword in installed if keyword in text)
+    return hits >= 2
+
+
 def _generate_smart_actions(agent_filter: str = "") -> list[dict]:
     """Generate dynamic quick actions from live agent data.
 
@@ -340,6 +431,7 @@ def _generate_smart_actions(agent_filter: str = "") -> list[dict]:
     """
     actions = []
     completed_hashes = _load_completed_hashes()
+    installed_infra = _detect_installed_infrastructure()
 
     # 1. Atlas improvements → actionable tasks
     try:
@@ -353,10 +445,13 @@ def _generate_smart_actions(agent_filter: str = "") -> list[dict]:
                     for item in items[:2]:  # top 2 per agent
                         if not isinstance(item, dict):
                             continue
-                        title = item.get("title", item.get("suggestion", ""))[:80]
+                        title = item.get("title", item.get("skill", item.get("suggestion", "")))[:80]
                         if not title:
                             continue
                         desc = item.get("description", item.get("detail", title))
+                        # Skip suggestions for things already built
+                        if _is_suggestion_stale(title, str(desc), installed_infra):
+                            continue
                         files = AGENT_FILE_MAP.get(agent_name, {}).get("key_files", [])
                         actions.append({
                             "id": f"atlas_{agent_name}_{hash(title) % 10000}",
@@ -512,6 +607,9 @@ def _generate_smart_actions(agent_filter: str = "") -> list[dict]:
                 agent = learning.get("agent", "atlas")
                 conf = learning.get("confidence", 0)
                 if conf < 0.7 or not any(kw in insight.lower() for kw in action_keywords):
+                    continue
+                # Skip learnings about things already built
+                if _is_suggestion_stale(insight, "", installed_infra):
                     continue
                 action_id = f"learning_{agent}_{hash(insight) % 10000}"
                 actions.append({
