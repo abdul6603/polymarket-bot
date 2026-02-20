@@ -677,6 +677,25 @@ def _fetch_usdc_balance(wallet: str) -> float:
     return int(data.get("balance", "0")) / 1e6
 
 
+def _fetch_cash_from_pro() -> float | None:
+    """Read USDC cash balance from Pro M3 via SSH (Garves bot writes this file)."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["ssh", "-o", "ConnectTimeout=3", "-o", "StrictHostKeyChecking=no",
+             "pro", "cat", "/Users/macuser/polymarket-bot/data/polymarket_balance.json"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            data = json.loads(result.stdout)
+            cash = data.get("cash")
+            if cash is not None:
+                return float(cash)
+    except Exception:
+        pass
+    return None
+
+
 def _fetch_position_value(wallet: str) -> float:
     """Get open position value from Polymarket data API."""
     import urllib.request
@@ -730,13 +749,20 @@ def api_garves_balance():
     except Exception as e:
         result["error"] = f"Position value fetch failed: {str(e)[:80]}"
 
-    # USDC cash — CLOB API, needs VPN (best-effort)
+    # USDC cash — try CLOB API first, then SSH to Pro, then stale cache
     try:
         cash = _fetch_usdc_balance(wallet)
         result["cash"] = round(cash, 2)
     except Exception:
-        # No VPN — use stale cache value if available
-        if stale_cached and stale_cached.get("cash") is not None:
+        # CLOB API failed (no VPN) — try reading balance from Pro via SSH
+        try:
+            cash = _fetch_cash_from_pro()
+            if cash is not None:
+                result["cash"] = round(cash, 2)
+        except Exception:
+            pass
+        # Last resort: stale cache
+        if result["cash"] == 0.0 and stale_cached and stale_cached.get("cash"):
             result["cash"] = stale_cached["cash"]
 
     if result["live"]:
@@ -943,8 +969,15 @@ def api_garves_positions():
                 "pnl_pct": round((pnl / total_cost * 100) if total_cost > 0 else 0, 1),
             }
 
-            # Open = price between 0.1%-99.9%  |  Settled with value = won unredeemed
-            if 0.001 < cur_price < 0.999:
+            # Include if: actively trading (mid-range price) OR won unredeemed (price ~1.0)
+            if cur_price >= 0.999:
+                row["status"] = "won"
+                holdings.append(row)
+                totals["open_count"] += 1
+                totals["open_margin"] += total_cost
+                totals["open_value"] += total_value
+                totals["open_pnl"] += pnl
+            elif cur_price > 0.001:
                 holdings.append(row)
                 totals["open_count"] += 1
                 totals["open_margin"] += total_cost
