@@ -646,6 +646,7 @@ class SignalEngine:
         # ── LLM Signal Synthesis (close calls only — margin < 3 votes) ──
         _llm_adj = 0.0
         vote_margin = abs(up_count - down_count)
+        active_count = up_count + down_count
         if _USE_SHARED_LLM and _shared_llm_call and vote_margin < 3 and active_count >= 5:
             try:
                 _t0 = time.time()
