@@ -58,7 +58,7 @@
     <div style="font-weight:600;color:var(--text-primary);margin-bottom:10px;font-size:0.82rem;">Agent Intelligence Meters</div>
     <div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:12px;">Score = Experience (decisions) + Knowledge (patterns) + Accuracy (win rate) + Maturity (resolved ratio) + Recency (7d activity)</div>
     <div id="intel-meters-container">
-      <span class="text-muted" style="font-size:0.72rem;">Loading...</span>
+      <span class="text-muted" style="font-size:0.72rem;">Waiting for refresh...</span>
     </div>
   </div>
 
@@ -502,8 +502,6 @@ function refreshIntelligence() {
         routing = results[3], recentCalls = results[4], brainActivity = results[5],
         patternFeed = results[6], costSavings = results[7];
 
-    console.log('[Intelligence] Data loaded:', {status: !!status, costs: !!costs, memoryAll: !!memoryAll, agents: Object.keys(memoryAll.agents || {})});
-
     // INTELLIGENCE METERS
     renderIntelMeters(memoryAll.agents || {});
 
@@ -620,11 +618,11 @@ function refreshIntelligence() {
       });
       costEl.innerHTML = cHtml + '</div>';
     }
-  } catch(e) { console.error('[Intelligence] render error:', e); }
+  } catch(e) {
+    console.error('[Intelligence] render error:', e);
+  }
   }).catch(function(err) {
-    console.error('[Intelligence] refreshIntelligence error:', err);
-    var el = document.getElementById('intel-meters-container');
-    if (el) el.innerHTML = '<span style="color:var(--error);font-size:0.72rem;">Error loading: ' + (err.message || err) + '</span>';
+    console.error('[Intelligence] fetch error:', err);
   });
 }
 

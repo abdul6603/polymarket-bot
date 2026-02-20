@@ -4264,7 +4264,7 @@ function renderIntelMeter(containerId, agentKey, data) {
   el.innerHTML = html;
 }
 
-async function refreshIntelligence() {
+async function refreshAgentIntel() {
   try {
     var resp = await fetch('/api/intelligence');
     _intelData = await resp.json();
@@ -4306,8 +4306,8 @@ switchTab = function(tab) {
 };
 
 // Load on startup + every 30s
-refreshIntelligence();
-setInterval(refreshIntelligence, 30000);
+refreshAgentIntel();
+setInterval(refreshAgentIntel, 30000);
 
 // ── Infrastructure Display ──
 

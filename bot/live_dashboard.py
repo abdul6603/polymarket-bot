@@ -79,7 +79,7 @@ if HAS_SOCKETIO:
 @app.after_request
 def add_cache_headers(response):
     # Only disable caching for API responses, allow browser caching for static assets
-    if request.path.startswith("/api/"):
+    if request.path.startswith("/api/") or request.path == "/":
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
