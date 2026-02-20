@@ -469,6 +469,102 @@ def audit_all() -> dict:
     return result
 
 
+LLM_COSTS_FILE = Path(os.path.expanduser("~/shared/llm_costs.jsonl"))
+
+
+def analyze_llm_call_patterns() -> list[dict]:
+    """Analyze ~/shared/llm_costs.jsonl for optimization opportunities.
+
+    Groups by agent + task_type, flags:
+    - Agents using expensive models for 'fast' tasks
+    - High-volume patterns that could use local LLM
+    Returns list of optimization recommendations with estimated savings.
+    """
+    if not LLM_COSTS_FILE.exists():
+        return []
+
+    # Parse JSONL
+    entries = []
+    try:
+        with open(LLM_COSTS_FILE) as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        entries.append(json.loads(line))
+                    except Exception:
+                        pass
+    except Exception:
+        log.exception("Failed to read LLM costs file")
+        return []
+
+    if not entries:
+        return []
+
+    # Group by agent + task_type + model
+    from collections import defaultdict
+    groups = defaultdict(lambda: {"count": 0, "models": defaultdict(int)})
+    for e in entries:
+        agent = e.get("agent", "unknown")
+        task_type = e.get("task_type", "unknown")
+        model = e.get("model", "unknown")
+        key = f"{agent}:{task_type}"
+        groups[key]["count"] += 1
+        groups[key]["models"][model] += 1
+
+    recommendations = []
+
+    for key, data in groups.items():
+        agent, task_type = key.split(":", 1)
+        total = data["count"]
+        models = dict(data["models"])
+
+        # Flag: expensive model for "fast" tasks
+        if task_type == "fast":
+            for model, count in models.items():
+                if model in ("gpt-4o", "claude-sonnet") and count > 5:
+                    savings = count * (_cost_per_call(model) - _cost_per_call("gpt-4o-mini"))
+                    recommendations.append({
+                        "agent": agent,
+                        "task_type": task_type,
+                        "issue": f"Using {model} for 'fast' tasks ({count} calls)",
+                        "recommendation": f"Switch to gpt-4o-mini or local 3B model",
+                        "estimated_savings_monthly": round(savings * 30, 2),
+                        "severity": "high" if savings > 1 else "medium",
+                    })
+
+        # Flag: high volume that could go local
+        if total > 100 and task_type in ("fast", "analysis"):
+            local_candidates = [m for m in models if m in ("gpt-4o-mini", "gpt-4o")]
+            if local_candidates:
+                cloud_count = sum(models.get(m, 0) for m in local_candidates)
+                savings = sum(models.get(m, 0) * _cost_per_call(m) for m in local_candidates)
+                recommendations.append({
+                    "agent": agent,
+                    "task_type": task_type,
+                    "issue": f"High volume ({cloud_count} cloud calls for '{task_type}')",
+                    "recommendation": "Route to local MLX (Qwen 3B/14B) to eliminate cost",
+                    "estimated_savings_monthly": round(savings * 30, 2),
+                    "severity": "medium",
+                })
+
+    recommendations.sort(key=lambda r: r.get("estimated_savings_monthly", 0), reverse=True)
+    return recommendations
+
+
+def generate_cost_report() -> dict:
+    """Comprehensive cost report combining all analysis functions.
+
+    Wraps audit_all() + find_waste() + analyze_llm_call_patterns() + LLM recommendations.
+    Produces a complete cost report dict.
+    """
+    report = audit_all()
+    report["waste"] = find_waste()
+    report["llm_patterns"] = analyze_llm_call_patterns()
+    report["recommendations"] = get_llm_cost_recommendations()
+    return report
+
+
 def find_waste() -> list[dict]:
     """Identify wasteful spending patterns."""
     audit = audit_all()

@@ -281,7 +281,19 @@ def scan_reddit_predictions(subreddits: list[str] | None = None) -> list[IntelIt
                 headers={"User-Agent": "Viper-Intel/2.0"},
                 timeout=10,
             )
-            if resp.status_code != 200:
+            if resp.status_code == 429:
+                log.warning("Reddit r/%s rate-limited (429), retrying in 2s...", sub)
+                time.sleep(2)
+                resp = session.get(
+                    f"https://www.reddit.com/r/{sub}/hot.json",
+                    params={"limit": 15},
+                    headers={"User-Agent": "Viper-Intel/2.0"},
+                    timeout=10,
+                )
+                if resp.status_code != 200:
+                    log.warning("Reddit r/%s retry failed (%d), skipping", sub, resp.status_code)
+                    continue
+            elif resp.status_code != 200:
                 log.warning("Reddit r/%s returned %d", sub, resp.status_code)
                 continue
 
@@ -320,6 +332,9 @@ def scan_reddit_predictions(subreddits: list[str] | None = None) -> list[IntelIt
 
         except Exception:
             log.exception("Failed to scan r/%s", sub)
+
+        # Rate-limit: pause between sub requests to avoid 429s
+        time.sleep(1)
 
     log.info("Reddit scan: %d intel items from %d subs", len(items), len(subs))
     return items

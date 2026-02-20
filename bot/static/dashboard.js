@@ -7295,9 +7295,10 @@ async function loadViperTab() {
   } catch(e) {}
 
   // Cost audit
+  var costData = null;
   try {
     var costResp = await fetch('/api/viper/costs');
-    var costData = await costResp.json();
+    costData = await costResp.json();
     renderViperCosts(costData);
   } catch(e) {}
 
@@ -7313,6 +7314,24 @@ async function loadViperTab() {
     var sorenOppResp = await fetch('/api/viper/soren-opportunities');
     var sorenOppData = await sorenOppResp.json();
     renderSorenOpportunities(sorenOppData);
+  } catch(e) {}
+
+  // Brotherhood P&L
+  loadViperPnl();
+
+  // Anomalies
+  loadViperAnomalies();
+
+  // Agent Digests
+  loadViperDigests();
+
+  // Cost Optimization (from cost data)
+  renderCostOptimization(costData);
+
+  // Shelby push count from status
+  try {
+    var pushEl = document.getElementById('viper-push-count');
+    if (pushEl && s) pushEl.textContent = s.pushes || 0;
   } catch(e) {}
 
   // Brand Channel
@@ -7610,6 +7629,158 @@ async function viperTriggerScan() {
     _viperUpdateProgress({step: 'Error: ' + e.message, detail: '', pct: 0});
     if (btn) { btn.disabled = false; btn.textContent = 'Trigger Scan'; btn.style.opacity = '1'; }
   }
+}
+
+// ══════════════════════════════════════
+// VIPER P&L, ANOMALIES, DIGESTS
+// ══════════════════════════════════════
+
+async function loadViperPnl() {
+  try {
+    var resp = await fetch('/api/viper/pnl');
+    var d = await resp.json();
+    var netEl = document.getElementById('viper-pnl-net');
+    var monthEl = document.getElementById('viper-pnl-monthly');
+    var costEl = document.getElementById('viper-pnl-cost');
+    var trendEl = document.getElementById('viper-pnl-trend');
+    if (netEl) {
+      var net = d.net_daily || 0;
+      netEl.textContent = '$' + net.toFixed(2);
+      netEl.style.color = net >= 0 ? 'var(--success)' : 'var(--error)';
+    }
+    if (monthEl) {
+      var monthly = d.net_monthly_est || 0;
+      monthEl.textContent = '$' + monthly.toFixed(2);
+      monthEl.style.color = monthly >= 0 ? 'var(--success)' : 'var(--error)';
+    }
+    if (costEl) {
+      var cost = (d.costs || {}).daily_api || 0;
+      var infra = (d.costs || {}).infrastructure_daily || 0;
+      costEl.textContent = '$' + (cost + infra).toFixed(2);
+      costEl.style.color = 'var(--warning)';
+    }
+    if (trendEl) {
+      var trendMap = {profitable: 'Profitable', near_breakeven: 'Near Breakeven', needs_improvement: 'Needs Work'};
+      var trendColors = {profitable: 'var(--success)', near_breakeven: 'var(--warning)', needs_improvement: 'var(--error)'};
+      var trend = d.trend || 'unknown';
+      trendEl.textContent = trendMap[trend] || trend;
+      trendEl.style.color = trendColors[trend] || 'var(--text-muted)';
+    }
+    // Revenue detail badges
+    var detailEl = document.getElementById('viper-pnl-detail');
+    if (detailEl && d.revenue) {
+      var r = d.revenue;
+      var h = '';
+      h += '<div class="widget-badge"><span class="wb-label">Garves P&L:</span> <span style="color:' + ((r.garves || 0) >= 0 ? 'var(--success)' : 'var(--error)') + ';font-weight:700;">$' + (r.garves || 0).toFixed(2) + '</span></div>';
+      h += '<div class="widget-badge"><span class="wb-label">Hawk P&L:</span> <span style="color:' + ((r.hawk || 0) >= 0 ? 'var(--success)' : 'var(--error)') + ';font-weight:700;">$' + (r.hawk || 0).toFixed(2) + '</span></div>';
+      if (r.garves_win_rate !== undefined) h += '<div class="widget-badge"><span class="wb-label">Garves WR:</span> <span style="color:' + (r.garves_win_rate >= 0.5 ? 'var(--success)' : 'var(--warning)') + ';">' + (r.garves_win_rate * 100).toFixed(1) + '%</span></div>';
+      if (r.hawk_win_rate !== undefined) h += '<div class="widget-badge"><span class="wb-label">Hawk WR:</span> <span style="color:' + (r.hawk_win_rate >= 0.5 ? 'var(--success)' : 'var(--warning)') + ';">' + (r.hawk_win_rate * 100).toFixed(1) + '%</span></div>';
+      h += '<div class="widget-badge"><span class="wb-label">Best:</span> <span style="color:#FFD700;">' + esc(d.best_performer || '--') + '</span></div>';
+      detailEl.innerHTML = h;
+    }
+  } catch(e) { console.error('viper pnl:', e); }
+}
+
+async function loadViperAnomalies() {
+  try {
+    var resp = await fetch('/api/viper/anomalies');
+    var d = await resp.json();
+    var el = document.getElementById('viper-anomalies');
+    if (!el) return;
+    var alerts = d.anomalies || [];
+    if (alerts.length === 0) {
+      el.innerHTML = '<div style="background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.15);border-radius:8px;padding:12px 16px;text-align:center;color:var(--success);font-size:0.78rem;font-weight:600;">All Clear — No anomalies detected</div>';
+      return;
+    }
+    var h = '';
+    var sevColors = {critical: 'var(--error)', warning: 'var(--warning)', info: 'var(--text-muted)'};
+    var sevIcons = {critical: '&#x1F6A8;', warning: '&#x26A0;&#xFE0F;', info: '&#x2139;&#xFE0F;'};
+    for (var i = 0; i < alerts.length; i++) {
+      var a = alerts[i];
+      var sc = sevColors[a.severity] || 'var(--text-muted)';
+      var si = sevIcons[a.severity] || '';
+      h += '<div style="background:rgba(255,80,80,0.06);border:1px solid ' + sc + ';border-radius:8px;padding:10px 16px;margin-bottom:6px;">';
+      h += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+      h += '<span style="font-size:0.78rem;font-weight:600;color:' + sc + ';">' + si + ' ' + esc(a.message || '') + '</span>';
+      h += '<span class="badge" style="background:rgba(255,255,255,0.06);color:' + sc + ';font-size:0.62rem;">' + esc((a.severity || '').toUpperCase()) + '</span>';
+      h += '</div>';
+      h += '<div style="font-size:0.66rem;color:var(--text-muted);margin-top:4px;">Agent: ' + esc(a.agent || '') + ' | Type: ' + esc(a.type || '') + '</div>';
+      h += '</div>';
+    }
+    el.innerHTML = h;
+  } catch(e) { console.error('viper anomalies:', e); }
+}
+
+async function loadViperDigests() {
+  try {
+    var resp = await fetch('/api/viper/digests');
+    var d = await resp.json();
+    var el = document.getElementById('viper-digests');
+    if (!el) return;
+    var agents = ['garves', 'hawk', 'soren', 'shelby', 'atlas'];
+    var agentColors = {garves:'#FFD700', hawk:'#00d4ff', soren:'#cc66ff', shelby:'#ff6b6b', atlas:'#8B5CF6'};
+    var h = '';
+    for (var i = 0; i < agents.length; i++) {
+      var ag = agents[i];
+      var digest = d[ag] || {};
+      var fresh = digest.fresh;
+      var count = digest.item_count || 0;
+      var age = digest.age_minutes;
+      var borderColor = fresh ? 'rgba(0,255,136,0.3)' : 'rgba(255,255,255,0.08)';
+      var statusColor = fresh ? 'var(--success)' : 'var(--text-muted)';
+      var statusText = fresh ? 'Fresh' : (age ? Math.round(age) + 'm old' : 'No data');
+      h += '<div style="background:rgba(255,255,255,0.04);border:1px solid ' + borderColor + ';border-radius:8px;padding:10px 14px;min-width:120px;flex:1;">';
+      h += '<div style="font-size:0.72rem;font-weight:700;color:' + (agentColors[ag] || '#888') + ';">' + esc(ag.charAt(0).toUpperCase() + ag.slice(1)) + '</div>';
+      h += '<div style="font-size:1rem;font-weight:700;">' + count + ' <span style="font-size:0.66rem;color:var(--text-muted);">items</span></div>';
+      h += '<div style="font-size:0.62rem;color:' + statusColor + ';">' + statusText + '</div>';
+      h += '</div>';
+    }
+    el.innerHTML = h;
+  } catch(e) { console.error('viper digests:', e); }
+}
+
+function renderCostOptimization(costData) {
+  var el = document.getElementById('viper-cost-recs');
+  if (!el || !costData) return;
+  var waste = costData.waste || [];
+  var patterns = costData.llm_patterns || [];
+  var recs = costData.recommendations || '';
+  if (waste.length === 0 && patterns.length === 0 && !recs) {
+    el.innerHTML = '<div class="text-muted" style="text-align:center;padding:12px;">No optimization opportunities found</div>';
+    return;
+  }
+  var h = '';
+  // Waste flags
+  if (waste.length > 0) {
+    h += '<div style="margin-bottom:10px;">';
+    for (var i = 0; i < waste.length; i++) {
+      var w = waste[i];
+      h += '<div style="background:rgba(255,200,0,0.06);border:1px solid rgba(255,200,0,0.2);border-radius:8px;padding:8px 14px;margin-bottom:6px;">';
+      h += '<span style="font-weight:600;color:var(--warning);font-size:0.76rem;">' + esc(w.agent || '') + ': $' + (w.monthly || 0).toFixed(2) + '/mo</span>';
+      h += ' <span style="font-size:0.66rem;color:var(--text-muted);">' + esc(w.reason || '') + '</span>';
+      h += '</div>';
+    }
+    h += '</div>';
+  }
+  // LLM pattern recommendations
+  if (patterns.length > 0) {
+    h += '<div style="margin-bottom:10px;">';
+    for (var j = 0; j < patterns.length; j++) {
+      var p = patterns[j];
+      var sev = p.severity === 'high' ? 'var(--error)' : 'var(--warning)';
+      h += '<div style="background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.2);border-radius:8px;padding:8px 14px;margin-bottom:6px;">';
+      h += '<div style="font-weight:600;color:' + sev + ';font-size:0.76rem;">' + esc(p.agent || '') + ': ' + esc(p.issue || '') + '</div>';
+      h += '<div style="font-size:0.68rem;color:var(--text-secondary);">' + esc(p.recommendation || '') + '</div>';
+      if (p.estimated_savings_monthly) h += '<div style="font-size:0.66rem;color:var(--success);">Est. savings: $' + p.estimated_savings_monthly.toFixed(2) + '/mo</div>';
+      h += '</div>';
+    }
+    h += '</div>';
+  }
+  // LLM text recommendations
+  if (recs) {
+    h += '<div style="background:rgba(0,255,136,0.04);border:1px solid rgba(0,255,136,0.12);border-radius:8px;padding:10px 14px;font-size:0.72rem;color:var(--text-secondary);white-space:pre-wrap;line-height:1.5;">' + esc(recs) + '</div>';
+  }
+  el.innerHTML = h;
 }
 
 // ══════════════════════════════════════

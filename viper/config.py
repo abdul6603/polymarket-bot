@@ -28,5 +28,5 @@ class ViperConfig:
     dry_run: bool = _env("VIPER_DRY_RUN", "true").lower() in ("true", "1", "yes")
 
     # Shelby integration
-    shelby_tasks_file: Path = Path("/Users/abdallaalhamdan/shelby/data/tasks.json")
-    mercury_analytics_file: Path = Path("/Users/abdallaalhamdan/mercury/data/analytics.json")
+    shelby_tasks_file: Path = Path.home() / "shelby" / "data" / "tasks.json"
+    mercury_analytics_file: Path = Path.home() / "mercury" / "data" / "analytics.json"

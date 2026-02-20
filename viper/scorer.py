@@ -25,7 +25,7 @@ def _llm_actionability_bonus(item: IntelItem) -> int:
     if not (_USE_SHARED_LLM and _shared_llm_call):
         return 0
     try:
-        text = f"{item.title}: {item.summary[:200]}"
+        text = f"{item.headline}: {item.summary[:200]}"
         result = _shared_llm_call(
             system=(
                 "You assess whether news/intel is actionable for prediction market trading. "

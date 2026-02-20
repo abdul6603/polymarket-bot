@@ -19,6 +19,7 @@ STATUS_FILE = DATA_DIR / "viper_status.json"
 INTEL_FILE = DATA_DIR / "viper_intel.json"
 BRIEFING_FILE = DATA_DIR / "hawk_briefing.json"
 SOREN_OPPS_FILE = DATA_DIR / "soren_opportunities.json"
+PNL_FILE = DATA_DIR / "brotherhood_pnl.json"
 
 _scan_lock = threading.Lock()
 _scan_running = False
@@ -180,6 +181,46 @@ def api_viper_brand_plan(msg_id):
     except Exception as e:
         log.exception("Brand channel plan failed")
         return jsonify({"success": False, "error": str(e)[:200]})
+
+
+@viper_bp.route("/api/viper/pnl")
+def api_viper_pnl():
+    """Brotherhood P&L — revenue vs costs."""
+    if PNL_FILE.exists():
+        try:
+            return jsonify(json.loads(PNL_FILE.read_text()))
+        except Exception:
+            pass
+    return jsonify({"date": "", "revenue": {}, "costs": {}, "net_daily": 0, "trend": "unknown"})
+
+
+@viper_bp.route("/api/viper/digests")
+def api_viper_digests():
+    """All agent digest files with freshness info."""
+    agents = ["garves", "hawk", "soren", "shelby", "atlas"]
+    digests = {}
+    for agent in agents:
+        path = DATA_DIR / f"viper_{agent}_digest.json"
+        if path.exists():
+            try:
+                d = json.loads(path.read_text())
+                age = time.time() - d.get("generated_at", 0)
+                d["fresh"] = age < 1800  # 30 min freshness
+                d["age_minutes"] = round(age / 60, 1)
+                digests[agent] = d
+            except Exception:
+                digests[agent] = {"fresh": False, "error": "parse_failed"}
+        else:
+            digests[agent] = {"fresh": False, "items": [], "item_count": 0}
+    return jsonify(digests)
+
+
+@viper_bp.route("/api/viper/anomalies")
+def api_viper_anomalies():
+    """Current anomaly alerts."""
+    status = _load_status()
+    anomalies = status.get("anomalies", [])
+    return jsonify({"anomalies": anomalies, "count": len(anomalies)})
 
 
 @viper_bp.route("/api/viper/scan-status")

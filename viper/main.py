@@ -21,8 +21,9 @@ from viper.config import ViperConfig
 from viper.scanner import scan_all
 from viper.intel import append_intel, load_intel, save_intel, IntelItem
 from viper.market_matcher import update_market_context
-from viper.cost_audit import audit_all
+from viper.cost_audit import audit_all, find_waste, get_llm_cost_recommendations
 from viper.scorer import score_intel
+from viper.shelby_push import push_to_shelby
 
 log = logging.getLogger(__name__)
 
@@ -41,6 +42,25 @@ DATA_DIR = Path(__file__).parent.parent / "data"
 STATUS_FILE = DATA_DIR / "viper_status.json"
 OPPS_FILE = DATA_DIR / "viper_opportunities.json"
 COSTS_FILE = DATA_DIR / "viper_costs.json"
+PUSHED_FILE = DATA_DIR / "viper_pushed.json"
+
+
+def _load_pushed_ids() -> set:
+    """Load set of already-pushed intel IDs to avoid re-pushing to Shelby."""
+    if PUSHED_FILE.exists():
+        try:
+            return set(json.loads(PUSHED_FILE.read_text()))
+        except Exception:
+            pass
+    return set()
+
+
+def _save_pushed_ids(ids: set) -> None:
+    DATA_DIR.mkdir(exist_ok=True)
+    try:
+        PUSHED_FILE.write_text(json.dumps(list(ids)[-500:]))  # cap at 500
+    except Exception:
+        log.exception("Failed to save pushed IDs")
 
 from zoneinfo import ZoneInfo
 ET = ZoneInfo("America/New_York")
@@ -147,6 +167,25 @@ def run_single_scan(cfg: ViperConfig, cycle: int = 0) -> dict:
     scored.sort(key=lambda x: x["score"], reverse=True)
     _save_opportunities(scored[:100])
 
+    # 3b. Push high-scoring items to Shelby (score >= 75, deduped)
+    pushed_ids = _load_pushed_ids()
+    push_count = 0
+    for sd in scored:
+        if sd["score"] >= 75 and sd["id"] not in pushed_ids:
+            try:
+                item_obj = IntelItem(**{k: v for k, v in sd.items() if k != "score"})
+                if push_to_shelby(cfg, item_obj, sd["score"]):
+                    pushed_ids.add(sd["id"])
+                    push_count += 1
+            except Exception:
+                log.exception("Failed to push item %s to Shelby", sd.get("id", "?"))
+            if push_count >= 5:  # cap at 5 pushes per cycle
+                break
+    if push_count > 0:
+        _save_pushed_ids(pushed_ids)
+        log.info("Pushed %d items to Shelby (score >= 75)", push_count)
+    result["shelby_pushes"] = push_count
+
     # 4. Match intel to markets → build context for Hawk
     matched = update_market_context()
     result["matched"] = matched
@@ -244,8 +283,56 @@ class ViperBot:
                 if self.cycle % 12 == 0:
                     log.info("Running hourly cost audit...")
                     cost_data = audit_all()
+                    # Add waste analysis
+                    try:
+                        cost_data["waste"] = find_waste()
+                    except Exception:
+                        log.exception("find_waste() failed")
+                        cost_data["waste"] = []
+                    # Add LLM cost recommendations
+                    try:
+                        cost_data["recommendations"] = get_llm_cost_recommendations()
+                    except Exception:
+                        log.exception("get_llm_cost_recommendations() failed")
+                        cost_data["recommendations"] = ""
+                    # Add LLM call pattern analysis
+                    try:
+                        from viper.cost_audit import analyze_llm_call_patterns
+                        cost_data["llm_patterns"] = analyze_llm_call_patterns()
+                    except Exception:
+                        log.exception("analyze_llm_call_patterns() failed")
+                        cost_data["llm_patterns"] = []
                     _save_costs(cost_data)
                     log.info("Total estimated monthly API cost: $%.2f", cost_data.get("total_monthly", 0))
+
+                    # Brotherhood P&L (hourly)
+                    try:
+                        from viper.pnl import compute_pnl
+                        pnl_data = compute_pnl()
+                        log.info("Brotherhood P&L: net_daily=$%.2f", pnl_data.get("net_daily", 0))
+                    except Exception:
+                        log.exception("Brotherhood P&L computation failed")
+
+                # Anomaly detection (every cycle — lightweight reads)
+                anomalies = []
+                try:
+                    from viper.anomaly import detect_anomalies
+                    anomalies = detect_anomalies()
+                    if anomalies:
+                        log.warning("Anomalies detected: %d alerts", len(anomalies))
+                except Exception:
+                    log.exception("Anomaly detection failed")
+
+                # Agent digests (every 4th cycle = ~20 min)
+                digests_generated = False
+                if self.cycle % 4 == 0:
+                    try:
+                        from viper.digest import generate_digests
+                        digests = generate_digests()
+                        digests_generated = True
+                        log.info("Agent digests generated: %s", list(digests.keys()))
+                    except Exception:
+                        log.exception("Digest generation failed")
 
                 # Save status
                 soren_count = result.get("soren_opportunities", -1)
@@ -263,6 +350,9 @@ class ViperBot:
                     "briefed_markets": result.get("briefed_markets", 0),
                     "tavily_ran": result.get("tavily_ran", False),
                     "soren_opportunities": soren_count if soren_count >= 0 else None,
+                    "anomalies": anomalies,
+                    "digests_generated": digests_generated,
+                    "pushes": result.get("shelby_pushes", 0),
                 })
 
                 # Publish cycle_completed to the shared event bus

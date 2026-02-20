@@ -35,6 +35,34 @@
   <div id="viper-hawk-briefing" style="display:none;margin-bottom:12px;">
     <div style="display:flex;gap:8px;flex-wrap:wrap;" id="viper-briefing-badges"></div>
   </div>
+  <!-- Brotherhood P&L -->
+  <div class="section-spacer">
+    <h2 class="section-title" style="color:#00ff88;">Brotherhood P&L</h2>
+    <div id="viper-pnl-cards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;">
+      <div class="stat-card" data-accent="viper"><div class="stat-value" id="viper-pnl-net" style="color:var(--text-muted);">--</div><div class="stat-label">Net Daily</div></div>
+      <div class="stat-card" data-accent="success"><div class="stat-value" id="viper-pnl-monthly" style="color:var(--text-muted);">--</div><div class="stat-label">Monthly Est.</div></div>
+      <div class="stat-card" data-accent="warning"><div class="stat-value" id="viper-pnl-cost" style="color:var(--text-muted);">--</div><div class="stat-label">Daily Cost</div></div>
+      <div class="stat-card" data-accent="viper"><div class="stat-value" id="viper-pnl-trend" style="color:var(--text-muted);">--</div><div class="stat-label">Trend</div></div>
+    </div>
+    <div id="viper-pnl-detail" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
+  </div>
+  <!-- Anomaly Alerts -->
+  <div class="section-spacer">
+    <h2 class="section-title" style="color:#00ff88;">Anomaly Alerts</h2>
+    <div id="viper-anomalies" style="margin-bottom:12px;"><div class="text-muted" style="text-align:center;padding:12px;">No anomalies detected</div></div>
+  </div>
+  <!-- Agent Digest Status -->
+  <div class="section-spacer">
+    <h2 class="section-title" style="color:#00ff88;">Agent Digests</h2>
+    <div id="viper-digests" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
+  </div>
+  <!-- Shelby Push Log -->
+  <div class="section-spacer">
+    <h2 class="section-title" style="color:#00ff88;">Shelby Push Log</h2>
+    <div id="viper-push-log" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <div class="widget-badge"><span class="wb-label">Pushes:</span> <span id="viper-push-count" style="color:#00ff88;font-weight:700;">0</span></div>
+    </div>
+  </div>
   <div class="section-spacer">
     <h2 class="section-title" style="color:#00ff88;">Live Intelligence Feed</h2>
     <div class="glass-card"><table class="data-table"><thead><tr><th>Source</th><th>Headline</th><th>Category</th><th>Sentiment</th><th>Score</th></tr></thead><tbody id="viper-intel-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No intelligence yet — hit Trigger Scan</td></tr></tbody></table></div>
@@ -43,6 +71,10 @@
     <h2 class="section-title" style="color:#00ff88;">Live Cost Audit</h2>
     <div id="viper-cost-summary"></div>
     <div class="glass-card"><table class="data-table"><thead><tr><th>Agent</th><th>Service</th><th>Monthly</th><th>Per Call</th><th>Volume</th><th>Source</th></tr></thead><tbody id="viper-cost-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">Loading live costs...</td></tr></tbody></table></div>
+  </div>
+  <div class="section-spacer">
+    <h2 class="section-title" style="color:#00ff88;">Cost Optimization</h2>
+    <div id="viper-cost-recs" style="margin-bottom:12px;"><div class="text-muted" style="text-align:center;padding:12px;">No optimization data yet</div></div>
   </div>
   <div class="section-spacer">
     <h2 class="section-title" style="color:#00ff88;">Soren Opportunity Feed <span style="font-size:0.68rem;color:#cc66ff;font-weight:400;margin-left:6px;">powered by Viper</span></h2>
