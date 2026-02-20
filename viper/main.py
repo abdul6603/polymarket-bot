@@ -215,6 +215,7 @@ class ViperBot:
         self.cycle = 0
         self.total_intel = 0
         self.total_matched = 0
+        self._total_pushes = len(_load_pushed_ids())
 
     async def run(self) -> None:
         logging.basicConfig(
@@ -246,6 +247,7 @@ class ViperBot:
                 result = run_single_scan(self.cfg, cycle=self.cycle)
                 self.total_intel += result.get("new_items", 0)
                 self.total_matched += result.get("matched", 0)
+                self._total_pushes += result.get("shelby_pushes", 0)
 
                 # Brain: record scan cycle + outcome
                 if _viper_brain:
@@ -353,6 +355,7 @@ class ViperBot:
                     "anomalies": anomalies,
                     "digests_generated": digests_generated,
                     "pushes": result.get("shelby_pushes", 0),
+                    "pushed_to_shelby": (self._total_pushes if hasattr(self, '_total_pushes') else 0),
                 })
 
                 # Publish cycle_completed to the shared event bus

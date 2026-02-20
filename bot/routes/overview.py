@@ -935,18 +935,33 @@ def api_intelligence():
         cost_intel = min(100, len(viper_costs) * 10 + 20)
         viper_intel["dimensions"]["Cost Intelligence"] = cost_intel
 
-        # 3. Revenue Potential — estimated value of opportunities
-        total_value = sum(o.get("value", 0) for o in viper_opps)
+        # 3. Revenue Potential — score-weighted intel value
+        total_value = sum(o.get("score", o.get("value", 0)) for o in viper_opps)
         revenue = min(100, int(total_value / 10) + 15) if total_value else 15
         viper_intel["dimensions"]["Revenue Potential"] = revenue
 
         # 4. Push Rate — opportunities pushed to Shelby
-        pushed = viper_status.get("pushed_to_shelby", 0)
+        pushed = viper_status.get("pushed_to_shelby", viper_status.get("pushes", 0))
+        # Also count from dedup file if status hasn't been updated yet
+        pushed_file = DATA_DIR / "viper_pushed.json"
+        if pushed == 0 and pushed_file.exists():
+            try:
+                pushed = len(json.loads(pushed_file.read_text()))
+            except Exception:
+                pass
         push_rate = min(100, pushed * 8 + 10)
         viper_intel["dimensions"]["Push Rate"] = push_rate
 
-        # 5. Monetization IQ — Soren metrics awareness
+        # 5. Monetization IQ — Soren metrics/opportunities awareness
         has_soren_metrics = (DATA_DIR / "viper_soren_metrics.json").exists() or viper_status.get("soren_metrics_ready", False)
+        # Soren opportunities file also counts as monetization awareness
+        if not has_soren_metrics and (DATA_DIR / "soren_opportunities.json").exists():
+            try:
+                so = json.loads((DATA_DIR / "soren_opportunities.json").read_text())
+                if so.get("count", 0) > 0 or len(so.get("opportunities", [])) > 0:
+                    has_soren_metrics = True
+            except Exception:
+                pass
         monetization = 30 + (30 if has_soren_metrics else 0) + min(40, len(viper_opps) * 3)
         viper_intel["dimensions"]["Monetization IQ"] = min(100, monetization)
 
