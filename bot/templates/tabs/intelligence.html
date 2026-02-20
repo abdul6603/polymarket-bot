@@ -139,6 +139,119 @@
     <div id="pattern-feed-container" style="max-height:250px;overflow-y:auto;"><span class="text-muted" style="font-size:0.72rem;">Loading...</span></div>
   </div>
 
+  <!-- Installed Frameworks -->
+  <div class="stat-card" style="padding:14px;margin-bottom:12px;">
+    <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.82rem;">Installed Frameworks</div>
+    <div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:10px;">Frameworks are the platforms and foundations that tools are built on. Like macOS is the framework, and the apps are the tools.</div>
+    <table style="width:100%;border-collapse:collapse;font-size:0.68rem;">
+      <thead>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <th style="text-align:left;padding:5px 6px;color:var(--text-muted);">Framework</th>
+          <th style="text-align:left;padding:5px 6px;color:var(--text-muted);">What It Is</th>
+          <th style="text-align:left;padding:5px 6px;color:var(--text-muted);">What Runs On It</th>
+          <th style="text-align:center;padding:5px 6px;color:var(--text-muted);">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#3776AB;">Python 3.9</td>
+          <td style="padding:4px 6px;">Core programming language — system Python on macOS</td>
+          <td style="padding:4px 6px;">Shelby, Atlas, Soren, Lisa, Thor, Robotox, Quant, Dashboard</td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#3776AB;">Python 3.12 venv</td>
+          <td style="padding:4px 6px;">Isolated Python environment with trading libraries (py_clob_client)</td>
+          <td style="padding:4px 6px;">Garves, Hawk, Viper</td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#000;"><span style="color:#eee;">Flask</span></td>
+          <td style="padding:4px 6px;">Web framework — serves the dashboard UI, API routes, WebSocket</td>
+          <td style="padding:4px 6px;">Command Center Dashboard (14 tabs, 140+ endpoints)</td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#eee;">Socket.IO</td>
+          <td style="padding:4px 6px;">Real-time communication framework — push updates without page refresh</td>
+          <td style="padding:4px 6px;">Dashboard live updates, heartbeat monitoring</td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#FF6384;">Chart.js</td>
+          <td style="padding:4px 6px;">Data visualization framework — renders charts, graphs, donuts</td>
+          <td style="padding:4px 6px;">PnL curves, win rate donuts, radar charts, cost pie, call timeline</td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#003B57;">SQLite</td>
+          <td style="padding:4px 6px;">Embedded database engine — stores agent memory without a server</td>
+          <td style="padding:4px 6px;">AgentMemory (decisions, patterns, knowledge) for all 9 agents</td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#9B59B6;">MLX</td>
+          <td style="padding:4px 6px;">Apple Silicon AI inference framework — runs LLMs locally on M3 Pro</td>
+          <td style="padding:4px 6px;">Qwen 14B (reasoning/writing), Qwen 3B (fast tasks)</td>
+          <td style="padding:4px 6px;text-align:center;color:var(--error);">Pro offline</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#eee;">LaunchAgents</td>
+          <td style="padding:4px 6px;">macOS service framework — auto-starts agents on boot, restarts on crash</td>
+          <td style="padding:4px 6px;">Garves, Dashboard, Shelby, Atlas, Robotox, Thor, Viper</td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#0DB7ED;">Tailscale</td>
+          <td style="padding:4px 6px;">Mesh VPN framework — connects Air and Pro over secure network</td>
+          <td style="padding:4px 6px;">SSH Air &rarr; Pro, deploy script, remote monitoring</td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#F05032;">Git + GitHub</td>
+          <td style="padding:4px 6px;">Version control & deployment framework — code sync across machines</td>
+          <td style="padding:4px 6px;">All repos (polymarket-bot, soren, thor, sentinel), deploy script</td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#74AA9C;">OpenAI Platform</td>
+          <td style="padding:4px 6px;">Cloud AI framework — GPT-4o, GPT-4o-mini, DALL-E 3, TTS models</td>
+          <td style="padding:4px 6px;">Hawk analyst, Soren writer, Atlas research, Lisa content</td>
+          <td style="padding:4px 6px;text-align:center;color:var(--warning);">Low quota</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#D97757;">Anthropic Platform</td>
+          <td style="padding:4px 6px;">Cloud AI framework — Claude Sonnet 4, Claude Opus for code generation</td>
+          <td style="padding:4px 6px;">Thor code generation, shared LLM fallback chain</td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#4285F4;">asyncio</td>
+          <td style="padding:4px 6px;">Python async framework — handles concurrent WebSocket connections</td>
+          <td style="padding:4px 6px;">Garves trading loop, Binance WS feed, market data streams</td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#217346;">openpyxl</td>
+          <td style="padding:4px 6px;">Excel framework — reads and writes .xlsx spreadsheets from Python</td>
+          <td style="padding:4px 6px;">Brotherhood progress sheet, git post-commit hook</td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
+        </tr>
+        <tr>
+          <td style="padding:4px 6px;font-weight:600;color:#4687C4;">NordVPN</td>
+          <td style="padding:4px 6px;">VPN framework — geo-unblocks Polymarket API from Qatar</td>
+          <td style="padding:4px 6px;">Garves live trading (CLOB API requires non-US/QA IP)</td>
+          <td style="padding:4px 6px;text-align:center;color:var(--error);">Pro offline</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:8px;font-size:0.65rem;color:var(--text-muted);">
+      <span style="color:var(--success);">Installed</span> = running |
+      <span style="color:var(--warning);">Low quota</span> = needs top-up |
+      <span style="color:var(--error);">Pro offline</span> = needs M3 Pro reboot
+    </div>
+  </div>
+
   <!-- Installed Tools Table -->
   <div class="stat-card" style="padding:14px;margin-bottom:12px;">
     <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.82rem;">Installed Tools</div>
