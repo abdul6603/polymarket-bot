@@ -18,6 +18,7 @@ from hawk.risk import HawkRiskManager
 from hawk.resolver import resolve_paper_trades
 from hawk.briefing import generate_briefing
 from hawk.arb import ArbEngine
+from hawk.learner import record_trade_outcome, get_dimension_adjustments
 
 log = logging.getLogger(__name__)
 
@@ -498,6 +499,26 @@ class HawkBot:
                         "news_factor": opp.estimate.news_factor[:300],
                     })
 
+                    # ── Learner Dimension Consultation (pre-decision) ──
+                    learner_adj = 0.0
+                    learner_blocked = []
+                    try:
+                        trade_ctx = {
+                            "edge_source": opp.estimate.edge_source,
+                            "category": opp.market.category,
+                            "confidence": opp.estimate.confidence,
+                            "risk_score": opp.risk_score,
+                            "direction": opp.direction,
+                            "time_left_hours": opp.time_left_hours,
+                        }
+                        learner_adj, learner_blocked = get_dimension_adjustments(trade_ctx)
+                        if learner_blocked:
+                            log.info("[LEARNER] BLOCKED trade — toxic dimensions: %s | %s",
+                                     ", ".join(learner_blocked), opp.market.question[:60])
+                            continue
+                    except Exception:
+                        log.debug("[LEARNER] Consultation failed (non-fatal)")
+
                     # ── Brain Memory Consultation (pre-decision) ──
                     # Query learned patterns + past decisions BEFORE placing bet
                     brain_edge_adj = 0.0
@@ -565,13 +586,14 @@ class HawkBot:
                                         log.info("[BRAIN] %d similar past decisions (avg_score=%.2f) → adj %.1f%% | total brain adj: %.1f%%",
                                                  len(resolved), avg_score, sim_adj * 100, brain_edge_adj * 100)
 
-                            # 3. Apply brain adjustment — skip trade if edge no longer sufficient
-                            if brain_edge_adj < 0:
-                                effective_edge = opp.edge + brain_edge_adj  # brain_edge_adj is negative
+                            # 3. Apply combined learner + brain adjustment
+                            combined_adj = learner_adj + brain_edge_adj
+                            if combined_adj < 0:
+                                effective_edge = opp.edge + combined_adj
                                 if effective_edge < self.cfg.min_edge:
-                                    log.info("[BRAIN] BLOCKED trade: edge %.1f%% + brain adj %.1f%% = %.1f%% < min_edge %.1f%% | %s",
-                                             opp.edge * 100, brain_edge_adj * 100, effective_edge * 100,
-                                             self.cfg.min_edge * 100, opp.market.question[:60])
+                                    log.info("[BRAIN+LEARNER] BLOCKED: edge %.1f%% + learner %.1f%% + brain %.1f%% = %.1f%% < min %.1f%% | %s",
+                                             opp.edge * 100, learner_adj * 100, brain_edge_adj * 100,
+                                             effective_edge * 100, self.cfg.min_edge * 100, opp.market.question[:60])
                                     continue
 
                         except Exception:
@@ -584,10 +606,12 @@ class HawkBot:
                         if order_id:
                             placed_cids.add(cid)
                             trades_placed += 1
-                            brain_tag = f" | brain_adj={brain_edge_adj*100:+.1f}%" if brain_edge_adj != 0 else ""
+                            adj_tag = ""
+                            if learner_adj != 0 or brain_edge_adj != 0:
+                                adj_tag = f" | learner={learner_adj*100:+.1f}% brain={brain_edge_adj*100:+.1f}%"
                             log.info("TRADE PLACED: %s %s | $%.2f | edge=%.1f%%%s | %s",
                                      opp.direction.upper(), opp.market.question[:60],
-                                     opp.position_size_usd, opp.edge * 100, brain_tag, order_id)
+                                     opp.position_size_usd, opp.edge * 100, adj_tag, order_id)
                             # Brain: record trade decision
                             if self._brain:
                                 try:
@@ -624,19 +648,62 @@ class HawkBot:
                         # Record per-trade PnL for accurate streak detection
                         for trade_pnl in res.get("per_trade_pnl", []):
                             self.risk.record_pnl(trade_pnl)
+                        # Learner: record dimension outcomes
+                        for resolved_trade in res.get("resolved_trades", []):
+                            try:
+                                record_trade_outcome(resolved_trade)
+                            except Exception:
+                                log.debug("[LEARNER] Failed to record outcome (non-fatal)")
                         # Brain: record resolved outcomes
                         if self._brain:
                             try:
                                 for resolved_trade in res.get("resolved_trades", []):
                                     _did = self.tracker.get_decision_id(resolved_trade.get("condition_id", ""))
+                                    _won = resolved_trade.get("won", False)
+                                    _pnl = resolved_trade.get("pnl", 0)
+                                    _conf = 0.6 if _won else 0.4
+                                    _label = "WON" if _won else "LOST"
+
                                     if _did:
-                                        _won = resolved_trade.get("won", False)
-                                        _pnl = resolved_trade.get("pnl", 0)
-                                        self._brain.remember_outcome(_did, f"{'WIN' if _won else 'LOSS'} PnL=${_pnl:.2f}", score=1.0 if _won else -1.0)
-                                        cat = resolved_trade.get("category", "unknown")
-                                        self._brain.learn_pattern("hawk_category_outcome", f"Category '{cat}': {'WON' if _won else 'LOST'}", confidence=0.6 if _won else 0.4)
+                                        self._brain.remember_outcome(_did, f"{_label} PnL=${_pnl:.2f}", score=1.0 if _won else -1.0)
+
+                                    # 1. Category pattern (existing)
+                                    cat = resolved_trade.get("category", "unknown")
+                                    self._brain.learn_pattern("hawk_category_outcome",
+                                        f"Category '{cat}': {_label}", confidence=_conf)
+
+                                    # 2. Edge source pattern
+                                    esrc = resolved_trade.get("edge_source", "unknown")
+                                    self._brain.learn_pattern("hawk_edge_source_outcome",
+                                        f"Edge source '{esrc}': {_label}", confidence=_conf)
+
+                                    # 3. Direction pattern
+                                    direction = resolved_trade.get("direction", "unknown")
+                                    self._brain.learn_pattern("hawk_direction_outcome",
+                                        f"Direction '{direction}': {_label}", confidence=_conf)
+
+                                    # 4. Confidence pattern
+                                    conf_val = resolved_trade.get("confidence", 0.5)
+                                    conf_band = "high" if conf_val > 0.7 else "medium" if conf_val >= 0.5 else "low"
+                                    self._brain.learn_pattern("hawk_confidence_outcome",
+                                        f"Confidence '{conf_band}': {_label}", confidence=_conf)
+
+                                    # 5. Risk pattern
+                                    risk = resolved_trade.get("risk_score", 5)
+                                    risk_band = "low" if risk <= 3 else "medium" if risk <= 6 else "high"
+                                    self._brain.learn_pattern("hawk_risk_outcome",
+                                        f"Risk '{risk_band}': {_label}", confidence=_conf)
+
+                                    # 6. Time pattern
+                                    hours = resolved_trade.get("time_left_hours", 24)
+                                    time_band = "ending_soon" if hours < 6 else "today" if hours <= 24 else "tomorrow" if hours <= 48 else "this_week"
+                                    self._brain.learn_pattern("hawk_time_outcome",
+                                        f"Time '{time_band}': {_label}", confidence=_conf)
+
+                                    log.info("[BRAIN] Recorded 6 patterns for %s trade: %s | %s | %s",
+                                             _label, cat, esrc, direction)
                             except Exception:
-                                pass
+                                log.debug("[BRAIN] Outcome recording failed (non-fatal)")
                         # Reload tracker
                         self.tracker._positions = []
                         self.tracker._load_positions()
@@ -654,6 +721,32 @@ class HawkBot:
                                         log.info("REVIEW REC: %s", rec)
                         except Exception:
                             log.exception("Post-trade review failed")
+
+                # Pattern mining — every 6 cycles (~6 hours)
+                if self.cycle % 6 == 0:
+                    try:
+                        import sys as _sys
+                        _sys.path.insert(0, str(Path.home() / "shared"))
+                        from pattern_miner import mine_agent as _mine_agent
+                        mine_result = _mine_agent("hawk")
+                        if not mine_result.get("skipped"):
+                            log.info("[PATTERN MINER] Extracted %d patterns from %d resolved decisions",
+                                     mine_result.get("patterns_extracted", 0),
+                                     mine_result.get("resolved_decisions", 0))
+                            try:
+                                from shared.events import publish as bus_publish
+                                bus_publish(
+                                    agent="hawk",
+                                    event_type="pattern_mining",
+                                    data=mine_result,
+                                    summary=f"Hawk pattern mining: {mine_result.get('patterns_extracted', 0)} new patterns",
+                                )
+                            except Exception:
+                                pass
+                        else:
+                            log.info("[PATTERN MINER] Skipped: %s", mine_result.get("reason", "unknown"))
+                    except Exception:
+                        log.debug("[PATTERN MINER] Failed (non-fatal)")
 
                 _save_status(self.tracker, self.risk, running=True, cycle=self.cycle, arb_engine=self.arb)
 

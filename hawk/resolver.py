@@ -20,7 +20,7 @@ def resolve_paper_trades() -> dict:
     Returns summary: {checked, resolved, wins, losses, skipped, total_pnl}.
     """
     if not TRADES_FILE.exists():
-        return {"checked": 0, "resolved": 0, "wins": 0, "losses": 0, "skipped": 0, "total_pnl": 0.0}
+        return {"checked": 0, "resolved": 0, "wins": 0, "losses": 0, "skipped": 0, "total_pnl": 0.0, "resolved_trades": []}
 
     trades = []
     try:
@@ -31,11 +31,11 @@ def resolve_paper_trades() -> dict:
                     trades.append(json.loads(line))
     except Exception:
         log.exception("Failed to load trades for resolution")
-        return {"checked": 0, "resolved": 0, "wins": 0, "losses": 0, "skipped": 0, "total_pnl": 0.0}
+        return {"checked": 0, "resolved": 0, "wins": 0, "losses": 0, "skipped": 0, "total_pnl": 0.0, "resolved_trades": []}
 
     unresolved = [t for t in trades if not t.get("resolved")]
     if not unresolved:
-        return {"checked": 0, "resolved": 0, "wins": 0, "losses": 0, "skipped": 0, "total_pnl": 0.0}
+        return {"checked": 0, "resolved": 0, "wins": 0, "losses": 0, "skipped": 0, "total_pnl": 0.0, "resolved_trades": []}
 
     log.info("Checking %d unresolved paper trades...", len(unresolved))
 
@@ -47,7 +47,7 @@ def resolve_paper_trades() -> dict:
             cid_to_trades.setdefault(cid, []).append(t)
 
     session = get_session()
-    stats = {"checked": len(unresolved), "resolved": 0, "wins": 0, "losses": 0, "skipped": 0, "total_pnl": 0.0, "per_trade_pnl": []}
+    stats = {"checked": len(unresolved), "resolved": 0, "wins": 0, "losses": 0, "skipped": 0, "total_pnl": 0.0, "per_trade_pnl": [], "resolved_trades": []}
 
     for cid, cid_trades in cid_to_trades.items():
         try:
@@ -118,6 +118,7 @@ def resolve_paper_trades() -> dict:
                 stats["resolved"] += 1
                 stats["total_pnl"] += pnl
                 stats["per_trade_pnl"].append(round(pnl, 2))
+                stats["resolved_trades"].append(t)
                 if won:
                     stats["wins"] += 1
                 else:

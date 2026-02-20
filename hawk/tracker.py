@@ -29,7 +29,7 @@ class HawkTracker:
         self._load_positions()
 
     def _load_positions(self) -> None:
-        """Load unresolved trades from disk on startup."""
+        """Load unresolved trades from disk on startup + rebuild decision_id map."""
         if not TRADES_FILE.exists():
             return
         try:
@@ -39,9 +39,16 @@ class HawkTracker:
                     if not line:
                         continue
                     rec = json.loads(line)
+                    # Rebuild decision_id mapping from persisted data
+                    did = rec.get("decision_id", "")
+                    if did:
+                        cid = rec.get("condition_id") or rec.get("market_id", "")
+                        if cid:
+                            self._decision_ids[cid] = did
                     if not rec.get("resolved"):
                         self._positions.append(rec)
-            log.info("Loaded %d open Hawk positions", len(self._positions))
+            log.info("Loaded %d open Hawk positions, %d decision IDs restored",
+                     len(self._positions), len(self._decision_ids))
         except Exception:
             log.exception("Failed to load Hawk trade history")
 
@@ -96,6 +103,8 @@ class HawkTracker:
             "timestamp": time.time(),
             "opened_at": time.time(),
             "time_str": datetime.now(ET).strftime("%Y-%m-%d %I:%M%p"),
+            # Brain tracking
+            "decision_id": "",
             # Resolution fields
             "resolved": False,
             "outcome": "",
@@ -113,8 +122,12 @@ class HawkTracker:
         )
 
     def set_decision_id(self, condition_id: str, decision_id: str) -> None:
-        """Map a condition_id to a brain decision_id for outcome tracking."""
+        """Map a condition_id to a brain decision_id for outcome tracking.
+
+        Persists to JSONL so decision IDs survive restarts.
+        """
         self._decision_ids[condition_id] = decision_id
+        self._update_trade_field(condition_id, "decision_id", decision_id)
 
     def get_decision_id(self, condition_id: str) -> str:
         """Get brain decision_id for a condition_id, or empty string."""
@@ -189,6 +202,31 @@ class HawkTracker:
         except Exception:
             log.exception("Failed to load Hawk trades")
         return trades
+
+    def _update_trade_field(self, condition_id: str, field: str, value) -> None:
+        """Update a field in the JSONL file for a specific condition_id."""
+        if not TRADES_FILE.exists():
+            return
+        try:
+            trades = []
+            updated = False
+            with open(TRADES_FILE) as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    rec = json.loads(line)
+                    cid = rec.get("condition_id") or rec.get("market_id", "")
+                    if cid == condition_id and not updated:
+                        rec[field] = value
+                        updated = True
+                    trades.append(rec)
+            if updated:
+                with open(TRADES_FILE, "w") as f:
+                    for t in trades:
+                        f.write(json.dumps(t) + "\n")
+        except Exception:
+            log.exception("Failed to update trade field %s for %s", field, condition_id[:12])
 
     def _append_to_file(self, rec: dict) -> None:
         """Append a single trade record to the JSONL file."""

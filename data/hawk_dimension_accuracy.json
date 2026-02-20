@@ -1,0 +1,104 @@
+{
+  "edge_source": {
+    "sportsbook_divergence": {
+      "wins": 1,
+      "losses": 2,
+      "total": 3,
+      "accuracy": 0.3333333333333333
+    },
+    "base_rate": {
+      "wins": 2,
+      "losses": 9,
+      "total": 11,
+      "accuracy": 0.18181818181818182
+    },
+    "news": {
+      "wins": 0,
+      "losses": 2,
+      "total": 2,
+      "accuracy": 0.0
+    }
+  },
+  "category": {
+    "sports": {
+      "wins": 2,
+      "losses": 3,
+      "total": 5,
+      "accuracy": 0.4
+    },
+    "other": {
+      "wins": 0,
+      "losses": 2,
+      "total": 2,
+      "accuracy": 0.0
+    },
+    "crypto_event": {
+      "wins": 1,
+      "losses": 8,
+      "total": 9,
+      "accuracy": 0.1111111111111111
+    }
+  },
+  "confidence_band": {
+    "high": {
+      "wins": 1,
+      "losses": 2,
+      "total": 3,
+      "accuracy": 0.3333333333333333
+    },
+    "low": {
+      "wins": 2,
+      "losses": 11,
+      "total": 13,
+      "accuracy": 0.15384615384615385
+    }
+  },
+  "risk_band": {
+    "low": {
+      "wins": 2,
+      "losses": 7,
+      "total": 9,
+      "accuracy": 0.2222222222222222
+    },
+    "medium": {
+      "wins": 1,
+      "losses": 6,
+      "total": 7,
+      "accuracy": 0.14285714285714285
+    }
+  },
+  "direction": {
+    "yes": {
+      "wins": 2,
+      "losses": 5,
+      "total": 7,
+      "accuracy": 0.2857142857142857
+    },
+    "no": {
+      "wins": 1,
+      "losses": 8,
+      "total": 9,
+      "accuracy": 0.1111111111111111
+    }
+  },
+  "time_band": {
+    "ending_soon": {
+      "wins": 2,
+      "losses": 2,
+      "total": 4,
+      "accuracy": 0.5
+    },
+    "today": {
+      "wins": 0,
+      "losses": 10,
+      "total": 10,
+      "accuracy": 0.0
+    },
+    "tomorrow": {
+      "wins": 1,
+      "losses": 1,
+      "total": 2,
+      "accuracy": 0.5
+    }
+  }
+}
