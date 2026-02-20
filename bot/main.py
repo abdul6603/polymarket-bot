@@ -698,6 +698,20 @@ class TradingBot:
                          conviction.total_score, conviction.tier_label)
                 continue
 
+            # Cross-asset time-window exposure cap: block if same timeframe
+            # has > total exposure across ALL assets combined
+            CROSS_ASSET_TW_CAP = 15.0
+            tw_exposure = sum(
+                p.size_usd for p in self.tracker.open_positions
+                if getattr(p, "timeframe", "") == timeframe
+            )
+            if tw_exposure + conviction.position_size_usd > CROSS_ASSET_TW_CAP:
+                log.info(
+                    "  -> Blocked: cross-asset time-window cap ($%.2f + $%.2f > $%.2f for %s)",
+                    tw_exposure, conviction.position_size_usd, CROSS_ASSET_TW_CAP, timeframe,
+                )
+                continue
+
             # Risk check (pass actual conviction size, not default $10)
             allowed, reason = check_risk(self.cfg, sig, self.tracker, market_id,
                                          trade_size_usd=conviction.position_size_usd,

@@ -43,15 +43,15 @@ SIZE_TIERS = {
     # Bumped +$5 each: tighter filters (conf 0.60, no 1h, fewer indicators) mean fewer but
     # higher-quality trades — bet harder on them. 5-trade loss streak = ~$175 max.
     (0, 15):   (0.0, 0.0),      # DON'T TRADE — truly insufficient evidence
-    (15, 30):  (15.0, 20.0),    # Micro — small exploratory bets
-    (30, 50):  (20.0, 25.0),    # Small — moderate conviction
-    (50, 70):  (25.0, 30.0),    # Standard — solid signal
-    (70, 85):  (30.0, 35.0),    # Increased — strong conviction
-    (85, 100): (35.0, 40.0),    # Maximum conviction — highest tier
+    (15, 30):  (5.0, 8.0),      # Micro — small exploratory bets
+    (30, 50):  (8.0, 10.0),     # Small — moderate conviction
+    (50, 70):  (10.0, 12.0),    # Standard — solid signal
+    (70, 85):  (12.0, 15.0),    # Increased — strong conviction
+    (85, 100): (15.0, 18.0),    # Maximum conviction — highest tier
 }
 
 # ── Safety Rails ──
-ABSOLUTE_MAX_PER_TRADE = 40.0       # Max per trade — bumped from $35 to match tighter signal filters
+ABSOLUTE_MAX_PER_TRADE = 18.0       # Max per trade — bumped from $35 to match tighter signal filters
 ABSOLUTE_MAX_DAILY_LOSS = 50.0      # Stop trading if daily loss hits $50
 LOSING_STREAK_THRESHOLD = 3         # Scale down after 3 consecutive losses
 LOSING_STREAK_PENALTY = 0.75        # Multiply conviction by 0.75 during losing streak (0.6 was too crushing)
@@ -89,7 +89,7 @@ BAD_HOURS_ET: set[int] = set()  # Empty — removed time blocks per Jordan's dir
 # ── All Assets Aligned Mode thresholds ──
 ALL_ALIGNED_MIN_CONSENSUS = 4       # Each asset must have 4+ non-disabled indicators agreeing
 ALL_ALIGNED_MIN_ASSETS = 3          # 3 of 4 assets must agree
-ALL_ALIGNED_SIZE = 40.0             # Max size when all-aligned fires — capped same as ABSOLUTE_MAX
+ALL_ALIGNED_SIZE = 15.0             # Max size when all-aligned fires — capped same as ABSOLUTE_MAX
 
 
 @dataclass

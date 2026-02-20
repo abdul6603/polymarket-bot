@@ -87,7 +87,7 @@ MAX_GROUP_WEIGHT_FRACTION = 0.35  # No single group can contribute > 35% of tota
 # These pairs agree 95-100% of the time. Counting both inflates consensus.
 # When counting votes, only count ONE vote per cluster (highest confidence wins).
 CONSENSUS_CLUSTERS = {
-    "price_momentum": {"price_div", "temporal_arb"},  # 100% agreement on 74 trades
+    "price_momentum": {"price_div", "temporal_arb", "heikin_ashi"},  # 100% agreement on 74 trades + heikin_ashi correlated
     "trend_slope": {"ema", "momentum"},               # 95% agreement
 }
 
@@ -127,7 +127,7 @@ WEIGHTS = {
     "temporal_arb": 1.8,
     "price_div": 1.4,
     "macd": 1.1,
-    "order_flow": 4.5,  # Quant moderate: 2.5→4.5. Volume+flow are strongest leading signals. Was 4.0→2.5→4.5.
+    "order_flow": 2.0,  # Reduced 4.5→2.0: was dominating consensus. Flow is noisy in low-vol regimes.
     "news": 0.5,         # Re-enabled: LLM sentiment (Qwen 3B) replaces keyword matching. Expected 65-70% accuracy.
     # LOW TIER — marginal (50-55%)
     "momentum": 2.0,    # Quant moderate: 1.2→2.0. Strong confirming signal per backtest.
@@ -193,7 +193,7 @@ TF_WEIGHT_SCALE = {
 
 MIN_CANDLES = 30
 CONSENSUS_RATIO = 0.70  # Relaxed 0.78→0.70: R:R 1.2+ filter guards quality, let more trades through (7/10 instead of 8/10)
-CONSENSUS_FLOOR = 3     # Raised 2→3: Quant suggested 7 (too aggressive), tried 4 but caused 100% unanimity requirement on low-indicator pairs (SOL/15m has only 4 active). 3 = meaningful filter without deadlock.
+CONSENSUS_FLOOR = 7     # Raised 3→7: stricter consensus floor — require strong indicator agreement before trading.
 MIN_CONSENSUS = CONSENSUS_FLOOR  # backward compat for backtest/quant
 MIN_ATR_THRESHOLD = 0.00005  # skip if volatility below this (0.005% of price)
 MIN_CONFIDENCE = 0.20  # Lowered 0.60→0.20: Quant backtest shows 61.4% WR at 0.2. Consensus=7 and edge=8% are the real quality gates; 0.60 was filtering out winners.
