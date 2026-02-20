@@ -22,6 +22,7 @@ from hawk.scanner import HawkMarket
 
 # Wire up shared intelligence layer
 sys.path.insert(0, str(Path.home() / "shared"))
+sys.path.insert(0, str(Path.home()))
 _USE_SHARED_LLM = False
 _shared_llm_call = None
 _hawk_brain = None
@@ -316,10 +317,11 @@ def _get_sportsbook_data(cfg: HawkConfig, market: HawkMarket) -> tuple[float | N
 
 
 def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate | None:
-    """Analyze a market using the V3 sportsbook-first architecture.
+    """Analyze a market using the V4 sportsbook-pure architecture.
 
-    Sports: sportsbook consensus → GPT adjusts ±5%
-    Non-sports: GPT-4o primary with confidence calibration
+    Sports + sportsbook data: USE RAW SPORTSBOOK PROB (zero GPT cost!)
+    Sports without sportsbook: SKIP (no edge without data)
+    Non-sports: GPT-4o with strict confidence calibration
     """
     is_sports = market.category == "sports"
 
@@ -331,7 +333,30 @@ def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate |
     if is_sports:
         sportsbook_prob, sportsbook_books, espn_context = _get_sportsbook_data(cfg, market)
 
-    # ── Build GPT prompt ──
+        # V4: Sports with sportsbook data → pure math, skip GPT entirely ($0 cost)
+        if sportsbook_prob is not None:
+            log.info("[V4] Sportsbook-pure: prob=%.2f (%d books) | %s",
+                     sportsbook_prob, sportsbook_books, market.question[:60])
+            return ProbabilityEstimate(
+                market_id=market.condition_id,
+                question=market.question,
+                estimated_prob=sportsbook_prob,
+                confidence=0.75,
+                reasoning=f"Pure sportsbook consensus from {sportsbook_books} bookmakers — no GPT needed",
+                category=market.category,
+                risk_level=3,
+                edge_source="sportsbook_divergence",
+                money_thesis=f"Sportsbook says {sportsbook_prob:.0%}, Polymarket disagrees — free edge",
+                news_factor="sportsbook consensus",
+                sportsbook_prob=sportsbook_prob,
+                sportsbook_books=sportsbook_books,
+            )
+
+        # V4: Sports WITHOUT sportsbook data → skip entirely (GPT guesses are -EV)
+        log.info("[V4] No sportsbook data — skipping sports market: %s", market.question[:60])
+        return None
+
+    # ── Build GPT prompt (non-sports only) ──
     time_info = ""
     if market.time_left_hours > 0:
         if market.time_left_hours < 24:
@@ -532,37 +557,44 @@ def batch_analyze(
     markets: list[HawkMarket],
     max_concurrent: int = 5,
 ) -> list[ProbabilityEstimate]:
-    """Parallel analysis with ThreadPoolExecutor."""
-    # Separate sports and non-sports for logging
+    """V4 batch analysis — sportsbook-pure for sports, GPT only for non-sports."""
     sports = [m for m in markets if m.category == "sports"]
     non_sports = [m for m in markets if m.category != "sports"]
-    log.info("Analyzing %d markets: %d sports (sportsbook-first), %d non-sports (GPT primary)",
+    log.info("Analyzing %d markets: %d sports (sportsbook-pure, $0), %d non-sports (GPT)",
              len(markets), len(sports), len(non_sports))
 
-    # Prefetch sportsbook data BEFORE parallel GPT analysis
-    # This avoids cache race conditions and saves API quota
+    # Prefetch sportsbook data BEFORE analysis
     if sports:
         try:
             from hawk.odds import prefetch_sports
             odds_key = getattr(cfg, 'odds_api_key', '')
             prefetch_sports(odds_key, [m.question for m in sports])
         except Exception:
-            log.debug("Sportsbook prefetch failed — GPT will run without sportsbook data")
+            log.debug("Sportsbook prefetch failed — sports markets will be skipped")
 
     estimates: list[ProbabilityEstimate] = []
 
-    with ThreadPoolExecutor(max_workers=max_concurrent) as pool:
-        futures = {
-            pool.submit(analyze_market, cfg, m): m
-            for m in markets
-        }
-        for future in as_completed(futures):
-            result = future.result()
-            if result is not None:
-                estimates.append(result)
+    # Sports: process synchronously (no GPT calls, instant)
+    for m in sports:
+        result = analyze_market(cfg, m)
+        if result is not None:
+            estimates.append(result)
 
-    # Log V3 stats
+    # Non-sports: parallel GPT analysis (only these cost money)
+    if non_sports:
+        log.info("GPT analyzing %d non-sports markets ($$$)", len(non_sports))
+        with ThreadPoolExecutor(max_workers=max_concurrent) as pool:
+            futures = {
+                pool.submit(analyze_market, cfg, m): m
+                for m in non_sports
+            }
+            for future in as_completed(futures):
+                result = future.result()
+                if result is not None:
+                    estimates.append(result)
+
     sb_count = sum(1 for e in estimates if e.sportsbook_prob is not None)
-    log.info("V3 Analysis: %d/%d markets | %d with sportsbook data | %d GPT-only",
-             len(estimates), len(markets), sb_count, len(estimates) - sb_count)
+    gpt_count = len(estimates) - sb_count
+    log.info("V4 Analysis: %d/%d markets | %d sportsbook-pure ($0) | %d GPT ($$$)",
+             len(estimates), len(markets), sb_count, gpt_count)
     return estimates

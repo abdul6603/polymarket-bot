@@ -27,11 +27,11 @@ class HawkConfig:
     # OpenAI for GPT-4o analysis
     openai_api_key: str = _env("OPENAI_API_KEY")
 
-    # Hawk-specific risk params — V3 precision defaults (targeting 70% WR)
-    bankroll_usd: float = float(_env("HAWK_BANKROLL_USD", "250"))
-    max_bet_usd: float = float(_env("HAWK_MAX_BET_USD", "25"))
-    max_concurrent: int = int(_env("HAWK_MAX_CONCURRENT", "5"))
-    daily_loss_cap: float = float(_env("HAWK_DAILY_LOSS_CAP", "50"))
+    # Hawk-specific risk params — V4 sportsbook-pure (targeting 55-60% WR)
+    bankroll_usd: float = float(_env("HAWK_BANKROLL_USD", "500"))
+    max_bet_usd: float = float(_env("HAWK_MAX_BET_USD", "50"))
+    max_concurrent: int = int(_env("HAWK_MAX_CONCURRENT", "8"))
+    daily_loss_cap: float = float(_env("HAWK_DAILY_LOSS_CAP", "75"))
     cycle_minutes: int = int(_env("HAWK_CYCLE_MINUTES", "60"))
     min_edge: float = float(_env("HAWK_MIN_EDGE", "0.15"))
     min_volume: int = int(_env("HAWK_MIN_VOLUME", "5000"))

@@ -203,11 +203,11 @@ def calculate_edge(
     no_price = _get_market_price(market, "no")
     est_prob = estimate.estimated_prob
 
-    # V3: Dynamic min_edge based on confidence and data quality
+    # V4: Dynamic min_edge based on confidence and data quality
     has_sportsbook = getattr(estimate, 'sportsbook_prob', None) is not None
     if has_sportsbook:
-        # Sportsbook-backed: slightly lower threshold (they're reliable)
-        effective_min_edge = max(0.05, cfg.min_edge - 0.03)
+        # Sportsbook-backed: lower threshold — 40 bookmakers > GPT guesses
+        effective_min_edge = max(0.05, cfg.min_edge - 0.05)
     elif estimate.confidence >= 0.6:
         effective_min_edge = cfg.min_edge
     elif estimate.confidence >= 0.4:
