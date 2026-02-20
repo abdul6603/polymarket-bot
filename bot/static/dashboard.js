@@ -8350,6 +8350,7 @@ async function loadQuantTab() {
   loadQuantHawkReview();
   loadQuantWalkForward();
   loadQuantAnalytics();
+  loadQuantLiveParams();
 }
 
 async function loadQuantResults() {
@@ -8672,6 +8673,40 @@ async function loadQuantAnalytics() {
     divEl.innerHTML = dhtml;
 
   } catch(e) { console.error('quant analytics:', e); }
+}
+
+async function loadQuantLiveParams() {
+  try {
+    var resp = await fetch('/api/quant/live-params');
+    var data = await resp.json();
+    var card = document.getElementById('quant-live-params-card');
+    if (!data.active) {
+      card.style.display = 'none';
+      return;
+    }
+    card.style.display = 'block';
+    var v = data.validation || {};
+    var params = data.params || {};
+    var badge = document.getElementById('quant-lp-badge');
+    badge.textContent = 'AUTO-PILOT';
+    badge.style.background = '#00BFFF22';
+    badge.style.color = '#00BFFF';
+    var summary = 'Quant auto-applied params: WR ' + (v.baseline_wr||0) + '% \u2192 ' + (v.best_wr||0) + '% (+' + (v.improvement_pp||0) + 'pp)';
+    document.getElementById('quant-lp-summary').textContent = summary;
+    document.getElementById('quant-lp-detail').textContent = 'OOS ' + (v.wf_oos_wr||0) + '% | Overfit ' + (v.overfit_drop||0) + 'pp | ' + (v.trades_analyzed||0) + ' trades | Applied ' + (data.applied_at||'--');
+    var paramsEl = document.getElementById('quant-lp-params');
+    var phtml = '';
+    var paramLabels = {min_confidence:'Confidence',up_confidence_premium:'UP Premium',min_edge_absolute:'Edge Floor',consensus_floor:'Consensus'};
+    for (var k in params) {
+      var label = paramLabels[k] || k;
+      var val = typeof params[k] === 'number' ? (params[k] < 1 ? (params[k]*100).toFixed(0) + '%' : params[k]) : params[k];
+      phtml += '<span style="display:inline-flex;align-items:center;gap:4px;background:var(--card-bg);border:1px solid var(--border);border-radius:6px;padding:3px 8px;font-size:0.65rem;">';
+      phtml += '<span class="text-muted">' + esc(label) + ':</span>';
+      phtml += '<span style="color:#00BFFF;font-weight:600;">' + val + '</span>';
+      phtml += '</span>';
+    }
+    paramsEl.innerHTML = phtml;
+  } catch(e) { console.error('quant live-params:', e); }
 }
 
 async function quantTriggerRun() {

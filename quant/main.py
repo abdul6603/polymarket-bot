@@ -16,7 +16,7 @@ from quant.walk_forward import (
 )
 from quant.reporter import (
     write_status, write_results, write_recommendations,
-    write_hawk_review, publish_events,
+    write_hawk_review, publish_events, write_live_params,
 )
 from quant.analytics import compute_kelly, analyze_indicator_diversity, detect_strategy_decay
 from quant.scorer import score_result
@@ -123,6 +123,18 @@ class QuantBot:
         _write_analytics(trades, baseline)
         if self.cfg.hawk_review:
             write_hawk_review(hawk_trades)
+
+        # 6b. Auto-apply validated params to Garves's live config
+        if scored and scored[0][1].total_signals >= 20:
+            best_result = scored[0][1]
+            applied = write_live_params(
+                baseline=baseline,
+                best=best_result,
+                wf_test_wr=wf_result.test_win_rate,
+                wf_overfit_drop=wf_result.overfit_drop,
+            )
+            if applied:
+                log.info("AUTO-APPLIED: Quant params pushed to Garves live config")
 
         # 7. ML Model retrain (XGBoost on resolved trades)
         try:
@@ -323,7 +335,17 @@ def run_single_backtest(progress_callback=None) -> dict:
 
     publish_events(baseline, scored)
 
+    # Auto-apply validated params
+    params_applied = False
     best = scored[0][1] if scored and scored[0][1].total_signals >= 20 else baseline
+    if best is not baseline:
+        params_applied = write_live_params(
+            baseline=baseline,
+            best=best,
+            wf_test_wr=wf_result.test_win_rate,
+            wf_overfit_drop=wf_result.overfit_drop,
+        )
+
     return {
         "baseline_wr": round(baseline.win_rate, 1),
         "best_wr": round(best.win_rate, 1),
@@ -340,4 +362,5 @@ def run_single_backtest(progress_callback=None) -> dict:
             "overfit_drop": wf_result.overfit_drop,
         },
         "optimizer": "optuna" if HAS_OPTUNA else "grid",
+        "params_auto_applied": params_applied,
     }

@@ -267,6 +267,108 @@ def write_recommendations(baseline: BacktestResult,
     log.info("Wrote quant_recommendations.json (%d recommendations)", len(recommendations))
 
 
+def write_live_params(
+    baseline: BacktestResult,
+    best: BacktestResult,
+    wf_test_wr: float,
+    wf_overfit_drop: float,
+) -> bool:
+    """Write validated optimal params to quant_live_params.json for Garves to pick up.
+
+    Safety rails — only writes if ALL conditions pass:
+    1. Best WR > baseline WR + 2pp (meaningful improvement)
+    2. Walk-forward OOS WR > 50% (strategy works on unseen data)
+    3. Overfit drop < 5pp (not just fitting noise)
+    4. 40+ trades analyzed (statistical significance)
+
+    Returns True if params were written, False if safety check failed.
+    """
+    improvement = best.win_rate - baseline.win_rate
+    min_trades = 40
+
+    # Safety checks
+    if best.total_signals < min_trades:
+        log.info("Live params: skip — only %d signals (need %d)", best.total_signals, min_trades)
+        return False
+    if improvement < 2.0:
+        log.info("Live params: skip — improvement %.1fpp < 2pp threshold", improvement)
+        return False
+    if wf_test_wr < 50.0:
+        log.info("Live params: skip — walk-forward OOS WR %.1f%% < 50%%", wf_test_wr)
+        return False
+    if wf_overfit_drop > 5.0:
+        log.info("Live params: skip — overfit drop %.1fpp > 5pp", wf_overfit_drop)
+        return False
+
+    # Extract the tunable params from best result
+    bp = best.params
+    live_params = {}
+
+    # Only override params that differ from baseline
+    base_p = baseline.params
+    if bp.get("min_confidence") != base_p.get("min_confidence"):
+        live_params["min_confidence"] = bp["min_confidence"]
+    if bp.get("up_confidence_premium") != base_p.get("up_confidence_premium"):
+        live_params["up_confidence_premium"] = bp["up_confidence_premium"]
+    if bp.get("min_edge_absolute") and bp.get("min_edge_absolute") != base_p.get("min_edge_absolute"):
+        live_params["min_edge_absolute"] = bp["min_edge_absolute"]
+    if bp.get("min_consensus") and bp.get("min_consensus") != base_p.get("min_consensus"):
+        # Quant optimizes min_consensus directly; map to consensus_floor for signals.py
+        live_params["consensus_floor"] = bp["min_consensus"]
+
+    if not live_params:
+        log.info("Live params: skip — best params identical to baseline")
+        return False
+
+    output = {
+        "params": live_params,
+        "validation": {
+            "walk_forward_passed": True,
+            "baseline_wr": round(baseline.win_rate, 1),
+            "best_wr": round(best.win_rate, 1),
+            "improvement_pp": round(improvement, 1),
+            "wf_oos_wr": round(wf_test_wr, 1),
+            "overfit_drop": round(wf_overfit_drop, 1),
+            "trades_analyzed": best.total_signals,
+            "best_label": best.label,
+        },
+        "applied_at": _now_et(),
+    }
+
+    import os
+    tmp = (DATA_DIR / "quant_live_params.json.tmp")
+    try:
+        DATA_DIR.mkdir(exist_ok=True)
+        with open(tmp, "w") as f:
+            json.dump(output, indent=2, fp=f)
+        os.replace(str(tmp), str(DATA_DIR / "quant_live_params.json"))
+        log.info(
+            "LIVE PARAMS UPDATED: %s (WR %.1f%% → %.1f%%, OOS %.1f%%, overfit %.1fpp)",
+            live_params, baseline.win_rate, best.win_rate, wf_test_wr, wf_overfit_drop,
+        )
+
+        # Publish event for dashboard visibility
+        try:
+            import sys
+            sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+            from shared.events import publish
+            publish(
+                agent="quant",
+                event_type="live_params_updated",
+                severity="warning",
+                summary=f"Quant auto-applied params: WR {baseline.win_rate:.1f}% → {best.win_rate:.1f}% "
+                        f"(+{improvement:.1f}pp, OOS {wf_test_wr:.1f}%, overfit {wf_overfit_drop:.1f}pp)",
+                data={"params": live_params, "validation": output["validation"]},
+            )
+        except Exception:
+            pass
+
+        return True
+    except Exception:
+        log.exception("Failed to write quant_live_params.json")
+        return False
+
+
 def write_hawk_review(hawk_trades: list[dict]) -> None:
     """Write data/quant_hawk_review.json — Hawk trade calibration analysis."""
     if not hawk_trades:

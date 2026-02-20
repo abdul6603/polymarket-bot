@@ -46,6 +46,18 @@
     </div>
   </div>
 
+  <!-- Live Param Override Status -->
+  <div id="quant-live-params-card" style="display:none;background:var(--card-bg);border:1px solid #00BFFF44;border-radius:10px;padding:14px 18px;margin-bottom:16px;">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <div id="quant-lp-badge" style="font-size:0.68rem;font-weight:600;padding:3px 10px;border-radius:6px;background:#00BFFF22;color:#00BFFF;">AUTO-PILOT</div>
+      <div style="flex:1;min-width:200px;">
+        <div id="quant-lp-summary" style="font-size:0.78rem;font-weight:500;color:var(--text-primary);">Loading...</div>
+        <div id="quant-lp-detail" style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;"></div>
+      </div>
+      <div id="quant-lp-params" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+    </div>
+  </div>
+
   <!-- Smart Actions (moved after verdict for visibility) -->
   <div class="section-spacer" style="margin-top:0;margin-bottom:16px;">
     <h2 class="section-title" style="color:#00BFFF;">Suggested Actions</h2>
@@ -53,64 +65,56 @@
   </div>
 
   <!-- Key Numbers Row 1: Performance -->
-  <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:12px;">
+  <div class="grid-4" style="margin-bottom:12px;">
     <div class="stat-card">
       <div class="stat-label">Current Live WR</div>
       <div class="stat-value" id="quant-baseline-wr" style="color:var(--warning);">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Garves's current win rate</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Best WR Found</div>
       <div class="stat-value" id="quant-best-wr" style="color:var(--success);">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Optimal from backtests</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Out-of-Sample WR</div>
       <div class="stat-value" id="quant-wf-oos" style="color:var(--warning);">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Walk-forward test accuracy</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Overfit Gap</div>
       <div class="stat-value" id="quant-overfit">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Train vs test WR drop</div>
     </div>
   </div>
 
   <!-- Key Numbers Row 2: Sizing & Health -->
-  <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;">
+  <div class="grid-4" style="margin-bottom:20px;">
     <div class="stat-card">
       <div class="stat-label">Kelly Size</div>
       <div class="stat-value" id="quant-kelly" style="color:#00BFFF;">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Optimal position size</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Diversity Score</div>
+      <div class="stat-label">Diversity</div>
       <div class="stat-value" id="quant-diversity" style="color:var(--success);">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Indicator independence</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Strategy Health</div>
       <div class="stat-value" id="quant-decay-status" style="font-size:0.85rem;">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Is strategy still working?</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Trades Analyzed</div>
       <div class="stat-value" id="quant-trades" style="color:var(--text-muted);">--</div>
-      <div class="text-muted" style="font-size:0.6rem;">Historical trades replayed</div>
     </div>
   </div>
 
-  <!-- What To Change (merged Current vs Best + Recommendations) -->
+  <!-- What To Change (merged params + recommendations) -->
   <div class="card" style="margin-bottom:20px;">
-    <div class="card-header">What To Change <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">Current params vs backtest optimal — with reasoning</span></div>
+    <div class="card-header">What To Change <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">Parameters: current vs backtest optimal</span></div>
     <table class="table">
-      <thead><tr><th>Parameter</th><th>Current</th><th>Optimal</th><th>Delta</th></tr></thead>
+      <thead><tr><th>Parameter</th><th>Now</th><th>Optimal</th><th>Status</th></tr></thead>
       <tbody id="quant-params-tbody">
         <tr><td colspan="4" class="text-muted" style="text-align:center;padding:20px;">Run a backtest to see comparison</td></tr>
       </tbody>
     </table>
-    <div id="quant-recommendations" style="padding:0;">
-      <div class="text-muted" style="text-align:center;padding:16px;font-size:0.72rem;">Recommendations appear after backtesting</div>
+    <div id="quant-recommendations" style="padding:8px 12px;">
+      <div class="text-muted" style="text-align:center;padding:8px;font-size:0.72rem;">Recommendations appear after backtesting</div>
     </div>
   </div>
 

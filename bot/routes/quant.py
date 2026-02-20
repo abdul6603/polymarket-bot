@@ -19,6 +19,7 @@ RECS_FILE = DATA_DIR / "quant_recommendations.json"
 HAWK_REVIEW_FILE = DATA_DIR / "quant_hawk_review.json"
 WF_FILE = DATA_DIR / "quant_walk_forward.json"
 ANALYTICS_FILE = DATA_DIR / "quant_analytics.json"
+LIVE_PARAMS_FILE = DATA_DIR / "quant_live_params.json"
 
 _run_lock = threading.Lock()
 _run_running = False
@@ -132,6 +133,20 @@ def api_quant_analytics():
     return jsonify(data or {"kelly": {}, "diversity": {}, "decay": {}, "updated": ""})
 
 
+@quant_bp.route("/api/quant/live-params")
+def api_quant_live_params():
+    """Current auto-applied param overrides from Quant validation."""
+    data = _load_json(LIVE_PARAMS_FILE)
+    if not data:
+        return jsonify({"active": False, "params": {}, "validation": {}})
+    return jsonify({
+        "active": True,
+        "params": data.get("params", {}),
+        "validation": data.get("validation", {}),
+        "applied_at": data.get("applied_at", ""),
+    })
+
+
 @quant_bp.route("/api/quant/walk-forward")
 def api_quant_walk_forward():
     """Walk-forward validation results + bootstrap confidence intervals."""
@@ -156,10 +171,11 @@ def api_quant_run():
             from quant.main import run_single_backtest
             summary = run_single_backtest(progress_callback=_set_progress)
 
+            applied_msg = " | Params AUTO-APPLIED" if summary.get("params_auto_applied") else ""
             _set_progress(
                 "Complete",
                 f"Baseline {summary['baseline_wr']}% | Best {summary['best_wr']}% | "
-                f"{summary['combos_tested']} combos",
+                f"{summary['combos_tested']} combos{applied_msg}",
                 100,
                 done=True,
             )

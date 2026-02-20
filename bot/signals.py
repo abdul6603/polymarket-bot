@@ -10,6 +10,7 @@ from bot.config import Config
 from bot.pattern_gate import get_pattern_gate
 from bot.regime import RegimeAdjustment
 from bot.weight_learner import get_dynamic_weights
+from bot.param_loader import get_live_params
 
 # ── Shared Intelligence Layer (MLX routing for signal synthesis) ──
 _USE_SHARED_LLM = False
@@ -299,6 +300,20 @@ class SignalEngine:
         external_data: dict | None = None,
     ) -> Signal | None:
         """Generate a signal from the weighted ensemble of all indicators."""
+
+        # ── Load Quant-validated param overrides (cached 60s, fallback to defaults) ──
+        _live = get_live_params({
+            "min_confidence": MIN_CONFIDENCE,
+            "up_confidence_premium": UP_CONFIDENCE_PREMIUM,
+            "min_edge_absolute": MIN_EDGE_ABSOLUTE,
+            "consensus_floor": CONSENSUS_FLOOR,
+            "consensus_ratio": CONSENSUS_RATIO,
+        })
+        _min_confidence = _live["min_confidence"]
+        _up_confidence_premium = _live["up_confidence_premium"]
+        _min_edge_absolute = _live["min_edge_absolute"]
+        _consensus_floor = _live["consensus_floor"]
+        _consensus_ratio = _live["consensus_ratio"]
 
         closes = self._cache.get_closes(asset, 200)
         if len(closes) < MIN_CANDLES:
@@ -739,7 +754,7 @@ class SignalEngine:
         total_indicators = len(active)
 
         # Proportional consensus: 70% of active indicators must agree, floor of 3
-        effective_consensus = max(CONSENSUS_FLOOR, int(active_count * CONSENSUS_RATIO))
+        effective_consensus = max(_consensus_floor, int(active_count * _consensus_ratio))
         effective_consensus = min(effective_consensus, active_count)  # can't require more than available
         if regime and regime.consensus_offset:
             effective_consensus += regime.consensus_offset
@@ -909,7 +924,7 @@ class SignalEngine:
         asset_premium = ASSET_EDGE_PREMIUM.get(asset, 1.0)
         min_edge = MIN_EDGE_BY_TF.get(timeframe, 0.05) * (regime.edge_multiplier if regime else 1.0) * asset_premium
         # Hard floor — regime cannot lower edge below absolute minimum
-        min_edge = max(min_edge, MIN_EDGE_ABSOLUTE)
+        min_edge = max(min_edge, _min_edge_absolute)
         # Pattern gate edge adjustment: raise bar for losing combos, lower for winning ones
         if _gate_decision.edge_adjustment > 0:
             min_edge = max(min_edge, _gate_decision.edge_adjustment)
@@ -926,10 +941,10 @@ class SignalEngine:
             return None
 
         # ── Confidence Floor: MAX of regime floor and MIN_CONFIDENCE (never let regime lower it) ──
-        regime_floor = regime.confidence_floor if regime else MIN_CONFIDENCE
-        effective_conf_floor = max(regime_floor, MIN_CONFIDENCE)
+        regime_floor = regime.confidence_floor if regime else _min_confidence
+        effective_conf_floor = max(regime_floor, _min_confidence)
         if consensus_dir == "up":
-            up_premium = UP_CONFIDENCE_PREMIUM
+            up_premium = _up_confidence_premium
             # Halve UP penalty in fear — contrarian buying IS the strategy in fear regimes
             if regime and regime.label in ("extreme_fear", "fear"):
                 up_premium *= 0.5
