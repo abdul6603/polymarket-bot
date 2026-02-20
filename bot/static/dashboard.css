@@ -181,6 +181,7 @@
   .stat-card[data-accent="nexus"] { border-left-color:var(--agent-nexus); }
   .stat-card[data-accent="sentinel"] { border-left-color:var(--agent-sentinel); }
   .stat-card[data-accent="thor"] { border-left-color:var(--agent-thor); }
+  .stat-card[data-accent="hawk"] { border-left-color:var(--agent-hawk); }
   .stat-card[data-accent="success"] { border-left-color:var(--success); }
   .stat-card[data-accent="warning"] { border-left-color:var(--warning); }
   .stat-card[data-accent="error"] { border-left-color:var(--error); }
@@ -215,6 +216,11 @@
   .section-title[data-accent="nexus"]::before { background:var(--agent-nexus); }
   .section-title[data-accent="sentinel"]::before { background:var(--agent-sentinel); }
   .section-title[data-accent="thor"]::before { background:var(--agent-thor); }
+  .section-title[data-accent="hawk"]::before { background:var(--agent-hawk); }
+  .section-title[data-accent="hawk"] { color:var(--agent-hawk); }
+  .btn-hawk { background:rgba(255,215,0,0.12); border-color:rgba(255,215,0,0.25); color:var(--agent-hawk); }
+  .btn-hawk:hover { background:rgba(255,215,0,0.2); border-color:rgba(255,215,0,0.4); }
+  .badge-hawk { background:rgba(255,215,0,0.1); color:var(--agent-hawk); border:1px solid rgba(255,215,0,0.15); }
   .section-spacer { margin-top:var(--space-10); }
 
   /* Tables */

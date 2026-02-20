@@ -6576,6 +6576,65 @@ async function loadHawkTab() {
 
   // Trade suggestions
   loadHawkSuggestions();
+
+  // Performance breakdowns
+  hawkLoadPerformance();
+
+  // Smart actions from Thor
+  loadAgentSmartActions('hawk');
+}
+
+async function hawkRefreshIntel() {
+  try {
+    var resp = await fetch('/api/hawk/intel-sync');
+    var data = await resp.json();
+    renderHawkIntelSync(data);
+    showToast('Intel sync refreshed', 'success');
+  } catch(e) { console.error('hawk intel refresh:', e); showToast('Intel refresh failed', 'error'); }
+}
+
+async function hawkLoadPerformance() {
+  try {
+    var resp = await fetch('/api/hawk/performance');
+    var data = await resp.json();
+    renderHawkPerformance(data);
+  } catch(e) { console.error('hawk performance:', e); }
+}
+
+function renderHawkPerformance(data) {
+  var catEl = document.getElementById('hawk-perf-category');
+  var riskEl = document.getElementById('hawk-perf-risk');
+  var edgeEl = document.getElementById('hawk-perf-edge');
+  if (!catEl || !riskEl || !edgeEl) return;
+  if (!data || data.total === 0) {
+    var empty = '<span class="text-muted" style="font-size:0.76rem;">No resolved trades yet</span>';
+    catEl.innerHTML = empty; riskEl.innerHTML = empty; edgeEl.innerHTML = empty;
+    return;
+  }
+  catEl.innerHTML = buildPerfTable(data.by_category || {});
+  riskEl.innerHTML = buildPerfTable(data.by_risk || {});
+  edgeEl.innerHTML = buildPerfTable(data.by_edge || {});
+}
+
+function buildPerfTable(breakdown) {
+  var keys = Object.keys(breakdown);
+  if (keys.length === 0) return '<span class="text-muted" style="font-size:0.76rem;">No data</span>';
+  var html = '<table class="data-table" style="font-size:0.72rem;"><thead><tr><th>Bucket</th><th>W/L</th><th>WR%</th><th>P&L</th></tr></thead><tbody>';
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    var v = breakdown[k];
+    var w = v.wins || 0, l = v.losses || 0;
+    var wr = (w + l) > 0 ? ((w / (w + l)) * 100).toFixed(1) : '0.0';
+    var pnl = v.pnl || 0;
+    var pnlColor = pnl >= 0 ? 'var(--success)' : 'var(--error)';
+    var wrColor2 = parseFloat(wr) >= 55 ? 'var(--success)' : parseFloat(wr) >= 45 ? 'var(--agent-hawk)' : 'var(--error)';
+    html += '<tr><td style="text-transform:capitalize;">' + esc(k) + '</td>';
+    html += '<td>' + w + '/' + l + '</td>';
+    html += '<td style="color:' + wrColor2 + ';font-weight:600;">' + wr + '%</td>';
+    html += '<td style="color:' + pnlColor + ';">$' + pnl.toFixed(2) + '</td></tr>';
+  }
+  html += '</tbody></table>';
+  return html;
 }
 
 async function loadHawkArb() {
