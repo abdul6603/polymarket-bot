@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import json
 import logging
+import subprocess
 import time
+import threading
 from pathlib import Path
 
 from flask import Blueprint, jsonify, request
@@ -13,6 +15,13 @@ thor_bp = Blueprint("thor", __name__)
 
 THOR_DATA = Path.home() / "thor" / "data"
 EXCEL_PATH = Path.home() / "Desktop" / "brotherhood_progress.xlsx"
+THOR_SCHEDULE_FILE = THOR_DATA / "wake_schedule.json"
+
+# Track running batch process
+_thor_batch_lock = threading.Lock()
+_thor_batch_proc: subprocess.Popen | None = None
+_thor_last_wake: float = 0.0
+_thor_auto_wake_interval: int = 43200  # 12 hours in seconds
 
 
 @thor_bp.route("/api/thor")
@@ -78,6 +87,186 @@ def api_thor():
         return jsonify(status)
     except Exception as e:
         return jsonify({"state": "offline", "error": str(e)})
+
+
+@thor_bp.route("/api/thor/wake", methods=["POST"])
+def api_thor_wake():
+    """Wake Thor for a single batch run — process all pending tasks, then sleep.
+
+    Runs Thor in batch mode as a subprocess. Returns immediately.
+    """
+    global _thor_batch_proc, _thor_last_wake
+    with _thor_batch_lock:
+        # Check if already running
+        if _thor_batch_proc and _thor_batch_proc.poll() is None:
+            return jsonify({"status": "already_running", "pid": _thor_batch_proc.pid})
+
+        # Check pending tasks
+        pending = 0
+        tasks_dir = THOR_DATA / "tasks"
+        if tasks_dir.exists():
+            for f in tasks_dir.glob("task_*.json"):
+                try:
+                    data = json.loads(f.read_text())
+                    if data.get("status") == "pending":
+                        pending += 1
+                except Exception:
+                    pass
+
+        if pending == 0:
+            return jsonify({"status": "no_tasks", "message": "No pending tasks — Thor stays asleep"})
+
+        # Start Thor in batch mode
+        thor_home = Path.home() / "thor"
+        _thor_batch_proc = subprocess.Popen(
+            ["python3", "-m", "thor", "batch"],
+            cwd=str(thor_home),
+            stdout=open(str(THOR_DATA / "thor_daemon.log"), "a"),
+            stderr=subprocess.STDOUT,
+        )
+        _thor_last_wake = time.time()
+
+        # Save last wake time
+        _save_schedule()
+
+        log.info("Thor woke up (batch mode) — PID %d, %d pending tasks", _thor_batch_proc.pid, pending)
+        return jsonify({
+            "status": "waking",
+            "pid": _thor_batch_proc.pid,
+            "pending_tasks": pending,
+        })
+
+
+@thor_bp.route("/api/thor/wake-status")
+def api_thor_wake_status():
+    """Check Thor's batch status and auto-wake schedule."""
+    global _thor_batch_proc, _thor_last_wake
+
+    # Load schedule
+    schedule = _load_schedule()
+    auto_enabled = schedule.get("auto_enabled", True)
+    interval_h = schedule.get("interval_hours", 12)
+    last_wake = schedule.get("last_wake", 0)
+
+    # Check if batch is running
+    batch_running = False
+    batch_pid = None
+    if _thor_batch_proc:
+        rc = _thor_batch_proc.poll()
+        if rc is None:
+            batch_running = True
+            batch_pid = _thor_batch_proc.pid
+        else:
+            batch_pid = _thor_batch_proc.pid
+
+    # Time until next auto-wake
+    next_wake_in = 0
+    if auto_enabled and last_wake > 0:
+        next_wake_in = max(0, (last_wake + interval_h * 3600) - time.time())
+
+    return jsonify({
+        "batch_running": batch_running,
+        "batch_pid": batch_pid,
+        "auto_enabled": auto_enabled,
+        "interval_hours": interval_h,
+        "last_wake": last_wake,
+        "last_wake_ago": f"{(time.time() - last_wake) / 3600:.1f}h" if last_wake > 0 else "never",
+        "next_wake_in": f"{next_wake_in / 3600:.1f}h" if next_wake_in > 0 else "now",
+    })
+
+
+@thor_bp.route("/api/thor/schedule", methods=["POST"])
+def api_thor_schedule():
+    """Configure Thor's auto-wake schedule."""
+    data = request.get_json() or {}
+    schedule = _load_schedule()
+
+    if "auto_enabled" in data:
+        schedule["auto_enabled"] = bool(data["auto_enabled"])
+    if "interval_hours" in data:
+        schedule["interval_hours"] = max(1, min(48, int(data["interval_hours"])))
+
+    _save_schedule(schedule)
+    return jsonify({"status": "ok", "schedule": schedule})
+
+
+def thor_auto_wake_check():
+    """Called by dashboard refresh loop to check if Thor should auto-wake.
+
+    Returns True if Thor was woken up.
+    """
+    global _thor_batch_proc, _thor_last_wake
+    schedule = _load_schedule()
+
+    if not schedule.get("auto_enabled", True):
+        return False
+
+    interval_s = schedule.get("interval_hours", 12) * 3600
+    last_wake = schedule.get("last_wake", 0)
+
+    # Check if it's time
+    if time.time() - last_wake < interval_s:
+        return False
+
+    # Check if already running
+    with _thor_batch_lock:
+        if _thor_batch_proc and _thor_batch_proc.poll() is None:
+            return False
+
+    # Check pending tasks
+    pending = 0
+    tasks_dir = THOR_DATA / "tasks"
+    if tasks_dir.exists():
+        for f in tasks_dir.glob("task_*.json"):
+            try:
+                data = json.loads(f.read_text())
+                if data.get("status") == "pending":
+                    pending += 1
+            except Exception:
+                pass
+
+    if pending == 0:
+        # No tasks — update last_wake so we don't check every second
+        schedule["last_wake"] = time.time()
+        _save_schedule(schedule)
+        return False
+
+    # Wake Thor
+    with _thor_batch_lock:
+        thor_home = Path.home() / "thor"
+        _thor_batch_proc = subprocess.Popen(
+            ["python3", "-m", "thor", "batch"],
+            cwd=str(thor_home),
+            stdout=open(str(THOR_DATA / "thor_daemon.log"), "a"),
+            stderr=subprocess.STDOUT,
+        )
+        _thor_last_wake = time.time()
+        schedule["last_wake"] = _thor_last_wake
+        _save_schedule(schedule)
+        log.info("[AUTO-WAKE] Thor woke up — PID %d, %d pending tasks", _thor_batch_proc.pid, pending)
+    return True
+
+
+def _load_schedule() -> dict:
+    try:
+        if THOR_SCHEDULE_FILE.exists():
+            return json.loads(THOR_SCHEDULE_FILE.read_text())
+    except Exception:
+        pass
+    return {"auto_enabled": True, "interval_hours": 12, "last_wake": 0}
+
+
+def _save_schedule(schedule: dict | None = None):
+    global _thor_last_wake
+    if schedule is None:
+        schedule = _load_schedule()
+    if _thor_last_wake > schedule.get("last_wake", 0):
+        schedule["last_wake"] = _thor_last_wake
+    try:
+        THOR_SCHEDULE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        THOR_SCHEDULE_FILE.write_text(json.dumps(schedule, indent=2))
+    except Exception:
+        pass
 
 
 @thor_bp.route("/api/thor/queue")
@@ -162,7 +351,7 @@ def api_thor_costs():
                 except Exception:
                     continue
 
-        daily_budget = 5.0
+        daily_budget = 2.0
         return jsonify({
             "daily_spend_usd": round(daily_spend, 4),
             "daily_budget_usd": daily_budget,

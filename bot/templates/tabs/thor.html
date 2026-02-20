@@ -7,6 +7,33 @@
     <button class="btn" onclick="healthCheckAgent('thor')" style="font-size:0.72rem;">Health Check</button>
     <button class="agent-chat-trigger" onclick="openAgentChat('thor')" style="font-size:0.72rem;color:var(--agent-thor);">Chat</button>
   </div>
+
+  <!-- Wake Control Panel -->
+  <div class="glass-card" style="margin:12px 0;border-left:3px solid #ff6600;padding:12px 16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+      <div>
+        <h3 style="font-size:0.82rem;margin:0 0 4px;color:#ff6600;font-weight:700;">Wake Control</h3>
+        <span class="text-muted" style="font-size:0.7rem;">Thor sleeps and wakes every 12h to review issues. Budget: $2/day max.</span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn" id="btn-thor-wake" onclick="thorWakeNow()" style="font-size:0.78rem;background:#ff6600;color:#000;font-weight:700;padding:6px 16px;">Wake Now</button>
+        <span id="thor-wake-status" style="font-size:0.72rem;color:var(--text-muted);"></span>
+      </div>
+    </div>
+    <div style="display:flex;gap:16px;align-items:center;margin-top:8px;flex-wrap:wrap;">
+      <label style="font-size:0.74rem;display:flex;align-items:center;gap:6px;cursor:pointer;">
+        <input type="checkbox" id="thor-auto-wake" onchange="thorToggleAutoWake()" checked />
+        <span>Auto-wake every</span>
+      </label>
+      <select id="thor-wake-interval" onchange="thorUpdateInterval()" style="font-size:0.74rem;padding:2px 6px;background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border-color);border-radius:4px;">
+        <option value="6">6h</option>
+        <option value="12" selected>12h</option>
+        <option value="24">24h</option>
+      </select>
+      <span id="thor-next-wake" class="text-muted" style="font-size:0.72rem;"></span>
+      <span id="thor-last-wake" class="text-muted" style="font-size:0.72rem;"></span>
+    </div>
+  </div>
   <div class="health-inline" id="thor-health-result"></div>
   <div class="grid-6">
     <div class="stat-card" data-accent="thor"><div class="stat-value" id="thor-queue-pending">0</div><div class="stat-label">Pending Tasks</div></div>
@@ -42,7 +69,7 @@
     <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
       <div style="font-family:var(--font-mono);font-size:0.82rem;">
         <span class="text-muted">Today:</span> <span id="thor-cost-daily" style="color:var(--success);font-weight:600;">$0.00</span>
-        <span class="text-muted"> / </span><span id="thor-cost-budget">$5.00</span>
+        <span class="text-muted"> / </span><span id="thor-cost-budget">$2.00</span>
       </div>
       <div style="flex:1;min-width:120px;max-width:300px;">
         <div style="background:var(--bg-card);border-radius:4px;height:8px;overflow:hidden;">

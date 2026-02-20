@@ -4434,6 +4434,8 @@ async function loadThor() {
   loadThorResults();
   // Load activity
   loadThorActivity();
+  // Load wake status
+  thorLoadWakeStatus();
 }
 
 async function loadThorCosts() {
@@ -4769,6 +4771,76 @@ async function submitAgentSmartAction(agent, index) {
   } catch(e) {
     alert('Failed: ' + e.message);
   }
+}
+
+// ── Thor Wake Control ──
+async function thorWakeNow() {
+  var btn = document.getElementById('btn-thor-wake');
+  var status = document.getElementById('thor-wake-status');
+  btn.disabled = true;
+  btn.textContent = 'Waking...';
+  try {
+    var resp = await fetch('/api/thor/wake', {method: 'POST'});
+    var data = await resp.json();
+    if (data.status === 'waking') {
+      status.textContent = 'Thor awake (PID ' + data.pid + ') — ' + data.pending_tasks + ' tasks';
+      status.style.color = '#ff6600';
+    } else if (data.status === 'already_running') {
+      status.textContent = 'Already running (PID ' + data.pid + ')';
+      status.style.color = 'var(--warning)';
+    } else if (data.status === 'no_tasks') {
+      status.textContent = 'No pending tasks — Thor stays asleep';
+      status.style.color = 'var(--text-muted)';
+    }
+  } catch(e) {
+    status.textContent = 'Error: ' + e.message;
+    status.style.color = 'var(--error)';
+  }
+  btn.disabled = false;
+  btn.textContent = 'Wake Now';
+}
+
+async function thorToggleAutoWake() {
+  var enabled = document.getElementById('thor-auto-wake').checked;
+  await fetch('/api/thor/schedule', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({auto_enabled: enabled})
+  });
+}
+
+async function thorUpdateInterval() {
+  var hours = parseInt(document.getElementById('thor-wake-interval').value);
+  await fetch('/api/thor/schedule', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({interval_hours: hours})
+  });
+}
+
+async function thorLoadWakeStatus() {
+  try {
+    var resp = await fetch('/api/thor/wake-status');
+    var data = await resp.json();
+    var statusEl = document.getElementById('thor-wake-status');
+    var nextEl = document.getElementById('thor-next-wake');
+    var lastEl = document.getElementById('thor-last-wake');
+    var autoEl = document.getElementById('thor-auto-wake');
+    var intervalEl = document.getElementById('thor-wake-interval');
+
+    if (data.batch_running) {
+      statusEl.textContent = 'Running (PID ' + data.batch_pid + ')';
+      statusEl.style.color = '#ff6600';
+    } else {
+      statusEl.textContent = 'Sleeping';
+      statusEl.style.color = 'var(--text-muted)';
+    }
+
+    if (nextEl) nextEl.textContent = 'Next wake: ' + data.next_wake_in;
+    if (lastEl) lastEl.textContent = 'Last wake: ' + data.last_wake_ago + ' ago';
+    if (autoEl) autoEl.checked = data.auto_enabled;
+    if (intervalEl) intervalEl.value = String(data.interval_hours);
+  } catch(e) {}
 }
 
 async function thorUpdateSheet() {

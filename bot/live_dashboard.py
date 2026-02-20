@@ -192,6 +192,13 @@ if __name__ == "__main__":
                 except Exception:
                     pass
 
+            # Thor auto-wake check (every 30s loop iteration)
+            try:
+                from bot.routes.thor import thor_auto_wake_check
+                thor_auto_wake_check()
+            except Exception:
+                pass
+
             _time.sleep(30)
 
     threading.Thread(target=_broadcast_processor, daemon=True, name="broadcast-ack").start()
