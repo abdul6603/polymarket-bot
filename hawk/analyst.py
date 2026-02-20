@@ -356,6 +356,11 @@ def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate |
         log.info("[V4] No sportsbook data — skipping sports market: %s", market.question[:60])
         return None
 
+    # V4: Non-sports markets — SKIP (Hawk is sports-only now)
+    log.info("[V4] Skipping non-sports market (sports-only mode): %s", market.question[:60])
+    return None
+
+    # ── DEAD CODE below — kept for future re-enable if needed ──
     # ── Build GPT prompt (non-sports only) ──
     time_info = ""
     if market.time_left_hours > 0:
@@ -580,21 +585,10 @@ def batch_analyze(
         if result is not None:
             estimates.append(result)
 
-    # Non-sports: parallel GPT analysis (only these cost money)
+    # Non-sports: skipped in V4 (Hawk is sports-only, zero GPT cost)
     if non_sports:
-        log.info("GPT analyzing %d non-sports markets ($$$)", len(non_sports))
-        with ThreadPoolExecutor(max_workers=max_concurrent) as pool:
-            futures = {
-                pool.submit(analyze_market, cfg, m): m
-                for m in non_sports
-            }
-            for future in as_completed(futures):
-                result = future.result()
-                if result is not None:
-                    estimates.append(result)
+        log.info("Skipping %d non-sports markets (sports-only mode)", len(non_sports))
 
-    sb_count = sum(1 for e in estimates if e.sportsbook_prob is not None)
-    gpt_count = len(estimates) - sb_count
-    log.info("V4 Analysis: %d/%d markets | %d sportsbook-pure ($0) | %d GPT ($$$)",
-             len(estimates), len(markets), sb_count, gpt_count)
+    log.info("V4 Analysis: %d/%d markets | %d sportsbook-pure ($0) | 0 GPT",
+             len(estimates), len(markets), len(estimates))
     return estimates
