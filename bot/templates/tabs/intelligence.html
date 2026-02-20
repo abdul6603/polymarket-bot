@@ -11,6 +11,19 @@
     </div>
   </div>
 
+  <!-- Smart Actions (TOP) -->
+  <div class="stat-card" style="padding:14px;margin-bottom:12px;">
+    <div style="font-weight:600;color:var(--text-primary);margin-bottom:10px;font-size:0.78rem;">Smart Actions</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+      <button class="btn" onclick="intelAction('health-check')" style="font-size:0.7rem;padding:5px 12px;background:#9B59B622;border:1px solid #9B59B6;color:#9B59B6;">Test LLM Connectivity</button>
+      <button class="btn" onclick="intelAction('prune-patterns')" style="font-size:0.7rem;padding:5px 12px;background:#E67E2222;border:1px solid #E67E22;color:#E67E22;">Prune Weak Patterns</button>
+      <button class="btn" onclick="intelAction('export-learnings')" style="font-size:0.7rem;padding:5px 12px;background:#22AA4422;border:1px solid #22AA44;color:#22AA44;">Export All Learnings</button>
+      <button class="btn" onclick="intelAction('compact-costs')" style="font-size:0.7rem;padding:5px 12px;background:#3498DB22;border:1px solid #3498DB;color:#3498DB;">Compact Cost Log</button>
+      <button class="btn" onclick="intelResetPrompt()" style="font-size:0.7rem;padding:5px 12px;background:#E74C3C22;border:1px solid #E74C3C;color:#E74C3C;">Reset Agent Memory</button>
+    </div>
+    <div id="intel-action-result" style="font-size:0.68rem;color:var(--text-muted);min-height:20px;"></div>
+  </div>
+
   <!-- Top Row: Server Status + Cost Summary -->
   <div class="stat-grid" style="grid-template-columns:repeat(5,1fr);margin-bottom:12px;">
     <div class="stat-card">
@@ -40,6 +53,15 @@
     </div>
   </div>
 
+  <!-- INTELLIGENCE METERS — Real Learning Progress -->
+  <div class="stat-card" style="padding:14px;margin-bottom:12px;">
+    <div style="font-weight:600;color:var(--text-primary);margin-bottom:10px;font-size:0.82rem;">Agent Intelligence Meters</div>
+    <div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:12px;">Score = Experience (decisions) + Knowledge (patterns) + Accuracy (win rate) + Maturity (resolved ratio) + Recency (7d activity)</div>
+    <div id="intel-meters-container">
+      <span class="text-muted" style="font-size:0.72rem;">Loading...</span>
+    </div>
+  </div>
+
   <!-- Memory Stats Row -->
   <div class="stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:12px;">
     <div class="stat-card">
@@ -64,237 +86,293 @@
     </div>
   </div>
 
-  <!-- Smart Actions -->
-  <div class="stat-card" style="padding:14px;margin-bottom:12px;">
-    <div style="font-weight:600;color:var(--text-primary);margin-bottom:10px;font-size:0.78rem;">Smart Actions</div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-      <button class="btn" onclick="intelAction('health-check')" id="btn-health-check" style="font-size:0.7rem;padding:5px 12px;background:#9B59B622;border:1px solid #9B59B6;color:#9B59B6;">
-        Test LLM Connectivity
-      </button>
-      <button class="btn" onclick="intelAction('prune-patterns')" id="btn-prune" style="font-size:0.7rem;padding:5px 12px;background:#E67E2222;border:1px solid #E67E22;color:#E67E22;">
-        Prune Weak Patterns
-      </button>
-      <button class="btn" onclick="intelAction('export-learnings')" id="btn-export" style="font-size:0.7rem;padding:5px 12px;background:#22AA4422;border:1px solid #22AA44;color:#22AA44;">
-        Export All Learnings
-      </button>
-      <button class="btn" onclick="intelAction('compact-costs')" id="btn-compact" style="font-size:0.7rem;padding:5px 12px;background:#3498DB22;border:1px solid #3498DB;color:#3498DB;">
-        Compact Cost Log
-      </button>
-      <button class="btn" onclick="intelResetPrompt()" id="btn-reset" style="font-size:0.7rem;padding:5px 12px;background:#E74C3C22;border:1px solid #E74C3C;color:#E74C3C;">
-        Reset Agent Memory
-      </button>
-    </div>
-    <div id="intel-action-result" style="font-size:0.68rem;color:var(--text-muted);min-height:20px;"></div>
-  </div>
-
-  <!-- Two Column Layout: Routing Table + Per-Agent Memory -->
+  <!-- Two Column: Routing + Per-Agent Memory -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-    <!-- Routing Table -->
     <div class="stat-card" style="padding:14px;">
       <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">LLM Routing Table</div>
       <table style="width:100%;border-collapse:collapse;font-size:0.7rem;">
-        <thead>
-          <tr style="border-bottom:1px solid var(--border-color);">
-            <th style="text-align:left;padding:4px;color:var(--text-muted);">Task Type</th>
-            <th style="text-align:left;padding:4px;color:var(--text-muted);">Route</th>
-          </tr>
-        </thead>
-        <tbody id="llm-routing-table">
-          <tr><td colspan="2" class="text-muted">Loading...</td></tr>
-        </tbody>
+        <thead><tr style="border-bottom:1px solid var(--border-color);"><th style="text-align:left;padding:4px;color:var(--text-muted);">Task Type</th><th style="text-align:left;padding:4px;color:var(--text-muted);">Route</th></tr></thead>
+        <tbody id="llm-routing-table"><tr><td colspan="2" class="text-muted">Loading...</td></tr></tbody>
       </table>
       <div style="margin-top:10px;font-weight:600;color:var(--text-primary);font-size:0.74rem;">Agent Overrides</div>
       <div id="llm-agent-overrides" class="text-muted" style="font-size:0.68rem;margin-top:4px;">Loading...</div>
     </div>
-
-    <!-- Per-Agent Memory -->
     <div class="stat-card" style="padding:14px;">
       <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Per-Agent Memory</div>
       <table style="width:100%;border-collapse:collapse;font-size:0.7rem;">
-        <thead>
-          <tr style="border-bottom:1px solid var(--border-color);">
-            <th style="text-align:left;padding:4px;color:var(--text-muted);">Agent</th>
-            <th style="text-align:center;padding:4px;color:var(--text-muted);">Decisions</th>
-            <th style="text-align:center;padding:4px;color:var(--text-muted);">Patterns</th>
-            <th style="text-align:center;padding:4px;color:var(--text-muted);">WR</th>
-            <th style="text-align:center;padding:4px;color:var(--text-muted);">DB</th>
-          </tr>
-        </thead>
-        <tbody id="llm-memory-table">
-          <tr><td colspan="5" class="text-muted">Loading...</td></tr>
-        </tbody>
+        <thead><tr style="border-bottom:1px solid var(--border-color);"><th style="text-align:left;padding:4px;color:var(--text-muted);">Agent</th><th style="text-align:center;padding:4px;color:var(--text-muted);">Decisions</th><th style="text-align:center;padding:4px;color:var(--text-muted);">Patterns</th><th style="text-align:center;padding:4px;color:var(--text-muted);">WR</th><th style="text-align:center;padding:4px;color:var(--text-muted);">DB</th></tr></thead>
+        <tbody id="llm-memory-table"><tr><td colspan="5" class="text-muted">Loading...</td></tr></tbody>
       </table>
     </div>
   </div>
 
-  <!-- Brain Activity + Charts Row -->
+  <!-- Brain Activity + Cost Donut -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-    <!-- Brain Activity Indicator -->
     <div class="stat-card" style="padding:14px;">
       <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Brain Activity (Last 5 min)</div>
-      <div id="brain-activity-container">
-        <span class="text-muted" style="font-size:0.72rem;">Loading...</span>
-      </div>
+      <div id="brain-activity-container"><span class="text-muted" style="font-size:0.72rem;">Loading...</span></div>
     </div>
-
-    <!-- Cost Savings Donut -->
     <div class="stat-card" style="padding:14px;">
       <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Local vs Cloud Calls</div>
-      <div class="chart-container chart-sm">
-        <canvas id="chart-cost-pie"></canvas>
-      </div>
+      <div class="chart-container chart-sm"><canvas id="chart-cost-pie"></canvas></div>
       <div style="text-align:center;margin-top:6px;font-size:0.68rem;">
         <span style="color:var(--success);">Total Saved: </span><span id="llm-total-saved" style="color:var(--success);font-weight:600;">$0.00</span>
       </div>
     </div>
   </div>
 
-  <!-- Call Volume Timeline + Memory Growth -->
+  <!-- Charts: Call Timeline + Memory Growth -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
     <div class="stat-card" style="padding:14px;">
       <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">LLM Call Volume (by hour)</div>
-      <div class="chart-container chart-md">
-        <canvas id="chart-call-timeline"></canvas>
-      </div>
+      <div class="chart-container chart-md"><canvas id="chart-call-timeline"></canvas></div>
     </div>
     <div class="stat-card" style="padding:14px;">
       <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Agent Memory Growth</div>
-      <div class="chart-container chart-md">
-        <canvas id="chart-memory-bars"></canvas>
-      </div>
+      <div class="chart-container chart-md"><canvas id="chart-memory-bars"></canvas></div>
     </div>
   </div>
 
   <!-- Pattern Learnings Feed -->
   <div class="stat-card" style="padding:14px;margin-bottom:12px;">
     <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Recent Pattern Learnings</div>
-    <div id="pattern-feed-container" style="max-height:250px;overflow-y:auto;">
-      <span class="text-muted" style="font-size:0.72rem;">Loading...</span>
-    </div>
+    <div id="pattern-feed-container" style="max-height:250px;overflow-y:auto;"><span class="text-muted" style="font-size:0.72rem;">Loading...</span></div>
   </div>
 
-  <!-- Brotherhood Frameworks Table -->
+  <!-- Installed Tools Table -->
   <div class="stat-card" style="padding:14px;margin-bottom:12px;">
-    <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Brotherhood Tech Stack</div>
-    <table style="width:100%;border-collapse:collapse;font-size:0.7rem;">
+    <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.82rem;">Installed Tools</div>
+    <div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:10px;">Each tool is a capability installed in an agent. Tools can be shared across agents via the shared intelligence layer.</div>
+    <table style="width:100%;border-collapse:collapse;font-size:0.68rem;">
       <thead>
         <tr style="border-bottom:1px solid var(--border-color);">
-          <th style="text-align:left;padding:6px;color:var(--text-muted);">Agent</th>
-          <th style="text-align:left;padding:6px;color:var(--text-muted);">Language</th>
-          <th style="text-align:left;padding:6px;color:var(--text-muted);">AI/LLM</th>
-          <th style="text-align:left;padding:6px;color:var(--text-muted);">Data</th>
-          <th style="text-align:left;padding:6px;color:var(--text-muted);">APIs</th>
-          <th style="text-align:left;padding:6px;color:var(--text-muted);">MLX</th>
+          <th style="text-align:left;padding:5px 6px;color:var(--text-muted);">Tool</th>
+          <th style="text-align:left;padding:5px 6px;color:var(--text-muted);">What It Does</th>
+          <th style="text-align:left;padding:5px 6px;color:var(--text-muted);">Used By</th>
+          <th style="text-align:center;padding:5px 6px;color:var(--text-muted);">Status</th>
         </tr>
       </thead>
       <tbody>
         <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:5px 6px;color:#00D4FF;font-weight:600;">Garves</td>
-          <td style="padding:5px 6px;">Python 3.12</td>
-          <td style="padding:5px 6px;">Qwen 14B/3B, GPT-4o-mini</td>
-          <td style="padding:5px 6px;">JSONL, SQLite</td>
-          <td style="padding:5px 6px;">Binance WS, Polymarket CLOB</td>
-          <td style="padding:5px 6px;color:var(--success);">Wired</td>
+          <td style="padding:4px 6px;font-weight:600;color:#9B59B6;">AgentBrain</td>
+          <td style="padding:4px 6px;">Memory + LLM reasoning — records decisions, learns patterns, thinks before acting</td>
+          <td style="padding:4px 6px;">All 9 agents</td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
         </tr>
         <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:5px 6px;color:#FFD700;font-weight:600;">Hawk</td>
-          <td style="padding:5px 6px;">Python 3.12</td>
-          <td style="padding:5px 6px;">GPT-4o (sports), Qwen 14B</td>
-          <td style="padding:5px 6px;">JSONL, SQLite</td>
-          <td style="padding:5px 6px;">Polymarket CLOB, OpenAI</td>
-          <td style="padding:5px 6px;color:var(--success);">Wired</td>
+          <td style="padding:4px 6px;font-weight:600;color:#9B59B6;">LLM Router</td>
+          <td style="padding:4px 6px;">Routes AI calls between local MLX (free) and cloud APIs (paid) based on task type</td>
+          <td style="padding:4px 6px;">All 9 agents</td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
         </tr>
         <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:5px 6px;color:#CC66FF;font-weight:600;">Soren</td>
-          <td style="padding:5px 6px;">Python 3.9</td>
-          <td style="padding:5px 6px;">Qwen 14B (writing), GPT-4</td>
-          <td style="padding:5px 6px;">JSON, SQLite</td>
-          <td style="padding:5px 6px;">OpenAI, DALL-E 3, ElevenLabs</td>
-          <td style="padding:5px 6px;color:var(--success);">Wired</td>
+          <td style="padding:4px 6px;font-weight:600;color:#9B59B6;">Event Bus</td>
+          <td style="padding:4px 6px;">Cross-agent communication — agents publish events, others subscribe and react</td>
+          <td style="padding:4px 6px;">Atlas, Robotox, Thor, Viper, Garves</td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
         </tr>
         <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:5px 6px;color:#FF8800;font-weight:600;">Lisa</td>
-          <td style="padding:5px 6px;">Python 3.9</td>
-          <td style="padding:5px 6px;">Qwen 14B, GPT-4o-mini</td>
-          <td style="padding:5px 6px;">JSON, SQLite</td>
-          <td style="padding:5px 6px;">X/Twitter API, OpenAI</td>
-          <td style="padding:5px 6px;color:var(--success);">Wired</td>
+          <td style="padding:4px 6px;font-weight:600;color:#00D4FF;">Binance WebSocket</td>
+          <td style="padding:4px 6px;">Real-time crypto price feed — BTC, ETH, SOL, XRP candle data</td>
+          <td style="padding:4px 6px;"><span style="color:#00D4FF;">Garves</span></td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
         </tr>
         <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:5px 6px;color:#FFAA00;font-weight:600;">Shelby</td>
-          <td style="padding:5px 6px;">Python 3.9</td>
-          <td style="padding:5px 6px;">Qwen 14B (reasoning)</td>
-          <td style="padding:5px 6px;">JSON, SQLite</td>
-          <td style="padding:5px 6px;">Telegram Bot API</td>
-          <td style="padding:5px 6px;color:var(--success);">Wired</td>
+          <td style="padding:4px 6px;font-weight:600;color:#00D4FF;">Polymarket CLOB</td>
+          <td style="padding:4px 6px;">Prediction market order execution — place, cancel, track bets</td>
+          <td style="padding:4px 6px;"><span style="color:#00D4FF;">Garves</span>, <span style="color:#FFD700;">Hawk</span>, <span style="color:#00FF88;">Viper</span></td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
         </tr>
         <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:5px 6px;color:#22AA44;font-weight:600;">Atlas</td>
-          <td style="padding:5px 6px;">Python 3.9</td>
-          <td style="padding:5px 6px;">Qwen 14B, GPT-4o-mini</td>
-          <td style="padding:5px 6px;">JSON, SQLite, KB</td>
-          <td style="padding:5px 6px;">Tavily Search API</td>
-          <td style="padding:5px 6px;color:var(--success);">Wired</td>
+          <td style="padding:4px 6px;font-weight:600;color:#00D4FF;">11-Indicator Ensemble</td>
+          <td style="padding:4px 6px;">RSI, MACD, EMA, Bollinger, Momentum, Order Flow, Volume Spike + more</td>
+          <td style="padding:4px 6px;"><span style="color:#00D4FF;">Garves</span></td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
         </tr>
         <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:5px 6px;color:#FF6600;font-weight:600;">Thor</td>
-          <td style="padding:5px 6px;">Python 3.9</td>
-          <td style="padding:5px 6px;">Claude Sonnet/Opus</td>
-          <td style="padding:5px 6px;">JSON, SQLite</td>
-          <td style="padding:5px 6px;">Anthropic API</td>
-          <td style="padding:5px 6px;color:var(--success);">Wired</td>
+          <td style="padding:4px 6px;font-weight:600;color:#00D4FF;">Regime Detector</td>
+          <td style="padding:4px 6px;">Detects market mood (Fear/Greed) and adjusts trading parameters dynamically</td>
+          <td style="padding:4px 6px;"><span style="color:#00D4FF;">Garves</span></td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
         </tr>
         <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:5px 6px;color:#00FF88;font-weight:600;">Viper</td>
-          <td style="padding:5px 6px;">Python 3.12</td>
-          <td style="padding:5px 6px;">Qwen 3B/14B</td>
-          <td style="padding:5px 6px;">JSONL, SQLite</td>
-          <td style="padding:5px 6px;">Tavily, Reddit, Polymarket</td>
-          <td style="padding:5px 6px;color:var(--success);">Wired</td>
+          <td style="padding:4px 6px;font-weight:600;color:#FFD700;">GPT-4o Analyst</td>
+          <td style="padding:4px 6px;">AI probability analysis for sports, politics, culture prediction markets</td>
+          <td style="padding:4px 6px;"><span style="color:#FFD700;">Hawk</span></td>
+          <td style="padding:4px 6px;text-align:center;color:var(--error);">Down (quota)</td>
         </tr>
         <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:5px 6px;color:#00FF44;font-weight:600;">Robotox</td>
-          <td style="padding:5px 6px;">Python 3.9</td>
-          <td style="padding:5px 6px;">Qwen 14B/3B</td>
-          <td style="padding:5px 6px;">JSON, SQLite</td>
-          <td style="padding:5px 6px;">System (ps, lsof, launchctl)</td>
-          <td style="padding:5px 6px;color:var(--success);">Wired</td>
+          <td style="padding:4px 6px;font-weight:600;color:#22AA44;">Tavily Search</td>
+          <td style="padding:4px 6px;">Web search API for real-time research, news gathering, intel scanning</td>
+          <td style="padding:4px 6px;"><span style="color:#22AA44;">Atlas</span>, <span style="color:#00FF88;">Viper</span></td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#CC66FF;">DALL-E 3</td>
+          <td style="padding:4px 6px;">AI image generation for social media content visuals</td>
+          <td style="padding:4px 6px;"><span style="color:#CC66FF;">Soren</span></td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#CC66FF;">ElevenLabs TTS</td>
+          <td style="padding:4px 6px;">Text-to-speech voice generation (Brian voice) for video content</td>
+          <td style="padding:4px 6px;"><span style="color:#CC66FF;">Soren</span></td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#FF8800;">X/Twitter API</td>
+          <td style="padding:4px 6px;">Post tweets, monitor replies, track engagement on @soren0era</td>
+          <td style="padding:4px 6px;"><span style="color:#FF8800;">Lisa</span></td>
+          <td style="padding:4px 6px;text-align:center;color:var(--error);">401 Error</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#FFAA00;">Telegram Bot</td>
+          <td style="padding:4px 6px;">Send alerts, trade notifications, error reports directly to Jordan</td>
+          <td style="padding:4px 6px;"><span style="color:#FFAA00;">Shelby</span>, <span style="color:#00FF44;">Robotox</span></td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#FF6600;">Claude Sonnet/Opus</td>
+          <td style="padding:4px 6px;">Code generation, review, and autonomous task execution</td>
+          <td style="padding:4px 6px;"><span style="color:#FF6600;">Thor</span></td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#00FF44;">Process Monitor</td>
+          <td style="padding:4px 6px;">Watches all agent processes, auto-restarts on crash, detects port conflicts</td>
+          <td style="padding:4px 6px;"><span style="color:#00FF44;">Robotox</span></td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#00FF44;">Log Watcher</td>
+          <td style="padding:4px 6px;">Scans agent logs for 12 error patterns, auto-fixes known issues, escalates unknowns</td>
+          <td style="padding:4px 6px;"><span style="color:#00FF44;">Robotox</span></td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#00FF88;">Reddit Scanner</td>
+          <td style="padding:4px 6px;">Monitors 5 subreddits for prediction market intel and freelance opportunities</td>
+          <td style="padding:4px 6px;"><span style="color:#00FF88;">Viper</span></td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#00FF88;">Cost Auditor</td>
+          <td style="padding:4px 6px;">Tracks API spend per agent, identifies waste, recommends cost optimizations</td>
+          <td style="padding:4px 6px;"><span style="color:#00FF88;">Viper</span></td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
         </tr>
         <tr>
-          <td style="padding:5px 6px;color:#00BFFF;font-weight:600;">Quant</td>
-          <td style="padding:5px 6px;">Python 3.9</td>
-          <td style="padding:5px 6px;">None (pure math)</td>
-          <td style="padding:5px 6px;">JSON, CSV</td>
-          <td style="padding:5px 6px;">None (backtesting only)</td>
-          <td style="padding:5px 6px;color:var(--text-muted);">N/A</td>
+          <td style="padding:4px 6px;font-weight:600;color:#00BFFF;">Backtester</td>
+          <td style="padding:4px 6px;">Replays resolved trades against 500 weight/threshold combos to find optimal settings</td>
+          <td style="padding:4px 6px;"><span style="color:#00BFFF;">Quant</span></td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
         </tr>
       </tbody>
     </table>
     <div style="margin-top:8px;font-size:0.65rem;color:var(--text-muted);">
-      Shared Layer: <span style="color:#9B59B6;">~/shared/</span> — llm_client.py (router), agent_brain.py (memory+LLM), agent_memory.py (SQLite), events.py (bus) |
-      Dashboard: <span style="color:#9B59B6;">Flask + Socket.IO + Chart.js</span> |
-      Infra: <span style="color:#9B59B6;">LaunchAgents + Git Deploy + Tailscale SSH</span>
+      <span style="color:var(--success);">Installed</span> = active and working |
+      <span style="color:var(--error);">Down</span> = needs attention |
+      Shared Layer: <span style="color:#9B59B6;">~/shared/</span> (llm_client, agent_brain, agent_memory, events)
     </div>
   </div>
 
-  <!-- Recent LLM Calls Activity Feed -->
+  <!-- Recent LLM Calls -->
   <div class="stat-card" style="padding:14px;margin-bottom:12px;">
     <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Recent LLM Calls</div>
-    <div id="llm-activity-feed" style="max-height:280px;overflow-y:auto;font-size:0.68rem;">
-      <span class="text-muted">Loading...</span>
-    </div>
+    <div id="llm-activity-feed" style="max-height:280px;overflow-y:auto;font-size:0.68rem;"><span class="text-muted">Loading...</span></div>
   </div>
 
-  <!-- Cost Breakdown by Agent -->
+  <!-- Cost by Agent -->
   <div class="stat-card" style="padding:14px;">
     <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Cost by Agent (24h)</div>
-    <div id="llm-cost-by-agent" style="font-size:0.7rem;">
-      <span class="text-muted">Loading...</span>
-    </div>
+    <div id="llm-cost-by-agent" style="font-size:0.7rem;"><span class="text-muted">Loading...</span></div>
   </div>
 </div>
 
 <script>
+var _INTEL_AGENT_COLORS = {
+  shelby:'#FFAA00', atlas:'#22AA44', lisa:'#FF8800', hawk:'#FFD700',
+  soren:'#CC66FF', garves:'#00D4FF', quant:'#00BFFF', viper:'#00FF88',
+  robotox:'#00FF44', thor:'#FF6600'
+};
+var _INTEL_AGENT_ORDER = ['garves','hawk','soren','lisa','shelby','atlas','thor','viper','robotox','quant'];
+
+function calcIntelScore(s) {
+  if (!s || s.error) return {score:0, exp:0, know:0, acc:0, mat:0, rec:0};
+  var dec = s.total_decisions || 0;
+  var pat = s.active_patterns || 0;
+  var wr = s.win_rate || 0;
+  var resolved = s.resolved_decisions || 0;
+  var recent7d = s.recent_patterns_7d || 0;
+  // Experience: more decisions = more experienced (max 30pts at 50+ decisions)
+  var exp = Math.min(dec * 0.6, 30);
+  // Knowledge: more patterns = more learned rules (max 25pts at 15+ patterns)
+  var know = Math.min(pat * 1.67, 25);
+  // Accuracy: win rate (max 20pts)
+  var acc = (wr / 100) * 20;
+  // Maturity: resolved ratio — follows through on decisions (max 15pts)
+  var mat = dec > 0 ? (resolved / dec) * 15 : 0;
+  // Recency: active learning in last 7 days (max 10pts)
+  var rec = Math.min(recent7d * 2, 10);
+  var score = Math.round(exp + know + acc + mat + rec);
+  return {score: Math.min(score, 100), exp: Math.round(exp), know: Math.round(know), acc: Math.round(acc), mat: Math.round(mat), rec: Math.round(rec)};
+}
+
+function getIntelGrade(score) {
+  if (score >= 80) return {label: 'GENIUS', color: '#FFD700'};
+  if (score >= 60) return {label: 'SHARP', color: 'var(--success)'};
+  if (score >= 40) return {label: 'LEARNING', color: '#3498DB'};
+  if (score >= 20) return {label: 'ROOKIE', color: 'var(--warning)'};
+  if (score > 0)   return {label: 'NEWBORN', color: 'var(--error)'};
+  return {label: 'OFFLINE', color: 'var(--text-muted)'};
+}
+
+function renderIntelMeters(agents) {
+  var el = document.getElementById('intel-meters-container');
+  if (!el) return;
+  var html = '';
+  _INTEL_AGENT_ORDER.forEach(function(ag) {
+    var s = (agents || {})[ag] || {};
+    var r = calcIntelScore(s);
+    var g = getIntelGrade(r.score);
+    var c = _INTEL_AGENT_COLORS[ag] || '#888';
+    var barColor = r.score >= 60 ? 'var(--success)' : r.score >= 30 ? '#3498DB' : r.score > 0 ? 'var(--warning)' : 'var(--border-color)';
+
+    html += '<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--border-color);">';
+    // Agent name
+    html += '<div style="min-width:70px;color:'+c+';font-weight:600;font-size:0.74rem;text-transform:capitalize;">'+ag+'</div>';
+    // Score number
+    html += '<div style="min-width:32px;text-align:right;font-weight:700;font-size:0.82rem;color:'+g.color+';">'+r.score+'</div>';
+    // Progress bar
+    html += '<div style="flex:1;background:var(--card-bg);border-radius:6px;height:18px;position:relative;overflow:hidden;border:1px solid var(--border-color);">';
+    html += '<div style="width:'+r.score+'%;height:100%;border-radius:5px;background:linear-gradient(90deg,'+barColor+','+c+');transition:width 0.8s ease;"></div>';
+    // Segment markers inside bar
+    if (r.score > 0) {
+      var segs = [
+        {w: r.exp, label:'EXP', col:'rgba(255,255,255,0.9)'},
+        {w: r.know, label:'KNW', col:'rgba(255,255,255,0.7)'},
+        {w: r.acc, label:'ACC', col:'rgba(255,255,255,0.7)'},
+      ];
+      var offset = 0;
+      segs.forEach(function(seg) {
+        if (seg.w > 0) {
+          html += '<span style="position:absolute;left:'+(offset + seg.w/2)+'%;top:50%;transform:translate(-50%,-50%);font-size:0.5rem;font-weight:600;color:'+seg.col+';text-shadow:0 1px 2px rgba(0,0,0,0.8);pointer-events:none;">'+seg.label+'</span>';
+          offset += seg.w;
+        }
+      });
+    }
+    html += '</div>';
+    // Grade label
+    html += '<div style="min-width:60px;text-align:center;font-size:0.62rem;font-weight:700;color:'+g.color+';letter-spacing:0.5px;">'+g.label+'</div>';
+    // Breakdown tooltip
+    html += '<div style="min-width:140px;font-size:0.58rem;color:var(--text-muted);">';
+    html += (s.total_decisions||0)+' dec | '+(s.active_patterns||0)+' pat | '+(s.win_rate||0).toFixed(0)+'% WR';
+    html += '</div>';
+    html += '</div>';
+  });
+  el.innerHTML = html || '<span class="text-muted">No data yet</span>';
+}
+
 function refreshIntelligence() {
   Promise.all([
     fetch('/api/llm/status').then(function(r){return r.json();}).catch(function(){return {};}),
@@ -306,64 +384,38 @@ function refreshIntelligence() {
     fetch('/api/llm/pattern-feed').then(function(r){return r.json();}).catch(function(){return {patterns:[]};}),
     fetch('/api/llm/cost-savings').then(function(r){return r.json();}).catch(function(){return {};}),
   ]).then(function(results) {
-    var status = results[0];
-    var costs = results[1];
-    var memoryAll = results[2];
-    var routing = results[3];
-    var recentCalls = results[4];
-    var brainActivity = results[5];
-    var patternFeed = results[6];
-    var costSavings = results[7];
+    var status = results[0], costs = results[1], memoryAll = results[2],
+        routing = results[3], recentCalls = results[4], brainActivity = results[5],
+        patternFeed = results[6], costSavings = results[7];
 
-    // Brain activity grid
-    if (typeof renderBrainActivity === 'function') {
-      renderBrainActivity('brain-activity-container', brainActivity.activity || {});
-    }
-    // Pattern learnings feed
-    if (typeof renderPatternFeed === 'function') {
-      renderPatternFeed('pattern-feed-container', patternFeed.patterns || []);
-    }
-    // Cost savings donut
-    var csLocal = costSavings.local_calls || 0;
-    var csCloud = costSavings.cloud_calls || 0;
-    if (typeof renderCostPie === 'function' && (csLocal + csCloud) > 0) {
-      renderCostPie('chart-cost-pie', csLocal, csCloud);
-    }
+    // INTELLIGENCE METERS
+    renderIntelMeters(memoryAll.agents || {});
+
+    // Brain activity
+    if (typeof renderBrainActivity === 'function') renderBrainActivity('brain-activity-container', brainActivity.activity || {});
+    if (typeof renderPatternFeed === 'function') renderPatternFeed('pattern-feed-container', patternFeed.patterns || []);
+
+    // Charts
+    var csLocal = costSavings.local_calls || 0, csCloud = costSavings.cloud_calls || 0;
+    if (typeof renderCostPie === 'function' && (csLocal + csCloud) > 0) renderCostPie('chart-cost-pie', csLocal, csCloud);
     setTextSafe('llm-total-saved', '$' + (costSavings.estimated_savings || 0).toFixed(2));
-    // Call volume timeline
-    if (typeof renderCallTimeline === 'function' && recentCalls.calls) {
-      renderCallTimeline('chart-call-timeline', recentCalls.calls);
-    }
-    // Memory growth bars
-    if (typeof renderMemoryBars === 'function' && memoryAll.agents) {
-      renderMemoryBars('chart-memory-bars', memoryAll.agents);
-    }
+    if (typeof renderCallTimeline === 'function' && recentCalls.calls) renderCallTimeline('chart-call-timeline', recentCalls.calls);
+    if (typeof renderMemoryBars === 'function' && memoryAll.agents) renderMemoryBars('chart-memory-bars', memoryAll.agents);
 
     // Server status
     var online = status.server_online;
     var badge = document.getElementById('llm-server-badge');
     var statusEl = document.getElementById('llm-server-status');
-    if (badge) {
-      badge.textContent = online ? 'ONLINE' : 'OFFLINE';
-      badge.style.color = online ? 'var(--success)' : 'var(--error)';
-    }
-    if (statusEl) {
-      statusEl.textContent = online ? 'Online' : 'Offline';
-      statusEl.style.color = online ? 'var(--success)' : 'var(--error)';
-    }
-
+    if (badge) { badge.textContent = online ? 'ONLINE' : 'OFFLINE'; badge.style.color = online ? 'var(--success)' : 'var(--error)'; }
+    if (statusEl) { statusEl.textContent = online ? 'Online' : 'Offline'; statusEl.style.color = online ? 'var(--success)' : 'var(--error)'; }
     var modelEl = document.getElementById('llm-model-name');
-    if (modelEl && status.models) {
-      var m = status.models.local_large || '';
-      modelEl.textContent = 'Model: ' + (m.split('/').pop() || '--');
-    }
+    if (modelEl && status.models) { var m = status.models.local_large || ''; modelEl.textContent = 'Model: ' + (m.split('/').pop() || '--'); }
 
     // Cost data
     var c24 = costs.last_24h || {};
     var byProv = c24.by_provider || {};
     var localCalls = (byProv.local || {}).calls || 0;
     var cloudCalls = (c24.total_calls || 0) - localCalls;
-
     setTextSafe('llm-total-calls', c24.total_calls || 0);
     setTextSafe('llm-local-calls', localCalls);
     setTextSafe('llm-cloud-calls', cloudCalls);
@@ -371,7 +423,7 @@ function refreshIntelligence() {
     setTextSafe('llm-savings-24h', '$' + (costs.estimated_savings_24h || 0).toFixed(4));
     setTextSafe('llm-savings', '$' + (costs.estimated_savings_24h || 0).toFixed(2));
 
-    // Memory stats
+    // Memory totals
     var totals = (memoryAll.totals || {});
     setTextSafe('llm-total-decisions', totals.decisions || 0);
     setTextSafe('llm-total-patterns', totals.patterns || 0);
@@ -381,28 +433,21 @@ function refreshIntelligence() {
     // Per-agent memory table
     var memTable = document.getElementById('llm-memory-table');
     if (memTable && memoryAll.agents) {
-      var agentColors = {
-        shelby:'#FFAA00', atlas:'#22AA44', lisa:'#FF8800', hawk:'#FFD700',
-        soren:'#CC66FF', garves:'#00D4FF', quant:'#00BFFF', viper:'#00FF88',
-        robotox:'#00FF44', thor:'#FF6600'
-      };
       var rows = '';
-      var agents = ['shelby','atlas','hawk','garves','soren','lisa','thor','quant','viper','robotox'];
-      agents.forEach(function(ag) {
+      _INTEL_AGENT_ORDER.forEach(function(ag) {
         var s = memoryAll.agents[ag] || {};
         if (s.error) return;
-        var c = agentColors[ag] || '#888';
+        var c = _INTEL_AGENT_COLORS[ag] || '#888';
         var wr = s.total_decisions > 0 ? (s.win_rate || 0).toFixed(1) + '%' : '--';
         var wrColor = (s.win_rate || 0) >= 50 ? 'var(--success)' : (s.win_rate || 0) > 0 ? 'var(--error)' : 'var(--text-muted)';
         rows += '<tr style="border-bottom:1px solid var(--border-color);">' +
           '<td style="padding:4px 6px;color:'+c+';font-weight:600;text-transform:capitalize;">'+ag+'</td>' +
-          '<td style="text-align:center;padding:4px;">'+((s.total_decisions||0) > 0 ? s.total_decisions : '<span class="text-muted">0</span>')+'</td>' +
-          '<td style="text-align:center;padding:4px;">'+((s.active_patterns||0) > 0 ? s.active_patterns : '<span class="text-muted">0</span>')+'</td>' +
+          '<td style="text-align:center;padding:4px;">'+(s.total_decisions||0)+'</td>' +
+          '<td style="text-align:center;padding:4px;">'+(s.active_patterns||0)+'</td>' +
           '<td style="text-align:center;padding:4px;color:'+wrColor+';">'+wr+'</td>' +
-          '<td style="text-align:center;padding:4px;color:var(--text-muted);">'+((s.db_size_kb||0) > 0 ? (s.db_size_kb).toFixed(0)+'KB' : '--')+'</td>' +
-          '</tr>';
+          '<td style="text-align:center;padding:4px;color:var(--text-muted);">'+((s.db_size_kb||0)>0?(s.db_size_kb).toFixed(0)+'KB':'--')+'</td></tr>';
       });
-      memTable.innerHTML = rows || '<tr><td colspan="5" class="text-muted">No memory data yet</td></tr>';
+      memTable.innerHTML = rows || '<tr><td colspan="5" class="text-muted">No memory data</td></tr>';
     }
 
     // Routing table
@@ -411,24 +456,18 @@ function refreshIntelligence() {
       var routeColors = {local_large:'#9B59B6',local_small:'#3498DB',cloud_openai:'#E67E22',cloud_claude:'#E74C3C',cloud_gpt4o:'#F39C12'};
       var rRows = '';
       Object.keys(routing.routing).forEach(function(tt) {
-        var route = routing.routing[tt];
-        var rc = routeColors[route] || '#888';
-        rRows += '<tr style="border-bottom:1px solid var(--border-color);"><td style="padding:4px 6px;">'+tt+'</td>' +
-          '<td style="padding:4px 6px;color:'+rc+';font-weight:500;">'+route.replace(/_/g,' ')+'</td></tr>';
+        var route = routing.routing[tt]; var rc = routeColors[route] || '#888';
+        rRows += '<tr style="border-bottom:1px solid var(--border-color);"><td style="padding:4px 6px;">'+tt+'</td><td style="padding:4px 6px;color:'+rc+';font-weight:500;">'+route.replace(/_/g,' ')+'</td></tr>';
       });
       routeTable.innerHTML = rRows;
     }
-
-    // Agent overrides
     var overEl = document.getElementById('llm-agent-overrides');
     if (overEl && routing.agent_overrides) {
       var overHtml = '';
       Object.keys(routing.agent_overrides).forEach(function(ag) {
         var ov = routing.agent_overrides[ag];
         overHtml += '<div style="margin-bottom:2px;"><span style="color:var(--text-primary);font-weight:500;text-transform:capitalize;">'+ag+':</span> ';
-        Object.keys(ov).forEach(function(k) {
-          overHtml += k + ' &rarr; <span style="color:#E67E22;">'+ov[k]+'</span> ';
-        });
+        Object.keys(ov).forEach(function(k) { overHtml += k+' &rarr; <span style="color:#E67E22;">'+ov[k]+'</span> '; });
         overHtml += '</div>';
       });
       overEl.innerHTML = overHtml || 'None configured';
@@ -439,7 +478,7 @@ function refreshIntelligence() {
     if (feedEl && recentCalls.calls) {
       var fHtml = '';
       recentCalls.calls.slice(0, 30).forEach(function(call) {
-        var provColor = (call.provider || '').indexOf('local') >= 0 ? '#9B59B6' : '#E67E22';
+        var provColor = (call.provider||'').indexOf('local')>=0 ? '#9B59B6' : '#E67E22';
         var ts = call.ts ? call.ts.split('T')[1].split('.')[0] : '--';
         var fb = call.fallback ? ' <span style="color:var(--error);font-size:0.6rem;">[FALLBACK]</span>' : '';
         fHtml += '<div style="padding:3px 0;border-bottom:1px solid var(--border-color);display:flex;gap:8px;align-items:center;">' +
@@ -448,8 +487,7 @@ function refreshIntelligence() {
           '<span style="min-width:50px;text-transform:capitalize;">'+(call.agent||'--')+'</span>' +
           '<span style="color:var(--text-muted);">'+(call.task_type||'--')+'</span>' +
           '<span style="margin-left:auto;color:var(--text-muted);">'+(call.latency_ms||0)+'ms</span>' +
-          '<span style="color:'+((call.cost_usd||0) > 0 ? 'var(--warning)' : 'var(--success)')+';">$'+(call.cost_usd||0).toFixed(4)+'</span>' +
-          fb + '</div>';
+          '<span style="color:'+((call.cost_usd||0)>0?'var(--warning)':'var(--success)')+';">$'+(call.cost_usd||0).toFixed(4)+'</span>'+fb+'</div>';
       });
       feedEl.innerHTML = fHtml || '<span class="text-muted">No calls recorded yet</span>';
     }
@@ -458,90 +496,60 @@ function refreshIntelligence() {
     var costEl = document.getElementById('llm-cost-by-agent');
     if (costEl && c24.by_agent) {
       var cHtml = '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
-      var agentColors2 = {shelby:'#FFAA00',atlas:'#22AA44',lisa:'#FF8800',hawk:'#FFD700',soren:'#CC66FF',garves:'#00D4FF',quant:'#00BFFF',viper:'#00FF88',robotox:'#00FF44',thor:'#FF6600'};
-      Object.keys(c24.by_agent).sort(function(a,b) { return (c24.by_agent[b].cost||0)-(c24.by_agent[a].cost||0); }).forEach(function(ag) {
-        var d = c24.by_agent[ag];
-        var agColor = agentColors2[ag] || '#888';
+      Object.keys(c24.by_agent).sort(function(a,b){return (c24.by_agent[b].cost||0)-(c24.by_agent[a].cost||0);}).forEach(function(ag) {
+        var d = c24.by_agent[ag]; var agColor = _INTEL_AGENT_COLORS[ag] || '#888';
         cHtml += '<div style="background:var(--card-bg);padding:6px 10px;border-radius:6px;border:1px solid var(--border-color);">' +
           '<div style="color:'+agColor+';font-weight:600;text-transform:capitalize;font-size:0.72rem;">'+ag+'</div>' +
           '<div style="font-size:0.68rem;">'+(d.calls||0)+' calls | $'+((d.cost||0)).toFixed(4)+'</div></div>';
       });
-      cHtml += '</div>';
-      costEl.innerHTML = cHtml;
+      costEl.innerHTML = cHtml + '</div>';
     }
   });
 }
 
-function setTextSafe(id, val) {
-  var el = document.getElementById(id);
-  if (el) el.textContent = val;
-}
+function setTextSafe(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
 
 function intelAction(action) {
   var resultEl = document.getElementById('intel-action-result');
   if (resultEl) resultEl.innerHTML = '<span style="color:#9B59B6;">Running ' + action + '...</span>';
-
-  fetch('/api/llm/actions/' + action, {method: 'POST'})
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      var msg = '';
-      if (action === 'health-check') {
-        var localStatus = data.local_server ? '<span style="color:var(--success);">ONLINE</span>' : '<span style="color:var(--error);">OFFLINE</span>';
-        var cloudStatus = data.cloud_fallback ? '<span style="color:var(--success);">OK</span> (' + (data.cloud_latency_ms||0) + 'ms)' : '<span style="color:var(--error);">FAILED</span>';
-        msg = 'Local: ' + localStatus + ' | Cloud: ' + cloudStatus + ' | Memory DBs: ' + (data.memory_dbs||0) + ' (' + (data.memory_size_mb||0) + 'MB) | Log: ' + (data.total_logged_calls||0) + ' calls';
-      } else if (action === 'prune-patterns') {
-        msg = '<span style="color:var(--success);">Pruned ' + (data.total_pruned||0) + ' weak patterns</span>';
-        if (data.pruned) {
-          Object.keys(data.pruned).forEach(function(ag) {
-            msg += ' | ' + ag + ': ' + data.pruned[ag];
-          });
-        }
-        refreshIntelligence();
-      } else if (action === 'export-learnings') {
-        msg = '<span style="color:var(--success);">Exported ' + (data.total_patterns||0) + ' patterns from ' + (data.agents_exported||0) + ' agents</span> &rarr; ~/shared/learnings_export.json';
-      } else if (action === 'compact-costs') {
-        msg = '<span style="color:var(--success);">Compacted:</span> kept ' + (data.kept||0) + ' | archived ' + (data.archived||0) + ' (was ' + (data.original_lines||0) + ')';
-        refreshIntelligence();
-      }
-      if (resultEl) resultEl.innerHTML = msg || JSON.stringify(data);
-    })
-    .catch(function(e) {
-      if (resultEl) resultEl.innerHTML = '<span style="color:var(--error);">Error: ' + e.message + '</span>';
-    });
+  fetch('/api/llm/actions/' + action, {method:'POST'}).then(function(r){return r.json();}).then(function(data) {
+    var msg = '';
+    if (action === 'health-check') {
+      var ls = data.local_server ? '<span style="color:var(--success);">ONLINE</span>' : '<span style="color:var(--error);">OFFLINE</span>';
+      var cs = data.cloud_fallback ? '<span style="color:var(--success);">OK</span> ('+data.cloud_latency_ms+'ms)' : '<span style="color:var(--error);">FAILED</span>';
+      msg = 'Local: '+ls+' | Cloud: '+cs+' | Memory DBs: '+(data.memory_dbs||0)+' ('+(data.memory_size_mb||0)+'MB) | Log: '+(data.total_logged_calls||0)+' calls';
+    } else if (action === 'prune-patterns') {
+      msg = '<span style="color:var(--success);">Pruned '+(data.total_pruned||0)+' weak patterns</span>';
+      if (data.pruned) Object.keys(data.pruned).forEach(function(ag){msg += ' | '+ag+': '+data.pruned[ag];});
+      refreshIntelligence();
+    } else if (action === 'export-learnings') {
+      msg = '<span style="color:var(--success);">Exported '+(data.total_patterns||0)+' patterns from '+(data.agents_exported||0)+' agents</span> &rarr; ~/shared/learnings_export.json';
+    } else if (action === 'compact-costs') {
+      msg = '<span style="color:var(--success);">Compacted:</span> kept '+(data.kept||0)+' | archived '+(data.archived||0)+' (was '+(data.original_lines||0)+')';
+      refreshIntelligence();
+    }
+    if (resultEl) resultEl.innerHTML = msg || JSON.stringify(data);
+  }).catch(function(e){if (resultEl) resultEl.innerHTML = '<span style="color:var(--error);">Error: '+e.message+'</span>';});
 }
 
 function intelResetPrompt() {
   var resultEl = document.getElementById('intel-action-result');
-  var agents = ['shelby','atlas','lisa','hawk','soren','garves','quant','viper','robotox','thor'];
   var select = '<span style="color:#E74C3C;">Reset memory for: </span>';
-  agents.forEach(function(ag) {
-    select += '<button onclick="intelResetConfirm(\'' + ag + '\')" style="background:#E74C3C22;border:1px solid #E74C3C;color:#E74C3C;padding:2px 8px;margin:2px;border-radius:4px;font-size:0.66rem;cursor:pointer;">' + ag + '</button>';
+  _INTEL_AGENT_ORDER.forEach(function(ag) {
+    select += '<button onclick="intelResetConfirm(\''+ag+'\')" style="background:#E74C3C22;border:1px solid #E74C3C;color:#E74C3C;padding:2px 8px;margin:2px;border-radius:4px;font-size:0.66rem;cursor:pointer;">'+ag+'</button>';
   });
   select += ' <button onclick="document.getElementById(\'intel-action-result\').innerHTML=\'\'" style="background:var(--card-bg);border:1px solid var(--border-color);color:var(--text-muted);padding:2px 8px;margin:2px;border-radius:4px;font-size:0.66rem;cursor:pointer;">Cancel</button>';
   if (resultEl) resultEl.innerHTML = select;
 }
 
 function intelResetConfirm(agent) {
-  if (!confirm('Reset ALL memory for ' + agent + '? This will backup the DB first.')) return;
+  if (!confirm('Reset ALL memory for '+agent+'? This will backup the DB first.')) return;
   var resultEl = document.getElementById('intel-action-result');
-  if (resultEl) resultEl.innerHTML = '<span style="color:#E74C3C;">Resetting ' + agent + '...</span>';
-
-  fetch('/api/llm/actions/reset-agent-memory', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({agent: agent})
-  })
-  .then(function(r) { return r.json(); })
-  .then(function(data) {
-    if (data.success) {
-      if (resultEl) resultEl.innerHTML = '<span style="color:var(--success);">Reset ' + agent + ' memory. Backup at ' + (data.backup||'') + '</span>';
-      refreshIntelligence();
-    } else {
-      if (resultEl) resultEl.innerHTML = '<span style="color:var(--error);">' + (data.error||'Failed') + '</span>';
-    }
-  })
-  .catch(function(e) {
-    if (resultEl) resultEl.innerHTML = '<span style="color:var(--error);">Error: ' + e.message + '</span>';
-  });
+  if (resultEl) resultEl.innerHTML = '<span style="color:#E74C3C;">Resetting '+agent+'...</span>';
+  fetch('/api/llm/actions/reset-agent-memory',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({agent:agent})})
+  .then(function(r){return r.json();}).then(function(data) {
+    if (data.success) { if (resultEl) resultEl.innerHTML = '<span style="color:var(--success);">Reset '+agent+' memory. Backup at '+(data.backup||'')+'</span>'; refreshIntelligence(); }
+    else { if (resultEl) resultEl.innerHTML = '<span style="color:var(--error);">'+(data.error||'Failed')+'</span>'; }
+  }).catch(function(e){if (resultEl) resultEl.innerHTML = '<span style="color:var(--error);">Error: '+e.message+'</span>';});
 }
 </script>
