@@ -160,6 +160,10 @@ class TradingBot:
         self.STACK_EDGE_ESCALATION = 0.02       # +2% edge per stacked bet
         self.STACK_CONFIDENCE_ESCALATION = 0.05  # +5% confidence per stacked bet
 
+        # Balance cache: written by the bot (which has VPN), read by dashboard
+        self._balance_cache_file = Path(__file__).parent.parent / "data" / "polymarket_balance.json"
+        self._last_balance_sync = 0.0
+
     def _load_market_counts(self) -> dict[str, int]:
         """Load market trade counts from today's trades file to survive restarts."""
         import json as _json
@@ -179,6 +183,50 @@ class TradingBot:
         except Exception as e:
             log.warning("Failed to load market counts from trades: %s", str(e)[:100])
         return counts
+
+    def _sync_balance_cache(self) -> None:
+        """Write real USDC balance to cache file every 2 min (for dashboard)."""
+        import json as _json
+        now = time.time()
+        if now - self._last_balance_sync < 120:
+            return
+        self._last_balance_sync = now
+        if self.client is None:
+            return
+        try:
+            from py_clob_client.clob_types import BalanceAllowanceParams, AssetType
+            params = BalanceAllowanceParams(
+                asset_type=AssetType.COLLATERAL,
+                signature_type=2,
+            )
+            result = self.client.get_balance_allowance(params)
+            cash = int(result.get("balance", "0")) / 1e6
+
+            # Position value from tracker
+            pos_val = sum(
+                p.shares * p.current_price
+                for p in self.tracker.positions.values()
+                if p.shares > 0
+            ) if hasattr(self.tracker, 'positions') else 0.0
+
+            bankroll = float(self.cfg.bankroll_usd) if hasattr(self.cfg, 'bankroll_usd') else 250.0
+            portfolio = cash + pos_val
+            cache = {
+                "portfolio": round(portfolio, 2),
+                "cash": round(cash, 2),
+                "positions_value": round(pos_val, 2),
+                "pnl": round(portfolio - bankroll, 2),
+                "bankroll": bankroll,
+                "live": True,
+                "error": None,
+                "fetched_at": now,
+                "source": "garves_bot",
+            }
+            self._balance_cache_file.write_text(_json.dumps(cache, indent=2))
+            log.info("[BALANCE] Cash=$%.2f Positions=$%.2f Portfolio=$%.2f",
+                     cash, pos_val, portfolio)
+        except Exception as e:
+            log.debug("Balance sync failed: %s", str(e)[:100])
 
     def _setup_logging(self) -> None:
         logging.basicConfig(
@@ -314,6 +362,9 @@ class TradingBot:
         log.info("[REGIME] %s (FnG=%d) — size=%.1fx edge=%.2fx",
                  regime.label.upper(), regime.fng_value,
                  regime.size_multiplier, regime.edge_multiplier)
+
+        # Sync balance cache for dashboard (every 2 min)
+        self._sync_balance_cache()
 
         # 1. Discover all markets across assets and timeframes
         all_markets = fetch_markets(self.cfg)

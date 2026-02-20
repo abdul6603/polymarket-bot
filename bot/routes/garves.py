@@ -617,24 +617,44 @@ def api_garves_news_sentiment():
 BALANCE_CACHE_FILE = DATA_DIR / "polymarket_balance.json"
 BALANCE_CACHE_TTL = 60  # seconds
 POLYMARKET_WALLET = os.getenv("FUNDER_ADDRESS", "0x7CA4C1122aED3a226fEE08C38F329Ddf2Fb7817E")
-USDC_E_CONTRACT = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"
-POLYGON_RPC = "https://polygon-rpc.com"
+
+
+def _clob_hmac(secret: str, timestamp: int, method: str, path: str) -> str:
+    """Build HMAC-SHA256 signature for Polymarket CLOB L2 auth."""
+    import base64, hashlib, hmac as _hmac
+    key = base64.urlsafe_b64decode(secret)
+    msg = f"{timestamp}{method}{path}"
+    sig = _hmac.new(key, msg.encode(), hashlib.sha256).digest()
+    return base64.urlsafe_b64encode(sig).decode()
 
 
 def _fetch_usdc_balance(wallet: str) -> float:
-    """Query on-chain USDC.e balance via Polygon RPC."""
+    """Query USDC collateral balance via Polymarket CLOB API (raw HTTP, no py_clob_client)."""
     import urllib.request
-    padded = "000000000000000000000000" + wallet[2:].lower()
-    payload = json.dumps({
-        "jsonrpc": "2.0", "method": "eth_call",
-        "params": [{"to": USDC_E_CONTRACT, "data": "0x70a08231" + padded}, "latest"],
-        "id": 1,
+    clob_host = os.getenv("CLOB_HOST", "https://clob.polymarket.com")
+    api_key = os.getenv("CLOB_API_KEY", "")
+    api_secret = os.getenv("CLOB_API_SECRET", "")
+    api_passphrase = os.getenv("CLOB_API_PASSPHRASE", "")
+    funder = os.getenv("FUNDER_ADDRESS", "")
+
+    if not api_key or not api_secret:
+        raise RuntimeError("CLOB API credentials not configured")
+
+    path = "/balance-allowance"
+    url = f"{clob_host}{path}?asset_type=COLLATERAL&signature_type=2"
+    ts = int(time.time())
+    sig = _clob_hmac(api_secret, ts, "GET", path)
+
+    req = urllib.request.Request(url, headers={
+        "POLY_ADDRESS": funder,
+        "POLY_SIGNATURE": sig,
+        "POLY_TIMESTAMP": str(ts),
+        "POLY_API_KEY": api_key,
+        "POLY_PASSPHRASE": api_passphrase,
     })
-    req = urllib.request.Request(POLYGON_RPC, data=payload.encode(),
-                                 headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=10) as resp:
         data = json.loads(resp.read().decode())
-    return int(data.get("result", "0x0"), 16) / 1e6
+    return int(data.get("balance", "0")) / 1e6
 
 
 def _fetch_position_value(wallet: str) -> float:
@@ -651,24 +671,29 @@ def _fetch_position_value(wallet: str) -> float:
 
 @garves_bp.route("/api/garves/balance")
 def api_garves_balance():
-    """Live Polymarket portfolio balance — on-chain USDC + position value."""
-    # Check cache first
+    """Live Polymarket portfolio balance — read from bot's balance cache."""
+    bankroll = float(os.getenv("BANKROLL_USD", "250.0"))
+
+    # Primary: read cache written by Garves bot (which has VPN access to CLOB API)
     if BALANCE_CACHE_FILE.exists():
         try:
             cached = json.loads(BALANCE_CACHE_FILE.read_text())
-            if time.time() - cached.get("fetched_at", 0) < BALANCE_CACHE_TTL:
+            age = time.time() - cached.get("fetched_at", 0)
+            # Accept bot-written cache up to 5 min old
+            if age < 300:
+                cached["bankroll"] = bankroll
+                cached["pnl"] = round(cached.get("portfolio", 0) - bankroll, 2)
+                cached["cache_age_s"] = round(age)
                 return jsonify(cached)
         except Exception:
             pass
 
-    bankroll = 250.0
+    # Fallback: try CLOB API directly (works if VPN is active on this machine)
     result = {"portfolio": 0.0, "cash": 0.0, "positions_value": 0.0,
               "pnl": 0.0, "bankroll": bankroll, "live": False, "error": None}
-
     wallet = POLYMARKET_WALLET
     errors = []
 
-    # 1. On-chain USDC.e balance (cash)
     try:
         cash = _fetch_usdc_balance(wallet)
         result["cash"] = round(cash, 2)
@@ -676,7 +701,6 @@ def api_garves_balance():
     except Exception as e:
         errors.append(f"USDC: {str(e)[:80]}")
 
-    # 2. Open position value from data API
     try:
         pos_val = _fetch_position_value(wallet)
         result["positions_value"] = round(pos_val, 2)
@@ -684,35 +708,13 @@ def api_garves_balance():
     except Exception as e:
         errors.append(f"Positions: {str(e)[:80]}")
 
-    # 3. Compute portfolio and PnL
     if result["live"]:
         result["portfolio"] = round(result["cash"] + result["positions_value"], 2)
         result["pnl"] = round(result["portfolio"] - bankroll, 2)
     else:
-        # Fallback: estimate from trade records
-        trades = _load_trades()
-        live_trades = [t for t in trades if not t.get("dry_run", True)]
-        stake = float(os.getenv("ORDER_SIZE_USD", "5.0"))
-        pnl, in_play = 0.0, 0.0
-        for t in live_trades:
-            implied = t.get("implied_up_price", 0.5)
-            d = t.get("direction", "up")
-            ep = implied if d == "up" else (1 - implied)
-            if t.get("resolved"):
-                if t.get("outcome") == "unknown":
-                    continue
-                if t.get("won"):
-                    pnl += stake * (1 - ep) - stake * 0.02
-                else:
-                    pnl -= stake * ep
-            else:
-                in_play += stake
-        result["portfolio"] = round(bankroll + pnl, 2)
-        result["cash"] = round(bankroll + pnl - in_play, 2)
-        result["pnl"] = round(pnl, 2)
-
-    if errors:
-        result["error"] = "; ".join(errors)
+        result["error"] = "Balance unavailable — Garves bot not running or VPN down"
+        if errors:
+            result["error"] += " (" + "; ".join(errors) + ")"
 
     result["fetched_at"] = time.time()
     try:
