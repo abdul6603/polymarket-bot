@@ -291,7 +291,6 @@ MAX_CORRELATED_SAME_DIR = 1  # max positions in same direction within a group
 # ── Drawdown Circuit Breaker ──
 MAX_CONSECUTIVE_LOSSES = 3
 LOSS_STREAK_COOLDOWN_S = 7200  # 2 hours
-DAILY_LOSS_LIMIT_USD = -30.0   # halt if daily PnL drops below this
 
 
 class DrawdownBreaker:
@@ -352,18 +351,6 @@ class DrawdownBreaker:
                     f"cooldown until {time.strftime('%H:%M:%S', time.localtime(resume_at))}"
                 )
                 return
-
-        # Check 2: Daily realized PnL
-        daily_pnl = sum(t.get("pnl", 0) for t in recent_trades)
-        if daily_pnl <= DAILY_LOSS_LIMIT_USD:
-            # Halt for rest of the day (or at least 2h cooldown)
-            resume_at = now + LOSS_STREAK_COOLDOWN_S
-            self._halted_until = resume_at
-            self._halt_reason = (
-                f"Daily PnL ${daily_pnl:.2f} breached ${DAILY_LOSS_LIMIT_USD:.2f} limit — "
-                f"cooldown until {time.strftime('%H:%M:%S', time.localtime(resume_at))}"
-            )
-            return
 
         # No halt conditions — clear any stale halt
         if now >= self._halted_until:
