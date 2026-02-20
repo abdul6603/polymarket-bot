@@ -671,4 +671,18 @@ function intelResetConfirm(agent) {
     else { if (resultEl) resultEl.innerHTML = '<span style="color:var(--error);">'+(data.error||'Failed')+'</span>'; }
   }).catch(function(e){if (resultEl) resultEl.innerHTML = '<span style="color:var(--error);">Error: '+e.message+'</span>';});
 }
+
+// Auto-load when tab becomes visible via MutationObserver
+(function() {
+  var tabEl = document.getElementById('tab-intelligence');
+  if (!tabEl) return;
+  var obs = new MutationObserver(function(mutations) {
+    mutations.forEach(function(m) {
+      if (m.attributeName === 'class' && tabEl.classList.contains('active')) {
+        refreshIntelligence();
+      }
+    });
+  });
+  obs.observe(tabEl, {attributes: true});
+})();
 </script>

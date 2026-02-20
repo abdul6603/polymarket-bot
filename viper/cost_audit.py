@@ -20,6 +20,7 @@ _USE_SHARED_LLM = False
 _shared_llm_call = None
 try:
     sys.path.insert(0, str(Path.home() / "shared"))
+    sys.path.insert(0, str(Path.home()))
     from llm_client import llm_call as _llm_call
     _shared_llm_call = _llm_call
     _USE_SHARED_LLM = True

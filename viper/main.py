@@ -31,6 +31,7 @@ _viper_brain = None
 try:
     import sys as _sys
     _sys.path.insert(0, str(Path.home() / "shared"))
+    _sys.path.insert(0, str(Path.home()))
     from agent_brain import AgentBrain
     _viper_brain = AgentBrain("viper", system_prompt="You are Viper, a market intelligence scanner.", task_type="fast")
 except Exception:

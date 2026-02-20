@@ -220,6 +220,7 @@ class HawkBot:
         try:
             import sys as _sys
             _sys.path.insert(0, str(Path.home() / "shared"))
+            _sys.path.insert(0, str(Path.home()))
             from agent_brain import AgentBrain
             self._brain = AgentBrain("hawk", system_prompt="You are Hawk, a prediction market analyst.", task_type="analysis")
         except Exception:

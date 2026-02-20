@@ -137,6 +137,7 @@ class TradingBot:
         try:
             import sys as _sys2
             _sys2.path.insert(0, str(Path.home() / "shared"))
+            _sys2.path.insert(0, str(Path.home()))
             from agent_brain import AgentBrain
             from llm_client import llm_call as _garves_llm
             self._brain = AgentBrain("garves", system_prompt="You are Garves, a crypto prediction market trader on Polymarket. You analyze BTC/ETH/SOL up-or-down markets.", task_type="analysis")
