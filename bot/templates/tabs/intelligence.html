@@ -148,6 +148,104 @@
     </div>
   </div>
 
+
+  <!-- API Dependency Map — Who Uses What -->
+  <div class="stat-card" style="padding:14px;margin-bottom:12px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+      <div style="font-weight:700;color:var(--text-primary);font-size:0.84rem;">Agent Infrastructure Map</div>
+      <div style="font-size:0.6rem;color:var(--text-muted);background:rgba(155,89,182,0.1);padding:2px 8px;border-radius:4px;">Who runs what</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:0.68rem;">
+      <thead>
+        <tr style="border-bottom:2px solid var(--border-color);">
+          <th style="text-align:left;padding:6px 8px;color:var(--text-muted);font-weight:600;">Agent</th>
+          <th style="text-align:center;padding:6px 8px;color:#9B59B6;font-weight:600;">Local LLM</th>
+          <th style="text-align:center;padding:6px 8px;color:var(--warning);font-weight:600;">External APIs</th>
+          <th style="text-align:left;padding:6px 8px;color:var(--text-muted);font-weight:600;">API Details</th>
+          <th style="text-align:center;padding:6px 8px;color:var(--error);font-weight:600;">Cost</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Garves</td>
+          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen 14B + 3B</span></td>
+          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--warning);">Polymarket CLOB</span></td>
+          <td style="padding:6px 8px;color:var(--text-muted);">Polymarket CLOB API (needs NordVPN Qatar), Binance.US (prices)</td>
+          <td style="text-align:center;padding:6px 8px;color:var(--success);">Free APIs</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Hawk</td>
+          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen 14B</span></td>
+          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--error);">GPT-4o + Claude</span></td>
+          <td style="padding:6px 8px;color:var(--text-muted);">GPT-4o (sports analysis), Claude fallback, Polymarket Gamma API</td>
+          <td style="text-align:center;padding:6px 8px;color:var(--error);">6172</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Atlas</td>
+          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen 14B</span></td>
+          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--warning);">Tavily + DDG</span></td>
+          <td style="padding:6px 8px;color:var(--text-muted);">Tavily (web search, 1K free/mo), DuckDuckGo (scraping), CoinGecko, Fear&amp;Greed</td>
+          <td style="text-align:center;padding:6px 8px;color:var(--warning);">$</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Thor</td>
+          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen Coder 14B</span></td>
+          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">None</span></td>
+          <td style="padding:6px 8px;color:var(--text-muted);">100% local coding model (was Claude cloud, switched today)</td>
+          <td style="text-align:center;padding:6px 8px;color:var(--success);">FREE</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Shelby</td>
+          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen 14B</span></td>
+          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--warning);">Telegram</span></td>
+          <td style="padding:6px 8px;color:var(--text-muted);">Telegram Bot API (free), OpenAI fallback for tool-calling</td>
+          <td style="text-align:center;padding:6px 8px;color:var(--success);">Free</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Viper</td>
+          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen 14B</span></td>
+          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">None</span></td>
+          <td style="padding:6px 8px;color:var(--text-muted);">100% local — scans agent data, costs, opportunities</td>
+          <td style="text-align:center;padding:6px 8px;color:var(--success);">FREE</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Quant</td>
+          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">No LLM</span></td>
+          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">None</span></td>
+          <td style="padding:6px 8px;color:var(--text-muted);">Pure Python backtesting — no LLM or API needed</td>
+          <td style="text-align:center;padding:6px 8px;color:var(--success);">FREE</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Soren</td>
+          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen 14B</span></td>
+          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">None</span></td>
+          <td style="padding:6px 8px;color:var(--text-muted);">Local LLM for content generation (fed by Atlas trends)</td>
+          <td style="text-align:center;padding:6px 8px;color:var(--success);">FREE</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Lisa</td>
+          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen 14B</span></td>
+          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--error);">X (Twitter) API</span></td>
+          <td style="padding:6px 8px;color:var(--text-muted);">X API v2 (401 auth broken), ElevenLabs (voice, not active)</td>
+          <td style="text-align:center;padding:6px 8px;color:var(--error);">BROKEN</td>
+        </tr>
+        <tr>
+          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Robotox</td>
+          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">No LLM</span></td>
+          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">None</span></td>
+          <td style="padding:6px 8px;color:var(--text-muted);">Pure Python monitoring — process checks, log watching</td>
+          <td style="text-align:center;padding:6px 8px;color:var(--success);">FREE</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;font-size:0.62rem;">
+      <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--success);margin-right:4px;"></span><strong>7 agents</strong> on local LLM (Qwen 14B / Coder 14B / 3B) — <strong>/bin/zsh.00</strong></div>
+      <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warning);margin-right:4px;"></span><strong>Atlas</strong> needs Tavily (1K free calls/mo)</div>
+      <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--error);margin-right:4px;"></span><strong>Hawk</strong> uses GPT-4o for sports (cloud cost)</div>
+      <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#3498DB;margin-right:4px;"></span><strong>3 models</strong> on Pro M3: Qwen 14B, Qwen 3B, Qwen Coder 14B</div>
+    </div>
+  </div>
+
   <!-- Brain Activity + Cost Donut -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
     <div class="stat-card" style="padding:14px;">
