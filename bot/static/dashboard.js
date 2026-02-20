@@ -2040,67 +2040,124 @@ async function atlasThoughts() {
 
 async function atlasHubEval() {
   var el = document.getElementById('atlas-report');
-  el.innerHTML = '<div class="atlas-report-loading"><div class="spinner"></div>Evaluating agent hub vs best practices...</div>';
+  el.innerHTML = '<div class="atlas-report-loading"><div class="spinner"></div>Evaluating agent hub...</div>';
   try {
     var resp = await fetch('/api/atlas/hub-eval');
     var data = await resp.json();
     if (data.error) { el.innerHTML = '<div class="atlas-report-section"><div class="section-body" style="color:var(--error);">' + esc(data.error) + '</div></div>'; return; }
-    var html = '<div class="atlas-report-header" style="border-left-color:var(--warning);">Hub Evaluation — System vs Industry</div>';
-    // Our system
+    var html = '<div class="atlas-report-header" style="border-left-color:var(--agent-atlas);">Hub Evaluation</div>';
+
+    // Agent roster — compact grid
     if (data.our_system) {
-      var body = '<div class="atlas-kv-row"><span class="kv-key">Total Agents</span><span class="kv-val">' + data.our_system.total_agents + '</span></div>';
-      body += '<div class="atlas-kv-row"><span class="kv-key">Architecture</span><span class="kv-val">' + esc(data.our_system.architecture || '') + '</span></div>';
-      if (data.our_system.features) {
-        body += '<div style="margin-top:var(--space-3);font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:var(--space-2);">Features</div>';
-        for (var i = 0; i < data.our_system.features.length; i++) {
-          body += '<div class="atlas-rec-item"><span class="rec-num" style="color:var(--success);">&#x2713;</span><span class="rec-text">' + esc(data.our_system.features[i]) + '</span></div>';
+      var sys = data.our_system;
+      var body = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">';
+      body += '<span style="font-size:1.4rem;font-weight:700;color:var(--agent-atlas);">' + sys.total_agents + '</span>';
+      body += '<span style="font-size:0.72rem;color:var(--text-muted);">agents</span>';
+      body += '<span style="font-size:0.68rem;color:var(--text-secondary);margin-left:auto;">' + esc(sys.architecture || '') + '</span>';
+      body += '</div>';
+      // Agent chips
+      var agents = sys.agents || [];
+      body += '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">';
+      for (var i = 0; i < agents.length; i++) {
+        var a = agents[i];
+        if (typeof a === 'object') {
+          body += '<div style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;background:' + (a.color || '#666') + '15;border:1px solid ' + (a.color || '#666') + '30;border-radius:5px;font-size:0.66rem;">';
+          body += '<span style="color:' + (a.color || '#fff') + ';font-weight:600;">' + esc(a.name) + '</span>';
+          body += '<span style="color:var(--text-muted);">' + esc(a.role) + '</span></div>';
+        } else {
+          body += '<span style="padding:3px 8px;background:rgba(34,170,68,0.1);border-radius:5px;font-size:0.66rem;color:var(--success);">' + esc(a) + '</span>';
         }
       }
-      html += atlasSection('Our System', 'var(--agent-atlas)', body);
+      body += '</div>';
+      // Features as compact tags
+      if (sys.features && sys.features.length > 0) {
+        body += '<div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Capabilities (' + sys.features.length + ')</div>';
+        body += '<div style="display:flex;flex-wrap:wrap;gap:3px;">';
+        for (var i = 0; i < sys.features.length; i++) {
+          body += '<span style="padding:2px 6px;background:rgba(34,170,68,0.08);border-radius:3px;font-size:0.62rem;color:var(--success);">' + esc(sys.features[i]) + '</span>';
+        }
+        body += '</div>';
+      }
+      html += atlasSection('Brotherhood', 'var(--agent-atlas)', body);
     }
-    // Strengths
-    if (data.strengths && data.strengths.length > 0) {
-      var body = '';
+
+    // Strengths + Gaps side by side
+    var sgBody = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
+    // Strengths column
+    sgBody += '<div>';
+    sgBody += '<div style="font-size:0.65rem;color:var(--success);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;font-weight:600;">Strengths (' + (data.strengths || []).length + ')</div>';
+    if (data.strengths) {
       for (var i = 0; i < data.strengths.length; i++) {
-        body += '<div class="atlas-rec-item"><span class="rec-num" style="color:var(--success);">&#x2713;</span><span class="rec-text">' + esc(data.strengths[i]) + '</span></div>';
+        sgBody += '<div style="font-size:0.7rem;padding:3px 0;color:var(--text-secondary);"><span style="color:var(--success);margin-right:4px;">+</span>' + esc(data.strengths[i]) + '</div>';
       }
-      html += atlasSection('Strengths', 'var(--success)', body);
     }
-    // Gaps
+    sgBody += '</div>';
+    // Gaps column
+    sgBody += '<div>';
+    sgBody += '<div style="font-size:0.65rem;color:var(--error);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;font-weight:600;">Gaps (' + (data.gaps || []).length + ')</div>';
     if (data.gaps && data.gaps.length > 0) {
-      var body = '';
       for (var i = 0; i < data.gaps.length; i++) {
-        body += '<div class="atlas-rec-item"><span class="rec-num" style="color:var(--error);">&#x2717;</span><span class="rec-text">' + esc(data.gaps[i]) + '</span></div>';
+        sgBody += '<div style="font-size:0.7rem;padding:3px 0;color:var(--text-secondary);"><span style="color:var(--error);margin-right:4px;">-</span>' + esc(data.gaps[i]) + '</div>';
       }
-      html += atlasSection('Gaps', 'var(--error)', body);
+    } else {
+      sgBody += '<div style="font-size:0.7rem;color:var(--text-muted);">No critical gaps detected</div>';
     }
-    // Competitor insights
-    if (data.competitor_insights && data.competitor_insights.length > 0) {
-      var body = '';
-      for (var i = 0; i < data.competitor_insights.length; i++) {
-        var ci = data.competitor_insights[i];
-        body += '<div class="atlas-rec-item"><span class="rec-num">' + (i+1) + '</span><span class="rec-text">' + esc(ci.title || ci.name || ci.snippet || JSON.stringify(ci).substring(0, 150)) + '</span></div>';
-      }
-      html += atlasSection('Competitor / Industry Intel', 'var(--agent-soren)', body);
-    }
-    // Research insights
-    if (data.research_insights && data.research_insights.length > 0) {
-      var body = '';
-      for (var i = 0; i < data.research_insights.length; i++) {
-        var ri = data.research_insights[i];
-        body += '<div class="atlas-rec-item"><span class="rec-num">&#x1F50D;</span><span class="rec-text">' + esc(ri.insight || ri.query || JSON.stringify(ri).substring(0, 150)) + '</span></div>';
-      }
-      html += atlasSection('Research Insights', 'var(--agent-garves)', body);
-    }
-    // Recommendations
+    sgBody += '</div></div>';
+    html += atlasSection('Assessment', 'var(--warning)', sgBody);
+
+    // Recommendations — compact with priority badges
     if (data.recommendations && data.recommendations.length > 0) {
       var body = '';
       for (var i = 0; i < data.recommendations.length; i++) {
         var rec = data.recommendations[i];
-        body += '<div class="atlas-rec-item">' + atlasPriorityBadge(rec.priority) + '<span class="rec-text">' + esc(rec.recommendation || '') + '</span></div>';
+        body += '<div style="display:flex;align-items:flex-start;gap:6px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);">';
+        body += atlasPriorityBadge(rec.priority);
+        body += '<span style="font-size:0.7rem;color:var(--text-secondary);line-height:1.4;">' + esc(rec.recommendation || '') + '</span>';
+        body += '</div>';
       }
       html += atlasSection('Recommendations', 'var(--warning)', body);
     }
+
+    // Research insights — compact cards with agent, quality, source
+    if (data.research_insights && data.research_insights.length > 0) {
+      var body = '';
+      for (var i = 0; i < data.research_insights.length; i++) {
+        var ri = data.research_insights[i];
+        var agent = ri.agent || 'general';
+        var quality = ri.quality_score || 0;
+        var qColor = quality >= 9 ? 'var(--success)' : quality >= 7 ? 'var(--warning)' : 'var(--text-muted)';
+        var insight = ri.insight || '';
+        // Truncate at sentence boundary
+        if (insight.length > 200) {
+          var lastDot = insight.indexOf('.', 100);
+          if (lastDot > 0 && lastDot < 250) insight = insight.substring(0, lastDot + 1);
+          else insight = insight.substring(0, 200) + '...';
+        }
+        body += '<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);">';
+        body += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">';
+        body += '<span style="font-size:0.62rem;font-weight:600;color:var(--agent-atlas);text-transform:uppercase;">' + esc(agent) + '</span>';
+        body += '<span style="font-size:0.58rem;padding:1px 5px;border-radius:3px;background:' + qColor + '18;color:' + qColor + ';">' + quality + '/10</span>';
+        if (ri.source) body += '<span style="font-size:0.6rem;color:var(--text-muted);margin-left:auto;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(ri.source) + '</span>';
+        body += '</div>';
+        body += '<div style="font-size:0.7rem;color:var(--text-secondary);line-height:1.4;">' + esc(insight) + '</div>';
+        body += '</div>';
+      }
+      html += atlasSection('Research Insights', 'var(--agent-atlas)', body);
+    }
+
+    // Competitor intel — compact
+    if (data.competitor_insights && data.competitor_insights.length > 0) {
+      var body = '';
+      for (var i = 0; i < data.competitor_insights.length; i++) {
+        var ci = data.competitor_insights[i];
+        body += '<div style="font-size:0.7rem;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.04);color:var(--text-secondary);">';
+        body += '<span style="color:var(--text-primary);font-weight:500;">' + esc(ci.title || '') + '</span>';
+        if (ci.snippet) body += '<div style="font-size:0.66rem;color:var(--text-muted);margin-top:1px;">' + esc(ci.snippet.substring(0, 120)) + '</div>';
+        body += '</div>';
+      }
+      html += atlasSection('Industry Intel', 'var(--agent-soren)', body);
+    }
+
     el.innerHTML = html;
   } catch (e) { el.innerHTML = '<div class="atlas-report-section"><div class="section-body" style="color:var(--error);">Error: ' + esc(e.message) + '</div></div>'; }
 }
@@ -8378,23 +8435,20 @@ async function loadQuantRecommendations() {
 function renderQuantRecommendations(recs) {
   var el = document.getElementById('quant-recommendations');
   if (!recs || recs.length === 0) {
-    el.innerHTML = '<div class="text-muted" style="text-align:center;padding:20px;">No recommendations yet</div>';
+    el.innerHTML = '<div class="text-muted" style="text-align:center;padding:8px;font-size:0.72rem;">No recommendations</div>';
     return;
   }
-  var html = '';
+  var html = '<div style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;">';
   for (var i = 0; i < recs.length; i++) {
     var r = recs[i];
     var confColor = r.confidence === 'high' ? 'var(--success)' : r.confidence === 'medium' ? 'var(--warning)' : 'var(--text-muted)';
-    html += '<div style="padding:8px 12px;border-bottom:1px solid var(--border);">';
-    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
-    html += '<span style="font-weight:600;font-size:0.74rem;color:#00BFFF;">' + esc(r.param) + '</span>';
-    html += '<span class="badge" style="background:' + confColor + '22;color:' + confColor + ';font-size:0.62rem;">' + esc(r.confidence) + '</span>';
-    html += '</div>';
-    html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:2px;">' + esc(r.current) + ' &rarr; ' + esc(r.suggested) + '</div>';
-    html += '<div style="font-size:0.66rem;color:var(--text-secondary);">' + esc(r.reasoning) + '</div>';
-    if (r.impact) html += '<div style="font-size:0.66rem;color:var(--success);margin-top:2px;">' + esc(r.impact) + '</div>';
+    html += '<div style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:rgba(0,191,255,0.06);border:1px solid rgba(0,191,255,0.12);border-radius:6px;font-size:0.68rem;">';
+    html += '<span style="color:#00BFFF;font-weight:600;">' + esc(r.param) + '</span>';
+    html += '<span class="text-muted">' + esc(r.current) + ' &rarr; ' + esc(r.suggested) + '</span>';
+    html += '<span style="padding:1px 6px;border-radius:3px;font-size:0.58rem;font-weight:600;background:' + confColor + '22;color:' + confColor + ';">' + esc(r.confidence) + '</span>';
     html += '</div>';
   }
+  html += '</div>';
   el.innerHTML = html;
 }
 
@@ -8415,41 +8469,43 @@ function renderQuantParams(data) {
     return;
   }
   var params = [
-    {name: 'Min Consensus', key: 'min_consensus'},
-    {name: 'Min Confidence', key: 'min_confidence'},
-    {name: 'UP Confidence Premium', key: 'up_confidence_premium'},
-    {name: 'Min Edge Absolute', key: 'min_edge_absolute'},
+    {name: 'Consensus', key: 'min_consensus'},
+    {name: 'Confidence', key: 'min_confidence'},
+    {name: 'UP Premium', key: 'up_confidence_premium'},
+    {name: 'Min Edge', key: 'min_edge_absolute'},
   ];
+  function cleanVal(v) {
+    if (v === undefined || v === null) return '--';
+    var s = String(v);
+    // Strip verbose parts like "70% (floor=3)" → just the number
+    var m = s.match(/^([\d.]+)/);
+    return m ? m[1] : s;
+  }
   var html = '';
   for (var i = 0; i < params.length; i++) {
     var p = params[i];
-    var cv = current[p.key];
-    var bv = best[p.key];
-    var delta = '';
-    if (cv !== undefined && bv !== undefined) {
-      var d = typeof bv === 'number' ? bv - cv : 0;
-      if (d > 0) delta = '<span style="color:var(--success);">+' + d.toFixed(2) + '</span>';
-      else if (d < 0) delta = '<span style="color:var(--error);">' + d.toFixed(2) + '</span>';
-      else delta = '<span class="text-muted">--</span>';
-    } else {
-      delta = '<span class="text-muted">--</span>';
-    }
+    var cv = cleanVal(current[p.key]);
+    var bv = cleanVal(best[p.key]);
+    var match = cv === bv;
+    var statusBadge = match
+      ? '<span style="padding:2px 8px;border-radius:4px;font-size:0.62rem;font-weight:600;background:rgba(34,170,68,0.13);color:var(--success);">APPLIED</span>'
+      : '<span style="padding:2px 8px;border-radius:4px;font-size:0.62rem;font-weight:600;background:rgba(255,170,0,0.13);color:var(--warning);">PENDING</span>';
     html += '<tr>';
-    html += '<td>' + p.name + '</td>';
-    html += '<td>' + (cv !== undefined ? cv : '--') + '</td>';
-    html += '<td>' + (bv !== undefined ? bv : '--') + '</td>';
-    html += '<td>' + delta + '</td>';
+    html += '<td style="font-size:0.74rem;">' + p.name + '</td>';
+    html += '<td style="font-family:var(--font-mono);font-size:0.74rem;">' + cv + '</td>';
+    html += '<td style="font-family:var(--font-mono);font-size:0.74rem;color:#00BFFF;">' + bv + '</td>';
+    html += '<td>' + statusBadge + '</td>';
     html += '</tr>';
   }
   // Performance row
   var cp = data.current_performance || {};
   var bp = data.best_performance || {};
-  html += '<tr style="border-top:2px solid var(--border);">';
-  html += '<td style="font-weight:600;">Win Rate</td>';
-  html += '<td style="color:' + wrColor(cp.win_rate || 0) + ';">' + (cp.win_rate || '--') + '%</td>';
-  html += '<td style="color:' + wrColor(bp.win_rate || 0) + ';">' + (bp.win_rate || '--') + '%</td>';
   var wrDelta = (bp.win_rate || 0) - (cp.win_rate || 0);
-  html += '<td style="color:' + (wrDelta > 0 ? 'var(--success)' : wrDelta < 0 ? 'var(--error)' : 'var(--text-muted)') + ';">' + (wrDelta > 0 ? '+' : '') + wrDelta.toFixed(1) + 'pp</td>';
+  html += '<tr style="border-top:2px solid var(--border);">';
+  html += '<td style="font-weight:600;font-size:0.74rem;">Win Rate</td>';
+  html += '<td style="font-family:var(--font-mono);font-size:0.74rem;color:' + wrColor(cp.win_rate || 0) + ';">' + (cp.win_rate || '--') + '%</td>';
+  html += '<td style="font-family:var(--font-mono);font-size:0.74rem;color:' + wrColor(bp.win_rate || 0) + ';">' + (bp.win_rate || '--') + '%</td>';
+  html += '<td style="font-family:var(--font-mono);font-size:0.74rem;font-weight:600;color:' + (wrDelta > 0 ? 'var(--success)' : wrDelta < 0 ? 'var(--error)' : 'var(--text-muted)') + ';">' + (wrDelta > 0 ? '+' : '') + wrDelta.toFixed(1) + 'pp</td>';
   html += '</tr>';
   tbody.innerHTML = html;
 }

@@ -609,16 +609,24 @@ def api_atlas_hub_eval():
             except Exception:
                 pass
 
-        # Gather research insights about agent orchestration
+        # Gather recent high-quality research insights (quality >= 8)
         research_log = []
         rl_path = ATLAS_ROOT / "data" / "research_log.json"
         if rl_path.exists():
             try:
                 with open(rl_path) as f:
                     rl = json.load(f)
-                research_log = [r for r in (rl if isinstance(rl, list) else [])
-                                if any(kw in str(r).lower() for kw in
-                                       ["agent", "orchestr", "multi-agent", "ai system", "infra"])][-10:]
+                # Get recent high-quality insights, grouped by agent (max 2 per agent)
+                agent_counts = {}
+                for r in reversed(rl if isinstance(rl, list) else []):
+                    q = r.get("quality_score", 0)
+                    a = r.get("agent", "general")
+                    if q >= 8 and agent_counts.get(a, 0) < 2:
+                        research_log.append(r)
+                        agent_counts[a] = agent_counts.get(a, 0) + 1
+                    if len(research_log) >= 10:
+                        break
+                research_log.reverse()
             except Exception:
                 pass
 
@@ -655,11 +663,21 @@ def api_atlas_hub_eval():
             features.append("Agent brain notes system for persistent knowledge")
 
         our_system = {
-            "total_agents": 7,
-            "agents": ["Garves (Trading)", "Soren (Content)", "Shelby (Commander)",
-                       "Atlas (Research)", "Lisa (Social)", "Thor (Engineering)", "Robotox (Monitoring)"],
+            "total_agents": 10,
+            "agents": [
+                {"name": "Garves", "role": "Crypto Up/Down trader (Polymarket)", "color": "#00d4ff"},
+                {"name": "Soren", "role": "Dark motivation content creator (@soren.era)", "color": "#cc66ff"},
+                {"name": "Shelby", "role": "Commander — scheduler, task mgmt, Telegram", "color": "#ffaa00"},
+                {"name": "Atlas", "role": "24/7 research engine, feeds all agents", "color": "#22aa44"},
+                {"name": "Lisa", "role": "Social media manager (X, TikTok, Instagram)", "color": "#ff8800"},
+                {"name": "Thor", "role": "Autonomous code generation agent", "color": "#ff6600"},
+                {"name": "Robotox", "role": "System health monitor, auto-restart", "color": "#00ff44"},
+                {"name": "Hawk", "role": "Non-crypto Polymarket scanner (sports, politics)", "color": "#FFD700"},
+                {"name": "Viper", "role": "Revenue hunter — gigs, cost audits", "color": "#00ff88"},
+                {"name": "Quant", "role": "Backtesting lab — parameter optimization", "color": "#00BFFF"},
+            ],
             "features": features,
-            "architecture": "Hierarchical: Owner > Claude > Shelby > Agents, Atlas cross-cuts",
+            "architecture": "Jordan (Owner) > Claude (Godfather) > Thor + Shelby > All Agents. Atlas cross-cuts.",
         }
 
         # Dynamic strengths — based on what exists
@@ -681,7 +699,7 @@ def api_atlas_hub_eval():
             gaps.append("No inter-agent direct messaging (agents go through Atlas/Shelby)")
             gaps.append("Limited real-time collaboration between agents")
 
-        # Pull gap insights from Atlas learnings
+        # Pull gap insights from Atlas learnings (clean, complete sentences)
         try:
             kb_file = ATLAS_ROOT / "data" / "knowledge_base.json"
             if kb_file.exists():
@@ -689,9 +707,18 @@ def api_atlas_hub_eval():
                 for learning in (kb.get("learnings", []))[-30:]:
                     insight = learning.get("insight", "")
                     conf = learning.get("confidence", 0)
+                    agent = learning.get("agent", "")
                     if conf >= 0.75 and any(kw in insight.lower() for kw in
                                             ["needs", "bottleneck", "missing", "should", "improve", "low", "below"]):
-                        gap_text = insight[:120]
+                        # Truncate at sentence boundary, not mid-word
+                        gap_text = insight[:300]
+                        last_period = gap_text.rfind(".")
+                        if last_period > 50:
+                            gap_text = gap_text[:last_period + 1]
+                        # Prefix with agent name for context
+                        if agent and agent != "atlas":
+                            agent_label = agent.title()
+                            gap_text = f"[{agent_label}] {gap_text}"
                         if gap_text not in gaps:
                             gaps.append(gap_text)
         except Exception:
@@ -1168,7 +1195,7 @@ def api_atlas_suggest_agent():
                 pass
 
         # Current system gaps that might warrant a new agent
-        current_agents = ["garves", "soren", "shelby", "atlas", "lisa", "thor", "robotox"]
+        current_agents = ["garves", "soren", "shelby", "atlas", "lisa", "thor", "robotox", "hawk", "viper", "quant"]
         gap_areas = [
             {"area": "Analytics/BI", "description": "Dedicated data visualization and business intelligence agent",
              "need": "medium", "reason": "Currently Atlas handles both research and analytics — a dedicated BI agent could provide richer dashboards and trend analysis"},
