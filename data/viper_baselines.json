@@ -1,0 +1,55 @@
+{
+  "agents": {
+    "infrastructure_daily_cost": {
+      "avg": 6.6667,
+      "latest": 6.6667,
+      "count": 126
+    },
+    "atlas_daily_cost": {
+      "avg": 1.6128,
+      "latest": 1.616,
+      "count": 126
+    },
+    "viper_daily_cost": {
+      "avg": 1.2498,
+      "latest": 1.25,
+      "count": 126
+    },
+    "thor_daily_cost": {
+      "avg": 0.3263,
+      "latest": 0.3263,
+      "count": 126
+    },
+    "soren_daily_cost": {
+      "avg": 0.1873,
+      "latest": 0.1873,
+      "count": 126
+    },
+    "hawk_daily_cost": {
+      "avg": 0.006,
+      "latest": 0.006,
+      "count": 126
+    },
+    "garves_daily_cost": {
+      "avg": 0.0017,
+      "latest": 0.0017,
+      "count": 126
+    },
+    "lisa_daily_cost": {
+      "avg": 0.0007,
+      "latest": 0.0007,
+      "count": 126
+    },
+    "robotox_daily_cost": {
+      "avg": 0.0,
+      "latest": 0.0,
+      "count": 126
+    },
+    "shelby_daily_cost": {
+      "avg": 0.0,
+      "latest": 0.0,
+      "count": 126
+    }
+  },
+  "updated": "2026-02-20T17:17:28.981204"
+}

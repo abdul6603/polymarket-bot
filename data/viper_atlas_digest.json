@@ -1,0 +1,64 @@
+{
+  "agent": "atlas",
+  "items": [
+    {
+      "headline": "Top spender: infrastructure ($200.00/mo)",
+      "detail": "Total: $301.64/mo across 10 agents",
+      "source": "cost_audit",
+      "score": 50,
+      "ts": 1771624726.7789319,
+      "category": "cost_trend"
+    },
+    {
+      "headline": "Active intel category: economy",
+      "detail": "Latest: Discussion Thread: President Trump Holds Press Conference Responding to Supreme Court Striking Down Most Tariffs",
+      "source": "intel_categories",
+      "score": 30,
+      "ts": 1771624726.779097,
+      "category": "research_topic"
+    },
+    {
+      "headline": "Active intel category: politics",
+      "detail": "Latest: Supreme Court rules that Trump\u2019s sweeping emergency tariffs are illegal | CNN Politics",
+      "source": "intel_categories",
+      "score": 30,
+      "ts": 1771624726.779098,
+      "category": "research_topic"
+    },
+    {
+      "headline": "Active intel category: culture",
+      "detail": "Latest: Down to my last $160. What should I do?",
+      "source": "intel_categories",
+      "score": 30,
+      "ts": 1771624726.7791,
+      "category": "research_topic"
+    },
+    {
+      "headline": "Active intel category: crypto",
+      "detail": "Latest: Delete Three Forever From MegaETH, Eclipse, Monad, and Berachain",
+      "source": "intel_categories",
+      "score": 30,
+      "ts": 1771624726.779101,
+      "category": "research_topic"
+    },
+    {
+      "headline": "Active intel category: sports",
+      "detail": "Latest: Pick of the Day - 2/20/26 (Friday)",
+      "source": "intel_categories",
+      "score": 30,
+      "ts": 1771624726.779103,
+      "category": "research_topic"
+    },
+    {
+      "headline": "Monitoring 10 agents",
+      "detail": "Baselines updated: 2026-02-20T16:58:46.777127",
+      "source": "anomaly_detector",
+      "score": 20,
+      "ts": 1771624726.779145,
+      "category": "system_health"
+    }
+  ],
+  "generated_at": 1771624726.779146,
+  "item_count": 7,
+  "fresh": true
+}

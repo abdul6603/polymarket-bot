@@ -1,33 +1,33 @@
 {
   "macd": {
-    "total_votes": 266,
+    "total_votes": 280,
     "correct_votes": 174,
-    "accuracy": 0.6541353383458647
+    "accuracy": 0.6214285714285714
   },
   "ema": {
-    "total_votes": 266,
-    "correct_votes": 178,
-    "accuracy": 0.6691729323308271
+    "total_votes": 280,
+    "correct_votes": 179,
+    "accuracy": 0.6392857142857142
   },
   "heikin_ashi": {
-    "total_votes": 234,
+    "total_votes": 236,
     "correct_votes": 142,
-    "accuracy": 0.6068376068376068
+    "accuracy": 0.6016949152542372
   },
   "bollinger": {
-    "total_votes": 210,
-    "correct_votes": 66,
-    "accuracy": 0.3142857142857143
+    "total_votes": 211,
+    "correct_votes": 67,
+    "accuracy": 0.3175355450236967
   },
   "momentum": {
-    "total_votes": 266,
-    "correct_votes": 180,
-    "accuracy": 0.6766917293233082
+    "total_votes": 280,
+    "correct_votes": 181,
+    "accuracy": 0.6464285714285715
   },
   "price_div": {
-    "total_votes": 211,
+    "total_votes": 223,
     "correct_votes": 137,
-    "accuracy": 0.6492890995260664
+    "accuracy": 0.6143497757847534
   },
   "temporal_arb": {
     "total_votes": 174,
@@ -35,9 +35,9 @@
     "accuracy": 0.632183908045977
   },
   "order_flow": {
-    "total_votes": 241,
+    "total_votes": 255,
     "correct_votes": 148,
-    "accuracy": 0.6141078838174274
+    "accuracy": 0.5803921568627451
   },
   "volume_spike": {
     "total_votes": 51,
@@ -45,24 +45,24 @@
     "accuracy": 0.8431372549019608
   },
   "rsi": {
-    "total_votes": 119,
-    "correct_votes": 29,
-    "accuracy": 0.24369747899159663
+    "total_votes": 132,
+    "correct_votes": 42,
+    "accuracy": 0.3181818181818182
   },
   "news": {
-    "total_votes": 141,
+    "total_votes": 142,
     "correct_votes": 83,
-    "accuracy": 0.5886524822695035
+    "accuracy": 0.5845070422535211
   },
   "liquidation": {
-    "total_votes": 79,
+    "total_votes": 91,
     "correct_votes": 63,
-    "accuracy": 0.7974683544303798
+    "accuracy": 0.6923076923076923
   },
   "spot_depth": {
-    "total_votes": 103,
+    "total_votes": 115,
     "correct_votes": 68,
-    "accuracy": 0.6601941747572816
+    "accuracy": 0.591304347826087
   },
   "funding_rate": {
     "total_votes": 14,

@@ -1,16 +1,7 @@
 {
   "running": true,
+  "total_intel": 0,
+  "total_matched": 0,
   "mode": "intelligence",
-  "cycle": 83,
-  "total_intel": 245,
-  "total_matched": 3235,
-  "last_scan_items": 0,
-  "last_scan_new": 0,
-  "last_scan_matched": 41,
-  "sources": {},
-  "briefing_active": false,
-  "briefed_markets": 10,
-  "tavily_ran": false,
-  "soren_opportunities": null,
-  "last_update": "2026-02-18T17:30:22.250297-05:00"
+  "last_update": "2026-02-20T19:42:29.177212-05:00"
 }

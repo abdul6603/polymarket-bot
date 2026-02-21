@@ -1,53 +1,67 @@
 {
   "kelly": {
-    "win_rate": 60.6,
-    "avg_win_return": 20.4,
-    "full_kelly_pct": 21.2,
-    "half_kelly_pct": 10.6,
-    "quarter_kelly_pct": 5.3,
-    "recommended_usd": 26.52,
+    "win_rate": 56.0,
+    "avg_win_return": 19.9,
+    "full_kelly_pct": 12.0,
+    "half_kelly_pct": 6.0,
+    "quarter_kelly_pct": 3.0,
+    "recommended_usd": 15.0,
     "current_size_usd": 10.0,
     "bankroll": 250.0
   },
   "diversity": {
-    "n_indicators": 17,
-    "avg_agreement": 44.6,
-    "diversity_score": 100,
+    "n_indicators": 15,
+    "avg_agreement": 53.1,
+    "diversity_score": 93.8,
     "redundant_pairs": [
       {
         "indicator_a": "bollinger",
         "indicator_b": "rsi",
         "agreement": 100.0,
-        "compared": 24,
+        "compared": 25,
         "suggestion": "Consider removing one \u2014 they agree 100% of the time"
       },
       {
         "indicator_a": "price_div",
         "indicator_b": "temporal_arb",
         "agreement": 100.0,
-        "compared": 74,
+        "compared": 71,
         "suggestion": "Consider removing one \u2014 they agree 100% of the time"
       },
       {
         "indicator_a": "ema",
         "indicator_b": "momentum",
-        "agreement": 94.9,
-        "compared": 118,
+        "agreement": 94.7,
+        "compared": 113,
         "suggestion": "Consider removing one \u2014 they agree 95% of the time"
       },
       {
         "indicator_a": "heikin_ashi",
         "indicator_b": "temporal_arb",
-        "agreement": 94.6,
-        "compared": 74,
-        "suggestion": "Consider removing one \u2014 they agree 95% of the time"
+        "agreement": 94.4,
+        "compared": 71,
+        "suggestion": "Consider removing one \u2014 they agree 94% of the time"
       },
       {
         "indicator_a": "heikin_ashi",
         "indicator_b": "price_div",
-        "agreement": 93.8,
-        "compared": 97,
-        "suggestion": "Consider removing one \u2014 they agree 94% of the time"
+        "agreement": 93.5,
+        "compared": 92,
+        "suggestion": "Consider removing one \u2014 they agree 93% of the time"
+      },
+      {
+        "indicator_a": "ema",
+        "indicator_b": "temporal_arb",
+        "agreement": 91.5,
+        "compared": 71,
+        "suggestion": "Consider removing one \u2014 they agree 92% of the time"
+      },
+      {
+        "indicator_a": "ema",
+        "indicator_b": "price_div",
+        "agreement": 91.3,
+        "compared": 92,
+        "suggestion": "Consider removing one \u2014 they agree 91% of the time"
       },
       {
         "indicator_a": "ema",
@@ -55,20 +69,6 @@
         "agreement": 91.3,
         "compared": 23,
         "suggestion": "Consider removing one \u2014 they agree 91% of the time"
-      },
-      {
-        "indicator_a": "ema",
-        "indicator_b": "price_div",
-        "agreement": 88.7,
-        "compared": 97,
-        "suggestion": "Consider removing one \u2014 they agree 89% of the time"
-      },
-      {
-        "indicator_a": "ema",
-        "indicator_b": "temporal_arb",
-        "agreement": 87.8,
-        "compared": 74,
-        "suggestion": "Consider removing one \u2014 they agree 88% of the time"
       },
       {
         "indicator_a": "ema",
@@ -87,29 +87,59 @@
     ],
     "independent_indicators": [
       "bollinger",
-      "liquidation",
       "liquidity",
-      "macd",
       "news",
       "orderbook",
       "price_div",
       "rsi",
       "sentiment",
-      "spot_depth",
-      "temporal_arb",
-      "volume_spike",
-      "vwap"
+      "temporal_arb"
     ]
   },
   "decay": {
     "is_decaying": true,
-    "trend_direction": "stable",
-    "current_rolling_wr": 65.0,
+    "trend_direction": "decaying",
+    "current_rolling_wr": 70.0,
     "peak_rolling_wr": 80.0,
-    "decay_amount": 15.0,
+    "decay_amount": 10.0,
     "rolling_window": 20,
-    "alert_message": "Strategy decay detected: rolling WR dropped 15pp from peak 80% to 65%",
+    "alert_message": "Strategy decay detected: rolling WR dropped 10pp from peak 80% to 70%",
     "rolling_history": [
+      {
+        "trade_index": 88,
+        "timestamp": 1771157826.578298,
+        "rolling_wr": 45.0,
+        "window_wins": 9,
+        "window_losses": 11
+      },
+      {
+        "trade_index": 89,
+        "timestamp": 1771157845.40462,
+        "rolling_wr": 40.0,
+        "window_wins": 8,
+        "window_losses": 12
+      },
+      {
+        "trade_index": 90,
+        "timestamp": 1771158642.814993,
+        "rolling_wr": 35.0,
+        "window_wins": 7,
+        "window_losses": 13
+      },
+      {
+        "trade_index": 91,
+        "timestamp": 1771158975.144254,
+        "rolling_wr": 30.0,
+        "window_wins": 6,
+        "window_losses": 14
+      },
+      {
+        "trade_index": 92,
+        "timestamp": 1771159638.979511,
+        "rolling_wr": 30.0,
+        "window_wins": 6,
+        "window_losses": 14
+      },
       {
         "trade_index": 93,
         "timestamp": 1771159810.6198988,
@@ -273,54 +303,19 @@
       },
       {
         "trade_index": 116,
-        "timestamp": 1771390818.934957,
-        "rolling_wr": 75.0,
-        "window_wins": 15,
-        "window_losses": 5
-      },
-      {
-        "trade_index": 117,
-        "timestamp": 1771390824.030824,
-        "rolling_wr": 80.0,
-        "window_wins": 16,
-        "window_losses": 4
-      },
-      {
-        "trade_index": 118,
-        "timestamp": 1771391005.572049,
-        "rolling_wr": 80.0,
-        "window_wins": 16,
-        "window_losses": 4
-      },
-      {
-        "trade_index": 119,
-        "timestamp": 1771391137.4619951,
-        "rolling_wr": 80.0,
-        "window_wins": 16,
-        "window_losses": 4
-      },
-      {
-        "trade_index": 120,
-        "timestamp": 1771411912.233259,
-        "rolling_wr": 75.0,
-        "window_wins": 15,
-        "window_losses": 5
-      },
-      {
-        "trade_index": 121,
-        "timestamp": 1771412001.22766,
+        "timestamp": 1771624561.1539478,
         "rolling_wr": 70.0,
         "window_wins": 14,
         "window_losses": 6
       },
       {
-        "trade_index": 122,
-        "timestamp": 1771412094.135623,
-        "rolling_wr": 65.0,
-        "window_wins": 13,
-        "window_losses": 7
+        "trade_index": 117,
+        "timestamp": 1771624865.0782442,
+        "rolling_wr": 70.0,
+        "window_wins": 14,
+        "window_losses": 6
       }
     ]
   },
-  "updated": "2026-02-18 06:33 AM ET"
+  "updated": "2026-02-20 07:42 PM ET"
 }

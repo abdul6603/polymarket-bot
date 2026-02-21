@@ -1,0 +1,38 @@
+{
+  "date": "2026-02-20",
+  "revenue": {
+    "garves": 0.0,
+    "garves_daily": 0.0,
+    "garves_trades": 0,
+    "garves_win_rate": 0,
+    "hawk": -43.01,
+    "hawk_daily": -7.17,
+    "hawk_trades": 13,
+    "hawk_win_rate": 0.308,
+    "soren_est": 0.0
+  },
+  "costs": {
+    "daily_api": 10.05,
+    "infrastructure_daily": 6.67,
+    "total_monthly": 301.64,
+    "agent_breakdown": {
+      "infrastructure": 200.0,
+      "atlas": 48.48,
+      "viper": 37.5,
+      "thor": 9.79,
+      "soren": 5.62,
+      "hawk": 0.18,
+      "garves": 0.05,
+      "lisa": 0.02,
+      "robotox": 0.0,
+      "shelby": 0.0
+    }
+  },
+  "net_daily": -23.89,
+  "net_monthly_est": -716.7,
+  "best_performer": "garves",
+  "biggest_cost": "infrastructure",
+  "trend": "needs_improvement",
+  "days_tracked": 6,
+  "computed_at": 1771624726.776394
+}

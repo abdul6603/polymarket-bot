@@ -1,10 +1,11 @@
 {
-  "portfolio": 138.37,
-  "cash": 0.0,
-  "positions_value": 138.37,
-  "pnl": -111.63,
+  "portfolio": 76.66,
+  "cash": 76.66,
+  "positions_value": 0.0,
+  "pnl": -173.34,
   "bankroll": 250.0,
   "live": true,
-  "error": "USDC: HTTP Error 401: Unauthorized",
-  "fetched_at": 1771453370.482087
+  "error": null,
+  "fetched_at": 1771634558.626252,
+  "source": "garves_bot"
 }

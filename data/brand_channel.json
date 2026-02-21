@@ -1,0 +1,1967 @@
+{
+  "messages": [
+    {
+      "id": "bc_1771579595_b772",
+      "opportunity_id": "5132ad190a4656ba",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T04:26:35.432271-05:00",
+      "opportunity": {
+        "title": "Stoic \u2022 7.5M reels on Instagram",
+        "description": "## stoic face. ## stoic philosophy explained. ## stoic mindset quotes. ## the daily stoic book review. ## stoic daily routine. ## the stoics (@thestoiccs)/? ## daily stoic podcast episodes. ## stoic mindset exercises. ## definition of stoic. ## stoic quotes and sayings. ## stoic mindset's latest quotes. ## stoic reflections (@stoicreflections)/? ## stoic mindset (@stoicmindset0)/? ## daily stoic q",
+        "type": "trending_content",
+        "category": "core",
+        "url": "https://www.instagram.com/popular/stoic/",
+        "source": "tavily",
+        "estimated_value": "Low reach",
+        "fit_score": 32
+      },
+      "brand_assessment": {
+        "brand_fit_score": 75,
+        "pillar_match": "stoic_lessons",
+        "archetype_alignment": "Strong",
+        "value_alignment": [
+          "Discipline over motivation",
+          "Silence over explanation",
+          "Pain as fuel"
+        ],
+        "content_suggestion": "Create a cinematic edit with voiceover explaining a stoic principle, using original footage of Soren's night rituals or gym sessions. Caption: 'In silence, we find strength. #StoicWarrior'",
+        "risk_flags": [],
+        "auto_verdict": "auto_approved",
+        "reasoning": "The opportunity aligns well with Soren's stoic and disciplined brand identity, offering a chance to deepen his connection to stoic philosophy while maintaining his dark, intense aesthetic."
+      },
+      "status": "approved",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T04:26:35.432271-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "approved",
+          "at": "2026-02-20T04:26:35.432271-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771579600_98dc",
+      "opportunity_id": "0fd7b57d8a45ee6a",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T04:26:40.046561-05:00",
+      "opportunity": {
+        "title": "Become a Myprotein Ambassador & Influencer",
+        "description": "Free shipping on orders over $140  World's No.1 Online Sports Nutrition Brand  Earn $20 by referring a friend today! Save an extra 5% when you shop the app   WINTER SAVINGS EVENT. PLUS AN EXTRA 5% OFF WHEN YOU SHOP THE APP. ## Team Myprotein. **Are you ready to be the next brand ambassador for one of the fastest growing sports nutrition and wellness brands in the US & Canada?**. **Myprotein is com",
+        "type": "brand_deal",
+        "category": "fitness",
+        "url": "https://ca.myprotein.com/c/about-us/ways-to-work-with-us/join-team-myprotein/",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 24
+      },
+      "brand_assessment": {
+        "brand_fit_score": 45,
+        "pillar_match": "gym_warrior",
+        "archetype_alignment": "Moderate",
+        "value_alignment": [
+          "discipline over motivation",
+          "progress over perfection"
+        ],
+        "content_suggestion": "Create a raw gym footage video showcasing intense workouts using Myprotein products, with a voiceover emphasizing discipline and progress.",
+        "risk_flags": [
+          "potential brand dilution",
+          "conflict with dark aesthetic"
+        ],
+        "auto_verdict": "needs_review",
+        "reasoning": "While the fitness category aligns with Soren's gym-focused content, the mainstream and promotional nature of the Myprotein brand may dilute the dark, lone wolf aesthetic that defines Soren's identity."
+      },
+      "status": "assessed",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T04:26:40.046561-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "assessed",
+          "at": "2026-02-20T04:26:40.046561-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771579603_a49b",
+      "opportunity_id": "8b69ff01f5f79066",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T04:26:43.694591-05:00",
+      "opportunity": {
+        "title": "Brand Ambassadors - CELSIUS",
+        "description": "# Brand Ambassadors. ## CELSIUS BRAND AMBASSADORS. ## APPLY FOR THE CELSIUS BRAND AMBASSADOR PROGRAM TODAY. A CELSIUS Brand Ambassador embodies a lifestyle dedicated to Living Fit! Some are weekend warriors, certified personal trainers, or professional and non-professional athletes, while some just want to follow a healthy regime by living a positive, balanced, and fit life. But most importantly, ",
+        "type": "brand_deal",
+        "category": "core",
+        "url": "https://www.celsius.com/ambassador/",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 19
+      },
+      "brand_assessment": {
+        "brand_fit_score": 35,
+        "pillar_match": "none",
+        "archetype_alignment": "Weak",
+        "value_alignment": [],
+        "content_suggestion": "Soren could create a dark_motivation video contrasting the 'Living Fit' lifestyle with his own 'Warrior Spirit' approach, emphasizing discipline over motivation.",
+        "risk_flags": [
+          "Brand identity clash",
+          "Misalignment with core values"
+        ],
+        "auto_verdict": "auto_rejected",
+        "reasoning": "The CELSIUS brand ambassador program promotes a positive and balanced lifestyle, which contrasts with Soren's darker, more intense brand identity focused on solitude and discipline. The opportunity does not align with Soren's core values or archetype."
+      },
+      "status": "rejected",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T04:26:43.694591-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "rejected",
+          "at": "2026-02-20T04:26:43.694591-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771579606_4d2e",
+      "opportunity_id": "4aa82efd6b715567",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T04:26:46.752650-05:00",
+      "opportunity": {
+        "title": "Best Supplement Affiliate Programs (List Updated Jan 2026)",
+        "description": "Whether it\u2019s making money online through blogging or just trying to improve your health by eating better foods \u2013 there are many supplement affiliate programs you can try and make money for the next time you want to use an irresistible discount found on\u00a0Tripplo. Stack Labs is a new, niche bodybuilding supplement brand that offers an opportunity for affiliate marketers to earn high commissions. HGH.",
+        "type": "affiliate",
+        "category": "fitness",
+        "url": "https://www.osiaffiliate.com/marketing/best-supplement-affiliate-programs/",
+        "source": "tavily",
+        "estimated_value": "$10-50/mo",
+        "fit_score": 19
+      },
+      "brand_assessment": {
+        "brand_fit_score": 45,
+        "pillar_match": "gym_warrior",
+        "archetype_alignment": "Moderate",
+        "value_alignment": [
+          "Discipline over motivation",
+          "Progress over perfection"
+        ],
+        "content_suggestion": "Create a raw gym footage video showcasing the use of specific supplements from the affiliate program, emphasizing discipline and progress. Caption: 'Fuel your evolution. Discipline over motivation.'",
+        "risk_flags": [
+          "Potential reputation risk if the supplements are not well-regarded"
+        ],
+        "auto_verdict": "needs_review",
+        "reasoning": "The opportunity aligns moderately with Soren's focus on fitness and discipline, but the commercial nature of affiliate marketing could dilute the brand's raw and authentic voice."
+      },
+      "status": "assessed",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T04:26:46.752650-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "assessed",
+          "at": "2026-02-20T04:26:46.752650-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771579609_165b",
+      "opportunity_id": "71c77e1b91753757",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T04:26:49.769384-05:00",
+      "opportunity": {
+        "title": "Elite Brand Ambassador Program",
+        "description": "Through our Elite Brand Ambassador search we are looking for more than good looks and a massive social media following\u2026we\u2019re looking for people that truly want to help others and set great examples of what it means to be a good person. Through our Elite Brand Ambassador search we are looking for more than good looks and a massive social media following\u2026we\u2019re looking for people that truly want to h",
+        "type": "brand_deal",
+        "category": "general",
+        "url": "https://www.ansperformance.com/pages/elite-brand-ambassador-program?srsltid=AfmBOopOBasgrTdUH6bo0TyEQn6z9Yi8jmf3cjPbD-gGPxTjedjoqqCf",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 18
+      },
+      "brand_assessment": {
+        "brand_fit_score": 35,
+        "pillar_match": "none",
+        "archetype_alignment": "Weak",
+        "value_alignment": [],
+        "content_suggestion": "",
+        "risk_flags": [
+          "Misalignment with brand values",
+          "Potential dilution of dark and intense brand image"
+        ],
+        "auto_verdict": "auto_rejected",
+        "reasoning": "The opportunity focuses on being a good person and helping others, which conflicts with Soren's lone wolf and dark warrior archetype. It does not align with his core values or content pillars, posing a risk to his brand identity."
+      },
+      "status": "rejected",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T04:26:49.769384-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "rejected",
+          "at": "2026-02-20T04:26:49.769384-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771579612_a939",
+      "opportunity_id": "ab813165538c0853",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T04:26:52.288847-05:00",
+      "opportunity": {
+        "title": "Self Development Affiliate Programs",
+        "description": "# Self Development Affiliate Programs. CogniFit Affiliate Program  active   Company: CogniFit offers digital cognitive assessments and brain training programs. + Receive a 15% earnings commission for each sale you generate with your audience + Promote CogniFit Brain Health Premium Programs + Allow ... GetCertified.ai Affiliate Program  active   Company: GetCertified.ai is an online platform that p",
+        "type": "affiliate",
+        "category": "core",
+        "url": "https://www.affiliateprogramdb.com/self-development-affiliate-programs/",
+        "source": "tavily",
+        "estimated_value": "$10-50/mo",
+        "fit_score": 18
+      },
+      "brand_assessment": {
+        "brand_fit_score": 45,
+        "pillar_match": "self_improvement_for_men",
+        "archetype_alignment": "Moderate",
+        "value_alignment": [
+          "Discipline over motivation",
+          "Progress over perfection"
+        ],
+        "content_suggestion": "Create a mindset_monologue video discussing the importance of cognitive training in the journey of self-improvement, linking it to the warrior's path of relentless progress.",
+        "risk_flags": [
+          "Potential misalignment with dark aesthetic",
+          "Reputation risk if perceived as too commercial"
+        ],
+        "auto_verdict": "needs_review",
+        "reasoning": "The affiliate program aligns with Soren's focus on self-improvement and discipline, but the commercial nature and potential deviation from the dark aesthetic require careful consideration."
+      },
+      "status": "assessed",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T04:26:52.288847-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "assessed",
+          "at": "2026-02-20T04:26:52.288847-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771579615_33fa",
+      "opportunity_id": "a75680007f1790b3",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T04:26:55.488131-05:00",
+      "opportunity": {
+        "title": "20 Best Paying Health and Fitness Affiliate Programs in 2025",
+        "description": "In\u00a02026\u00a0**health and fitness affiliate programs** offering competitive commissions that can significantly boost your income. In this guide, we will explore the **20 best paying health and fitness affiliate programs in**2026, highlighting their unique offerings, commission structures, and how they cater to different segments within the fitness niche. * **Diverse Opportunities:** The health and fitn",
+        "type": "affiliate",
+        "category": "fitness",
+        "url": "https://wod.guru/blog/fitness-affiliate-programs/",
+        "source": "tavily",
+        "estimated_value": "$10-50/mo",
+        "fit_score": 17
+      },
+      "brand_assessment": {
+        "brand_fit_score": 45,
+        "pillar_match": "gym_warrior",
+        "archetype_alignment": "Moderate",
+        "value_alignment": [
+          "Discipline over motivation",
+          "Progress over perfection"
+        ],
+        "content_suggestion": "Create a video showcasing a high-intensity workout routine with a voiceover discussing the importance of choosing the right tools and programs to enhance discipline and progress. Caption: 'Equip your journey. Choose wisely. #DisciplineOverMotivation'",
+        "risk_flags": [
+          "Potential misalignment with dark aesthetic",
+          "Possible dilution of brand's unique voice"
+        ],
+        "auto_verdict": "needs_review",
+        "reasoning": "The opportunity aligns moderately with Soren's focus on fitness and discipline but may dilute the brand's dark, intense aesthetic and unique voice."
+      },
+      "status": "assessed",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T04:26:55.488131-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "assessed",
+          "at": "2026-02-20T04:26:55.488131-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771579621_a385",
+      "opportunity_id": "592ab62502855e92",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T04:27:01.296524-05:00",
+      "opportunity": {
+        "title": "50 Best Fitness Affiliate Programs of 2026 for Massive Passive Income",
+        "description": "#### A healthy menu of fitness affiliate programs starting off with the 10 Best. Flex those marketing muscles and drive traffic to your fitness website. As there are plenty of fitness communities to join, there are also a lot of other websites and other affiliate marketers trying to get the same traffic as you. Some of the commission rates of the fitness affiliate programs listed here aren\u2019t that ",
+        "type": "affiliate",
+        "category": "fitness",
+        "url": "https://www.affilorama.com/blog/top-fitness-affiliate-programs",
+        "source": "tavily",
+        "estimated_value": "$10-50/mo",
+        "fit_score": 17
+      },
+      "brand_assessment": {
+        "brand_fit_score": 35,
+        "pillar_match": "none",
+        "archetype_alignment": "Weak",
+        "value_alignment": [],
+        "content_suggestion": "none",
+        "risk_flags": [
+          "Potential dilution of brand focus",
+          "Misalignment with dark motivation theme"
+        ],
+        "auto_verdict": "auto_rejected",
+        "reasoning": "The opportunity does not align with Soren's dark motivation and lone wolf brand identity, focusing instead on affiliate marketing which is outside his core content pillars and values."
+      },
+      "status": "rejected",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T04:27:01.296524-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "rejected",
+          "at": "2026-02-20T04:27:01.296524-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771579623_3498",
+      "opportunity_id": "c9fa4f07b2057818",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T04:27:03.849964-05:00",
+      "opportunity": {
+        "title": "8 Best Health & Wellness Affiliate Programs in 2025",
+        "description": "# Best Health and Wellness Affiliate Programs with High Commissions in 2026. We researched the 2026 affiliate wellness market and found eight health and wellness affiliate programs with high commissions and interesting perks. ## Who is Health and Wellness Affiliate Marketing For? ## 8 Health and Wellness Affiliate Programs With Attractive Commissions\u00a0and Products. From neurohealth to weight loss a",
+        "type": "affiliate",
+        "category": "content",
+        "url": "https://www.rewardful.com/articles/best-health-and-wellness-affiliate-programs",
+        "source": "tavily",
+        "estimated_value": "$10-50/mo",
+        "fit_score": 16
+      },
+      "brand_assessment": {
+        "brand_fit_score": 25,
+        "pillar_match": "none",
+        "archetype_alignment": "Weak",
+        "value_alignment": [],
+        "content_suggestion": "",
+        "risk_flags": [
+          "brand misalignment"
+        ],
+        "auto_verdict": "auto_rejected",
+        "reasoning": "The affiliate opportunity focuses on health and wellness, which does not align with Soren's dark motivation and lone wolf brand identity. The content lacks the intensity and rawness that define Soren's voice and values."
+      },
+      "status": "rejected",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T04:27:03.849964-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "rejected",
+          "at": "2026-02-20T04:27:03.849964-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771579625_ad97",
+      "opportunity_id": "3a93a4ae04a9a155",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T04:27:05.998716-05:00",
+      "opportunity": {
+        "title": "Affiliate program and selfpublishing?",
+        "description": "Hello, I am wondering what is the best way to create an affiliate program for my physical book. - My book is nearly finished and I want to promote it based on an affiliate program. I find affiliates, they have a personal link through which people can buy my book, then the affiliate earn a commission for each book sold.- At first, I wanted to use Amazon KDP to print/send it, an affiliate could just",
+        "type": "affiliate",
+        "category": "content",
+        "url": "https://www.reddit.com/r/selfpublish/comments/bjk3ed/affiliate_program_and_selfpublishing/",
+        "source": "tavily",
+        "estimated_value": "$10-50/mo",
+        "fit_score": 16
+      },
+      "brand_assessment": {
+        "brand_fit_score": 35,
+        "pillar_match": "none",
+        "archetype_alignment": "Weak",
+        "value_alignment": [],
+        "content_suggestion": "",
+        "risk_flags": [
+          "Potential misalignment with dark aesthetic",
+          "Focus on commercial rather than personal evolution"
+        ],
+        "auto_verdict": "auto_rejected",
+        "reasoning": "The affiliate program opportunity does not align with Soren's brand identity, which emphasizes personal evolution and dark motivation over commercial ventures."
+      },
+      "status": "rejected",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T04:27:05.998716-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "rejected",
+          "at": "2026-02-20T04:27:05.998716-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771581362_582e",
+      "opportunity_id": "39c510e89624e698",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T04:56:02.213736-05:00",
+      "opportunity": {
+        "title": "16 Brands That Work With Influencers: Inspire Your 2026 Collabs",
+        "description": "They especially want insights from brands that collaborate with small influencers on Instagram and TikTok, because micro and nano creators deliver some wild engagement numbers (think genuine fans, loyal communities, and real talk). fashion brand collaborations with influencers. fashion brands that collaborate with small influencers. Fashion brand collaborations with influencers. fashion brands tha",
+        "type": "brand_deal",
+        "category": "content",
+        "url": "https://iqfluence.io/public/blog/brands-that-work-with-influencers",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 22
+      },
+      "brand_assessment": {
+        "brand_fit_score": 35,
+        "pillar_match": "none",
+        "archetype_alignment": "Weak",
+        "value_alignment": [],
+        "content_suggestion": "None",
+        "risk_flags": [
+          "Misalignment with dark aesthetic",
+          "Potential dilution of brand intensity"
+        ],
+        "auto_verdict": "auto_rejected",
+        "reasoning": "The opportunity focuses on fashion brand collaborations, which do not align with Soren's dark, disciplined, and solitary brand identity. The emphasis on influencer partnerships and fashion lacks synergy with Soren's core values and content pillars."
+      },
+      "status": "rejected",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T04:56:02.213736-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "rejected",
+          "at": "2026-02-20T04:56:02.213736-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771581364_b1c5",
+      "opportunity_id": "b6802c654ced5511",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T04:56:04.956036-05:00",
+      "opportunity": {
+        "title": "Celsius Brand Ambassadors",
+        "description": "# Brand Ambassadors. ## CELSIUS BRAND AMBASSADORS. ## APPLY FOR THE CELSIUS BRAND AMBASSADOR PROGRAM TODAY. A CELSIUS Brand Ambassador embodies a lifestyle dedicated to Living Fit! Some are weekend warriors, certified personal trainers, or professional and non-professional athletes, while some just want to follow a healthy regime by living a positive, balanced, and fit life. But most importantly, ",
+        "type": "brand_deal",
+        "category": "core",
+        "url": "https://www.celsius.com/ambassador/",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 19
+      },
+      "brand_assessment": {
+        "brand_fit_score": 35,
+        "pillar_match": "none",
+        "archetype_alignment": "Weak",
+        "value_alignment": [],
+        "content_suggestion": "None",
+        "risk_flags": [
+          "Brand identity misalignment",
+          "Potential dilution of dark aesthetic"
+        ],
+        "auto_verdict": "auto_rejected",
+        "reasoning": "The Celsius Brand Ambassador program promotes a positive, balanced lifestyle which contrasts with Soren's dark, intense, and solitary brand identity. The opportunity does not align with Soren's core values or content pillars."
+      },
+      "status": "rejected",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T04:56:04.956036-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "rejected",
+          "at": "2026-02-20T04:56:04.956036-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771581367_684a",
+      "opportunity_id": "8994817ebae8a565",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T04:56:07.639923-05:00",
+      "opportunity": {
+        "title": "Brand Ambassadors Wanted - Black Magic Supply",
+        "description": "We hope that every one of you gets to experience what it is like to be a part of the Black Magic Supply community.The creation of Black Magic Supply did not happen from \u201cgood luck\u201d, we earned the opportunity to launch this brand. Many of our athletes started off from a simple email by displaying their passion for the brand and we had to make them a part of the team.Our program can be as hands-on o",
+        "type": "brand_deal",
+        "category": "general",
+        "url": "https://www.blackmagicsupps.com/pages/brand-ambassadors-wanted?srsltid=AfmBOooKuT8580T9HjgFr36PkeuoRPRgmmNExGIq1gtLyPV1Phhr9Pph",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 18
+      },
+      "brand_assessment": {
+        "brand_fit_score": 45,
+        "pillar_match": "gym_warrior",
+        "archetype_alignment": "Moderate",
+        "value_alignment": [
+          "Discipline over motivation",
+          "Actions over words"
+        ],
+        "content_suggestion": "Create a raw gym footage video showcasing intense workouts using Black Magic Supply products, emphasizing the discipline and warrior spirit. Caption: 'Fuel your inner warrior. No excuses. Just action.'",
+        "risk_flags": [
+          "Potential brand dilution if Black Magic Supply's image doesn't align with Soren's dark and intense aesthetic"
+        ],
+        "auto_verdict": "needs_review",
+        "reasoning": "While the opportunity aligns with Soren's focus on discipline and action, the brand's general category and potential image misalignment pose risks to Soren's distinct dark and intense brand identity."
+      },
+      "status": "assessed",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T04:56:07.639923-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "assessed",
+          "at": "2026-02-20T04:56:07.639923-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771581377_d476",
+      "opportunity_id": "fb588892edd72985",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T04:56:17.415602-05:00",
+      "opportunity": {
+        "title": "Self Development Affiliate Programs - APDB",
+        "description": "# Self Development Affiliate Programs. CogniFit Affiliate Program  active   Company: CogniFit offers digital cognitive assessments and brain training programs. + Receive a 15% earnings commission for each sale you generate with your audience + Promote CogniFit Brain Health Premium Programs + Allow ... GetCertified.ai Affiliate Program  active   Company: GetCertified.ai is an online platform that p",
+        "type": "affiliate",
+        "category": "core",
+        "url": "https://www.affiliateprogramdb.com/self-development-affiliate-programs/",
+        "source": "tavily",
+        "estimated_value": "$10-50/mo",
+        "fit_score": 18
+      },
+      "brand_assessment": {
+        "brand_fit_score": 45,
+        "pillar_match": "self_improvement_for_men",
+        "archetype_alignment": "Moderate",
+        "value_alignment": [
+          "Discipline over motivation",
+          "Progress over perfection"
+        ],
+        "content_suggestion": "Create a mindset_monologue video discussing how cognitive training aligns with the 1% mentality, emphasizing discipline and progress.",
+        "risk_flags": [
+          "Potential misalignment with dark aesthetic",
+          "Reputation risk if perceived as too commercial"
+        ],
+        "auto_verdict": "needs_review",
+        "reasoning": "The opportunity aligns moderately with Soren's values of discipline and progress, but the commercial nature and potential aesthetic misalignment require careful consideration."
+      },
+      "status": "assessed",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T04:56:17.415602-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "assessed",
+          "at": "2026-02-20T04:56:17.415602-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771581380_74fd",
+      "opportunity_id": "dc45de890d7bb300",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T04:56:20.357085-05:00",
+      "opportunity": {
+        "title": "Ambassador Program | Nutrishop",
+        "description": "Join a passionate community of athletes and enthusiasts representing a trusted leader in health, fitness and nutrition. Promote quality products, grow your personal brand, and earn commission. You'll receive a customized promo code of your choice for marketing that will track all online sales you generate. Earn up to five free supplements of your choice per month, along with exclusive Nutrishop ge",
+        "type": "brand_deal",
+        "category": "fitness",
+        "url": "https://www.nutrishopusa.com/pages/ambassador-program?srsltid=AfmBOorhixREvsqR4kCyRBkJBOEVGbx5zyuzykLbvnwmfLap38aWJCeH",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 17
+      },
+      "brand_assessment": {
+        "brand_fit_score": 55,
+        "pillar_match": "gym_warrior",
+        "archetype_alignment": "Moderate",
+        "value_alignment": [
+          "Discipline over motivation",
+          "Progress over perfection"
+        ],
+        "content_suggestion": "Create a raw gym footage video showcasing intense workouts using Nutrishop supplements, captioned with a focus on discipline and progress.",
+        "risk_flags": [
+          "Potential brand dilution if not aligned with dark aesthetic",
+          "Reputation risk if products are not high quality"
+        ],
+        "auto_verdict": "needs_review",
+        "reasoning": "While the fitness category aligns with Soren's gym warrior pillar, the partnership with a mainstream brand like Nutrishop may dilute the dark, lone wolf aesthetic. The opportunity supports discipline and progress values but requires careful execution to maintain brand integrity."
+      },
+      "status": "assessed",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T04:56:20.357085-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "assessed",
+          "at": "2026-02-20T04:56:20.357085-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771583194_8ec2",
+      "opportunity_id": "96393af1c7b9e56c",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T05:26:34.871486-05:00",
+      "opportunity": {
+        "title": "20 Best Paying Health and Fitness Affiliate Programs in 2026",
+        "description": "In\u00a02026\u00a0**health and fitness affiliate programs** offering competitive commissions that can significantly boost your income. In this guide, we will explore the **20 best paying health and fitness affiliate programs in**2026, highlighting their unique offerings, commission structures, and how they cater to different segments within the fitness niche. * **Diverse Opportunities:** The health and fitn",
+        "type": "affiliate",
+        "category": "fitness",
+        "url": "https://wod.guru/blog/fitness-affiliate-programs/",
+        "source": "tavily",
+        "estimated_value": "$10-50/mo",
+        "fit_score": 17
+      },
+      "brand_assessment": {
+        "brand_fit_score": 45,
+        "pillar_match": "gym_warrior",
+        "archetype_alignment": "Moderate",
+        "value_alignment": [
+          "Discipline over motivation",
+          "Actions over words"
+        ],
+        "content_suggestion": "Create a video showcasing intense gym workouts with a voiceover discussing the importance of discipline in choosing the right affiliate programs that align with personal growth and fitness goals.",
+        "risk_flags": [
+          "Potential reputation risk if affiliate programs are not perceived as high-quality or aligned with Soren's disciplined image"
+        ],
+        "auto_verdict": "needs_review",
+        "reasoning": "The opportunity aligns moderately with Soren's focus on fitness and discipline, but the commercial nature of affiliate programs may dilute the brand's intense and raw image, requiring careful selection and presentation."
+      },
+      "status": "assessed",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T05:26:34.871486-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "assessed",
+          "at": "2026-02-20T05:26:34.871486-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771583199_a143",
+      "opportunity_id": "888e32c0aa6022f0",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T05:26:39.950924-05:00",
+      "opportunity": {
+        "title": "17 Best Health Affiliate Programs for 2026 - Tapfiliate",
+        "description": "Affiliate marketing in the health and fitness niche allows brands to increase their product exposure and generate sales, while affiliates have the opportunity to earn a substantial income by promoting products that align with their audience\u2019s interests. Affiliates, on the other hand, can leverage their expertise and audience to promote high-quality health products and earn a commission on each sal",
+        "type": "affiliate",
+        "category": "fitness",
+        "url": "https://tapfiliate.com/blog/health-affiliate-programs/",
+        "source": "tavily",
+        "estimated_value": "$10-50/mo",
+        "fit_score": 17
+      },
+      "brand_assessment": {
+        "brand_fit_score": 45,
+        "pillar_match": "gym_warrior",
+        "archetype_alignment": "Moderate",
+        "value_alignment": [
+          "Discipline over motivation",
+          "Progress over perfection"
+        ],
+        "content_suggestion": "Create a raw gym workout video featuring a voiceover about using affiliate products to enhance discipline and progress, ending with a CTA to explore the affiliate link.",
+        "risk_flags": [
+          "Potential reputation risk if products don't align with brand's high standards"
+        ],
+        "auto_verdict": "needs_review",
+        "reasoning": "While the affiliate opportunity aligns with Soren's focus on fitness and discipline, the commercial nature may dilute the brand's raw and intense identity, requiring careful integration to maintain authenticity."
+      },
+      "status": "assessed",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T05:26:39.950924-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "assessed",
+          "at": "2026-02-20T05:26:39.950924-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771583203_a5bb",
+      "opportunity_id": "f6e3dac104c19a09",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T05:26:43.169525-05:00",
+      "opportunity": {
+        "title": "Affiliate Program - Self-Improvement-eBooks",
+        "description": "### SPLASH SALE. ### 50-75% Off All eBooks! #### (Spend $50 or more and receive an additional 15% discount!). Image 2: Self-Improvement-eBooks. 0 item(s) - $0.00. *   Your shopping cart is empty! Self-Improvement-eBooks affiliate program is free and enables members to earn revenue by placing a link or links on their web site which advertises Self-Improvement-eBooks or specific products on it. Any ",
+        "type": "affiliate",
+        "category": "content",
+        "url": "https://self-improvement-ebooks.com/books/affiliate-account",
+        "source": "tavily",
+        "estimated_value": "$10-50/mo",
+        "fit_score": 16
+      },
+      "brand_assessment": {
+        "brand_fit_score": 35,
+        "pillar_match": "none",
+        "archetype_alignment": "Weak",
+        "value_alignment": [],
+        "content_suggestion": "Consider a mindset_monologue discussing the importance of self-driven improvement over external resources.",
+        "risk_flags": [
+          "Potential brand dilution",
+          "Misalignment with dark aesthetic"
+        ],
+        "auto_verdict": "auto_rejected",
+        "reasoning": "The affiliate program for self-improvement eBooks does not align with Soren's dark, lone wolf brand identity, which emphasizes self-reliance and internal discipline over external resources."
+      },
+      "status": "rejected",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T05:26:43.169525-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "rejected",
+          "at": "2026-02-20T05:26:43.169525-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771585287_3bbb",
+      "opportunity_id": "9a5f2653cc4c961c",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T06:01:27.803841-05:00",
+      "opportunity": {
+        "title": "How Influencer Marketing Is Changing in 2026 | Vogue",
+        "description": "Instead, creators will take on the role of consultants, as brands develop more substantial partnerships with the talent that now make up such a core part of their marketing strategies. Instead of simply tapping creators to promote their products via one-time posts and affiliate links, brands will need to think about how to work collaboratively with talent on the strategy side, experts agree. But, ",
+        "type": "brand_deal",
+        "category": "content",
+        "url": "https://www.vogue.com/article/how-influencer-marketing-is-changing-in-2026",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 22
+      },
+      "brand_assessment": {
+        "brand_fit_score": 45,
+        "pillar_match": "none",
+        "archetype_alignment": "Weak",
+        "value_alignment": [],
+        "content_suggestion": "Explore a mindset_monologue about the evolution of influencer marketing and how Soren's lone wolf mentality adapts to these changes.",
+        "risk_flags": [
+          "Potential dilution of brand identity",
+          "Misalignment with dark motivation focus"
+        ],
+        "auto_verdict": "needs_review",
+        "reasoning": "The opportunity suggests a shift towards collaboration, which contrasts with Soren's lone wolf and self-reliant brand identity. The alignment with Soren's core values and archetype is weak, requiring careful consideration."
+      },
+      "status": "assessed",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T06:01:27.803841-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "assessed",
+          "at": "2026-02-20T06:01:27.803841-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771585291_89fe",
+      "opportunity_id": "dd5daf92b1561774",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T06:01:31.938532-05:00",
+      "opportunity": {
+        "title": "The 13 Best Fitness Affiliate Programs for 2026 - Hevy Coach",
+        "description": "The National Academy of Sports Medicine, also known as NASM, is a program aimed at people who want to earn a certification in the fitness industry and work as a coach or personal trainer. So, if you\u2019re building an audience of fitness enthusiasts, consider Titan Fitness\u2019 affiliate program to promote products through video reviews, comparisons, how-to article guides, and other pieces of content. The",
+        "type": "affiliate",
+        "category": "fitness",
+        "url": "https://hevycoach.com/best-fitness-affiliate-programs/",
+        "source": "tavily",
+        "estimated_value": "$10-50/mo",
+        "fit_score": 17
+      },
+      "brand_assessment": {
+        "brand_fit_score": 35,
+        "pillar_match": "none",
+        "archetype_alignment": "Weak",
+        "value_alignment": [],
+        "content_suggestion": "",
+        "risk_flags": [
+          "Potential misalignment with dark aesthetic",
+          "Low estimated value"
+        ],
+        "auto_verdict": "auto_rejected",
+        "reasoning": "The affiliate program opportunity does not align with Soren's dark, intense brand identity or content pillars, and the potential value is low."
+      },
+      "status": "rejected",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T06:01:31.938532-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "rejected",
+          "at": "2026-02-20T06:01:31.938532-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771587907_02bd",
+      "opportunity_id": "786beda9993bad87",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T06:45:07.190771-05:00",
+      "opportunity": {
+        "title": "Stoic Mindset's Latest Posts - Instagram",
+        "description": "#stoicism #selfcontrol #ancientwisdom #mindset](https://scontent-sof1-1.cdninstagram.com/v/t51.71878-15/600906604_1406184591169699_944738607854948038_n.jpg?stp=dst-jpg_e35_s640x640_tt6&_nc_cat=106&ccb=7-5&_nc_sid=18de74&efg=eyJlZmdfdGFnIjoiQ0xJUFMuYmVzdF9pbWFnZV91cmxnZW4uQzMifQ%3D%3D&_nc_ohc=5zuSY3POlWoQ7kNvwF1E1sM&_nc_oc=Adk5pqQcgTJxndolUvqfJLd5BEGBkCPxzfPuxQOMhE6LgmvubG4o3It-yc2WWZl3Mg-zdlWTsgvs",
+        "type": "trending_content",
+        "category": "core",
+        "url": "https://www.instagram.com/popular/stoic-mindset's-latest-posts/",
+        "source": "tavily",
+        "estimated_value": "Low reach",
+        "fit_score": 28
+      },
+      "brand_assessment": {
+        "brand_fit_score": 75,
+        "pillar_match": "stoic_lessons",
+        "archetype_alignment": "Strong",
+        "value_alignment": [
+          "Discipline over motivation",
+          "Silence over explanation",
+          "Pain as fuel"
+        ],
+        "content_suggestion": "Create a cinematic video with a voiceover discussing a stoic principle, using original footage of Soren's night rituals or gym sessions, ending with a CTA to reflect on personal growth.",
+        "risk_flags": [],
+        "auto_verdict": "auto_approved",
+        "reasoning": "The opportunity aligns well with Soren's brand, particularly through the stoic philosophy and discipline themes, which are core to his identity and content pillars."
+      },
+      "status": "approved",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T06:45:07.190771-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "approved",
+          "at": "2026-02-20T06:45:07.190771-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771587910_c192",
+      "opportunity_id": "d5ef429eef693637",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T06:45:10.128522-05:00",
+      "opportunity": {
+        "title": "Become a Brand Ambassador for RXBAR Protein Bars: Join the No ...",
+        "description": "HomeReal Talk Articles Become a Brand Ambassador for RXBAR Protein Bars: Join the No B.S. Athlete Movement. # Become a Brand Ambassador for RXBAR Protein Bars: Join the No B.S. Athlete Movement. If you\u2019re all about fueling your lifestyle with real ingredients and real effort, we\u2019ve got good news: RXBAR is looking for brand ambassadors who live the No B.S. life, in and out of the gym. The **No B.S.",
+        "type": "brand_deal",
+        "category": "fitness",
+        "url": "https://www.rxbar.com/en_US/real-talk/articles/brand-ambassador.html",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 19
+      },
+      "brand_assessment": {
+        "brand_fit_score": 55,
+        "pillar_match": "gym_warrior",
+        "archetype_alignment": "Moderate",
+        "value_alignment": [
+          "Discipline over motivation",
+          "Actions over words"
+        ],
+        "content_suggestion": "Create a raw gym video featuring RXBAR as part of the pre-workout routine, emphasizing 'fueling the warrior within' with a caption like 'Real fuel for real warriors. No B.S. Just results.'",
+        "risk_flags": [
+          "Potential dilution of dark aesthetic with a commercial product"
+        ],
+        "auto_verdict": "needs_review",
+        "reasoning": "The opportunity aligns moderately with Soren's fitness and discipline values but risks diluting the brand's dark and intense aesthetic with a commercial product focus."
+      },
+      "status": "assessed",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T06:45:10.128522-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "assessed",
+          "at": "2026-02-20T06:45:10.128522-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771589916_4154",
+      "opportunity_id": "b3825f7fc88e3f21",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T07:18:36.551254-05:00",
+      "opportunity": {
+        "title": "Brand Ambassadors Wanted",
+        "description": "We hope that every one of you gets to experience what it is like to be a part of the Black Magic Supply community.The creation of Black Magic Supply did not happen from \u201cgood luck\u201d, we earned the opportunity to launch this brand. Many of our athletes started off from a simple email by displaying their passion for the brand and we had to make them a part of the team.Our program can be as hands-on o",
+        "type": "brand_deal",
+        "category": "general",
+        "url": "https://www.blackmagicsupps.com/pages/brand-ambassadors-wanted?srsltid=AfmBOoruW3htzjeRwh7Fs762tvsJQaJhdz79vZoMXbRw-jwuNuhBQx6F",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 18
+      },
+      "brand_assessment": {
+        "brand_fit_score": 45,
+        "pillar_match": "gym_warrior",
+        "archetype_alignment": "Moderate",
+        "value_alignment": [
+          "Discipline over motivation",
+          "Actions over words"
+        ],
+        "content_suggestion": "Create a raw gym footage video showcasing intense workouts using Black Magic Supply products, with a voiceover about discipline and relentless progress.",
+        "risk_flags": [
+          "Potential brand dilution if not aligned with Soren's dark aesthetic"
+        ],
+        "auto_verdict": "needs_review",
+        "reasoning": "The opportunity aligns moderately with Soren's focus on discipline and action, but the brand's general category and aesthetic may not fully match Soren's dark, lone wolf identity."
+      },
+      "status": "assessed",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T07:18:36.551254-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "assessed",
+          "at": "2026-02-20T07:18:36.551254-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771589921_0cab",
+      "opportunity_id": "e208d6ca9bdc812f",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T07:18:41.052195-05:00",
+      "opportunity": {
+        "title": "Become a TL Ambassador - Transparent Labs",
+        "description": "The TL Ambassador Program is a community of\u00a0like-minded individuals who share our mission of improving performance and health with clean, natural supplements. Ambassadors will earn exclusive rewards, benefits, and\u00a0**10% commission** on every new referral that shops Transparent Labs. As a TL Ambassador you have access to exclusive TL merch, ability to earn free monthly product, and the opportunity ",
+        "type": "brand_deal",
+        "category": "fitness",
+        "url": "https://www.transparentlabs.com/pages/tl-ambassador?srsltid=AfmBOopwXSsyuUGw4x_9gjsbohFql5X8Ue84_fwCNW-q4hWVXiW0ku9B",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 17
+      },
+      "brand_assessment": {
+        "brand_fit_score": 55,
+        "pillar_match": "gym_warrior",
+        "archetype_alignment": "Moderate",
+        "value_alignment": [
+          "Discipline over motivation",
+          "Progress over perfection"
+        ],
+        "content_suggestion": "Create a raw gym video showcasing intense workouts with a voiceover about using clean supplements to fuel discipline and progress. Caption: 'Fuel the warrior within. #DisciplineOverMotivation #GymWarrior'",
+        "risk_flags": [
+          "Potential brand dilution if perceived as too commercial"
+        ],
+        "auto_verdict": "needs_review",
+        "reasoning": "The opportunity aligns moderately with Soren's fitness focus and values of discipline and progress, but the commercial nature of the deal may dilute the brand's intense and solitary image."
+      },
+      "status": "assessed",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T07:18:41.052195-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "assessed",
+          "at": "2026-02-20T07:18:41.052195-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771589925_44f3",
+      "opportunity_id": "6627c8a873a29979",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T07:18:45.935103-05:00",
+      "opportunity": {
+        "title": "Ambassador Program",
+        "description": "Join a passionate community of athletes and enthusiasts representing a trusted leader in health, fitness and nutrition. Promote quality products, grow your personal brand, and earn commission. You'll receive a customized promo code of your choice for marketing that will track all online sales you generate. Earn up to five free supplements of your choice per month, along with exclusive Nutrishop ge",
+        "type": "brand_deal",
+        "category": "fitness",
+        "url": "https://www.nutrishopusa.com/pages/ambassador-program?srsltid=AfmBOor9DuxEMnM-87CGCOBydgKb_S9hVublihOhXt0wV-w7rrTItVY9",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 17
+      },
+      "brand_assessment": {
+        "brand_fit_score": 55,
+        "pillar_match": "gym_warrior",
+        "archetype_alignment": "Moderate",
+        "value_alignment": [
+          "Discipline over motivation",
+          "Actions over words"
+        ],
+        "content_suggestion": "Create a raw gym video showcasing intense workouts with a voiceover about discipline and using pain as fuel, integrating the promo code subtly.",
+        "risk_flags": [
+          "Potential over-commercialization",
+          "Misalignment with dark aesthetic"
+        ],
+        "auto_verdict": "needs_review",
+        "reasoning": "While the fitness aspect aligns with Soren's gym warrior pillar, the commercial nature of the ambassador program may dilute the brand's intense and solitary image, requiring careful integration."
+      },
+      "status": "assessed",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T07:18:45.935103-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "assessed",
+          "at": "2026-02-20T07:18:45.935103-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771589929_e9fa",
+      "opportunity_id": "eecc6fc73b9899a1",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T07:18:49.833289-05:00",
+      "opportunity": {
+        "title": "8 Best Health & Wellness Affiliate Programs in 2026",
+        "description": "# Best Health and Wellness Affiliate Programs with High Commissions in 2026. We researched the 2026 affiliate wellness market and found eight health and wellness affiliate programs with high commissions and interesting perks. ## Who is Health and Wellness Affiliate Marketing For? ## 8 Health and Wellness Affiliate Programs With Attractive Commissions\u00a0and Products. From neurohealth to weight loss a",
+        "type": "affiliate",
+        "category": "content",
+        "url": "https://www.rewardful.com/articles/best-health-and-wellness-affiliate-programs",
+        "source": "tavily",
+        "estimated_value": "$10-50/mo",
+        "fit_score": 16
+      },
+      "brand_assessment": {
+        "brand_fit_score": 30,
+        "pillar_match": "none",
+        "archetype_alignment": "Weak",
+        "value_alignment": [],
+        "content_suggestion": "none",
+        "risk_flags": [
+          "brand misalignment"
+        ],
+        "auto_verdict": "auto_rejected",
+        "reasoning": "The affiliate opportunity focuses on health and wellness, which does not align with Soren's dark motivation and lone wolf brand identity. The content lacks the intensity and rawness that Soren embodies."
+      },
+      "status": "rejected",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T07:18:49.833289-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "rejected",
+          "at": "2026-02-20T07:18:49.833289-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771589932_5d5b",
+      "opportunity_id": "f122e766a523a3c7",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T07:18:52.386871-05:00",
+      "opportunity": {
+        "title": "Best Book Affiliate Programs to Maximize Earnings & Optimize ...",
+        "description": "# Best Book Affiliate Programs to Maximize Earnings & Optimize Performance. In this article, we dive into the top book affiliate programs that offer high commissions and excellent earning potential, from audiobooks to rare finds. In this Strackr guide, we'll explore the top book affiliate programs that not only offer competitive payouts but also tools and support to help you boost your performance",
+        "type": "affiliate",
+        "category": "content",
+        "url": "https://strackr.com/blog/book-affiliate-programs",
+        "source": "tavily",
+        "estimated_value": "$10-50/mo",
+        "fit_score": 16
+      },
+      "brand_assessment": {
+        "brand_fit_score": 25,
+        "pillar_match": "none",
+        "archetype_alignment": "Weak",
+        "value_alignment": [],
+        "content_suggestion": "Soren could create a mindset_monologue discussing the importance of self-education and personal growth through reading, tying it to his lone wolf lifestyle.",
+        "risk_flags": [
+          "Brand misalignment",
+          "Reputation risk"
+        ],
+        "auto_verdict": "auto_rejected",
+        "reasoning": "The opportunity does not align with Soren's brand identity, which is centered around dark motivation and personal discipline rather than affiliate marketing or book programs."
+      },
+      "status": "rejected",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T07:18:52.386871-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "rejected",
+          "at": "2026-02-20T07:18:52.386871-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771589935_f933",
+      "opportunity_id": "41e60544855f6d3b",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T07:18:55.768019-05:00",
+      "opportunity": {
+        "title": "Affiliate Program - Personal Growth",
+        "description": "# Personal Growth Affiliate Partnership. Enough detail to learn the best ideas from hundreds of personal growth books. All Affiliates agree to the following: You, as an affiliate or JV partner for 'Personal Growth' or 'PersonalGrowth.com', have read and fully agree to the terms listed on the Official FTC Website\u00a0to ensure that your promotions comply with the new guidelines. Negative marketing usin",
+        "type": "affiliate",
+        "category": "content",
+        "url": "https://personalgrowth.com/affiliates/",
+        "source": "tavily",
+        "estimated_value": "$10-50/mo",
+        "fit_score": 16
+      },
+      "brand_assessment": {
+        "brand_fit_score": 45,
+        "pillar_match": "mindset_monologue",
+        "archetype_alignment": "Moderate",
+        "value_alignment": [
+          "Discipline over motivation",
+          "Progress over perfection"
+        ],
+        "content_suggestion": "Create a mindset_monologue video discussing how personal growth books can be distilled into actionable discipline tips, ending with a CTA to explore more.",
+        "risk_flags": [
+          "Potential mismatch with dark aesthetic",
+          "Reputation risk if perceived as too commercial"
+        ],
+        "auto_verdict": "needs_review",
+        "reasoning": "The affiliate program aligns moderately with Soren's focus on personal growth and discipline, but the commercial nature and potential aesthetic mismatch pose risks to his brand identity."
+      },
+      "status": "assessed",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T07:18:55.768019-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "assessed",
+          "at": "2026-02-20T07:18:55.768019-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771604787_ce59",
+      "opportunity_id": "0e84567e1f6a6c92",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T11:26:27.297279-05:00",
+      "opportunity": {
+        "title": "Brand Ambassadors",
+        "description": "# Brand Ambassadors. ## CELSIUS BRAND AMBASSADORS. ## APPLY FOR THE CELSIUS BRAND AMBASSADOR PROGRAM TODAY. A CELSIUS Brand Ambassador embodies a lifestyle dedicated to Living Fit! Some are weekend warriors, certified personal trainers, or professional and non-professional athletes, while some just want to follow a healthy regime by living a positive, balanced, and fit life. But most importantly, ",
+        "type": "brand_deal",
+        "category": "core",
+        "url": "https://www.celsius.com/ambassador/",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 19
+      },
+      "brand_assessment": {
+        "brand_fit_score": 35,
+        "pillar_match": "none",
+        "archetype_alignment": "Weak",
+        "value_alignment": [],
+        "content_suggestion": "None",
+        "risk_flags": [
+          "Brand identity misalignment",
+          "Potential dilution of dark aesthetic"
+        ],
+        "auto_verdict": "auto_rejected",
+        "reasoning": "The CELSIUS Brand Ambassador program focuses on a positive, balanced lifestyle which conflicts with Soren's dark, intense brand identity and values. The opportunity does not align with any of Soren's content pillars or core values."
+      },
+      "status": "rejected",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T11:26:27.297279-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "rejected",
+          "at": "2026-02-20T11:26:27.297279-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771606732_e82a",
+      "opportunity_id": "ca460d3bcf5175bd",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T11:58:52.776593-05:00",
+      "opportunity": {
+        "title": "Top 20 Black UGC Influencers in 2025",
+        "description": "**Bio** LA \u2194\ufe0e MEX \ud83d\udccd Houston Jan-MarchBeauty \u2022 Travel \u2022 WellnessModeling Inquiries: @outlawartistmanagement Brand Partnerships: \\*\\*\\*\\*\\*@10mgmt.com **Instagram Handle**  @aliedavis\\_  **Instagram Followers**  79.9K **Type**  Micro **Gender**  Female   Get Email Contact Request 150 Black UGC Instagram Influencers with email contacts in a spreadsheet or csv file. **Bio** \u26a1\ufe0f UGC Creator with bestie ",
+        "type": "brand_deal",
+        "category": "content",
+        "url": "https://influencers.feedspot.com/black_ugc_instagram_influencers/",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 20
+      },
+      "brand_assessment": {
+        "brand_fit_score": 25,
+        "pillar_match": "none",
+        "archetype_alignment": "Misaligned",
+        "value_alignment": [],
+        "content_suggestion": "",
+        "risk_flags": [
+          "Brand misalignment",
+          "Reputation risk"
+        ],
+        "auto_verdict": "auto_rejected",
+        "reasoning": "The opportunity does not align with Soren's dark and intense brand identity, focusing instead on beauty, travel, and wellness, which are outside his content pillars and values."
+      },
+      "status": "rejected",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T11:58:52.776593-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "rejected",
+          "at": "2026-02-20T11:58:52.776593-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771606735_0231",
+      "opportunity_id": "857cc57013986a72",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T11:58:55.557387-05:00",
+      "opportunity": {
+        "title": "C4 Energy / Cellucor / XTEND Ambassadors",
+        "description": "C4 Energy / Cellucor / XTEND Ambassadors   Skip to content. Our elite team of influencers believes in redefining limits, inspiring others, and elevating both mental and physical performance. By joining Team C4, you join a community that's on the cutting edge of all things energy. **Brand Love**: You live an active lifestyle and love energy drinks, pre-workout, protein powders, and more! ## TEAM C4",
+        "type": "brand_deal",
+        "category": "fitness",
+        "url": "https://cellucor.com/pages/teamc4?srsltid=AfmBOor_Aybzw0XKGmCxW7VkUo26eXIp6fh3ACGLDHcWKwxALTSM_THg",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 17
+      },
+      "brand_assessment": {
+        "brand_fit_score": 65,
+        "pillar_match": "gym_warrior",
+        "archetype_alignment": "Moderate",
+        "value_alignment": [
+          "Discipline over motivation",
+          "Progress over perfection"
+        ],
+        "content_suggestion": "Create a raw gym video showcasing an intense workout session with C4 Energy as the pre-workout choice. Caption: 'Fuel the warrior within. Discipline over motivation. #GymWarrior #C4Energy'",
+        "risk_flags": [
+          "Potential over-commercialization"
+        ],
+        "auto_verdict": "needs_review",
+        "reasoning": "The opportunity aligns moderately with Soren's fitness and discipline values, but the commercial nature could dilute the brand's raw and intense identity."
+      },
+      "status": "assessed",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T11:58:55.557387-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "assessed",
+          "at": "2026-02-20T11:58:55.557387-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771609960_be98",
+      "opportunity_id": "dc781931d0c58659",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T12:52:40.935846-05:00",
+      "opportunity": {
+        "title": "Highest Paying Health Affiliate Programs | 2026 | 2027 - Vellko",
+        "description": "# Highest Paying Health Affiliate Programs in 2026 (and Why Vellko Is the Best Choice). ## **What Makes the Health Niche So Profitable for Affiliate Marketing**. In light of these aspects because of these, affiliate programs within the health industry typically offer\u00a0**more than average rates for commissions** and longer cookie durations, as well as incentives for performance, creating a lucrative",
+        "type": "affiliate",
+        "category": "content",
+        "url": "https://vellko.com/blog/highest-paying-health-affiliate-programs/",
+        "source": "tavily",
+        "estimated_value": "$10-50/mo",
+        "fit_score": 16
+      },
+      "brand_assessment": {
+        "brand_fit_score": 35,
+        "pillar_match": "none",
+        "archetype_alignment": "Weak",
+        "value_alignment": [],
+        "content_suggestion": "",
+        "risk_flags": [
+          "brand misalignment",
+          "reputation risk"
+        ],
+        "auto_verdict": "auto_rejected",
+        "reasoning": "The opportunity does not align with Soren's dark, intense brand identity or core values focused on discipline and solitude. The affiliate program content is not compatible with any of Soren's content pillars or archetype."
+      },
+      "status": "rejected",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T12:52:40.935846-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "rejected",
+          "at": "2026-02-20T12:52:40.935846-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771611937_ad6e",
+      "opportunity_id": "00deb7dfb8595994",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T13:25:37.537760-05:00",
+      "opportunity": {
+        "title": "Affiliate System - Popular Book Company (Canada) Ltd.",
+        "description": "then join Popular Book Company\u2019s Affiliate Program! Help promote our products to your friends, family, followers, and subscribers through unique affiliate links provided by Popular Book Company and for every purchase made through your unique affiliate link, you earn a 20% commission on the pre-tax total of every order. Join our team of parents, content creators, educators, and influencers earning ",
+        "type": "affiliate",
+        "category": "content",
+        "url": "https://www.popularbook.ca/affiliate-system?srsltid=AfmBOoqOyBx2MJEdpvPO7nz75d6wW4_rKqYhwMVQkocWHSrj8Duub_h7",
+        "source": "tavily",
+        "estimated_value": "$10-50/mo",
+        "fit_score": 28
+      },
+      "brand_assessment": {
+        "brand_fit_score": 15,
+        "pillar_match": "none",
+        "archetype_alignment": "Misaligned",
+        "value_alignment": [],
+        "content_suggestion": "",
+        "risk_flags": [
+          "brand misalignment",
+          "reputation risk"
+        ],
+        "auto_verdict": "auto_rejected",
+        "reasoning": "The affiliate program with Popular Book Company does not align with Soren's dark, intense, and disciplined brand identity. It lacks connection to his core values and content pillars, posing a risk to his brand's authenticity and reputation."
+      },
+      "status": "rejected",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T13:25:37.537760-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "rejected",
+          "at": "2026-02-20T13:25:37.537760-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771611940_a083",
+      "opportunity_id": "d73d073c29278cf2",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T13:25:40.710883-05:00",
+      "opportunity": {
+        "title": "Supplement Brand Ambassador Program | XYMOGEN",
+        "description": "The essential and functional cookies we use are to improve your experience, enable site functionality, remember your settings, and to enable communication tools. The marketing cookies we use help us understand and analyze site activity and deliver relevant and personalized advertising. # Join the XYMOGEN Ambassador Program. A community of wellness leaders, practitioners, and advocates shaping the ",
+        "type": "brand_deal",
+        "category": "fitness",
+        "url": "https://www.xymogen.com/ambassador-program?srsltid=AfmBOorWnSGe7Vn2ro_PZsFarLhxGpUFGPRlLpI_CE8UQ0fXHIRhx4m5",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 18
+      },
+      "brand_assessment": {
+        "brand_fit_score": 35,
+        "pillar_match": "none",
+        "archetype_alignment": "Weak",
+        "value_alignment": [],
+        "content_suggestion": "",
+        "risk_flags": [
+          "brand misalignment",
+          "reputation risk"
+        ],
+        "auto_verdict": "auto_rejected",
+        "reasoning": "The XYMOGEN Ambassador Program does not align with Soren's dark motivation and lone wolf brand identity, focusing more on wellness and community rather than discipline and solitude."
+      },
+      "status": "rejected",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T13:25:40.710883-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "rejected",
+          "at": "2026-02-20T13:25:40.710883-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771614079_ff35",
+      "opportunity_id": "23c5dfe1b17e8db7",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T14:01:19.101677-05:00",
+      "opportunity": {
+        "title": "Top 20 Black UGC Influencers in 2026",
+        "description": "**Bio** LA \u2194\ufe0e MEX \ud83d\udccd Houston Jan-MarchBeauty \u2022 Travel \u2022 WellnessModeling Inquiries: @outlawartistmanagement Brand Partnerships: \\*\\*\\*\\*\\*@10mgmt.com **Instagram Handle**  @aliedavis\\_  **Instagram Followers**  79.9K **Type**  Micro **Gender**  Female   Get Email Contact Request 150 Black UGC Instagram Influencers with email contacts in a spreadsheet or csv file. **Bio** \u26a1\ufe0f UGC Creator with bestie ",
+        "type": "brand_deal",
+        "category": "content",
+        "url": "https://influencers.feedspot.com/black_ugc_instagram_influencers/",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 20
+      },
+      "brand_assessment": {
+        "brand_fit_score": 25,
+        "pillar_match": "none",
+        "archetype_alignment": "Misaligned",
+        "value_alignment": [],
+        "content_suggestion": "",
+        "risk_flags": [
+          "brand misalignment",
+          "content category mismatch"
+        ],
+        "auto_verdict": "auto_rejected",
+        "reasoning": "The opportunity does not align with Soren's dark, disciplined, and solitary brand identity. The focus on beauty, travel, and wellness is contrary to Soren's core values and content pillars."
+      },
+      "status": "rejected",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T14:01:19.101677-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "rejected",
+          "at": "2026-02-20T14:01:19.101677-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771616027_8b56",
+      "opportunity_id": "319d38a6b91f931d",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T14:33:47.069219-05:00",
+      "opportunity": {
+        "title": "Become a Factor Form Influencer!",
+        "description": "## Want to become a Factor Form ambassador? Whether you're a seasoned influencer or just starting out, we offer tailored programs to support your journey. Find the Perfect Program for You. We offer a range of influencer programs, each thoughtfully designed to welcome creators of all kinds. Enjoy a free Factor Form box and share your unboxing and experience with your followers. Craft engaging conte",
+        "type": "brand_deal",
+        "category": "content",
+        "url": "https://www.factor75.com/about/influencer-program-FactorForm",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 15
+      },
+      "brand_assessment": {
+        "brand_fit_score": 30,
+        "pillar_match": "none",
+        "archetype_alignment": "Weak",
+        "value_alignment": [],
+        "content_suggestion": "",
+        "risk_flags": [
+          "brand misalignment",
+          "reputation risk"
+        ],
+        "auto_verdict": "auto_rejected",
+        "reasoning": "The opportunity does not align with Soren's dark, intense brand identity and values, focusing instead on a more generic influencer program that lacks the depth and intensity Soren's audience expects."
+      },
+      "status": "rejected",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T14:33:47.069219-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "rejected",
+          "at": "2026-02-20T14:33:47.069219-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771618277_abbf",
+      "opportunity_id": "10dbd01e7de4d782",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T15:11:17.048700-05:00",
+      "opportunity": {
+        "title": "Looking for creators for supplement brand : r/UGCcreators - Reddit",
+        "description": "We've just launched a UGC Creator Affiliate Program! Here's the deal: You'd earn a 20% commission on any sales you drive with your affiliate link.",
+        "type": "brand_deal",
+        "category": "content",
+        "url": "https://www.reddit.com/r/UGCcreators/comments/1f9or8m/looking_for_creators_for_supplement_brand/",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 24
+      },
+      "brand_assessment": {
+        "brand_fit_score": 45,
+        "pillar_match": "gym_warrior",
+        "archetype_alignment": "Moderate",
+        "value_alignment": [
+          "Discipline over motivation",
+          "Actions over words"
+        ],
+        "content_suggestion": "Create a raw gym video showcasing intense workout sessions with a voiceover about the importance of discipline in fitness, linking it to the supplement's benefits.",
+        "risk_flags": [
+          "Potential reputation risk if supplement brand doesn't align with Soren's high standards"
+        ],
+        "auto_verdict": "needs_review",
+        "reasoning": "The opportunity aligns moderately with Soren's focus on discipline and action, but the commercial nature of the deal and potential misalignment with brand standards present risks."
+      },
+      "status": "assessed",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T15:11:17.048700-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "assessed",
+          "at": "2026-02-20T15:11:17.048700-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771618285_05db",
+      "opportunity_id": "7de8623d61308e1b",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T15:11:25.273053-05:00",
+      "opportunity": {
+        "title": "Dream Brands to Work With as an Influencer in 2026 | TikTok",
+        "description": "Keywords: dream brands to collaborate with in 2026, influencer brand partnerships, luxury lifestyle brands, fashion inspiration for",
+        "type": "brand_deal",
+        "category": "content",
+        "url": "https://www.tiktok.com/@laurenbrown2307/video/7592002459392888078",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 22
+      },
+      "brand_assessment": {
+        "brand_fit_score": 35,
+        "pillar_match": "none",
+        "archetype_alignment": "Weak",
+        "value_alignment": [],
+        "content_suggestion": "None",
+        "risk_flags": [
+          "Potential brand dilution",
+          "Misalignment with dark aesthetic"
+        ],
+        "auto_verdict": "auto_rejected",
+        "reasoning": "The opportunity focuses on luxury lifestyle and fashion inspiration, which does not align with Soren's dark, disciplined, and solitary brand identity. The content lacks the intensity and rawness that define Soren's voice and values."
+      },
+      "status": "rejected",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T15:11:25.273053-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "rejected",
+          "at": "2026-02-20T15:11:25.273053-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771618288_428b",
+      "opportunity_id": "21e47e4433eb1bcc",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T15:11:28.552534-05:00",
+      "opportunity": {
+        "title": "3 Fitness Brands Winning Influencer Marketing - Aspire",
+        "description": "Let's take a look behind-the-scenes of leading fitness brands like Alani Nu, Gymshark, and Rad Power Bikes. * **Co-hosting events:** Recently, Gymshark ambassador Anna Archer has been co-hosting a run club with Gymshark, coined \u201cAnna On The Run.\u201d Through events such as this one, Gymshark is able to leverage Anna\u2019s devoted fanbase to engage and align the brand with the wider fitness community, taki",
+        "type": "brand_deal",
+        "category": "fitness",
+        "url": "https://www.aspire.io/blog/fitness-brands-influencer-marketing",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 16
+      },
+      "brand_assessment": {
+        "brand_fit_score": 45,
+        "pillar_match": "gym_warrior",
+        "archetype_alignment": "Moderate",
+        "value_alignment": [
+          "Discipline over motivation",
+          "Actions over words"
+        ],
+        "content_suggestion": "Create a raw gym footage video with a voiceover about the discipline of solo training, ending with a CTA to reflect on personal growth.",
+        "risk_flags": [
+          "Potential brand dilution by associating with mainstream fitness brands"
+        ],
+        "auto_verdict": "needs_review",
+        "reasoning": "While the opportunity aligns with Soren's focus on fitness and discipline, the mainstream nature of the brands involved may dilute the 'lone wolf' and 'dark warrior' identity, requiring careful consideration."
+      },
+      "status": "assessed",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T15:11:28.552534-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "assessed",
+          "at": "2026-02-20T15:11:28.552534-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771622224_a0cb",
+      "opportunity_id": "91d0ac8f5fbe5c0a",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-20T16:17:04.945346-05:00",
+      "opportunity": {
+        "title": "Become an Ambassador - Warrior",
+        "description": "## Item added to your cart. BRAND NEW APP - DOWNLOAD TODAY. # Become an Ambassador. ##### JOIN OUR AMBASSADOR PROGRAMME. Our ambassador programme is a fantastic way to earn money through your digital platform, including website blog or social media channel. By joining our network of ambassadors, you will have the opportunity to earn great commission and gain access to some of our exclusive offers ",
+        "type": "brand_deal",
+        "category": "core",
+        "url": "https://teamwarrior.com/pages/become-an-ambassador?srsltid=AfmBOoraPJJRArlC42JBZoPrW0IVV1tq7VruiN1WN7ypIzOBwu6J-hiz",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 22
+      },
+      "brand_assessment": {
+        "brand_fit_score": 35,
+        "pillar_match": "none",
+        "archetype_alignment": "Weak",
+        "value_alignment": [],
+        "content_suggestion": "",
+        "risk_flags": [
+          "brand dilution",
+          "misalignment with lone wolf image"
+        ],
+        "auto_verdict": "auto_rejected",
+        "reasoning": "The ambassador program opportunity does not align with Soren's lone wolf and dark warrior archetype, nor does it resonate with his core values of discipline, solitude, and legacy. The collaborative nature of an ambassador program conflicts with Soren's brand identity."
+      },
+      "status": "rejected",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-20T16:17:04.945346-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "rejected",
+          "at": "2026-02-20T16:17:04.945346-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    }
+  ],
+  "count": 40,
+  "updated": "2026-02-20T16:17:07.724973-05:00"
+}

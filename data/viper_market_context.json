@@ -1,465 +1,92 @@
 {
-  "0xcc50462aed8b6f537847a1314a651c83f91be2786280a2785b65895972c40484": [
+  "0x40af6693f340def565890a43abf9a8f758ac6b300ecd5946484a8c2320919c98": [
     {
-      "headline": "Daily General Discussion February 18, 2026 : r/ethereum - Reddit",
-      "summary": "Peter Thiel's Founders Fund has fully exited its ETHZilla stake, selling down from ~7.5% to zero. ETHZilla pivoted to an Ethereum-heavy treasury",
+      "headline": "2026 Super Bowl Odds: Seahawks Favored Over Patriots - FOX Sports",
+      "summary": "O/U: 45.5. The Patriots were Super-Bowl favorites \u2026 for just a few hours. After New England defeated the Broncos in Denver in the AFC",
       "source": "tavily",
-      "url": "https://www.reddit.com/r/ethereum/comments/1r7v1qw/daily_general_discussion_february_18_2026/",
-      "sentiment": -1.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771418062.243221
-    },
-    {
-      "headline": "Ethereum price prediction 2026\u20132030 | Future Forecast - Capital.com",
-      "summary": "Galaxy's research team states, in its crypto predictions report, that Ether is expected to trade above $5,500 at some point in 2025, framing",
-      "source": "tavily",
-      "url": "https://capital.com/en-int/market-updates/eth-stock-forecast-13-02-2026",
+      "url": "https://www.foxsports.com/stories/nfl/super-bowl-lx-2026-odds",
       "sentiment": 0.0,
       "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771418062.2434208
+      "relevance": 0.667,
+      "match_type": "entity",
+      "timestamp": 1771555400.021653
     },
     {
-      "headline": "What does the price of Ethereum hold for February 2026? - Binance",
-      "summary": "The price of Ethereum approaches February 2026 at a decisive crossroads. Indeed, after losing nearly 7% in January, ETH finishes the month",
+      "headline": "UFC Fight Night: Strickland vs. Hernandez Betting and Picks Discussion",
+      "summary": "UFC Fight Night: Strickland vs. Hernandez Betting Predictions and Best Picks Discussion\n\n* **Date/Time:**\u00a0Saturday 02.21.2026 at 05:00 PM ET\n* **U.S. Broadcast:**\u00a0Paramount+\n* **Promotion:**\u00a0[Ultimate Fighting Championship](https://www.tapology.com/fightcenter/promotions/1-ultimate-fighting-champion",
+      "source": "reddit/r/sportsbook",
+      "url": "https://reddit.com/r/sportsbook/comments/1r86nw7/ufc_fight_night_strickland_vs_hernandez_betting/",
+      "sentiment": 0.2,
+      "confidence": 0.509,
+      "relevance": 0.667,
+      "match_type": "entity",
+      "timestamp": 1771623685.787215
+    },
+    {
+      "headline": "Grizzlies vs Heat Odds & Live Scores - February 21, 2026",
+      "summary": "Grizzlies. Heat are 2-3 in their last 5 games. Heat are 3-2 in their last 5 games against the spread; Heat are 18-10 in their road games against the spread",
       "source": "tavily",
-      "url": "https://www.binance.com/en/square/post/35793906416409",
+      "url": "https://www.actionnetwork.com/nba-game/memphis-grizzlies-miami-heat/275400",
       "sentiment": 0.0,
       "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771418062.243499
+      "relevance": 0.333,
+      "match_type": "entity",
+      "timestamp": 1771548802.185034
     },
     {
-      "headline": "Gareth Soloway Shares What's Next for Bitcoin, Ethereum, XRP ...",
-      "summary": "... cryptosrus, coin bureau, altcoin news, bitcoin today, markets, investing ... Politics Chat, February 17, 2026. Heather Cox Richardson. New.",
+      "headline": "Nuggets vs Grizzlies Predictions and Best Bets - YouTube",
+      "summary": "the current odds. #nbapredictions #nbafreepicks #nbapicks Get every ... Grizzlies \u2014 February 11, 2026 Memphis Grizzlies @ Denver",
       "source": "tavily",
-      "url": "https://www.youtube.com/watch?v=Lm-H37evXF8",
+      "url": "https://www.youtube.com/watch?v=8htM-YF0H1E",
       "sentiment": 0.0,
       "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771418062.243573
+      "relevance": 0.333,
+      "match_type": "entity",
+      "timestamp": 1771548802.185111
     },
     {
-      "headline": "Prediction: 2026 Will Be the Year of Ethereum (ETH)",
-      "summary": "Key Points \u00b7 A change in market sentiment \u00b7 Growth in DeFi \u00b7 New crypto market legislation on the way \u00b7 Can Ethereum reclaim the $5,000 price level?",
+      "headline": "Oakland Golden Grizzlies vs. IU Indy Jaguars Odds, Stats",
+      "summary": "Golden Grizzlies vs. Jaguars odds, stats and matchup insights for the February 25, 2026 game. Get the latest betting lines, trends,",
       "source": "tavily",
-      "url": "https://www.theglobeandmail.com/investing/markets/stocks/BMNR/pressreleases/276443/prediction-2026-will-be-the-year-of-ethereum-eth/",
+      "url": "https://news.sportsinteraction.com/ncaab/matchup/golden-grizzlies-vs-jaguars-odds-022526-209089",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 0.333,
+      "match_type": "entity",
+      "timestamp": 1771548802.185232
+    },
+    {
+      "headline": "Memphis vs. South Florida prediction, odds, line, time - CBS Sports",
+      "summary": "Memphis vs. South Florida odds, prediction, time: 2026 college basketball picks for Feb. 19 from proven model ; Memphis vs. South Florida spread:.",
+      "source": "tavily",
+      "url": "https://www.cbssports.com/college-basketball/news/memphis-south-florida-odds-prediction-time-2026-college-basketball-picks-february-19/",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 0.333,
+      "match_type": "entity",
+      "timestamp": 1771548802.185292
+    },
+    {
+      "headline": "Utah Jazz vs Memphis Grizzlies Prediction, 2/20/2026 Preview and ...",
+      "summary": "The Utah Jazz (18-38) are traveling to FedExForum on Friday where they will play the Memphis Grizzlies (20-33). nba picks Brice Sensabaugh Utah",
+      "source": "tavily",
+      "url": "https://www.docsports.com/free-picks/nba/2026/utah-jazz-vs-memphis-grizzlies-prediction-2-20-2026-preview-and-pick.html",
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "relevance": 0.333,
+      "match_type": "entity",
+      "timestamp": 1771548802.185354
+    },
+    {
+      "headline": "Timberwolves vs. Grizzlies prediction, odds, pick \u2013 2/2/2026",
+      "summary": "The Minnesota Timberwolves are currently fifth in the West following their most recent 131-114 win over the Memphis Grizzlies.",
+      "source": "tavily",
+      "url": "https://sports.yahoo.com/articles/timberwolves-vs-grizzlies-prediction-odds-201750075.html",
       "sentiment": 1.0,
       "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771418062.243659
-    },
-    {
-      "headline": "Prediction: 2026 Will Be the Year of Ethereum (ETH) | The Motley Fool",
-      "summary": "Ethereum could more than double in price in 2026 to reclaim its all-time high near $5,000. It's been a rough start to the year for Ethereum (ETH",
-      "source": "tavily",
-      "url": "https://www.fool.com/investing/2026/02/18/prediction-2026-will-be-the-year-of-ethereum-eth/",
-      "sentiment": 1.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771418062.2437382
-    },
-    {
-      "headline": "Tom Lee Calls 2026 a 'Defining Year' for Ethereum - Yahoo Finance",
-      "summary": "Tom Lee Calls 2026 a 'Defining Year' for Ethereum: Here's What That Means. Something went wrong. Skip to main content. News \u00b7 Today's news \u00b7 US",
-      "source": "tavily",
-      "url": "https://finance.yahoo.com/news/tom-lee-calls-2026-defining-193500840.html",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771418062.2438242
-    },
-    {
-      "headline": "Daily General Discussion February 17, 2026 : r/ethereum - Reddit",
-      "summary": "QQQ down 1% today. ETH price action in comparison is great! Now really is the time to accumulate.",
-      "source": "tavily",
-      "url": "https://www.reddit.com/r/ethereum/comments/1r6y4bq/daily_general_discussion_february_17_2026/",
-      "sentiment": -1.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771426927.607771
-    }
-  ],
-  "0xe33720074e2a51b89fdaa0c67e8d4a66d795a584327d92bdd366ea4795f5c966": [
-    {
-      "headline": "Suns vs. Spurs (Mar 19, 2026) Live Score - ESPN",
-      "summary": "The 76ers plan to sign two-way forward Jabari Walker to a new two-year contract and veteran guard Cam Payne for the remainder of the season,",
-      "source": "tavily",
-      "url": "https://www.espn.com/nba/game/_/gameId/401810868/suns-spurs",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771428142.90005
-    },
-    {
-      "headline": "Spurs vs. Suns Prediction, Odds, Picks - Feb. 19 - FOX Sports",
-      "summary": "The San Antonio Spurs (38-16) will attempt to extend a six-game winning stretch when they host the Phoenix Suns (32-23) on February 19, 2026",
-      "source": "tavily",
-      "url": "https://www.foxsports.com/articles/nba/spurs-vs-suns-prediction-odds-picks-feb-19",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771428142.9002728
-    },
-    {
-      "headline": "Spurs vs. Suns Prediction, Odds, Picks, Best Bets for Feb. 19",
-      "summary": "Spurs vs. Suns Game Info. Date: Thursday, February 19, 2026; Time: 8:30 p.m. ET ; Spurs vs. Suns Betting Trends. The Spurs are 28-22-4 against",
-      "source": "tavily",
-      "url": "https://www.fanduel.com/research/spurs-vs-suns-prediction-nba-odds-spread-best-bets-for-2-19-2026",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771428142.900465
-    },
-    {
-      "headline": "Phoenix Suns Rumors, Trades, Free Agency - Valley of the Suns",
-      "summary": "Free Agency ; Suns sign perfect forward while rest of league is watching All-Star Weekend. Luke Duffy \u00b7 Feb 14, 2026 ; Suns are winning because they hit the",
-      "source": "tavily",
-      "url": "https://valleyofthesuns.com/",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771428142.900664
-    },
-    {
-      "headline": "Air Alamo: San Antonio Spurs News, Rumors, Draft, Free Agency ...",
-      "summary": "Bismack Biyombo's days are numbered after Spurs' latest signing \u00b7 The Spurs are drawing closer to a complete NBA power rankings takeover \u00b7 Unsung Spurs hero has",
-      "source": "tavily",
-      "url": "https://airalamo.com/",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771428142.9008682
-    },
-    {
-      "headline": "San Antonio faces Phoenix, seeks 7th straight victory | ktvb.com",
-      "summary": "The Suns are shooting 46.0% from the field, 0.4% higher than the 45.6% the Spurs' opponents have shot this season. The teams meet for the third",
-      "source": "tavily",
-      "url": "https://www.ktvb.com/article/syndication/associatedpress/san-antonio-faces-phoenix-seeks-7th-straight-victory/616-46b969f1-34ae-4e47-816d-f3d076375d61",
-      "sentiment": 1.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771428142.901074
-    },
-    {
-      "headline": "Why Jeremy Sochan is not the answer for the Suns frontcourt",
-      "summary": "The San Antonio Spurs have released Jeremy Sochan. They are allowing him an opportunity to test the market and find a home. I am here to tell",
-      "source": "tavily",
-      "url": "https://www.brightsideofthesun.com/suns-roster/98617/jeremy-sochan-released-spurs-free-agency-suns-rumors-roster-fit-ryan-dunn-stats-analysis",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771428142.901264
-    },
-    {
-      "headline": "Spurs Sign 13-Year NBA Center to 10-Day Contract - Yahoo Sports",
-      "summary": "The San Antonio Spurs added an extra body before NBA action returns following the All-Star break. San Antonio already has four centers on",
-      "source": "tavily",
-      "url": "https://sports.yahoo.com/articles/spurs-sign-13-nba-center-043742658.html",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771428142.901454
-    }
-  ],
-  "0x2cdb4368cf40772af15618288c21671af59d0f9cdaceb34e532780de02177355": [
-    {
-      "headline": "Czechia leads 2-1 over Canada in first period of win-or-go-home game",
-      "summary": "The Latest\u200b\u200b Czechia leads Canada 2-1 in a quarterfinal, win-or-go-home men's hockey game. Canada's men's curling team cruised to an 8-3 victory",
-      "source": "tavily",
-      "url": "https://www.cbc.ca/sports/olympics/winter/livestory/olympics-2026-milano-cortina-winter-olympic-games-day-12-team-canada-live-updates-9.7094485",
-      "sentiment": 1.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771432852.32782
-    },
-    {
-      "headline": "Canada vs Czechia Olympics Quarterfinals Live Updates, Score and ...",
-      "summary": "Canada and Czechia opened their 2026 Winter Olympics with a preliminary round game last Thursday, Feb. 12. Canada won handily, 5-0, with Macklin",
-      "source": "tavily",
-      "url": "https://www.flohockey.tv/articles/15450552-canada-vs-czechia-olympics-quarterfinals-live-updates-score-and-highlights",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771432852.328036
-    },
-    {
-      "headline": "Canada faces Czechia in men's hockey quarters; 'Beat-up' McMorris ...",
-      "summary": "Winter Olympics 2026 live updates: Canada faces Czechia in men's hockey quarters; 'Beat-up' McMorris finishes 8th in slopestyle. Sarault",
-      "source": "tavily",
-      "url": "https://www.theglobeandmail.com/sports/olympics/article-winter-olympics-2026-canada-vs-czechia-mens-hockey-quarterfinal-score/",
-      "sentiment": 1.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771432852.328209
-    },
-    {
-      "headline": "Canada vs Czechia Projected Lines For Olympic Hockey Today",
-      "summary": "See the official projected lines for the Canada vs Czechia quarterfinals game on Wednesday, Feb. 18 at the 2026 Winter Olympics in Milan.",
-      "source": "tavily",
-      "url": "https://www.flohockey.tv/articles/15450614-canada-vs-czechia-projected-lines-for-olympic-hockey-today-marchands-back",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771432852.328371
-    },
-    {
-      "headline": "What happens if Team Canada loses, wins or ties vs Czechia today ...",
-      "summary": "Canada and Czechia collide in a quarterfinal at the 2026 Winter Olympics after contrasting paths \u2014 dominant Canadians and gritty Czech underdogs",
-      "source": "tavily",
-      "url": "https://bolavip.com/en/nhl/what-happens-if-team-canada-loses-wins-or-ties-vs-czechia-today-in-2026-winter-olympics-quarterfinals",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771432852.3285928
-    },
-    {
-      "headline": "Canada vs. Czechia box score: Full stats from 2026 Olympic men's ...",
-      "summary": "Czechian star David Pastrnak said ahead of Wednesday's quarterfinal matchup that Canada \"might be the best team ever,\" indicating his team knows",
-      "source": "tavily",
-      "url": "https://www.sportingnews.com/us/nhl/news/canada-czechia-box-score-stats-2026-olympic-hockey/489ca339c1e11264b592473e",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771432852.3287628
-    },
-    {
-      "headline": "2026 Winter Olympics Day 12 recap: Team Canada's men's hockey ...",
-      "summary": "2026 Winter Olympics Day 12 recap: Team Canada's men's hockey faces Czechia in quarterfinals, as short-track stars push for the podium again.",
-      "source": "tavily",
-      "url": "https://ca.news.yahoo.com/2026-winter-olympics-day-12-recap-team-canadas-mens-hockey-faces-czechia-in-quarterfinals-as-short-track-stars-push-for-the-podium-again-122206655.html",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771432852.328943
-    },
-    {
-      "headline": "Necas powers Czechia into Olympic quarterfinal rematch with Canada",
-      "summary": "MILAN \u2013 Martin Necas brought his game and his confidence to the Olympic Winter Games Milano Cortina 2026.",
-      "source": "tavily",
-      "url": "https://www.nhl.com/news/martin-necas-powers-team-czechia-into-olympic-quarterfinals",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771432852.3291311
-    }
-  ],
-  "0xf972542880343e9bb9fc75aec332b34d1becf0e0b8a7aee37b3c6f43f694ce7a": [
-    {
-      "headline": "Bitcoin Forecast Lowered, Bitcoin Price Diverging From Gold",
-      "summary": "Bitcoin Forecast Lowered, Bitcoin Price Diverging From Gold | Bloomberg Crypto 2/17/2026 ... 02/18/2026. Bloomberg Television. New. 1.1K views.",
-      "source": "tavily",
-      "url": "https://www.youtube.com/watch?v=Cnrbgx8P6_M",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771416790.103668
-    },
-    {
-      "headline": "What Triggered Bitcoin's Major Selloff in February 2026? | VanEck",
-      "summary": "Bitcoin's February selloff reflects orderly deleveraging rather than capitulation. Despite a roughly 20% YTD decline, leverage has",
-      "source": "tavily",
-      "url": "https://www.vaneck.com/us/en/blogs/digital-assets/matthew-sigel-what-triggered-bitcoins-major-selloff-in-february-2026/",
-      "sentiment": -1.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771416790.104029
-    },
-    {
-      "headline": "Prediction: Bitcoin Will Hit $150,000 By the End of 2026",
-      "summary": "Bitcoin has the potential to double in value this year. Here's why.",
-      "source": "tavily",
-      "url": "https://finance.yahoo.com/news/prediction-bitcoin-hit-150-000-110500127.html",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771416790.104175
-    },
-    {
-      "headline": "BTC price news: bitcoin claws back to $70,000 after $8.7 ... - CoinDesk",
-      "summary": "Bitcoin's price recovered above $70,000 after a drop, driven by cooler-than-expected U.S. inflation data and increased risk appetite.",
-      "source": "tavily",
-      "url": "https://www.coindesk.com/markets/2026/02/14/bitcoin-claws-back-to-usd70-000-on-cooling-inflation-after-usd8-7-billion-wipeout",
-      "sentiment": -1.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771428141.1881568
-    },
-    {
-      "headline": "No, but seriously: What's going on with bitcoin? | CNN Business",
-      "summary": "Bitcoin is acting weird. The world's most famous cryptocurrency has tumbled 44% from its October peak, falling below $70000 Thursday for the",
-      "source": "tavily",
-      "url": "https://www.cnn.com/2026/02/05/investing/bitcoin-price",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771428141.1883252
-    },
-    {
-      "headline": "Bitcoin on pace for fourth negative week in a row, here's ... - YouTube",
-      "summary": "On today's episode of CNBC Crypto World, experts weigh in on recent crypto market pressure as bitcoin heads for its fourth negative week in",
-      "source": "tavily",
-      "url": "https://www.youtube.com/watch?v=r5YUljbPCfk",
-      "sentiment": -1.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771428141.189257
-    },
-    {
-      "headline": "My Trading Game Plan | February 18, 2026 - YouTube",
-      "summary": "... crypto and will walk you through everything you need to be a ... Macro Cycle 2026\u2014Bitcoin, Gold, Stocks, Commodities, Bonds: Mike",
-      "source": "tavily",
-      "url": "https://www.youtube.com/watch?v=N_N6ziCzXe0",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771429069.961658
-    },
-    {
-      "headline": "$10,000 in XRP or Bitcoin for 2026? 3 AI Models Pick the Winner",
-      "summary": "ChatGPT favors XRP for a $10,000 investment through 2026. The AI model projects the XRP price at $2.50 to $3.50, implying 56% to 119% upside",
-      "source": "tavily",
-      "url": "https://247wallst.com/investing/2026/02/18/10000-in-xrp-or-bitcoin-for-2026-3-ai-models-pick-the-winner/",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771429069.962017
-    }
-  ],
-  "0xfe0dd8d584ba331c35833b315f62607c90213959f3193d32737aff8bc7059a97": [
-    {
-      "headline": "Bitcoin bounce fades as it hovers around $66,000 - CNBC",
-      "summary": "Bitcoin has remained volatile, recovering from its early February low to $70,000 before falling back down under that mark.",
-      "source": "tavily",
-      "url": "https://www.cnbc.com/2026/02/11/bitcoin-price-today-crypto-volatility.html",
-      "sentiment": -1.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771415826.063714
-    },
-    {
-      "headline": "Bitcoin stuck in tight range; WLFI rallies ahead of crypto forum",
-      "summary": "Bitcoin is up 0.9% on Wednesday to around $68,000, holding between $65,100 and $72,000 since Feb. 6 as volatility and funding rates cool.",
-      "source": "tavily",
-      "url": "https://www.coindesk.com/markets/2026/02/18/bitcoin-holds-near-usd68-000-as-volatility-cools-wlfi-jumps-ahead-of-mar-a-lago-forum",
-      "sentiment": 1.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771415826.063785
-    },
-    {
-      "headline": "$695K bitcoin? $21K ether? Here's where 21 experts think crypto is ...",
-      "summary": "\"Bitcoin clearing $200,000 in 2026 and moving toward $1 million ... This story was originally published February 17, 2026 at 10:00 AM.",
-      "source": "tavily",
-      "url": "https://www.charlotteobserver.com/news/business/article314741042.html",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771415826.063848
-    },
-    {
-      "headline": "Daily Crypto Discussion - February 18, 2026 (GMT+0) - Reddit",
-      "summary": "The leading community for cryptocurrency news, discussion, and analysis. 904K Weekly visitors 14K Weekly contributions.",
-      "source": "tavily",
-      "url": "https://www.reddit.com/r/CryptoCurrency/comments/1r7om6p/daily_crypto_discussion_february_18_2026_gmt0/",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771415826.0639338
-    },
-    {
-      "headline": "Prediction: Bitcoin Will Hit $150000 By the End of 2026",
-      "summary": "With Bitcoin (BTC 0.07%) currently trading for less than $70,000, it might seem inconceivable that it could more than double in value to hit",
-      "source": "tavily",
-      "url": "https://www.fool.com/investing/2026/02/18/prediction-bitcoin-will-hit-150000-by-the-end-of-2/",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771415826.063972
-    },
-    {
-      "headline": "Stocks, Metals, Bitcoin - Rolling Down The Risk Curve - YouTube",
-      "summary": "Crypto Banter. New. 1.8K views \u00b7 35:55 \u00b7 Go to channel David Lin ... Politics Chat, February 17, 2026. Heather Cox Richardson. New. 210K",
-      "source": "tavily",
-      "url": "https://www.youtube.com/watch?v=X_rFEH24Ebg",
-      "sentiment": -1.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771415826.0640142
-    },
-    {
-      "headline": "Despite Bitcoin's Plunge, These Crypto IPOs Are Seen on Deck for ...",
-      "summary": "Despite Bitcoin's Plunge, These Crypto IPOs Are Seen on Deck for 2026. Investors are nursing huge losses on 2025 crypto IPOs, but stablecoin",
-      "source": "tavily",
-      "url": "https://global.morningstar.com/en-eu/stocks/despite-bitcoins-plunge-these-crypto-ipos-are-seen-deck-2026",
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771415826.0640519
-    },
-    {
-      "headline": "Will Bitcoin drop again? Cryptocurrencies try to stabilize after the sell ...",
-      "summary": "Cryptocurrencies are trying to \u201cstabilize\u201d after the recent, sharp sell-off, while Bitcoin continues to consolidate between $65,000 and",
-      "source": "tavily",
-      "url": "https://www.xtb.com/int/market-analysis/news-and-research/crypto-news-will-bitcoin-drop-again-cryptocurrencies-try-to-stabilize-after-the-sell-off",
-      "sentiment": -1.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771415826.064131
-    }
-  ],
-  "0x6900b9aeaa078af6deafe53d1b7a08f28fbedd3f4dee887095ec7f938956f4c9": [
-    {
-      "headline": "Bitcoin Won Over Wall Street and Now It's Paying the Price",
-      "summary": "The Coinbase premium \u2014 negative for most of 2026 \u2014 suggests that demand has yet to materialize. Coinbase Premium Turns Deeply Negative Since",
-      "source": "tavily",
-      "url": "https://www.bloomberg.com/news/articles/2026-02-18/bitcoin-won-over-wall-street-and-now-it-s-paying-the-price",
-      "sentiment": -1.0,
-      "confidence": 0.8,
-      "relevance": 1.0,
-      "match_type": "pre_linked",
-      "timestamp": 1771430958.4239302
+      "relevance": 0.333,
+      "match_type": "entity",
+      "timestamp": 1771548802.185421
     }
   ]
 }

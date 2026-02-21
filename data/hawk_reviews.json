@@ -1,15 +1,15 @@
 {
-  "total_reviewed": 8,
-  "wins": 2,
-  "losses": 6,
-  "win_rate": 25.0,
-  "total_pnl": -37.13,
+  "total_reviewed": 13,
+  "wins": 4,
+  "losses": 9,
+  "win_rate": 30.8,
+  "total_pnl": -43.01,
   "win_rate_by_category": {
     "sports": {
       "wins": 2,
-      "losses": 2,
-      "pnl": 22.87,
-      "win_rate": 50.0
+      "losses": 3,
+      "pnl": -2.13,
+      "win_rate": 40.0
     },
     "other": {
       "wins": 0,
@@ -18,76 +18,84 @@
       "win_rate": 0.0
     },
     "crypto_event": {
-      "wins": 0,
-      "losses": 2,
-      "pnl": -30.0,
-      "win_rate": 0.0
+      "wins": 1,
+      "losses": 4,
+      "pnl": -44.02,
+      "win_rate": 20.0
+    },
+    "politics": {
+      "wins": 1,
+      "losses": 0,
+      "pnl": 33.14,
+      "win_rate": 100.0
     }
   },
   "win_rate_by_risk_level": {
     "low (1-3)": {
-      "wins": 1,
-      "losses": 4,
-      "pnl": -26.61,
-      "win_rate": 20.0
+      "wins": 3,
+      "losses": 6,
+      "pnl": -7.49,
+      "win_rate": 33.3
     },
     "medium (4-6)": {
       "wins": 1,
-      "losses": 2,
-      "pnl": -10.52,
-      "win_rate": 33.3
+      "losses": 3,
+      "pnl": -35.52,
+      "win_rate": 25.0
     }
   },
   "win_rate_by_edge_range": {
     "20%+": {
-      "wins": 2,
-      "losses": 6,
-      "pnl": -37.13,
-      "win_rate": 25.0
+      "wins": 4,
+      "losses": 9,
+      "pnl": -43.01,
+      "win_rate": 30.8
     }
   },
   "direction_stats": {
     "yes": {
       "wins": 2,
-      "losses": 2
+      "losses": 3
     },
     "no": {
-      "wins": 0,
-      "losses": 4
+      "wins": 2,
+      "losses": 6
     }
   },
-  "calibration_score": 0.259,
+  "calibration_score": 0.371,
   "losing_patterns": {
-    "avg_edge_on_losses": 0.487,
+    "avg_edge_on_losses": 0.439,
     "top_losing_categories": [
       {
+        "item": "crypto_event",
+        "count": 4
+      },
+      {
         "item": "sports",
-        "count": 2
+        "count": 3
       },
       {
         "item": "other",
-        "count": 2
-      },
-      {
-        "item": "crypto_event",
         "count": 2
       }
     ],
     "direction_bias": [
       {
         "item": "no",
-        "count": 4
+        "count": 6
       },
       {
         "item": "yes",
-        "count": 2
+        "count": 3
       }
     ]
   },
   "recommendations": [
-    "Win rate below 50% \u2014 consider raising min_edge threshold"
+    "Win rate below 50% \u2014 consider raising min_edge threshold",
+    "GPT-4o calibration poor (>0.35 avg error) \u2014 consider using news enrichment more aggressively",
+    "Category 'crypto_event' has <30% win rate \u2014 consider excluding"
   ],
-  "reviewed_at": "2026-02-18T11:27:59.011982-05:00",
+  "reviewed_at": "2026-02-20T16:51:21.924847-05:00",
   "trade_reviews": [
     {
       "question": "Spread: Wisconsin Badgers (-1.5)",
@@ -204,6 +212,25 @@
       "time_str": "2026-02-17 11:14PM"
     },
     {
+      "question": "Will the price of Ethereum be between $1,900 and $2,000 on February 18?",
+      "category": "crypto_event",
+      "direction": "no",
+      "outcome": "lost",
+      "won": false,
+      "pnl": -15.0,
+      "edge": 0.345,
+      "estimated_prob": 0.15,
+      "entry_price": 0.505,
+      "risk_score": 3,
+      "verdict": "Wrong call \u2014 bet NO, lost",
+      "direction_correct": false,
+      "prob_calibration": "decent",
+      "prob_error": 0.15,
+      "reasoning": "Ethereum's price is highly volatile, and predicting its exact price range on a specific future date is challenging. Historically, Ethereum's price can fluctuate significantly within short periods due ",
+      "edge_source": "base_rate",
+      "time_str": "2026-02-17 11:14PM"
+    },
+    {
       "question": "Will the price of XRP be between $1.40 and $1.50 on February 18?",
       "category": "other",
       "direction": "no",
@@ -240,6 +267,82 @@
       "reasoning": "Bitcoin's price is highly volatile, and the likelihood of it landing within a narrow $2,000 range on a specific day is low. Historically, Bitcoin's daily price movements often exceed this range, makin",
       "edge_source": "base_rate",
       "time_str": "2026-02-17 11:14PM"
+    },
+    {
+      "question": "Will the price of Ethereum be between $1,900 and $2,000 on February 18?",
+      "category": "crypto_event",
+      "direction": "no",
+      "outcome": "lost",
+      "won": false,
+      "pnl": -15.0,
+      "edge": 0.345,
+      "estimated_prob": 0.15,
+      "entry_price": 0.505,
+      "risk_score": 3,
+      "verdict": "Wrong call \u2014 bet NO, lost",
+      "direction_correct": false,
+      "prob_calibration": "decent",
+      "prob_error": 0.15,
+      "reasoning": "Ethereum's price is highly volatile and influenced by numerous factors, including market sentiment, regulatory news, and macroeconomic conditions. The narrow range of $1,900 to $2,000 is a small windo",
+      "edge_source": "base_rate",
+      "time_str": "2026-02-17 11:14PM"
+    },
+    {
+      "question": "Suns vs. Spurs",
+      "category": "sports",
+      "direction": "yes",
+      "outcome": "lost",
+      "won": false,
+      "pnl": -25.0,
+      "edge": 0.335,
+      "estimated_prob": 0.6,
+      "entry_price": 0.265,
+      "risk_score": 5,
+      "verdict": "Wrong call \u2014 bet YES, lost",
+      "direction_correct": false,
+      "prob_calibration": "poor",
+      "prob_error": 0.6,
+      "reasoning": "The San Antonio Spurs have a strong record of 38-16 and are on a six-game winning streak, which suggests they are in good form. The Phoenix Suns, with a record of 32-23, are also competitive but appea",
+      "edge_source": "base_rate",
+      "time_str": "2026-02-18 10:54AM"
+    },
+    {
+      "question": "Will the price of Bitcoin be between $68,000 and $70,000 on February 19?",
+      "category": "crypto_event",
+      "direction": "no",
+      "outcome": "won",
+      "won": true,
+      "pnl": 15.98,
+      "edge": 0.29,
+      "estimated_prob": 0.1,
+      "entry_price": 0.61,
+      "risk_score": 3,
+      "verdict": "Correct call",
+      "direction_correct": true,
+      "prob_calibration": "poor",
+      "prob_error": 0.9,
+      "reasoning": "Bitcoin's price is highly volatile, and while it recently hovered around $66,000, it briefly touched $70,000. However, the probability of it stabilizing within the narrow range of $68,000 to $70,000 i",
+      "edge_source": "base_rate",
+      "time_str": "2026-02-18 10:54AM"
+    },
+    {
+      "question": "Will Trump\u2019s approval rating be between 41.0 and 41.4 on February 20, 2026?",
+      "category": "politics",
+      "direction": "no",
+      "outcome": "won",
+      "won": true,
+      "pnl": 33.14,
+      "edge": 0.52,
+      "estimated_prob": 0.05,
+      "entry_price": 0.43,
+      "risk_score": 3,
+      "verdict": "Correct call",
+      "direction_correct": true,
+      "prob_calibration": "poor",
+      "prob_error": 0.95,
+      "reasoning": "Trump's approval rating has recently dipped by 4 points, suggesting a downward trend. Given the narrow range of 41.0 to 41.4, it's statistically unlikely for the rating to stabilize precisely within t",
+      "edge_source": "recency",
+      "time_str": "2026-02-20 01:35AM"
     }
   ]
 }

@@ -1,68 +1,68 @@
 {
   "walk_forward": {
-    "train_win_rate": 69.0,
-    "test_win_rate": 58.7,
-    "overfit_drop": 10.3,
+    "train_win_rate": 66.0,
+    "test_win_rate": 44.2,
+    "overfit_drop": 21.8,
     "n_folds": 5,
     "fold_results": [
       {
         "fold": 1,
-        "train_size": 24,
-        "test_size": 24,
-        "train_wr": 88.9,
-        "test_wr": 55.6,
-        "train_signals": 9,
-        "test_signals": 18,
-        "train_score": 85.4,
-        "test_score": 55.5,
+        "train_size": 23,
+        "test_size": 23,
+        "train_wr": 83.3,
+        "test_wr": 52.4,
+        "train_signals": 12,
+        "test_signals": 21,
+        "train_score": 83.9,
+        "test_score": 52.9,
         "best_params_label": "grid_best"
       },
       {
         "fold": 2,
-        "train_size": 48,
-        "test_size": 24,
-        "train_wr": 66.7,
-        "test_wr": 54.5,
-        "train_signals": 27,
-        "test_signals": 11,
-        "train_score": 66.2,
-        "test_score": 56.9,
+        "train_size": 46,
+        "test_size": 23,
+        "train_wr": 61.8,
+        "test_wr": 40.9,
+        "train_signals": 34,
+        "test_signals": 22,
+        "train_score": 62.4,
+        "test_score": 46.0,
         "best_params_label": "grid_best"
       },
       {
         "fold": 3,
-        "train_size": 72,
-        "test_size": 24,
+        "train_size": 69,
+        "test_size": 23,
         "train_wr": 62.5,
-        "test_wr": 40.0,
+        "test_wr": 10.0,
         "train_signals": 40,
         "test_signals": 10,
-        "train_score": 63.1,
-        "test_score": 41.3,
+        "train_score": 63.2,
+        "test_score": 26.5,
         "best_params_label": "grid_best"
       },
       {
         "fold": 4,
-        "train_size": 96,
-        "test_size": 27,
-        "train_wr": 58.0,
-        "test_wr": 84.6,
-        "train_signals": 50,
-        "test_signals": 13,
-        "train_score": 59.2,
-        "test_score": 82.6,
+        "train_size": 92,
+        "test_size": 26,
+        "train_wr": 56.3,
+        "test_wr": 73.7,
+        "train_signals": 71,
+        "test_signals": 19,
+        "train_score": 58.7,
+        "test_score": 79.3,
         "best_params_label": "grid_best"
       }
     ],
-    "elapsed_seconds": 0.08
+    "elapsed_seconds": 0.05
   },
   "confidence_interval": {
-    "point_estimate": 60.6,
-    "ci_lower": 48.5,
-    "ci_upper": 72.7,
-    "margin_of_error": 12.1,
+    "point_estimate": 56.0,
+    "ci_lower": 46.0,
+    "ci_upper": 65.0,
+    "margin_of_error": 9.5,
     "ci_level": 0.95,
-    "n_trades": 66
+    "n_trades": 100
   },
-  "updated": "2026-02-18 06:33 AM ET"
+  "updated": "2026-02-20 07:42 PM ET"
 }

@@ -272,5 +272,151 @@
         "detail": "SOLANA: 1W-5L (17%). Consider reducing exposure or disabling this asset."
       }
     ]
+  },
+  {
+    "date": "2026-02-19",
+    "generated_at": "2026-02-19T15:35:49.350386-05:00",
+    "summary": {
+      "total_trades": 31,
+      "resolved": 23,
+      "pending": 2,
+      "stale": 6,
+      "wins": 16,
+      "losses": 7,
+      "win_rate": 69.6,
+      "pnl": 19.02,
+      "avg_edge": 16.13,
+      "avg_confidence": 0.6969
+    },
+    "by_asset": {
+      "bitcoin": {
+        "wins": 2,
+        "losses": 1,
+        "pnl": -0.8
+      },
+      "xrp": {
+        "wins": 9,
+        "losses": 6,
+        "pnl": -9.36
+      },
+      "solana": {
+        "wins": 5,
+        "losses": 0,
+        "pnl": 29.18
+      }
+    },
+    "by_timeframe": {
+      "4h": {
+        "wins": 4,
+        "losses": 0
+      },
+      "15m": {
+        "wins": 11,
+        "losses": 7
+      },
+      "1h": {
+        "wins": 1,
+        "losses": 0
+      }
+    },
+    "by_direction": {
+      "up": {
+        "wins": 4,
+        "losses": 2
+      },
+      "down": {
+        "wins": 12,
+        "losses": 5
+      }
+    },
+    "regime_distribution": {
+      "extreme_fear": 31
+    },
+    "strategy": {
+      "engine": "11-indicator ensemble + ConvictionEngine",
+      "conviction_scoring": "9-layer evidence (0-100)",
+      "safety_rails": "losing streak 0.75x, low WR 0.7x, extreme fear 0.90x, $50 daily loss cap",
+      "sizing": "conviction-based $25-$50",
+      "assets": [
+        "bitcoin",
+        "solana",
+        "ethereum",
+        "xrp"
+      ],
+      "timeframes": [
+        "4h",
+        "15m",
+        "1h"
+      ],
+      "regime": "extreme_fear"
+    },
+    "mistakes": [
+      {
+        "type": "technical",
+        "severity": "medium",
+        "title": "Dead Zone Trades Leaked Through",
+        "detail": "14 trades placed outside 8AM-11PM ET window.",
+        "trades": [
+          "0x905d115a86",
+          "0xfe59655036",
+          "0xf10f62ec1a"
+        ]
+      },
+      {
+        "type": "approach",
+        "severity": "high",
+        "title": "Losing Streak of 3",
+        "detail": "Hit a 3-trade losing streak. Safety rails should have reduced sizing or paused trading after 3 consecutive losses."
+      },
+      {
+        "type": "technical",
+        "severity": "medium",
+        "title": "6 Trades Marked Stale",
+        "detail": "6 trades couldn't be resolved (API timeout or market issue). Resolution logic may need improvement."
+      }
+    ]
+  },
+  {
+    "date": "2026-02-20",
+    "generated_at": "2026-02-20T16:48:15.499406-05:00",
+    "summary": {
+      "total_trades": 1,
+      "resolved": 0,
+      "pending": 1,
+      "stale": 0,
+      "wins": 0,
+      "losses": 0,
+      "win_rate": 0,
+      "pnl": 0.0,
+      "avg_edge": 0,
+      "avg_confidence": 0
+    },
+    "by_asset": {},
+    "by_timeframe": {},
+    "by_direction": {},
+    "regime_distribution": {
+      "extreme_fear": 1
+    },
+    "strategy": {
+      "engine": "11-indicator ensemble + ConvictionEngine",
+      "conviction_scoring": "9-layer evidence (0-100)",
+      "safety_rails": "losing streak 0.75x, low WR 0.7x, extreme fear 0.90x, $50 daily loss cap",
+      "sizing": "conviction-based $25-$50",
+      "assets": [
+        "ethereum"
+      ],
+      "timeframes": [
+        "15m"
+      ],
+      "regime": "extreme_fear"
+    },
+    "mistakes": [
+      {
+        "type": "info",
+        "severity": "low",
+        "title": "No Major Issues Detected",
+        "detail": "Clean trading day. All systems performed within expected parameters."
+      }
+    ]
   }
 ]

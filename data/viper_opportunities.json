@@ -1,4 +1,1325 @@
 {
-  "opportunities": [],
-  "updated": 1771453822.244064
+  "opportunities": [
+    {
+      "id": "d56d200fe479e29b",
+      "source": "reddit/r/politics",
+      "headline": "Megathread: Supreme Court strikes down President Donald Trump's Tariff Policy",
+      "summary": "The U.S. Supreme Court ruled Friday in [Learning Resources, Inc. v. Trump](https://www.supremecourt.gov/opinions/25pdf/24-1287_4gcj.pdf) that the International Emergency Economic Powers Act (IEEPA) \"does not authorize the President to impose tariffs.\"\n\nThe Roberts decision is joined by Justices Sotomayor, Kagan, Gorsuch, Barrett, and Jackson, with Justices Thomas, Kavanaugh, and Alito dissenting.\n",
+      "url": "https://reddit.com/r/politics/comments/1r9y3hw/megathread_supreme_court_strikes_down_president/",
+      "relevance_tags": [
+        "trump",
+        "president",
+        "supreme court",
+        "policy",
+        "tariff"
+      ],
+      "sentiment": -0.6,
+      "confidence": 0.8,
+      "timestamp": 1771634197.334947,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 26498,
+        "comments": 3853,
+        "sub": "politics"
+      },
+      "score": 95
+    },
+    {
+      "id": "5b97c7cf40b518da",
+      "source": "reddit/r/politics",
+      "headline": "Discussion Thread: President Trump Holds Press Conference Responding to Supreme Court Striking Down Most Tariffs",
+      "summary": "The news conference is scheduled to begin at 12:45 p.m. Eastern.\n\n**News and Analysis**\n\n- AP: [Supreme Court strikes down Trump\u2019s sweeping tariffs, upending central plank of economic agenda](https://apnews.com/article/supreme-court-tariffs-trump-0485fcda30a7310501123e4931dba3f9)\n\n- r/politics: [Megathread: Supreme Court strikes down President Donald Trump's Tariff Policy](https://www.reddit.com/r",
+      "url": "https://reddit.com/r/politics/comments/1ra19w6/discussion_thread_president_trump_holds_press/",
+      "relevance_tags": [
+        "trump",
+        "president",
+        "supreme court",
+        "policy",
+        "tariff"
+      ],
+      "sentiment": -0.7,
+      "confidence": 0.8,
+      "timestamp": 1771634206.4925,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 1025,
+        "comments": 1911,
+        "sub": "politics"
+      },
+      "score": 95
+    },
+    {
+      "id": "626c137d842418f1",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Supreme Court rules that Trump\u2019s sweeping emergency tariffs are illegal | CNN Politics",
+      "summary": "Score: 33395, Comments: 1498",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r9xu7b/supreme_court_rules_that_trumps_sweeping/",
+      "relevance_tags": [
+        "trump",
+        "supreme court",
+        "tariff"
+      ],
+      "sentiment": -0.7,
+      "confidence": 0.8,
+      "timestamp": 1771634364.628733,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 33395,
+        "comments": 1498,
+        "sub": "wallstreetbets"
+      },
+      "score": 86
+    },
+    {
+      "id": "398c79f2080b57f4",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Trump Announces New 10% Global Tariff",
+      "summary": "During his speech regarding the Supreme Court decision, a new 10% global tariff was announced. \n\n\"Today I will sign an order to impose a 10% global tariff under section 122, over and above our normal tariffs already being charged\"\n\nSection 232 and section 301 tariffs remain fully in place\n\nEdit 2: Tariffs are limited to 150 days according to AI\n&gt;Section 122 of the Trade Act of 1974 (19 U.S.C. \u00a7",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1ra3ptw/trump_announces_new_10_global_tariff/",
+      "relevance_tags": [
+        "trump",
+        "supreme court",
+        "sec",
+        "ai",
+        "tariff"
+      ],
+      "sentiment": -0.6,
+      "confidence": 0.8,
+      "timestamp": 1771634355.525494,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {
+        "score": 12855,
+        "comments": 1831,
+        "sub": "wallstreetbets"
+      },
+      "score": 85
+    },
+    {
+      "id": "a84a8f5d77a79296",
+      "source": "tavily",
+      "headline": "Prediction Markets Brief: February 20, 2026 - MLQ.ai | AI for investors",
+      "summary": "Sports markets show Spain leading the 2026 FIFA World Cup at 16% amid $165.6M volume. 24-hour trading remains active across political and sports",
+      "url": "https://mlq.ai/prediction/brief/daily/2026-02-20/",
+      "relevance_tags": [
+        "world cup",
+        "ai",
+        "market"
+      ],
+      "sentiment": 0.5,
+      "confidence": 0.7,
+      "timestamp": 1771634048.854552,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {},
+      "score": 83
+    },
+    {
+      "id": "cb1f0fed882528a2",
+      "source": "reddit/r/politics",
+      "headline": "McConnell Stalls Trump\u2019s Election Overhaul Bill as Republicans Fume",
+      "summary": "Score: 9878, Comments: 696",
+      "url": "https://reddit.com/r/politics/comments/1ra6o2v/mcconnell_stalls_trumps_election_overhaul_bill_as/",
+      "relevance_tags": [
+        "trump",
+        "election",
+        "republican"
+      ],
+      "sentiment": -0.5,
+      "confidence": 0.8,
+      "timestamp": 1771634215.430358,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 9878,
+        "comments": 696,
+        "sub": "politics"
+      },
+      "score": 81
+    },
+    {
+      "id": "f76edaef3dda43a2",
+      "source": "reddit/r/politics",
+      "headline": "Trump endorses self-described \u2018Nazi-ish\u2019 Texas Republican as Peter Thiel backs his bid for Congress",
+      "summary": "Score: 2784, Comments: 107",
+      "url": "https://reddit.com/r/politics/comments/1ra48ys/trump_endorses_selfdescribed_naziish_texas/",
+      "relevance_tags": [
+        "trump",
+        "congress",
+        "republican"
+      ],
+      "sentiment": -0.8,
+      "confidence": 0.8,
+      "timestamp": 1771634306.246387,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 2784,
+        "comments": 107,
+        "sub": "politics"
+      },
+      "score": 81
+    },
+    {
+      "id": "90af7fed2554ff26",
+      "source": "tavily",
+      "headline": "Why prediction markets are thriving \u2013 and facing scrutiny | PBS News",
+      "summary": "The day before the election, Polymarket gave candidate Trump a 58 percent chance of winning. Now, part of the prediction market boom has been",
+      "url": "https://www.pbs.org/newshour/show/why-prediction-markets-are-thriving-and-facing-scrutiny",
+      "relevance_tags": [
+        "trump",
+        "election",
+        "market"
+      ],
+      "sentiment": 0.4,
+      "confidence": 0.7,
+      "timestamp": 1771634086.273794,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {},
+      "score": 80
+    },
+    {
+      "id": "1d913a130bc416d7",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Investors brace for 'knee-jerk market reaction' to a coming Supreme Court tariff decision",
+      "summary": "tldr:\n\n&gt;The US Supreme Court will convene Friday at 10 a.m. ET for the first time in weeks, with markets keyed in on a possible decision around tariffs.\n\n&gt;A decision in the case, Learning Resources, Inc. v. Trump, will have significant ramifications for US trade, ranging from President Trump's \"Liberation Day\" tariffs that have spanned the globe to his regular threats aimed at specific natio",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r9jgup/investors_brace_for_kneejerk_market_reaction_to_a/",
+      "relevance_tags": [
+        "trump",
+        "president",
+        "supreme court",
+        "ai",
+        "market",
+        "tariff"
+      ],
+      "sentiment": -0.2,
+      "confidence": 0.8,
+      "timestamp": 1771634456.4884238,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {
+        "score": 1611,
+        "comments": 329,
+        "sub": "wallstreetbets"
+      },
+      "score": 79
+    },
+    {
+      "id": "dafde598b33ba8fa",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "GDP Miss badly",
+      "summary": "[https://www.cnbc.com/2026/02/20/pce-inflation-december-2025.html](https://www.cnbc.com/2026/02/20/pce-inflation-december-2025.html)\n\nMore headache..more degenerates in the mkt.",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r9vgw4/gdp_miss_badly/",
+      "relevance_tags": [
+        "nfl",
+        "inflation",
+        "gdp"
+      ],
+      "sentiment": -0.8,
+      "confidence": 0.8,
+      "timestamp": 1771634392.5997708,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {
+        "score": 1413,
+        "comments": 360,
+        "sub": "wallstreetbets"
+      },
+      "score": 76
+    },
+    {
+      "id": "212df5dd4ecda910",
+      "source": "reddit/r/politics",
+      "headline": "Trump Says He Will Impose 10% Global Tariff Under Different Authority",
+      "summary": "Score: 5795, Comments: 1014",
+      "url": "https://reddit.com/r/politics/comments/1ra3siu/trump_says_he_will_impose_10_global_tariff_under/",
+      "relevance_tags": [
+        "trump",
+        "tariff"
+      ],
+      "sentiment": -0.4,
+      "confidence": 0.8,
+      "timestamp": 1771634242.327947,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {
+        "score": 5795,
+        "comments": 1014,
+        "sub": "politics"
+      },
+      "score": 74
+    },
+    {
+      "id": "421471a053ae15c4",
+      "source": "tavily",
+      "headline": "Prediction-Market Battle Heats Up - Front Office Sports",
+      "summary": "With the CFTC chairman's announcement, the stage is set for an eventual Supreme Court battle over sports event contracts.",
+      "url": "https://frontofficesports.com/newsletter/prediction-market-battle-heats-up/",
+      "relevance_tags": [
+        "supreme court",
+        "ai",
+        "market"
+      ],
+      "sentiment": 0.2,
+      "confidence": 0.7,
+      "timestamp": 1771634058.1639402,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {},
+      "score": 72
+    },
+    {
+      "id": "580076f916dc63d3",
+      "source": "reddit/r/politics",
+      "headline": "Turns out there was voter fraud in Georgia-by Elon Musk",
+      "summary": "Score: 40973, Comments: 970",
+      "url": "https://reddit.com/r/politics/comments/1ra1idw/turns_out_there_was_voter_fraud_in_georgiaby_elon/",
+      "relevance_tags": [
+        "vote"
+      ],
+      "sentiment": -0.5,
+      "confidence": 0.8,
+      "timestamp": 1771634224.1932642,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 40973,
+        "comments": 970,
+        "sub": "politics"
+      },
+      "score": 72
+    },
+    {
+      "id": "4ea3e9e604dad09d",
+      "source": "reddit/r/politics",
+      "headline": "Trump Leaks Disastrous Economic Figure in Typo-Filled Post",
+      "summary": "Score: 8614, Comments: 587",
+      "url": "https://reddit.com/r/politics/comments/1r9yp45/trump_leaks_disastrous_economic_figure_in/",
+      "relevance_tags": [
+        "trump"
+      ],
+      "sentiment": -0.7,
+      "confidence": 0.8,
+      "timestamp": 1771634251.226037,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {
+        "score": 8614,
+        "comments": 587,
+        "sub": "politics"
+      },
+      "score": 72
+    },
+    {
+      "id": "17fe22a1c8ac0920",
+      "source": "reddit/r/politics",
+      "headline": "Trump Stuns Governors With Foul-Mouthed Rant at SCOTUS",
+      "summary": "Score: 4318, Comments: 544",
+      "url": "https://reddit.com/r/politics/comments/1ra3x6b/trump_stuns_governors_with_foulmouthed_rant_at/",
+      "relevance_tags": [
+        "trump",
+        "governor"
+      ],
+      "sentiment": -0.7,
+      "confidence": 0.8,
+      "timestamp": 1771634260.3053691,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 4318,
+        "comments": 544,
+        "sub": "politics"
+      },
+      "score": 72
+    },
+    {
+      "id": "47dd052f2fd7732f",
+      "source": "reddit/r/politics",
+      "headline": "ICE agents could be banned from getting public jobs in N.J. for life under new plan",
+      "summary": "Score: 17674, Comments: 435",
+      "url": "https://reddit.com/r/politics/comments/1r9tkc9/ice_agents_could_be_banned_from_getting_public/",
+      "relevance_tags": [
+        "jobs"
+      ],
+      "sentiment": -0.6,
+      "confidence": 0.8,
+      "timestamp": 1771634277.9861708,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 17674,
+        "comments": 435,
+        "sub": "politics"
+      },
+      "score": 72
+    },
+    {
+      "id": "24c8613a2b0524f9",
+      "source": "reddit/r/politics",
+      "headline": "'Trump will no longer be able to honor many of the \"deals\" he has negotiated': How the Supreme Court crippled America's negotiator in chief",
+      "summary": "Score: 2399, Comments: 390",
+      "url": "https://reddit.com/r/politics/comments/1ra2p3p/trump_will_no_longer_be_able_to_honor_many_of_the/",
+      "relevance_tags": [
+        "trump",
+        "supreme court"
+      ],
+      "sentiment": -0.6,
+      "confidence": 0.8,
+      "timestamp": 1771634324.636248,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 2399,
+        "comments": 390,
+        "sub": "politics"
+      },
+      "score": 72
+    },
+    {
+      "id": "810ff9562a6b4912",
+      "source": "tavily",
+      "headline": "Market Trends - Polymarket",
+      "summary": "Polymarket currently hosts 2 active markets for Market Trends that lets you track or trade on predictions like \"Price of Portal one week after launch?\". Whether",
+      "url": "https://polymarket.com/predictions/market-trends",
+      "relevance_tags": [
+        "eth",
+        "market"
+      ],
+      "sentiment": 0.5,
+      "confidence": 0.7,
+      "timestamp": 1771633981.669848,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {},
+      "score": 70
+    },
+    {
+      "id": "48f52b8abf11cce3",
+      "source": "tavily",
+      "headline": "Prediction Markets Predictions & Real-Time Odds - Polymarket",
+      "summary": "Polymarket currently hosts 9 active markets for Prediction Markets that lets you track or trade on predictions like \"Which companies will be acquired before",
+      "url": "https://polymarket.com/predictions/prediction-markets",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.5,
+      "confidence": 0.7,
+      "timestamp": 1771634000.199359,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {},
+      "score": 70
+    },
+    {
+      "id": "36e34221d60cea20",
+      "source": "tavily",
+      "headline": "Tech Predictions & Real-Time Odds - Polymarket",
+      "summary": "Explore the latest Tech predictions on Polymarket as of February 20, 2026. Track real-time odds and trade on The World's Largest Prediction Market\u2122",
+      "url": "https://polymarket.com/predictions/tech",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.5,
+      "confidence": 0.7,
+      "timestamp": 1771634018.410837,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {},
+      "score": 70
+    },
+    {
+      "id": "5758471d03a6f532",
+      "source": "tavily",
+      "headline": "Prediction Markets - CME Group",
+      "summary": "Find out about 24/7 prediction markets at CME Group, including $1 event contracts on Sports, Economic Indicators, Crypto, Commodities, Financials and more.",
+      "url": "https://www.cmegroup.com/markets/prediction-markets.html",
+      "relevance_tags": [
+        "crypto",
+        "market"
+      ],
+      "sentiment": 0.5,
+      "confidence": 0.7,
+      "timestamp": 1771634077.217613,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {},
+      "score": 70
+    },
+    {
+      "id": "107d606c3255d745",
+      "source": "tavily",
+      "headline": "Prediction Markets - CNBC",
+      "summary": "The latest news and insight involving the growing prediction markets such as Kalshi and Polymarket.",
+      "url": "https://www.cnbc.com/prediction-markets/",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.5,
+      "confidence": 0.7,
+      "timestamp": 1771634104.400714,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {},
+      "score": 70
+    },
+    {
+      "id": "90cfef38a22658be",
+      "source": "reddit/r/politics",
+      "headline": "Massie: Trump UFO talk \u2018ultimate weapon of mass distraction\u2019 from Epstein files",
+      "summary": "Score: 5764, Comments: 195",
+      "url": "https://reddit.com/r/politics/comments/1r9ycfr/massie_trump_ufo_talk_ultimate_weapon_of_mass/",
+      "relevance_tags": [
+        "trump"
+      ],
+      "sentiment": -0.5,
+      "confidence": 0.8,
+      "timestamp": 1771634296.285192,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 5764,
+        "comments": 195,
+        "sub": "politics"
+      },
+      "score": 67
+    },
+    {
+      "id": "9e8ceaa929df689a",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "CRWD and NET down almost 10% today because... Claude has a new code review skill",
+      "summary": "One of the most misguided dumps I've seen in a long time just happened. [Anthropic released a new code review skill for Claude which will help find and fix vulnerabilities in software](https://www.anthropic.com/news/claude-code-security) and the algos are selling security stocks like crazy. \n\nTake it from someone in the biz: Cloudflare and CrowdStrike do not make application security products that",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1ra87of/crwd_and_net_down_almost_10_today_because_claude/",
+      "relevance_tags": [
+        "sec",
+        "stock"
+      ],
+      "sentiment": -0.7,
+      "confidence": 0.8,
+      "timestamp": 1771634373.964608,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 432,
+        "comments": 112,
+        "sub": "wallstreetbets"
+      },
+      "score": 67
+    },
+    {
+      "id": "d6154ec70a9abdb9",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Down to my last $160. What should I do?",
+      "summary": "$100k losses on RH and another $40k  on Webull. This feels so unreal. My predictions have never been wrong, but i\u2019m just always too early. If i bought options with two or three weeks longer expiration date, i wouldn\u2019t have lost money at all. \n\nI\u2019m just full time doordash driver and this was all i had under my name. I feel like market always moves against my position. Am i wrong for wanting to have",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r9lbib/down_to_my_last_160_what_should_i_do/",
+      "relevance_tags": [
+        "ai",
+        "market"
+      ],
+      "sentiment": -0.8,
+      "confidence": 0.8,
+      "timestamp": 1771634402.2031271,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 9501,
+        "comments": 3607,
+        "sub": "wallstreetbets"
+      },
+      "score": 67
+    },
+    {
+      "id": "6dfbcb2a37fa27cd",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "Delete Three Forever From MegaETH, Eclipse, Monad, and Berachain",
+      "summary": "If I must delete 3 from MegaETH, Eclipse, Monad, and Berachain, I'd keep Monad for its strong EVM compatibility and throughput. The others, while innovative, overlap too much in the crowded L1 space. Says Grok. \n\nCrypto Twitter may have expected a different answer, possibly favoring the most hyped or culturally loud ecosystem. But hype cycles and long term infrastructure value are not always align",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1ra6gcn/delete_three_forever_from_megaeth_eclipse_monad/",
+      "relevance_tags": [
+        "crypto",
+        "eth",
+        "ai"
+      ],
+      "sentiment": 0.2,
+      "confidence": 0.506,
+      "timestamp": 1771634489.442508,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 6,
+        "comments": 35,
+        "sub": "cryptocurrency"
+      },
+      "score": 67
+    },
+    {
+      "id": "c27e31e3c2828bf9",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "Prince Andrew Arrested as Epstein Files Explode \u2014 Prediction Markets Bet on Who\u2019s Next",
+      "summary": "Score: 53, Comments: 34",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r9r0kj/prince_andrew_arrested_as_epstein_files_explode/",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": -0.8,
+      "confidence": 0.553,
+      "timestamp": 1771634488.946048,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 53,
+        "comments": 34,
+        "sub": "cryptocurrency"
+      },
+      "score": 66
+    },
+    {
+      "id": "880e4d8605be6551",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "BitMine Buys Record 45,759 ETH",
+      "summary": "Score: 54, Comments: 18",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r9mr9k/bitmine_buys_record_45759_eth/",
+      "relevance_tags": [
+        "eth"
+      ],
+      "sentiment": 0.5,
+      "confidence": 0.554,
+      "timestamp": 1771634489.826004,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 54,
+        "comments": 18,
+        "sub": "cryptocurrency"
+      },
+      "score": 66
+    },
+    {
+      "id": "3ddfbc0a88e1aa7c",
+      "source": "tavily",
+      "headline": "Polymarket | The World's Largest Prediction Market\u2122",
+      "summary": "Polymarket is the world's largest prediction market, allowing you to stay informed and profit from your knowledge by trading on future events across various",
+      "url": "https://polymarket.com/",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.7,
+      "confidence": 0.7,
+      "timestamp": 1771634009.244458,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {},
+      "score": 65
+    },
+    {
+      "id": "b91cce8d43112a67",
+      "source": "tavily",
+      "headline": "Crypto Predictions & Real-Time Odds - Polymarket",
+      "summary": "Explore the latest Crypto predictions on Polymarket as of February 20, 2026. Track real-time odds and trade on The World's Largest Prediction Market\u2122",
+      "url": "https://polymarket.com/predictions/crypto",
+      "relevance_tags": [
+        "crypto",
+        "market"
+      ],
+      "sentiment": 0.5,
+      "confidence": 0.7,
+      "timestamp": 1771634036.5067961,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {},
+      "score": 65
+    },
+    {
+      "id": "41050a5fb34b5370",
+      "source": "tavily",
+      "headline": "Sports Predictions & Real-Time Odds | Polymarket",
+      "summary": "Explore the latest Sports predictions on Polymarket as of February 20, 2026. Track real-time odds and trade on The World's Largest Prediction Market\u2122",
+      "url": "https://polymarket.com/predictions/sports",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.5,
+      "confidence": 0.7,
+      "timestamp": 1771634095.490262,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {},
+      "score": 65
+    },
+    {
+      "id": "b7bd48875a1fec71",
+      "source": "tavily",
+      "headline": "Nevada legal battle against prediction markets it calls 'unlicensed ...",
+      "summary": "Nevada regulators claim that Kalshi, through its prediction market contracts, is offering people a way to illegally bet on sports. Kalshi",
+      "url": "https://www.nbcnews.com/news/us-news/nevada-legal-battle-prediction-markets-calls-unlicensed-sports-gamblin-rcna259728",
+      "relevance_tags": [
+        "ai",
+        "market"
+      ],
+      "sentiment": -0.6,
+      "confidence": 0.7,
+      "timestamp": 1771634113.095674,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {},
+      "score": 65
+    },
+    {
+      "id": "706e1dbd6ed57132",
+      "source": "tavily",
+      "headline": "The War Over Prediction Markets Is Just Getting Started - WIRED",
+      "summary": "Prediction markets like Kalshi and Polymarket are booming, and so is a fight among regulators, lawmakers, and advocates over their legality.",
+      "url": "https://www.wired.com/story/the-political-war-over-prediction-markets-is-just-getting-started/",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.2,
+      "confidence": 0.7,
+      "timestamp": 1771634068.10097,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {},
+      "score": 64
+    },
+    {
+      "id": "542b606ea66b1e22",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "$540,000 Frozen: My Crypto Revenge Story",
+      "summary": "On August 20th 2024 Reddit user u/VtheCryptoEng lost his life savings ($207,300 USDT) in a social engineering / phishing scam.\n\nHe reached out to me about a year ago looking for help while at the same time trying to work with law enforcement in his jurisdiction to track down the scammers responsible.\n\nHere's a breakdown of the wallets affected.\n\n# Theft Wallets\n\n* **VtheCryptoEng Wallet** \\- 0x007",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r9djnl/540000_frozen_my_crypto_revenge_story/",
+      "relevance_tags": [
+        "crypto"
+      ],
+      "sentiment": -0.3,
+      "confidence": 0.8,
+      "timestamp": 1771634488.517079,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 505,
+        "comments": 94,
+        "sub": "cryptocurrency"
+      },
+      "score": 64
+    },
+    {
+      "id": "3e5523522cc042fd",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Closed My ZIM Position",
+      "summary": "I bought 2001 30 strike calls expiring April 17 for an average of $0.19 last year. I tried to get more for the contracts, but finally settled for $1 on almost all of them.\n\nMy overall contributions since I started investing again last year have been $13,500. Now I have just under $200,000 after fees and before taxes. Not life changing money, but more money than I\u2019ve ever had.\n\nI want to thank Thet",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1ra8han/closed_my_zim_position/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 0.2,
+      "confidence": 0.8,
+      "timestamp": 1771634382.8941891,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 379,
+        "comments": 38,
+        "sub": "wallstreetbets"
+      },
+      "score": 61
+    },
+    {
+      "id": "89fbd7429b50da60",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Fuck this shit",
+      "summary": "Was up $5k this morning, sold GOOG and AMZN calls too early to buy this shit. Instead of being up almost $10k if I held those calls, I\u2019m back to break even on a day the market mooned. Fuck this fucking market ",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1ra7gbx/fuck_this_shit/",
+      "relevance_tags": [
+        "sol",
+        "market"
+      ],
+      "sentiment": -0.8,
+      "confidence": 0.56,
+      "timestamp": 1771634438.070786,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 60,
+        "comments": 69,
+        "sub": "wallstreetbets"
+      },
+      "score": 61
+    },
+    {
+      "id": "871d3632aaabbacc",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "Daily Crypto Discussion - February 20, 2026 (GMT+0)",
+      "summary": "**Welcome to the Daily Crypto Discussion thread. Please read the disclaimer and rules before participating.**\n\n\u00a0\n\n# Disclaimer:\n\nConsider all information posted here with several liberal heaps of salt, and always cross check any information you may read on this thread with known sources. Any trade information posted in this open thread may be highly misleading, and could be an attempt to manipulat",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r9h89g/daily_crypto_discussion_february_20_2026_gmt0/",
+      "relevance_tags": [
+        "crypto",
+        "ai"
+      ],
+      "sentiment": 0.5,
+      "confidence": 0.523,
+      "timestamp": 1771634471.0076501,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 23,
+        "comments": 158,
+        "sub": "cryptocurrency"
+      },
+      "score": 60
+    },
+    {
+      "id": "9c49aff8d006d514",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "1099-DA Fear Mongering Needs to Stop",
+      "summary": "Holy hell. This tax season feels like driving down a bumpy dirt road at 80mph. The sheer amount of 1099-DA posts in the last 48 hours is overwhelming. So many people asking the same questions... paired with pervasive fear mongering on every social platform I go on -- I want to bang my head against a wall. Clearly a lot of confusion in the air.\n\nI\u2019m a CPA specializing in crypto tax, a mod of\u00a0[r/Cry",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r9z49h/1099da_fear_mongering_needs_to_stop/",
+      "relevance_tags": [
+        "crypto",
+        "ai"
+      ],
+      "sentiment": -0.6,
+      "confidence": 0.529,
+      "timestamp": 1771634486.805396,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {
+        "score": 29,
+        "comments": 29,
+        "sub": "cryptocurrency"
+      },
+      "score": 60
+    },
+    {
+      "id": "417e04decdda5d36",
+      "source": "tavily",
+      "headline": "Trending Markets Predictions & Real-Time Odds - Polymarket",
+      "summary": "What is the current top Trending Markets prediction? As of today, the most active market is \"Will Biden finish his term?,\" where the crowd is currently",
+      "url": "https://polymarket.com/predictions/trending-markets",
+      "relevance_tags": [
+        "biden",
+        "market"
+      ],
+      "sentiment": 0.2,
+      "confidence": 0.7,
+      "timestamp": 1771633972.5507011,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {},
+      "score": 59
+    },
+    {
+      "id": "4840881c240a54d9",
+      "source": "tavily",
+      "headline": "Today Predictions & Real-Time Odds - Polymarket",
+      "summary": "Explore the latest Today predictions on Polymarket as of February 19, 2026. Track real-time odds and trade on The World's Largest Prediction Market\u2122",
+      "url": "https://polymarket.com/predictions/today",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.2,
+      "confidence": 0.7,
+      "timestamp": 1771633990.8834581,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {},
+      "score": 59
+    },
+    {
+      "id": "4d77574e5b9b0c89",
+      "source": "tavily",
+      "headline": "All Predictions & Real-Time Odds - Polymarket",
+      "summary": "Explore the latest All predictions on Polymarket as of February 20, 2026. Track real-time odds and trade on The World's Largest Prediction Market\u2122",
+      "url": "https://polymarket.com/predictions/all",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.2,
+      "confidence": 0.7,
+      "timestamp": 1771634027.336309,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {},
+      "score": 59
+    },
+    {
+      "id": "4908883160ebae56",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "Fed's Neel Kashkari: Crypto is 'utterly useless'",
+      "summary": "Score: 38, Comments: 63",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r9vm28/feds_neel_kashkari_crypto_is_utterly_useless/",
+      "relevance_tags": [
+        "crypto",
+        "fed"
+      ],
+      "sentiment": -0.2,
+      "confidence": 0.538,
+      "timestamp": 1771634487.9993238,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 38,
+        "comments": 63,
+        "sub": "cryptocurrency"
+      },
+      "score": 59
+    },
+    {
+      "id": "c4275622aa18ee86",
+      "source": "reddit/r/politics",
+      "headline": "MAGA\u2019s Reaction to the Epstein Files Reveals Total Moral Collapse",
+      "summary": "Score: 5332, Comments: 209",
+      "url": "https://reddit.com/r/politics/comments/1ra89ko/magas_reaction_to_the_epstein_files_reveals_total/",
+      "relevance_tags": [],
+      "sentiment": -0.8,
+      "confidence": 0.8,
+      "timestamp": 1771634233.42174,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 5332,
+        "comments": 209,
+        "sub": "politics"
+      },
+      "score": 58
+    },
+    {
+      "id": "bdfc79b6e7a0e3b8",
+      "source": "reddit/r/politics",
+      "headline": "U.S. Historian Robert Kagan: \"We Are Watching a Country Fall Under Dictatorship Almost Without Resistance\"",
+      "summary": "Score: 30910, Comments: 2732",
+      "url": "https://reddit.com/r/politics/comments/1r9tbij/us_historian_robert_kagan_we_are_watching_a/",
+      "relevance_tags": [],
+      "sentiment": -0.8,
+      "confidence": 0.8,
+      "timestamp": 1771634269.097575,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 30910,
+        "comments": 2732,
+        "sub": "politics"
+      },
+      "score": 58
+    },
+    {
+      "id": "e0c15f01dae6e5f6",
+      "source": "reddit/r/politics",
+      "headline": "DHS confirms ICE agent fatally shot US citizen in 2025",
+      "summary": "Score: 1656, Comments: 57",
+      "url": "https://reddit.com/r/politics/comments/1ra8nej/dhs_confirms_ice_agent_fatally_shot_us_citizen_in/",
+      "relevance_tags": [],
+      "sentiment": -1.0,
+      "confidence": 0.8,
+      "timestamp": 1771634315.159806,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 1656,
+        "comments": 57,
+        "sub": "politics"
+      },
+      "score": 58
+    },
+    {
+      "id": "9bfb36107b13968f",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Daily Discussion Thread for February 20, 2026",
+      "summary": "This post contains content not supported on old Reddit. [Click here to view the full post](https://sh.reddit.com/r/wallstreetbets/comments/1r9tj1h)",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r9tj1h/daily_discussion_thread_for_february_20_2026/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7030000000000001,
+      "timestamp": 1771634465.465536,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 203,
+        "comments": 17579,
+        "sub": "wallstreetbets"
+      },
+      "score": 57
+    },
+    {
+      "id": "8ef8b4f60490bd3d",
+      "source": "reddit/r/sportsbook",
+      "headline": "Pick of the Day - 2/20/26 (Friday)",
+      "summary": "Free Reddit Pick of the Day\n\n* Post **ONE** pick. No side picks in comments. You can provide a link to your other picks in the other daily threads.\n* **TWO** leg parlays and teasers are **allowed**. Must stay within odds requirements. \n* Must be between -200 and +200 (1.5 and 3.0) odds.\n* Bet size should be between 1 and 5 units. No \"100 unit locks\"\n* Provide a write up on why this is your Pick of",
+      "url": "https://reddit.com/r/sportsbook/comments/1r9czro/pick_of_the_day_22026_friday/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 0.2,
+      "confidence": 0.585,
+      "timestamp": 1771634157.0796769,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {
+        "score": 85,
+        "comments": 429,
+        "sub": "sportsbook"
+      },
+      "score": 56
+    },
+    {
+      "id": "3564ec2421ddc60b",
+      "source": "reddit/r/sportsbook",
+      "headline": "UFC Fight Night: Strickland vs. Hernandez Betting and Picks Discussion",
+      "summary": "UFC Fight Night: Strickland vs. Hernandez Betting Predictions and Best Picks Discussion\n\n* **Date/Time:**\u00a0Saturday 02.21.2026 at 05:00 PM ET\n* **U.S. Broadcast:**\u00a0Paramount+\n* **Promotion:**\u00a0[Ultimate Fighting Championship](https://www.tapology.com/fightcenter/promotions/1-ultimate-fighting-championship-ufc)\n* **Ownership:**\u00a0Endeavor\n* **Venue:**\u00a0Toyota Center\n* **Location:**\u00a0[Houston, Texas, Unit",
+      "url": "https://reddit.com/r/sportsbook/comments/1r86nw7/ufc_fight_night_strickland_vs_hernandez_betting/",
+      "relevance_tags": [
+        "ufc",
+        "championship"
+      ],
+      "sentiment": 0.2,
+      "confidence": 0.511,
+      "timestamp": 1771634129.945135,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {
+        "score": 11,
+        "comments": 31,
+        "sub": "sportsbook"
+      },
+      "score": 54
+    },
+    {
+      "id": "da2aa864247f7e09",
+      "source": "reddit/r/sportsbook",
+      "headline": "Pick of the Day - 2/21/26 (Saturday)",
+      "summary": "Free Reddit Pick of the Day\n\n* Post **ONE** pick. No side picks in comments. You can provide a link to your other picks in the other daily threads.\n* **TWO** leg parlays and teasers are **allowed**. Must stay within odds requirements. \n* Must be between -200 and +200 (1.5 and 3.0) odds.\n* Bet size should be between 1 and 5 units. No \"100 unit locks\"\n* Provide a write up on why this is your Pick of",
+      "url": "https://reddit.com/r/sportsbook/comments/1ra7lsi/pick_of_the_day_22126_saturday/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 0.2,
+      "confidence": 0.509,
+      "timestamp": 1771634148.139589,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {
+        "score": 9,
+        "comments": 21,
+        "sub": "sportsbook"
+      },
+      "score": 54
+    },
+    {
+      "id": "ba0d07974a7f1426",
+      "source": "reddit/r/politics",
+      "headline": "A fake ICE tip line reveals neighbors reporting neighbors",
+      "summary": "Score: 12131, Comments: 581",
+      "url": "https://reddit.com/r/politics/comments/1r9ucbx/a_fake_ice_tip_line_reveals_neighbors_reporting/",
+      "relevance_tags": [],
+      "sentiment": -0.7,
+      "confidence": 0.8,
+      "timestamp": 1771634287.146213,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {
+        "score": 12131,
+        "comments": 581,
+        "sub": "politics"
+      },
+      "score": 53
+    },
+    {
+      "id": "b0c9d22d4229686c",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Weekend Discussion Thread for the Weekend of February 20, 2026",
+      "summary": "This post contains content not supported on old Reddit. [Click here to view the full post](https://sh.reddit.com/r/wallstreetbets/comments/1ra7akv)",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1ra7akv/weekend_discussion_thread_for_the_weekend_of/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.579,
+      "timestamp": 1771634346.436394,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 79,
+        "comments": 2023,
+        "sub": "wallstreetbets"
+      },
+      "score": 53
+    },
+    {
+      "id": "ef4955702d32c883",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Oh",
+      "summary": "I guess I don't know what I'm doing after all. Maybe I should stop throwing my paycheck away every week.",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1ra3jpn/oh/",
+      "relevance_tags": [],
+      "sentiment": -0.7,
+      "confidence": 0.8,
+      "timestamp": 1771634411.216477,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {
+        "score": 431,
+        "comments": 141,
+        "sub": "wallstreetbets"
+      },
+      "score": 53
+    },
+    {
+      "id": "39f5058f591b5647",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "scammers bought an $8 blue check, pretended to be epstein\u2019s ex, fooled half of twitter and made $500k \ud83d\ude2d",
+      "summary": "bro this was actually insane\n\n\n\nwe just watched one of the wildest scams this year and ppl fell for it bc of an $8 blue check \ud83d\ude2d\n\n\n\nso here\u2019s what happened w the fake karyna shuliak thing\n\n\n\n**they faked her**\n\nshe hasn\u2019t spoken publicly in like 10 yrs. scammers bought some random 2017 twitter account, renamed it to her name, bought the blue check and boom. everyone saw \u201cjoined 2017\u201d and was like y",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1ra2j5w/scammers_bought_an_8_blue_check_pretended_to_be/",
+      "relevance_tags": [],
+      "sentiment": -0.5,
+      "confidence": 0.8,
+      "timestamp": 1771634485.840013,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 1151,
+        "comments": 81,
+        "sub": "cryptocurrency"
+      },
+      "score": 53
+    },
+    {
+      "id": "81a97b8999245591",
+      "source": "reddit/r/sportsbook",
+      "headline": "NBA Props Daily - 2/20/26 (Friday)",
+      "summary": "Score: 17, Comments: 206",
+      "url": "https://reddit.com/r/sportsbook/comments/1r9k2pb/nba_props_daily_22026_friday/",
+      "relevance_tags": [
+        "nba",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.517,
+      "timestamp": 1771634166.0914078,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {
+        "score": 17,
+        "comments": 206,
+        "sub": "sportsbook"
+      },
+      "score": 52
+    },
+    {
+      "id": "45f05bb06d5386c8",
+      "source": "reddit/r/sportsbook",
+      "headline": "NCAABB College Basketball Betting and Picks - 2/20/26 (Friday)",
+      "summary": "NCAABB College Basketball Betting Picks and College Basketball Sports Betting Odds for Friday, February 20, 2026\n\n\n|Time (ET)| Teams | ML | Spread | Total |\n|:-:|:-:|:-:|:-:|:-:|\n|2/20|Akron|[-1200](https://sportsbook.link/)|[-13.5 -110](https://sportsbook.link/)|[o147.0 -110](https://sportsbook.link/)|\n|6:30 PM|Ball State|[+700](https://sportsbook.link/)|[+13.5 -110](https://sportsbook.link/)| [u",
+      "url": "https://reddit.com/r/sportsbook/comments/1r9k2gd/ncaabb_college_basketball_betting_and_picks_22026/",
+      "relevance_tags": [
+        "basketball"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.514,
+      "timestamp": 1771634175.34549,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {
+        "score": 14,
+        "comments": 149,
+        "sub": "sportsbook"
+      },
+      "score": 52
+    },
+    {
+      "id": "7b91ccd825e237cc",
+      "source": "reddit/r/sportsbook",
+      "headline": "NBA Betting and Picks - 2/20/26 (Friday)",
+      "summary": "NBA Betting Picks and NBA Sports Betting Odds for Friday, February 20, 2026\n\n\n|Time (ET)| Teams | ML | Spread | Total |\n|:-:|:-:|:-:|:-:|:-:|\n|2/20|Utah Jazz|[+110](https://sportsbook.link/)|[+2.0 -110](https://sportsbook.link/)|[o237.0 -110](https://sportsbook.link/)|\n|7:10 PM|Memphis Grizzlies|[-130](https://sportsbook.link/)|[-2.0 -110](https://sportsbook.link/)| [u237.0 -110](https://sportsboo",
+      "url": "https://reddit.com/r/sportsbook/comments/1r9k251/nba_betting_and_picks_22026_friday/",
+      "relevance_tags": [
+        "nba"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.511,
+      "timestamp": 1771634184.268793,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {
+        "score": 11,
+        "comments": 112,
+        "sub": "sportsbook"
+      },
+      "score": 52
+    },
+    {
+      "id": "4c7506c8198ca56c",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "\"Sell\" Is a Myth. I Only Know HODL",
+      "summary": "Score: 818, Comments: 63",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r9bmgg/sell_is_a_myth_i_only_know_hodl/",
+      "relevance_tags": [],
+      "sentiment": -0.3,
+      "confidence": 0.8,
+      "timestamp": 1771634487.598061,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 818,
+        "comments": 63,
+        "sub": "cryptocurrency"
+      },
+      "score": 50
+    },
+    {
+      "id": "88b2ce2943ab4872",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "How do you guys do it\u2026",
+      "summary": "Damn",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1ra8d82/how_do_you_guys_do_it/",
+      "relevance_tags": [],
+      "sentiment": -0.5,
+      "confidence": 0.58,
+      "timestamp": 1771634420.126411,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 80,
+        "comments": 131,
+        "sub": "wallstreetbets"
+      },
+      "score": 47
+    },
+    {
+      "id": "1de63c859bfcabcb",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "POV you accidently stumble into an XRP maxi chat",
+      "summary": "Score: 1959, Comments: 264",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r94om7/pov_you_accidently_stumble_into_an_xrp_maxi_chat/",
+      "relevance_tags": [],
+      "sentiment": -0.2,
+      "confidence": 0.8,
+      "timestamp": 1771634487.2081652,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 1959,
+        "comments": 264,
+        "sub": "cryptocurrency"
+      },
+      "score": 47
+    },
+    {
+      "id": "eceed79e62b8f3b3",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "We're giving away over $1000 of nano with this button!",
+      "summary": "[TheNanoButton.com](https://thenanobutton.com) lets you press a button to earn free nano, and has already distributed over $155 worth so far. \n\nWe've added another $1000 to its balance, with the earning rate being doubled over the next 48 hours! \n\nThere is no minimum withdrawal amount. Withdrawals are processed instantly.\n\nProof of funds: [https://nanexplorer.com/nano/accounts/nano\\_1rur9jitm46obe",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1r9ukdl/were_giving_away_over_1000_of_nano_with_this/",
+      "relevance_tags": [],
+      "sentiment": 1.0,
+      "confidence": 0.505,
+      "timestamp": 1771634471.491122,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 5,
+        "comments": 76,
+        "sub": "cryptocurrency"
+      },
+      "score": 46
+    },
+    {
+      "id": "1a2817eeff271746",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Logged into my account for the first time in over a year this week.",
+      "summary": "Promptly lost $3k on Fiserv and then took out a marker and put it on (Carvana going) Red. Best 25 minute \u201cinvestment\u201d of my life.",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1r9y1ab/logged_into_my_account_for_the_first_time_in_over/",
+      "relevance_tags": [],
+      "sentiment": 0.2,
+      "confidence": 0.734,
+      "timestamp": 1771634429.321391,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 234,
+        "comments": 41,
+        "sub": "wallstreetbets"
+      },
+      "score": 45
+    },
+    {
+      "id": "694133edf9d40b71",
+      "source": "reddit/r/sportsbook",
+      "headline": "Genesis Invitational 2026 (GOLF)",
+      "summary": "Back to back weeks with the 54 hole leader and nothing to show for it is brutal. I strongly considered taking a few weeks off, but I didn\u2019t want to let you fine people down. So here we go - Players now head to Riviera County Club for the final event of the west coast swing, the Genesis Invitational. See comment below for full breakdown.",
+      "url": "https://reddit.com/r/sportsbook/comments/1r67vpj/genesis_invitational_2026_golf/",
+      "relevance_tags": [],
+      "sentiment": -0.4,
+      "confidence": 0.558,
+      "timestamp": 1771634138.998815,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {
+        "score": 58,
+        "comments": 228,
+        "sub": "sportsbook"
+      },
+      "score": 44
+    },
+    {
+      "id": "98261e720fa0fc51",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "Trader Loses Six Figures Due to Fake Uniswap Ad on Google",
+      "summary": "Score: 16, Comments: 23",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1ra8k35/trader_loses_six_figures_due_to_fake_uniswap_ad/",
+      "relevance_tags": [],
+      "sentiment": -0.3,
+      "confidence": 0.516,
+      "timestamp": 1771634486.257104,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 16,
+        "comments": 23,
+        "sub": "cryptocurrency"
+      },
+      "score": 43
+    },
+    {
+      "id": "fdf971e9a17c8d71",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Weekly Earnings Thread 2/23 - 2/27",
+      "summary": "Score: 91, Comments: 154",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1ra00b2/weekly_earnings_thread_223_227/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.591,
+      "timestamp": 1771634337.1799428,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {
+        "score": 91,
+        "comments": 154,
+        "sub": "wallstreetbets"
+      },
+      "score": 40
+    },
+    {
+      "id": "c0ac082830f6c526",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "GG BOYS. GG.",
+      "summary": "Yeah, I think I\u2019m done \ud83d\ude42",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1rabou2/gg_boys_gg/",
+      "relevance_tags": [],
+      "sentiment": 0.2,
+      "confidence": 0.534,
+      "timestamp": 1771634447.181463,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 34,
+        "comments": 49,
+        "sub": "wallstreetbets"
+      },
+      "score": 40
+    }
+  ],
+  "updated": 1771634541.117526
 }
