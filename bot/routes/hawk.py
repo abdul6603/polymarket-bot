@@ -24,8 +24,6 @@ BRIEFING_FILE = DATA_DIR / "hawk_briefing.json"
 MARKET_CONTEXT_FILE = DATA_DIR / "viper_market_context.json"
 MODE_FILE = DATA_DIR / "hawk_mode.json"
 SUGGESTIONS_FILE = DATA_DIR / "hawk_suggestions.json"
-ARB_STATUS_FILE = DATA_DIR / "hawk_arb_status.json"
-ARB_TRADES_FILE = DATA_DIR / "hawk_arb_trades.jsonl"
 ET = ZoneInfo("America/New_York")
 
 _scan_lock = threading.Lock()
@@ -1071,100 +1069,40 @@ def api_hawk_performance():
         return jsonify({"total": 0, "by_category": {}, "by_risk": {}, "by_edge": {}})
 
 
-# ── Arbitrage Engine Endpoints ──
 
-def _load_arb_trades() -> list[dict]:
-    """Load all arb trades from JSONL."""
-    if not ARB_TRADES_FILE.exists():
-        return []
-    trades = []
-    try:
-        with open(ARB_TRADES_FILE) as f:
-            for line in f:
-                line = line.strip()
-                if line:
-                    trades.append(json.loads(line))
-    except Exception:
-        pass
-    return trades
+# ── Weather Intelligence Endpoint ──
 
+@hawk_bp.route("/api/hawk/weather")
+def api_hawk_weather():
+    """Weather intelligence status — active markets, data source status."""
+    trades = _load_trades()
+    weather_trades = [t for t in trades if t.get("category") == "weather"]
+    weather_resolved = [t for t in weather_trades if t.get("resolved")]
+    weather_wins = sum(1 for t in weather_resolved if t.get("won"))
+    weather_pnl = sum(t.get("pnl", 0) for t in weather_resolved)
 
-@hawk_bp.route("/api/hawk/arb")
-def api_hawk_arb():
-    """Arb engine status + open/resolved arbs."""
-    # Try dedicated arb status file first
-    arb_status = {}
-    if ARB_STATUS_FILE.exists():
+    # Count weather markets from latest opportunities
+    weather_opps = 0
+    if OPPS_FILE.exists():
         try:
-            arb_status = json.loads(ARB_STATUS_FILE.read_text())
+            data = json.loads(OPPS_FILE.read_text())
+            weather_opps = sum(1 for o in data.get("opportunities", []) if o.get("category") == "weather")
         except Exception:
             pass
 
-    # Also compute from trades for consistency
-    trades = _load_arb_trades()
-    open_arbs = [t for t in trades if not t.get("resolved")]
-    resolved = [t for t in trades if t.get("resolved")]
-    total_profit = sum(t.get("profit", 0) for t in resolved)
-    total_invested = sum(t.get("position_usd", 0) for t in trades)
+    # Get scan stats for weather count
+    status = _load_status()
+    scan = status.get("scan", {})
 
     return jsonify({
-        "status": arb_status,
-        "summary": {
-            "total_executed": len(trades),
-            "open_arbs": len(open_arbs),
-            "resolved": len(resolved),
-            "total_profit": round(total_profit, 2),
-            "total_invested": round(total_invested, 2),
-            "open_exposure": round(sum(t.get("position_usd", 0) for t in open_arbs), 2),
-        },
-        "open_positions": [
-            {
-                "arb_id": t.get("arb_id", ""),
-                "condition_id": t.get("condition_id", ""),
-                "question": t.get("question", "")[:120],
-                "outcome_a": t.get("outcome_a", ""),
-                "outcome_b": t.get("outcome_b", ""),
-                "ask_a": t.get("ask_a", 0),
-                "ask_b": t.get("ask_b", 0),
-                "combined_cost": t.get("combined_cost", 0),
-                "profit_per_share": t.get("profit_per_share", 0),
-                "shares": t.get("shares", 0),
-                "position_usd": t.get("position_usd", 0),
-                "expected_profit": t.get("expected_profit", 0),
-                "time_str": t.get("time_str", ""),
-                "category": t.get("category", ""),
-            } for t in open_arbs
-        ],
-    })
-
-
-@hawk_bp.route("/api/hawk/arb/history")
-def api_hawk_arb_history():
-    """Arb trade history with per-trade profit."""
-    trades = _load_arb_trades()
-    resolved = [t for t in trades if t.get("resolved")]
-    resolved.sort(key=lambda t: t.get("resolve_time", 0), reverse=True)
-
-    return jsonify({
-        "trades": [
-            {
-                "arb_id": t.get("arb_id", ""),
-                "condition_id": t.get("condition_id", ""),
-                "question": t.get("question", "")[:120],
-                "outcome_a": t.get("outcome_a", ""),
-                "outcome_b": t.get("outcome_b", ""),
-                "ask_a": t.get("ask_a", 0),
-                "ask_b": t.get("ask_b", 0),
-                "combined_cost": t.get("combined_cost", 0),
-                "profit_per_share": t.get("profit_per_share", 0),
-                "shares": t.get("shares", 0),
-                "position_usd": t.get("position_usd", 0),
-                "profit": t.get("profit", 0),
-                "time_str": t.get("time_str", ""),
-                "category": t.get("category", ""),
-                "dry_run": t.get("dry_run", True),
-            } for t in resolved[:50]
-        ],
-        "total": len(resolved),
-        "total_profit": round(sum(t.get("profit", 0) for t in resolved), 2),
+        "weather_markets_scanned": scan.get("weather_analyzed", 0),
+        "weather_opportunities": weather_opps,
+        "weather_trades": len(weather_trades),
+        "weather_resolved": len(weather_resolved),
+        "weather_wins": weather_wins,
+        "weather_losses": len(weather_resolved) - weather_wins,
+        "weather_win_rate": round(weather_wins / len(weather_resolved) * 100, 1) if weather_resolved else 0,
+        "weather_pnl": round(weather_pnl, 2),
+        "data_sources": ["Open-Meteo Ensemble (GFS+ECMWF)", "api.weather.gov (NWS)", "NOAA NHC"],
+        "cost": "$0 (all free APIs)",
     })

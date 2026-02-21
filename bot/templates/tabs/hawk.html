@@ -48,6 +48,8 @@
         <span style="margin:0 6px;color:var(--text-muted);">&rarr;</span>
         <span style="color:var(--success);font-weight:700;" id="hawk-scan-sports">--</span> <span class="text-muted">sports</span>
         <span style="color:var(--text-muted);">+</span>
+        <span style="color:#4FC3F7;font-weight:700;" id="hawk-scan-weather">--</span> <span class="text-muted">weather</span>
+        <span style="color:var(--text-muted);">+</span>
         <span style="color:#00BFFF;font-weight:700;" id="hawk-scan-nonsports">--</span> <span class="text-muted">non-sports</span>
         <span style="margin:0 6px;color:var(--text-muted);">=</span>
         <span style="color:var(--agent-hawk);font-weight:700;font-size:0.88rem;" id="hawk-scan-analyzed">--</span> <span class="text-muted">analyzed</span>
@@ -66,9 +68,9 @@
     <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-winrate" style="color:var(--agent-hawk);">--</div><div class="stat-label">Win Rate</div></div>
     <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-open-bets">0</div><div class="stat-label">Open Bets</div></div>
     <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-total-trades">0</div><div class="stat-label">Total Trades</div></div>
-    <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-arb-bankroll" style="color:var(--agent-hawk);">$800</div><div class="stat-label">Arb Bankroll</div></div>
-    <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-arb-open" style="color:#00d4ff;">0</div><div class="stat-label">Open Arbs</div></div>
-    <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-arb-profit" style="color:#00ff44;">$0.00</div><div class="stat-label">Arb Profit</div></div>
+    <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-weather-markets" style="color:#00BFFF;">0</div><div class="stat-label">Weather Markets</div></div>
+    <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-weather-trades" style="color:#00d4ff;">0</div><div class="stat-label">Weather Trades</div></div>
+    <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-weather-pnl" style="color:#00ff44;">$0.00</div><div class="stat-label">Weather P&amp;L</div></div>
   </div>
 
   <!-- E2: Win Rate Chart + Streak -->
@@ -173,7 +175,7 @@
       <!-- O: Open Positions -->
       <div class="section-spacer">
         <h3 class="section-title" data-accent="hawk" style="font-size:0.82rem;">Open Positions</h3>
-        <div class="glass-card"><table class="data-table"><thead><tr><th>Market</th><th>Dir</th><th>Cost</th><th>Entry</th><th>Now</th><th>Timer</th><th>P&amp;L</th><th>Payout</th><th>Return</th><th>Category</th><th>Risk</th></tr></thead><tbody id="hawk-pos-tbody"><tr><td colspan="11" class="text-muted" style="text-align:center;padding:24px;">No open positions</td></tr></tbody></table></div>
+        <div class="glass-card"><table class="data-table"><thead><tr><th>Market</th><th>Dir</th><th>Cost</th><th>Entry</th><th>Now</th><th>Status</th><th>P&amp;L</th><th>Payout</th><th>Return</th><th>Category</th><th>Risk</th></tr></thead><tbody id="hawk-pos-tbody"><tr><td colspan="11" class="text-muted" style="text-align:center;padding:24px;">No open positions</td></tr></tbody></table></div>
       </div>
 
       <!-- P: Trade History -->

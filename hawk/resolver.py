@@ -1,4 +1,4 @@
-"""Market Resolution Checker — resolve paper trades by checking actual market outcomes."""
+"""Market Resolution Checker — resolve trades by checking actual market outcomes."""
 from __future__ import annotations
 
 import json
@@ -35,7 +35,7 @@ TRADES_FILE = DATA_DIR / "hawk_trades.jsonl"
 
 
 def resolve_paper_trades() -> dict:
-    """Check all unresolved paper trades against Gamma API for outcomes.
+    """Check all unresolved trades against Gamma API for outcomes.
 
     Returns summary: {checked, resolved, wins, losses, skipped, total_pnl}.
     """
@@ -57,7 +57,7 @@ def resolve_paper_trades() -> dict:
     if not unresolved:
         return {"checked": 0, "resolved": 0, "wins": 0, "losses": 0, "skipped": 0, "total_pnl": 0.0, "resolved_trades": []}
 
-    log.info("Checking %d unresolved paper trades...", len(unresolved))
+    log.info("Checking %d unresolved trades...", len(unresolved))
 
     # Collect unique condition IDs — support both old market_id and new condition_id
     cid_to_trades: dict[str, list[dict]] = {}

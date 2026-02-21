@@ -7158,6 +7158,7 @@ function hawkCalcTimeLeft(endDate, curPrice, category) {
   if (isNaN(end)) return {text: 'Unknown', label: '', color: 'var(--text-muted)', sort: 99999999};
   var diff = end - now;
   var isSports = (category || '').match(/sport|soccer|nba|nfl|nhl|mlb|ufc|mma|hockey|basketball|football|unknown/i);
+  var isCrypto = (category || '').match(/crypto|up.down|garves/i);
   if (diff <= 0) {
     var ago = Math.abs(diff);
     var cp = curPrice || 0;
@@ -7171,14 +7172,14 @@ function hawkCalcTimeLeft(endDate, curPrice, category) {
     if (agoHrs >= 24) agoStr = Math.floor(agoHrs / 24) + 'd ' + (agoHrs % 24) + 'h ago';
     else if (agoHrs >= 1) agoStr = agoHrs + 'h ' + Math.floor((ago % 3600000) / 60000) + 'm ago';
     else agoStr = agoMin + 'm ago';
-    var waitLabel = isSports ? 'In play' : 'Awaiting result';
+    var waitLabel = isCrypto ? 'Resolving' : isSports ? 'In play' : 'Awaiting result';
     return {text: agoStr, label: waitLabel, color: '#ff6b35', sort: -1};
   }
   var hours = diff / 3600000;
   var days = Math.floor(hours / 24);
   var hrs = Math.floor(hours % 24);
-  // Label: for sports = event start, for others = market closes
-  var countLabel = isSports ? 'Event starts' : 'Market closes';
+  // Label: crypto = resolves (end_date IS resolution), sports = event starts, other = market closes
+  var countLabel = isCrypto ? 'Resolves' : isSports ? 'Event starts' : 'Market closes';
   if (days > 365) return {text: Math.floor(days/365) + 'y ' + Math.floor((days%365)/30) + 'mo', label: countLabel, color: 'var(--text-muted)', sort: diff};
   if (days > 30) return {text: Math.floor(days/30) + 'mo ' + (days%30) + 'd', label: countLabel, color: '#888', sort: diff};
   if (days > 7) return {text: days + 'd', label: countLabel, color: 'var(--text-secondary)', sort: diff};

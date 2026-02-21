@@ -218,7 +218,7 @@ MIN_EDGE_BY_TF = {
 }
 
 # Hard floor — regime adjustments cannot lower edge below this
-MIN_EDGE_ABSOLUTE = 0.08  # 8% — Data: edge<8% has 6-27% WR (79 trades, only 18 wins). 8% is the breakeven floor.
+MIN_EDGE_ABSOLUTE = 0.12  # 12% — Quant backtest: 8%→12% improves WR 61.5%→69.9%. Old 8% had 6-27% WR on low-edge trades.
 
 # Reward-to-Risk ratio filter
 # R:R = ((1-P) * 0.98) / P  where P = token price, 0.98 = payout after 2% winner fee

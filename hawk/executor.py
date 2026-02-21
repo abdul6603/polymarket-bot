@@ -133,24 +133,36 @@ _NO_OUTCOMES = {"no", "down", "under"}
 
 
 def _get_entry_price(opp: TradeOpportunity) -> float:
-    """Get the entry price for the trade direction."""
+    """Get the entry price for the trade direction.
+
+    Adds a 2-cent taker premium so the limit order crosses the spread
+    and fills immediately instead of sitting unfilled in the order book.
+    """
+    TAKER_PREMIUM = 0.02  # 2 cents above mid-price to ensure fill
+
+    raw_price = 0.5
     target = _YES_OUTCOMES if opp.direction == "yes" else _NO_OUTCOMES
     for t in opp.market.tokens:
         tok_outcome = (t.get("outcome") or "").lower()
         if tok_outcome in target:
             try:
-                return max(0.01, min(0.99, float(t.get("price", 0.5))))
+                raw_price = float(t.get("price", 0.5))
+                break
             except (ValueError, TypeError):
-                return 0.5
-    # Fallback: first token for yes, second for no
-    tokens = opp.market.tokens
-    if len(tokens) == 2:
-        idx = 0 if opp.direction == "yes" else 1
-        try:
-            return max(0.01, min(0.99, float(tokens[idx].get("price", 0.5))))
-        except (ValueError, TypeError):
-            return 0.5
-    return 0.5
+                pass
+    else:
+        # Fallback: first token for yes, second for no
+        tokens = opp.market.tokens
+        if len(tokens) == 2:
+            idx = 0 if opp.direction == "yes" else 1
+            try:
+                raw_price = float(tokens[idx].get("price", 0.5))
+            except (ValueError, TypeError):
+                pass
+
+    # Add taker premium to cross the spread
+    aggressive_price = raw_price + TAKER_PREMIUM
+    return max(0.01, min(0.99, round(aggressive_price, 2)))
 
 
 def _notify_trade_placed(opp: TradeOpportunity) -> None:

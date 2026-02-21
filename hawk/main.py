@@ -17,7 +17,6 @@ from hawk.tracker import HawkTracker
 from hawk.risk import HawkRiskManager
 from hawk.resolver import resolve_paper_trades
 from hawk.briefing import generate_briefing
-from hawk.arb import ArbEngine
 from hawk.learner import record_trade_outcome, get_dimension_adjustments
 
 log = logging.getLogger(__name__)
@@ -47,7 +46,6 @@ def _load_brain_notes() -> list[dict]:
 
 def _save_status(tracker: HawkTracker, risk: HawkRiskManager | None = None,
                  running: bool = True, cycle: int = 0,
-                 arb_engine: ArbEngine | None = None,
                  scan_stats: dict | None = None) -> None:
     """Save current status to data/hawk_status.json for dashboard."""
     DATA_DIR.mkdir(exist_ok=True)
@@ -58,8 +56,6 @@ def _save_status(tracker: HawkTracker, risk: HawkRiskManager | None = None,
     if risk:
         summary["effective_bankroll"] = round(risk.effective_bankroll(), 2)
         summary["consecutive_losses"] = risk.consecutive_losses
-    if arb_engine:
-        summary.update(arb_engine.summary())
     if scan_stats:
         summary["scan"] = scan_stats
     try:
@@ -216,7 +212,6 @@ class HawkBot:
         self.tracker = HawkTracker()
         self.risk = HawkRiskManager(self.cfg, self.tracker)
         self.executor: HawkExecutor | None = None
-        self.arb: ArbEngine | None = None
         self.cycle = 0
 
         # Agent Brain — learning memory
@@ -259,42 +254,6 @@ class HawkBot:
             except Exception:
                 log.warning("Could not initialize CLOB client, running in dry-run mode")
         self.executor = HawkExecutor(self.cfg, client, self.tracker)
-        self.arb = ArbEngine(self.cfg, client)
-
-    async def _fast_arb_loop(self) -> None:
-        """Independent fast arb scanner — runs every 60s, zero GPT cost.
-
-        Scans Polymarket binary markets for price mismatches where buying
-        both sides guarantees profit. Uses only Gamma API + CLOB orderbook
-        (both free). Completely independent from the main GPT analysis cycle.
-        """
-        log.info("[ARB] Fast arb loop started — scanning every %ds", self.cfg.arb_scan_interval)
-        while True:
-            try:
-                if not self.cfg.arb_enabled or self.risk.is_shutdown():
-                    await asyncio.sleep(self.cfg.arb_scan_interval)
-                    continue
-
-                markets = scan_all_markets(self.cfg)
-                if markets:
-                    arb_opps = self.arb.scan(markets)
-                    for arb_opp in arb_opps[:self.cfg.arb_max_concurrent]:
-                        result = self.arb.execute(arb_opp)
-                        if result:
-                            log.info("[ARB] Executed arb trade! profit=$%.2f", arb_opp.expected_profit_usd)
-
-                    # Resolve settled arbs
-                    arb_res = self.arb.resolve()
-                    if arb_res["resolved"] > 0:
-                        log.info("[ARB] Resolved %d arbs | profit: $%.2f",
-                                 arb_res["resolved"], arb_res["profit"])
-                    self.arb.save_status()
-                    _save_status(self.tracker, self.risk, running=True, cycle=self.cycle, arb_engine=self.arb)
-
-            except Exception:
-                log.exception("[ARB] Fast arb loop error")
-
-            await asyncio.sleep(self.cfg.arb_scan_interval)
 
     async def run(self) -> None:
         """Main loop — V2 Smart Degen."""
@@ -307,16 +266,13 @@ class HawkBot:
         log.info("Config: bankroll=$%.0f, max_bet=$%.0f, kelly=%.0f%%, min_edge=%.0f%%",
                  self.cfg.bankroll_usd, self.cfg.max_bet_usd,
                  self.cfg.kelly_fraction * 100, self.cfg.min_edge * 100)
-        log.info("V2 features: compound=%s, news=%s, max_risk=%d, cycle=%dm, arb_interval=%ds",
+        log.info("V2 features: compound=%s, news=%s, max_risk=%d, cycle=%dm, weather=%s",
                  self.cfg.compound_bankroll, self.cfg.news_enrichment,
-                 self.cfg.max_risk_score, self.cfg.cycle_minutes, self.cfg.arb_scan_interval)
+                 self.cfg.max_risk_score, self.cfg.cycle_minutes, self.cfg.weather_enabled)
         log.info("Mode: %s", "DRY RUN" if self.cfg.dry_run else "LIVE TRADING")
 
         self._init_executor()
-        _save_status(self.tracker, self.risk, running=True, cycle=0, arb_engine=self.arb)
-
-        # Launch fast arb scanner as independent background task
-        asyncio.create_task(self._fast_arb_loop())
+        _save_status(self.tracker, self.risk, running=True, cycle=0)
 
         while True:
             self.cycle += 1
@@ -342,7 +298,7 @@ class HawkBot:
 
                 if self.risk.is_shutdown():
                     log.warning("Daily loss cap hit — skipping cycle")
-                    _save_status(self.tracker, self.risk, running=True, cycle=self.cycle, arb_engine=self.arb)
+                    _save_status(self.tracker, self.risk, running=True, cycle=self.cycle)
                     await asyncio.sleep(self.cfg.cycle_minutes * 60)
                     continue
 
@@ -352,12 +308,9 @@ class HawkBot:
                 log.info("Found %d eligible markets", len(markets))
 
                 if not markets:
-                    _save_status(self.tracker, self.risk, running=True, cycle=self.cycle, arb_engine=self.arb)
+                    _save_status(self.tracker, self.risk, running=True, cycle=self.cycle)
                     await asyncio.sleep(self.cfg.cycle_minutes * 60)
                     continue
-
-                # NOTE: Arb scanning moved to independent fast loop (_fast_arb_loop)
-                # running every 60s — no longer tied to the main GPT cycle.
 
                 # 2. Filter contested (12-88% YES price)
                 contested = []
@@ -371,13 +324,14 @@ class HawkBot:
                 # 3. V2: Urgency-weighted ranking (ending-soon first)
                 ranked_markets = _urgency_rank(contested)
 
-                # Split: ALL sports get analyzed (sportsbook-pure = $0 cost),
-                # only cap non-sports at 30 to control GPT costs
+                # Split: ALL sports + weather get analyzed ($0 cost),
+                # only cap non-sports at 30 to control LLM costs
                 sports_markets = [m for m in ranked_markets if m.category == "sports"]
-                non_sports_markets = [m for m in ranked_markets if m.category != "sports"]
-                target_markets = sports_markets + non_sports_markets[:30]
-                log.info("Analyzing %d markets: %d sports (ALL, $0) + %d/%d non-sports (GPT capped)",
-                         len(target_markets), len(sports_markets),
+                weather_markets = [m for m in ranked_markets if m.category == "weather"]
+                non_sports_markets = [m for m in ranked_markets if m.category not in ("sports", "weather")]
+                target_markets = sports_markets + weather_markets + non_sports_markets[:30]
+                log.info("Analyzing %d markets: %d sports ($0) + %d weather ($0) + %d/%d non-sports (local LLM)",
+                         len(target_markets), len(sports_markets), len(weather_markets),
                          min(len(non_sports_markets), 30), len(non_sports_markets))
 
                 # Track scan stats for dashboard
@@ -385,12 +339,13 @@ class HawkBot:
                     "total_eligible": len(markets),
                     "contested": len(contested),
                     "sports_analyzed": len(sports_markets),
+                    "weather_analyzed": len(weather_markets),
                     "non_sports_analyzed": min(len(non_sports_markets), 30),
                     "total_analyzed": len(target_markets),
                     "non_sports_total": len(non_sports_markets),
                 }
 
-                # 4. Analyze with GPT-4o (V2 wise degen personality)
+                # 4. Analyze with LLM (local Qwen2.5-14B for non-sports, sportsbook for sports)
                 estimates = batch_analyze(self.cfg, target_markets, max_concurrent=5)
 
                 # 5. Calculate edges with compound bankroll
@@ -654,91 +609,90 @@ class HawkBot:
                 if self.executor and not self.cfg.dry_run:
                     self.executor.check_fills()
 
-                # Resolve paper trades
-                if self.cfg.dry_run:
-                    res = resolve_paper_trades()
-                    if res["resolved"] > 0:
-                        log.info(
-                            "Resolved %d trades: %d W / %d L | P&L: $%.2f",
-                            res["resolved"], res["wins"], res["losses"],
-                            res.get("total_pnl", 0.0),
-                        )
-                        # Record per-trade PnL for accurate streak detection
-                        for trade_pnl in res.get("per_trade_pnl", []):
-                            self.risk.record_pnl(trade_pnl)
-                        # Learner: record dimension outcomes
-                        for resolved_trade in res.get("resolved_trades", []):
-                            try:
-                                record_trade_outcome(resolved_trade)
-                            except Exception:
-                                log.debug("[LEARNER] Failed to record outcome (non-fatal)")
-                        # Brain: record resolved outcomes
-                        if self._brain:
-                            try:
-                                for resolved_trade in res.get("resolved_trades", []):
-                                    _did = self.tracker.get_decision_id(resolved_trade.get("condition_id", ""))
-                                    _won = resolved_trade.get("won", False)
-                                    _pnl = resolved_trade.get("pnl", 0)
-                                    _conf = 0.6 if _won else 0.4
-                                    _label = "WON" if _won else "LOST"
-
-                                    if _did:
-                                        self._brain.remember_outcome(_did, f"{_label} PnL=${_pnl:.2f}", score=1.0 if _won else -1.0)
-
-                                    # 1. Category pattern (existing)
-                                    cat = resolved_trade.get("category", "unknown")
-                                    self._brain.learn_pattern("hawk_category_outcome",
-                                        f"Category '{cat}': {_label}", confidence=_conf)
-
-                                    # 2. Edge source pattern
-                                    esrc = resolved_trade.get("edge_source", "unknown")
-                                    self._brain.learn_pattern("hawk_edge_source_outcome",
-                                        f"Edge source '{esrc}': {_label}", confidence=_conf)
-
-                                    # 3. Direction pattern
-                                    direction = resolved_trade.get("direction", "unknown")
-                                    self._brain.learn_pattern("hawk_direction_outcome",
-                                        f"Direction '{direction}': {_label}", confidence=_conf)
-
-                                    # 4. Confidence pattern
-                                    conf_val = resolved_trade.get("confidence", 0.5)
-                                    conf_band = "high" if conf_val > 0.7 else "medium" if conf_val >= 0.5 else "low"
-                                    self._brain.learn_pattern("hawk_confidence_outcome",
-                                        f"Confidence '{conf_band}': {_label}", confidence=_conf)
-
-                                    # 5. Risk pattern
-                                    risk = resolved_trade.get("risk_score", 5)
-                                    risk_band = "low" if risk <= 3 else "medium" if risk <= 6 else "high"
-                                    self._brain.learn_pattern("hawk_risk_outcome",
-                                        f"Risk '{risk_band}': {_label}", confidence=_conf)
-
-                                    # 6. Time pattern
-                                    hours = resolved_trade.get("time_left_hours", 24)
-                                    time_band = "ending_soon" if hours < 6 else "today" if hours <= 24 else "tomorrow" if hours <= 48 else "this_week"
-                                    self._brain.learn_pattern("hawk_time_outcome",
-                                        f"Time '{time_band}': {_label}", confidence=_conf)
-
-                                    log.info("[BRAIN] Recorded 6 patterns for %s trade: %s | %s | %s",
-                                             _label, cat, esrc, direction)
-                            except Exception:
-                                log.debug("[BRAIN] Outcome recording failed (non-fatal)")
-                        # Reload tracker
-                        self.tracker._positions = []
-                        self.tracker._load_positions()
-
-                        # Post-trade review
+                # Resolve trades (check market outcomes)
+                res = resolve_paper_trades()
+                if res["resolved"] > 0:
+                    log.info(
+                        "Resolved %d trades: %d W / %d L | P&L: $%.2f",
+                        res["resolved"], res["wins"], res["losses"],
+                        res.get("total_pnl", 0.0),
+                    )
+                    # Record per-trade PnL for accurate streak detection
+                    for trade_pnl in res.get("per_trade_pnl", []):
+                        self.risk.record_pnl(trade_pnl)
+                    # Learner: record dimension outcomes
+                    for resolved_trade in res.get("resolved_trades", []):
                         try:
-                            from hawk.reviewer import review_resolved_trades
-                            review = review_resolved_trades()
-                            if review.get("total_reviewed", 0) > 0:
-                                log.info("Post-trade review: %d trades, %.1f%% WR, calibration=%.3f",
-                                         review["total_reviewed"], review.get("win_rate", 0),
-                                         review.get("calibration_score", 0))
-                                if review.get("recommendations"):
-                                    for rec in review["recommendations"]:
-                                        log.info("REVIEW REC: %s", rec)
+                            record_trade_outcome(resolved_trade)
                         except Exception:
-                            log.exception("Post-trade review failed")
+                            log.debug("[LEARNER] Failed to record outcome (non-fatal)")
+                    # Brain: record resolved outcomes
+                    if self._brain:
+                        try:
+                            for resolved_trade in res.get("resolved_trades", []):
+                                _did = self.tracker.get_decision_id(resolved_trade.get("condition_id", ""))
+                                _won = resolved_trade.get("won", False)
+                                _pnl = resolved_trade.get("pnl", 0)
+                                _conf = 0.6 if _won else 0.4
+                                _label = "WON" if _won else "LOST"
+
+                                if _did:
+                                    self._brain.remember_outcome(_did, f"{_label} PnL=${_pnl:.2f}", score=1.0 if _won else -1.0)
+
+                                # 1. Category pattern (existing)
+                                cat = resolved_trade.get("category", "unknown")
+                                self._brain.learn_pattern("hawk_category_outcome",
+                                    f"Category '{cat}': {_label}", confidence=_conf)
+
+                                # 2. Edge source pattern
+                                esrc = resolved_trade.get("edge_source", "unknown")
+                                self._brain.learn_pattern("hawk_edge_source_outcome",
+                                    f"Edge source '{esrc}': {_label}", confidence=_conf)
+
+                                # 3. Direction pattern
+                                direction = resolved_trade.get("direction", "unknown")
+                                self._brain.learn_pattern("hawk_direction_outcome",
+                                    f"Direction '{direction}': {_label}", confidence=_conf)
+
+                                # 4. Confidence pattern
+                                conf_val = resolved_trade.get("confidence", 0.5)
+                                conf_band = "high" if conf_val > 0.7 else "medium" if conf_val >= 0.5 else "low"
+                                self._brain.learn_pattern("hawk_confidence_outcome",
+                                    f"Confidence '{conf_band}': {_label}", confidence=_conf)
+
+                                # 5. Risk pattern
+                                risk = resolved_trade.get("risk_score", 5)
+                                risk_band = "low" if risk <= 3 else "medium" if risk <= 6 else "high"
+                                self._brain.learn_pattern("hawk_risk_outcome",
+                                    f"Risk '{risk_band}': {_label}", confidence=_conf)
+
+                                # 6. Time pattern
+                                hours = resolved_trade.get("time_left_hours", 24)
+                                time_band = "ending_soon" if hours < 6 else "today" if hours <= 24 else "tomorrow" if hours <= 48 else "this_week"
+                                self._brain.learn_pattern("hawk_time_outcome",
+                                    f"Time '{time_band}': {_label}", confidence=_conf)
+
+                                log.info("[BRAIN] Recorded 6 patterns for %s trade: %s | %s | %s",
+                                         _label, cat, esrc, direction)
+                        except Exception:
+                            log.debug("[BRAIN] Outcome recording failed (non-fatal)")
+                    # Reload tracker
+                    self.tracker._positions = []
+                    self.tracker._load_positions()
+
+                    # Post-trade review
+                    try:
+                        from hawk.reviewer import review_resolved_trades
+                        review = review_resolved_trades()
+                        if review.get("total_reviewed", 0) > 0:
+                            log.info("Post-trade review: %d trades, %.1f%% WR, calibration=%.3f",
+                                     review["total_reviewed"], review.get("win_rate", 0),
+                                     review.get("calibration_score", 0))
+                            if review.get("recommendations"):
+                                for rec in review["recommendations"]:
+                                    log.info("REVIEW REC: %s", rec)
+                    except Exception:
+                        log.exception("Post-trade review failed")
 
                 # Pattern mining — every 6 cycles (~6 hours)
                 if self.cycle % 6 == 0:
@@ -766,11 +720,11 @@ class HawkBot:
                     except Exception:
                         log.debug("[PATTERN MINER] Failed (non-fatal)")
 
-                _save_status(self.tracker, self.risk, running=True, cycle=self.cycle, arb_engine=self.arb, scan_stats=_scan_stats)
+                _save_status(self.tracker, self.risk, running=True, cycle=self.cycle, scan_stats=_scan_stats)
 
             except Exception:
                 log.exception("Hawk V2 cycle %d failed", self.cycle)
-                _save_status(self.tracker, self.risk, running=True, cycle=self.cycle, arb_engine=self.arb)
+                _save_status(self.tracker, self.risk, running=True, cycle=self.cycle)
 
             log.info("Hawk V2 cycle %d complete. Sleeping %d minutes...", self.cycle, self.cfg.cycle_minutes)
             await asyncio.sleep(self.cfg.cycle_minutes * 60)
