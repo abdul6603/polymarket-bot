@@ -8466,6 +8466,14 @@ async function loadQuantTab() {
     document.getElementById('quant-baseline-wr').textContent = data.baseline_win_rate ? data.baseline_win_rate + '%' : '--';
     document.getElementById('quant-baseline-wr').style.color = wrColor(data.baseline_win_rate || 0);
     document.getElementById('quant-trades').textContent = data.trade_count || '--';
+    document.getElementById('quant-trade-count').textContent = data.trade_count || '--';
+    var sigSum = '';
+    if (data.baseline_signals && data.best_signals) {
+      sigSum = '(' + data.baseline_signals + ' signals, best ' + data.best_signals + ')';
+    } else if (data.baseline_signals) {
+      sigSum = '(' + data.baseline_signals + ' signals)';
+    }
+    document.getElementById('quant-signal-summary').textContent = sigSum;
     document.getElementById('quant-avg-edge').textContent = data.baseline_avg_edge ? data.baseline_avg_edge + '%' : '--';
     document.getElementById('quant-last-update').textContent = data.last_run || '--';
     var fr = data.filter_reasons || {};
