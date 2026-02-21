@@ -12,6 +12,8 @@ from pathlib import Path
 
 from flask import Blueprint, jsonify
 
+from bot.routes._utils import read_fresh, read_fresh_list
+
 from bot.shared import (
     _load_trades,
     get_atlas,
@@ -37,8 +39,8 @@ def _get_thor_overview() -> dict:
     try:
         status_file = THOR_DATA / "status.json"
         state = "offline"
-        if status_file.exists():
-            data = json.loads(status_file.read_text())
+        data = read_fresh(status_file, "~/thor/data/status.json")
+        if data:
             state = data.get("state", "offline")
 
         pending = completed = 0
@@ -62,16 +64,13 @@ def _get_thor_overview() -> dict:
 def _get_quant_overview() -> dict:
     """Quick Quant status for overview grid."""
     try:
-        status_file = DATA_DIR / "quant_status.json"
-        if status_file.exists():
-            data = json.loads(status_file.read_text())
-            results_file = DATA_DIR / "quant_results.json"
+        data = read_fresh(DATA_DIR / "quant_status.json", "~/polymarket-bot/data/quant_status.json")
+        if data:
+            rdata = read_fresh(DATA_DIR / "quant_results.json", "~/polymarket-bot/data/quant_results.json")
             best_wr = 0
-            if results_file.exists():
-                rdata = json.loads(results_file.read_text())
-                top = rdata.get("top_results", [])
-                if top:
-                    best_wr = top[0].get("win_rate", 0)
+            top = rdata.get("top_results", [])
+            if top:
+                best_wr = top[0].get("win_rate", 0)
             return {
                 "running": data.get("running", False),
                 "total_combos_tested": data.get("total_combos_tested", 0),
@@ -84,7 +83,19 @@ def _get_quant_overview() -> dict:
 
 @overview_bp.route("/api/overview")
 def api_overview():
-    """High-level status of all agents."""
+    """High-level status of all agents.
+
+    Uses cache so Air dashboard shows Pro's computed data (via rsync).
+    """
+    cache_file = DATA_DIR / "overview_cache.json"
+    if cache_file.exists():
+        try:
+            age = time.time() - cache_file.stat().st_mtime
+            if age < 120:
+                return jsonify(json.loads(cache_file.read_text()))
+        except Exception:
+            pass
+
     # Garves
     trades = _load_trades()
     resolved = [t for t in trades if t.get("resolved") and t.get("outcome") not in ("unknown", None)]
@@ -141,33 +152,15 @@ def api_overview():
             pass
 
     # Hawk
-    hawk_status = {}
-    hawk_status_file = DATA_DIR / "hawk_status.json"
-    if hawk_status_file.exists():
-        try:
-            hawk_status = json.loads(hawk_status_file.read_text())
-        except Exception:
-            pass
+    hawk_status = read_fresh(DATA_DIR / "hawk_status.json", "~/polymarket-bot/data/hawk_status.json")
 
     # Viper
-    viper_status = {}
-    viper_status_file = DATA_DIR / "viper_status.json"
-    if viper_status_file.exists():
-        try:
-            viper_status = json.loads(viper_status_file.read_text())
-        except Exception:
-            pass
+    viper_status = read_fresh(DATA_DIR / "viper_status.json", "~/polymarket-bot/data/viper_status.json")
 
     # Razor
-    razor_status = {}
-    razor_status_file = DATA_DIR / "razor_status.json"
-    if razor_status_file.exists():
-        try:
-            razor_status = json.loads(razor_status_file.read_text())
-        except Exception:
-            pass
+    razor_status = read_fresh(DATA_DIR / "razor_status.json", "~/polymarket-bot/data/razor_status.json")
 
-    return jsonify({
+    overview_data = {
         "garves": {
             "running": garves_running,
             "win_rate": round(garves_wr, 1),
@@ -209,7 +202,16 @@ def api_overview():
             "exposure": razor_status.get("exposure", 0),
             "markets": razor_status.get("total_markets", 0),
         },
-    })
+    }
+
+    # Cache so Air dashboard shows Pro's data (via rsync)
+    try:
+        cache_file = DATA_DIR / "overview_cache.json"
+        cache_file.write_text(json.dumps(overview_data, indent=2))
+    except Exception:
+        pass
+
+    return jsonify(overview_data)
 
 
 @overview_bp.route("/api/agent/<agent>/kpis")
@@ -364,7 +366,7 @@ def api_agent_kpis(agent):
             kpis["platform_distribution"] = platform_dist
     elif agent == "sentinel":
         try:
-            from bot.routes.sentinel import _get_sentinel
+            from bot.routes.robotox import _get_sentinel
             s = _get_sentinel()
             status = s.get_status()
             kpis = {
@@ -381,7 +383,21 @@ def api_agent_kpis(agent):
 
 @overview_bp.route("/api/intelligence")
 def api_intelligence():
-    """Intelligence meter for all agents -- 5 dimensions each, 0-100 scale."""
+    """Intelligence meter for all agents -- 5 dimensions each, 0-100 scale.
+
+    Uses a cache file so Air dashboard shows Pro's computed scores (via rsync).
+    Pro computes fresh scores and saves to cache. Air reads the synced cache.
+    """
+    # Check if cached intelligence data exists and is fresh (<120s)
+    cache_file = DATA_DIR / "intelligence_cache.json"
+    if cache_file.exists():
+        try:
+            age = time.time() - cache_file.stat().st_mtime
+            if age < 120:
+                return jsonify(json.loads(cache_file.read_text()))
+        except Exception:
+            pass
+
     ET_tz = ZoneInfo("America/New_York")
 
     result = {}
@@ -923,26 +939,13 @@ def api_intelligence():
         viper_costs_file = DATA_DIR / "viper_costs.json"
         viper_status_file = DATA_DIR / "viper_status.json"
 
-        viper_status = {}
-        if viper_status_file.exists():
-            try:
-                viper_status = json.loads(viper_status_file.read_text())
-            except Exception:
-                pass
+        viper_status = read_fresh(viper_status_file, "~/polymarket-bot/data/viper_status.json")
 
-        viper_opps = []
-        if viper_opps_file.exists():
-            try:
-                viper_opps = json.loads(viper_opps_file.read_text()).get("opportunities", [])
-            except Exception:
-                pass
+        viper_opps_data = read_fresh(viper_opps_file, "~/polymarket-bot/data/viper_opportunities.json")
+        viper_opps = viper_opps_data.get("opportunities", [])
 
-        viper_costs = []
-        if viper_costs_file.exists():
-            try:
-                viper_costs = json.loads(viper_costs_file.read_text()).get("costs", [])
-            except Exception:
-                pass
+        viper_costs_data = read_fresh(viper_costs_file, "~/polymarket-bot/data/viper_costs.json")
+        viper_costs = viper_costs_data.get("costs", [])
 
         # 1. Opportunity Discovery — opportunities found
         discovery = min(100, len(viper_opps) * 5 + 15)
@@ -996,18 +999,10 @@ def api_intelligence():
         quant_wf_file = DATA_DIR / "quant_walk_forward.json"
         quant_analytics_file = DATA_DIR / "quant_analytics.json"
 
-        q_status = {}
-        if quant_status_file.exists():
-            q_status = json.loads(quant_status_file.read_text())
-        q_results = {}
-        if quant_results_file.exists():
-            q_results = json.loads(quant_results_file.read_text())
-        q_wf = {}
-        if quant_wf_file.exists():
-            q_wf = json.loads(quant_wf_file.read_text())
-        q_analytics = {}
-        if quant_analytics_file.exists():
-            q_analytics = json.loads(quant_analytics_file.read_text())
+        q_status = read_fresh(quant_status_file, "~/polymarket-bot/data/quant_status.json")
+        q_results = read_fresh(quant_results_file, "~/polymarket-bot/data/quant_results.json")
+        q_wf = read_fresh(quant_wf_file, "~/polymarket-bot/data/quant_walk_forward.json")
+        q_analytics = read_fresh(quant_analytics_file, "~/polymarket-bot/data/quant_analytics.json")
 
         combos_tested = q_status.get("total_combos_tested", 0)
         top_results = q_results.get("top_results", [])
@@ -1051,9 +1046,7 @@ def api_intelligence():
     try:
         razor_intel = {"dimensions": {}, "overall": 0, "title": "The Mathematician"}
         razor_sf = DATA_DIR / "razor_status.json"
-        razor_st = {}
-        if razor_sf.exists():
-            razor_st = json.loads(razor_sf.read_text())
+        razor_st = read_fresh(razor_sf, "~/polymarket-bot/data/razor_status.json")
         learner = razor_st.get("learner", {})
         r_total = razor_st.get("total_arbs", 0)
         r_open = razor_st.get("open_count", 0)
@@ -1165,6 +1158,13 @@ def api_intelligence():
         result["team"] = team
     except Exception:
         result["team"] = {"dimensions": {}, "overall": 0, "title": "Brotherhood", "agent_scores": {}}
+
+    # Cache the computed result so Air can read it via rsync
+    try:
+        cache_file = DATA_DIR / "intelligence_cache.json"
+        cache_file.write_text(json.dumps(result, indent=2))
+    except Exception:
+        pass
 
     return jsonify(result)
 
