@@ -141,7 +141,7 @@ def scan_all_markets(cfg: HawkConfig) -> list[HawkMarket]:
     # Gamma API: get active events sorted by volume
     offset = 0
     page_size = 50
-    max_events = 200
+    max_events = 500
 
     while offset < max_events:
         try:
