@@ -18,9 +18,13 @@ CONFIG_FILE = SHARED_DIR / "llm_config.json"
 MEMORY_DIR = SHARED_DIR / "memory"
 
 
+# Pro M3 LAN IP — LLM server runs on Pro only
+PRO_LLM_URL = "http://10.0.0.127:11434/v1"
+
+
 @llm_bp.route("/api/llm/status")
 def llm_status():
-    """LLM server health + model info."""
+    """LLM server health + model info. Checks localhost first, then Pro's LAN IP."""
     server_online = False
     model_info = {}
 
@@ -29,6 +33,17 @@ def llm_status():
         from llm_client import _load_config, _is_local_server_up
         cfg = _load_config()
         server_online = _is_local_server_up(cfg)
+
+        # If localhost check failed, try Pro's LAN IP (we might be on Air)
+        if not server_online:
+            import urllib.request
+            try:
+                req = urllib.request.Request(f"{PRO_LLM_URL}/models", method="GET")
+                with urllib.request.urlopen(req, timeout=3):
+                    server_online = True
+            except Exception:
+                pass
+
         model_info = {
             "local_large": cfg.get("models", {}).get("local_large", ""),
             "local_small": cfg.get("models", {}).get("local_small", ""),
@@ -312,12 +327,21 @@ def llm_health_check():
     """Test LLM connectivity — local + cloud fallback."""
     results = {}
 
-    # Test local server
+    # Test local server (try localhost, then Pro's LAN IP)
     try:
         sys.path.insert(0, str(SHARED_DIR))
         from llm_client import _load_config, _is_local_server_up, llm_call
         cfg = _load_config()
         results["local_server"] = _is_local_server_up(cfg)
+        if not results["local_server"]:
+            import urllib.request
+            try:
+                req = urllib.request.Request(f"{PRO_LLM_URL}/models", method="GET")
+                with urllib.request.urlopen(req, timeout=3):
+                    results["local_server"] = True
+                    results["local_note"] = "via Pro LAN"
+            except Exception:
+                pass
     except Exception as e:
         results["local_server"] = False
         results["local_error"] = str(e)[:100]
