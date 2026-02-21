@@ -208,8 +208,12 @@ def calculate_edge(
 
     # V4: Dynamic min_edge based on confidence and data quality
     has_sportsbook = getattr(estimate, 'sportsbook_prob', None) is not None
+    has_weather_model = getattr(estimate, 'edge_source', '') == 'weather_model'
     if has_sportsbook:
         # Sportsbook-backed: lower threshold — 40 bookmakers > GPT guesses
+        effective_min_edge = max(0.05, cfg.min_edge - 0.05)
+    elif has_weather_model:
+        # Weather model-backed: lower threshold — ensemble data is very accurate
         effective_min_edge = max(0.05, cfg.min_edge - 0.05)
     elif estimate.confidence >= 0.6:
         effective_min_edge = cfg.min_edge
@@ -224,7 +228,7 @@ def calculate_edge(
     no_edge = (1 - est_prob) - no_price
     best_edge = max(yes_edge, no_edge)
 
-    source_tag = "SB" if has_sportsbook else "GPT"
+    source_tag = "SB" if has_sportsbook else "WX" if has_weather_model else "GPT"
     if best_edge > 0.02:
         log.info("Edge calc [%s]: %s | prob=%.2f market=%.2f | YES=%.1f%% NO=%.1f%% | min=%.1f%% conf=%.1f",
                  source_tag, market.question[:45], est_prob, yes_price,
@@ -257,8 +261,8 @@ def calculate_edge(
         )
         return None
 
-    # Fix 5: Confidence floor — reject low-confidence GPT guesses
-    if not has_sportsbook and estimate.confidence < MIN_CONFIDENCE:
+    # Fix 5: Confidence floor — reject low-confidence GPT guesses (sportsbook + weather exempt)
+    if not has_sportsbook and not has_weather_model and estimate.confidence < MIN_CONFIDENCE:
         log.info("Rejected low-confidence trade: conf=%.2f < %.2f | %s",
                  estimate.confidence, MIN_CONFIDENCE, market.question[:50])
         return None

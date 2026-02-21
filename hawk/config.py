@@ -57,11 +57,5 @@ class HawkConfig:
     predictit_enabled: bool = _env("HAWK_PREDICTIT_ENABLED", "true").lower() in ("true", "1", "yes")
     weather_enabled: bool = _env("HAWK_WEATHER_ENABLED", "true").lower() in ("true", "1", "yes")
 
-    # V5: Arbitrage engine — buy both sides when combined ask < $0.98
-    arb_enabled: bool = _env("HAWK_ARB_ENABLED", "true").lower() in ("true", "1", "yes")
-    arb_bankroll_usd: float = float(_env("HAWK_ARB_BANKROLL_USD", "800"))
-    arb_max_per_trade: float = float(_env("HAWK_ARB_MAX_PER_TRADE", "100"))
-    arb_min_profit_pct: float = float(_env("HAWK_ARB_MIN_PROFIT_PCT", "0.002"))
-    arb_max_concurrent: int = int(_env("HAWK_ARB_MAX_CONCURRENT", "10"))
-    arb_min_depth_usd: float = float(_env("HAWK_ARB_MIN_DEPTH_USD", "100"))
-    arb_scan_interval: int = int(_env("HAWK_ARB_SCAN_INTERVAL", "60"))  # Fast arb loop: every 60s
+    # V6: Weather intelligence — Open-Meteo ensemble + NWS, $0 cost
+    weather_min_volume: int = int(_env("HAWK_WEATHER_MIN_VOLUME", "1000"))  # Lower threshold for weather markets

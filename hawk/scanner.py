@@ -75,12 +75,20 @@ _CATEGORY_KEYWORDS = {
                "ice hockey", "gold medal", "ncaa", "college basketball", "college football",
                "premier league", "la liga", "serie a", "bundesliga", "ligue 1",
                "formula 1", "f1", "grand prix", "pga", "lpga", "atp", "wta"],
+    "weather": ["temperature", "rainfall", "snowfall", "precipitation", "hurricane",
+                "tornado", "storm", "heat wave", "cold wave", "blizzard", "freeze",
+                "drought", "flood", "noaa", "weather forecast", "sea ice", "arctic",
+                "hottest year", "climate record", "windchill", "heat index",
+                "tropical storm", "cyclone", "typhoon", "landfall",
+                "category 5", "category 4", "category 3",
+                "inches of rain", "inches of snow", "high temperature",
+                "low temperature", "degrees fahrenheit"],
     "crypto_event": ["bitcoin", "ethereum", "crypto", "btc", "eth", "sol", "token", "blockchain",
                      "defi", "nft", "halving", "etf", "sec", "price will"],
     "culture": ["oscar", "grammy", "emmy", "movie", "film", "music", "celebrity", "tiktok",
-                "youtube", "twitch", "viral", "ai", "spacex", "nasa", "weather", "elon musk",
+                "youtube", "twitch", "viral", "ai", "spacex", "nasa", "elon musk",
                 "tweet", "openai", "google", "apple", "microsoft", "amazon", "meta",
-                "earthquake", "hurricane", "war", "conflict", "ceasefire"],
+                "earthquake", "war", "conflict", "ceasefire"],
 }
 
 
@@ -101,12 +109,18 @@ class HawkMarket:
 
 
 def _categorize_market(question: str) -> str:
-    """Classify market into category. Sports regex checked FIRST for accuracy."""
+    """Classify market into category. Sports regex first, then weather before culture."""
     # Sports regex catches "vs.", "Spread:", "O/U", team mascots, esports
     if _SPORTS_RE.search(question):
         return "sports"
     q = question.lower()
+    # Check weather BEFORE culture so weather markets don't get miscategorized
+    weather_kws = _CATEGORY_KEYWORDS.get("weather", [])
+    if any(kw in q for kw in weather_kws):
+        return "weather"
     for cat, keywords in _CATEGORY_KEYWORDS.items():
+        if cat == "weather":
+            continue  # Already checked above
         if any(kw in q for kw in keywords):
             return cat
     return "other"
@@ -203,8 +217,11 @@ def scan_all_markets(cfg: HawkConfig) -> list[HawkMarket]:
                     volume = float(m.get("volume", 0) or 0)
                     liquidity = float(m.get("liquidity", 0) or 0)
 
-                    # Skip low-volume markets
-                    if volume < cfg.min_volume:
+                    # Skip low-volume markets (weather markets get lower threshold)
+                    _is_weather = any(kw in question.lower() for kw in _CATEGORY_KEYWORDS.get("weather", []))
+                    weather_min_vol = getattr(cfg, 'weather_min_volume', 1000)
+                    effective_min_vol = weather_min_vol if _is_weather else cfg.min_volume
+                    if volume < effective_min_vol:
                         continue
 
                     # Skip low-liquidity markets (wide spreads, slippage risk)

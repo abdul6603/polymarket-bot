@@ -6752,6 +6752,8 @@ async function loadHawkTab() {
     if (scanTotal) scanTotal.textContent = scan.total_eligible || '--';
     if (scanContested) scanContested.textContent = scan.contested || '--';
     if (scanSports) scanSports.textContent = scan.sports_analyzed || '--';
+    var scanWeather = document.getElementById('hawk-scan-weather');
+    if (scanWeather) scanWeather.textContent = scan.weather_analyzed || '--';
     if (scanNonsports) scanNonsports.textContent = scan.non_sports_analyzed || '--';
     if (scanAnalyzed) scanAnalyzed.textContent = scan.total_analyzed || '--';
   } catch(e) { console.error('hawk status:', e); }
@@ -6817,8 +6819,8 @@ async function loadHawkTab() {
     renderHawkReviews(revData);
   } catch(e) {}
 
-  // Arbitrage Engine
-  loadHawkArb();
+  // Weather Intelligence
+  loadHawkWeather();
 
   // Mode badge
   loadHawkMode();
@@ -6886,76 +6888,55 @@ function buildPerfTable(breakdown) {
   return html;
 }
 
-async function loadHawkArb() {
+async function loadHawkWeather() {
   try {
-    var resp = await fetch('/api/hawk/arb');
+    var resp = await fetch('/api/hawk/weather');
     var d = await resp.json();
-    var sm = d.summary || {};
-    var bankEl = document.getElementById('hawk-arb-bankroll');
-    var openEl = document.getElementById('hawk-arb-open');
-    var profEl = document.getElementById('hawk-arb-profit');
-    var execEl = document.getElementById('hawk-arb-executed');
-    if (bankEl) {
-      var exposure = sm.open_exposure || 0;
-      bankEl.textContent = '$' + ((d.status || {}).bankroll || 800).toFixed(0);
-      if (exposure > 0) bankEl.textContent += ' ($' + exposure.toFixed(0) + ' deployed)';
+    var mktsEl = document.getElementById('hawk-weather-markets');
+    var tradesEl = document.getElementById('hawk-weather-trades');
+    var pnlEl = document.getElementById('hawk-weather-pnl');
+    var wxScanned = document.getElementById('hawk-wx-scanned');
+    var wxOpps = document.getElementById('hawk-wx-opps');
+    var wxWr = document.getElementById('hawk-wx-wr');
+    if (mktsEl) mktsEl.textContent = d.weather_markets_scanned || 0;
+    if (tradesEl) tradesEl.textContent = d.weather_trades || 0;
+    if (pnlEl) {
+      var pnl = d.weather_pnl || 0;
+      pnlEl.textContent = (pnl >= 0 ? '$' : '-$') + Math.abs(pnl).toFixed(2);
+      pnlEl.style.color = pnl >= 0 ? '#00ff44' : 'var(--error)';
     }
-    if (openEl) openEl.textContent = sm.open_arbs || 0;
-    if (profEl) { profEl.textContent = '$' + (sm.total_profit || 0).toFixed(2); profEl.style.color = (sm.total_profit || 0) >= 0 ? '#00ff44' : 'var(--error)'; }
-    if (execEl) execEl.textContent = sm.total_executed || 0;
-    renderHawkArbOpen(d.open_positions || []);
-  } catch(e) { console.error('hawk arb:', e); }
-  try {
-    var hResp = await fetch('/api/hawk/arb/history');
-    var hData = await hResp.json();
-    renderHawkArbHistory(hData.trades || []);
-  } catch(e) {}
+    if (wxScanned) wxScanned.textContent = d.weather_markets_scanned || 0;
+    if (wxOpps) wxOpps.textContent = d.weather_opportunities || 0;
+    if (wxWr) {
+      var wr = d.weather_win_rate || 0;
+      wxWr.textContent = d.weather_resolved > 0 ? wr.toFixed(1) + '%' : '--';
+      if (d.weather_resolved > 0) wxWr.style.color = wrColor(wr);
+    }
+    renderHawkWeatherTrades(d);
+  } catch(e) { console.error('hawk weather:', e); }
 }
 
-function renderHawkArbOpen(positions) {
-  var tbody = document.getElementById('hawk-arb-open-tbody');
+function renderHawkWeatherTrades(data) {
+  var tbody = document.getElementById('hawk-wx-trades-tbody');
   if (!tbody) return;
-  if (positions.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="text-muted" style="text-align:center;padding:16px;">No open arb positions</td></tr>';
+  if (!data.weather_trades || data.weather_trades === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:16px;">No weather trades yet</td></tr>';
     return;
   }
-  var html = '';
-  for (var i = 0; i < positions.length; i++) {
-    var p = positions[i];
-    html += '<tr>';
-    html += '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(p.question) + '">' + esc(p.question) + '</td>';
-    html += '<td>' + esc(p.outcome_a) + ' <span style="color:#00d4ff;">$' + (p.ask_a || 0).toFixed(4) + '</span></td>';
-    html += '<td>' + esc(p.outcome_b) + ' <span style="color:#00d4ff;">$' + (p.ask_b || 0).toFixed(4) + '</span></td>';
-    html += '<td style="color:#FFD700;font-weight:600;">$' + (p.combined_cost || 0).toFixed(4) + '</td>';
-    html += '<td style="color:#00ff44;font-weight:600;">$' + (p.profit_per_share || 0).toFixed(4) + '</td>';
-    html += '<td>' + (p.shares || 0).toFixed(1) + '</td>';
-    html += '<td style="color:#00ff44;font-weight:700;">$' + (p.expected_profit || 0).toFixed(2) + '</td>';
-    html += '<td style="font-size:0.72rem;color:var(--text-muted);">' + esc(p.time_str) + '</td>';
-    html += '</tr>';
-  }
-  tbody.innerHTML = html;
-}
-
-function renderHawkArbHistory(trades) {
-  var tbody = document.getElementById('hawk-arb-hist-tbody');
-  if (!tbody) return;
-  if (trades.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:16px;">No resolved arbs yet</td></tr>';
-    return;
-  }
-  var html = '';
-  for (var i = 0; i < trades.length; i++) {
-    var t = trades[i];
-    var profitColor = (t.profit || 0) >= 0 ? '#00ff44' : 'var(--error)';
-    html += '<tr>';
-    html += '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(t.question) + '">' + esc(t.question) + '</td>';
-    html += '<td>$' + (t.combined_cost || 0).toFixed(4) + '</td>';
-    html += '<td>' + (t.shares || 0).toFixed(1) + '</td>';
-    html += '<td>$' + (t.position_usd || 0).toFixed(2) + '</td>';
-    html += '<td style="color:' + profitColor + ';font-weight:700;">$' + (t.profit || 0).toFixed(2) + '</td>';
-    html += '<td style="font-size:0.72rem;color:var(--text-muted);">' + esc(t.time_str) + '</td>';
-    html += '</tr>';
-  }
+  // Weather trades are embedded in the main trade history — show summary
+  var resolved = data.weather_resolved || 0;
+  var wins = data.weather_wins || 0;
+  var losses = data.weather_losses || 0;
+  var pnl = data.weather_pnl || 0;
+  var pnlColor = pnl >= 0 ? '#00ff44' : 'var(--error)';
+  var html = '<tr>';
+  html += '<td style="color:#4FC3F7;font-weight:600;">Weather Markets (all)</td>';
+  html += '<td>--</td>';
+  html += '<td>--</td>';
+  html += '<td>' + (resolved > 0 ? wins + 'W / ' + losses + 'L' : 'No resolved') + '</td>';
+  html += '<td style="color:' + (resolved > 0 ? wrColor(data.weather_win_rate || 0) : 'var(--text-muted)') + ';">' + (resolved > 0 ? (data.weather_win_rate || 0).toFixed(1) + '%' : '--') + '</td>';
+  html += '<td style="color:' + pnlColor + ';font-weight:700;">$' + pnl.toFixed(2) + '</td>';
+  html += '</tr>';
   tbody.innerHTML = html;
 }
 

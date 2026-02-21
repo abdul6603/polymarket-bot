@@ -236,31 +236,45 @@
     </div>
   </div>
 
-  <!-- ═══ COLLAPSIBLE: Arbitrage (default CLOSED) ═══ -->
+  <!-- ═══ COLLAPSIBLE: Weather Intelligence (default CLOSED) ═══ -->
   <div class="collapse-section">
     <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="hawk" style="margin-bottom:0;">Arbitrage Engine <span style="font-size:0.68rem;color:#00ff44;font-weight:400;margin-left:6px;">guaranteed profit</span></h2>
+      <h2 class="section-title" data-accent="hawk" style="margin-bottom:0;">Weather Intelligence <span style="font-size:0.68rem;color:#4FC3F7;font-weight:400;margin-left:6px;">$0 cost — ensemble models</span></h2>
     </div>
     <div class="collapse-body">
-      <div id="hawk-arb-section">
-        <div class="stat-card" data-accent="hawk" style="margin-bottom:12px;">
-          <div class="stat-value" id="hawk-arb-executed">0</div>
-          <div class="stat-label">Total Arbs Executed</div>
+      <div id="hawk-weather-section">
+        <!-- Weather Stats -->
+        <div class="grid-3" style="margin-bottom:12px;">
+          <div class="stat-card" data-accent="hawk">
+            <div class="stat-value" id="hawk-wx-scanned" style="color:#4FC3F7;">0</div>
+            <div class="stat-label">Markets Scanned</div>
+          </div>
+          <div class="stat-card" data-accent="hawk">
+            <div class="stat-value" id="hawk-wx-opps" style="color:var(--agent-hawk);">0</div>
+            <div class="stat-label">Opportunities</div>
+          </div>
+          <div class="stat-card" data-accent="hawk">
+            <div class="stat-value" id="hawk-wx-wr" style="color:var(--success);">--</div>
+            <div class="stat-label">Win Rate</div>
+          </div>
         </div>
-        <!-- Open Arb Positions Table -->
-        <div class="glass-card" style="margin-bottom:12px;">
-          <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Open Arb Positions</h3>
-          <table class="data-table">
-            <thead><tr><th>Market</th><th>Leg A</th><th>Leg B</th><th>Combined</th><th>Profit/Share</th><th>Shares</th><th>Exp. Profit</th><th>Time</th></tr></thead>
-            <tbody id="hawk-arb-open-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:16px;">No open arb positions</td></tr></tbody>
-          </table>
+        <!-- Data Sources -->
+        <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #4FC3F7;">
+          <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Data Sources</h3>
+          <div id="hawk-wx-sources" style="font-family:var(--font-mono);font-size:0.74rem;">
+            <div style="display:flex;gap:16px;flex-wrap:wrap;">
+              <div><span style="color:#4FC3F7;font-weight:600;">Open-Meteo Ensemble</span> <span class="text-muted">GFS (31) + ECMWF IFS (51 members)</span></div>
+              <div><span style="color:#4FC3F7;font-weight:600;">api.weather.gov</span> <span class="text-muted">NWS deterministic + hourly (US)</span></div>
+              <div><span style="color:#4FC3F7;font-weight:600;">NOAA NHC</span> <span class="text-muted">Hurricane tracking + advisories</span></div>
+            </div>
+          </div>
         </div>
-        <!-- Resolved Arbs Table -->
+        <!-- Weather Trades -->
         <div class="glass-card">
-          <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Resolved Arbs</h3>
+          <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Recent Weather Trades</h3>
           <table class="data-table">
-            <thead><tr><th>Market</th><th>Combined Cost</th><th>Shares</th><th>Invested</th><th>Profit</th><th>Time</th></tr></thead>
-            <tbody id="hawk-arb-hist-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:16px;">No resolved arbs yet</td></tr></tbody>
+            <thead><tr><th>Market</th><th>Dir</th><th>Edge</th><th>Confidence</th><th>Result</th><th>P&amp;L</th></tr></thead>
+            <tbody id="hawk-wx-trades-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:16px;">No weather trades yet</td></tr></tbody>
           </table>
         </div>
       </div>

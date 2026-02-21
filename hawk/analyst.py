@@ -316,14 +316,61 @@ def _get_sportsbook_data(cfg: HawkConfig, market: HawkMarket) -> tuple[float | N
     return sportsbook_prob, num_books, espn_context
 
 
+def _get_weather_data(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate | None:
+    """Pure data-driven weather analysis — $0 cost, no LLM needed."""
+    try:
+        from hawk.noaa import analyze_weather_market
+        result = analyze_weather_market(market.question)
+        if result is None:
+            return None
+
+        prob = result["probability"]
+        confidence = result["confidence"]
+        reasoning = result["reasoning"]
+        n_members = result.get("ensemble_members", 0)
+        horizon = result.get("forecast_horizon_hours", 0)
+        data_source = result.get("data_source", "weather_model")
+
+        member_info = f" ({n_members} ensemble members)" if n_members > 0 else ""
+        horizon_info = f" | {horizon:.0f}h forecast horizon" if horizon > 0 else ""
+
+        log.info("[WEATHER] Data-driven analysis: prob=%.2f conf=%.2f | %s%s%s",
+                 prob, confidence, market.question[:60], member_info, horizon_info)
+
+        return ProbabilityEstimate(
+            market_id=market.condition_id,
+            question=market.question,
+            estimated_prob=prob,
+            confidence=confidence,
+            reasoning=f"Multi-model weather ensemble consensus — no LLM needed. {reasoning}",
+            category="weather",
+            risk_level=2,
+            edge_source="weather_model",
+            money_thesis=f"Weather models say {prob:.0%} — if market disagrees, that is free edge",
+            news_factor=f"Source: {data_source}{member_info}{horizon_info}",
+        )
+    except Exception:
+        log.exception("[WEATHER] Weather data analysis failed for %s", market.question[:60])
+        return None
+
+
 def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate | None:
-    """Analyze a market using the V4 sportsbook-pure architecture.
+    """Analyze a market using the V5 architecture.
 
     Sports + sportsbook data: USE RAW SPORTSBOOK PROB (zero GPT cost!)
     Sports without sportsbook: SKIP (no edge without data)
-    Non-sports: GPT-4o with strict confidence calibration
+    Weather: Pure weather model data (zero LLM cost!)
+    Non-sports: Local LLM with strict confidence calibration
     """
     is_sports = market.category == "sports"
+
+    # ── Weather: pure data, skip LLM ($0 cost) ──
+    if market.category == "weather":
+        weather_est = _get_weather_data(cfg, market)
+        if weather_est is not None:
+            return weather_est
+        # If no weather data match, fall through to LLM analysis
+        log.info("[WEATHER] No weather data match, falling through to LLM: %s", market.question[:60])
 
     # ── Sports: get sportsbook + ESPN data first ──
     sportsbook_prob = None
@@ -568,11 +615,12 @@ def batch_analyze(
     markets: list[HawkMarket],
     max_concurrent: int = 5,
 ) -> list[ProbabilityEstimate]:
-    """V4 batch analysis — sportsbook-pure for sports, GPT only for non-sports."""
+    """V5 batch analysis — sportsbook-pure for sports, weather model for weather, LLM for rest."""
     sports = [m for m in markets if m.category == "sports"]
-    non_sports = [m for m in markets if m.category != "sports"]
-    log.info("Analyzing %d markets: %d sports (sportsbook-pure, $0), %d non-sports (GPT)",
-             len(markets), len(sports), len(non_sports))
+    weather = [m for m in markets if m.category == "weather"]
+    non_sports = [m for m in markets if m.category not in ("sports", "weather")]
+    log.info("Analyzing %d markets: %d sports ($0), %d weather ($0), %d non-sports (LLM)",
+             len(markets), len(sports), len(weather), len(non_sports))
 
     # Prefetch sportsbook data BEFORE analysis
     if sports:
@@ -591,6 +639,12 @@ def batch_analyze(
         if result is not None:
             estimates.append(result)
 
+    # Weather: process synchronously (no LLM calls, instant)
+    for m in weather:
+        result = analyze_market(cfg, m)
+        if result is not None:
+            estimates.append(result)
+
     # V5: Non-sports — analyze with local LLM ($0 cost via shared router)
     for m in non_sports:
         result = analyze_market(cfg, m)
@@ -598,7 +652,8 @@ def batch_analyze(
             estimates.append(result)
 
     sports_count = sum(1 for e in estimates if e.category == "sports")
-    other_count = len(estimates) - sports_count
-    log.info("V5 Analysis: %d/%d markets | %d sports | %d non-sports",
-             len(estimates), len(markets), sports_count, other_count)
+    weather_count = sum(1 for e in estimates if e.category == "weather")
+    other_count = len(estimates) - sports_count - weather_count
+    log.info("V5 Analysis: %d/%d markets | %d sports | %d weather | %d non-sports",
+             len(estimates), len(markets), sports_count, weather_count, other_count)
     return estimates
