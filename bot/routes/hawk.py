@@ -11,6 +11,8 @@ from pathlib import Path
 
 from flask import Blueprint, jsonify, request
 
+from bot.routes._utils import read_fresh, read_fresh_jsonl
+
 log = logging.getLogger(__name__)
 hawk_bp = Blueprint("hawk", __name__)
 
@@ -37,27 +39,12 @@ def _set_progress(step: str, detail: str = "", pct: int = 0, done: bool = False)
 
 
 def _load_trades() -> list[dict]:
-    if not TRADES_FILE.exists():
-        return []
-    trades = []
-    try:
-        with open(TRADES_FILE) as f:
-            for line in f:
-                line = line.strip()
-                if line:
-                    trades.append(json.loads(line))
-    except Exception:
-        pass
-    return trades
+    return read_fresh_jsonl(TRADES_FILE, "~/polymarket-bot/data/hawk_trades.jsonl")
 
 
 def _load_status() -> dict:
-    if STATUS_FILE.exists():
-        try:
-            return json.loads(STATUS_FILE.read_text())
-        except Exception:
-            pass
-    return {"running": False}
+    data = read_fresh(STATUS_FILE, "~/polymarket-bot/data/hawk_status.json")
+    return data if data else {"running": False}
 
 
 def _read_pro_hawk_mode():
@@ -440,17 +427,48 @@ def api_hawk_positions():
                 "_cid": cid,
             })
 
-        # ── 4. Fetch end_date from CLOB API ──
-        for pos in positions:
-            cid = pos["_cid"]
+        # ── 4. Fetch game times from Gamma API ──
+        # Collect event slugs from positions data
+        slug_to_cids: dict[str, list[str]] = {}
+        if isinstance(pos_data, list):
+            for p in pos_data:
+                cid = p.get("conditionId", p.get("asset", ""))
+                slug = p.get("eventSlug", "")
+                if slug and cid:
+                    slug_to_cids.setdefault(slug, []).append(cid)
+
+        def _normalize_dt(s: str) -> str:
+            if not s:
+                return ""
+            s = s.strip().replace(" ", "T")
+            if s.endswith("+00"):
+                s = s[:-3] + "Z"
+            elif not s.endswith("Z") and "+" not in s[10:]:
+                s += "Z"
+            return s
+
+        for slug in slug_to_cids:
             try:
-                clob_url = f"https://clob.polymarket.com/markets/{cid}"
-                creq = urllib.request.Request(clob_url, headers=headers)
-                with urllib.request.urlopen(creq, timeout=5) as cresp:
-                    cdata = json.loads(cresp.read().decode())
-                end_date = cdata.get("end_date_iso") or ""
-                if end_date and end_date != "None":
-                    pos["end_date"] = end_date
+                gamma_url = f"https://gamma-api.polymarket.com/events?slug={slug}"
+                greq = urllib.request.Request(gamma_url, headers=headers)
+                with urllib.request.urlopen(greq, timeout=5) as gresp:
+                    events = json.loads(gresp.read().decode())
+                if not events:
+                    continue
+                ev = events[0] if isinstance(events, list) else events
+                cid_times: dict[str, str] = {}
+                for m in ev.get("markets", []):
+                    mcid = m.get("conditionId", "")
+                    gst = m.get("gameStartTime") or m.get("endDate") or ""
+                    if mcid and gst:
+                        cid_times[mcid] = _normalize_dt(gst)
+                ev_end = _normalize_dt(ev.get("startTime") or ev.get("endDate") or "")
+                for pos in positions:
+                    pcid = pos["_cid"]
+                    if pcid in cid_times:
+                        pos["end_date"] = cid_times[pcid]
+                    elif pcid in slug_to_cids.get(slug, []) and ev_end:
+                        pos["end_date"] = ev_end
             except Exception:
                 pass
 
@@ -637,12 +655,12 @@ def api_hawk_scan():
             target_markets = _urgency_rank_inline(contested)[:30]
 
             _set_progress(
-                "GPT-4o analysis",
-                f"Analyzing {len(target_markets)} contested markets with AI...",
+                "LLM analysis",
+                f"Analyzing {len(target_markets)} contested markets with local LLM...",
                 40,
             )
 
-            # 3. Analyze with GPT-4o
+            # 3. Analyze with LLM (local Qwen2.5-14B via shared router)
             estimates = batch_analyze(cfg, target_markets, max_concurrent=5)
 
             _set_progress("Calculating edges", f"Got {len(estimates)} estimates, finding mispriced markets...", 80)
