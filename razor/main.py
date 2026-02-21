@@ -95,10 +95,11 @@ class RazorBot:
         self._tasks = [
             asyncio.create_task(self._discovery_loop()),
             asyncio.create_task(self._arb_loop()),
+            asyncio.create_task(self._clob_scan_loop()),
             asyncio.create_task(self._status_loop()),
         ]
 
-        log.info("Razor is running — 3 async loops active")
+        log.info("Razor is running — 4 async loops active")
 
         try:
             await asyncio.gather(*self._tasks)
@@ -177,6 +178,32 @@ class RazorBot:
             except Exception:
                 log.exception("Arb loop error")
                 await asyncio.sleep(5)
+
+    async def _clob_scan_loop(self) -> None:
+        """CLOB batch scanner — rotates through ALL markets via REST orderbook.
+
+        Catches arbs even when WS doesn't deliver ask data for a token.
+        Checks 30 markets every 5s → full rotation of 4000 markets in ~11 min.
+        """
+        await asyncio.sleep(10)  # Let WS warm up first
+
+        while self._running:
+            try:
+                if self.engine and self._markets:
+                    opps = await asyncio.get_event_loop().run_in_executor(
+                        None, self.engine.clob_batch_scan, self._markets,
+                    )
+                    # Execute any found (CLOB-verified already, skip re-check)
+                    for opp in opps[:3]:
+                        self.engine.execute_arb(opp)
+
+                await asyncio.sleep(5)
+
+            except asyncio.CancelledError:
+                return
+            except Exception:
+                log.exception("CLOB scan loop error")
+                await asyncio.sleep(10)
 
     async def _status_loop(self) -> None:
         """Write status JSON + log stats every 30 seconds."""

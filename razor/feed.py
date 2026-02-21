@@ -68,9 +68,10 @@ class RazorFeed:
                 await self._send_subscribe(new_ids)
             log.info("Subscribed to %d new tokens (total: %d)", len(new_ids), len(self._token_ids))
 
-    def get_pair_prices(self, token_a: str, token_b: str) -> tuple[float, float, float, float]:
-        """Get prices for a binary pair. Returns (price_a, price_b, bid_a, bid_b).
+    def get_pair_prices(self, token_a: str, token_b: str) -> tuple[float, float, float, float, float, float]:
+        """Get prices for a binary pair.
 
+        Returns (price_a, price_b, bid_a, bid_b, ask_a, ask_b).
         Microsecond read from in-memory dicts.
         """
         return (
@@ -78,6 +79,8 @@ class RazorFeed:
             self.prices.get(token_b, 0.0),
             self.best_bids.get(token_a, 0.0),
             self.best_bids.get(token_b, 0.0),
+            self.best_asks.get(token_a, 0.0),
+            self.best_asks.get(token_b, 0.0),
         )
 
     def token_age(self, token_id: str) -> float:

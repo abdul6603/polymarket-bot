@@ -53,58 +53,59 @@ class RazorEngine:
         self.executor = executor
         self.tracker = tracker
         self._last_opportunities: list[ArbOpportunity] = []
+        # CLOB batch scanner state — rotates through all markets
+        self._clob_scan_idx = 0
+        self._clob_batch_size = 30  # Markets per batch (60 REST calls)
 
     def scan_opportunities(
         self, markets: list[RazorMarket], feed: RazorFeed,
     ) -> list[ArbOpportunity]:
-        """Scan all markets for completeness arbitrage using WS prices.
+        """Scan all markets for completeness arbitrage using WS ask prices.
 
+        Uses WS best_asks (from book events) as primary signal.
+        Falls back to WS mid-prices only if no ask data.
         Called every scan_interval_s (1s). Pure math — microsecond execution.
         """
         opportunities: list[ArbOpportunity] = []
 
         for market in markets:
-            # Skip if we already have a position
             if self.tracker.has_position(market.condition_id):
                 continue
 
-            # Read WS prices (microsecond read)
-            price_a, price_b, bid_a, bid_b = feed.get_pair_prices(
+            # Read WS data (microsecond read)
+            price_a, price_b, bid_a, bid_b, ask_a, ask_b = feed.get_pair_prices(
                 market.token_a_id, market.token_b_id,
             )
 
-            # Fall back to Gamma prices if WS hasn't delivered yet
-            if price_a <= 0:
-                price_a = market.price_a
-            if price_b <= 0:
-                price_b = market.price_b
+            # Use asks as primary signal (that's where arbs live)
+            # Fall back to mid-price, then Gamma price
+            eff_a = ask_a if ask_a > 0 else (price_a if price_a > 0 else market.price_a)
+            eff_b = ask_b if ask_b > 0 else (price_b if price_b > 0 else market.price_b)
 
-            if price_a <= 0 or price_b <= 0:
+            if eff_a <= 0 or eff_b <= 0:
                 continue
 
-            # THE MATH: spread = 1.00 - (price_a + price_b)
-            price_sum = price_a + price_b
-            spread = 1.0 - price_sum
+            # THE MATH: spread = 1.00 - (ask_a + ask_b)
+            combined = eff_a + eff_b
+            spread = 1.0 - combined
 
-            # Quick filter — skip if no spread
             if spread < self.cfg.min_spread:
                 continue
 
             opportunities.append(ArbOpportunity(
                 market=market,
-                price_a=price_a,
-                price_b=price_b,
-                ask_a=price_a,  # Placeholder — will be verified by CLOB
-                ask_b=price_b,
+                price_a=price_a if price_a > 0 else market.price_a,
+                price_b=price_b if price_b > 0 else market.price_b,
+                ask_a=eff_a,
+                ask_b=eff_b,
                 spread=spread,
-                net_profit_per_dollar=0.0,  # Calculated after CLOB check
+                net_profit_per_dollar=0.0,
                 depth_a=0.0,
                 depth_b=0.0,
                 max_shares=0.0,
                 position_usd=0.0,
             ))
 
-        # Sort by spread (most profitable first)
         opportunities.sort(key=lambda o: o.spread, reverse=True)
         self._last_opportunities = opportunities
 
@@ -112,6 +113,59 @@ class RazorEngine:
             log.info("Found %d potential arbs (top spread: %.3f = %.1f%%)",
                      len(opportunities), opportunities[0].spread,
                      opportunities[0].spread * 100)
+
+        return opportunities
+
+    def clob_batch_scan(self, markets: list[RazorMarket]) -> list[ArbOpportunity]:
+        """Scan a batch of markets via CLOB REST orderbook.
+
+        Rotates through ALL markets — catches arbs even without WS ask data.
+        Called every ~5s from a dedicated loop.
+        """
+        n = len(markets)
+        if n == 0:
+            return []
+
+        start = self._clob_scan_idx % n
+        batch = []
+        for i in range(self._clob_batch_size):
+            idx = (start + i) % n
+            m = markets[idx]
+            if not self.tracker.has_position(m.condition_id):
+                batch.append(m)
+        self._clob_scan_idx = (start + self._clob_batch_size) % n
+
+        opportunities: list[ArbOpportunity] = []
+        for m in batch:
+            ask_a, depth_a = self.executor.fetch_best_ask(m.token_a_id)
+            ask_b, depth_b = self.executor.fetch_best_ask(m.token_b_id)
+            if ask_a <= 0 or ask_b <= 0:
+                continue
+
+            combined = ask_a + ask_b
+            spread = 1.0 - combined
+            if spread < self.cfg.min_spread:
+                continue
+
+            opportunities.append(ArbOpportunity(
+                market=m,
+                price_a=m.price_a,
+                price_b=m.price_b,
+                ask_a=ask_a,
+                ask_b=ask_b,
+                spread=spread,
+                net_profit_per_dollar=0.0,
+                depth_a=depth_a,
+                depth_b=depth_b,
+                max_shares=0.0,
+                position_usd=0.0,
+            ))
+
+        if opportunities:
+            opportunities.sort(key=lambda o: o.spread, reverse=True)
+            log.info("[CLOB SCAN] Found %d arbs in batch of %d (idx %d/%d) | top: %.3f",
+                     len(opportunities), len(batch), start, n,
+                     opportunities[0].spread)
 
         return opportunities
 
@@ -244,7 +298,7 @@ class RazorEngine:
         cfg = self.cfg
 
         for pos in self.tracker.open_positions:
-            price_a, price_b, bid_a, bid_b = feed.get_pair_prices(
+            price_a, price_b, bid_a, bid_b, _ask_a, _ask_b = feed.get_pair_prices(
                 pos.token_a_id, pos.token_b_id,
             )
 
