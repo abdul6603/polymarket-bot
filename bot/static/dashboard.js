@@ -427,14 +427,18 @@ function renderOnChainPositions(data) {
   _onChainHoldingsData = holdings;
   if (holdEl) {
     if (holdings.length === 0) {
-      holdEl.innerHTML = '<tr><td colspan="10" class="text-muted" style="text-align:center;padding:16px;">No open positions — scanning for opportunities</td></tr>';
+      holdEl.innerHTML = '<tr><td colspan="12" class="text-muted" style="text-align:center;padding:16px;">No open positions — scanning for opportunities</td></tr>';
     } else {
       var html = '';
       for (var i = 0; i < holdings.length; i++) {
         var p = holdings[i];
         var pc = p.pnl >= 0 ? 'var(--success)' : 'var(--error)';
         var ps = (p.pnl >= 0 ? '+$' : '-$') + Math.abs(p.pnl).toFixed(2);
-        var tl = hawkCalcTimeLeft(p.end_date);
+        var stillActive = (p.cur_price || 0) > 0.001;
+        var tl = hawkCalcTimeLeft(p.end_date, stillActive);
+        var gPayout = (p.size || 0) * 1.0;
+        var gReturn = gPayout - (p.cost || 0);
+        var gReturnPct = (p.cost || 0) > 0 ? (gReturn / p.cost * 100) : 0;
         html += '<tr>';
         html += '<td style="font-weight:600;">' + esc(p.asset) + '</td>';
         html += '<td style="font-size:0.72rem;">' + esc(p.market) + '</td>';
@@ -450,6 +454,8 @@ function renderOnChainPositions(data) {
         } else {
           html += '<td style="color:' + pc + ';font-weight:700;">' + ps + ' (' + p.pnl_pct.toFixed(1) + '%)</td>';
         }
+        html += '<td style="color:#00d4ff;font-weight:600;">$' + gPayout.toFixed(2) + '</td>';
+        html += '<td style="color:' + (gReturn >= 0 ? '#00ff44' : '#ff4444') + ';font-weight:600;">+$' + gReturn.toFixed(2) + ' <span style="font-size:0.68rem;opacity:0.7;">(+' + gReturnPct.toFixed(0) + '%)</span></td>';
         html += '</tr>';
       }
       holdEl.innerHTML = html;
@@ -7247,7 +7253,7 @@ function renderHawkPositions(positions) {
   var el = document.getElementById('hawk-pos-tbody');
   if (!el) return;
   _hawkPositionsData = positions;
-  if (positions.length === 0) { el.innerHTML = '<tr><td colspan="9" class="text-muted" style="text-align:center;padding:24px;">No open positions</td></tr>'; return; }
+  if (positions.length === 0) { el.innerHTML = '<tr><td colspan="11" class="text-muted" style="text-align:center;padding:24px;">No open positions</td></tr>'; return; }
   var html = '';
   for (var i = 0; i < positions.length; i++) {
     var p = positions[i];
@@ -7256,6 +7262,9 @@ function renderHawkPositions(positions) {
     var pnl = p.pnl || 0;
     var pnlColor = pnl >= 0 ? '#00ff44' : '#ff4444';
     var pnlPct = p.pnl_pct || 0;
+    var payout = p.payout || (p.shares || 0);
+    var estRet = p.est_return || (payout - (p.size_usd || 0));
+    var estRetPct = p.est_return_pct || ((p.size_usd || 0) > 0 ? (estRet / (p.size_usd || 1) * 100) : 0);
     html += '<tr>';
     html += '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc((p.question || '').substring(0, 45)) + '</td>';
     html += '<td>' + esc(p.direction || '?') + '</td>';
@@ -7264,6 +7273,8 @@ function renderHawkPositions(positions) {
     html += '<td style="font-weight:600;">' + ((p.cur_price || 0) * 100).toFixed(0) + '\u00A2</td>';
     html += '<td id="hawk-pos-timer-' + i + '" style="color:' + tl.color + ';font-weight:600;font-size:0.76rem;white-space:nowrap;">' + tl.text + '</td>';
     html += '<td style="color:' + pnlColor + ';font-weight:600;">' + (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2) + ' <span style="font-size:0.68rem;opacity:0.7;">(' + (pnlPct >= 0 ? '+' : '') + pnlPct.toFixed(0) + '%)</span></td>';
+    html += '<td style="color:#00d4ff;font-weight:600;">$' + payout.toFixed(2) + '</td>';
+    html += '<td style="color:' + (estRet >= 0 ? '#00ff44' : '#ff4444') + ';font-weight:600;">+$' + estRet.toFixed(2) + ' <span style="font-size:0.68rem;opacity:0.7;">(+' + estRetPct.toFixed(0) + '%)</span></td>';
     html += '<td><span class="badge" style="background:rgba(255,255,255,0.08);">' + esc(p.category || '?') + '</span></td>';
     html += '<td style="font-size:0.72rem;color:var(--text-muted);">' + (p.risk_score || '-') + '</td>';
     html += '</tr>';
@@ -9215,7 +9226,7 @@ function razorRenderPositions(positions) {
   var tbody = document.getElementById('razor-pos-tbody');
   if (!tbody) return;
   if (!positions || positions.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No open arb positions</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="text-muted" style="text-align:center;padding:24px;">No open arb positions</td></tr>';
     return;
   }
   var html = '';
@@ -9225,6 +9236,9 @@ function razorRenderPositions(positions) {
     var age = p.age_s || 0;
     var ageStr = age >= 3600 ? Math.floor(age / 3600) + 'h ' + Math.floor((age % 3600) / 60) + 'm' : Math.floor(age / 60) + 'm ' + Math.floor(age % 60) + 's';
     var statusColor = p.status === 'exiting' ? 'var(--warning)' : 'var(--success)';
+    var rPayout = (p.shares || 0) * 1.0;
+    var rReturn = rPayout - (p.position_usd || 0);
+    var rReturnPct = (p.position_usd || 0) > 0 ? (rReturn / p.position_usd * 100) : 0;
     html += '<tr>';
     html += '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(p.question || '') + '">' + esc((p.question || '').substring(0, 50)) + '</td>';
     html += '<td>' + (p.ask_a || 0).toFixed(3) + '</td>';
@@ -9232,6 +9246,8 @@ function razorRenderPositions(positions) {
     html += '<td style="color:var(--agent-razor);">' + combined.toFixed(3) + '</td>';
     html += '<td>' + (p.shares || 0).toFixed(1) + '</td>';
     html += '<td>$' + (p.position_usd || 0).toFixed(2) + '</td>';
+    html += '<td style="color:#00d4ff;font-weight:600;">$' + rPayout.toFixed(2) + '</td>';
+    html += '<td style="color:#00ff44;font-weight:600;">+$' + rReturn.toFixed(2) + ' <span style="font-size:0.68rem;opacity:0.7;">(+' + rReturnPct.toFixed(0) + '%)</span></td>';
     html += '<td><span style="color:' + statusColor + ';text-transform:uppercase;font-weight:600;font-size:0.72rem;">' + esc(p.status) + '</span></td>';
     html += '<td>' + ageStr + '</td>';
     html += '</tr>';

@@ -382,16 +382,24 @@ def api_hawk_positions():
             if cur_price >= 0.999:
                 status = "won"
 
+            payout = total_size * 1.0  # $1 per share on win
+            est_return = payout - total_cost
+            est_return_pct = (est_return / total_cost * 100) if total_cost > 0 else 0
+
             positions.append({
                 "condition_id": cid,
                 "question": title,
                 "direction": outcome.lower() if outcome else "yes",
+                "shares": round(total_size, 2),
                 "size_usd": round(total_cost, 2),
                 "entry_price": round(avg_price, 4),
                 "cur_price": round(cur_price, 4),
                 "value": round(total_value, 2),
                 "pnl": round(pnl, 2),
                 "pnl_pct": round(pnl_pct, 1),
+                "payout": round(payout, 2),
+                "est_return": round(est_return, 2),
+                "est_return_pct": round(est_return_pct, 1),
                 "status": status,
                 "_cid": cid,
             })
