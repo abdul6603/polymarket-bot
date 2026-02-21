@@ -10,6 +10,8 @@ from pathlib import Path
 
 from flask import Blueprint, jsonify, request
 
+from bot.routes._utils import read_fresh
+
 log = logging.getLogger(__name__)
 thor_bp = Blueprint("thor", __name__)
 
@@ -30,9 +32,8 @@ def api_thor():
     try:
         # Read status file (written by Thor's reporter)
         status_file = THOR_DATA / "status.json"
-        if status_file.exists():
-            status = json.loads(status_file.read_text())
-        else:
+        status = read_fresh(status_file, "~/thor/data/status.json")
+        if not status:
             status = {"state": "offline", "agent": "thor"}
 
         # Queue stats
@@ -714,92 +715,55 @@ def _generate_smart_actions(agent_filter: str = "") -> list[dict]:
     except Exception:
         pass
 
-    # 4. Soren queue health → pipeline actions
+    # 4. Soren pipeline failures → code fix actions (NOT operational queue management)
     try:
         queue_file = Path.home() / "soren-content" / "data" / "content_queue.json"
         if queue_file.exists():
             queue = json.loads(queue_file.read_text())
             items = queue if isinstance(queue, list) else queue.get("items", [])
-            pending = [i for i in items if i.get("status") == "pending"]
             failed = [i for i in items if i.get("status") == "failed"]
             if len(failed) > 2:
                 actions.append({
                     "id": "soren_failed_posts",
-                    "title": f"Soren: {len(failed)} Failed Posts — Fix Pipeline",
-                    "description": f"{len(failed)} content items failed. Check generation errors, "
-                                   "API connectivity, and retry failed items.",
+                    "title": f"Soren: {len(failed)} Failed Posts — Fix Pipeline Code",
+                    "description": f"{len(failed)} content items failed. Debug generation/publishing "
+                                   "code, fix error handling, and add retry logic.",
                     "agent": "soren",
                     "source": "live_data",
                     "priority": "high",
                     "target_files": ["soren-content/generate.py", "mercury/core/publisher.py"],
                     "color": AGENT_COLORS["soren"],
                 })
-            if len(pending) < 3:
-                actions.append({
-                    "id": "soren_low_queue",
-                    "title": f"Soren Queue Low ({len(pending)} pending) — Generate Content",
-                    "description": "Content queue running low. Generate a fresh batch of content "
-                                   "across all pillars to keep posting schedule on track.",
-                    "agent": "soren",
-                    "source": "live_data",
-                    "priority": "normal",
-                    "target_files": ["soren-content/generate.py", "soren-content/writer.py"],
-                    "color": AGENT_COLORS["soren"],
-                })
+            # NOTE: "Queue Low — Generate Content" removed — that's Soren's job, not Thor's
     except Exception:
         pass
 
-    # 5. Atlas KB health → maintenance actions
-    try:
-        kb_file = ATLAS_DATA / "knowledge_base.json"
-        if kb_file.exists():
-            kb = json.loads(kb_file.read_text())
-            obs_count = len(kb.get("observations", []))
-            learnings = kb.get("learnings", [])
-            unapplied = len([l for l in learnings if not l.get("applied")])
-            if obs_count > 400:
-                actions.append({
-                    "id": "atlas_compress_kb",
-                    "title": f"Atlas KB Bloated ({obs_count} obs) — Compress",
-                    "description": f"Knowledge base has {obs_count} observations (max 500). "
-                                   "Run auto-summarization to compress old observations into learnings.",
-                    "agent": "atlas",
-                    "source": "live_data",
-                    "priority": "normal",
-                    "target_files": ["atlas/brain.py"],
-                    "color": AGENT_COLORS["atlas"],
-                })
-            if unapplied > 10:
-                actions.append({
-                    "id": "atlas_apply_learnings",
-                    "title": f"Atlas: {unapplied} Unapplied Learnings — Review",
-                    "description": f"{unapplied} validated learnings haven't been applied yet. "
-                                   "Review and implement the most impactful ones.",
-                    "agent": "atlas",
-                    "source": "live_data",
-                    "priority": "normal",
-                    "target_files": ["atlas/brain.py", "atlas/improvements.py"],
-                    "color": AGENT_COLORS["atlas"],
-                })
-    except Exception:
-        pass
+    # 5. (Removed — Atlas KB health is operational maintenance, not coding)
 
-    # 5b. Atlas learnings → actionable insights (evolving knowledge)
+    # 5b. Atlas learnings → coding-actionable insights only
     try:
         kb_file = ATLAS_DATA / "knowledge_base.json"
         if kb_file.exists():
             kb = json.loads(kb_file.read_text())
             learnings = kb.get("learnings", [])
-            # Only high-confidence, actionable learnings that mention specific issues
-            action_keywords = ["needs", "should", "bottleneck", "declining", "failing",
-                               "low", "below", "improve", "fix", "broken", "stale"]
+            # Only learnings that suggest building/fixing CODE — not alerts or metrics
+            coding_keywords = ["implement", "build", "algorithm", "module", "refactor",
+                               "automate", "integrate", "pipeline", "system", "feature",
+                               "fix bug", "add support", "optimize code", "rewrite"]
+            # Reject learnings that are just alerts/metrics
+            alert_keywords = ["win rate", "score low", "queue low", "completion rate",
+                              "consecutive", "backlog", "pending", "audit", "review"]
             for learning in reversed(learnings[-50:]):
                 insight = learning.get("insight", "")
                 agent = learning.get("agent", "atlas")
                 conf = learning.get("confidence", 0)
-                if conf < 0.7 or not any(kw in insight.lower() for kw in action_keywords):
+                insight_lower = insight.lower()
+                if conf < 0.7:
                     continue
-                # Skip learnings about things already built
+                if not any(kw in insight_lower for kw in coding_keywords):
+                    continue
+                if any(kw in insight_lower for kw in alert_keywords):
+                    continue
                 if _is_suggestion_stale(insight, "", installed_infra):
                     continue
                 action_id = f"learning_{agent}_{hash(insight) % 10000}"
@@ -819,31 +783,7 @@ def _generate_smart_actions(agent_filter: str = "") -> list[dict]:
     except Exception:
         pass
 
-    # 6. Shelby assessments → low-scoring agent actions
-    try:
-        assess_file = SHELBY_DATA / "agent_assessments.json"
-        if assess_file.exists():
-            assessments = json.loads(assess_file.read_text())
-            if isinstance(assessments, dict):
-                for agent_name, data in assessments.items():
-                    if not isinstance(data, dict):
-                        continue
-                    score = data.get("score", data.get("rating", 100))
-                    if isinstance(score, (int, float)) and score < 60:
-                        actions.append({
-                            "id": f"low_score_{agent_name}",
-                            "title": f"{agent_name.title()} Score Low ({score}) — Investigate",
-                            "description": f"Shelby rates {agent_name.title()} at {score}/100. "
-                                           f"Reason: {data.get('reason', data.get('notes', 'underperforming'))}. "
-                                           "Investigate and fix root cause.",
-                            "agent": agent_name,
-                            "source": "shelby",
-                            "priority": "high",
-                            "target_files": AGENT_FILE_MAP.get(agent_name, {}).get("key_files", []),
-                            "color": AGENT_COLORS.get(agent_name, "#888"),
-                        })
-    except Exception:
-        pass
+    # 6. (Removed — Shelby score assessments are investigations, not coding tasks)
 
     # 7. Dependency checker → security actions
     try:
@@ -901,6 +841,29 @@ def _generate_smart_actions(agent_filter: str = "") -> list[dict]:
         if title_hash not in completed_hashes:
             filtered.append(a)
     actions = filtered
+
+    # Final guard: reject actions that are clearly NOT coding tasks
+    # This catches future sources that might add operational/alert items
+    _non_coding_patterns = [
+        "generate content", "queue low", "clear task backlog", "investigate",
+        "completion rate", "unapplied learnings", "review and", "audit",
+        "score low", "consecutive check", "0% win rate",
+    ]
+    actions = [a for a in actions if not any(
+        pat in a.get("title", "").lower() for pat in _non_coding_patterns
+    )]
+
+    # Reject raw markdown summaries / status reports that leak from Atlas KB
+    def _is_clean_action(a):
+        t = a.get("title", "")
+        if t.startswith("**") or t.startswith("1.") or t.startswith("- "):
+            return False  # Raw markdown, not a proper task title
+        if "maintaining" in t.lower() and "rate" in t.lower():
+            return False  # Status report, not a task
+        if len(t) < 10:
+            return False  # Too short to be meaningful
+        return True
+    actions = [a for a in actions if _is_clean_action(a)]
 
     # Filter by agent if requested
     if agent_filter:
