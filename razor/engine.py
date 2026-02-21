@@ -1,18 +1,24 @@
 """Razor Engine — the brain. Detect arbs, execute, manage exits.
 
-Pure math, no AI. When A + B < 1, the proof writes itself.
+Pure math + ML learning. When A + B < 1, the proof writes itself.
+The Mathematician learns from every trade.
 """
 from __future__ import annotations
 
 import logging
 import time
+from datetime import datetime
 from dataclasses import dataclass
+from zoneinfo import ZoneInfo
 
 from razor.config import RazorConfig
 from razor.feed import RazorFeed
 from razor.executor import RazorExecutor
 from razor.tracker import ArbPosition, RazorTracker
 from razor.scanner import RazorMarket
+from razor.learner import RazorLearner
+
+ET = ZoneInfo("America/New_York")
 
 log = logging.getLogger(__name__)
 
@@ -52,6 +58,7 @@ class RazorEngine:
         self.cfg = cfg
         self.executor = executor
         self.tracker = tracker
+        self.learner = RazorLearner()
         self._last_opportunities: list[ArbOpportunity] = []
         # CLOB batch scanner state — rotates through all markets
         self._clob_scan_idx = 0
@@ -70,6 +77,8 @@ class RazorEngine:
 
         for market in markets:
             if self.tracker.has_position(market.condition_id):
+                continue
+            if self.learner.should_skip(market.condition_id):
                 continue
 
             # Read WS data (microsecond read)
@@ -109,6 +118,21 @@ class RazorEngine:
         opportunities.sort(key=lambda o: o.spread, reverse=True)
         self._last_opportunities = opportunities
 
+        # Learn from what we found
+        hour = datetime.now(ET).hour
+        for opp in opportunities:
+            self.learner.record_opportunity(
+                opp.market.condition_id, opp.market.question,
+                opp.spread, opp.market.liquidity, hour,
+            )
+
+        # Prioritize hotspots — known repeat arb markets get bumped up
+        if len(opportunities) > 1:
+            opportunities.sort(
+                key=lambda o: (self.learner.is_hotspot(o.market.condition_id), o.spread),
+                reverse=True,
+            )
+
         if opportunities:
             log.info("Found %d potential arbs (top spread: %.3f = %.1f%%)",
                      len(opportunities), opportunities[0].spread,
@@ -131,7 +155,7 @@ class RazorEngine:
         for i in range(self._clob_batch_size):
             idx = (start + i) % n
             m = markets[idx]
-            if not self.tracker.has_position(m.condition_id):
+            if not self.tracker.has_position(m.condition_id) and not self.learner.should_skip(m.condition_id):
                 batch.append(m)
         self._clob_scan_idx = (start + self._clob_batch_size) % n
 
@@ -214,6 +238,7 @@ class RazorEngine:
             log.debug("Not profitable after fees: spread=%.4f, fees=%.4f, net=%.4f | %s",
                       spread, total_taker_fee + winner_fee, net_profit,
                       opp.market.question[:60])
+            self.learner.record_skip(opp.market.condition_id, "negative_net_after_fees")
             return None
 
         if spread < cfg.min_spread:
@@ -288,6 +313,7 @@ class RazorEngine:
             dry_run=cfg.dry_run,
         )
         self.tracker.add_position(pos)
+        self.learner.record_execution(opp.market.condition_id, spread, position_usd)
         self._bus_arb_placed(pos)
         return pos
 
@@ -337,6 +363,7 @@ class RazorEngine:
                 pnl = recovery - cost
                 self.executor.sell_both_sides(pos.token_a_id, pos.token_b_id, pos.shares)
                 self.tracker.close_position(pos, round(pnl, 2), "max_hold")
+                self.learner.record_exit(pos.condition_id, age, "max_hold", round(pnl, 2))
                 continue
 
             # 2. PROFIT LOCK — sell both when winner > 95%
@@ -350,6 +377,7 @@ class RazorEngine:
                 pnl = total_recovery - pos.position_usd
                 self.executor.sell_both_sides(pos.token_a_id, pos.token_b_id, pos.shares)
                 self.tracker.close_position(pos, round(pnl, 2), "profit_lock")
+                self.learner.record_exit(pos.condition_id, pos.age_s(), "profit_lock", round(pnl, 2))
                 continue
 
             # 3. EARLY EXIT — sell losing side when winner > 70%
@@ -373,6 +401,7 @@ class RazorEngine:
                 total_recovery = pos.exit_recovery + winner_recovery
                 pnl = total_recovery - pos.position_usd
                 self.tracker.close_position(pos, round(pnl, 2), "early_exit_profit_lock")
+                self.learner.record_exit(pos.condition_id, pos.age_s(), "early_exit_profit_lock", round(pnl, 2))
 
     def check_settlements(self) -> None:
         """Check if any open positions have settled (market resolved)."""
@@ -401,6 +430,7 @@ class RazorEngine:
                 # Subtract any recovery already counted
                 pnl = payout + pos.exit_recovery - cost
                 self.tracker.close_position(pos, round(pnl, 2), "settled")
+                self.learner.record_exit(pos.condition_id, pos.age_s(), "settled", round(pnl, 2))
                 log.info("SETTLED: %s | payout=$%.2f | PnL=$%.2f | %s",
                          pos.arb_id, payout, pnl, pos.question[:60])
             except Exception:

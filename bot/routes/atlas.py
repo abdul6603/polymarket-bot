@@ -663,7 +663,7 @@ def api_atlas_hub_eval():
             features.append("Agent brain notes system for persistent knowledge")
 
         our_system = {
-            "total_agents": 10,
+            "total_agents": 11,
             "agents": [
                 {"name": "Garves", "role": "Crypto Up/Down trader (Polymarket)", "color": "#00d4ff"},
                 {"name": "Soren", "role": "Dark motivation content creator (@soren.era)", "color": "#cc66ff"},
@@ -675,6 +675,7 @@ def api_atlas_hub_eval():
                 {"name": "Hawk", "role": "Non-crypto Polymarket scanner (sports, politics)", "color": "#FFD700"},
                 {"name": "Viper", "role": "Revenue hunter — gigs, cost audits", "color": "#00ff88"},
                 {"name": "Quant", "role": "Backtesting lab — parameter optimization", "color": "#00BFFF"},
+                {"name": "Razor", "role": "Completeness arbitrage — ALL markets, ML-enhanced", "color": "#FF1493"},
             ],
             "features": features,
             "architecture": "Jordan (Owner) > Claude (Godfather) > Thor + Shelby > All Agents. Atlas cross-cuts.",
@@ -1195,7 +1196,7 @@ def api_atlas_suggest_agent():
                 pass
 
         # Current system gaps that might warrant a new agent
-        current_agents = ["garves", "soren", "shelby", "atlas", "lisa", "thor", "robotox", "hawk", "viper", "quant"]
+        current_agents = ["garves", "soren", "shelby", "atlas", "lisa", "thor", "robotox", "hawk", "viper", "quant", "razor"]
         gap_areas = [
             {"area": "Analytics/BI", "description": "Dedicated data visualization and business intelligence agent",
              "need": "medium", "reason": "Currently Atlas handles both research and analytics — a dedicated BI agent could provide richer dashboards and trend analysis"},

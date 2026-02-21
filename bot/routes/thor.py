@@ -481,6 +481,7 @@ AGENT_COLORS = {
     "garves": "#FFD700", "soren": "#9370DB", "shelby": "#4169E1",
     "atlas": "#32CD32", "lisa": "#FF69B4", "robotox": "#FF4500",
     "thor": "#00CED1", "dashboard": "#708090", "system": "#e0e0e0",
+    "razor": "#FF1493",
 }
 
 # Project file mappings
@@ -493,6 +494,7 @@ AGENT_FILE_MAP = {
     "robotox": {"root": "sentinel", "key_files": ["sentinel.py"]},
     "thor": {"root": "thor", "key_files": ["agent.py", "core/brain.py", "core/coder.py"]},
     "dashboard": {"root": "polymarket-bot", "key_files": ["bot/live_dashboard.py", "bot/static/dashboard.js", "bot/templates/dashboard.html"]},
+    "razor": {"root": "polymarket-bot", "key_files": ["razor/engine.py", "razor/scanner.py", "razor/main.py"]},
 }
 
 

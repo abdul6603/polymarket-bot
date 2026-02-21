@@ -218,6 +218,7 @@ class RazorBot:
                     break
 
                 stats = self.tracker.stats()
+                learner_summary = self.engine.learner.summary() if self.engine else {}
                 feed_info = {
                     "ws_connected": self.feed.connected if self.feed else False,
                     "ws_tokens": self.feed.token_count if self.feed else 0,
@@ -227,8 +228,13 @@ class RazorBot:
                     "bankroll_usd": self.cfg.bankroll_usd,
                     "max_per_trade": self.cfg.max_per_trade,
                     "last_opps": len(self.engine.last_opportunities) if self.engine else 0,
+                    "learner": learner_summary,
                 }
                 self.tracker.save_status(extra=feed_info)
+
+                # Save learner state to disk
+                if self.engine:
+                    self.engine.learner.save()
 
                 log.info(
                     "STATUS: open=%d | exposure=$%.2f | PnL=$%.2f | "
