@@ -29,10 +29,18 @@
     </div>
   </div>
 
-  <!-- Activity Feed -->
-  <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-garves);">
-    <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Agent Activity</h3>
-    <div id="garves-activity-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:150px;overflow-y:auto;"><span class="text-muted">Waiting for activity...</span></div>
+  <!-- ═══ COLLAPSIBLE: Open Positions (default OPEN) ═══ -->
+  <div class="collapse-section default-open">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">Open Positions
+        <span id="positions-live-dot" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;animation:pulse-glow 2s ease-in-out infinite;margin-left:8px;"></span>
+        <span style="font-size:0.64rem;color:var(--success);margin-left:4px;">LIVE</span>
+      </h2>
+    </div>
+    <div class="collapse-body">
+      <div class="glass-card"><table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Bet</th><th>Shares</th><th>Entry</th><th>Now</th><th>Margin</th><th>Value</th><th>Timer</th><th>P&L</th><th>Payout</th><th>Return</th></tr></thead>
+      <tbody id="oc-holdings-tbody"><tr><td colspan="12" class="text-muted" style="text-align:center;padding:16px;">No open positions</td></tr></tbody></table></div>
+    </div>
   </div>
 
   <!-- 6 Stats Grid -->
@@ -113,14 +121,11 @@
       <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">Trade Details</h2>
     </div>
     <div class="collapse-body">
-      <!-- Current Holdings -->
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <h3 class="section-title" data-accent="garves" style="margin:0;font-size:0.76rem;">Current Holdings</h3>
-        <span id="positions-live-dot" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;animation:pulse-glow 2s ease-in-out infinite;"></span>
-        <span style="font-size:0.64rem;color:var(--success);">LIVE</span>
+      <!-- Activity Feed -->
+      <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-garves);">
+        <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Agent Activity</h3>
+        <div id="garves-activity-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:150px;overflow-y:auto;"><span class="text-muted">Waiting for activity...</span></div>
       </div>
-      <div class="glass-card" style="margin-bottom:12px;"><table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Bet</th><th>Shares</th><th>Entry</th><th>Now</th><th>Margin</th><th>Value</th><th>Timer</th><th>P&L</th><th>Payout</th><th>Return</th></tr></thead>
-      <tbody id="oc-holdings-tbody"><tr><td colspan="12" class="text-muted" style="text-align:center;padding:16px;">No open positions</td></tr></tbody></table></div>
 
       <!-- Trade History -->
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:var(--space-2);">
