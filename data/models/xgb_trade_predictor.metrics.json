@@ -1,0 +1,33 @@
+{
+  "status": "trained",
+  "num_samples": 34,
+  "win_rate": 0.3235294117647059,
+  "accuracy": 0.7352941176470589,
+  "precision": 0.6,
+  "recall": 0.5454545454545454,
+  "f1": 0.5714285714285714,
+  "cv_accuracy": null,
+  "top_features": [
+    [
+      "entry_price",
+      0.5898752212524414
+    ],
+    [
+      "edge",
+      0.2946588397026062
+    ],
+    [
+      "confidence",
+      0.0978793203830719
+    ],
+    [
+      "size_usd",
+      0.017586611211299896
+    ],
+    [
+      "category",
+      0.0
+    ]
+  ],
+  "model_path": "/Users/abdallaalhamdan/polymarket-bot/data/models/xgb_trade_predictor.json"
+}

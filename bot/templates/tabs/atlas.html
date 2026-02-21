@@ -38,6 +38,17 @@
     </div>
   </div>
 
+  <!-- KB Semantic Search -->
+  <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-atlas);background:linear-gradient(135deg,rgba(34,170,68,0.04),rgba(0,191,255,0.04));">
+    <h3 class="section-title" style="font-size:0.72rem;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;color:var(--agent-atlas);">KB Semantic Search</h3>
+    <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:8px;">Search learnings and observations by meaning, not just keywords.</div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <input type="text" class="input" id="atlas-kb-search-query" placeholder="e.g. bitcoin weekend pattern, content engagement..." style="flex:1;font-size:0.78rem;padding:6px 10px;" onkeydown="if(event.key==='Enter')atlasKBSearch()">
+      <button class="btn btn-primary" onclick="atlasKBSearch()" style="font-size:0.76rem;padding:6px 16px;white-space:nowrap;">Search KB</button>
+    </div>
+    <div id="atlas-kb-search-results" style="display:none;margin-top:10px;max-height:350px;overflow-y:auto;"></div>
+  </div>
+
   <!-- ═══════════════════════════════════════════════════════════════ -->
   <!-- CONTENT INTELLIGENCE PIPELINE — Auto-feeds Soren & Lisa       -->
   <!-- ═══════════════════════════════════════════════════════════════ -->

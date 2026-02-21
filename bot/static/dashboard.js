@@ -1678,6 +1678,47 @@ async function atlasDeepResearch() {
   } catch(e) { resultEl.innerHTML = '<div style="color:var(--error);">Research failed: ' + esc(e.message) + '</div>'; }
 }
 
+async function atlasKBSearch() {
+  var queryEl = document.getElementById('atlas-kb-search-query');
+  var resultEl = document.getElementById('atlas-kb-search-results');
+  if (!queryEl || !resultEl) return;
+  var q = queryEl.value.trim();
+  if (!q) { alert('Enter a search query'); return; }
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = '<div style="color:var(--agent-atlas);">Searching KB...</div>';
+  try {
+    var resp = await fetch('/api/atlas/kb-search?q=' + encodeURIComponent(q) + '&top_k=15');
+    var data = await resp.json();
+    if (data.error) { resultEl.innerHTML = '<div style="color:var(--error);">' + esc(data.error) + '</div>'; return; }
+    var results = data.results || [];
+    var method = data.method || 'keyword';
+    var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
+    html += '<span style="font-weight:600;color:var(--agent-atlas);">' + results.length + ' results</span>';
+    html += '<span style="font-size:0.66rem;padding:2px 8px;border-radius:10px;background:' + (method === 'semantic' ? 'rgba(34,170,68,0.15);color:#22aa44' : 'rgba(255,170,0,0.15);color:#ffaa00') + ';">' + method + '</span>';
+    html += '</div>';
+    if (!results.length) {
+      html += '<div class="text-muted">No matching entries found.</div>';
+    } else {
+      results.forEach(function(r) {
+        var typeBadge = r._type === 'learning' ? '<span style="font-size:0.62rem;padding:1px 6px;border-radius:8px;background:rgba(0,212,255,0.12);color:#00d4ff;">Learning</span>' : '<span style="font-size:0.62rem;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,0.06);color:var(--text-muted);">Observation</span>';
+        var scoreColor = (r._score || 0) > 0.7 ? '#00ff44' : (r._score || 0) > 0.4 ? '#ffaa00' : 'var(--text-muted)';
+        html += '<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">';
+        html += '<div style="display:flex;align-items:center;gap:6px;">' + typeBadge;
+        if (r.agent) html += '<span style="font-size:0.66rem;color:var(--text-muted);">' + esc(r.agent) + '</span>';
+        html += '</div>';
+        html += '<span style="font-size:0.68rem;color:' + scoreColor + ';font-weight:600;">' + ((r._score || 0) * 100).toFixed(0) + '%</span>';
+        html += '</div>';
+        var text = r.insight || r.observation || '';
+        html += '<div style="font-size:0.74rem;color:var(--text-secondary);margin-top:3px;line-height:1.4;">' + esc(text.substring(0, 300)) + '</div>';
+        if (r.confidence !== undefined) html += '<div style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;">Confidence: ' + (r.confidence * 100).toFixed(0) + '%</div>';
+        html += '</div>';
+      });
+    }
+    resultEl.innerHTML = html;
+  } catch(e) { resultEl.innerHTML = '<div style="color:var(--error);">Search failed: ' + esc(e.message) + '</div>'; }
+}
+
 async function loadAtlasCompetitorSummary() {
   var el = document.getElementById('atlas-competitor-summary');
   var bullets = document.getElementById('atlas-competitor-bullets');

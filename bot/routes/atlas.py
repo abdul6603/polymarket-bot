@@ -310,6 +310,41 @@ def api_atlas_costs():
         return jsonify({"error": str(e)[:200]}), 500
 
 
+@atlas_bp.route("/api/atlas/kb-search")
+def api_atlas_kb_search():
+    """Semantic search across the knowledge base.
+
+    Query params: q=<search query>, top_k=<max results, default 10>
+    Returns matched observations/learnings ranked by semantic similarity.
+    """
+    try:
+        q = request.args.get("q", "").strip()
+        if not q:
+            return jsonify({"error": "Query parameter 'q' is required"}), 400
+        top_k = min(int(request.args.get("top_k", 10)), 50)
+
+        from atlas.brain import KnowledgeBase
+        kb = KnowledgeBase()
+        results = kb.semantic_search(q, top_k=top_k)
+
+        # Check if embeddings are available
+        embedding_available = False
+        try:
+            from shared.embedding_client import is_available
+            embedding_available = is_available()
+        except Exception:
+            pass
+
+        return jsonify({
+            "query": q,
+            "results": results,
+            "count": len(results),
+            "method": "semantic" if embedding_available else "keyword",
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
 @atlas_bp.route("/api/atlas/kb-health")
 def api_atlas_kb_health():
     """Knowledge base health metrics — confidence, age, contradictions."""
