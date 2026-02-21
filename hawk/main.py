@@ -368,9 +368,14 @@ class HawkBot:
                 # 3. V2: Urgency-weighted ranking (ending-soon first)
                 ranked_markets = _urgency_rank(contested)
 
-                # Cap at 30 for GPT-4o analysis
-                target_markets = ranked_markets[:30]
-                log.info("Analyzing %d urgency-ranked markets with GPT-4o V2...", len(target_markets))
+                # Split: ALL sports get analyzed (sportsbook-pure = $0 cost),
+                # only cap non-sports at 30 to control GPT costs
+                sports_markets = [m for m in ranked_markets if m.category == "sports"]
+                non_sports_markets = [m for m in ranked_markets if m.category != "sports"]
+                target_markets = sports_markets + non_sports_markets[:30]
+                log.info("Analyzing %d markets: %d sports (ALL, $0) + %d/%d non-sports (GPT capped)",
+                         len(target_markets), len(sports_markets),
+                         min(len(non_sports_markets), 30), len(non_sports_markets))
 
                 # 4. Analyze with GPT-4o (V2 wise degen personality)
                 estimates = batch_analyze(self.cfg, target_markets, max_concurrent=5)
