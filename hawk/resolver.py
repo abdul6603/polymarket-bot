@@ -3,12 +3,32 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import time
 from pathlib import Path
 
 from bot.http_session import get_session
 
 log = logging.getLogger(__name__)
+
+# Telegram notifications via Shelby's bot
+_TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+_TG_CHAT = os.getenv("TELEGRAM_CHAT_ID", "")
+
+
+def _notify_tg(text: str) -> None:
+    """Send a Telegram notification (fire-and-forget, never crashes caller)."""
+    if not _TG_TOKEN or not _TG_CHAT:
+        return
+    try:
+        import requests
+        requests.post(
+            f"https://api.telegram.org/bot{_TG_TOKEN}/sendMessage",
+            json={"chat_id": _TG_CHAT, "text": text, "parse_mode": "HTML"},
+            timeout=5,
+        )
+    except Exception:
+        pass
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 TRADES_FILE = DATA_DIR / "hawk_trades.jsonl"
@@ -131,6 +151,15 @@ def resolve_paper_trades() -> dict:
                     pnl,
                     our_price,
                     t.get("risk_score", "?"),
+                )
+
+                # Telegram notification
+                emoji = "\U0001f7e2" if won else "\U0001f534"
+                pnl_str = f"+${pnl:.2f}" if pnl >= 0 else f"-${abs(pnl):.2f}"
+                _notify_tg(
+                    f"{emoji} <b>Hawk {'WON' if won else 'LOST'}</b>\n"
+                    f"{t.get('question', '')[:100]}\n"
+                    f"P&L: <b>{pnl_str}</b> | {t.get('direction', '').upper()} @ ${entry_price:.2f}"
                 )
 
                 # Publish to shared event bus

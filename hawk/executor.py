@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import time
 
 from py_clob_client.client import ClobClient
@@ -13,6 +14,23 @@ from hawk.edge import TradeOpportunity
 from hawk.tracker import HawkTracker
 
 log = logging.getLogger(__name__)
+
+_TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+_TG_CHAT = os.getenv("TELEGRAM_CHAT_ID", "")
+
+
+def _notify_tg(text: str) -> None:
+    if not _TG_TOKEN or not _TG_CHAT:
+        return
+    try:
+        import requests
+        requests.post(
+            f"https://api.telegram.org/bot{_TG_TOKEN}/sendMessage",
+            json={"chat_id": _TG_CHAT, "text": text, "parse_mode": "HTML"},
+            timeout=5,
+        )
+    except Exception:
+        pass
 
 
 class HawkExecutor:
@@ -45,6 +63,7 @@ class HawkExecutor:
             log.info("[DRY RUN] Simulated order: %s", order_id)
             self.tracker.record_trade(opp, order_id)
             _bus_trade_placed(opp, order_id)
+            _notify_trade_placed(opp)
             return order_id
 
         if not self.client:
@@ -64,6 +83,7 @@ class HawkExecutor:
             log.info("Order placed: %s", order_id)
             self.tracker.record_trade(opp, order_id)
             _bus_trade_placed(opp, order_id)
+            _notify_trade_placed(opp)
             return order_id
         except Exception:
             log.exception("Failed to place order")
@@ -131,6 +151,17 @@ def _get_entry_price(opp: TradeOpportunity) -> float:
         except (ValueError, TypeError):
             return 0.5
     return 0.5
+
+
+def _notify_trade_placed(opp: TradeOpportunity) -> None:
+    """Send Telegram notification when Hawk places a trade."""
+    price = _get_entry_price(opp)
+    _notify_tg(
+        f"\U0001f985 <b>Hawk Trade Placed</b>\n"
+        f"{opp.market.question[:100]}\n"
+        f"<b>{opp.direction.upper()}</b> ${opp.position_size_usd:.2f} @ ${price:.2f} | "
+        f"Edge: {opp.edge*100:.1f}% | Risk: {opp.risk_score}/10"
+    )
 
 
 def _bus_trade_placed(opp: TradeOpportunity, order_id: str) -> None:
