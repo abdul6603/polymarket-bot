@@ -6738,6 +6738,18 @@ async function loadHawkTab() {
       streakEl.textContent = Math.abs(streak);
       streakEl.style.color = streak >= 0 ? 'var(--success)' : 'var(--error)';
     }
+    // Scan stats
+    var scan = st.scan || {};
+    var scanTotal = document.getElementById('hawk-scan-total');
+    var scanContested = document.getElementById('hawk-scan-contested');
+    var scanSports = document.getElementById('hawk-scan-sports');
+    var scanNonsports = document.getElementById('hawk-scan-nonsports');
+    var scanAnalyzed = document.getElementById('hawk-scan-analyzed');
+    if (scanTotal) scanTotal.textContent = scan.total_eligible || '--';
+    if (scanContested) scanContested.textContent = scan.contested || '--';
+    if (scanSports) scanSports.textContent = scan.sports_analyzed || '--';
+    if (scanNonsports) scanNonsports.textContent = scan.non_sports_analyzed || '--';
+    if (scanAnalyzed) scanAnalyzed.textContent = scan.total_analyzed || '--';
   } catch(e) { console.error('hawk status:', e); }
 
   // V2: Risk meter summary

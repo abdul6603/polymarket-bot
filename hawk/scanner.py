@@ -51,8 +51,16 @@ _SPORTS_RE = re.compile(
     r"razorbacks|volunteers|commodores|gamecocks|aggies|"
     r"ducks|beavers|huskies|cougars|bruins|trojans|"
     r"golden flashes|fighting irish|spartans|hawkeyes|"
-    r"terrapins|nittany lions|scarlet knights|"
-    r"esports|dota 2|counter-strike|league of legends|valorant))",
+    r"terrapins|nittany lions|scarlet knights))",
+    re.IGNORECASE,
+)
+
+# Esports — no sportsbook data, GPT guesses are -EV. Block entirely.
+_ESPORTS_RE = re.compile(
+    r"(esports|dota\s*2|counter-?strike|league of legends|valorant|"
+    r"overwatch|csgo|cs2|LoL|PARIVISION|MOUZ|TheMongolz|Fnatic|"
+    r"Team Vitality|G2 Esports|Cloud9|T1|Gen\.G|NaVi|FaZe Clan|"
+    r"\bBO[135]\b|Map \d Winner)",
     re.IGNORECASE,
 )
 
@@ -174,6 +182,11 @@ def scan_all_markets(cfg: HawkConfig) -> list[HawkMarket]:
                     # Skip ALL crypto price markets (Up/Down + price target + above/below)
                     if _is_updown_price_market(question):
                         log.debug("Blocked crypto price market: %s", question[:80])
+                        continue
+
+                    # Skip esports — no sportsbook data, pure noise
+                    if _ESPORTS_RE.search(question) or _ESPORTS_RE.search(event_title):
+                        log.debug("Blocked esports market: %s", question[:80])
                         continue
 
                     # Skip ALL crypto_event markets — 11% WR, -$128 PnL historically

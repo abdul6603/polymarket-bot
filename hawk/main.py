@@ -47,7 +47,8 @@ def _load_brain_notes() -> list[dict]:
 
 def _save_status(tracker: HawkTracker, risk: HawkRiskManager | None = None,
                  running: bool = True, cycle: int = 0,
-                 arb_engine: ArbEngine | None = None) -> None:
+                 arb_engine: ArbEngine | None = None,
+                 scan_stats: dict | None = None) -> None:
     """Save current status to data/hawk_status.json for dashboard."""
     DATA_DIR.mkdir(exist_ok=True)
     summary = tracker.summary()
@@ -59,6 +60,8 @@ def _save_status(tracker: HawkTracker, risk: HawkRiskManager | None = None,
         summary["consecutive_losses"] = risk.consecutive_losses
     if arb_engine:
         summary.update(arb_engine.summary())
+    if scan_stats:
+        summary["scan"] = scan_stats
     try:
         STATUS_FILE.write_text(json.dumps(summary, indent=2))
     except Exception:
@@ -376,6 +379,16 @@ class HawkBot:
                 log.info("Analyzing %d markets: %d sports (ALL, $0) + %d/%d non-sports (GPT capped)",
                          len(target_markets), len(sports_markets),
                          min(len(non_sports_markets), 30), len(non_sports_markets))
+
+                # Track scan stats for dashboard
+                _scan_stats = {
+                    "total_eligible": len(markets),
+                    "contested": len(contested),
+                    "sports_analyzed": len(sports_markets),
+                    "non_sports_analyzed": min(len(non_sports_markets), 30),
+                    "total_analyzed": len(target_markets),
+                    "non_sports_total": len(non_sports_markets),
+                }
 
                 # 4. Analyze with GPT-4o (V2 wise degen personality)
                 estimates = batch_analyze(self.cfg, target_markets, max_concurrent=5)
@@ -753,7 +766,7 @@ class HawkBot:
                     except Exception:
                         log.debug("[PATTERN MINER] Failed (non-fatal)")
 
-                _save_status(self.tracker, self.risk, running=True, cycle=self.cycle, arb_engine=self.arb)
+                _save_status(self.tracker, self.risk, running=True, cycle=self.cycle, arb_engine=self.arb, scan_stats=_scan_stats)
 
             except Exception:
                 log.exception("Hawk V2 cycle %d failed", self.cycle)
