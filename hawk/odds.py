@@ -39,9 +39,39 @@ _SPORT_KEYS = {
     "nhl": "icehockey_nhl",
     "mls": "soccer_usa_mls",
     "epl": "soccer_epl",
+    "premier league": "soccer_epl",
+    "la liga": "soccer_spain_la_liga",
+    "serie a": "soccer_italy_serie_a",
+    "bundesliga": "soccer_germany_bundesliga",
+    "ligue 1": "soccer_france_ligue_one",
+    "champions league": "soccer_uefa_champs_league",
+    "europa league": "soccer_uefa_europa_league",
+    "fa cup": "soccer_fa_cup",
+    "copa del rey": "soccer_spain_copa_del_rey",
+    "eredivisie": "soccer_netherlands_eredivisie",
+    "primeira liga": "soccer_portugal_primeira_liga",
     "ufc": "mma_mixed_martial_arts",
     "mma": "mma_mixed_martial_arts",
+    "boxing": "boxing_boxing",
+    "afl": "aussierules_afl",
+    "nrl": "rugbyleague_nrl",
+    "six nations": "rugbyunion_six_nations",
+    "euroleague": "basketball_euroleague",
 }
+
+# All soccer leagues to scan when we detect a soccer question but can't identify the league
+_ALL_SOCCER_KEYS = [
+    "soccer_epl", "soccer_spain_la_liga", "soccer_italy_serie_a",
+    "soccer_germany_bundesliga", "soccer_france_ligue_one",
+    "soccer_uefa_champs_league", "soccer_uefa_europa_league",
+    "soccer_uefa_europa_conference_league", "soccer_fa_cup",
+    "soccer_efl_champ", "soccer_netherlands_eredivisie",
+    "soccer_portugal_primeira_liga", "soccer_turkey_super_league",
+    "soccer_spain_segunda_division", "soccer_italy_serie_b",
+    "soccer_usa_mls", "soccer_mexico_ligamx", "soccer_brazil_campeonato",
+    "soccer_argentina_primera_division", "soccer_spain_copa_del_rey",
+    "soccer_australia_aleague", "soccer_spl",
+]
 
 # Cache: {sport_key: (timestamp, events_list)}
 _cache: dict[str, tuple[float, list[dict]]] = {}
@@ -56,7 +86,8 @@ class SportsbookConsensus:
     sport_key: str
     consensus_home_prob: float  # Devigged probability for home team
     consensus_away_prob: float  # Devigged probability for away team
-    num_books: int  # How many sportsbooks contributed
+    consensus_draw_prob: float = 0.0  # Devigged draw probability (soccer 3-way)
+    num_books: int = 0  # How many sportsbooks contributed
     spread_home: float | None = None  # Home spread (e.g., -3.5)
     spread_home_prob: float | None = None  # Probability of covering spread
     total_line: float | None = None  # O/U line (e.g., 157.5)
@@ -134,7 +165,23 @@ def _detect_sport(question: str) -> str | None:
     if any(t in q for t in nfl_teams):
         return "americanfootball_nfl"
 
-    # Generic sports with "vs." — default to NCAAB (most common)
+    # Soccer: "draw" + "vs" is a strong soccer signal
+    if "draw" in q and re.search(r"\bvs\.?\b", q):
+        return "_soccer_scan"  # Special key: scan all soccer leagues
+
+    # Soccer: "FC" or "CF" or "United" with "vs" (European football clubs)
+    if re.search(r"\bvs\.?\b", q) and re.search(r"\b(fc|cf|united|city|athletic|real|sporting|racing)\b", q):
+        return "_soccer_scan"
+
+    # Ice hockey
+    if "ice hockey" in q or "hockey" in q:
+        return "icehockey_nhl"
+
+    # Tennis
+    if "tennis" in q or "atp" in q or "wta" in q:
+        return None  # Tennis matching is too complex for now
+
+    # Generic sports with "vs." + spread/o/u — default to NCAAB (most common)
     if re.search(r"\bvs\.?\b", q) and ("spread" in q or "o/u" in q):
         return "basketball_ncaab"
 
@@ -148,10 +195,21 @@ def _extract_teams(question: str) -> tuple[str, str] | None:
     - "Team A vs. Team B"
     - "Team A vs. Team B: O/U 157.5"
     - "Spread: Team A (-3.5)"
+    - "Will Team A vs. Team B end in a draw?"
+    - "Will Team A beat Team B?"
+    - "Will Team A win ... gold medal?"
     """
-    # "Team A vs. Team B" pattern
+    # "Will Team A vs. Team B end in a draw?" pattern
+    draw_match = re.match(
+        r"^Will\s+(.+?)\s+vs\.?\s+(.+?)\s+end\s+in\s+a\s+draw",
+        question, re.IGNORECASE,
+    )
+    if draw_match:
+        return draw_match.group(1).strip(), draw_match.group(2).strip()
+
+    # "Team A vs. Team B" pattern (with optional O/U suffix)
     vs_match = re.match(
-        r"^(.+?)\s+vs\.?\s+(.+?)(?:\s*:\s*O/U|\s*$)",
+        r"^(?:Will\s+)?(.+?)\s+vs\.?\s+(.+?)(?:\s*:\s*O/U|\s*[-—]|\s+end\b|\s*$)",
         question, re.IGNORECASE,
     )
     if vs_match:
@@ -164,6 +222,14 @@ def _extract_teams(question: str) -> tuple[str, str] | None:
     )
     if spread_match:
         return spread_match.group(1).strip(), ""
+
+    # "Will Team A win/beat ...?" — single team extraction
+    win_match = re.match(
+        r"^Will\s+(.+?)\s+(win|beat|defeat)\b",
+        question, re.IGNORECASE,
+    )
+    if win_match:
+        return win_match.group(1).strip(), ""
 
     return None
 
@@ -327,6 +393,7 @@ def calculate_consensus(event: dict) -> SportsbookConsensus | None:
     # Collect h2h (moneyline) probabilities
     home_probs = []
     away_probs = []
+    draw_probs = []
     spread_probs = []
     spread_lines = []
     total_over_probs = []
@@ -341,9 +408,17 @@ def calculate_consensus(event: dict) -> SportsbookConsensus | None:
                 if home in outcomes and away in outcomes:
                     h_prob = _american_to_prob(outcomes[home])
                     a_prob = _american_to_prob(outcomes[away])
-                    devigged = _devig_probs([h_prob, a_prob])
-                    home_probs.append(devigged[0])
-                    away_probs.append(devigged[1])
+                    # 3-way market (soccer) — includes Draw
+                    if "Draw" in outcomes:
+                        d_prob = _american_to_prob(outcomes["Draw"])
+                        devigged = _devig_probs([h_prob, d_prob, a_prob])
+                        home_probs.append(devigged[0])
+                        draw_probs.append(devigged[1])
+                        away_probs.append(devigged[2])
+                    else:
+                        devigged = _devig_probs([h_prob, a_prob])
+                        home_probs.append(devigged[0])
+                        away_probs.append(devigged[1])
 
             elif key == "spreads":
                 for o in market.get("outcomes", []):
@@ -366,6 +441,7 @@ def calculate_consensus(event: dict) -> SportsbookConsensus | None:
         sport_key=sport_key,
         consensus_home_prob=sum(home_probs) / len(home_probs),
         consensus_away_prob=sum(away_probs) / len(away_probs),
+        consensus_draw_prob=sum(draw_probs) / len(draw_probs) if draw_probs else 0.0,
         num_books=len(home_probs),
     )
 
@@ -411,13 +487,26 @@ def get_sportsbook_probability(
         log.debug("Could not extract teams from: %s", question[:50])
         return None, None
 
-    # Fetch odds
-    events = fetch_odds(api_key, sport_key)
-    if not events:
-        return None, None
+    # Fetch odds — for soccer scan, search all cached soccer leagues
+    event = None
+    confidence = 0.0
+    if sport_key == "_soccer_scan":
+        best_event = None
+        best_conf = 0.0
+        for sk in _ALL_SOCCER_KEYS:
+            if sk in _cache:
+                _, cached_events = _cache[sk]
+                ev, conf = _match_event(question, teams, cached_events)
+                if ev and conf > best_conf:
+                    best_event = ev
+                    best_conf = conf
+        event, confidence = best_event, best_conf
+    else:
+        events = fetch_odds(api_key, sport_key)
+        if not events:
+            return None, None
+        event, confidence = _match_event(question, teams, events)
 
-    # Match event
-    event, confidence = _match_event(question, teams, events)
     if not event:
         log.debug("No sportsbook match for: %s (best conf: %.2f)", question[:50], confidence)
         return None, None
@@ -436,8 +525,18 @@ def get_sportsbook_probability(
             market_type = "spread"
         elif "o/u " in q_lower or "over/under" in q_lower:
             market_type = "total"
+        elif "draw" in q_lower:
+            market_type = "draw"
         else:
             market_type = "h2h"
+
+    if market_type == "draw":
+        if consensus.consensus_draw_prob > 0:
+            prob = consensus.consensus_draw_prob
+            log.info("Sportsbook draw: %s vs %s → draw_prob=%.2f (%d books, conf=%.2f)",
+                     consensus.home_team, consensus.away_team, prob, consensus.num_books, confidence)
+            return prob, consensus
+        return None, None
 
     if market_type == "spread":
         # Extract the spread value from the question
@@ -486,10 +585,17 @@ def prefetch_sports(api_key: str, questions: list[str]) -> int:
 
     # Deduplicate sports across all questions
     sport_keys: set[str] = set()
+    need_soccer_scan = False
     for q in questions:
         sk = _detect_sport(q)
-        if sk:
+        if sk == "_soccer_scan":
+            need_soccer_scan = True
+        elif sk:
             sport_keys.add(sk)
+
+    # Expand soccer scan into all major leagues
+    if need_soccer_scan:
+        sport_keys.update(_ALL_SOCCER_KEYS)
 
     if not sport_keys:
         return 0
@@ -500,6 +606,7 @@ def prefetch_sports(api_key: str, questions: list[str]) -> int:
         if sk in _cache:
             cached_time, _ = _cache[sk]
             if time.time() - cached_time < _CACHE_TTL:
+                fetched += 1  # Count cached as fetched
                 continue
         events = fetch_odds(api_key, sk)
         if events:
