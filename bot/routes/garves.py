@@ -1181,3 +1181,17 @@ def ml_status():
         status["finbert"] = {"status": "unavailable"}
 
     return jsonify(status)
+
+
+# ── Razor (The Mathematician) Status ──
+
+@garves_bp.route("/api/razor/status")
+def razor_status():
+    """Return Razor arb bot status from its JSON status file."""
+    status_file = DATA_DIR / "razor_status.json"
+    if not status_file.exists():
+        return jsonify({"error": "Razor not running or no status yet", "enabled": False})
+    try:
+        return jsonify(json.loads(status_file.read_text()))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

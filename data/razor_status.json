@@ -1,0 +1,15 @@
+{
+  "total_arbs": 0,
+  "open_count": 0,
+  "closed_count": 0,
+  "win_count": 0,
+  "win_rate": 0.0,
+  "total_pnl": 0,
+  "avg_profit": 0.0,
+  "exposure": 0,
+  "positions": [],
+  "last_update": "2026-02-20T22:39:43.888937-05:00",
+  "total_markets": 4018,
+  "dry_run": true,
+  "ws_connected": false
+}
