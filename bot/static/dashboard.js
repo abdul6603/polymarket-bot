@@ -281,8 +281,7 @@ function _tickPositionCountdowns() {
   for (var i = 0; i < _hawkPositionsData.length; i++) {
     var el = document.getElementById('hawk-pos-timer-' + i);
     if (el && _hawkPositionsData[i].end_date) {
-      var stillActive = (_hawkPositionsData[i].cur_price || 0) > 0.001;
-      var tl = hawkCalcTimeLeft(_hawkPositionsData[i].end_date, stillActive);
+      var tl = hawkCalcTimeLeft(_hawkPositionsData[i].end_date, _hawkPositionsData[i].cur_price || 0);
       el.textContent = tl.text;
       el.style.color = tl.color;
     }
@@ -291,8 +290,7 @@ function _tickPositionCountdowns() {
   for (var j = 0; j < _onChainHoldingsData.length; j++) {
     var el2 = document.getElementById('oc-timer-' + j);
     if (el2 && _onChainHoldingsData[j].end_date) {
-      var stillActive2 = (_onChainHoldingsData[j].cur_price || 0) > 0.001;
-      var tl2 = hawkCalcTimeLeft(_onChainHoldingsData[j].end_date, stillActive2);
+      var tl2 = hawkCalcTimeLeft(_onChainHoldingsData[j].end_date, _onChainHoldingsData[j].cur_price || 0);
       el2.textContent = tl2.text;
       el2.style.color = tl2.color;
     }
@@ -434,8 +432,7 @@ function renderOnChainPositions(data) {
         var p = holdings[i];
         var pc = p.pnl >= 0 ? 'var(--success)' : 'var(--error)';
         var ps = (p.pnl >= 0 ? '+$' : '-$') + Math.abs(p.pnl).toFixed(2);
-        var stillActive = (p.cur_price || 0) > 0.001;
-        var tl = hawkCalcTimeLeft(p.end_date, stillActive);
+        var tl = hawkCalcTimeLeft(p.end_date, p.cur_price || 0);
         var gPayout = (p.size || 0) * 1.0;
         var gReturn = gPayout - (p.cost || 0);
         var gReturnPct = (p.cost || 0) > 0 ? (gReturn / p.cost * 100) : 0;
@@ -7041,15 +7038,26 @@ function hawkSetCatFilter(cat) {
   renderHawkOpportunities(_hawkOppsCache);
 }
 
-function hawkCalcTimeLeft(endDate, stillActive) {
+function hawkCalcTimeLeft(endDate, curPrice) {
   if (!endDate) return {text: 'No deadline', color: 'var(--text-muted)', sort: 99999999};
   var now = Date.now();
   var end = new Date(endDate).getTime();
   if (isNaN(end)) return {text: 'Unknown', color: 'var(--text-muted)', sort: 99999999};
   var diff = end - now;
   if (diff <= 0) {
-    if (stillActive) return {text: 'Resolving...', color: '#ff6b35', sort: -1};
-    return {text: 'Expired', color: 'var(--error)', sort: -1};
+    var ago = Math.abs(diff);
+    var cp = curPrice || 0;
+    // Resolved — price at 0 or 1
+    if (cp >= 0.95) return {text: 'WON', color: '#00ff44', sort: -2};
+    if (cp <= 0.05) return {text: 'LOST', color: '#ff4444', sort: -2};
+    // Still resolving — show how long ago it ended
+    var agoMin = Math.floor(ago / 60000);
+    var agoHrs = Math.floor(ago / 3600000);
+    var agoStr;
+    if (agoHrs >= 24) agoStr = Math.floor(agoHrs / 24) + 'd ' + (agoHrs % 24) + 'h ago';
+    else if (agoHrs >= 1) agoStr = agoHrs + 'h ' + Math.floor((ago % 3600000) / 60000) + 'm ago';
+    else agoStr = agoMin + 'm ago';
+    return {text: agoStr, color: '#ff6b35', sort: -1};
   }
   var hours = diff / 3600000;
   var days = Math.floor(hours / 24);
@@ -7257,8 +7265,7 @@ function renderHawkPositions(positions) {
   var html = '';
   for (var i = 0; i < positions.length; i++) {
     var p = positions[i];
-    var stillActive = (p.cur_price || 0) > 0.001;
-    var tl = hawkCalcTimeLeft(p.end_date, stillActive);
+    var tl = hawkCalcTimeLeft(p.end_date, p.cur_price || 0);
     var pnl = p.pnl || 0;
     var pnlColor = pnl >= 0 ? '#00ff44' : '#ff4444';
     var pnlPct = p.pnl_pct || 0;
