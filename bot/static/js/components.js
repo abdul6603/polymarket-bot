@@ -136,6 +136,23 @@ function renderPatternFeed(containerId, patterns) {
 }
 
 // ═══════════════════════════════════════════
+//  Collapsible Sections
+// ═══════════════════════════════════════════
+function initCollapsibles() {
+  var sections = document.querySelectorAll('.collapse-section.default-open');
+  for (var i = 0; i < sections.length; i++) {
+    sections[i].classList.add('open');
+  }
+  document.addEventListener('click', function(e) {
+    var trigger = e.target.closest('.collapse-trigger');
+    if (!trigger) return;
+    var section = trigger.closest('.collapse-section');
+    if (section) section.classList.toggle('open');
+  });
+}
+document.addEventListener('DOMContentLoaded', initCollapsibles);
+
+// ═══════════════════════════════════════════
 //  Status Pulse (for running agents)
 // ═══════════════════════════════════════════
 function updateStatusPulse(agentCards) {

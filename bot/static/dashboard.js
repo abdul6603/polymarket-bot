@@ -1,6 +1,5 @@
 var currentTab = 'overview';
 var chatLoaded = false;
-var econPeriod = 'month';
 var _atlasBgCache = null;
 var _overviewCache = null;
 var AGENT_COLORS = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',sentinel:'#00ff44',thor:'#ff6600',hawk:'#FFD700',viper:'#00ff88',quant:'#00BFFF'};
@@ -730,7 +729,7 @@ async function loadExternalData() {
   }
 }
 
-async function loadMLStatus() {
+async function loadMLWinPredictor() {
   try {
     var resp = await fetch('/api/garves/ml-status');
     var d = await resp.json();
@@ -1230,36 +1229,20 @@ async function loadSchedule() {
       html += '</div>';
     }
     el.innerHTML = html;
-  } catch (e) {}
-}
-
-function setEconPeriod(p) { econPeriod = p; loadEconomics(); }
-
-async function loadEconomics() {
-  try {
-    var resp = await fetch('/api/shelby/economics?period=' + econPeriod);
-    var data = await resp.json();
-    var el = document.getElementById('shelby-economics');
-    var agents = data.agents || {};
-    var agentNames = ['garves','soren','atlas','lisa','sentinel'];
-    var html = '<div class="econ-row" style="font-weight:600;color:var(--text-muted);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;">';
-    html += '<span style="flex:1;">Agent</span><span style="width:100px;text-align:right;">Cost</span><span style="width:100px;text-align:right;">Revenue</span><span style="width:100px;text-align:right;">Net</span></div>';
-    for (var i = 0; i < agentNames.length; i++) {
-      var name = agentNames[i];
-      var a = agents[name] || {costs:0,revenue:0};
-      var net = (a.revenue || 0) - (a.costs || 0);
-      var dn = name === 'lisa' ? 'Lisa' : name === 'sentinel' ? 'Robotox' : name.charAt(0).toUpperCase() + name.slice(1);
-      html += '<div class="econ-row"><span style="flex:1;color:' + (AGENT_COLORS[name]||'var(--text)') + ';font-weight:500;">' + dn + '</span>';
-      html += '<span style="width:100px;text-align:right;color:var(--error);">$' + (a.costs||0).toFixed(2) + '</span>';
-      html += '<span style="width:100px;text-align:right;color:var(--success);">$' + (a.revenue||0).toFixed(2) + '</span>';
-      html += '<span style="width:100px;text-align:right;color:' + (net >= 0 ? 'var(--success)' : 'var(--error)') + ';">$' + net.toFixed(2) + '</span></div>';
+    // Also update next routine (avoids duplicate /api/shelby/schedule call)
+    var currentTime = data.current_time || '';
+    var nextEl = document.getElementById('shelby-next-routine');
+    if (nextEl) {
+      var nextRoutine = null;
+      for (var j = 0; j < keys.length; j++) {
+        if (!schedule[keys[j]].completed && keys[j] >= currentTime) {
+          nextRoutine = keys[j] + ' ' + (schedule[keys[j]].name || '');
+          break;
+        }
+      }
+      if (nextRoutine) { nextEl.textContent = nextRoutine.split(' ')[0]; nextEl.title = nextRoutine; }
+      else { nextEl.textContent = 'All done'; }
     }
-    html += '<div class="econ-row" style="border-top:1px solid var(--border);margin-top:var(--space-2);padding-top:var(--space-3);font-weight:600;">';
-    html += '<span style="flex:1;">Total (' + esc(econPeriod) + ')</span>';
-    html += '<span style="width:100px;text-align:right;color:var(--error);">$' + (data.total_cost||0).toFixed(2) + '</span>';
-    html += '<span style="width:100px;text-align:right;color:var(--success);">$' + (data.total_revenue||0).toFixed(2) + '</span>';
-    html += '<span style="width:100px;text-align:right;color:' + ((data.net||0) >= 0 ? 'var(--success)' : 'var(--error)') + ';">$' + (data.net||0).toFixed(2) + '</span></div>';
-    el.innerHTML = html;
   } catch (e) {}
 }
 
@@ -3405,6 +3388,8 @@ async function loadPostingSchedule() {
     var data = await resp.json();
     var schedule = data.schedule || [];
     if (countEl) countEl.textContent = schedule.length > 0 ? schedule.length + ' scheduled' : '';
+    var schedCountEl = document.getElementById('lisa-scheduled-count');
+    if (schedCountEl) schedCountEl.textContent = data.count || schedule.length || 0;
     if (schedule.length === 0) {
       el.innerHTML = '<div class="glass-card" style="text-align:center;padding:var(--space-4);"><div style="font-size:0.76rem;color:var(--text-muted);">No posts scheduled yet</div><div style="font-size:0.7rem;color:var(--text-secondary);margin-top:2px;">Approve content from Jordan\'s queue to schedule posts</div></div>';
       return;
@@ -3892,7 +3877,7 @@ async function refresh() {
       _overviewCache = data;
       renderAgentGrid(data);
       loadInfrastructure();
-      loadEventFeed();
+      loadAgentComms();
       // Fetch atlas bg status for countdown on overview
       try {
         var bgResp = await fetch('/api/atlas/background/status');
@@ -3904,9 +3889,7 @@ async function refresh() {
       if (_intelData) renderTeamIntelligence(_intelData);
       loadBrainNotes('claude');
       loadCommandTable('claude');
-      loadMemoryFeed();
       loadAgentSmartActions('overview');
-      loadCrossAgentFlow();
     } else if (currentTab === 'garves-live') {
       var resp = await fetch('/api/trades/live');
       var data = await resp.json();
@@ -3935,8 +3918,7 @@ async function refresh() {
       loadExternalData();
       loadAgentLearning('garves');
       loadNewsSentiment();
-      loadCommandTable('garves');
-      loadAgentSmartActions('garves');
+      loadMLWinPredictor();
       loadMLStatus();
     } else if (currentTab === 'soren') {
       var resp = await fetch('/api/soren');
@@ -3944,7 +3926,6 @@ async function refresh() {
       loadAgentLearning('soren');
       loadSorenCompetitors();
       loadPillarDistribution();
-      loadCommandTable('soren');
       loadAgentSmartActions('soren');
       loadAgentActivity('soren');
       loadSorenMetrics();
@@ -3952,9 +3933,7 @@ async function refresh() {
       var resp = await fetch('/api/shelby');
       renderShelby(await resp.json());
       try { loadSchedule(); } catch(e) {}
-      // Economics section removed
       try { loadAssessments(); } catch(e) {}
-      try { loadShelbyNextRoutine(); } catch(e) {}
       loadCommandTable('shelby');
       loadAgentSmartActions('shelby');
       loadAgentActivity('shelby');
@@ -3969,7 +3948,6 @@ async function refresh() {
       renderAtlas(atlasData);
       loadAtlasBgStatus();
       loadAgentLearning('atlas');
-      loadCommandTable('atlas');
       loadAgentSmartActions('atlas');
       loadAgentActivity('atlas');
       loadAtlasKBHealth();
@@ -3987,7 +3965,6 @@ async function refresh() {
       loadImageCosts();
       loadXCompetitorIntel();
       loadReplyOpportunities();
-      loadLisaScheduledCount();
       loadLisaIntelligence();
       testXConnection();
     } else if (currentTab === 'sentinel') {
@@ -4019,7 +3996,6 @@ async function refresh() {
       loadAgentActivity('hawk');
     } else if (currentTab === 'viper') {
       loadViperTab();
-      loadCommandTable('viper');
     } else if (currentTab === 'quant') {
       loadQuantTab();
       loadQuantSmartActions();
@@ -6115,6 +6091,7 @@ var _agentActivityMap = {
   'shelby': {agent: 'shelby', id: 'shelby-activity-feed'},
   'atlas': {agent: 'atlas', id: 'atlas-activity-feed'},
   'lisa': {agent: 'lisa', id: 'lisa-activity-feed'},
+  'hawk': {agent: 'hawk', id: 'hawk-activity-feed'},
   'sentinel': {agent: 'robotox', id: 'robotox-activity-feed'},
   'thor': {agent: 'thor', id: 'thor-activity-feed'},
 };
@@ -8641,17 +8618,9 @@ function renderQuantParams(data) {
   tbody.innerHTML = html;
 }
 
-async function loadQuantHawkReview() {
-  try {
-    var resp = await fetch('/api/quant/recommendations');
-    var hawkResp = await fetch('/api/quant/results');
-    var hawkData = hawkResp.ok ? await hawkResp.json() : {};
-    var el = document.getElementById('quant-hawk-review');
-
-    // Load hawk review data from a separate file
-    var reviewResp = await fetch('/api/quant/params');
-    el.innerHTML = '<div class="text-muted" style="text-align:center;padding:12px;font-size:0.72rem;">Hawk trade calibration data will appear after running a backtest cycle</div>';
-  } catch(e) { console.error('quant hawk review:', e); }
+function loadQuantHawkReview() {
+  var el = document.getElementById('quant-hawk-review');
+  if (el) el.innerHTML = '<div class="text-muted" style="text-align:center;padding:12px;font-size:0.72rem;">Hawk trade calibration data will appear after running a backtest cycle</div>';
 }
 
 async function loadQuantWalkForward() {

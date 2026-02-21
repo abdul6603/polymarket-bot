@@ -1229,6 +1229,57 @@
     box-shadow:0 4px 24px rgba(0,0,0,0.3);
   }
 
+  /* ═══════════════════════════════════════════
+     Collapsible Sections
+     ═══════════════════════════════════════════ */
+  .collapse-section { margin-bottom: var(--space-4); }
+  .collapse-trigger {
+    display: flex; align-items: center; justify-content: space-between;
+    cursor: pointer; user-select: none; padding: var(--space-3) 0;
+  }
+  .collapse-trigger::after {
+    content: '\25B6'; font-size: 0.6rem; color: var(--text-muted);
+    transition: transform var(--transition-base); margin-left: var(--space-3);
+  }
+  .collapse-section.open .collapse-trigger::after { transform: rotate(90deg); }
+  .collapse-body { display: none; }
+  .collapse-section.open .collapse-body { display: block; }
+
+  /* ═══════════════════════════════════════════
+     Card/Table aliases for Quant tab
+     ═══════════════════════════════════════════ */
+  .card {
+    background: var(--glass-bg); backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border); border-radius: var(--radius);
+    padding: var(--space-6);
+    transition: border-color var(--transition-base), box-shadow var(--transition-base);
+  }
+  .card:hover { border-color: rgba(255,255,255,0.1); box-shadow: 0 4px 24px rgba(0,0,0,0.3); }
+  .card-header {
+    font-family: var(--font-heading); font-size: 0.82rem; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-secondary);
+    margin-bottom: var(--space-5); display: flex; align-items: center; gap: var(--space-3);
+  }
+  .table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.78rem; }
+  .table thead th {
+    font-family: var(--font-ui); font-size: 0.68rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted);
+    text-align: left; padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border); white-space: nowrap;
+  }
+  .table tbody tr { transition: background var(--transition-fast); }
+  .table tbody tr:nth-child(even) { background: rgba(255,255,255,0.015); }
+  .table tbody tr:hover { background: rgba(255,255,255,0.04); }
+  .table tbody td {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid rgba(255,255,255,0.025);
+    color: var(--text-secondary); white-space: nowrap;
+  }
+
+  /* Hide empty containers */
+  .hide-empty:empty { display: none !important; }
+
   @media (max-width:1200px) { .grid-4,.grid-6 { grid-template-columns:repeat(3,1fr); } .team-agents-row { grid-template-columns:repeat(3,1fr); } }
   @media (max-width:900px) { .grid-3,.grid-4,.grid-6 { grid-template-columns:repeat(2,1fr); } .main { padding:0 var(--space-4); } .intel-meter { flex-direction:column; align-items:stretch; } .team-agents-row { grid-template-columns:repeat(3,1fr); } }
   @media (max-width:640px) { .grid-2,.grid-3,.grid-4,.grid-6 { grid-template-columns:1fr; } .sidebar { display:none; } .main { margin-left:0; } .kpi-grid { grid-template-columns:1fr; } .team-agents-row { grid-template-columns:repeat(2,1fr); } .atlas-cmd-grid { grid-template-columns:1fr; } .atlas-cmd-card--wide { grid-column:span 1; } }

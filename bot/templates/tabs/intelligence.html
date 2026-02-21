@@ -149,7 +149,12 @@
   </div>
 
 
-  <!-- API Dependency Map — Who Uses What -->
+  <!-- API Dependency Map — Who Uses What (Collapsible) -->
+  <div class="collapse-section">
+    <div class="collapse-trigger">
+      <h2 class="section-title" style="margin-bottom:0;font-size:0.84rem;">Agent Infrastructure Map <span style="font-size:0.6rem;color:var(--text-muted);font-weight:400;margin-left:6px;">Who runs what</span></h2>
+    </div>
+    <div class="collapse-body">
   <div class="stat-card" style="padding:14px;margin-bottom:12px;">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
       <div style="font-weight:700;color:var(--text-primary);font-size:0.84rem;">Agent Infrastructure Map</div>
@@ -245,6 +250,8 @@
       <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#3498DB;margin-right:4px;"></span><strong>3 models</strong> on Pro M3: Qwen 14B, Qwen 3B, Qwen Coder 14B</div>
     </div>
   </div>
+    </div>
+  </div>
 
   <!-- Brain Activity + Cost Donut -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
@@ -279,7 +286,12 @@
     <div id="pattern-feed-container" style="max-height:250px;overflow-y:auto;"><span class="text-muted" style="font-size:0.72rem;">Loading...</span></div>
   </div>
 
-  <!-- Installed Frameworks -->
+  <!-- Installed Frameworks (Collapsible) -->
+  <div class="collapse-section">
+    <div class="collapse-trigger">
+      <h2 class="section-title" style="margin-bottom:0;font-size:0.82rem;">Installed Frameworks</h2>
+    </div>
+    <div class="collapse-body">
   <div class="stat-card" style="padding:14px;margin-bottom:12px;">
     <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.82rem;">Installed Frameworks</div>
     <div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:10px;">Frameworks are the platforms and foundations that tools are built on. Like macOS is the framework, and the apps are the tools.</div>
@@ -391,8 +403,14 @@
       <span style="color:var(--error);">Pro offline</span> = needs M3 Pro reboot
     </div>
   </div>
+    </div>
+  </div>
 
-  <!-- Installed Tools Table -->
+  <div class="collapse-section">
+    <div class="collapse-trigger">
+      <h2 class="section-title" style="margin-bottom:0;font-size:0.82rem;">Installed Tools</h2>
+    </div>
+    <div class="collapse-body">
   <div class="stat-card" style="padding:14px;margin-bottom:12px;">
     <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.82rem;">Installed Tools</div>
     <div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:10px;">Each tool is a capability installed in an agent. Tools can be shared across agents via the shared intelligence layer.</div>
@@ -526,6 +544,8 @@
       <span style="color:var(--success);">Installed</span> = active and working |
       <span style="color:var(--error);">Down</span> = needs attention |
       Shared Layer: <span style="color:#9B59B6;">~/shared/</span> (llm_client, agent_brain, agent_memory, events)
+    </div>
+  </div>
     </div>
   </div>
 

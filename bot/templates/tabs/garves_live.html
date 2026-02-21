@@ -1,5 +1,6 @@
 <!-- GARVES — Unified Trading Tab -->
 <div class="tab-content" id="tab-garves-live">
+  <!-- Always visible: Intel meter + mode + chat -->
   <div id="intel-garves" class="intel-meter" style="margin-bottom:12px;"></div>
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
     <span id="garves-mode-badge" style="background:#00ff88;color:#000;font-weight:700;padding:4px 12px;border-radius:6px;font-size:0.8rem;">LIVE TRADING</span>
@@ -12,7 +13,7 @@
   </div>
   <div class="health-inline" id="garves-health-result"></div>
 
-  <!-- Live Balance from Polymarket -->
+  <!-- Hero cards: Portfolio, Cash, Real PnL -->
   <div class="grid-3" style="margin-bottom:12px;">
     <div class="stat-card" data-accent="success" style="border-left:3px solid var(--success);">
       <div class="stat-value" id="live-portfolio" style="font-size:1.4rem;">--</div>
@@ -28,10 +29,13 @@
     </div>
   </div>
 
+  <!-- Activity Feed -->
   <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-garves);">
     <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Agent Activity</h3>
     <div id="garves-activity-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:150px;overflow-y:auto;"><span class="text-muted">Waiting for activity...</span></div>
   </div>
+
+  <!-- 6 Stats Grid -->
   <div class="grid-6" id="live-stats-grid">
     <div class="stat-card" data-accent="success"><div class="stat-value" id="live-winrate">--</div><div class="stat-label">Win Rate</div></div>
     <div class="stat-card" data-accent="success"><div class="stat-value" id="live-pnl">--</div><div class="stat-label">Trade P&amp;L</div></div>
@@ -40,6 +44,8 @@
     <div class="stat-card" data-accent="garves"><div class="stat-value" id="live-resolved">--</div><div class="stat-label">Resolved</div></div>
     <div class="stat-card" data-accent="warning"><div class="stat-value" id="live-pending">--</div><div class="stat-label">Pending</div></div>
   </div>
+
+  <!-- Charts + Regime -->
   <div class="grid-2" style="margin-top:12px;">
     <div class="glass-card">
       <h3 class="section-title" style="font-size:0.72rem;margin-bottom:8px;">Equity Curve</h3>
@@ -52,158 +58,159 @@
   </div>
   <div class="mt-6" id="garves-regime-badge"><span class="badge badge-info">Regime: --</span></div>
 
-  <!-- ML Intelligence -->
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="garves">ML Intelligence</h2>
-    <div class="grid-3" id="ml-models-grid">
-      <div class="glass-card" style="border-left:3px solid #ff6600;">
-        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px;">LSTM Neural Predictor</div>
-        <div id="ml-lstm-status" style="font-size:0.76rem;">Loading...</div>
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- COLLAPSIBLE: ML & Strategy (default open)  -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="collapse-section default-open" style="margin-top:var(--space-8);">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">ML &amp; Strategy</h2>
+    </div>
+    <div class="collapse-body">
+      <!-- ML Intelligence -->
+      <div class="grid-3" id="ml-models-grid" style="margin-bottom:12px;">
+        <div class="glass-card" style="border-left:3px solid #ff6600;">
+          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px;">LSTM Neural Predictor</div>
+          <div id="ml-lstm-status" style="font-size:0.76rem;">Loading...</div>
+        </div>
+        <div class="glass-card" style="border-left:3px solid #00BFFF;">
+          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px;">XGBoost Trade Predictor</div>
+          <div id="ml-xgb-status" style="font-size:0.76rem;">Loading...</div>
+        </div>
+        <div class="glass-card" style="border-left:3px solid #00ff88;">
+          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px;">FinBERT Sentiment</div>
+          <div id="ml-finbert-status" style="font-size:0.76rem;">Loading...</div>
+        </div>
       </div>
-      <div class="glass-card" style="border-left:3px solid #00BFFF;">
-        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px;">XGBoost Trade Predictor</div>
-        <div id="ml-xgb-status" style="font-size:0.76rem;">Loading...</div>
+      <!-- ML Win Predictor -->
+      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">ML Win Predictor</h3>
+      <div class="grid-4" id="ml-summary-cards" style="margin-bottom:10px;">
+        <div class="stat-card" data-accent="garves"><div class="stat-value" id="ml-status">--</div><div class="stat-label">Model Status</div></div>
+        <div class="stat-card" data-accent="success"><div class="stat-value" id="ml-accuracy">--</div><div class="stat-label">CV Accuracy</div></div>
+        <div class="stat-card" data-accent="garves"><div class="stat-value" id="ml-samples">--</div><div class="stat-label">Training Samples</div></div>
+        <div class="stat-card" data-accent="garves"><div class="stat-value" id="ml-f1">--</div><div class="stat-label">F1 Score</div></div>
       </div>
-      <div class="glass-card" style="border-left:3px solid #00ff88;">
-        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px;">FinBERT Sentiment</div>
-        <div id="ml-finbert-status" style="font-size:0.76rem;">Loading...</div>
+      <div class="glass-card" style="margin-bottom:12px;">
+        <h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-2);">Top Feature Importances</h3>
+        <div id="ml-feature-bars" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">Loading...</span></div>
       </div>
+      <!-- Indicator Weights -->
+      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">Indicator Weights</h3>
+      <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;border-left:3px solid var(--agent-garves);">
+        <div style="font-size:0.68rem;color:var(--text-muted);line-height:1.5;">
+          <strong>Base</strong> = starting weight from Quant backtesting. <strong>Dynamic</strong> = auto-adjusted by the weight learner based on each indicator's live accuracy.
+          Indicators with accuracy above 55% get boosted +30%. Below 45% accuracy = disabled (0 weight). <strong>Samples</strong> = total votes cast by this indicator across all trades.
+        </div>
+      </div>
+      <div class="glass-card"><table class="data-table"><thead><tr><th>Indicator</th><th>Base</th><th>Dynamic</th><th>Accuracy</th><th>Samples</th><th>Status</th></tr></thead><tbody id="conv-weights-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody></table></div>
     </div>
   </div>
 
-  <!-- Portfolio -->
-  <div class="section-spacer">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-      <h2 class="section-title" data-accent="garves" style="margin:0;">Portfolio</h2>
-      <span id="positions-live-dot" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;animation:pulse-glow 2s ease-in-out infinite;"></span>
-      <span style="font-size:0.64rem;color:var(--success);">LIVE</span>
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- COLLAPSIBLE: Trade Details (default open)   -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="collapse-section default-open">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">Trade Details</h2>
     </div>
-    <!-- Open positions summary cards -->
-    <div class="grid-4" id="onchain-summary-cards">
-      <div class="stat-card" data-accent="garves"><div class="stat-value" id="oc-open-count">0</div><div class="stat-label">Open Positions</div></div>
-      <div class="stat-card" data-accent="garves"><div class="stat-value" id="oc-margin">$0.00</div><div class="stat-label">Margin</div></div>
-      <div class="stat-card" data-accent="success"><div class="stat-value" id="oc-value">$0.00</div><div class="stat-label">Market Value</div></div>
-      <div class="stat-card" data-accent="success"><div class="stat-value" id="oc-open-pnl">$0.00</div><div class="stat-label">Open P&L</div></div>
-    </div>
-    <!-- Current Holdings table -->
-    <div style="margin-top:10px;">
-      <h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-2);">Current Holdings</h3>
-      <div class="glass-card"><table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Bet</th><th>Shares</th><th>Entry</th><th>Now</th><th>Margin</th><th>Value</th><th>P&L</th></tr></thead>
+    <div class="collapse-body">
+      <!-- Current Holdings -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <h3 class="section-title" data-accent="garves" style="margin:0;font-size:0.76rem;">Current Holdings</h3>
+        <span id="positions-live-dot" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;animation:pulse-glow 2s ease-in-out infinite;"></span>
+        <span style="font-size:0.64rem;color:var(--success);">LIVE</span>
+      </div>
+      <div class="glass-card" style="margin-bottom:12px;"><table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Bet</th><th>Shares</th><th>Entry</th><th>Now</th><th>Margin</th><th>Value</th><th>P&L</th></tr></thead>
       <tbody id="oc-holdings-tbody"><tr><td colspan="9" class="text-muted" style="text-align:center;padding:16px;">No open positions</td></tr></tbody></table></div>
-    </div>
-    <!-- Trade History -->
-    <div style="margin-top:14px;">
+
+      <!-- Trade History -->
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:var(--space-2);">
         <h3 class="section-title" style="font-size:0.76rem;margin:0;">Trade History</h3>
         <span id="oc-record" class="text-muted" style="font-size:0.72rem;">--</span>
         <span id="oc-realized-pnl" class="text-muted" style="font-size:0.72rem;margin-left:auto;">--</span>
       </div>
-      <div class="glass-card"><table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Bet</th><th>Cost</th><th>Result</th><th>P&L</th></tr></thead>
+      <div class="glass-card" style="margin-bottom:12px;"><table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Bet</th><th>Cost</th><th>Result</th><th>P&L</th></tr></thead>
       <tbody id="oc-history-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:16px;">No trade history</td></tr></tbody></table></div>
-    </div>
-  </div>
 
-  <!-- ML Win Predictor -->
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="garves">ML Win Predictor</h2>
-    <div class="grid-4" id="ml-summary-cards">
-      <div class="stat-card" data-accent="garves"><div class="stat-value" id="ml-status">--</div><div class="stat-label">Model Status</div></div>
-      <div class="stat-card" data-accent="success"><div class="stat-value" id="ml-accuracy">--</div><div class="stat-label">CV Accuracy</div></div>
-      <div class="stat-card" data-accent="garves"><div class="stat-value" id="ml-samples">--</div><div class="stat-label">Training Samples</div></div>
-      <div class="stat-card" data-accent="garves"><div class="stat-value" id="ml-f1">--</div><div class="stat-label">F1 Score</div></div>
-    </div>
-    <div class="glass-card" style="margin-top:10px;">
-      <h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-2);">Top Feature Importances</h3>
-      <div id="ml-feature-bars" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">Loading...</span></div>
-    </div>
-  </div>
-
-  <!-- Indicator Weights (kept from ConvictionEngine) -->
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="garves">Indicator Weights</h2>
-    <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;border-left:3px solid var(--agent-garves);">
-      <div style="font-size:0.68rem;color:var(--text-muted);line-height:1.5;">
-        <strong>Base</strong> = starting weight from Quant backtesting. <strong>Dynamic</strong> = auto-adjusted by the weight learner based on each indicator's live accuracy.
-        Indicators with accuracy above 55% get boosted +30%. Below 45% accuracy = disabled (0 weight). <strong>Samples</strong> = total votes cast by this indicator across all trades.
+      <!-- Pending Trades -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <h3 class="section-title" data-accent="warning" style="margin:0;font-size:0.76rem;">Pending Trades</h3>
+        <span id="pending-count-badge" style="background:var(--warning);color:#000;font-weight:700;padding:2px 8px;border-radius:10px;font-size:0.72rem;">0</span>
+        <span id="pending-exposure" class="text-muted" style="font-size:0.76rem;margin-left:auto;">Exposure: --</span>
       </div>
+      <div class="glass-card" id="live-positions-table-wrap" style="margin-bottom:12px;">
+        <table class="data-table"><thead><tr><th>Placed</th><th>Market</th><th>Direction</th><th>Stake</th><th>Edge</th><th style="min-width:100px;">Countdown</th><th>Pot. Profit</th><th>Pot. Loss</th></tr></thead>
+        <tbody id="live-pending-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No pending trades</td></tr></tbody></table>
+      </div>
+
+      <!-- Resolved Trades -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <h3 class="section-title" data-accent="garves" style="margin:0;font-size:0.76rem;">Resolved Trades</h3>
+        <span id="resolved-summary" class="text-muted" style="font-size:0.76rem;margin-left:auto;">--</span>
+      </div>
+      <div class="glass-card" style="margin-bottom:12px;"><table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Direction</th><th>Stake</th><th>Edge</th><th>Result</th><th>PnL</th></tr></thead><tbody id="live-resolved-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;padding:24px;">No resolved trades yet</td></tr></tbody></table></div>
+
+      <!-- Breakdowns -->
+      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">Breakdowns</h3>
+      <div class="grid-3" id="live-breakdowns" style="margin-bottom:12px;">
+        <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Asset</h3><table class="data-table"><thead><tr><th>Asset</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-asset"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+        <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Timeframe</h3><table class="data-table"><thead><tr><th>TF</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-tf"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+        <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Direction</h3><table class="data-table"><thead><tr><th>Dir</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-dir"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+      </div>
+
+      <!-- Daily Performance -->
+      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">Daily Performance History</h3>
+      <div class="glass-card"><table class="data-table"><thead><tr><th>Date</th><th>Trades</th><th>W-L</th><th>Win Rate</th><th>PnL</th><th>Avg Edge</th><th>Regime</th><th>Issues</th></tr></thead><tbody id="daily-history-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No daily reports yet</td></tr></tbody></table></div>
     </div>
-    <div class="glass-card"><table class="data-table"><thead><tr><th>Indicator</th><th>Base</th><th>Dynamic</th><th>Accuracy</th><th>Samples</th><th>Status</th></tr></thead><tbody id="conv-weights-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody></table></div>
   </div>
 
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="garves">Breakdowns</h2>
-    <div class="grid-3" id="live-breakdowns">
-      <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Asset</h3><table class="data-table"><thead><tr><th>Asset</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-asset"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
-      <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Timeframe</h3><table class="data-table"><thead><tr><th>TF</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-tf"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
-      <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Direction</h3><table class="data-table"><thead><tr><th>Dir</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-dir"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- COLLAPSIBLE: Market Data (default closed)   -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="collapse-section">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">Market Data</h2>
+    </div>
+    <div class="collapse-body">
+      <!-- Derivatives Intelligence -->
+      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">Derivatives Intelligence</h3>
+      <div class="grid grid-3" id="deriv-cards" style="margin-bottom:12px;">
+        <div class="glass-card" id="deriv-funding"><div class="stat-label">Funding Rates</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+        <div class="glass-card" id="deriv-liquidations"><div class="stat-label">Liquidations (5m)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+        <div class="glass-card" id="deriv-depth"><div class="stat-label">Spot Depth (Top 5)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+      </div>
+      <!-- External Data Intelligence -->
+      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">External Data Intelligence</h3>
+      <div class="grid-3" id="ext-data-cards" style="margin-bottom:8px;">
+        <div class="glass-card" id="ext-macro"><div class="stat-label">Macro (FRED)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+        <div class="glass-card" id="ext-defi"><div class="stat-label">DeFi (DeFiLlama)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+        <div class="glass-card" id="ext-mempool"><div class="stat-label">Mempool (BTC)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+      </div>
+      <div class="grid-4 mt-3" id="ext-asset-cards" style="margin-bottom:12px;">
+        <div class="glass-card" id="ext-btc"><div class="stat-label">BTC External</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+        <div class="glass-card" id="ext-eth"><div class="stat-label">ETH External</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+        <div class="glass-card" id="ext-sol"><div class="stat-label">SOL External</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+        <div class="glass-card" id="ext-xrp"><div class="stat-label">XRP External</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+      </div>
+      <!-- News Sentiment -->
+      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">News Sentiment</h3>
+      <div class="grid-3" id="garves-sentiment-grid"><div class="text-muted" style="padding:var(--space-4);grid-column:1/-1;text-align:center;">Loading sentiment data...</div></div>
     </div>
   </div>
 
-  <!-- Live Positions (Pending Trades with Countdown Timers) -->
-  <div class="section-spacer">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-      <h2 class="section-title" data-accent="warning" style="margin:0;">Pending Trades</h2>
-      <span id="pending-count-badge" style="background:var(--warning);color:#000;font-weight:700;padding:2px 8px;border-radius:10px;font-size:0.72rem;">0</span>
-      <span id="pending-exposure" class="text-muted" style="font-size:0.76rem;margin-left:auto;">Exposure: --</span>
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- COLLAPSIBLE: Tools (default closed)         -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="collapse-section">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="warning" style="margin-bottom:0;">Tools</h2>
     </div>
-    <div class="glass-card" id="live-positions-table-wrap">
-      <table class="data-table"><thead><tr><th>Placed</th><th>Market</th><th>Direction</th><th>Stake</th><th>Edge</th><th style="min-width:100px;">Countdown</th><th>Pot. Profit</th><th>Pot. Loss</th></tr></thead>
-      <tbody id="live-pending-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No pending trades</td></tr></tbody></table>
+    <div class="collapse-body">
+      <!-- Mistake Analysis -->
+      <h3 class="section-title" data-accent="warning" style="font-size:0.76rem;">Today's Mistake Analysis</h3>
+      <div id="daily-mistakes" class="flex flex-col gap-2" style="margin-bottom:12px;"><div class="text-muted" style="padding:var(--space-4);">Loading analysis...</div></div>
+      <!-- Live Log -->
+      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">Live Log</h3>
+      <div class="log-feed" id="live-log-feed"><div class="log-line"><span class="log-time">--:--:--</span><span class="log-msg">Waiting for log data...</span></div></div>
     </div>
-  </div>
-
-  <!-- Resolved Trades -->
-  <div class="section-spacer">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-      <h2 class="section-title" data-accent="garves" style="margin:0;">Resolved Trades</h2>
-      <span id="resolved-summary" class="text-muted" style="font-size:0.76rem;margin-left:auto;">--</span>
-    </div>
-    <div class="glass-card"><table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Direction</th><th>Stake</th><th>Edge</th><th>Result</th><th>PnL</th></tr></thead><tbody id="live-resolved-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;padding:24px;">No resolved trades yet</td></tr></tbody></table></div>
-  </div>
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="garves">Daily Performance History</h2>
-    <div class="glass-card"><table class="data-table"><thead><tr><th>Date</th><th>Trades</th><th>W-L</th><th>Win Rate</th><th>PnL</th><th>Avg Edge</th><th>Regime</th><th>Issues</th></tr></thead><tbody id="daily-history-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No daily reports yet</td></tr></tbody></table></div>
-  </div>
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="warning">Today's Mistake Analysis</h2>
-    <div id="daily-mistakes" class="flex flex-col gap-2"><div class="text-muted" style="padding:var(--space-4);">Loading analysis...</div></div>
-  </div>
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="garves">Derivatives Intelligence</h2>
-    <div class="grid grid-3" id="deriv-cards">
-      <div class="glass-card" id="deriv-funding"><div class="stat-label">Funding Rates</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-      <div class="glass-card" id="deriv-liquidations"><div class="stat-label">Liquidations (5m)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-      <div class="glass-card" id="deriv-depth"><div class="stat-label">Spot Depth (Top 5)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-    </div>
-  </div>
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="garves">External Data Intelligence</h2>
-    <div class="grid-3" id="ext-data-cards">
-      <div class="glass-card" id="ext-macro"><div class="stat-label">Macro (FRED)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-      <div class="glass-card" id="ext-defi"><div class="stat-label">DeFi (DeFiLlama)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-      <div class="glass-card" id="ext-mempool"><div class="stat-label">Mempool (BTC)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-    </div>
-    <div class="grid-4 mt-3" id="ext-asset-cards">
-      <div class="glass-card" id="ext-btc"><div class="stat-label">BTC External</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-      <div class="glass-card" id="ext-eth"><div class="stat-label">ETH External</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-      <div class="glass-card" id="ext-sol"><div class="stat-label">SOL External</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-      <div class="glass-card" id="ext-xrp"><div class="stat-label">XRP External</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-    </div>
-  </div>
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="garves">News Sentiment</h2>
-    <div class="grid-3" id="garves-sentiment-grid"><div class="text-muted" style="padding:var(--space-4);grid-column:1/-1;text-align:center;">Loading sentiment data...</div></div>
-  </div>
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="garves">Live Log</h2>
-    <div class="log-feed" id="live-log-feed"><div class="log-line"><span class="log-time">--:--:--</span><span class="log-msg">Waiting for log data...</span></div></div>
-  </div>
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="garves">Suggested Actions</h2>
-    <div id="garves-smart-actions" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"><span class="text-muted" style="font-size:0.76rem;">Loading...</span></div>
-  </div>
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="garves">Commands &amp; Capabilities</h2>
-    <div class="glass-card"><div id="garves-commands" style="max-height:250px;overflow-y:auto;"><span class="text-muted">Loading commands...</span></div></div>
   </div>
 </div>
