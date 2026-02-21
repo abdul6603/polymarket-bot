@@ -136,6 +136,7 @@ class RazorEngine:
         self._clob_scan_idx = (start + self._clob_batch_size) % n
 
         opportunities: list[ArbOpportunity] = []
+        best_spread = -1.0
         for m in batch:
             ask_a, depth_a = self.executor.fetch_best_ask(m.token_a_id)
             ask_b, depth_b = self.executor.fetch_best_ask(m.token_b_id)
@@ -144,6 +145,8 @@ class RazorEngine:
 
             combined = ask_a + ask_b
             spread = 1.0 - combined
+            if spread > best_spread:
+                best_spread = spread
             if spread < self.cfg.min_spread:
                 continue
 
@@ -161,11 +164,13 @@ class RazorEngine:
                 position_usd=0.0,
             ))
 
+        # Always log progress so we can track scanning
+        log.info("[CLOB SCAN] batch %d-%d/%d | checked=%d | best_spread=%.4f | arbs=%d",
+                 start, (start + self._clob_batch_size) % n, n,
+                 len(batch), best_spread, len(opportunities))
+
         if opportunities:
             opportunities.sort(key=lambda o: o.spread, reverse=True)
-            log.info("[CLOB SCAN] Found %d arbs in batch of %d (idx %d/%d) | top: %.3f",
-                     len(opportunities), len(batch), start, n,
-                     opportunities[0].spread)
 
         return opportunities
 

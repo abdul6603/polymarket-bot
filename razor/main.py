@@ -40,6 +40,7 @@ class RazorBot:
         self._markets: list[RazorMarket] = []
         self._running = False
         self._tasks: list[asyncio.Task] = []
+        self._execute_lock = asyncio.Lock()  # Prevent race between arb_loop and clob_scan_loop
 
     async def run(self) -> None:
         """Main entry point — init, discover, loop."""
@@ -157,8 +158,10 @@ class RazorBot:
                     opps = self.engine.scan_opportunities(self._markets, self.feed)
 
                     # 2. Execute top opportunities (CLOB verification + order placement)
-                    for opp in opps[:3]:  # Max 3 new entries per cycle
-                        self.engine.execute_arb(opp)
+                    if opps:
+                        async with self._execute_lock:
+                            for opp in opps[:3]:
+                                self.engine.execute_arb(opp)
 
                     # 3. Manage exits on all open positions
                     self.engine.manage_exits(self.feed)
@@ -193,9 +196,10 @@ class RazorBot:
                     opps = await asyncio.get_event_loop().run_in_executor(
                         None, self.engine.clob_batch_scan, self._markets,
                     )
-                    # Execute any found (CLOB-verified already, skip re-check)
-                    for opp in opps[:3]:
-                        self.engine.execute_arb(opp)
+                    if opps:
+                        async with self._execute_lock:
+                            for opp in opps[:3]:
+                                self.engine.execute_arb(opp)
 
                 await asyncio.sleep(5)
 
