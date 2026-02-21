@@ -204,8 +204,10 @@ class QuantBot:
         """Poll event bus for trade_resolved events and study each one."""
         try:
             import sys
-            sys.path.insert(0, str(Path.home() / "shared"))
-            from shared.events import get_unread
+            _shared = str(Path.home() / "shared")
+            if _shared not in sys.path:
+                sys.path.insert(0, _shared)
+            from events import get_unread
         except ImportError:
             return
 
@@ -356,8 +358,10 @@ class QuantBot:
         # Publish event
         try:
             import sys
-            sys.path.insert(0, str(Path.home() / "shared"))
-            from shared.events import publish
+            _shared = str(Path.home() / "shared")
+            if _shared not in sys.path:
+                sys.path.insert(0, _shared)
+            from events import publish
             publish(
                 agent="quant",
                 event_type="mini_optimization_complete",
