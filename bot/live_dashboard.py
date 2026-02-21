@@ -150,29 +150,10 @@ if __name__ == "__main__":
         print("[Dashboard] Port 8877 already in use — another instance is running. Exiting.")
         sys.exit(0)
 
-    # Auto-start Atlas background research loop
+    # Atlas runs on Pro as its own LaunchAgent (com.atlas.agent).
+    # Dashboard reads Pro's status via SSH — no local loop needed.
     def _auto_start_atlas():
-        try:
-            # Check if daemon (com.atlas.agent) already runs a BackgroundLoop
-            import json as _json
-            from pathlib import Path as _Path
-            from datetime import datetime as _dt, timezone as _tz
-            _status_file = _Path.home() / "atlas" / "data" / "background_status.json"
-            if _status_file.exists():
-                _st = _json.loads(_status_file.read_text())
-                _started = _st.get("started_at", "")
-                if _started:
-                    _t = _dt.fromisoformat(_started)
-                    _age = (_dt.now(_tz.utc) - _t.astimezone(_tz.utc)).total_seconds()
-                    if _age < 7200:  # daemon started within last 2 hours
-                        print(f"[Dashboard] Atlas daemon already running (started {int(_age)}s ago) — skipping auto-start")
-                        return
-            atlas = get_atlas()
-            if atlas and not atlas.background.is_running():
-                atlas.start_background()
-                print("[Dashboard] Atlas background research loop auto-started")
-        except Exception as e:
-            print(f"[Dashboard] Atlas auto-start failed: {e}")
+        print("[Dashboard] Atlas background loop disabled — runs on Pro (status fetched via SSH)")
 
     # Auto-process broadcasts + send heartbeats for agents without active loops
     def _broadcast_processor():

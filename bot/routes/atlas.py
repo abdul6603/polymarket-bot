@@ -9,6 +9,8 @@ from pathlib import Path
 
 from flask import Blueprint, jsonify, request
 
+from bot.routes._utils import read_fresh
+
 from bot.shared import (
     get_atlas,
     ATLAS_ROOT,
@@ -235,13 +237,12 @@ def api_atlas_acknowledge():
 def api_atlas_costs():
     """API cost tracker data (Tavily + OpenAI)."""
     cost_file = ATLAS_ROOT / "data" / "cost_tracker.json"
-    if not cost_file.exists():
-        return jsonify({"today_tavily": 0, "today_openai": 0,
-                        "month_tavily": 0, "month_openai": 0,
-                        "projected_tavily": 0})
     try:
-        with open(cost_file) as f:
-            tracker = json.load(f)
+        tracker = read_fresh(cost_file, "~/atlas/data/cost_tracker.json")
+        if not tracker:
+            return jsonify({"today_tavily": 0, "today_openai": 0,
+                            "month_tavily": 0, "month_openai": 0,
+                            "projected_tavily": 0})
 
         daily = tracker.get("daily", {})
         today = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
@@ -403,6 +404,29 @@ def api_atlas_summarize():
         return jsonify({"error": str(e)[:200]}), 500, 500
 
 
+_atlas_bg_pro_cache = {"data": None, "ts": 0}
+
+def _fetch_pro_atlas_bg():
+    """Fetch Atlas background status from Pro via SSH (30s cache)."""
+    import time, subprocess
+    now = time.time()
+    if _atlas_bg_pro_cache["data"] and (now - _atlas_bg_pro_cache["ts"]) < 30:
+        return _atlas_bg_pro_cache["data"]
+    try:
+        result = subprocess.run(
+            ["ssh", "pro", "cat", "~/atlas/data/background_status.json"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            data = json.loads(result.stdout)
+            _atlas_bg_pro_cache["data"] = data
+            _atlas_bg_pro_cache["ts"] = now
+            return data
+    except Exception:
+        pass
+    return None
+
+
 @atlas_bp.route("/api/atlas/background/status")
 def api_atlas_bg_status():
     """Get Atlas background loop status -- state, cycles, last cycle, errors, research stats."""
@@ -414,8 +438,13 @@ def api_atlas_bg_status():
         status = bg.get_status()
         research = status.get("research_stats", {})
         data_feed = status.get("data_feed", {})
-        # Build a clean response
-        state = status.get("state", "idle")
+
+        # If local Atlas has no completed cycles, prefer Pro's real status
+        local_cycles = status.get("cycles", 0)
+        pro_status = None
+        if local_cycles == 0:
+            pro_status = _fetch_pro_atlas_bg()
+
         state_labels = {
             "idle": "Idle",
             "running": "Waiting for next cycle",
@@ -433,23 +462,42 @@ def api_atlas_bg_status():
             "v2_report_delivery": "Delivering reports",
             "stopped": "Stopped",
         }
+
+        # Merge Pro data if available and more complete
+        cycles = local_cycles
+        last_cycle = status.get("last_cycle")
+        last_findings = status.get("last_findings", 0)
+        started_at = status.get("started_at")
+        cumulative = status.get("cumulative_researches", 0)
+        agent_feed_log = status.get("agent_feed_log", {})
+        state = status.get("state", "idle")
+
+        if pro_status and pro_status.get("cycles", 0) > cycles:
+            cycles = pro_status["cycles"]
+            last_cycle = pro_status.get("last_cycle", last_cycle)
+            last_findings = pro_status.get("last_findings", last_findings)
+            started_at = pro_status.get("started_at", started_at)
+            cumulative = pro_status.get("cumulative_researches", cumulative)
+            agent_feed_log = pro_status.get("agent_feed_log", agent_feed_log)
+            state = pro_status.get("state", state)
+
         return jsonify({
-            "running": status.get("running", False),
+            "running": status.get("running", False) or (pro_status is not None and pro_status.get("state") not in ("stopped", "idle")),
             "state": state,
             "state_label": state_labels.get(state, state.replace("_", " ").title()),
-            "cycles": status.get("cycles", 0),
-            "started_at": status.get("started_at", None),
-            "last_cycle": status.get("last_cycle", None),
-            "last_findings": status.get("last_findings", 0),
-            "last_error": status.get("last_error", None),
-            "total_researches": research.get("total_researches", 0),
+            "cycles": cycles,
+            "started_at": started_at,
+            "last_cycle": last_cycle,
+            "last_findings": last_findings,
+            "last_error": status.get("last_error") or (pro_status or {}).get("last_error"),
+            "total_researches": cumulative or research.get("total_researches", 0),
             "unique_urls": research.get("seen_urls", 0) if isinstance(research.get("seen_urls"), int) else len(research.get("seen_urls", [])),
             "data_feed_active": data_feed.get("active", False),
             "data_feed_sources": data_feed.get("sources_count", 0),
-            "current_target": status.get("current_target", None),
+            "current_target": status.get("current_target") or (pro_status or {}).get("current_target"),
             "recent_learn_count": status.get("recent_learn_count", 0),
             "cycle_minutes": 45,
-            "agent_feed_log": status.get("agent_feed_log", {}),
+            "agent_feed_log": agent_feed_log,
         })
     except Exception as e:
         return jsonify({"running": False, "state": "error", "error": str(e)[:200]})
@@ -482,11 +530,10 @@ def api_atlas_bg_stop():
 @atlas_bp.route("/api/atlas/competitors")
 def api_atlas_competitors():
     """Competitor intelligence data."""
-    if not COMPETITOR_INTEL_FILE.exists():
-        return jsonify({"trading": [], "content": [], "ai_agents": [], "scanned_at": None})
     try:
-        with open(COMPETITOR_INTEL_FILE) as f:
-            data = json.load(f)
+        data = read_fresh(COMPETITOR_INTEL_FILE, "~/atlas/data/competitor_intel.json")
+        if not data:
+            return jsonify({"trading": [], "content": [], "ai_agents": [], "scanned_at": None})
         return jsonify(data)
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500
@@ -499,10 +546,9 @@ def api_atlas_learning(agent):
     kb_file = ATLAS_ROOT / "data" / "knowledge_base.json"
     result = {"observations": 0, "hypotheses": 0, "improvements_applied": 0, "learning_score": "Novice"}
 
-    if kb_file.exists():
+    kb = read_fresh(kb_file, "~/atlas/data/knowledge_base.json")
+    if kb:
         try:
-            with open(kb_file) as f:
-                kb = json.load(f)
             all_obs = kb.get("observations", [])
             agent_obs = [o for o in all_obs if o.get("agent", "").lower() == agent or agent in str(o.get("tags", "")).lower()]
             result["observations"] = len(agent_obs)
