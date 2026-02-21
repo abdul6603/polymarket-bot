@@ -13,11 +13,24 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 CANDLE_DIR = DATA_DIR / "candles"
 
 # All trade files to merge (resolved trades only)
-TRADE_FILES = [
+# Static files from older periods
+_STATIC_TRADE_FILES = [
     DATA_DIR / "trades.jsonl",
     DATA_DIR / "trades_old_strategy_feb15.jsonl",
     DATA_DIR / "trades_pre_fix_20260214_2359.jsonl",
 ]
+
+# Dynamic: also include daily archive files
+ARCHIVE_DIR = DATA_DIR / "archives"
+
+
+def _get_all_trade_files() -> list[Path]:
+    """Collect all trade JSONL files: static + daily archives."""
+    files = list(_STATIC_TRADE_FILES)
+    if ARCHIVE_DIR.exists():
+        for f in sorted(ARCHIVE_DIR.glob("trades_*.jsonl")):
+            files.append(f)
+    return files
 
 
 def _load_jsonl(path: Path) -> list[dict]:
@@ -71,7 +84,7 @@ def load_all_trades() -> list[dict]:
     seen_ids: set[str] = set()
     all_trades: list[dict] = []
 
-    for fpath in TRADE_FILES:
+    for fpath in _get_all_trade_files():
         rows = _load_jsonl(fpath)
         for t in rows:
             tid = t.get("trade_id", "")
@@ -87,7 +100,7 @@ def load_all_trades() -> list[dict]:
 
     # Sort by timestamp
     all_trades.sort(key=lambda t: t.get("timestamp", 0))
-    log.info("Loaded %d resolved trades from %d files", len(all_trades), len(TRADE_FILES))
+    log.info("Loaded %d resolved trades from %d files", len(all_trades), len(_get_all_trade_files()))
     return all_trades
 
 
