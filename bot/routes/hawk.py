@@ -60,15 +60,51 @@ def _load_status() -> dict:
     return {"running": False}
 
 
+def _read_pro_hawk_mode():
+    """Fetch hawk_mode.json from Pro via SSH."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["ssh", "pro", "cat", "~/polymarket-bot/data/hawk_mode.json"],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return json.loads(result.stdout)
+    except Exception:
+        pass
+    return None
+
+
 @hawk_bp.route("/api/hawk/mode")
 def api_hawk_mode():
-    """Current Hawk trading mode."""
+    """Current Hawk trading mode — checks Pro if local is stale (>2 min)."""
+    data = None
     if MODE_FILE.exists():
         try:
             data = json.loads(MODE_FILE.read_text())
-            return jsonify(data)
+            # Check freshness via toggled_at
+            toggled = data.get("toggled_at", "")
+            if toggled:
+                ts = datetime.fromisoformat(toggled)
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+                age = (datetime.now(timezone.utc) - ts).total_seconds()
+                if age < 120:
+                    return jsonify(data)
         except Exception:
             pass
+    # Stale or missing — check Pro
+    pro_data = _read_pro_hawk_mode()
+    if pro_data:
+        # Cache locally so next request is fast
+        try:
+            MODE_FILE.write_text(json.dumps(pro_data, indent=2))
+        except Exception:
+            pass
+        return jsonify(pro_data)
+    # Fall back to whatever we have
+    if data:
+        return jsonify(data)
     import os
     dry_run = os.getenv("HAWK_DRY_RUN", "true").lower() in ("true", "1", "yes")
     return jsonify({"dry_run": dry_run})
