@@ -6787,7 +6787,7 @@ async function loadHawkTab() {
 
   // Positions
   try {
-    var posResp = await fetch('/api/hawk/positions');
+    var posResp = await fetch('/api/hawk/positions?t=' + Date.now());
     var posData = await posResp.json();
     renderHawkPositions(posData.positions || []);
   } catch(e) {}
@@ -8512,6 +8512,9 @@ function renderHawkSuggestions(suggestions) {
   var tierBg = {HIGH:'rgba(0,255,136,0.08)', MEDIUM:'rgba(255,215,0,0.08)', SPECULATIVE:'rgba(255,136,68,0.08)'};
   var tierBorder = {HIGH:'rgba(0,255,136,0.3)', MEDIUM:'rgba(255,215,0,0.3)', SPECULATIVE:'rgba(255,136,68,0.3)'};
 
+  // Sort by conviction score — highest first
+  suggestions.sort(function(a, b) { return (b.score || 0) - (a.score || 0); });
+
   var html = '';
   for (var i = 0; i < suggestions.length; i++) {
     var s = suggestions[i];
@@ -8539,6 +8542,24 @@ function renderHawkSuggestions(suggestions) {
     }
     html += '</div>';
     html += '<div style="font-size:0.84rem;font-weight:600;color:#fff;line-height:1.4;">' + esc(s.question) + '</div>';
+    html += '</div>';
+    html += '</div>';
+
+    // Conviction meter — visual bar showing how confident Hawk is
+    var convScore = s.score || 0;
+    var convPct = Math.min(100, Math.max(0, convScore));
+    var convLabel, convColor, convGlow;
+    if (convPct >= 85) { convLabel = 'STRONG BET'; convColor = '#00ff88'; convGlow = 'rgba(0,255,136,0.4)'; }
+    else if (convPct >= 70) { convLabel = 'GOOD BET'; convColor = '#FFD700'; convGlow = 'rgba(255,215,0,0.3)'; }
+    else if (convPct >= 55) { convLabel = 'FAIR'; convColor = '#ff8844'; convGlow = 'rgba(255,136,68,0.2)'; }
+    else { convLabel = 'WEAK'; convColor = '#ff4444'; convGlow = 'rgba(255,68,68,0.2)'; }
+    html += '<div style="margin-bottom:10px;">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
+    html += '<span style="font-size:0.68rem;font-weight:800;color:' + convColor + ';letter-spacing:0.08em;">' + convLabel + '</span>';
+    html += '<span style="font-size:0.66rem;color:var(--text-muted);">Conviction ' + convPct + '/100</span>';
+    html += '</div>';
+    html += '<div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">';
+    html += '<div style="width:' + convPct + '%;height:100%;background:' + convColor + ';border-radius:3px;box-shadow:0 0 8px ' + convGlow + ';transition:width 0.5s ease;"></div>';
     html += '</div>';
     html += '</div>';
 
