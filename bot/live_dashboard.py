@@ -76,6 +76,15 @@ if HAS_SOCKETIO:
     socketio = SocketIO(app, async_mode="threading", cors_allowed_origins=["http://localhost:8877", "http://127.0.0.1:8877"])
 
 
+def broadcast_event(event_type, data=None):
+    """Emit a Socket.IO event to all connected clients (if socketio is available)."""
+    if socketio:
+        try:
+            socketio.emit(event_type, data or {})
+        except Exception:
+            pass
+
+
 @app.after_request
 def add_cache_headers(response):
     # Only disable caching for API responses, allow browser caching for static assets

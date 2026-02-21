@@ -184,10 +184,10 @@ function renderResolvedTrades(trades) {
 // === GARVES LIVE TAB RENDERERS ===
 function renderLiveStats(data) {
   var s = data.summary || {};
-  document.getElementById('live-winrate').textContent = (s.win_rate || 0) + '%';
+  animateCount('live-winrate', s.win_rate || 0, 800, '', '%');
   document.getElementById('live-winrate').style.color = wrColor(s.win_rate || 0);
   var pnl = s.pnl || 0;
-  document.getElementById('live-pnl').textContent = (pnl >= 0 ? '+$' : '-$') + Math.abs(pnl).toFixed(2);
+  animateCount('live-pnl', Math.abs(pnl), 800, pnl >= 0 ? '+$' : '-$');
   document.getElementById('live-pnl').style.color = pnl >= 0 ? 'var(--success)' : 'var(--error)';
   document.getElementById('live-wins-losses').textContent = (s.wins || 0) + ' / ' + (s.losses || 0);
   document.getElementById('live-total').textContent = s.total_trades || 0;
@@ -200,12 +200,13 @@ function renderLiveBalance(data) {
   var cashEl = document.getElementById('live-cash');
   var pnlEl = document.getElementById('live-real-pnl');
   if (!portEl) return;
-  portEl.textContent = '$' + (data.portfolio || 0).toFixed(2);
+  // Animate hero stat values
+  animateCount('live-portfolio', data.portfolio || 0, 800, '$');
   portEl.style.color = (data.portfolio || 0) > 0 ? 'var(--success)' : 'var(--error)';
-  cashEl.textContent = '$' + (data.cash || 0).toFixed(2);
+  animateCount('live-cash', data.cash || 0, 800, '$');
   cashEl.style.color = (data.cash || 0) > 0 ? 'var(--success)' : 'var(--text-muted)';
   var pnl = data.pnl || 0;
-  pnlEl.textContent = (pnl >= 0 ? '+$' : '-$') + Math.abs(pnl).toFixed(2);
+  animateCount('live-real-pnl', Math.abs(pnl), 800, pnl >= 0 ? '+$' : '-$');
   pnlEl.style.color = pnl >= 0 ? 'var(--success)' : 'var(--error)';
   // Show live/stale indicator
   var label = 'Portfolio';
@@ -3904,10 +3905,16 @@ async function refresh() {
       loadBrainNotes('claude');
       loadCommandTable('claude');
       loadMemoryFeed();
+      loadAgentSmartActions('overview');
+      loadCrossAgentFlow();
     } else if (currentTab === 'garves-live') {
       var resp = await fetch('/api/trades/live');
       var data = await resp.json();
       renderLiveStats(data);
+      // Wire charts — PnL equity curve + Win Rate donut
+      var _garvesResolved = data.recent_trades || [];
+      renderPnLChart('garves-pnl-chart', _garvesResolved.slice().reverse().map(function(t){ return {pnl: t.est_pnl || 0, date: t.time}; }), 'Garves');
+      renderWinRateDonut('garves-wr-donut', (data.summary||{}).wins||0, (data.summary||{}).losses||0);
       renderBreakdown('live-bd-asset', data.by_asset);
       renderBreakdown('live-bd-tf', data.by_timeframe);
       renderBreakdown('live-bd-dir', data.by_direction);
@@ -4488,6 +4495,19 @@ async function loadTodayActivity() {
   } catch(e) {}
 }
 
+async function loadCrossAgentFlow() {
+  try {
+    var resp = await fetch('/api/system-summary');
+    var d = await resp.json();
+    var atlasEl = document.getElementById('xflow-atlas-count');
+    var garvesEl = document.getElementById('xflow-garves-trades');
+    var hawkEl = document.getElementById('xflow-hawk-opps');
+    if (atlasEl && d.atlas) animateCount('xflow-atlas-count', d.atlas.patterns || 0, 600);
+    if (garvesEl && d.garves) animateCount('xflow-garves-trades', d.garves.trades || 0, 600);
+    if (hawkEl && d.hawk) animateCount('xflow-hawk-opps', d.hawk.trades || 0, 600);
+  } catch(e) {}
+}
+
 // ═══════════════════════════════════════════════════════
 // THOR — The Engineer
 // ═══════════════════════════════════════════════════════
@@ -4807,7 +4827,8 @@ async function loadAgentSmartActions(agent) {
   var el = document.getElementById(agent + '-smart-actions');
   if (!el) return;
   try {
-    var resp = await fetch('/api/thor/smart-actions?agent=' + encodeURIComponent(agent));
+    var apiAgent = agent === 'overview' ? '' : agent;
+    var resp = await fetch('/api/thor/smart-actions?agent=' + encodeURIComponent(apiAgent));
     var data = await resp.json();
     var actions = data.actions || [];
     _agentSmartActionsCache[agent] = actions;
@@ -4872,7 +4893,7 @@ async function submitAgentSmartAction(agent, index) {
         description: a.description || ''
       })
     }).catch(function(){});
-    showToast('Task submitted: ' + a.title, 'var(--agent-thor)');
+    showToast('Task submitted: ' + a.title, 'success');
     loadAgentSmartActions(agent);
   } catch(e) {
     alert('Failed: ' + e.message);
@@ -5088,7 +5109,7 @@ async function submitSmartAction(index) {
         description: a.description || ''
       })
     }).catch(function(){});
-    showToast('Task submitted: ' + a.title, 'var(--agent-thor)');
+    showToast('Task submitted: ' + a.title, 'success');
     loadThorQueue();
     loadThor();
     loadSmartActions();
@@ -5124,7 +5145,7 @@ async function thorSubmitCustomTask() {
       alert('Error: ' + data.error);
       return;
     }
-    showToast('Custom task submitted: ' + title.value.trim(), 'var(--agent-thor)');
+    showToast('Custom task submitted: ' + title.value.trim(), 'success');
     title.value = '';
     desc.value = '';
     if (files) files.value = '';
@@ -5135,16 +5156,8 @@ async function thorSubmitCustomTask() {
   }
 }
 
-function showToast(msg, color) {
-  var existing = document.getElementById('cc-toast');
-  if (existing) existing.remove();
-  var toast = document.createElement('div');
-  toast.id = 'cc-toast';
-  toast.style.cssText = 'position:fixed;bottom:24px;right:24px;background:var(--surface-secondary);border:1px solid ' + (color || 'var(--success)') + ';color:var(--text-primary);padding:12px 20px;border-radius:8px;font-size:0.82rem;font-family:var(--font-mono);z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,0.5);';
-  toast.textContent = msg;
-  document.body.appendChild(toast);
-  setTimeout(function() { toast.remove(); }, 3500);
-}
+// Legacy showToast removed — components.js provides stacking toast with typed variants
+// (info/success/warning/error/trade), slide-in/out animations, emoji icons
 
 async function loadThorActivity() {
   try {
@@ -6542,18 +6555,27 @@ async function loadHawkTab() {
     var d = await resp.json();
     var s = d.summary || {};
     var st = d.status || {};
-    document.getElementById('hawk-winrate').textContent = (s.win_rate || 0).toFixed(1) + '%';
+    animateCount('hawk-winrate', s.win_rate || 0, 800, '', '%');
     document.getElementById('hawk-winrate').style.color = wrColor(s.win_rate || 0);
-    document.getElementById('hawk-pnl').textContent = '$' + (s.pnl || 0).toFixed(2);
+    animateCount('hawk-pnl', Math.abs(s.pnl || 0), 800, (s.pnl || 0) >= 0 ? '$' : '-$');
     document.getElementById('hawk-pnl').style.color = (s.pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)';
     document.getElementById('hawk-open-bets').textContent = s.open_positions || 0;
     document.getElementById('hawk-total-trades').textContent = s.total_trades || 0;
     // V2: Effective bankroll
     var effBr = st.effective_bankroll || 200;
+    animateCount('hawk-eff-bankroll', effBr, 800, '$');
     var effEl = document.getElementById('hawk-eff-bankroll');
-    if (effEl) { effEl.textContent = '$' + effBr.toFixed(0); effEl.style.color = effBr >= 200 ? 'var(--success)' : '#FFD700'; }
-    document.getElementById('hawk-daily-pnl').textContent = '$' + (s.daily_pnl || 0).toFixed(2);
+    if (effEl) { effEl.style.color = effBr >= 200 ? 'var(--success)' : '#FFD700'; }
+    animateCount('hawk-daily-pnl', Math.abs(s.daily_pnl || 0), 800, (s.daily_pnl || 0) >= 0 ? '$' : '-$');
     document.getElementById('hawk-daily-pnl').style.color = (s.daily_pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)';
+    // Wire Win Rate donut + streak
+    renderWinRateDonut('hawk-wr-donut', s.wins || 0, s.losses || 0);
+    var streakEl = document.getElementById('hawk-streak-num');
+    if (streakEl) {
+      var streak = s.current_streak || st.current_streak || 0;
+      streakEl.textContent = Math.abs(streak);
+      streakEl.style.color = streak >= 0 ? 'var(--success)' : 'var(--error)';
+    }
   } catch(e) { console.error('hawk status:', e); }
 
   // V2: Risk meter summary

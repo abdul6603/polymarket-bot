@@ -51,6 +51,20 @@
     <div class="stat-card" data-accent="hawk"><div class="stat-value" id="hawk-arb-profit" style="color:#00ff44;">$0.00</div><div class="stat-label">Arb Profit</div></div>
   </div>
 
+  <!-- E2: Win Rate Chart + Streak -->
+  <div class="grid-2" style="margin-top:12px;">
+    <div class="glass-card">
+      <h3 class="section-title" style="font-size:0.72rem;margin-bottom:8px;">Win Rate</h3>
+      <div class="chart-container chart-sm"><canvas id="hawk-wr-donut"></canvas></div>
+    </div>
+    <div class="glass-card" style="display:flex;align-items:center;justify-content:center;">
+      <div id="hawk-streak-display" style="text-align:center;">
+        <div style="font-size:2rem;font-weight:700;color:var(--agent-hawk);" id="hawk-streak-num">0</div>
+        <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;">Current Streak</div>
+      </div>
+    </div>
+  </div>
+
   <!-- F: Risk Distribution -->
   <div id="hawk-risk-meter-bar" style="margin:12px 0;display:flex;gap:6px;flex-wrap:wrap;">
     <div class="widget-badge"><span class="wb-label">Risk Dist:</span> <span id="hawk-risk-low" style="color:#00ff44;">0 Low</span></div>

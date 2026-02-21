@@ -131,9 +131,9 @@
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script src="/static/js/components.js?v=20260220"></script>
-<script src="/static/js/charts.js?v=20260220"></script>
-<script src="/static/dashboard.js?v=20260220"></script>
+<script src="/static/js/components.js?v=20260221"></script>
+<script src="/static/js/charts.js?v=20260221"></script>
+<script src="/static/dashboard.js?v=20260221"></script>
 <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
 <script>
 // SocketIO real-time connection (optional — degrades gracefully)
@@ -151,6 +151,27 @@
     });
     socket.on('heartbeats', function(data) {
       console.log('[SocketIO] Heartbeat push received');
+    });
+    // Real-time trade alerts
+    socket.on('trade_new', function(data) {
+      var asset = (data.asset || '?').toUpperCase();
+      var dir = (data.direction || '?').toUpperCase();
+      var edge = ((data.edge || 0) * 100).toFixed(1);
+      var tf = data.timeframe || '';
+      showToast('Garves: ' + asset + '/' + tf + ' ' + dir + ' (' + edge + '% edge)', 'trade');
+    });
+    socket.on('trade_resolved', function(data) {
+      var asset = (data.asset || '?').toUpperCase();
+      var dir = (data.direction || '?').toUpperCase();
+      var pnl = (data.pnl || 0).toFixed(2);
+      if (data.won) {
+        showToast('WIN: ' + asset + ' ' + dir + ' +$' + pnl, 'success');
+      } else {
+        showToast('LOSS: ' + asset + ' ' + dir + ' -$' + Math.abs(data.pnl || 0).toFixed(2), 'error');
+      }
+    });
+    socket.on('agent_status', function(data) {
+      showToast((data.agent || 'Agent') + ': ' + (data.message || 'status update'), 'info');
     });
     window._ccSocket = socket;
   } catch(e) {

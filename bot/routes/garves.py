@@ -25,6 +25,14 @@ from bot.shared import (
 
 garves_bp = Blueprint("garves", __name__)
 
+def _broadcast(event_type, data=None):
+    """Emit Socket.IO event via the dashboard's broadcast_event helper."""
+    try:
+        from bot.live_dashboard import broadcast_event
+        broadcast_event(event_type, data)
+    except Exception:
+        pass
+
 MODE_FILE = DATA_DIR / "garves_mode.json"
 
 
@@ -636,6 +644,33 @@ def api_garves_broadcasts():
             acknowledge_broadcast("garves", bc.get("id", ""), garves_data)
 
         return jsonify({"processed": len(unread), "agent": "garves"})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@garves_bp.route("/api/garves/trade-event", methods=["POST"])
+def api_garves_trade_event():
+    """Webhook for Garves bot to push trade events via Socket.IO."""
+    try:
+        data = request.get_json(force=True) or {}
+        event_type = data.get("event", "")
+        if event_type == "trade_new":
+            _broadcast("trade_new", {
+                "asset": data.get("asset", "?"),
+                "direction": data.get("direction", "?"),
+                "edge": data.get("edge", 0),
+                "timeframe": data.get("timeframe", "?"),
+            })
+        elif event_type == "trade_resolved":
+            _broadcast("trade_resolved", {
+                "asset": data.get("asset", "?"),
+                "direction": data.get("direction", "?"),
+                "won": data.get("won", False),
+                "pnl": data.get("pnl", 0),
+            })
+        else:
+            _broadcast("agent_status", {"agent": "garves", "message": data.get("message", "")})
+        return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500
 
