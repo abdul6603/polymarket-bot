@@ -1185,23 +1185,66 @@ def ml_status():
 
 # ── Razor (The Mathematician) Status ──
 
+PRO_DASHBOARD = "http://100.90.61.126:8877"
+
+
+def _proxy_to_pro(path: str):
+    """Proxy API call to Pro if local data is stale. Returns None if Pro unreachable."""
+    try:
+        import requests
+        resp = requests.get(f"{PRO_DASHBOARD}{path}", timeout=3)
+        if resp.ok:
+            return resp.json()
+    except Exception:
+        pass
+    return None
+
+
+def _razor_local_or_pro(path: str, local_file: Path):
+    """Read local file; if stale (>2 min), proxy to Pro instead."""
+    data = None
+    if local_file.exists():
+        try:
+            data = json.loads(local_file.read_text())
+        except Exception:
+            pass
+    # Check freshness — if last_update is >2 min old, try Pro
+    if data and data.get("last_update"):
+        from datetime import datetime
+        try:
+            ts = datetime.fromisoformat(data["last_update"])
+            age_s = (datetime.now(ts.tzinfo) - ts).total_seconds()
+            if age_s < 120:
+                return data  # Fresh enough
+        except Exception:
+            pass
+    # Stale or missing — try Pro
+    pro_data = _proxy_to_pro(path)
+    if pro_data and not pro_data.get("error"):
+        return pro_data
+    # Fall back to whatever we have locally
+    return data
+
+
 @garves_bp.route("/api/razor/status")
 def razor_status():
-    """Return Razor arb bot status from its JSON status file."""
+    """Return Razor arb bot status — local or proxied from Pro."""
     status_file = DATA_DIR / "razor_status.json"
-    if not status_file.exists():
+    data = _razor_local_or_pro("/api/razor/status", status_file)
+    if not data:
         return jsonify({"error": "Razor not running or no status yet", "enabled": False})
-    try:
-        return jsonify(json.loads(status_file.read_text()))
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return jsonify(data)
 
 
 @garves_bp.route("/api/razor/history")
 def razor_history():
-    """Return Razor closed trades from JSONL."""
+    """Return Razor closed trades — local or proxied from Pro."""
     trades_file = DATA_DIR / "razor_trades.jsonl"
     if not trades_file.exists():
+        # Try Pro
+        pro_data = _proxy_to_pro("/api/razor/history")
+        if pro_data:
+            return jsonify(pro_data)
         return jsonify({"trades": []})
     try:
         trades = []
