@@ -350,8 +350,10 @@ def write_live_params(
         # Publish event for dashboard visibility
         try:
             import sys
-            sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
-            from shared.events import publish
+            _shared = str(Path.home() / "shared")
+            if _shared not in sys.path:
+                sys.path.insert(0, _shared)
+            from events import publish
             publish(
                 agent="quant",
                 event_type="live_params_updated",
