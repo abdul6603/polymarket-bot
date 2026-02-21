@@ -315,12 +315,145 @@ def api_hawk_opportunities():
     return jsonify({"opportunities": [], "updated": 0})
 
 
+POSITIONS_CACHE_FILE = DATA_DIR / "hawk_positions_onchain.json"
+POSITIONS_CACHE_TTL = 30  # seconds
+
+
 @hawk_bp.route("/api/hawk/positions")
 def api_hawk_positions():
-    """Open positions."""
-    trades = _load_trades()
-    open_pos = [t for t in trades if not t.get("resolved")]
-    return jsonify({"positions": open_pos[-20:]})
+    """Open positions — live on-chain + JSONL enrichment."""
+    import os
+    import urllib.request
+
+    # ── Cache check ──
+    if POSITIONS_CACHE_FILE.exists():
+        try:
+            cached = json.loads(POSITIONS_CACHE_FILE.read_text())
+            if time.time() - cached.get("fetched_at", 0) < POSITIONS_CACHE_TTL:
+                return jsonify(cached)
+        except Exception:
+            pass
+
+    wallet = os.getenv("FUNDER_ADDRESS", "0x7CA4C1122aED3a226fEE08C38F329Ddf2Fb7817E")
+    result = {"positions": [], "live": False, "fetched_at": 0, "error": None}
+
+    try:
+        headers = {"User-Agent": "Hawk/1.0"}
+
+        # ── 1. Fetch on-chain positions ──
+        pos_url = f"https://data-api.polymarket.com/positions?user={wallet.lower()}"
+        req = urllib.request.Request(pos_url, headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            pos_data = json.loads(resp.read().decode())
+
+        # ── 2. Group by condition_id ──
+        grouped: dict[str, list] = {}
+        if isinstance(pos_data, list):
+            for pos in pos_data:
+                size = float(pos.get("size", 0))
+                if size <= 0:
+                    continue
+                title = pos.get("title", pos.get("slug", ""))
+                # Skip crypto Up/Down — that's Garves territory
+                if any(kw in title.lower() for kw in ("up or down", "updown", "up/down")):
+                    continue
+                cid = pos.get("conditionId", pos.get("asset", ""))
+                grouped.setdefault(cid, []).append(pos)
+
+        # ── 3. Calculate per-position metrics ──
+        positions = []
+        for cid, entries in grouped.items():
+            total_size = sum(float(e.get("size", 0)) for e in entries)
+            total_cost = sum(float(e.get("size", 0)) * float(e.get("avgPrice", 0)) for e in entries)
+            cur_price = float(entries[0].get("curPrice", 0))
+
+            # Skip fully resolved (price near 0)
+            if cur_price <= 0.001:
+                continue
+
+            total_value = total_size * cur_price
+            avg_price = total_cost / total_size if total_size > 0 else 0
+            pnl = total_value - total_cost
+            pnl_pct = (pnl / total_cost * 100) if total_cost > 0 else 0
+            title = entries[0].get("title", entries[0].get("slug", "Unknown"))
+            outcome = entries[0].get("outcome", "")
+
+            status = "active"
+            if cur_price >= 0.999:
+                status = "won"
+
+            positions.append({
+                "condition_id": cid,
+                "question": title,
+                "direction": outcome.lower() if outcome else "yes",
+                "size_usd": round(total_cost, 2),
+                "entry_price": round(avg_price, 4),
+                "cur_price": round(cur_price, 4),
+                "value": round(total_value, 2),
+                "pnl": round(pnl, 2),
+                "pnl_pct": round(pnl_pct, 1),
+                "status": status,
+                "_cid": cid,
+            })
+
+        # ── 4. Fetch end_date from CLOB API ──
+        for pos in positions:
+            cid = pos["_cid"]
+            try:
+                clob_url = f"https://clob.polymarket.com/markets/{cid}"
+                creq = urllib.request.Request(clob_url, headers=headers)
+                with urllib.request.urlopen(creq, timeout=5) as cresp:
+                    cdata = json.loads(cresp.read().decode())
+                end_date = cdata.get("end_date_iso") or ""
+                if end_date and end_date != "None":
+                    pos["end_date"] = end_date
+            except Exception:
+                pass
+
+        # ── 5. Enrich from JSONL (category, edge, risk_score, reasoning) ──
+        trades = _load_trades()
+        jsonl_lookup: dict[str, dict] = {}
+        for t in trades:
+            cid = t.get("condition_id", "")
+            if cid:
+                jsonl_lookup[cid] = t  # last entry wins
+
+        for pos in positions:
+            cid = pos.pop("_cid")
+            enrichment = jsonl_lookup.get(cid, {})
+            pos["category"] = enrichment.get("category", "unknown")
+            pos["edge"] = enrichment.get("edge", 0)
+            pos["risk_score"] = enrichment.get("risk_score", 0)
+            pos["reasoning"] = (enrichment.get("reasoning") or "")[:200]
+            pos["tier"] = enrichment.get("tier", "")
+            if not pos.get("end_date"):
+                pos["end_date"] = enrichment.get("end_date", "")
+
+        positions.sort(key=lambda x: -x["value"])
+
+        result["positions"] = positions
+        result["live"] = True
+        result["fetched_at"] = time.time()
+
+        # Write cache
+        DATA_DIR.mkdir(exist_ok=True)
+        POSITIONS_CACHE_FILE.write_text(json.dumps(result, indent=2))
+
+    except Exception as e:
+        log.exception("Hawk on-chain positions fetch failed")
+        result["error"] = str(e)[:200]
+        # Fallback to JSONL
+        trades = _load_trades()
+        open_pos = [t for t in trades if not t.get("resolved")]
+        for t in open_pos:
+            t.setdefault("cur_price", 0)
+            t.setdefault("value", 0)
+            t.setdefault("pnl", 0)
+            t.setdefault("pnl_pct", 0)
+            t.setdefault("status", "unknown")
+        result["positions"] = open_pos[-20:]
+
+    return jsonify(result)
 
 
 @hawk_bp.route("/api/hawk/history")

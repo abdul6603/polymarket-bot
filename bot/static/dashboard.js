@@ -268,6 +268,37 @@ function updateCountdowns() {
   }
 }
 
+// === POSITION COUNTDOWN TICKER (Hawk + Garves on-chain) ===
+var _positionCountdownInterval = null;
+
+function _ensurePositionCountdownTicker() {
+  if (_positionCountdownInterval) return;
+  _positionCountdownInterval = setInterval(_tickPositionCountdowns, 1000);
+}
+
+function _tickPositionCountdowns() {
+  // Hawk open positions
+  for (var i = 0; i < _hawkPositionsData.length; i++) {
+    var el = document.getElementById('hawk-pos-timer-' + i);
+    if (el && _hawkPositionsData[i].end_date) {
+      var stillActive = (_hawkPositionsData[i].cur_price || 0) > 0.001;
+      var tl = hawkCalcTimeLeft(_hawkPositionsData[i].end_date, stillActive);
+      el.textContent = tl.text;
+      el.style.color = tl.color;
+    }
+  }
+  // Garves on-chain holdings
+  for (var j = 0; j < _onChainHoldingsData.length; j++) {
+    var el2 = document.getElementById('oc-timer-' + j);
+    if (el2 && _onChainHoldingsData[j].end_date) {
+      var stillActive2 = (_onChainHoldingsData[j].cur_price || 0) > 0.001;
+      var tl2 = hawkCalcTimeLeft(_onChainHoldingsData[j].end_date, stillActive2);
+      el2.textContent = tl2.text;
+      el2.style.color = tl2.color;
+    }
+  }
+}
+
 function renderLivePendingTrades(trades) {
   var el = document.getElementById('live-pending-tbody');
   var countBadge = document.getElementById('pending-count-badge');
@@ -362,6 +393,8 @@ function renderLiveResolvedTrades(trades) {
 }
 
 // === PORTFOLIO RENDERER ===
+var _onChainHoldingsData = [];
+
 function renderOnChainPositions(data) {
   var dot = document.getElementById('positions-live-dot');
   if (!dot) return;
@@ -391,15 +424,17 @@ function renderOnChainPositions(data) {
   // Current Holdings table
   var holdEl = document.getElementById('oc-holdings-tbody');
   var holdings = data.holdings || [];
+  _onChainHoldingsData = holdings;
   if (holdEl) {
     if (holdings.length === 0) {
-      holdEl.innerHTML = '<tr><td colspan="9" class="text-muted" style="text-align:center;padding:16px;">No open positions — scanning for opportunities</td></tr>';
+      holdEl.innerHTML = '<tr><td colspan="10" class="text-muted" style="text-align:center;padding:16px;">No open positions — scanning for opportunities</td></tr>';
     } else {
       var html = '';
       for (var i = 0; i < holdings.length; i++) {
         var p = holdings[i];
         var pc = p.pnl >= 0 ? 'var(--success)' : 'var(--error)';
         var ps = (p.pnl >= 0 ? '+$' : '-$') + Math.abs(p.pnl).toFixed(2);
+        var tl = hawkCalcTimeLeft(p.end_date);
         html += '<tr>';
         html += '<td style="font-weight:600;">' + esc(p.asset) + '</td>';
         html += '<td style="font-size:0.72rem;">' + esc(p.market) + '</td>';
@@ -409,6 +444,7 @@ function renderOnChainPositions(data) {
         html += '<td style="font-weight:600;">$' + p.cur_price.toFixed(3) + '</td>';
         html += '<td>$' + p.cost.toFixed(2) + '</td>';
         html += '<td style="font-weight:600;">$' + p.value.toFixed(2) + '</td>';
+        html += '<td id="oc-timer-' + i + '" style="color:' + tl.color + ';font-weight:600;font-size:0.76rem;white-space:nowrap;">' + tl.text + '</td>';
         if (p.status === 'won') {
           html += '<td><span class="badge badge-success" style="font-weight:700;">WON ' + ps + '</span></td>';
         } else {
@@ -417,6 +453,7 @@ function renderOnChainPositions(data) {
         html += '</tr>';
       }
       holdEl.innerHTML = html;
+      _ensurePositionCountdownTicker();
     }
   }
 
@@ -6998,13 +7035,16 @@ function hawkSetCatFilter(cat) {
   renderHawkOpportunities(_hawkOppsCache);
 }
 
-function hawkCalcTimeLeft(endDate) {
+function hawkCalcTimeLeft(endDate, stillActive) {
   if (!endDate) return {text: 'No deadline', color: 'var(--text-muted)', sort: 99999999};
   var now = Date.now();
   var end = new Date(endDate).getTime();
   if (isNaN(end)) return {text: 'Unknown', color: 'var(--text-muted)', sort: 99999999};
   var diff = end - now;
-  if (diff <= 0) return {text: 'Expired', color: 'var(--error)', sort: -1};
+  if (diff <= 0) {
+    if (stillActive) return {text: 'Resolving...', color: '#ff6b35', sort: -1};
+    return {text: 'Expired', color: 'var(--error)', sort: -1};
+  }
   var hours = diff / 3600000;
   var days = Math.floor(hours / 24);
   var hrs = Math.floor(hours % 24);
@@ -7201,22 +7241,35 @@ function showHawkReasoning(idx) {
   panel.scrollIntoView({behavior:'smooth', block:'nearest'});
 }
 
+var _hawkPositionsData = [];
+
 function renderHawkPositions(positions) {
   var el = document.getElementById('hawk-pos-tbody');
   if (!el) return;
-  if (positions.length === 0) { el.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No open positions</td></tr>'; return; }
+  _hawkPositionsData = positions;
+  if (positions.length === 0) { el.innerHTML = '<tr><td colspan="9" class="text-muted" style="text-align:center;padding:24px;">No open positions</td></tr>'; return; }
   var html = '';
   for (var i = 0; i < positions.length; i++) {
     var p = positions[i];
+    var stillActive = (p.cur_price || 0) > 0.001;
+    var tl = hawkCalcTimeLeft(p.end_date, stillActive);
+    var pnl = p.pnl || 0;
+    var pnlColor = pnl >= 0 ? '#00ff44' : '#ff4444';
+    var pnlPct = p.pnl_pct || 0;
     html += '<tr>';
     html += '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc((p.question || '').substring(0, 45)) + '</td>';
     html += '<td>' + esc(p.direction || '?') + '</td>';
     html += '<td>$' + (p.size_usd || 0).toFixed(2) + '</td>';
-    html += '<td>' + ((p.entry_price || 0) * 100).toFixed(0) + '%</td>';
+    html += '<td>' + ((p.entry_price || 0) * 100).toFixed(0) + '\u00A2</td>';
+    html += '<td style="font-weight:600;">' + ((p.cur_price || 0) * 100).toFixed(0) + '\u00A2</td>';
+    html += '<td id="hawk-pos-timer-' + i + '" style="color:' + tl.color + ';font-weight:600;font-size:0.76rem;white-space:nowrap;">' + tl.text + '</td>';
+    html += '<td style="color:' + pnlColor + ';font-weight:600;">' + (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2) + ' <span style="font-size:0.68rem;opacity:0.7;">(' + (pnlPct >= 0 ? '+' : '') + pnlPct.toFixed(0) + '%)</span></td>';
     html += '<td><span class="badge" style="background:rgba(255,255,255,0.08);">' + esc(p.category || '?') + '</span></td>';
+    html += '<td style="font-size:0.72rem;color:var(--text-muted);">' + (p.risk_score || '-') + '</td>';
     html += '</tr>';
   }
   el.innerHTML = html;
+  _ensurePositionCountdownTicker();
 }
 
 function renderHawkHistory(trades) {
