@@ -85,6 +85,7 @@ class PerformanceTracker:
     def __init__(self, cfg: Config, position_tracker=None):
         self.cfg = cfg
         self._position_tracker = position_tracker  # PositionTracker to clean up on resolution
+        self._total_resolved = 0  # lifetime counter for resolved trades
         DATA_DIR.mkdir(exist_ok=True)
         self._pending: dict[str, TradeRecord] = {}  # trade_id -> record
         self._decision_ids: dict[str, str] = {}  # trade_id -> brain decision_id
@@ -239,6 +240,7 @@ class PerformanceTracker:
             rec.outcome = outcome
             rec.won = (rec.direction == outcome)
             rec.resolve_time = now
+            self._total_resolved += 1
             if rec.entry_price > 0 and rec.size_usd > 0:
                 shares = rec.size_usd / rec.entry_price
                 if rec.won:
@@ -267,20 +269,35 @@ class PerformanceTracker:
             # V2: Push resolution alert to Shelby
             push_trade_alert(format_trade_alert(asdict(rec), "resolution"), "resolution")
 
-            # Publish trade_resolved to shared event bus
+            # Publish trade_resolved to shared event bus (enriched for Quant)
             try:
                 from shared.events import publish as bus_publish
                 bus_publish(
                     agent="garves",
                     event_type="trade_resolved",
                     data={
+                        "trade_id": trade_id,
                         "asset": rec.asset,
                         "direction": rec.direction,
                         "timeframe": rec.timeframe,
                         "outcome": "win" if rec.won else "loss",
                         "actual_result": rec.outcome,
-                        "trade_id": trade_id,
+                        "won": rec.won,
                         "market_id": rec.market_id,
+                        "indicator_votes": rec.indicator_votes,
+                        "edge": rec.edge,
+                        "confidence": rec.confidence,
+                        "probability": rec.probability,
+                        "pnl": rec.pnl,
+                        "size_usd": rec.size_usd,
+                        "entry_price": rec.entry_price,
+                        "regime_label": rec.regime_label,
+                        "regime_fng": rec.regime_fng,
+                        "reward_risk_ratio": rec.reward_risk_ratio,
+                        "implied_up_price": rec.implied_up_price,
+                        "binance_price": rec.binance_price,
+                        "ml_win_prob": rec.ml_win_prob,
+                        "dry_run": rec.dry_run,
                     },
                     summary=f"{'WIN' if rec.won else 'LOSS'}: {rec.asset.upper()}/{rec.timeframe} predicted={rec.direction.upper()} actual={rec.outcome.upper()}",
                 )
@@ -420,6 +437,35 @@ class PerformanceTracker:
             os.replace(str(tmp_path), str(TRADES_FILE))
         except Exception:
             log.exception("Failed to rewrite trade file")
+
+    def quick_stats(self) -> dict:
+        """Compute quick stats from trades.jsonl for resolved trades."""
+        wins = losses = total_pnl = 0
+        if not TRADES_FILE.exists():
+            return {"wins": 0, "losses": 0, "win_rate": 0.0, "pnl": 0.0, "total_resolved": self._total_resolved}
+        try:
+            with open(TRADES_FILE) as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    rec = json.loads(line)
+                    if rec.get("resolved") and rec.get("outcome") in ("up", "down"):
+                        if rec.get("won"):
+                            wins += 1
+                        else:
+                            losses += 1
+                        total_pnl += rec.get("pnl", 0.0)
+        except Exception:
+            pass
+        total = wins + losses
+        return {
+            "wins": wins,
+            "losses": losses,
+            "win_rate": round(wins / total * 100, 1) if total else 0.0,
+            "pnl": round(total_pnl, 2),
+            "total_resolved": self._total_resolved,
+        }
 
     @property
     def pending_count(self) -> int:

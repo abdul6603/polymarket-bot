@@ -8514,6 +8514,7 @@ async function loadQuantTab() {
   loadQuantWalkForward();
   loadQuantAnalytics();
   loadQuantLiveParams();
+  loadQuantTradeLearning();
 }
 
 async function loadQuantResults() {
@@ -8909,6 +8910,76 @@ async function quantPollProgress() {
       }, 1000);
     }
   } catch(e) { console.error('quant poll:', e); }
+}
+
+async function loadQuantTradeLearning() {
+  var card = document.getElementById('quant-learning-card');
+  if (!card) return;
+  try {
+    var resp = await fetch('/api/quant/trade-learning');
+    var d = await resp.json();
+    if (!d.total_studied) {
+      card.style.display = 'none';
+      return;
+    }
+    card.style.display = 'block';
+    document.getElementById('quant-learn-total').textContent = d.total_studied + ' trades studied';
+    document.getElementById('quant-learn-studied').textContent = d.total_studied;
+    var fc = d.filter_correctness || 0;
+    var fcEl = document.getElementById('quant-learn-filter');
+    fcEl.textContent = fc + '%';
+    fcEl.style.color = fc >= 60 ? 'var(--success)' : fc >= 45 ? 'var(--warning)' : 'var(--error)';
+    var ia = d.avg_indicator_accuracy || 0;
+    var iaEl = document.getElementById('quant-learn-ind-acc');
+    iaEl.textContent = ia + '%';
+    iaEl.style.color = ia >= 55 ? 'var(--success)' : ia >= 45 ? 'var(--warning)' : 'var(--error)';
+    document.getElementById('quant-learn-mini-opts').textContent = d.mini_opt ? (d.mini_opt.mini_opt_number || 0) : '0';
+
+    // Indicator accuracy chips
+    var chips = d.indicator_chips || [];
+    var chipHtml = '';
+    chips.forEach(function(c) {
+      var color = c.accuracy >= 55 ? '#22aa44' : c.accuracy >= 45 ? '#FFD700' : '#ff5555';
+      chipHtml += '<span style="display:inline-block;font-size:0.62rem;padding:2px 7px;border-radius:4px;background:' + color + '18;color:' + color + ';border:1px solid ' + color + '33;">';
+      chipHtml += c.name + ' ' + c.accuracy + '% <span style="opacity:0.6;">(' + c.votes + ')</span></span>';
+    });
+    document.getElementById('quant-learn-indicators').innerHTML = chipHtml || '<span class="text-muted" style="font-size:0.65rem;">No indicator data</span>';
+
+    // Mini-opt summary
+    var moDiv = document.getElementById('quant-learn-mini-opt-summary');
+    if (d.mini_opt && d.mini_opt.baseline_wr) {
+      moDiv.style.display = 'block';
+      var imp = d.mini_opt.improvement_pp || 0;
+      var impColor = imp > 0 ? 'var(--success)' : 'var(--error)';
+      moDiv.innerHTML = 'Latest mini-opt #' + (d.mini_opt.mini_opt_number || '?') + ': baseline ' + d.mini_opt.baseline_wr + '% &rarr; best ' + d.mini_opt.best_wr + '% (<span style="color:' + impColor + ';">' + (imp > 0 ? '+' : '') + imp + 'pp</span>) on ' + d.mini_opt.trades_used + ' trades';
+    } else {
+      moDiv.style.display = 'none';
+    }
+
+    // Recent studies feed
+    var recent = d.recent_studies || [];
+    var rEl = document.getElementById('quant-learn-recent');
+    if (!recent.length) {
+      rEl.innerHTML = '<div class="text-muted" style="font-size:0.7rem;text-align:center;">No studies yet</div>';
+    } else {
+      var rHtml = '';
+      recent.forEach(function(s) {
+        var icon = s.won ? '<span style="color:var(--success);">W</span>' : '<span style="color:var(--error);">L</span>';
+        var filterIcon = s.correctly_filtered ? '<span style="color:var(--success);" title="Filter correct">&#10003;</span>' : '<span style="color:var(--error);" title="Filter missed">&#10007;</span>';
+        rHtml += '<div style="display:flex;gap:8px;align-items:center;padding:3px 0;border-bottom:1px solid var(--border);font-size:0.68rem;">';
+        rHtml += '<span style="width:16px;text-align:center;font-weight:600;">' + icon + '</span>';
+        rHtml += '<span style="color:var(--text-muted);min-width:80px;">' + (s.asset || '').toUpperCase() + '/' + (s.timeframe || '') + '</span>';
+        rHtml += '<span style="min-width:28px;">' + (s.direction || '').toUpperCase() + '</span>';
+        rHtml += '<span style="color:#00BFFF;min-width:50px;">ind:' + (s.indicator_accuracy * 100).toFixed(0) + '%</span>';
+        rHtml += '<span style="min-width:16px;">' + filterIcon + '</span>';
+        rHtml += '<span class="text-muted" style="font-size:0.6rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (s.trade_id || '').substring(0, 16) + '</span>';
+        rHtml += '</div>';
+      });
+      rEl.innerHTML = rHtml;
+    }
+  } catch(e) {
+    console.error('quant trade learning:', e);
+  }
 }
 
 async function loadQuantSmartActions() {

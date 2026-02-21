@@ -58,6 +58,38 @@
     </div>
   </div>
 
+  <!-- Per-Trade Learning Card -->
+  <div id="quant-learning-card" style="display:none;background:var(--card-bg);border:1px solid rgba(0,191,255,0.2);border-radius:10px;padding:16px 20px;margin-bottom:16px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+      <div style="font-size:0.68rem;font-weight:600;padding:3px 10px;border-radius:6px;background:#00BFFF22;color:#00BFFF;">PER-TRADE LEARNING</div>
+      <div style="flex:1;"></div>
+      <span id="quant-learn-total" class="text-muted" style="font-size:0.65rem;">--</span>
+    </div>
+    <div class="grid-4" style="margin-bottom:12px;">
+      <div class="stat-card" style="padding:8px 10px;">
+        <div class="stat-label" style="font-size:0.6rem;">Trades Studied</div>
+        <div class="stat-value" id="quant-learn-studied" style="font-size:1.1rem;color:#00BFFF;">--</div>
+      </div>
+      <div class="stat-card" style="padding:8px 10px;">
+        <div class="stat-label" style="font-size:0.6rem;">Filter Correctness</div>
+        <div class="stat-value" id="quant-learn-filter" style="font-size:1.1rem;">--</div>
+      </div>
+      <div class="stat-card" style="padding:8px 10px;">
+        <div class="stat-label" style="font-size:0.6rem;">Avg Indicator Acc</div>
+        <div class="stat-value" id="quant-learn-ind-acc" style="font-size:1.1rem;">--</div>
+      </div>
+      <div class="stat-card" style="padding:8px 10px;">
+        <div class="stat-label" style="font-size:0.6rem;">Mini-Opts Run</div>
+        <div class="stat-value" id="quant-learn-mini-opts" style="font-size:1.1rem;color:#00BFFF;">--</div>
+      </div>
+    </div>
+    <div id="quant-learn-indicators" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;"></div>
+    <div id="quant-learn-mini-opt-summary" style="display:none;font-size:0.72rem;color:var(--text-secondary);padding:8px 10px;background:rgba(0,191,255,0.04);border-radius:6px;margin-bottom:10px;"></div>
+    <div id="quant-learn-recent" style="max-height:180px;overflow-y:auto;">
+      <div class="text-muted" style="font-size:0.7rem;text-align:center;">No studies yet</div>
+    </div>
+  </div>
+
   <!-- Smart Actions (moved after verdict for visibility) -->
   <div class="section-spacer" style="margin-top:0;margin-bottom:16px;">
     <h2 class="section-title" style="color:#00BFFF;">Suggested Actions</h2>

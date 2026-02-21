@@ -20,6 +20,8 @@ HAWK_REVIEW_FILE = DATA_DIR / "quant_hawk_review.json"
 WF_FILE = DATA_DIR / "quant_walk_forward.json"
 ANALYTICS_FILE = DATA_DIR / "quant_analytics.json"
 LIVE_PARAMS_FILE = DATA_DIR / "quant_live_params.json"
+TRADE_STUDIES_FILE = DATA_DIR / "quant_trade_studies.jsonl"
+MINI_OPT_FILE = DATA_DIR / "quant_mini_opt.json"
 
 _run_lock = threading.Lock()
 _run_running = False
@@ -152,6 +154,75 @@ def api_quant_walk_forward():
     """Walk-forward validation results + bootstrap confidence intervals."""
     data = _load_json(WF_FILE)
     return jsonify(data or {"walk_forward": {}, "confidence_interval": {}, "updated": ""})
+
+
+@quant_bp.route("/api/quant/trade-learning")
+def api_quant_trade_learning():
+    """Per-trade learning: recent studies + mini-opt results + indicator accuracy."""
+    # Load recent trade studies
+    studies = []
+    if TRADE_STUDIES_FILE.exists():
+        try:
+            with open(TRADE_STUDIES_FILE) as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        studies.append(json.loads(line))
+        except Exception:
+            pass
+
+    # Load mini-opt results
+    mini_opt = _load_json(MINI_OPT_FILE)
+
+    # Compute aggregate stats from studies
+    total = len(studies)
+    wins = sum(1 for s in studies if s.get("won"))
+    losses = total - wins
+    avg_ind_acc = 0.0
+    correctly_filtered = 0
+    indicator_stats = {}  # per-indicator correct/wrong counts
+
+    for s in studies:
+        avg_ind_acc += s.get("indicator_accuracy", 0)
+        if s.get("correctly_filtered"):
+            correctly_filtered += 1
+        for ind in s.get("correct_indicators", []):
+            if ind not in indicator_stats:
+                indicator_stats[ind] = {"correct": 0, "wrong": 0}
+            indicator_stats[ind]["correct"] += 1
+        for ind in s.get("wrong_indicators", []):
+            if ind not in indicator_stats:
+                indicator_stats[ind] = {"correct": 0, "wrong": 0}
+            indicator_stats[ind]["wrong"] += 1
+
+    if total:
+        avg_ind_acc /= total
+
+    # Build indicator accuracy chips
+    indicator_chips = []
+    for ind, stats in sorted(indicator_stats.items()):
+        ind_total = stats["correct"] + stats["wrong"]
+        if ind_total > 0:
+            acc = stats["correct"] / ind_total
+            indicator_chips.append({
+                "name": ind,
+                "accuracy": round(acc * 100, 1),
+                "votes": ind_total,
+            })
+    indicator_chips.sort(key=lambda x: x["accuracy"], reverse=True)
+
+    return jsonify({
+        "total_studied": total,
+        "wins": wins,
+        "losses": losses,
+        "win_rate": round(wins / total * 100, 1) if total else 0,
+        "avg_indicator_accuracy": round(avg_ind_acc * 100, 1),
+        "filter_correctness": round(correctly_filtered / total * 100, 1) if total else 0,
+        "indicator_chips": indicator_chips,
+        "recent_studies": studies[-10:][::-1],  # last 10, newest first
+        "mini_opt": mini_opt,
+        "mini_opt_active": bool(mini_opt),
+    })
 
 
 @quant_bp.route("/api/quant/run", methods=["POST"])

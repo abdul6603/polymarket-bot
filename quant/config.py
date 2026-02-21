@@ -12,3 +12,5 @@ class QuantConfig:
     assets: list[str] = field(default_factory=lambda: ["bitcoin", "ethereum", "solana"])
     timeframes: list[str] = field(default_factory=lambda: ["5m", "15m", "1h", "4h"])
     hawk_review: bool = True
+    event_poll_interval: int = 30       # seconds between event bus polls
+    mini_opt_threshold: int = 10        # trades studied before auto mini-optimization

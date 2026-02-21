@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 from pathlib import Path
 
 from quant.config import QuantConfig
@@ -43,18 +44,22 @@ class QuantBot:
     def __init__(self, cfg: QuantConfig | None = None):
         self.cfg = cfg or QuantConfig()
         self.cycle = 0
+        self._trades_studied_since_opt = 0  # reset after each mini-opt
+        self._total_trades_studied = 0
+        self._mini_opts_run = 0
 
     async def run(self):
-        """Run backtesting cycles forever."""
+        """Run backtesting cycles forever, polling event bus between cycles."""
         logging.basicConfig(
             level=logging.INFO,
             format="%(asctime)s [QUANT] %(levelname)s %(message)s",
             datefmt="%H:%M:%S",
         )
         log.info("Quant — The Strategy Alchemist starting up")
-        log.info("Config: cycle=%dm, max_combos=%d, min_trades=%d, optuna=%s",
+        log.info("Config: cycle=%dm, max_combos=%d, min_trades=%d, optuna=%s, poll=%ds, mini_opt_after=%d",
                  self.cfg.cycle_minutes, self.cfg.max_combinations,
-                 self.cfg.min_trades_for_significance, HAS_OPTUNA)
+                 self.cfg.min_trades_for_significance, HAS_OPTUNA,
+                 self.cfg.event_poll_interval, self.cfg.mini_opt_threshold)
 
         while True:
             self.cycle += 1
@@ -63,8 +68,16 @@ class QuantBot:
             except Exception:
                 log.exception("Cycle %d failed", self.cycle)
 
-            log.info("Sleeping %d minutes until next cycle...", self.cfg.cycle_minutes)
-            await asyncio.sleep(self.cfg.cycle_minutes * 60)
+            # Between full cycles, poll the event bus for resolved trades
+            log.info("Entering event poll loop for %d minutes (poll every %ds)...",
+                     self.cfg.cycle_minutes, self.cfg.event_poll_interval)
+            cycle_end = time.time() + self.cfg.cycle_minutes * 60
+            while time.time() < cycle_end:
+                try:
+                    await self._poll_trade_events()
+                except Exception:
+                    log.exception("Event poll failed")
+                await asyncio.sleep(self.cfg.event_poll_interval)
 
     async def _run_cycle(self):
         """Single backtest cycle."""
@@ -184,6 +197,176 @@ class QuantBot:
                     )
             except Exception:
                 pass
+
+    # ── Per-Trade Learning (event-driven) ──
+
+    async def _poll_trade_events(self):
+        """Poll event bus for trade_resolved events and study each one."""
+        try:
+            import sys
+            sys.path.insert(0, str(Path.home() / "shared"))
+            from shared.events import get_unread
+        except ImportError:
+            return
+
+        events = get_unread("quant")
+        trade_events = [e for e in events if e.get("type") == "trade_resolved"]
+
+        for evt in trade_events:
+            data = evt.get("data", {})
+            if not data.get("trade_id"):
+                continue
+            # Skip unknown outcomes
+            if data.get("actual_result") not in ("up", "down"):
+                continue
+            try:
+                self._study_single_trade(data)
+            except Exception:
+                log.exception("Failed to study trade %s", data.get("trade_id"))
+
+        # Check if mini-opt threshold reached
+        if self._trades_studied_since_opt >= self.cfg.mini_opt_threshold:
+            try:
+                self._run_mini_optimization()
+            except Exception:
+                log.exception("Mini-optimization failed")
+
+    def _study_single_trade(self, trade_data: dict):
+        """Analyze a single resolved trade against current live params."""
+        trade_id = trade_data.get("trade_id", "unknown")
+        indicator_votes = trade_data.get("indicator_votes", {})
+        won = trade_data.get("won", False)
+        direction = trade_data.get("direction", "")
+        actual = trade_data.get("actual_result", "")
+
+        # Analyze which indicators were right/wrong
+        correct_indicators = []
+        wrong_indicators = []
+        for name, vote in indicator_votes.items():
+            if isinstance(vote, dict):
+                ind_dir = vote.get("direction", "")
+            else:
+                ind_dir = str(vote)
+            if ind_dir == actual:
+                correct_indicators.append(name)
+            elif ind_dir in ("up", "down"):
+                wrong_indicators.append(name)
+
+        total_voting = len(correct_indicators) + len(wrong_indicators)
+        indicator_accuracy = len(correct_indicators) / total_voting if total_voting else 0.0
+
+        # Check if current live params would have passed/blocked this trade
+        try:
+            live_params = get_live_params()
+            from quant.backtester import replay_historical_trades
+            # Replay just this one trade with live params
+            result = replay_historical_trades([trade_data], live_params)
+            live_would_pass = result.total_signals > 0
+        except Exception:
+            live_would_pass = True  # assume it passed since it was executed
+
+        study = {
+            "trade_id": trade_id,
+            "studied_at": time.time(),
+            "asset": trade_data.get("asset", ""),
+            "timeframe": trade_data.get("timeframe", ""),
+            "direction": direction,
+            "actual_result": actual,
+            "won": won,
+            "pnl": trade_data.get("pnl", 0.0),
+            "edge": trade_data.get("edge", 0.0),
+            "confidence": trade_data.get("confidence", 0.0),
+            "regime_label": trade_data.get("regime_label", ""),
+            "indicator_accuracy": round(indicator_accuracy, 3),
+            "correct_indicators": correct_indicators,
+            "wrong_indicators": wrong_indicators,
+            "live_params_would_pass": live_would_pass,
+            "correctly_filtered": (not live_would_pass and not won) or (live_would_pass and won),
+        }
+
+        # Write to studies JSONL
+        studies_file = DATA_DIR / "quant_trade_studies.jsonl"
+        DATA_DIR.mkdir(exist_ok=True)
+        try:
+            with open(studies_file, "a") as f:
+                f.write(json.dumps(study) + "\n")
+        except Exception:
+            log.exception("Failed to write trade study")
+
+        self._trades_studied_since_opt += 1
+        self._total_trades_studied += 1
+
+        log.info("Studied trade %s: %s %s/%s %s | ind_acc=%.0f%% | filter_correct=%s",
+                 trade_id, "WIN" if won else "LOSS",
+                 study["asset"].upper(), study["timeframe"],
+                 direction.upper(), indicator_accuracy * 100,
+                 study["correctly_filtered"])
+
+    def _run_mini_optimization(self):
+        """Lightweight Optuna run on recent trades after threshold reached."""
+        log.info("=== Mini-optimization triggered (%d trades since last) ===",
+                 self._trades_studied_since_opt)
+
+        trades = load_all_trades()
+        # Use last 50 trades for mini-opt (recent performance focus)
+        recent = trades[-50:] if len(trades) > 50 else trades
+
+        if len(recent) < 10:
+            log.warning("Mini-opt: only %d recent trades, skipping", len(recent))
+            return
+
+        # Quick 50-trial Optuna run
+        if HAS_OPTUNA:
+            baseline, scored = optuna_full_optimization(
+                trades=recent, n_trials=50, min_trades=5,
+            )
+        else:
+            baseline, scored = run_optimization(
+                trades=recent, max_combinations=50, min_trades=5,
+            )
+
+        self._mini_opts_run += 1
+        self._trades_studied_since_opt = 0
+
+        best_wr = scored[0][1].win_rate if scored else baseline.win_rate
+        improvement = best_wr - baseline.win_rate
+
+        result = {
+            "mini_opt_number": self._mini_opts_run,
+            "timestamp": time.time(),
+            "trades_used": len(recent),
+            "baseline_wr": round(baseline.win_rate, 1),
+            "best_wr": round(best_wr, 1),
+            "improvement_pp": round(improvement, 1),
+            "combos_tested": len(scored),
+            "best_params": scored[0][1].params if scored else {},
+        }
+
+        # Write mini-opt result
+        mini_opt_file = DATA_DIR / "quant_mini_opt.json"
+        try:
+            mini_opt_file.write_text(json.dumps(result, indent=2))
+        except Exception:
+            log.exception("Failed to write mini-opt results")
+
+        log.info("Mini-opt #%d complete: baseline=%.1f%%, best=%.1f%% (+%.1fpp), %d combos on %d trades",
+                 self._mini_opts_run, baseline.win_rate, best_wr, improvement,
+                 len(scored), len(recent))
+
+        # Publish event
+        try:
+            import sys
+            sys.path.insert(0, str(Path.home() / "shared"))
+            from shared.events import publish
+            publish(
+                agent="quant",
+                event_type="mini_optimization_complete",
+                severity="info",
+                summary=f"Mini-opt #{self._mini_opts_run}: {baseline.win_rate:.1f}% → {best_wr:.1f}% ({improvement:+.1f}pp) on {len(recent)} trades",
+                data=result,
+            )
+        except Exception:
+            pass
 
     def _load_hawk_trades(self) -> list[dict]:
         """Load Hawk trades for calibration review."""
