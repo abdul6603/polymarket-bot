@@ -4121,6 +4121,7 @@ function renderTeamIntelligence(data) {
     {key:'robotox',name:'Robotox', color:'#00ff44'},
     {key:'thor',   name:'Thor',    color:'#ff6600'},
     {key:'hawk',   name:'Hawk',    color:'#FFD700'},
+    {key:'razor',  name:'Razor',   color:'#FF1493'},
     {key:'viper',  name:'Viper',   color:'#00ff88'},
   ];
 
