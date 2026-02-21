@@ -203,9 +203,10 @@ def scan_all_markets(cfg: HawkConfig) -> list[HawkMarket]:
                         log.debug("Blocked esports market: %s", question[:80])
                         continue
 
-                    # Skip ALL crypto_event markets — 11% WR, -$128 PnL historically
-                    if _categorize_market(question) == "crypto_event":
-                        log.debug("Blocked crypto_event market: %s", question[:80])
+                    # Only allow sports + weather — everything else loses money
+                    _market_cat = _categorize_market(question)
+                    if _market_cat not in ("sports", "weather"):
+                        log.debug("Blocked %s market (sports/weather only): %s", _market_cat, question[:80])
                         continue
 
                     # Skip closed/inactive
@@ -294,7 +295,7 @@ def scan_all_markets(cfg: HawkConfig) -> list[HawkMarket]:
                     market = HawkMarket(
                         condition_id=cid,
                         question=question,
-                        category=_categorize_market(question),
+                        category=_market_cat,
                         volume=volume,
                         liquidity=liquidity,
                         tokens=tokens,

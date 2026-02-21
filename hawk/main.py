@@ -573,6 +573,13 @@ class HawkBot:
                             log.debug("[BRAIN] Memory consultation failed (non-fatal)")
                             brain_edge_adj = 0.0
 
+                    # Only bet with real data-backed edge (sportsbook odds or weather model)
+                    _esrc = (opp.estimate.edge_source or "").lower()
+                    if _esrc not in ("sportsbook_divergence", "weather_model"):
+                        log.info("[FILTER] Blocked %s edge source (need sportsbook/weather data): %s",
+                                 _esrc, opp.market.question[:60])
+                        continue
+
                     # Auto-execute immediately after risk approval
                     if self.executor:
                         order_id = self.executor.place_order(opp)

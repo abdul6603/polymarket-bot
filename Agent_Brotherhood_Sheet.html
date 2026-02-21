@@ -377,7 +377,7 @@
     <div class="agent-badge" style="background: var(--hawk);">HK</div>
     <div class="agent-info">
       <h2>HAWK</h2>
-      <div class="role">The Poker Shark &bull; Polymarket Predator &bull; GPT-4o Brain &bull; Live Trading</div>
+      <div class="role">The Poker Shark &bull; Sports &amp; Weather Specialist &bull; Sportsbook Edge &bull; Live Trading</div>
       <div class="loc">~/polymarket-bot/hawk/ &bull; .venv/bin/python -m hawk</div>
     </div>
     <div class="tool-count" style="background: var(--hawk);">22 tools</div>
@@ -398,10 +398,10 @@
     </div>
     <div class="section-label">Skills</div>
     <div class="skills-grid">
-      <div class="skill-group"><div class="skill-group-name">Gamma API Scanner</div><ul class="skill-list"><li>Scans ALL active Polymarket markets</li><li>Contested filter (12-88% YES price)</li><li>Mid-tier targeting (skip top-5 efficient)</li><li>Category classifier (politics, sports, crypto events, culture)</li><li>Excludes crypto Up/Down (Garves territory)</li></ul></div>
-      <div class="skill-group"><div class="skill-group-name">Contrarian GPT-4o Analyst</div><ul class="skill-list"><li>6 mispricing patterns (recency, anchoring, narrative, extreme, neglected, breaking news)</li><li>First-principles probability estimation</li><li>Batch analysis (5 concurrent threads)</li><li>Anti-anchoring: ignores market price in reasoning</li><li>25+ opportunities per scan</li></ul></div>
-      <div class="skill-group"><div class="skill-group-name">Edge & Kelly Sizing</div><ul class="skill-list"><li>Edge calculator (GPT prob vs market price)</li><li>Quarter-Kelly criterion sizing</li><li>Expected value ranking</li><li>Min 5% edge threshold</li></ul></div>
-      <div class="skill-group"><div class="skill-group-name">Risk & Execution</div><ul class="skill-list"><li>$250 bankroll, $25 max bet</li><li>8 concurrent, $50 daily loss cap</li><li>CLOB API executor (GTC limit orders)</li><li>Category P&L heatmap tracking</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Gamma API Scanner</div><ul class="skill-list"><li>Sports &amp; Weather markets ONLY (all other categories blocked)</li><li>Contested filter (12-88% YES price)</li><li>Crypto price markets fully blocked (Garves territory)</li><li>Weather gets lower volume threshold ($1k vs $5k)</li><li>Esports blocked (no sportsbook data)</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Sportsbook Edge Engine</div><ul class="skill-list"><li>Real odds from 6-11 bookmakers via Odds API</li><li>Only bets on sportsbook_divergence or weather_model edge</li><li>base_rate/news/guessing edge sources BLOCKED</li><li>Line mismatch detection (rejects phantom edges)</li><li>Local LLM for non-sports analysis ($0 cost)</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Edge & Kelly Sizing</div><ul class="skill-list"><li>Edge calculator (sportsbook prob vs market price)</li><li>Quarter-Kelly criterion sizing</li><li>Expected value ranking</li><li>Min edge threshold + confidence floor 0.60</li></ul></div>
+      <div class="skill-group"><div class="skill-group-name">Risk & Execution</div><ul class="skill-list"><li>$250 bankroll, $15 max bet</li><li>8 concurrent, $50 daily loss cap</li><li>CLOB API executor (GTC limit + taker premium)</li><li>Brain memory + learner dimension adjustments</li></ul></div>
       <div class="skill-group"><div class="skill-group-name">Live Dashboard</div><ul class="skill-list"><li>Real-time scan progress bar</li><li>9-column opportunity table with reasoning</li><li>Scan summary (scanned/contested/analyzed/EV)</li><li>Click-to-view GPT-4o reasoning per market</li></ul></div>
     </div>
   </div>
