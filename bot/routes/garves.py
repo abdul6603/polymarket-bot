@@ -1185,23 +1185,23 @@ def ml_status():
 
 # ── Razor (The Mathematician) Status ──
 
-PRO_DASHBOARD = "http://100.90.61.126:8877"
-
-
-def _proxy_to_pro(path: str):
-    """Proxy API call to Pro if local data is stale. Returns None if Pro unreachable."""
+def _read_pro_file(remote_path: str):
+    """Read a file from Pro via SSH. Returns parsed JSON or None."""
+    import subprocess
     try:
-        import requests
-        resp = requests.get(f"{PRO_DASHBOARD}{path}", timeout=3)
-        if resp.ok:
-            return resp.json()
+        result = subprocess.run(
+            ["ssh", "pro", "cat", remote_path],
+            capture_output=True, text=True, timeout=5,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return json.loads(result.stdout)
     except Exception:
         pass
     return None
 
 
-def _razor_local_or_pro(path: str, local_file: Path):
-    """Read local file; if stale (>2 min), proxy to Pro instead."""
+def _razor_local_or_pro(local_file: Path, remote_path: str):
+    """Read local file; if stale (>2 min), fetch from Pro via SSH."""
     data = None
     if local_file.exists():
         try:
@@ -1219,7 +1219,7 @@ def _razor_local_or_pro(path: str, local_file: Path):
         except Exception:
             pass
     # Stale or missing — try Pro
-    pro_data = _proxy_to_pro(path)
+    pro_data = _read_pro_file(remote_path)
     if pro_data and not pro_data.get("error"):
         return pro_data
     # Fall back to whatever we have locally
@@ -1228,9 +1228,9 @@ def _razor_local_or_pro(path: str, local_file: Path):
 
 @garves_bp.route("/api/razor/status")
 def razor_status():
-    """Return Razor arb bot status — local or proxied from Pro."""
+    """Return Razor arb bot status — local or fetched from Pro via SSH."""
     status_file = DATA_DIR / "razor_status.json"
-    data = _razor_local_or_pro("/api/razor/status", status_file)
+    data = _razor_local_or_pro(status_file, "~/polymarket-bot/data/razor_status.json")
     if not data:
         return jsonify({"error": "Razor not running or no status yet", "enabled": False})
     return jsonify(data)
@@ -1238,13 +1238,30 @@ def razor_status():
 
 @garves_bp.route("/api/razor/history")
 def razor_history():
-    """Return Razor closed trades — local or proxied from Pro."""
+    """Return Razor closed trades — local or fetched from Pro."""
     trades_file = DATA_DIR / "razor_trades.jsonl"
     if not trades_file.exists():
-        # Try Pro
-        pro_data = _proxy_to_pro("/api/razor/history")
-        if pro_data:
-            return jsonify(pro_data)
+        # Try Pro — read the JSONL and filter closed
+        pro_data = _read_pro_file("~/polymarket-bot/data/razor_trades.jsonl")
+        # pro_data will be None if file doesn't exist or isn't valid JSON
+        # JSONL isn't valid JSON as a whole, so read via ssh differently
+        import subprocess
+        try:
+            result = subprocess.run(
+                ["ssh", "pro", "cat", "~/polymarket-bot/data/razor_trades.jsonl"],
+                capture_output=True, text=True, timeout=5,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                trades = []
+                for line in result.stdout.strip().split("\n"):
+                    if line.strip():
+                        rec = json.loads(line)
+                        if rec.get("status") == "closed":
+                            trades.append(rec)
+                trades.sort(key=lambda t: t.get("close_time", 0), reverse=True)
+                return jsonify({"trades": trades[:100]})
+        except Exception:
+            pass
         return jsonify({"trades": []})
     try:
         trades = []
