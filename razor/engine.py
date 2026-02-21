@@ -18,12 +18,41 @@ from razor.tracker import ArbPosition, RazorTracker
 from razor.scanner import RazorMarket
 from razor.learner import RazorLearner
 
+import os
+
 ET = ZoneInfo("America/New_York")
 
 log = logging.getLogger(__name__)
 
+_TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+_TG_CHAT = os.getenv("TELEGRAM_CHAT_ID", "")
+
+
+def _notify_tg(text: str) -> None:
+    if not _TG_TOKEN or not _TG_CHAT:
+        return
+    try:
+        import requests
+        requests.post(
+            f"https://api.telegram.org/bot{_TG_TOKEN}/sendMessage",
+            json={"chat_id": _TG_CHAT, "text": text, "parse_mode": "HTML"},
+            timeout=5,
+        )
+    except Exception:
+        pass
+
 # Polymarket fees
 WINNER_FEE = 0.02  # 2% on winning side payout
+
+
+def _razor_exit_tg(pos: ArbPosition, pnl: float, exit_type: str) -> None:
+    emoji = "\U0001f7e2" if pnl >= 0 else "\U0001f534"
+    pnl_str = f"+${pnl:.2f}" if pnl >= 0 else f"-${abs(pnl):.2f}"
+    _notify_tg(
+        f"{emoji} <b>Razor {exit_type}</b>\n"
+        f"{pos.question[:100]}\n"
+        f"P&L: <b>{pnl_str}</b> | Cost: ${pos.position_usd:.2f}"
+    )
 
 
 def _taker_fee(p: float) -> float:
@@ -315,6 +344,12 @@ class RazorEngine:
         self.tracker.add_position(pos)
         self.learner.record_execution(opp.market.condition_id, spread, position_usd)
         self._bus_arb_placed(pos)
+        _notify_tg(
+            f"\U0001fa93 <b>Razor Arb Opened</b>\n"
+            f"{opp.market.question[:100]}\n"
+            f"Cost: <b>${position_usd:.2f}</b> | Spread: {spread:.3f} | "
+            f"Expected: <b>+${expected_profit:.2f}</b>"
+        )
         return pos
 
     def manage_exits(self, feed: RazorFeed) -> None:
@@ -364,6 +399,7 @@ class RazorEngine:
                 self.executor.sell_both_sides(pos.token_a_id, pos.token_b_id, pos.shares)
                 self.tracker.close_position(pos, round(pnl, 2), "max_hold")
                 self.learner.record_exit(pos.condition_id, age, "max_hold", round(pnl, 2))
+                _razor_exit_tg(pos, pnl, "Max Hold")
                 continue
 
             # 2. PROFIT LOCK — sell both when winner > 95%
@@ -378,6 +414,7 @@ class RazorEngine:
                 self.executor.sell_both_sides(pos.token_a_id, pos.token_b_id, pos.shares)
                 self.tracker.close_position(pos, round(pnl, 2), "profit_lock")
                 self.learner.record_exit(pos.condition_id, pos.age_s(), "profit_lock", round(pnl, 2))
+                _razor_exit_tg(pos, pnl, "Profit Lock")
                 continue
 
             # 3. EARLY EXIT — sell losing side when winner > 70%
@@ -402,6 +439,7 @@ class RazorEngine:
                 pnl = total_recovery - pos.position_usd
                 self.tracker.close_position(pos, round(pnl, 2), "early_exit_profit_lock")
                 self.learner.record_exit(pos.condition_id, pos.age_s(), "early_exit_profit_lock", round(pnl, 2))
+                _razor_exit_tg(pos, pnl, "Early Exit")
 
     def check_settlements(self) -> None:
         """Check if any open positions have settled (market resolved)."""
@@ -433,6 +471,7 @@ class RazorEngine:
                 self.learner.record_exit(pos.condition_id, pos.age_s(), "settled", round(pnl, 2))
                 log.info("SETTLED: %s | payout=$%.2f | PnL=$%.2f | %s",
                          pos.arb_id, payout, pnl, pos.question[:60])
+                _razor_exit_tg(pos, pnl, "Settled")
             except Exception:
                 log.debug("Failed to check settlement for %s", pos.condition_id[:12])
 
