@@ -22,6 +22,7 @@ from bot.shared import (
     SHELBY_ROOT_DIR,
     SHELBY_TASKS_FILE,
 )
+from bot.routes._utils import read_fresh
 
 garves_bp = Blueprint("garves", __name__)
 
@@ -608,25 +609,16 @@ def api_garves_daily_today():
 @garves_bp.route("/api/garves/derivatives")
 def api_garves_derivatives():
     """Live derivatives data: funding rates, liquidations, spot depth."""
-    result = {"funding_rates": {}, "liquidations": {}, "spot_depth": {}, "connected": False}
-    try:
-        from bot.derivatives_feed import DerivativesFeed
-        # Read from the shared state file if the bot is running
-        deriv_state_file = DATA_DIR / "derivatives_state.json"
-        if deriv_state_file.exists():
-            with open(deriv_state_file) as f:
-                result = json.load(f)
-    except Exception:
-        pass
+    deriv_state_file = DATA_DIR / "derivatives_state.json"
+    result = read_fresh(deriv_state_file, "~/polymarket-bot/data/derivatives_state.json")
+    if not result:
+        result = {"funding_rates": {}, "liquidations": {}, "spot_depth": {}, "connected": False}
 
     # Also try spot depth from binance depth state
-    try:
-        depth_file = DATA_DIR / "spot_depth.json"
-        if depth_file.exists():
-            with open(depth_file) as f:
-                result["spot_depth"] = json.load(f)
-    except Exception:
-        pass
+    depth_file = DATA_DIR / "spot_depth.json"
+    depth = read_fresh(depth_file, "~/polymarket-bot/data/spot_depth.json")
+    if depth:
+        result["spot_depth"] = depth
 
     return jsonify(result)
 
@@ -920,14 +912,10 @@ def api_garves_orderbook_stats():
 @garves_bp.route("/api/garves/external-data")
 def api_garves_external_data():
     """External data intelligence: Coinglass, FRED Macro, DeFiLlama, Mempool, Whale Alert."""
-    result = {"timestamp": 0, "assets": {}, "defi": None, "mempool": None, "macro": None}
-    try:
-        state_file = DATA_DIR / "external_data_state.json"
-        if state_file.exists():
-            with open(state_file) as f:
-                result = json.load(f)
-    except Exception:
-        pass
+    state_file = DATA_DIR / "external_data_state.json"
+    result = read_fresh(state_file, "~/polymarket-bot/data/external_data_state.json")
+    if not result:
+        result = {"timestamp": 0, "assets": {}, "defi": None, "mempool": None, "macro": None}
     return jsonify(result)
 
 
@@ -1022,6 +1010,7 @@ def api_garves_positions():
                 "cur_price": round(cur_price, 4), "cost": round(total_cost, 2),
                 "value": round(total_value, 2), "pnl": round(pnl, 2),
                 "pnl_pct": round((pnl / total_cost * 100) if total_cost > 0 else 0, 1),
+                "_cid": cid,
             }
 
             # Include if: actively trading (mid-range price) OR won unredeemed (price ~1.0)
@@ -1040,6 +1029,59 @@ def api_garves_positions():
                 totals["open_pnl"] += pnl
 
         holdings.sort(key=lambda x: -x["value"])
+
+        # ── 1b. Fetch game times from Gamma API for countdown timers ──
+        # Collect unique event slugs from positions data
+        slug_to_cids: dict[str, list[str]] = {}
+        cid_to_slug: dict[str, str] = {}
+        if isinstance(pos_data, list):
+            for pos in pos_data:
+                cid = pos.get("conditionId", pos.get("asset", ""))
+                slug = pos.get("eventSlug", "")
+                if slug and cid:
+                    slug_to_cids.setdefault(slug, []).append(cid)
+                    cid_to_slug[cid] = slug
+
+        for slug in slug_to_cids:
+            try:
+                gamma_url = f"https://gamma-api.polymarket.com/events?slug={slug}"
+                greq = urllib.request.Request(gamma_url, headers=headers)
+                with urllib.request.urlopen(greq, timeout=5) as gresp:
+                    events = json.loads(gresp.read().decode())
+                if not events:
+                    continue
+                ev = events[0] if isinstance(events, list) else events
+                # Build conditionId → gameStartTime lookup from markets
+                def _normalize_dt(s: str) -> str:
+                    """Normalize datetime to ISO 8601 (2026-02-21T20:00:00Z)."""
+                    if not s:
+                        return ""
+                    s = s.strip().replace(" ", "T")
+                    if s.endswith("+00"):
+                        s = s[:-3] + "Z"
+                    elif not s.endswith("Z") and "+" not in s[10:]:
+                        s += "Z"
+                    return s
+
+                cid_times: dict[str, str] = {}
+                for m in ev.get("markets", []):
+                    mcid = m.get("conditionId", "")
+                    gst = m.get("gameStartTime") or m.get("endDate") or ""
+                    if mcid and gst:
+                        cid_times[mcid] = _normalize_dt(gst)
+                # Also use event-level endDate/startTime as fallback
+                ev_end = _normalize_dt(ev.get("startTime") or ev.get("endDate") or "")
+                for h in holdings:
+                    hcid = h.get("_cid", "")
+                    if hcid in cid_times:
+                        h["end_date"] = cid_times[hcid]
+                    elif hcid in slug_to_cids.get(slug, []) and ev_end:
+                        h["end_date"] = ev_end
+            except Exception:
+                pass
+        # Strip internal _cid field
+        for h in holdings:
+            h.pop("_cid", None)
 
         # ── 2. Fetch activity for real W/L record ──
         act_url = f"https://data-api.polymarket.com/activity?user={wallet.lower()}&limit=500"
@@ -1181,6 +1223,162 @@ def ml_status():
         status["finbert"] = {"status": "unavailable"}
 
     return jsonify(status)
+
+
+# ── Trade Journal Analyzer ──
+
+@garves_bp.route("/api/garves/journal")
+def api_garves_journal():
+    """Trade journal analysis — best/worst combos, hour heatmap, patterns."""
+    try:
+        trades = _load_trades()
+        resolved = [
+            t for t in trades
+            if t.get("resolved") and t.get("outcome") in ("up", "down")
+        ]
+
+        if not resolved:
+            return jsonify({
+                "best_combos": [], "worst_combos": [],
+                "hour_heatmap": {}, "streak_status": {},
+                "mistake_patterns": [], "recommendations": [],
+                "total_resolved": 0,
+            })
+
+        # ── Best/Worst combos by (asset, timeframe, direction) ──
+        from collections import defaultdict
+        combos = defaultdict(lambda: {"wins": 0, "losses": 0, "trades": []})
+        hour_data = defaultdict(lambda: {"wins": 0, "losses": 0})
+
+        for t in resolved:
+            asset = t.get("asset", "unknown")
+            tf = t.get("timeframe", "?")
+            direction = t.get("direction", "?")
+            key = f"{asset}/{tf}/{direction}"
+            won = t.get("won", False)
+            combos[key]["wins" if won else "losses"] += 1
+            combos[key]["trades"].append(t)
+
+            # Hour bucket
+            ts = t.get("timestamp", 0)
+            if ts:
+                trade_dt = datetime.fromtimestamp(ts, tz=ET)
+                h = trade_dt.hour
+                hour_data[h]["wins" if won else "losses"] += 1
+
+        combo_list = []
+        for key, stats in combos.items():
+            total = stats["wins"] + stats["losses"]
+            if total < 2:
+                continue
+            wr = stats["wins"] / total
+            combo_list.append({
+                "combo": key,
+                "wins": stats["wins"],
+                "losses": stats["losses"],
+                "total": total,
+                "win_rate": round(wr * 100, 1),
+            })
+
+        combo_list.sort(key=lambda x: (-x["total"], -x["win_rate"]))
+        best = [c for c in combo_list if c["win_rate"] >= 55][:10]
+        worst = [c for c in combo_list if c["win_rate"] < 50][:10]
+
+        # ── Hour heatmap ──
+        hour_heatmap = {}
+        for h in range(24):
+            d = hour_data.get(h, {"wins": 0, "losses": 0})
+            total = d["wins"] + d["losses"]
+            hour_heatmap[str(h)] = {
+                "wins": d["wins"],
+                "losses": d["losses"],
+                "total": total,
+                "win_rate": round(d["wins"] / total * 100, 1) if total > 0 else 0,
+            }
+
+        # ── Streak status ──
+        streak = 0
+        for t in reversed(resolved):
+            won = t.get("won", False)
+            if streak == 0:
+                streak = 1 if won else -1
+            elif streak > 0 and won:
+                streak += 1
+            elif streak < 0 and not won:
+                streak -= 1
+            else:
+                break
+
+        streak_status = {
+            "current": streak,
+            "type": "winning" if streak > 0 else "losing" if streak < 0 else "even",
+            "length": abs(streak),
+        }
+
+        # ── Mistake patterns ──
+        mistakes = []
+        recent = resolved[-30:]  # last 30 trades
+        # Pattern: low edge losses
+        low_edge_losses = [
+            t for t in recent
+            if not t.get("won") and t.get("edge", 0) < 0.10
+        ]
+        if len(low_edge_losses) >= 3:
+            mistakes.append({
+                "pattern": "Low-edge losses",
+                "count": len(low_edge_losses),
+                "description": f"{len(low_edge_losses)} losses with edge < 10% in last 30 trades",
+            })
+
+        # Pattern: consecutive same-direction losses
+        dir_losses = defaultdict(int)
+        for t in recent:
+            if not t.get("won"):
+                dir_losses[t.get("direction", "?")] += 1
+        for d, count in dir_losses.items():
+            if count >= 4:
+                mistakes.append({
+                    "pattern": f"Repeated {d.upper()} losses",
+                    "count": count,
+                    "description": f"{count} {d.upper()} losses in last 30 trades — possible directional bias",
+                })
+
+        # Pattern: overnight losses (0-6 AM ET)
+        overnight_losses = [
+            t for t in recent
+            if not t.get("won") and t.get("timestamp")
+            and datetime.fromtimestamp(t["timestamp"], tz=ET).hour < 6
+        ]
+        if len(overnight_losses) >= 2:
+            mistakes.append({
+                "pattern": "Overnight losses",
+                "count": len(overnight_losses),
+                "description": f"{len(overnight_losses)} losses between 12-6 AM ET in last 30 trades",
+            })
+
+        # ── Recommendations ──
+        recs = []
+        total_wr = sum(1 for t in resolved if t.get("won")) / len(resolved) if resolved else 0
+        if total_wr < 0.55:
+            recs.append("Overall WR below 55% — consider tightening consensus floor")
+        if best:
+            top = best[0]
+            recs.append(f"Best combo: {top['combo']} at {top['win_rate']}% WR ({top['total']} trades)")
+        if worst:
+            bottom = worst[0]
+            recs.append(f"Weakest combo: {bottom['combo']} at {bottom['win_rate']}% WR — consider blocking")
+
+        return jsonify({
+            "best_combos": best,
+            "worst_combos": worst,
+            "hour_heatmap": hour_heatmap,
+            "streak_status": streak_status,
+            "mistake_patterns": mistakes,
+            "recommendations": recs,
+            "total_resolved": len(resolved),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 # ── Razor (The Mathematician) Status ──

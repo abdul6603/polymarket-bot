@@ -893,6 +893,102 @@ async function loadMLStatus() {
   } catch (e) {}
 }
 
+async function loadJournal() {
+  try {
+    var r = await fetch('/api/garves/journal');
+    var d = await r.json();
+    if (d.error) return;
+
+    // Streak card
+    var streakEl = document.getElementById('journal-streak');
+    if (streakEl && d.streak_status) {
+      var s = d.streak_status;
+      var color = s.current > 0 ? 'var(--success)' : s.current < 0 ? 'var(--danger)' : 'var(--text-muted)';
+      var icon = s.current > 0 ? '+' : '';
+      streakEl.innerHTML = '<span style="color:' + color + '">' + icon + s.current + '</span>';
+    }
+
+    // Best combo card
+    var bestEl = document.getElementById('journal-best-combo');
+    if (bestEl && d.best_combos && d.best_combos.length > 0) {
+      var b = d.best_combos[0];
+      bestEl.innerHTML = '<span style="color:var(--success);font-size:0.72rem;">' + b.combo + '</span><br><span style="font-size:0.64rem;">' + b.win_rate + '% (' + b.total + ')</span>';
+    }
+
+    // Worst combo card
+    var worstEl = document.getElementById('journal-worst-combo');
+    if (worstEl && d.worst_combos && d.worst_combos.length > 0) {
+      var w = d.worst_combos[0];
+      worstEl.innerHTML = '<span style="color:var(--danger);font-size:0.72rem;">' + w.combo + '</span><br><span style="font-size:0.64rem;">' + w.win_rate + '% (' + w.total + ')</span>';
+    }
+
+    // Hour heatmap
+    var hmEl = document.getElementById('journal-hour-heatmap');
+    if (hmEl && d.hour_heatmap) {
+      var cells = '';
+      for (var h = 0; h < 24; h++) {
+        var hd = d.hour_heatmap[String(h)] || {wins:0,losses:0,total:0,win_rate:0};
+        var bg = 'rgba(128,128,128,0.2)';
+        if (hd.total >= 3) {
+          if (hd.win_rate >= 65) bg = 'rgba(0,255,136,0.35)';
+          else if (hd.win_rate >= 50) bg = 'rgba(0,255,136,0.15)';
+          else bg = 'rgba(255,68,68,0.25)';
+        }
+        cells += '<div style="background:' + bg + ';padding:3px 2px;border-radius:3px;text-align:center;" title="' + h + ':00 ET — ' + hd.wins + 'W/' + hd.losses + 'L (' + hd.win_rate + '%)">' + h + '<br><span style="font-size:0.56rem;">' + (hd.total > 0 ? hd.win_rate + '%' : '-') + '</span></div>';
+      }
+      hmEl.innerHTML = cells;
+    }
+
+    // Best combos table
+    var bestTbody = document.getElementById('journal-best-tbody');
+    if (bestTbody && d.best_combos) {
+      if (d.best_combos.length === 0) {
+        bestTbody.innerHTML = '<tr><td colspan="3" class="text-muted" style="text-align:center;">No data</td></tr>';
+      } else {
+        bestTbody.innerHTML = d.best_combos.map(function(c) {
+          return '<tr><td>' + c.combo + '</td><td>' + c.wins + '-' + c.losses + '</td><td style="color:var(--success)">' + c.win_rate + '%</td></tr>';
+        }).join('');
+      }
+    }
+
+    // Worst combos table
+    var worstTbody = document.getElementById('journal-worst-tbody');
+    if (worstTbody && d.worst_combos) {
+      if (d.worst_combos.length === 0) {
+        worstTbody.innerHTML = '<tr><td colspan="3" class="text-muted" style="text-align:center;">No data</td></tr>';
+      } else {
+        worstTbody.innerHTML = d.worst_combos.map(function(c) {
+          return '<tr><td>' + c.combo + '</td><td>' + c.wins + '-' + c.losses + '</td><td style="color:var(--danger)">' + c.win_rate + '%</td></tr>';
+        }).join('');
+      }
+    }
+
+    // Mistake patterns
+    var mistakesEl = document.getElementById('journal-mistakes');
+    if (mistakesEl && d.mistake_patterns) {
+      if (d.mistake_patterns.length === 0) {
+        mistakesEl.innerHTML = '<span style="color:var(--success)">No mistake patterns detected</span>';
+      } else {
+        mistakesEl.innerHTML = d.mistake_patterns.map(function(m) {
+          return '<div style="margin-bottom:4px;"><span style="color:var(--warning);">' + m.pattern + '</span> <span class="text-muted">(' + m.count + 'x)</span> — ' + m.description + '</div>';
+        }).join('');
+      }
+    }
+
+    // Recommendations
+    var recsEl = document.getElementById('journal-recommendations');
+    if (recsEl && d.recommendations) {
+      if (d.recommendations.length === 0) {
+        recsEl.innerHTML = '<span class="text-muted">No recommendations at this time</span>';
+      } else {
+        recsEl.innerHTML = d.recommendations.map(function(r) {
+          return '<div style="margin-bottom:3px;">&#8226; ' + r + '</div>';
+        }).join('');
+      }
+    }
+  } catch (e) {}
+}
+
 function freshnessBadge(f) {
   if (!f) return '';
   var colors = {green:'badge-success',yellow:'badge-warning',orange:'badge-warning',red:'badge-error'};
@@ -4003,6 +4099,7 @@ async function refresh() {
       loadNewsSentiment();
       loadMLWinPredictor();
       loadMLStatus();
+      loadJournal();
     } else if (currentTab === 'soren') {
       var resp = await fetch('/api/soren');
       renderSoren(await resp.json());

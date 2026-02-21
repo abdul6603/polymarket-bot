@@ -77,7 +77,7 @@ INDICATOR_GROUPS = {
     "flow": {"order_flow", "spot_depth", "orderbook", "liquidity", "poly_flow"},
     "external": {"open_interest", "long_short_ratio", "etf_flow", "whale_flow"},
     "price_action": {"temporal_arb", "price_div", "volume_spike"},
-    "macro": {"news", "dxy_trend", "stablecoin_flow", "tvl_momentum", "mempool"},
+    "macro": {"news", "dxy_trend", "stablecoin_flow", "tvl_momentum", "mempool", "tavily_news"},
     "derivatives": {"funding_rate", "liquidation"},
     "neural": {"lstm"},
 }
@@ -153,6 +153,8 @@ WEIGHTS = {
     "poly_flow": 1.0,         # Polymarket book flow: depth velocity, spread compression, whale detection
     # NEURAL — PyTorch LSTM price direction predictor
     "lstm": 0.0,              # DISABLED — 52.5% accuracy = coin flip noise. Used as reversal sentinel instead.
+    # TAVILY NEWS — Atlas Tavily crypto news sentiment (90-min cycles)
+    "tavily_news": 0.7,       # Atlas-sourced Tavily sentiment. Macro-level, slow-moving signal.
 }
 
 # Timeframe-dependent weight scaling
@@ -164,31 +166,31 @@ TF_WEIGHT_SCALE = {
             # External: slow data gets low weight on fast timeframes
             "open_interest": 0.4, "long_short_ratio": 0.3, "etf_flow": 0.3,
             "dxy_trend": 0.2, "stablecoin_flow": 0.2, "tvl_momentum": 0.2,
-            "mempool": 0.5, "whale_flow": 0.5},
+            "mempool": 0.5, "whale_flow": 0.5, "tavily_news": 0.3},
     "15m": {"order_flow": 1.5, "orderbook": 1.8, "temporal_arb": 2.0, "price_div": 1.5,
             "rsi": 0.8, "macd": 0.9,
             "spot_depth": 1.3, "liquidation": 1.5, "funding_rate": 0.8,
             "open_interest": 0.6, "long_short_ratio": 0.5, "etf_flow": 0.5,
             "dxy_trend": 0.3, "stablecoin_flow": 0.3, "tvl_momentum": 0.3,
-            "mempool": 0.6, "whale_flow": 0.6},
+            "mempool": 0.6, "whale_flow": 0.6, "tavily_news": 0.5},
     "1h":  {"order_flow": 1.0, "orderbook": 1.2, "rsi": 1.0, "macd": 1.1,
             "funding_rate": 1.2, "liquidation": 1.0,
             "open_interest": 1.0, "long_short_ratio": 0.8, "etf_flow": 0.8,
             "dxy_trend": 0.6, "stablecoin_flow": 0.6, "tvl_momentum": 0.6,
-            "mempool": 0.8, "whale_flow": 1.0},
+            "mempool": 0.8, "whale_flow": 1.0, "tavily_news": 0.9},
     "4h":  {"order_flow": 0.8, "orderbook": 0.8, "price_div": 0.7,
             "rsi": 1.2, "macd": 1.3, "heikin_ashi": 1.3,
             "funding_rate": 1.5, "liquidation": 0.8,
             "open_interest": 1.3, "long_short_ratio": 1.2, "etf_flow": 1.2,
             "dxy_trend": 1.0, "stablecoin_flow": 1.0, "tvl_momentum": 1.0,
-            "mempool": 0.6, "whale_flow": 1.2},
+            "mempool": 0.6, "whale_flow": 1.2, "tavily_news": 1.0},
     "weekly": {"rsi": 1.5, "macd": 1.5, "heikin_ashi": 1.5, "ema": 1.5,
                "momentum": 1.3, "bollinger": 1.2, "order_flow": 0.5,
                "orderbook": 0.5, "temporal_arb": 0.5, "price_div": 0.5,
                "funding_rate": 1.5, "liquidation": 0.5,
                "open_interest": 1.5, "long_short_ratio": 1.5, "etf_flow": 1.5,
                "dxy_trend": 1.3, "stablecoin_flow": 1.3, "tvl_momentum": 1.3,
-               "mempool": 0.4, "whale_flow": 1.3},
+               "mempool": 0.4, "whale_flow": 1.3, "tavily_news": 1.0},
 }
 
 MIN_CANDLES = 30
@@ -275,6 +277,85 @@ def _estimate_fees(timeframe: str, implied_price: float | None, is_maker: bool =
     taker_fee = 0.25 * (ip * (1 - ip)) ** 2
 
     return winner_fee + taker_fee
+
+
+# ── Tavily News Sentiment (Atlas-sourced) ──
+_TAVILY_SENTIMENT_FILE = Path.home() / "atlas" / "data" / "news_sentiment.json"
+_tavily_cache: dict = {"data": None, "loaded_at": 0.0}
+_TAVILY_CACHE_TTL = 120  # 2 minutes
+_TAVILY_ASSET_MAP = {
+    "bitcoin": "BTC", "ethereum": "ETH", "solana": "SOL", "xrp": "XRP",
+}
+_TAVILY_STALENESS = 7200  # 2 hours — ignore data older than this
+
+
+def _get_tavily_sentiment_vote(asset: str) -> IndicatorVote | None:
+    """Read Atlas Tavily news sentiment and return a vote for the given asset.
+
+    Returns IndicatorVote if sentiment exceeds +/-0.15 threshold and data is fresh.
+    Returns None if neutral, stale (>2h), or file missing.
+    """
+    now = time.time()
+
+    # In-memory cache (2 min TTL)
+    if _tavily_cache["data"] is not None and (now - _tavily_cache["loaded_at"]) < _TAVILY_CACHE_TTL:
+        data = _tavily_cache["data"]
+    else:
+        if not _TAVILY_SENTIMENT_FILE.exists():
+            return None
+        try:
+            import json as _json
+            data = _json.loads(_TAVILY_SENTIMENT_FILE.read_text())
+            _tavily_cache["data"] = data
+            _tavily_cache["loaded_at"] = now
+        except Exception:
+            return None
+
+    # Map asset name to ticker
+    ticker = _TAVILY_ASSET_MAP.get(asset)
+    if not ticker:
+        return None
+
+    assets = data.get("assets", {})
+    asset_data = assets.get(ticker)
+    if not asset_data:
+        return None
+
+    # Check staleness — data older than 2h is unreliable
+    ts_str = asset_data.get("timestamp") or data.get("updated_at", "")
+    if ts_str:
+        try:
+            from datetime import datetime as _dt, timezone as _tz
+            # Parse ISO timestamp
+            ts_str_clean = ts_str.replace("Z", "+00:00")
+            ts_dt = _dt.fromisoformat(ts_str_clean)
+            age_s = (now - ts_dt.timestamp())
+            if age_s > _TAVILY_STALENESS:
+                log.debug("[%s] Tavily sentiment stale (%.0fh old)", asset.upper(), age_s / 3600)
+                return None
+        except Exception:
+            pass  # Can't parse timestamp — use data anyway
+
+    sentiment = asset_data.get("sentiment", 0)
+
+    # Threshold: must exceed +/-0.15 to generate a vote
+    if abs(sentiment) <= 0.15:
+        return None
+
+    direction = "up" if sentiment > 0 else "down"
+    confidence = min(abs(sentiment), 0.8)
+
+    log.debug(
+        "[%s] Tavily news sentiment: %s (%.2f, conf=%.2f, %d headlines)",
+        asset.upper(), direction.upper(), sentiment, confidence,
+        asset_data.get("headline_count", 0),
+    )
+
+    return IndicatorVote(
+        direction=direction,
+        confidence=confidence,
+        raw_value=sentiment * 100,
+    )
 
 
 class SignalEngine:
@@ -573,6 +654,9 @@ class SignalEngine:
                 votes["lstm"] = None
         except Exception:
             votes["lstm"] = None
+
+        # ── Tavily News Sentiment (Atlas-sourced, 90-min cycle) ──
+        votes["tavily_news"] = _get_tavily_sentiment_vote(asset)
 
         # Filter to non-None votes
         active: dict[str, IndicatorVote] = {

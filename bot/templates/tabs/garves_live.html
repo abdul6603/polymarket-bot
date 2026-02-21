@@ -110,6 +110,48 @@
         </div>
       </div>
       <div class="glass-card"><table class="data-table"><thead><tr><th>Indicator</th><th>Base</th><th>Dynamic</th><th>Accuracy</th><th>Samples</th><th>Status</th></tr></thead><tbody id="conv-weights-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody></table></div>
+
+      <!-- Trade Journal Analyzer -->
+      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;margin-top:16px;">Trade Journal</h3>
+      <div class="grid-3" id="journal-summary-cards" style="margin-bottom:10px;">
+        <div class="stat-card" data-accent="garves"><div class="stat-value" id="journal-streak">--</div><div class="stat-label">Current Streak</div></div>
+        <div class="stat-card" data-accent="success"><div class="stat-value" id="journal-best-combo">--</div><div class="stat-label">Best Combo</div></div>
+        <div class="stat-card" data-accent="warning"><div class="stat-value" id="journal-worst-combo">--</div><div class="stat-label">Worst Combo</div></div>
+      </div>
+
+      <!-- Hour Heatmap -->
+      <div class="glass-card" style="margin-bottom:10px;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Hour Heatmap (ET)</div>
+        <div id="journal-hour-heatmap" style="display:grid;grid-template-columns:repeat(12,1fr);gap:3px;font-family:var(--font-mono);font-size:0.64rem;">
+          <span class="text-muted" style="grid-column:1/-1;text-align:center;">Loading...</span>
+        </div>
+      </div>
+
+      <!-- Best/Worst Combos Tables -->
+      <div class="grid-2" style="margin-bottom:10px;">
+        <div class="glass-card" style="border-left:3px solid var(--success);">
+          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--success);margin-bottom:4px;">Best Combos</div>
+          <table class="data-table"><thead><tr><th>Combo</th><th>W-L</th><th>WR</th></tr></thead>
+          <tbody id="journal-best-tbody"><tr><td colspan="3" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody></table>
+        </div>
+        <div class="glass-card" style="border-left:3px solid var(--danger);">
+          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--danger);margin-bottom:4px;">Worst Combos</div>
+          <table class="data-table"><thead><tr><th>Combo</th><th>W-L</th><th>WR</th></tr></thead>
+          <tbody id="journal-worst-tbody"><tr><td colspan="3" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody></table>
+        </div>
+      </div>
+
+      <!-- Mistake Patterns -->
+      <div class="glass-card" style="margin-bottom:10px;border-left:3px solid var(--warning);">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--warning);margin-bottom:4px;">Mistake Patterns</div>
+        <div id="journal-mistakes" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">Loading...</span></div>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="glass-card" style="border-left:3px solid var(--agent-garves);">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px;">Recommendations</div>
+        <div id="journal-recommendations" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">Loading...</span></div>
+      </div>
     </div>
   </div>
 

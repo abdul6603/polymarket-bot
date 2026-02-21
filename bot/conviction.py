@@ -67,15 +67,16 @@ EXTREME_FEAR_PENALTY = 0.90         # Reduced 0.75→0.90: live data shows 70% W
 COMPONENT_WEIGHTS = {
     "consensus_ratio":       13,  # Was 18 — still important but less dominant
     "edge_magnitude":        14,  # Was 13 — edge is THE most predictive factor
-    "cross_asset_alignment":  9,  # Was 12
-    "volatility_clarity":     7,  # Was 10
-    "streak_bonus":           5,  # Was 8
-    "time_quality":           7,  # Was 8
+    "cross_asset_alignment":  7,  # Was 9 — gave 2 to journal_fitness
+    "volatility_clarity":     5,  # Was 7 — gave 2 to journal_fitness
+    "streak_bonus":           3,  # Was 5 — gave 2 to journal_fitness
+    "time_quality":           5,  # Was 7 — gave 2 to journal_fitness
     "volume_confirmation":   11,  # Was 10 — volume_spike is 76.5% accurate
     "temporal_arb_strength": 11,  # Was 12
     "cross_timeframe":        5,  # Was 5 — keep
     "ml_win_probability":     8,  # Was 4 — boost now that ML is veto gate (65.7% CV accuracy)
-    "historical_wr":          10, # NEW — rolling WR from pattern gate for this combo
+    "historical_wr":          10, # Rolling WR from pattern gate for this combo
+    "journal_fitness":         8, # NEW — historical WR for this (asset, tf, dir, hour_bucket) combo
 }
 # Sum = 100
 
@@ -413,6 +414,13 @@ class ConvictionEngine:
         except Exception:
             components["historical_wr"] = 0.5 * COMPONENT_WEIGHTS["historical_wr"]
 
+        # ── 12. Journal Fitness (0-8 points) ──
+        # Historical WR for this specific (asset, timeframe, direction, hour_bucket) combo
+        journal_score = self._score_journal_fitness(
+            signal.asset, signal.timeframe, signal.direction, current_hour,
+        )
+        components["journal_fitness"] = journal_score
+
         # ── Sum Raw Score ──
         raw_score = sum(components.values())
 
@@ -506,7 +514,7 @@ class ConvictionEngine:
         log.info(
             "CONVICTION: %s %s/%s score=%.0f/100 -> $%.2f [%s] | "
             "consensus=%.1f edge=%.1f cross_asset=%.1f vol_clarity=%.1f "
-            "streak=%.1f time=%.1f volume=%.1f arb=%.1f ctf=%.1f ml=%.1f hist_wr=%.1f%s",
+            "streak=%.1f time=%.1f volume=%.1f arb=%.1f ctf=%.1f ml=%.1f hist_wr=%.1f journal=%.1f%s",
             signal.asset.upper(), signal.timeframe, signal.direction.upper(),
             final_score, position_size, tier_label,
             components.get("consensus_ratio", 0),
@@ -520,6 +528,7 @@ class ConvictionEngine:
             components.get("cross_timeframe", 0),
             components.get("ml_win_probability", 0),
             components.get("historical_wr", 0),
+            components.get("journal_fitness", 0),
             f" | safety: {', '.join(safety_adjustments)}" if safety_adjustments else "",
         )
 
@@ -637,6 +646,90 @@ class ConvictionEngine:
                 return 0.3  # Split — mediocre
             else:
                 return 0.0  # Both disagree — terrible
+
+    def _score_journal_fitness(
+        self, asset: str, timeframe: str, direction: str, hour: int,
+    ) -> float:
+        """Score 0-8 based on historical WR for this (asset, tf, direction, hour_bucket).
+
+        Hour buckets: 0-5 (overnight), 6-11 (morning), 12-17 (afternoon), 18-23 (evening).
+
+        Scoring:
+        - WR >= 65% with 10+ samples → 8 pts (full weight)
+        - WR >= 55% → 6 pts
+        - WR >= 45% → 3 pts
+        - WR < 45% → 0 pts (historically losing combo)
+        - <10 samples → 4 pts (neutral — insufficient data)
+        """
+        max_pts = COMPONENT_WEIGHTS["journal_fitness"]
+
+        # Determine hour bucket
+        if hour < 6:
+            hour_bucket = "overnight"
+        elif hour < 12:
+            hour_bucket = "morning"
+        elif hour < 18:
+            hour_bucket = "afternoon"
+        else:
+            hour_bucket = "evening"
+
+        if not TRADES_FILE.exists():
+            return 0.5 * max_pts  # No trade history — neutral
+
+        try:
+            wins = 0
+            total = 0
+            with open(TRADES_FILE) as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    rec = json.loads(line)
+                    if not rec.get("resolved") or rec.get("outcome") not in ("up", "down"):
+                        continue
+                    # Match asset, timeframe, direction
+                    if rec.get("asset") != asset:
+                        continue
+                    if rec.get("timeframe") != timeframe:
+                        continue
+                    if rec.get("direction") != direction:
+                        continue
+                    # Match hour bucket
+                    ts = rec.get("timestamp", 0)
+                    if ts:
+                        from zoneinfo import ZoneInfo
+                        trade_hour = datetime.fromtimestamp(ts, tz=ZoneInfo("America/New_York")).hour
+                        if trade_hour < 6:
+                            tb = "overnight"
+                        elif trade_hour < 12:
+                            tb = "morning"
+                        elif trade_hour < 18:
+                            tb = "afternoon"
+                        else:
+                            tb = "evening"
+                        if tb != hour_bucket:
+                            continue
+
+                    total += 1
+                    if rec.get("won"):
+                        wins += 1
+
+            if total < 10:
+                return 0.5 * max_pts  # Insufficient data — neutral
+
+            wr = wins / total
+
+            if wr >= 0.65:
+                return 1.0 * max_pts   # 8 pts
+            elif wr >= 0.55:
+                return 0.75 * max_pts  # 6 pts
+            elif wr >= 0.45:
+                return 0.375 * max_pts  # 3 pts
+            else:
+                return 0.0             # Historically losing combo
+
+        except Exception:
+            return 0.5 * max_pts  # Error — neutral
 
     def _get_rolling_performance(self) -> dict:
         """Load rolling performance metrics from trades.jsonl.
