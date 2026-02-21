@@ -553,9 +553,25 @@ def get_sportsbook_probability(
         prob = consensus.consensus_home_prob
     elif market_type == "total":
         if consensus.over_prob is not None:
+            # Extract the specific O/U line from the question (e.g., "O/U 1.5" → 1.5)
+            line_match = re.search(r"o/u\s+([\d.]+)", question, re.IGNORECASE)
+            asked_line = float(line_match.group(1)) if line_match else None
+            sb_line = consensus.total_line or 0
+
+            if asked_line is not None and sb_line > 0 and abs(asked_line - sb_line) > 0.5:
+                # The question asks about a DIFFERENT line than what the sportsbook has
+                # e.g., question is O/U 1.5 but sportsbook only has O/U 2.5 data
+                # Using the wrong line's probability is DANGEROUS — reject entirely
+                log.warning(
+                    "Sportsbook line MISMATCH: question asks O/U %.1f but sportsbook has O/U %.1f — "
+                    "REJECTING to avoid phantom edge | %s",
+                    asked_line, sb_line, question[:60],
+                )
+                return None, None
+
             prob = consensus.over_prob
             log.info("Sportsbook total: %.1f → over_prob=%.2f (%d books, conf=%.2f)",
-                     consensus.total_line or 0, prob, consensus.num_books, confidence)
+                     sb_line, prob, consensus.num_books, confidence)
             return prob, consensus
         return None, None
     else:

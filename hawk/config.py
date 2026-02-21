@@ -41,6 +41,7 @@ class HawkConfig:
     dry_run: bool = _env("HAWK_DRY_RUN", "true").lower() in ("true", "1", "yes")
 
     # V3 precision params
+    max_per_event_usd: float = float(_env("HAWK_MAX_PER_EVENT_USD", "20"))  # Max total exposure per event
     kelly_fraction: float = float(_env("HAWK_KELLY_FRACTION", "0.15"))
     max_risk_score: int = int(_env("HAWK_MAX_RISK_SCORE", "6"))
     compound_bankroll: bool = _env("HAWK_COMPOUND_BANKROLL", "true").lower() in ("true", "1", "yes")

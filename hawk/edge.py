@@ -33,6 +33,9 @@ MAX_TOKEN_PRICE = 0.40  # Never buy tokens above $0.40 (need 2.5:1 minimum)
 # Fix 5: Confidence floor — reject GPT guesses (sportsbook-backed exempt)
 MIN_CONFIDENCE = 0.60
 
+# Fix 6: Edge sanity cap — edges above 30% almost always mean bad data (wrong line, stale odds)
+MAX_EDGE_SANITY = 0.30
+
 _YES_OUTCOMES = {"yes", "up", "over"}
 _NO_OUTCOMES = {"no", "down", "under"}
 
@@ -243,6 +246,15 @@ def calculate_edge(
         return None
 
     if not token_id:
+        return None
+
+    # Fix 6: Edge sanity cap — if edge is absurdly large, data is probably wrong
+    if edge > MAX_EDGE_SANITY:
+        log.warning(
+            "SUSPICIOUS EDGE REJECTED: %.1f%% > %.0f%% max | prob=%.2f market=%.2f | %s "
+            "(likely bad sportsbook data or stale odds — refusing to bet on phantom edge)",
+            edge * 100, MAX_EDGE_SANITY * 100, est_prob, buy_price, market.question[:60],
+        )
         return None
 
     # Fix 5: Confidence floor — reject low-confidence GPT guesses

@@ -108,6 +108,9 @@ class HawkTracker:
             "urgency_label": opp.urgency_label,
             "money_thesis": opp.estimate.money_thesis[:300],
             "news_factor": opp.estimate.news_factor[:300],
+            # Market end date (ISO 8601)
+            "end_date": opp.market.end_date,
+            "event_slug": getattr(opp.market, 'event_slug', ''),
             # Timestamps
             "timestamp": time.time(),
             "opened_at": time.time(),
@@ -236,6 +239,34 @@ class HawkTracker:
                         f.write(json.dumps(t) + "\n")
         except Exception:
             log.exception("Failed to update trade field %s for %s", field, condition_id[:12])
+
+    def backfill_end_dates(self) -> int:
+        """Backfill end_date for open positions missing it via CLOB API.
+
+        Returns number of positions updated.
+        """
+        import urllib.request
+        updated = 0
+        for pos in self._positions:
+            if pos.get("end_date"):
+                continue
+            cid = pos.get("condition_id", "")
+            if not cid:
+                continue
+            try:
+                url = f"https://clob.polymarket.com/markets/{cid}"
+                req = urllib.request.Request(url, headers={"User-Agent": "Hawk/1.0"})
+                with urllib.request.urlopen(req, timeout=8) as resp:
+                    data = json.loads(resp.read().decode())
+                end_date = data.get("end_date_iso") or ""
+                if end_date and end_date != "None":
+                    pos["end_date"] = end_date
+                    self._update_trade_field(cid, "end_date", end_date)
+                    updated += 1
+                    log.info("Backfilled end_date for %s: %s", cid[:12], end_date)
+            except Exception:
+                log.warning("Failed to backfill end_date for %s", cid[:12])
+        return updated
 
     def _append_to_file(self, rec: dict) -> None:
         """Append a single trade record to the JSONL file."""

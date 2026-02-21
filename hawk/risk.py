@@ -133,8 +133,22 @@ class HawkRiskManager:
         if new_exposure > eff_bankroll:
             return False, f"Would exceed bankroll: ${new_exposure:.2f} > ${eff_bankroll:.2f}"
 
-        if self.tracker.has_position_for_market(opp.market.condition_id):
+        if self.tracker.has_position_for_market(opp.market.condition_id, opp.market.question):
             return False, f"Already have position in market {opp.market.condition_id[:12]}"
+
+        # Fix 6: Per-event exposure cap — don't pile $60+ into one match across O/U lines
+        event_slug = getattr(opp.market, 'event_slug', '') or ''
+        if event_slug:
+            event_exposure = sum(
+                p.get("size_usd", 0)
+                for p in self.tracker.open_positions
+                if p.get("event_slug", "") == event_slug
+            )
+            if event_exposure + opp.position_size_usd > self.cfg.max_per_event_usd:
+                return False, (
+                    f"Per-event cap: already ${event_exposure:.2f} on '{event_slug}', "
+                    f"adding ${opp.position_size_usd:.2f} would exceed ${self.cfg.max_per_event_usd:.2f} max"
+                )
 
         # Fix 3: Position correlation — block trades on same underlying asset
         new_underlying = extract_underlying(opp.market.question)
