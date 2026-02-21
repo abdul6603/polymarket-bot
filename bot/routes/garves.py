@@ -1195,3 +1195,25 @@ def razor_status():
         return jsonify(json.loads(status_file.read_text()))
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@garves_bp.route("/api/razor/history")
+def razor_history():
+    """Return Razor closed trades from JSONL."""
+    trades_file = DATA_DIR / "razor_trades.jsonl"
+    if not trades_file.exists():
+        return jsonify({"trades": []})
+    try:
+        trades = []
+        with open(trades_file) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                rec = json.loads(line)
+                if rec.get("status") == "closed":
+                    trades.append(rec)
+        trades.sort(key=lambda t: t.get("close_time", 0), reverse=True)
+        return jsonify({"trades": trades[:100]})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

@@ -1,0 +1,119 @@
+<!-- RAZOR — The Mathematician -->
+<div class="tab-content" id="tab-razor">
+
+  <!-- A: Intel Meter + Header Bar -->
+  <div id="intel-razor" class="intel-meter" style="margin-bottom:12px;"></div>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+    <span class="badge badge-razor" style="font-weight:700;padding:4px 12px;font-size:0.8rem;"><span id="razor-mode-label" style="color:var(--agent-razor);">DRY RUN</span></span>
+    <span class="text-muted" style="font-size:0.76rem;">Completeness arbitrage — ALL markets, ML-enhanced</span>
+    <span class="text-muted" style="font-size:0.68rem;font-style:italic;margin-left:auto;">"The numbers never lie. When A + B &lt; 1, the proof writes itself."</span>
+  </div>
+
+  <!-- B: Action Bar -->
+  <div class="agent-widget-row">
+    <button class="btn btn-razor" onclick="razorRefresh()" style="font-size:0.72rem;font-weight:700;">Refresh Status</button>
+    <button class="btn" onclick="healthCheckAgent('razor')" style="font-size:0.72rem;">Health Check</button>
+  </div>
+  <div class="health-inline" id="razor-health-result"></div>
+
+  <!-- C: Hero Cards -->
+  <div class="grid-3" style="margin-bottom:12px;">
+    <div class="stat-card" data-accent="razor">
+      <div class="stat-value" id="razor-bankroll" style="font-size:1.4rem;color:var(--agent-razor);">$1,000</div>
+      <div class="stat-label">Bankroll</div>
+    </div>
+    <div class="stat-card" data-accent="razor">
+      <div class="stat-value" id="razor-pnl" style="font-size:1.4rem;">$0.00</div>
+      <div class="stat-label">Total P&amp;L</div>
+    </div>
+    <div class="stat-card" data-accent="razor">
+      <div class="stat-value" id="razor-exposure" style="font-size:1.4rem;">$0.00</div>
+      <div class="stat-label">Exposure</div>
+    </div>
+  </div>
+
+  <!-- D: Activity Feed -->
+  <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-razor);">
+    <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Live Scanner</h3>
+    <div id="razor-activity-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:150px;overflow-y:auto;"><span class="text-muted">Connecting to Razor...</span></div>
+  </div>
+
+  <!-- E: Stats Grid -->
+  <div class="grid-6">
+    <div class="stat-card" data-accent="razor"><div class="stat-value" id="razor-winrate" style="color:var(--agent-razor);">--</div><div class="stat-label">Win Rate</div></div>
+    <div class="stat-card" data-accent="razor"><div class="stat-value" id="razor-open-count">0</div><div class="stat-label">Open Arbs</div></div>
+    <div class="stat-card" data-accent="razor"><div class="stat-value" id="razor-total-arbs">0</div><div class="stat-label">Total Arbs</div></div>
+    <div class="stat-card" data-accent="razor"><div class="stat-value" id="razor-markets" style="color:var(--agent-razor);">0</div><div class="stat-label">Markets Scanned</div></div>
+    <div class="stat-card" data-accent="razor"><div class="stat-value" id="razor-ws-status" style="color:#00ff44;">--</div><div class="stat-label">WS Feed</div></div>
+    <div class="stat-card" data-accent="razor"><div class="stat-value" id="razor-opps">0</div><div class="stat-label">Last Opps</div></div>
+  </div>
+
+  <!-- F: ML Learner Insights -->
+  <div class="collapse-section default-open">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="razor" style="margin-bottom:0;">ML Intelligence</h2>
+    </div>
+    <div class="collapse-body">
+      <div class="grid-3" style="margin-bottom:12px;">
+        <div class="stat-card" data-accent="razor">
+          <div class="stat-value" id="razor-best-spread" style="color:var(--agent-razor);">0%</div>
+          <div class="stat-label">Best Spread Ever</div>
+        </div>
+        <div class="stat-card" data-accent="razor">
+          <div class="stat-value" id="razor-hotspots">0</div>
+          <div class="stat-label">Known Hotspots</div>
+        </div>
+        <div class="stat-card" data-accent="razor">
+          <div class="stat-value" id="razor-spread-velocity">0</div>
+          <div class="stat-label">Spread Velocity</div>
+        </div>
+      </div>
+
+      <!-- Active Hours Heatmap -->
+      <div class="glass-card" style="margin-bottom:12px;">
+        <h3 class="section-title" style="font-size:0.72rem;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Arb Active Hours (ET)</h3>
+        <div id="razor-hour-heatmap" style="display:flex;gap:2px;flex-wrap:wrap;"></div>
+      </div>
+
+      <!-- Top Hotspots Table -->
+      <div class="glass-card">
+        <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Top Arb Hotspots</h3>
+        <table class="data-table">
+          <thead><tr><th>Market</th><th>Times Seen</th><th>Avg Spread</th><th>Avg Depth</th></tr></thead>
+          <tbody id="razor-hotspots-tbody"><tr><td colspan="4" class="text-muted" style="text-align:center;padding:16px;">Learning... no hotspots detected yet</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- G: Open Positions -->
+  <div class="collapse-section default-open">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="razor" style="margin-bottom:0;">Open Positions</h2>
+    </div>
+    <div class="collapse-body">
+      <div class="glass-card">
+        <table class="data-table">
+          <thead><tr><th>Market</th><th>Side A</th><th>Side B</th><th>Combined</th><th>Shares</th><th>Invested</th><th>Status</th><th>Age</th></tr></thead>
+          <tbody id="razor-pos-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No open arb positions</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- H: Trade History -->
+  <div class="collapse-section">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="razor" style="margin-bottom:0;">Trade History</h2>
+    </div>
+    <div class="collapse-body">
+      <div class="glass-card">
+        <table class="data-table">
+          <thead><tr><th>Time</th><th>Market</th><th>Combined Cost</th><th>Shares</th><th>Invested</th><th>P&amp;L</th><th>Exit</th></tr></thead>
+          <tbody id="razor-hist-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;padding:24px;">No trade history yet</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>

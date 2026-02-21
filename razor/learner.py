@@ -201,9 +201,10 @@ class RazorLearner:
                 if stats["last_opportunity_time"] > 0 else None,
             "hotspot_count": len(self._data["hotspots"]),
             "active_hours": self.get_hot_hours(),
-            "spread_velocity": round(self.get_spread_velocity(), 2),
+            "avg_spread_velocity": round(self.get_spread_velocity(), 4),
             "optimal_exit_s": self.get_optimal_exit_time(),
-            "top_hotspots": self.get_top_hotspots(5),
+            "hourly_frequency": {int(h): c for h, c in self._data["hourly_freq"].items()},
+            "top_hotspots": self.get_top_hotspots(10),
         }
 
     def save(self) -> None:

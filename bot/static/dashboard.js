@@ -2,10 +2,10 @@ var currentTab = 'overview';
 var chatLoaded = false;
 var _atlasBgCache = null;
 var _overviewCache = null;
-var AGENT_COLORS = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',sentinel:'#00ff44',thor:'#ff6600',hawk:'#FFD700',viper:'#00ff88',quant:'#00BFFF'};
-var AGENT_INITIALS = {garves:'GA',soren:'SO',shelby:'SH',atlas:'AT',lisa:'LI',sentinel:'RO',thor:'TH',hawk:'HK',viper:'VP',quant:'QT'};
-var AGENT_ROLES = {garves:'Trading Bot',soren:'Content Creator',shelby:'Team Leader',atlas:'Data Scientist',lisa:'Social Media',sentinel:'Health Monitor',thor:'Coding Lieutenant',hawk:'Market Predator',viper:'Opportunity Hunter',quant:'Strategy Lab'};
-var AGENT_NAMES = {garves:'Garves',soren:'Soren',shelby:'Shelby',atlas:'Atlas',lisa:'Lisa',sentinel:'Robotox',thor:'Thor',hawk:'Hawk',viper:'Viper',quant:'Quant'};
+var AGENT_COLORS = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',sentinel:'#00ff44',thor:'#ff6600',hawk:'#FFD700',viper:'#00ff88',quant:'#00BFFF',razor:'#FF1493'};
+var AGENT_INITIALS = {garves:'GA',soren:'SO',shelby:'SH',atlas:'AT',lisa:'LI',sentinel:'RO',thor:'TH',hawk:'HK',viper:'VP',quant:'QT',razor:'RZ'};
+var AGENT_ROLES = {garves:'Trading Bot',soren:'Content Creator',shelby:'Team Leader',atlas:'Data Scientist',lisa:'Social Media',sentinel:'Health Monitor',thor:'Coding Lieutenant',hawk:'Market Predator',viper:'Opportunity Hunter',quant:'Strategy Lab',razor:'The Mathematician'};
+var AGENT_NAMES = {garves:'Garves',soren:'Soren',shelby:'Shelby',atlas:'Atlas',lisa:'Lisa',sentinel:'Robotox',thor:'Thor',hawk:'Hawk',viper:'Viper',quant:'Quant',razor:'Razor'};
 var AGENT_AVATARS = {soren:'/static/soren_profile.png'};
 
 function switchTab(tab) {
@@ -41,7 +41,8 @@ function renderAgentGrid(overview) {
   var g = overview.garves || {};
   var s = overview.soren || {};
   var sh = overview.shelby || {};
-  var brainAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',lisa:'lisa',sentinel:'robotox',thor:'thor',hawk:'hawk',viper:'viper',quant:'quant'};
+  var brainAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',lisa:'lisa',sentinel:'robotox',thor:'thor',hawk:'hawk',viper:'viper',quant:'quant',razor:'razor'};
+  var rz = overview.razor || {};
   var cards = [
     {id:'garves', stats:[['Win Rate',(g.win_rate||0)+'%'],['Trades',g.total_trades||0],['Pending',g.pending||0]], online:g.running},
     {id:'soren', stats:[['Queue',s.queue_pending||0],['Posted',s.total_posted||0]], online:true},
@@ -51,6 +52,7 @@ function renderAgentGrid(overview) {
     {id:'sentinel', stats:[['Role','Monitor']], online:true},
     {id:'thor', stats:[['Tasks',(overview.thor||{}).completed||0],['Queue',(overview.thor||{}).pending||0]], online:(overview.thor||{}).state !== 'offline'},
     {id:'hawk', stats:[['Win Rate',((overview.hawk||{}).win_rate||0)+'%'],['Open',(overview.hawk||{}).open_bets||0]], online:(overview.hawk||{}).running},
+    {id:'razor', stats:[['Open Arbs',rz.open_arbs||0],['P&L','$'+(rz.pnl||0).toFixed(2)],['Markets',rz.markets||0]], online:rz.running},
     {id:'viper', stats:[['Found',(overview.viper||{}).opportunities||0],['Pushed',(overview.viper||{}).pushed||0]], online:(overview.viper||{}).running},
     {id:'quant', stats:[['Best WR',((overview.quant||{}).best_win_rate||0)+'%'],['Combos',(overview.quant||{}).total_combos_tested||0]], online:(overview.quant||{}).running}
   ];
@@ -3994,6 +3996,8 @@ async function refresh() {
       loadHawkTab();
       loadHawkSimTab();
       loadAgentActivity('hawk');
+    } else if (currentTab === 'razor') {
+      loadRazorTab();
     } else if (currentTab === 'viper') {
       loadViperTab();
     } else if (currentTab === 'quant') {
@@ -4146,8 +4150,8 @@ function renderTeamIntelligence(data) {
 
   el.innerHTML = html;
 }
-var _intelAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',lisa:'lisa',sentinel:'robotox',thor:'thor',hawk:'hawk',viper:'viper',quant:'quant'};
-var _intelColors = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',robotox:'#00ff44',thor:'#ff6600',hawk:'#FFD700',viper:'#00ff88',quant:'#00BFFF'};
+var _intelAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',lisa:'lisa',sentinel:'robotox',thor:'thor',hawk:'hawk',viper:'viper',quant:'quant',razor:'razor'};
+var _intelColors = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',robotox:'#00ff44',thor:'#ff6600',hawk:'#FFD700',viper:'#00ff88',quant:'#00BFFF',razor:'#FF1493'};
 
 function radarSVG(size, values, labels, color) {
   var cx = size / 2, cy = size / 2;
@@ -4707,8 +4711,10 @@ async function loadAtlasKBHealth() {
     var highPct = total > 0 ? Math.round((conf.high || 0) / total * 100) : 0;
     var contradictions = data.contradictions || 0;
     var stale = (data.age || {}).stale_30d_plus || 0;
-    // Health score: high confidence %, minus stale penalty, minus contradiction penalty
-    var healthScore = Math.min(100, Math.max(0, highPct + 20 - (stale > 10 ? 15 : stale > 5 ? 8 : 0) - (contradictions * 5)));
+    // Health score: high confidence %, minus stale penalty, minus contradiction rate penalty
+    var contradictionRate = total > 0 ? contradictions / total : 0;
+    var contradictionPenalty = Math.round(contradictionRate * 200);
+    var healthScore = Math.min(100, Math.max(0, highPct + 20 - (stale > 10 ? 15 : stale > 5 ? 8 : 0) - contradictionPenalty));
     var barColor = healthScore >= 70 ? '#00ff44' : healthScore >= 40 ? '#FFD700' : '#ff5555';
     if (barFill) { barFill.style.width = healthScore + '%'; barFill.style.background = barColor; }
     var html = '';
@@ -8896,4 +8902,201 @@ function quantHealthCheck() {
     msg += 'Recommendations: ' + (d.recommendations_count || 0);
     alert(msg);
   }).catch(function(e){ alert('Health check failed: ' + e.message); });
+}
+
+// ── RAZOR — The Mathematician ──
+
+async function loadRazorTab() {
+  try {
+    var resp = await fetch('/api/razor/status');
+    var d = await resp.json();
+    if (d.error) {
+      document.getElementById('razor-activity-feed').innerHTML = '<span class="text-muted">' + esc(d.error) + '</span>';
+      return;
+    }
+    razorRenderStatus(d);
+  } catch(e) {
+    console.error('razor tab:', e);
+    document.getElementById('razor-activity-feed').innerHTML = '<span class="text-muted">Failed to load Razor status</span>';
+  }
+}
+
+function razorRefresh() {
+  showToast('Refreshing Razor...', 'info');
+  loadRazorTab().then(function() { showToast('Razor refreshed', 'success'); });
+}
+
+function razorRenderStatus(d) {
+  // Mode label
+  var modeEl = document.getElementById('razor-mode-label');
+  if (modeEl) {
+    if (d.dry_run) { modeEl.textContent = 'DRY RUN'; modeEl.style.color = 'var(--warning)'; }
+    else { modeEl.textContent = 'LIVE'; modeEl.style.color = 'var(--success)'; }
+  }
+
+  // Hero cards
+  var bankroll = d.bankroll_usd || 1000;
+  animateCount('razor-bankroll', bankroll, 800, '$');
+
+  var pnl = d.total_pnl || 0;
+  animateCount('razor-pnl', Math.abs(pnl), 800, pnl >= 0 ? '$' : '-$');
+  var pnlEl = document.getElementById('razor-pnl');
+  if (pnlEl) pnlEl.style.color = pnl >= 0 ? 'var(--success)' : 'var(--error)';
+
+  var exposure = d.exposure || 0;
+  animateCount('razor-exposure', exposure, 800, '$');
+
+  // Stats grid
+  var wr = d.win_rate || 0;
+  var wrPct = typeof wr === 'number' && wr <= 1 ? (wr * 100).toFixed(1) : wr;
+  var wrEl = document.getElementById('razor-winrate');
+  if (wrEl) { wrEl.textContent = wrPct + '%'; wrEl.style.color = wrColor(parseFloat(wrPct)); }
+
+  setText('razor-open-count', d.open_count || 0);
+  setText('razor-total-arbs', d.total_arbs || 0);
+  setText('razor-markets', d.total_markets || 0);
+  setText('razor-opps', d.last_opps || 0);
+
+  var wsEl = document.getElementById('razor-ws-status');
+  if (wsEl) {
+    if (d.ws_connected) { wsEl.textContent = 'LIVE'; wsEl.style.color = '#00ff44'; }
+    else { wsEl.textContent = 'DOWN'; wsEl.style.color = 'var(--error)'; }
+  }
+
+  // Activity feed
+  razorRenderFeed(d);
+
+  // ML Learner
+  razorRenderLearner(d.learner || {});
+
+  // Positions
+  razorRenderPositions(d.positions || []);
+
+  // Trade history
+  razorRenderHistory(d);
+}
+
+function setText(id, val) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function razorRenderFeed(d) {
+  var el = document.getElementById('razor-activity-feed');
+  if (!el) return;
+  var lines = [];
+  var ts = d.last_update ? new Date(d.last_update).toLocaleTimeString() : '--';
+  lines.push('<span style="color:var(--agent-razor);">[ ' + ts + ' ]</span> Status update');
+  lines.push('Markets: <span style="color:var(--agent-razor);">' + (d.total_markets || 0) + '</span> | WS tokens: ' + (d.ws_tokens || 0) + ' | Scan: ' + (d.scan_interval_s || 1) + 's');
+  lines.push('Open: ' + (d.open_count || 0) + ' | Exposure: $' + (d.exposure || 0).toFixed(2) + ' | Arbs found: ' + (d.total_arbs || 0));
+  if (d.last_opps > 0) {
+    lines.push('<span style="color:var(--success);">Opportunities detected: ' + d.last_opps + '</span>');
+  } else {
+    lines.push('<span class="text-muted">Scanning... no live arbs right now</span>');
+  }
+  el.innerHTML = lines.join('<br>');
+}
+
+function razorRenderLearner(learner) {
+  // Best spread
+  setText('razor-best-spread', ((learner.best_spread_ever || 0) * 100).toFixed(2) + '%');
+  setText('razor-hotspots', learner.hotspot_count || 0);
+  setText('razor-spread-velocity', learner.avg_spread_velocity ? learner.avg_spread_velocity.toFixed(4) : '0');
+
+  // Hour heatmap
+  var heatEl = document.getElementById('razor-hour-heatmap');
+  if (heatEl && learner.hourly_frequency) {
+    var freq = learner.hourly_frequency;
+    var maxFreq = 1;
+    for (var h = 0; h < 24; h++) { if ((freq[h] || 0) > maxFreq) maxFreq = freq[h]; }
+    var html = '';
+    for (var h = 0; h < 24; h++) {
+      var count = freq[h] || 0;
+      var intensity = count / maxFreq;
+      var bg = 'rgba(255,20,147,' + (0.08 + intensity * 0.82).toFixed(2) + ')';
+      var label = h.toString().padStart(2, '0');
+      html += '<div title="' + label + ':00 ET — ' + count + ' arbs" style="width:28px;height:28px;display:flex;align-items:center;justify-content:center;background:' + bg + ';border-radius:4px;font-size:0.6rem;font-family:var(--font-mono);color:' + (intensity > 0.5 ? '#fff' : 'var(--text-muted)') + ';">' + label + '</div>';
+    }
+    heatEl.innerHTML = html;
+  }
+
+  // Hotspots table
+  var tbody = document.getElementById('razor-hotspots-tbody');
+  if (tbody && learner.top_hotspots && learner.top_hotspots.length > 0) {
+    var html = '';
+    for (var i = 0; i < learner.top_hotspots.length && i < 10; i++) {
+      var hs = learner.top_hotspots[i];
+      html += '<tr>';
+      html += '<td style="max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(hs.question || hs.condition_id || '') + '">' + esc((hs.question || hs.condition_id || '').substring(0, 60)) + '</td>';
+      html += '<td>' + (hs.times_seen || 0) + '</td>';
+      html += '<td style="color:var(--agent-razor);">' + ((hs.avg_spread || 0) * 100).toFixed(2) + '%</td>';
+      html += '<td>$' + (hs.avg_depth || 0).toFixed(0) + '</td>';
+      html += '</tr>';
+    }
+    tbody.innerHTML = html;
+  }
+}
+
+function razorRenderPositions(positions) {
+  var tbody = document.getElementById('razor-pos-tbody');
+  if (!tbody) return;
+  if (!positions || positions.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No open arb positions</td></tr>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < positions.length; i++) {
+    var p = positions[i];
+    var combined = (p.ask_a || 0) + (p.ask_b || 0);
+    var age = p.age_s || 0;
+    var ageStr = age >= 3600 ? Math.floor(age / 3600) + 'h ' + Math.floor((age % 3600) / 60) + 'm' : Math.floor(age / 60) + 'm ' + Math.floor(age % 60) + 's';
+    var statusColor = p.status === 'exiting' ? 'var(--warning)' : 'var(--success)';
+    html += '<tr>';
+    html += '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(p.question || '') + '">' + esc((p.question || '').substring(0, 50)) + '</td>';
+    html += '<td>' + (p.ask_a || 0).toFixed(3) + '</td>';
+    html += '<td>' + (p.ask_b || 0).toFixed(3) + '</td>';
+    html += '<td style="color:var(--agent-razor);">' + combined.toFixed(3) + '</td>';
+    html += '<td>' + (p.shares || 0).toFixed(1) + '</td>';
+    html += '<td>$' + (p.position_usd || 0).toFixed(2) + '</td>';
+    html += '<td><span style="color:' + statusColor + ';text-transform:uppercase;font-weight:600;font-size:0.72rem;">' + esc(p.status) + '</span></td>';
+    html += '<td>' + ageStr + '</td>';
+    html += '</tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+function razorRenderHistory(d) {
+  var tbody = document.getElementById('razor-hist-tbody');
+  if (!tbody) return;
+  // Load history from the trades endpoint — for now use closed info from status
+  var closed = d.closed_count || 0;
+  if (closed === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-muted" style="text-align:center;padding:24px;">No trade history yet</td></tr>';
+    return;
+  }
+  // Fetch full history
+  fetch('/api/razor/history').then(function(r) { return r.json(); }).then(function(hist) {
+    var trades = hist.trades || [];
+    if (trades.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-muted" style="text-align:center;padding:24px;">No trade history yet</td></tr>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < trades.length && i < 50; i++) {
+      var t = trades[i];
+      var pnlColor = (t.exit_pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)';
+      html += '<tr>';
+      html += '<td>' + esc(t.time_str || '') + '</td>';
+      html += '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(t.question || '') + '">' + esc((t.question || '').substring(0, 50)) + '</td>';
+      html += '<td>' + (t.combined_cost || 0).toFixed(3) + '</td>';
+      html += '<td>' + (t.shares || 0).toFixed(1) + '</td>';
+      html += '<td>$' + (t.position_usd || 0).toFixed(2) + '</td>';
+      html += '<td style="color:' + pnlColor + ';font-weight:600;">$' + (t.exit_pnl || 0).toFixed(2) + '</td>';
+      html += '<td>' + esc(t.close_reason || t.status || '') + '</td>';
+      html += '</tr>';
+    }
+    tbody.innerHTML = html;
+  }).catch(function() {
+    tbody.innerHTML = '<tr><td colspan="7" class="text-muted" style="text-align:center;padding:24px;">History unavailable</td></tr>';
+  });
 }
