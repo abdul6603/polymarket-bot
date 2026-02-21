@@ -14,6 +14,8 @@ from pathlib import Path
 
 from flask import Blueprint, Response, jsonify, request
 
+from bot.routes._utils import read_fresh
+
 # Add shelby to path for core.tasks imports
 _SHELBY_DIR = Path("/Users/abdallaalhamdan/shelby")
 if str(_SHELBY_DIR) not in sys.path:
@@ -52,28 +54,17 @@ def api_shelby():
     except Exception:
         pass
 
-    # Tasks — load via core.tasks for migration + priority sorting
+    # Tasks — V3 SQLite backend
     try:
-        from core.tasks import list_tasks as _list_tasks, prioritize_all, _load_tasks, _migrate_task
-        all_tasks = _load_tasks()
-        for t in all_tasks:
-            _migrate_task(t)
-        # Sort by priority desc
-        all_tasks.sort(key=lambda t: t.get("priority", 0), reverse=True)
-        tasks = all_tasks
+        from core.tasks import get_tasks
+        tasks = get_tasks(limit=50)
     except Exception:
         tasks = []
-        if SHELBY_TASKS_FILE.exists():
-            try:
-                with open(SHELBY_TASKS_FILE) as f:
-                    tasks = json.load(f)
-            except Exception:
-                pass
 
     tasks_pending = sum(1 for t in tasks if t.get("status") == "pending")
     tasks_in_progress = sum(1 for t in tasks if t.get("status") == "in_progress")
     tasks_done = sum(1 for t in tasks if t.get("status") in ("done", "completed"))
-    tasks_high_priority = sum(1 for t in tasks if t.get("priority", 0) > 70 and t.get("status") != "done")
+    tasks_high_priority = sum(1 for t in tasks if t.get("priority", 0) <= 2 and t.get("status") not in ("done", "archived"))
 
     # User profile / preferences
     profile = {}
@@ -199,17 +190,38 @@ def api_shelby_tasks_dispatch(task_id):
 
 @shelby_bp.route("/api/shelby/schedule/dispatch", methods=["POST"])
 def api_shelby_schedule_dispatch():
-    """Manually trigger scheduled dispatch for a routine."""
+    """Manually trigger scheduled dispatch for a routine.
+
+    Note: The old ProactiveScheduler has been removed. Dispatches now create
+    tasks directly via the V3 task system.
+    """
     data = request.get_json() or {}
     routine = data.get("routine", "")
     valid = ("dispatch_morning", "dispatch_midday", "dispatch_evening", "dispatch_eod")
     if routine not in valid:
         return jsonify({"error": f"Invalid routine. Use one of: {', '.join(valid)}"}), 400
     try:
-        from core.scheduler import ProactiveScheduler
-        sched = ProactiveScheduler()
-        result = sched._run_scheduled_dispatch(routine)
-        return jsonify({"success": True, "routine": routine, "result": result})
+        from core.tasks import create_task
+        dispatch_map = {
+            "dispatch_morning": [
+                {"title": "Morning health check", "agent": "robotox"},
+                {"title": "Generate full report", "agent": "atlas"},
+            ],
+            "dispatch_midday": [
+                {"title": "Soren content analysis", "agent": "atlas"},
+            ],
+            "dispatch_evening": [
+                {"title": "Garves trading analysis", "agent": "atlas"},
+            ],
+            "dispatch_eod": [
+                {"title": "Scan for bugs", "agent": "robotox"},
+            ],
+        }
+        created = 0
+        for task_def in dispatch_map.get(routine, []):
+            create_task(title=task_def["title"], agent=task_def["agent"], priority=3, source="scheduler")
+            created += 1
+        return jsonify({"success": True, "routine": routine, "result": f"{created} task(s) created"})
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500
 
@@ -271,15 +283,13 @@ def api_shelby_brief():
     soren_posted_today = [q for q in queue if q.get("status") == "posted" and q.get("posted_at", "")[:10] == now.strftime("%Y-%m-%d")]
     soren_awaiting = [q for q in soren_pending if q.get("scheduled_time", "") <= now.isoformat()]
 
-    # Shelby tasks
-    tasks = []
-    if SHELBY_TASKS_FILE.exists():
-        try:
-            with open(SHELBY_TASKS_FILE) as f:
-                tasks = json.load(f)
-        except Exception:
-            pass
-    active_tasks = [t for t in tasks if t.get("status") == "pending"]
+    # Shelby tasks — V3 SQLite
+    active_tasks = []
+    try:
+        from core.tasks import get_tasks
+        active_tasks = get_tasks(status="pending", limit=10)
+    except Exception:
+        pass
 
     # Mercury / Lisa review stats
     mercury_brief = {"total_posts": 0}
@@ -547,7 +557,7 @@ def api_shelby_activity_brief():
     # Robotox: last scan info
     sentinel_info = "idle"
     try:
-        from bot.routes.sentinel import _get_sentinel
+        from bot.routes.robotox import _get_sentinel
         s = _get_sentinel()
         status = s.get_status()
         sentinel_info = "online" if status.get("agents_online", 0) > 0 else "idle"
@@ -622,16 +632,15 @@ def api_shelby_export():
         except Exception:
             pass
 
-    # Shelby tasks
-    if SHELBY_TASKS_FILE.exists():
-        try:
-            with open(SHELBY_TASKS_FILE) as f:
-                tasks = json.load(f)
-            writer.writerow(["Shelby", "Total Tasks", len(tasks)])
-            writer.writerow(["Shelby", "Pending Tasks", sum(1 for t in tasks if t.get("status") == "pending")])
-            writer.writerow(["Shelby", "Done Tasks", sum(1 for t in tasks if t.get("status") in ("done", "completed"))])
-        except Exception:
-            pass
+    # Shelby tasks — V3 SQLite
+    try:
+        from core.tasks import get_tasks
+        all_tasks = get_tasks(limit=9999)
+        writer.writerow(["Shelby", "Total Tasks", len(all_tasks)])
+        writer.writerow(["Shelby", "Pending Tasks", sum(1 for t in all_tasks if t.get("status") == "pending")])
+        writer.writerow(["Shelby", "Done Tasks", sum(1 for t in all_tasks if t.get("status") in ("done", "archived"))])
+    except Exception:
+        pass
 
     csv_content = output.getvalue()
     return Response(

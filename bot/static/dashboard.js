@@ -281,8 +281,8 @@ function _tickPositionCountdowns() {
   for (var i = 0; i < _hawkPositionsData.length; i++) {
     var el = document.getElementById('hawk-pos-timer-' + i);
     if (el && _hawkPositionsData[i].end_date) {
-      var tl = hawkCalcTimeLeft(_hawkPositionsData[i].end_date, _hawkPositionsData[i].cur_price || 0);
-      el.textContent = tl.text;
+      var tl = hawkCalcTimeLeft(_hawkPositionsData[i].end_date, _hawkPositionsData[i].cur_price || 0, _hawkPositionsData[i].category);
+      el.innerHTML = tl.text + '<div style="font-size:0.58rem;font-weight:400;opacity:0.7;color:' + tl.color + ';">' + (tl.label || '') + '</div>';
       el.style.color = tl.color;
     }
   }
@@ -290,8 +290,8 @@ function _tickPositionCountdowns() {
   for (var j = 0; j < _onChainHoldingsData.length; j++) {
     var el2 = document.getElementById('oc-timer-' + j);
     if (el2 && _onChainHoldingsData[j].end_date) {
-      var tl2 = hawkCalcTimeLeft(_onChainHoldingsData[j].end_date, _onChainHoldingsData[j].cur_price || 0);
-      el2.textContent = tl2.text;
+      var tl2 = hawkCalcTimeLeft(_onChainHoldingsData[j].end_date, _onChainHoldingsData[j].cur_price || 0, _onChainHoldingsData[j].category);
+      el2.innerHTML = tl2.text + '<div style="font-size:0.58rem;font-weight:400;opacity:0.7;color:' + tl2.color + ';">' + (tl2.label || '') + '</div>';
       el2.style.color = tl2.color;
     }
   }
@@ -432,7 +432,7 @@ function renderOnChainPositions(data) {
         var p = holdings[i];
         var pc = p.pnl >= 0 ? 'var(--success)' : 'var(--error)';
         var ps = (p.pnl >= 0 ? '+$' : '-$') + Math.abs(p.pnl).toFixed(2);
-        var tl = hawkCalcTimeLeft(p.end_date, p.cur_price || 0);
+        var tl = hawkCalcTimeLeft(p.end_date, p.cur_price || 0, p.category || 'crypto_event');
         var gPayout = (p.size || 0) * 1.0;
         var gReturn = gPayout - (p.cost || 0);
         var gReturnPct = (p.cost || 0) > 0 ? (gReturn / p.cost * 100) : 0;
@@ -445,7 +445,7 @@ function renderOnChainPositions(data) {
         html += '<td style="font-weight:600;">$' + p.cur_price.toFixed(3) + '</td>';
         html += '<td>$' + p.cost.toFixed(2) + '</td>';
         html += '<td style="font-weight:600;">$' + p.value.toFixed(2) + '</td>';
-        html += '<td id="oc-timer-' + i + '" style="color:' + tl.color + ';font-weight:600;font-size:0.76rem;white-space:nowrap;">' + tl.text + '</td>';
+        html += '<td id="oc-timer-' + i + '" style="color:' + tl.color + ';font-weight:600;font-size:0.76rem;white-space:nowrap;">' + tl.text + '<div style="font-size:0.58rem;font-weight:400;opacity:0.7;">' + (tl.label || '') + '</div></td>';
         if (p.status === 'won') {
           html += '<td><span class="badge badge-success" style="font-weight:700;">WON ' + ps + '</span></td>';
         } else {
@@ -1100,10 +1100,11 @@ function renderShelby(data) {
   var highPri = 0, pending = 0, doneToday = 0, nextDue = null;
   for (var i = 0; i < tasks.length; i++) {
     var t = tasks[i], st = t.status || '';
-    if (st !== 'done' && (t.priority || 0) > 70) highPri++;
+    if (st !== 'done' && st !== 'archived' && (t.priority || 3) <= 2) highPri++;
     if (st === 'pending') pending++;
     if (st === 'done' && (t.completed || '').substring(0, 10) === todayStr) doneToday++;
-    if (st !== 'done' && t.due && t.due.length >= 10 && (!nextDue || t.due < nextDue)) nextDue = t.due;
+    var tdue = t.due_at || t.due || '';
+    if (st !== 'done' && st !== 'archived' && tdue && tdue.length >= 10 && (!nextDue || tdue < nextDue)) nextDue = tdue;
   }
   var e1 = document.getElementById('shelby-high-priority');
   var e2 = document.getElementById('shelby-tasks-pending');
@@ -1128,10 +1129,10 @@ function filterShelbyTasks() {
   if (agentVal) tasks = tasks.filter(function(t) { return (t.agent || '') === agentVal; });
   if (statusVal) tasks = tasks.filter(function(t) { return (t.status || '') === statusVal; });
 
-  if (sortVal === 'priority') tasks.sort(function(a, b) { return (b.priority || 0) - (a.priority || 0); });
-  else if (sortVal === 'due') tasks.sort(function(a, b) { return (a.due || 'zzzz').localeCompare(b.due || 'zzzz'); });
+  if (sortVal === 'priority') tasks.sort(function(a, b) { return (a.priority || 3) - (b.priority || 3); });
+  else if (sortVal === 'due') tasks.sort(function(a, b) { return (a.due_at || a.due || 'zzzz').localeCompare(b.due_at || b.due || 'zzzz'); });
   else if (sortVal === 'agent') tasks.sort(function(a, b) { return (a.agent || '').localeCompare(b.agent || ''); });
-  else if (sortVal === 'created') tasks.sort(function(a, b) { return (b.created || '').localeCompare(a.created || ''); });
+  else if (sortVal === 'created') tasks.sort(function(a, b) { return (b.created_at || b.created || '').localeCompare(a.created_at || a.created || ''); });
 
   renderShelbyTaskCards(tasks);
   var cEl = document.getElementById('shelby-task-count');
@@ -1153,8 +1154,9 @@ function renderShelbyTaskCards(tasks) {
 
   for (var i = 0; i < tasks.length; i++) {
     var t = tasks[i];
-    var pri = t.priority || 0;
-    var priColor = pri > 80 ? '#ef4444' : pri > 50 ? '#f59e0b' : '#64748b';
+    var pri = t.priority || 3;
+    var priLabels = {1:'P1',2:'P2',3:'P3',4:'P4'};
+    var priColor = pri <= 1 ? '#ef4444' : pri <= 2 ? '#f59e0b' : pri <= 3 ? '#3b82f6' : '#64748b';
     var st = t.status || 'pending';
     var diff = t.difficulty || 2;
     var cat = t.category || 'ops';
@@ -1164,22 +1166,23 @@ function renderShelbyTaskCards(tasks) {
     var doneOpacity = st === 'done' ? 'opacity:0.45;' : '';
     var doneStrike = st === 'done' ? 'text-decoration:line-through;' : '';
     var dueStr = '';
-    if (t.due && t.due.length >= 10) {
+    var tDue = t.due_at || t.due || '';
+    if (tDue && tDue.length >= 10) {
       var today = new Date(); today.setHours(0,0,0,0);
-      var dueDate = new Date(t.due.substring(0,10) + 'T00:00:00');
+      var dueDate = new Date(tDue.substring(0,10) + 'T00:00:00');
       var daysDiff = Math.round((dueDate - today) / 86400000);
       if (daysDiff < 0) dueStr = '<span style="color:#ef4444;font-weight:600;">Overdue ' + Math.abs(daysDiff) + 'd</span>';
       else if (daysDiff === 0) dueStr = '<span style="color:#f59e0b;font-weight:600;">Due today</span>';
       else if (daysDiff === 1) dueStr = '<span style="color:#f59e0b;">Tomorrow</span>';
-      else if (daysDiff <= 7) dueStr = '<span style="color:var(--text-muted);">' + t.due.substring(5,10) + ' (' + daysDiff + 'd)</span>';
-      else dueStr = '<span style="color:var(--text-muted);">' + t.due.substring(5,10) + '</span>';
+      else if (daysDiff <= 7) dueStr = '<span style="color:var(--text-muted);">' + tDue.substring(5,10) + ' (' + daysDiff + 'd)</span>';
+      else dueStr = '<span style="color:var(--text-muted);">' + tDue.substring(5,10) + '</span>';
     }
 
     // Left border = priority color
     html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-left:3px solid ' + priColor + ';border-bottom:1px solid rgba(255,255,255,0.04);' + doneOpacity + '">';
 
     // Priority badge
-    html += '<div style="min-width:36px;text-align:center;"><span style="background:' + priColor + '22;color:' + priColor + ';padding:3px 8px;border-radius:4px;font-weight:700;font-size:0.76rem;">' + pri + '</span></div>';
+    html += '<div style="min-width:36px;text-align:center;"><span style="background:' + priColor + '22;color:' + priColor + ';padding:3px 8px;border-radius:4px;font-weight:700;font-size:0.76rem;">' + (priLabels[pri] || 'P3') + '</span></div>';
 
     // Main content
     html += '<div style="flex:1;min-width:0;">';
@@ -1188,15 +1191,16 @@ function renderShelbyTaskCards(tasks) {
     html += '<div style="display:flex;gap:8px;align-items:center;margin-top:3px;flex-wrap:wrap;">';
     html += '<span style="color:' + agentColor + ';font-size:0.72rem;font-weight:600;">' + esc(agentName) + '</span>';
     html += '<span style="background:' + (catColors[cat] || '#94a3b8') + '18;color:' + (catColors[cat] || '#94a3b8') + ';padding:1px 6px;border-radius:3px;font-size:0.68rem;">' + esc(cat) + '</span>';
-    html += '<span style="color:' + diffColors[diff] + ';font-size:0.7rem;">' + diffLabels[diff] + '</span>';
+    if (t.source && t.source !== 'manual') html += '<span style="color:#6366f1;font-size:0.68rem;">' + esc(t.source) + '</span>';
     if (dueStr) html += dueStr;
     html += '</div>';
     // Notes preview (dispatch results)
-    if (t.notes) {
-      var notesPreview = t.notes.length > 120 ? t.notes.substring(0, 117) + '...' : t.notes;
-      var notesBg = st === 'done' ? 'rgba(16,185,129,0.08)' : 'rgba(59,130,246,0.08)';
-      var notesColor = st === 'done' ? '#10b981' : '#3b82f6';
-      html += '<div style="margin-top:4px;padding:3px 8px;background:' + notesBg + ';border-radius:4px;font-size:0.68rem;color:' + notesColor + ';line-height:1.4;cursor:pointer;white-space:pre-line;" onclick="this.textContent=this.dataset.full||this.textContent" data-full="' + esc(t.notes) + '">' + esc(notesPreview) + '</div>';
+    var desc = t.description || t.notes || '';
+    if (desc) {
+      var descPreview = desc.length > 120 ? desc.substring(0, 117) + '...' : desc;
+      var descBg = st === 'done' ? 'rgba(16,185,129,0.08)' : 'rgba(59,130,246,0.08)';
+      var descColor = st === 'done' ? '#10b981' : '#3b82f6';
+      html += '<div style="margin-top:4px;padding:3px 8px;background:' + descBg + ';border-radius:4px;font-size:0.68rem;color:' + descColor + ';line-height:1.4;cursor:pointer;white-space:pre-line;" onclick="this.textContent=this.dataset.full||this.textContent" data-full="' + esc(desc) + '">' + esc(descPreview) + '</div>';
     }
     html += '</div>';
 
@@ -7147,36 +7151,40 @@ function hawkSetCatFilter(cat) {
   renderHawkOpportunities(_hawkOppsCache);
 }
 
-function hawkCalcTimeLeft(endDate, curPrice) {
-  if (!endDate) return {text: 'No deadline', color: 'var(--text-muted)', sort: 99999999};
+function hawkCalcTimeLeft(endDate, curPrice, category) {
+  if (!endDate) return {text: 'No deadline', label: '', color: 'var(--text-muted)', sort: 99999999};
   var now = Date.now();
   var end = new Date(endDate).getTime();
-  if (isNaN(end)) return {text: 'Unknown', color: 'var(--text-muted)', sort: 99999999};
+  if (isNaN(end)) return {text: 'Unknown', label: '', color: 'var(--text-muted)', sort: 99999999};
   var diff = end - now;
+  var isSports = (category || '').match(/sport|soccer|nba|nfl|nhl|mlb|ufc|mma|hockey|basketball|football|unknown/i);
   if (diff <= 0) {
     var ago = Math.abs(diff);
     var cp = curPrice || 0;
     // Resolved — price at 0 or 1
-    if (cp >= 0.95) return {text: 'WON', color: '#00ff44', sort: -2};
-    if (cp <= 0.05) return {text: 'LOST', color: '#ff4444', sort: -2};
-    // Still resolving — show how long ago it ended
+    if (cp >= 0.95) return {text: 'WON', label: 'Resolved', color: '#00ff44', sort: -2};
+    if (cp <= 0.05) return {text: 'LOST', label: 'Resolved', color: '#ff4444', sort: -2};
+    // Still resolving — show how long ago event started
     var agoMin = Math.floor(ago / 60000);
     var agoHrs = Math.floor(ago / 3600000);
     var agoStr;
     if (agoHrs >= 24) agoStr = Math.floor(agoHrs / 24) + 'd ' + (agoHrs % 24) + 'h ago';
     else if (agoHrs >= 1) agoStr = agoHrs + 'h ' + Math.floor((ago % 3600000) / 60000) + 'm ago';
     else agoStr = agoMin + 'm ago';
-    return {text: agoStr, color: '#ff6b35', sort: -1};
+    var waitLabel = isSports ? 'In play' : 'Awaiting result';
+    return {text: agoStr, label: waitLabel, color: '#ff6b35', sort: -1};
   }
   var hours = diff / 3600000;
   var days = Math.floor(hours / 24);
   var hrs = Math.floor(hours % 24);
-  if (days > 365) return {text: Math.floor(days/365) + 'y ' + Math.floor((days%365)/30) + 'mo', color: 'var(--text-muted)', sort: diff};
-  if (days > 30) return {text: Math.floor(days/30) + 'mo ' + (days%30) + 'd', color: '#888', sort: diff};
-  if (days > 7) return {text: days + 'd', color: 'var(--text-secondary)', sort: diff};
-  if (days > 1) return {text: days + 'd ' + hrs + 'h', color: '#FFD700', sort: diff};
-  if (hours > 1) return {text: Math.floor(hours) + 'h ' + Math.floor((diff%3600000)/60000) + 'm', color: '#ff8844', sort: diff};
-  return {text: Math.floor(diff/60000) + 'm', color: 'var(--error)', sort: diff};
+  // Label: for sports = event start, for others = market closes
+  var countLabel = isSports ? 'Event starts' : 'Market closes';
+  if (days > 365) return {text: Math.floor(days/365) + 'y ' + Math.floor((days%365)/30) + 'mo', label: countLabel, color: 'var(--text-muted)', sort: diff};
+  if (days > 30) return {text: Math.floor(days/30) + 'mo ' + (days%30) + 'd', label: countLabel, color: '#888', sort: diff};
+  if (days > 7) return {text: days + 'd', label: countLabel, color: 'var(--text-secondary)', sort: diff};
+  if (days > 1) return {text: days + 'd ' + hrs + 'h', label: countLabel, color: '#FFD700', sort: diff};
+  if (hours > 1) return {text: Math.floor(hours) + 'h ' + Math.floor((diff%3600000)/60000) + 'm', label: countLabel, color: '#ff8844', sort: diff};
+  return {text: Math.floor(diff/60000) + 'm', label: countLabel, color: 'var(--error)', sort: diff};
 }
 
 function hawkCalc30Profit(o) {
@@ -7238,7 +7246,7 @@ function renderHawkOpportunities(opps) {
 
   for (var i = 0; i < filtered.length; i++) {
     var o = filtered[i];
-    var tl = hawkCalcTimeLeft(o.end_date);
+    var tl = hawkCalcTimeLeft(o.end_date, 0, o.category);
     o._timeLeft = tl;
     var daysLeft = tl.sort / 86400000;
     if (daysLeft < 0) continue; // expired
@@ -7374,7 +7382,7 @@ function renderHawkPositions(positions) {
   var html = '';
   for (var i = 0; i < positions.length; i++) {
     var p = positions[i];
-    var tl = hawkCalcTimeLeft(p.end_date, p.cur_price || 0);
+    var tl = hawkCalcTimeLeft(p.end_date, p.cur_price || 0, p.category);
     var pnl = p.pnl || 0;
     var pnlColor = pnl >= 0 ? '#00ff44' : '#ff4444';
     var pnlPct = p.pnl_pct || 0;
@@ -7387,7 +7395,7 @@ function renderHawkPositions(positions) {
     html += '<td>$' + (p.size_usd || 0).toFixed(2) + '</td>';
     html += '<td>' + ((p.entry_price || 0) * 100).toFixed(0) + '\u00A2</td>';
     html += '<td style="font-weight:600;">' + ((p.cur_price || 0) * 100).toFixed(0) + '\u00A2</td>';
-    html += '<td id="hawk-pos-timer-' + i + '" style="color:' + tl.color + ';font-weight:600;font-size:0.76rem;white-space:nowrap;">' + tl.text + '</td>';
+    html += '<td id="hawk-pos-timer-' + i + '" style="color:' + tl.color + ';font-weight:600;font-size:0.76rem;white-space:nowrap;">' + tl.text + '<div style="font-size:0.58rem;font-weight:400;opacity:0.7;color:' + tl.color + ';">' + (tl.label || '') + '</div></td>';
     html += '<td style="color:' + pnlColor + ';font-weight:600;">' + (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(2) + ' <span style="font-size:0.68rem;opacity:0.7;">(' + (pnlPct >= 0 ? '+' : '') + pnlPct.toFixed(0) + '%)</span></td>';
     html += '<td style="color:#00d4ff;font-weight:600;">$' + payout.toFixed(2) + '</td>';
     html += '<td style="color:' + (estRet >= 0 ? '#00ff44' : '#ff4444') + ';font-weight:600;">+$' + estRet.toFixed(2) + ' <span style="font-size:0.68rem;opacity:0.7;">(+' + estRetPct.toFixed(0) + '%)</span></td>';
@@ -8524,7 +8532,7 @@ function renderHawkSuggestions(suggestions) {
     var tbr = tierBorder[tier] || 'rgba(255,255,255,0.1)';
     var dirColor = s.direction === 'yes' ? '#00ff88' : '#ff6666';
     var dirArrow = s.direction === 'yes' ? '\u25B2 YES' : '\u25BC NO';
-    var tl = hawkCalcTimeLeft(s.end_date);
+    var tl = hawkCalcTimeLeft(s.end_date, 0, s.category);
     var rs = s.risk_score || 5;
 
     html += '<div style="background:' + tbg + ';border:1px solid ' + tbr + ';border-radius:10px;padding:16px;margin-bottom:10px;">';
