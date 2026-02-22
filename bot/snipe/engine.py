@@ -233,11 +233,15 @@ class SnipeEngine:
                 if result:
                     log.info("[SNIPE] Wave %d FIRED | T-%.0fs | price=$%.3f", wave_num, remaining, implied)
 
-        # All 3 waves done -> wait for resolution
+        # All 3 waves done OR time running out with fills -> wait for resolution
         if self.pyramid.waves_fired >= 3:
             self._state = SnipeState.EXECUTING
             self.window_tracker.mark_traded(window.market_id)
-            log.info("[SNIPE] ARMED -> EXECUTING (all 3 waves placed)")
+            log.info("[SNIPE] ARMED -> EXECUTING (all 3 waves filled)")
+        elif remaining < 30 and self.pyramid.waves_fired > 0:
+            self._state = SnipeState.EXECUTING
+            self.window_tracker.mark_traded(window.market_id)
+            log.info("[SNIPE] ARMED -> EXECUTING (%d waves filled, T-%.0fs)", self.pyramid.waves_fired, remaining)
 
     def _on_executing(self) -> None:
         """Waiting for window to resolve."""

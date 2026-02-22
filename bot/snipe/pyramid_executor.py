@@ -130,7 +130,8 @@ class PyramidExecutor:
         _, budget_frac, price_cap, _ = WAVES[wave_num - 1]
         size_usd = self._budget * budget_frac
 
-        price = min(implied_price, price_cap)
+        # Cross the spread: bid above implied to ensure fill (cap still protects us)
+        price = min(implied_price + 0.02, price_cap)
         price = max(0.01, min(0.99, round(price, 2)))
         shares = size_usd / price
 
@@ -180,7 +181,7 @@ class PyramidExecutor:
         shares: float,
         size_usd: float,
     ) -> WaveResult | None:
-        """Place a live order on CLOB."""
+        """Place a FOK (Fill or Kill) order on CLOB — fills instantly or cancels."""
         if not self._client:
             log.error("[SNIPE] No CLOB client for live order")
             return None
@@ -196,13 +197,23 @@ class PyramidExecutor:
                 token_id=token_id,
             )
             signed_order = self._client.create_order(order_args)
-            resp = self._client.post_order(signed_order, OrderType.GTC)
+            resp = self._client.post_order(signed_order, OrderType.FOK)
             order_id = resp.get("orderID") or resp.get("id", "unknown")
+            status = resp.get("status", "")
+
+            # FOK: either fully filled or fully rejected
+            filled = status.lower() in ("matched", "filled", "live")
+            if not filled:
+                log.warning(
+                    "[SNIPE] Wave %d FOK NOT FILLED: status=%s | price=$%.3f | %s",
+                    wave_num, status, price, order_id,
+                )
+                return None
 
             log.info(
-                "[SNIPE][LIVE] Wave %d: %s %.1f shares @ $%.3f ($%.2f) | %s",
+                "[SNIPE][LIVE] Wave %d: %s %.1f shares @ $%.3f ($%.2f) | %s | status=%s",
                 wave_num, self._active_position.direction.upper(),
-                shares, price, size_usd, order_id,
+                shares, price, size_usd, order_id, status,
             )
 
             return WaveResult(
