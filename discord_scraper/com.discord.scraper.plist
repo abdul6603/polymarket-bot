@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.discord.scraper</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/macuser/polymarket-bot/.venv/bin/python</string>
+        <string>-m</string>
+        <string>discord_scraper</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/macuser/polymarket-bot</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PYTHONPATH</key>
+        <string>/Users/macuser/polymarket-bot:/Users/macuser</string>
+    </dict>
+    <key>StandardOutPath</key>
+    <string>/tmp/discord_scraper.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/discord_scraper.log</string>
+    <key>KeepAlive</key>
+    <true/>
+    <key>RunAtLoad</key>
+    <true/>
+</dict>
+</plist>

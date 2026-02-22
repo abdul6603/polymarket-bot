@@ -16,6 +16,9 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from dotenv import load_dotenv
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
 from discord_scraper.config import (
     DISCORD_TOKEN, CHANNELS, CHANNEL_IDS,
     POLL_INTERVAL_SECONDS, MESSAGE_FETCH_LIMIT, VISION_DAILY_CAP,
