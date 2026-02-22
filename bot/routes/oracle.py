@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import logging
 import sqlite3
+from datetime import datetime, timezone
 from pathlib import Path
 
 from flask import Blueprint, jsonify
@@ -16,6 +17,7 @@ oracle_bp = Blueprint("oracle", __name__)
 DATA_DIR = Path.home() / "polymarket-bot" / "data"
 STATUS_FILE = DATA_DIR / "oracle_status.json"
 DB_FILE = DATA_DIR / "oracle_predictions.db"
+MODE_FILE = DATA_DIR / "oracle_mode.json"
 
 
 def _load_status() -> dict:
@@ -197,3 +199,23 @@ def api_oracle_accuracy():
         result["overall"]["win_rate"] = round(wins / total * 100, 1) if total > 0 else 0
 
     return jsonify(result)
+
+
+@oracle_bp.route("/api/oracle/toggle-mode", methods=["POST"])
+def api_oracle_toggle_mode():
+    """Toggle Oracle between live and paper trading."""
+    current_dry = True
+    if MODE_FILE.exists():
+        try:
+            current_dry = json.loads(MODE_FILE.read_text()).get("dry_run", True)
+        except Exception:
+            pass
+
+    new_dry = not current_dry
+    DATA_DIR.mkdir(exist_ok=True)
+    MODE_FILE.write_text(json.dumps({
+        "dry_run": new_dry,
+        "toggled_at": datetime.now(timezone.utc).isoformat(),
+    }, indent=2))
+    mode_label = "PAPER" if new_dry else "LIVE"
+    return jsonify({"success": True, "dry_run": new_dry, "mode": mode_label})

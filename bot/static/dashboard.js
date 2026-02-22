@@ -8413,7 +8413,7 @@ async function brandChannelPlan(id) {
 
 async function toggleGarvesMode() {
   var btn = document.getElementById('garves-mode-toggle');
-  if (btn) { btn.disabled = true; btn.textContent = 'Switching...'; }
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
   try {
     var resp = await fetch('/api/garves/toggle-mode', {method:'POST'});
     var d = await resp.json();
@@ -8421,12 +8421,12 @@ async function toggleGarvesMode() {
       updateGarvesModeBadge(d.dry_run);
     }
   } catch(e) { console.error('garves toggle:', e); }
-  if (btn) { btn.disabled = false; btn.textContent = 'Switch Mode'; }
+  if (btn) { btn.disabled = false; btn.textContent = 'Switch'; }
 }
 
 async function toggleHawkMode() {
   var btn = document.getElementById('hawk-mode-toggle');
-  if (btn) { btn.disabled = true; btn.textContent = 'Switching...'; }
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
   try {
     var resp = await fetch('/api/hawk/toggle-mode', {method:'POST'});
     var d = await resp.json();
@@ -8434,7 +8434,7 @@ async function toggleHawkMode() {
       updateHawkModeBadge(d.dry_run);
     }
   } catch(e) { console.error('hawk toggle:', e); }
-  if (btn) { btn.disabled = false; btn.textContent = 'Switch Mode'; }
+  if (btn) { btn.disabled = false; btn.textContent = 'Switch'; }
 }
 
 function updateGarvesModeBadge(isDryRun) {
@@ -8479,6 +8479,52 @@ async function loadHawkMode() {
     var d = await resp.json();
     updateHawkModeBadge(d.dry_run);
   } catch(e) {}
+}
+
+async function toggleOdinMode() {
+  var btn = document.getElementById('odin-mode-toggle');
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  try {
+    var resp = await fetch('/api/odin/toggle-mode', {method:'POST'});
+    var d = await resp.json();
+    if (d.success) {
+      var badge = document.getElementById('odin-mode-badge');
+      if (badge) {
+        badge.classList.remove('trading-mode-live', 'trading-mode-paper');
+        if (d.mode === 'live') {
+          badge.classList.add('trading-mode-live');
+          badge.textContent = 'Trading: Real Money';
+        } else {
+          badge.classList.add('trading-mode-paper');
+          badge.textContent = 'Trading: Paper Money';
+        }
+      }
+    }
+  } catch(e) { console.error('odin toggle:', e); }
+  if (btn) { btn.disabled = false; btn.textContent = 'Switch'; }
+}
+
+async function toggleOracleMode() {
+  var btn = document.getElementById('oracle-mode-toggle');
+  if (btn) { btn.disabled = true; btn.textContent = '...'; }
+  try {
+    var resp = await fetch('/api/oracle/toggle-mode', {method:'POST'});
+    var d = await resp.json();
+    if (d.success) {
+      var badge = document.getElementById('oracle-mode-badge');
+      if (badge) {
+        badge.classList.remove('trading-mode-live', 'trading-mode-paper');
+        if (d.dry_run) {
+          badge.classList.add('trading-mode-paper');
+          badge.textContent = 'Trading: Paper Money';
+        } else {
+          badge.classList.add('trading-mode-live');
+          badge.textContent = 'Trading: Real Money';
+        }
+      }
+    }
+  } catch(e) { console.error('oracle toggle:', e); }
+  if (btn) { btn.disabled = false; btn.textContent = 'Switch'; }
 }
 
 // ══════════════════════════════════════

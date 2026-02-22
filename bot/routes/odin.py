@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import logging
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -21,6 +22,7 @@ TRADES_FILE = DATA_DIR / "odin_trades.jsonl"
 SIGNALS_FILE = DATA_DIR / "odin_signals.jsonl"
 CB_FILE = DATA_DIR / "circuit_breaker.json"
 OMNICOIN_FILE = DATA_DIR / "omnicoin_analysis.json"
+MODE_FILE = DATA_DIR / "odin_mode.json"
 ET = ZoneInfo("America/New_York")
 
 
@@ -202,3 +204,22 @@ def api_odin_omnicoin_run():
     except Exception as e:
         log.error("[OMNICOIN] Analysis error: %s", str(e)[:300])
         return jsonify({"error": str(e)[:200], "symbol": symbol}), 500
+
+
+@odin_bp.route("/api/odin/toggle-mode", methods=["POST"])
+def api_odin_toggle_mode():
+    """Toggle Odin between live and paper trading."""
+    current_mode = "paper"
+    if MODE_FILE.exists():
+        try:
+            current_mode = json.loads(MODE_FILE.read_text()).get("mode", "paper")
+        except Exception:
+            pass
+
+    new_mode = "live" if current_mode == "paper" else "paper"
+    DATA_DIR.mkdir(exist_ok=True)
+    MODE_FILE.write_text(json.dumps({
+        "mode": new_mode,
+        "toggled_at": datetime.now(timezone.utc).isoformat(),
+    }, indent=2))
+    return jsonify({"success": True, "mode": new_mode})

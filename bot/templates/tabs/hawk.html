@@ -5,6 +5,7 @@
   <div id="intel-hawk" class="intel-meter" style="margin-bottom:12px;"></div>
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
     <span id="hawk-mode-badge" class="trading-mode-badge trading-mode-paper">Trading: Paper Money</span>
+    <button class="trading-mode-toggle" id="hawk-mode-toggle" onclick="toggleHawkMode()">Switch</button>
     <span class="text-muted" style="font-size:0.76rem;">Non-crypto prediction markets — Smart Degen</span>
     <button class="agent-chat-trigger" onclick="openAgentChat('hawk')" style="margin-left:auto;">Chat</button>
   </div>
@@ -13,7 +14,6 @@
   <div class="agent-widget-row">
     <button class="btn btn-hawk" id="hawk-scan-btn" onclick="hawkTriggerScan()" style="font-size:0.72rem;font-weight:700;">Trigger Scan</button>
     <button class="btn btn-hawk" onclick="hawkSimResolve()" style="font-size:0.72rem;">Check Resolutions</button>
-    <button class="btn btn-hawk" id="hawk-mode-toggle" onclick="toggleHawkMode()" style="font-size:0.72rem;">Switch Mode</button>
     <button class="btn" onclick="healthCheckAgent('hawk')" style="font-size:0.72rem;">Health Check</button>
     <button class="btn btn-hawk" onclick="hawkRefreshIntel()" style="font-size:0.72rem;">Refresh Intel</button>
     <button class="btn btn-hawk" onclick="hawkLoadPerformance()" style="font-size:0.72rem;">Refresh Performance</button>

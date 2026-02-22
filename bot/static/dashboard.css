@@ -1290,6 +1290,8 @@
   .trading-mode-badge { font-weight:700; padding:4px 14px; border-radius:6px; font-size:0.78rem; letter-spacing:0.02em; }
   .trading-mode-live { background:rgba(0,255,136,0.15); border:1px solid rgba(0,255,136,0.4); color:#00ff88; }
   .trading-mode-paper { background:rgba(255,215,0,0.15); border:1px solid rgba(255,215,0,0.4); color:#FFD700; }
+  .trading-mode-toggle { font-size:0.64rem; padding:3px 10px; border-radius:4px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); color:var(--text-muted); cursor:pointer; font-weight:600; transition:all 0.2s; }
+  .trading-mode-toggle:hover { background:rgba(255,255,255,0.12); color:var(--text-primary); border-color:rgba(255,255,255,0.3); }
 
   @media (max-width:1200px) { .grid-4,.grid-6 { grid-template-columns:repeat(3,1fr); } .team-agents-row { grid-template-columns:repeat(3,1fr); } }
   @media (max-width:900px) { .grid-3,.grid-4,.grid-6 { grid-template-columns:repeat(2,1fr); } .main { padding:0 var(--space-4); } .intel-meter { flex-direction:column; align-items:stretch; } .team-agents-row { grid-template-columns:repeat(3,1fr); } }
