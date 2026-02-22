@@ -4,7 +4,7 @@
   <!-- A: Intel Meter + Header -->
   <div id="intel-odin" class="intel-meter" style="margin-bottom:12px;"></div>
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-    <span class="badge" style="font-weight:700;padding:4px 12px;font-size:0.8rem;background:rgba(139,92,246,0.15);border:1px solid var(--agent-odin);"><span id="odin-mode-label" style="color:var(--agent-odin);">PAPER</span></span>
+    <span id="odin-mode-badge" class="trading-mode-badge trading-mode-paper">Trading: Paper Money</span>
     <span class="text-muted" style="font-size:0.76rem;">13-Skill All-Seeing Trader — CoinGlass + SMC + OmniCoin</span>
     <span class="text-muted" style="font-size:0.68rem;font-style:italic;margin-left:auto;">"I see everything. I forget nothing. I trade the imbalance."</span>
   </div>
@@ -200,15 +200,17 @@
 function odinRefresh() {
   fetch('/api/odin').then(r => r.json()).then(function(d) {
     // Mode
-    var modeEl = document.getElementById('odin-mode-label');
-    var modeBadge = document.getElementById('odin-positions-badge');
     var isLive = (d.mode || 'paper').toLowerCase() === 'live';
-    if (modeEl) modeEl.textContent = (d.mode || 'paper').toUpperCase();
+    var modeBadge = document.getElementById('odin-mode-badge');
     if (modeBadge) {
-      modeBadge.textContent = isLive ? 'LIVE' : 'PAPER';
-      modeBadge.style.background = isLive ? 'rgba(231,76,60,0.15)' : 'rgba(243,156,18,0.15)';
-      modeBadge.style.borderColor = isLive ? 'var(--error)' : 'var(--warning)';
-      modeBadge.style.color = isLive ? 'var(--error)' : 'var(--warning)';
+      modeBadge.classList.remove('trading-mode-live', 'trading-mode-paper');
+      if (isLive) {
+        modeBadge.classList.add('trading-mode-live');
+        modeBadge.textContent = 'Trading: Real Money';
+      } else {
+        modeBadge.classList.add('trading-mode-paper');
+        modeBadge.textContent = 'Trading: Paper Money';
+      }
     }
 
     // Hero cards

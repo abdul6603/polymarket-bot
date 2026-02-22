@@ -8440,27 +8440,27 @@ async function toggleHawkMode() {
 function updateGarvesModeBadge(isDryRun) {
   var badge = document.getElementById('garves-mode-badge');
   if (badge) {
+    badge.classList.remove('trading-mode-live', 'trading-mode-paper');
     if (isDryRun) {
-      badge.style.background = '#FFD700';
-      badge.style.color = '#000';
-      badge.textContent = 'PAPER MODE';
+      badge.classList.add('trading-mode-paper');
+      badge.textContent = 'Trading: Paper Money';
     } else {
-      badge.style.background = '#00ff88';
-      badge.style.color = '#000';
-      badge.textContent = 'LIVE TRADING';
+      badge.classList.add('trading-mode-live');
+      badge.textContent = 'Trading: Real Money';
     }
   }
 }
 
 function updateHawkModeBadge(isDryRun) {
-  var label = document.getElementById('hawk-mode-label');
-  if (label) {
+  var badge = document.getElementById('hawk-mode-badge');
+  if (badge) {
+    badge.classList.remove('trading-mode-live', 'trading-mode-paper');
     if (isDryRun) {
-      label.textContent = 'Paper';
-      label.style.color = '#FFD700';
+      badge.classList.add('trading-mode-paper');
+      badge.textContent = 'Trading: Paper Money';
     } else {
-      label.textContent = 'Live';
-      label.style.color = '#00ff88';
+      badge.classList.add('trading-mode-live');
+      badge.textContent = 'Trading: Real Money';
     }
   }
 }

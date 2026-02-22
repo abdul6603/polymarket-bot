@@ -4,7 +4,7 @@
   <!-- A: Intel Meter + Header -->
   <div id="intel-oracle" class="intel-meter" style="margin-bottom:12px;"></div>
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
-    <span class="badge" style="font-weight:700;padding:4px 12px;font-size:0.8rem;background:rgba(245,158,11,0.15);border:1px solid var(--agent-oracle);"><span id="oracle-mode-label" style="color:var(--agent-oracle);">DRY RUN</span></span>
+    <span id="oracle-mode-badge" class="trading-mode-badge trading-mode-paper">Trading: Paper Money</span>
     <span class="text-muted" style="font-size:0.76rem;">The Weekly Crypto Oracle — Born Feb 22, 2026</span>
     <span class="text-muted" style="font-size:0.68rem;font-style:italic;margin-left:auto;">"The market is a living entity. I read its breath, heartbeat, and hidden intentions."</span>
   </div>
@@ -248,8 +248,17 @@ function oracleRenderMarkdown(text) {
 function oracleRefresh() {
   fetch('/api/oracle').then(function(r) { return r.json(); }).then(function(d) {
     // Mode
-    var modeEl = document.getElementById('oracle-mode-label');
-    if (modeEl) modeEl.textContent = d.dry_run ? 'DRY RUN' : 'LIVE';
+    var modeBadge = document.getElementById('oracle-mode-badge');
+    if (modeBadge) {
+      modeBadge.classList.remove('trading-mode-live', 'trading-mode-paper');
+      if (d.dry_run) {
+        modeBadge.classList.add('trading-mode-paper');
+        modeBadge.textContent = 'Trading: Paper Money';
+      } else {
+        modeBadge.classList.add('trading-mode-live');
+        modeBadge.textContent = 'Trading: Real Money';
+      }
+    }
 
     // Last run
     var lastRunEl = document.getElementById('oracle-last-run');

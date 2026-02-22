@@ -1286,6 +1286,11 @@
   /* Hide empty containers */
   .hide-empty:empty { display: none !important; }
 
+  /* Trading mode badge — shared across all trader tabs */
+  .trading-mode-badge { font-weight:700; padding:4px 14px; border-radius:6px; font-size:0.78rem; letter-spacing:0.02em; }
+  .trading-mode-live { background:rgba(0,255,136,0.15); border:1px solid rgba(0,255,136,0.4); color:#00ff88; }
+  .trading-mode-paper { background:rgba(255,215,0,0.15); border:1px solid rgba(255,215,0,0.4); color:#FFD700; }
+
   @media (max-width:1200px) { .grid-4,.grid-6 { grid-template-columns:repeat(3,1fr); } .team-agents-row { grid-template-columns:repeat(3,1fr); } }
   @media (max-width:900px) { .grid-3,.grid-4,.grid-6 { grid-template-columns:repeat(2,1fr); } .main { padding:0 var(--space-4); } .intel-meter { flex-direction:column; align-items:stretch; } .team-agents-row { grid-template-columns:repeat(3,1fr); } }
   @media (max-width:640px) { .grid-2,.grid-3,.grid-4,.grid-6 { grid-template-columns:1fr; } .sidebar { display:none; } .main { margin-left:0; } .kpi-grid { grid-template-columns:1fr; } .team-agents-row { grid-template-columns:repeat(2,1fr); } .atlas-cmd-grid { grid-template-columns:1fr; } .atlas-cmd-card--wide { grid-column:span 1; } }
