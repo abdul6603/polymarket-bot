@@ -218,6 +218,13 @@ class Executor:
         if not self.client:
             return
 
+        # Stale GTC timeout: cancel unfilled orders after this many seconds
+        GTC_STALE_S = {
+            "5m": 600, "15m": 900, "1h": 3600, "4h": 7200, "weekly": 14400,
+        }
+        GTC_DEFAULT_STALE_S = 900  # 15 min default
+
+        now = time.time()
         for pos in list(self.tracker.open_positions):
             try:
                 order = self.client.get_order(pos.order_id)
@@ -230,6 +237,22 @@ class Executor:
                     # Order filled — position is ACTIVE. Keep in tracker for risk management.
                     log.info("Order %s FILLED — position active, keeping in tracker ($%.2f)",
                              pos.order_id, pos.size_usd)
+                elif status in ("live", "open", "active", ""):
+                    # Still open — check if stale and should be cancelled
+                    tf = getattr(pos, "timeframe", "")
+                    stale_limit = GTC_STALE_S.get(tf, GTC_DEFAULT_STALE_S)
+                    age = now - pos.opened_at
+                    if age > stale_limit:
+                        log.warning(
+                            "STALE ORDER: %s open for %.0fs (limit %ds) — cancelling",
+                            pos.order_id[:16], age, stale_limit,
+                        )
+                        try:
+                            self.client.cancel(pos.order_id)
+                            log.info("Cancelled stale GTC order %s", pos.order_id[:16])
+                        except Exception:
+                            log.debug("Cancel failed for %s (may already be gone)", pos.order_id[:16])
+                        self.tracker.remove(pos.order_id)
             except Exception:
                 log.debug("Could not check order %s", pos.order_id)
 
