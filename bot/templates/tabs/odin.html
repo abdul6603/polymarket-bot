@@ -5,16 +5,36 @@
   <div id="intel-odin" class="intel-meter" style="margin-bottom:12px;"></div>
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
     <span class="badge" style="font-weight:700;padding:4px 12px;font-size:0.8rem;background:rgba(139,92,246,0.15);border:1px solid var(--agent-odin);"><span id="odin-mode-label" style="color:var(--agent-odin);">PAPER</span></span>
-    <span class="text-muted" style="font-size:0.76rem;">Top 100 Coins — Regime-Adaptive Trader (CoinGlass + SMC)</span>
-    <span class="text-muted" style="font-size:0.68rem;font-style:italic;margin-left:auto;">"I see the structure. I see the trap. I trade the imbalance."</span>
+    <span class="text-muted" style="font-size:0.76rem;">13-Skill All-Seeing Trader — CoinGlass + SMC + OmniCoin</span>
+    <span class="text-muted" style="font-size:0.68rem;font-style:italic;margin-left:auto;">"I see everything. I forget nothing. I trade the imbalance."</span>
   </div>
 
   <!-- B: Action Bar -->
   <div class="agent-widget-row">
     <button class="btn" onclick="odinRefresh()" style="font-size:0.72rem;font-weight:700;border-color:var(--agent-odin);color:var(--agent-odin);">Refresh Status</button>
     <button class="btn" onclick="healthCheckAgent('odin')" style="font-size:0.72rem;">Health Check</button>
+    <span style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+      <input type="text" id="odin-omni-input" placeholder="Coin (e.g. BTC)" style="width:110px;padding:4px 10px;font-size:0.72rem;border:1px solid var(--agent-odin);border-radius:4px;background:transparent;color:var(--text-primary);">
+      <button class="btn" onclick="odinRunOmniCoin()" style="font-size:0.72rem;font-weight:700;border-color:var(--agent-odin);color:#fff;background:var(--agent-odin);">OmniCoin Analyzer</button>
+    </span>
   </div>
   <div class="health-inline" id="odin-health-result"></div>
+
+  <!-- B2: OmniCoin Analyzer Results -->
+  <div id="odin-omnicoin-section" class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-odin);display:none;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+      <h3 class="section-title" style="font-size:0.76rem;margin:0;text-transform:uppercase;letter-spacing:0.06em;color:var(--agent-odin);">OmniCoin Analysis: <span id="odin-omni-symbol">--</span></h3>
+      <span id="odin-omni-confidence" style="font-weight:700;font-size:1rem;padding:2px 10px;border-radius:6px;background:rgba(139,92,246,0.15);color:var(--agent-odin);">--/10</span>
+      <span id="odin-omni-bias" class="badge" style="font-size:0.64rem;font-weight:700;padding:2px 10px;">--</span>
+      <span id="odin-omni-time" class="text-muted" style="font-size:0.64rem;margin-left:auto;">--</span>
+    </div>
+    <div id="odin-omni-summary" style="font-size:0.76rem;margin-bottom:10px;line-height:1.5;color:var(--text-primary);"></div>
+    <div id="odin-omni-sections" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+    </div>
+    <div id="odin-omni-loading" style="display:none;text-align:center;padding:20px;color:var(--agent-odin);font-size:0.8rem;">
+      Analyzing... <span style="animation:pulse 1.5s infinite;">&#9679;</span>
+    </div>
+  </div>
 
   <!-- C: Hero Cards -->
   <div class="grid-3" style="margin-bottom:12px;">
@@ -86,7 +106,7 @@
   <!-- F2: Conviction Engine -->
   <div class="collapse-section default-open">
     <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="odin" style="margin-bottom:0;">Conviction Engine <span id="odin-conviction-badge" class="badge" style="font-size:0.56rem;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:8px;background:rgba(139,92,246,0.15);border:1px solid var(--agent-odin);color:var(--agent-odin);">--/100</span></h2>
+      <h2 class="section-title" data-accent="odin" style="margin-bottom:0;">Conviction Engine (1R Cap) <span id="odin-conviction-badge" class="badge" style="font-size:0.56rem;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:8px;background:rgba(139,92,246,0.15);border:1px solid var(--agent-odin);color:var(--agent-odin);">--/10</span></h2>
     </div>
     <div class="collapse-body">
       <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
@@ -286,11 +306,12 @@ function odinRefresh() {
     var cfgEl = document.getElementById('odin-config');
     if (cfgEl && d.config) {
       var c = d.config;
-      cfgEl.innerHTML = 'Risk/trade: $' + (c.risk_per_trade || 150)
-        + ' | Target R:R: ' + (c.target_rr || 2) + ':1'
-        + ' | Max positions: ' + (c.max_positions || 2)
+      cfgEl.innerHTML = 'Risk: ' + (c.risk_cap || '1R') + ' ($' + (c.risk_per_trade || 150) + ')'
+        + ' | R:R: ' + (c.target_rr || 2) + ':1'
+        + ' | Max pos: ' + (c.max_positions || 2)
         + ' | CoinGlass: ' + (c.coinglass ? 'ON' : 'OFF')
-        + ' | Cycle: ' + (c.cycle_seconds || 300) + 's';
+        + ' | Cycle: ' + (c.cycle_seconds || 300) + 's'
+        + ' | Skills: ' + (d.skill_count || 13);
     }
 
     // Intel meter
@@ -329,14 +350,15 @@ function odinRefresh() {
   // Conviction engine
   fetch('/api/odin/conviction').then(r => r.json()).then(function(c) {
     if (!c || !c.active) return;
-    odinSetVal('odin-conv-score', c.total_score || 0);
-    odinSetVal('odin-conv-mult', (c.risk_multiplier || 0).toFixed(2));
+    var conf110 = c.confidence_1_10 || Math.max(1, Math.min(10, Math.round((c.total_score||0)/10)));
+    odinSetVal('odin-conv-score', (c.total_score || 0) + ' (' + conf110 + '/10)');
+    odinSetVal('odin-conv-mult', (c.risk_multiplier || 0).toFixed(2) + ' (1R cap)');
     var badge = document.getElementById('odin-conviction-badge');
-    if (badge) badge.textContent = (c.total_score || 0) + '/100';
+    if (badge) badge.textContent = conf110 + '/10';
     var tierEl = document.getElementById('odin-conv-tier');
     if (tierEl) {
       tierEl.textContent = c.tier || '--';
-      var tierColors = {FULL:'var(--success)',THREE_QUARTER:'var(--success)',HALF:'var(--warning)',QUARTER:'var(--error)',NO_TRADE:'var(--error)'};
+      var tierColors = {FULL:'var(--success)',HIGH:'var(--success)',MODERATE:'var(--warning)',LOW:'var(--error)',NO_TRADE:'var(--error)'};
       tierEl.style.color = tierColors[c.tier] || 'var(--text-muted)';
       tierEl.style.borderColor = tierColors[c.tier] || 'var(--text-muted)';
       tierEl.style.border = '1px solid ' + (tierColors[c.tier] || 'var(--text-muted)');
@@ -491,6 +513,103 @@ function odinRenderPositions(positions) {
   });
 }
 
+function odinRunOmniCoin() {
+  var input = document.getElementById('odin-omni-input');
+  var symbol = (input ? input.value : '').trim().toUpperCase();
+  if (!symbol) { alert('Enter a coin symbol (e.g. BTC, ETH)'); return; }
+
+  var section = document.getElementById('odin-omnicoin-section');
+  var loading = document.getElementById('odin-omni-loading');
+  var sectionsEl = document.getElementById('odin-omni-sections');
+  var summaryEl = document.getElementById('odin-omni-summary');
+
+  if (section) section.style.display = 'block';
+  if (loading) loading.style.display = 'block';
+  if (sectionsEl) sectionsEl.innerHTML = '';
+  if (summaryEl) summaryEl.textContent = '';
+
+  fetch('/api/odin/omnicoin', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({symbol: symbol})
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (loading) loading.style.display = 'none';
+    if (d.error) {
+      if (summaryEl) summaryEl.textContent = 'Error: ' + d.error;
+      return;
+    }
+
+    odinSetVal('odin-omni-symbol', d.symbol || symbol);
+
+    var conf = d.confidence || 0;
+    var confEl = document.getElementById('odin-omni-confidence');
+    if (confEl) {
+      confEl.textContent = conf + '/10';
+      confEl.style.color = conf >= 7 ? 'var(--success)' : conf >= 4 ? 'var(--warning)' : 'var(--error)';
+    }
+
+    var biasEl = document.getElementById('odin-omni-bias');
+    if (biasEl) {
+      biasEl.textContent = d.bias || '--';
+      biasEl.style.background = d.bias === 'LONG' ? 'rgba(46,204,113,0.15)' : d.bias === 'SHORT' ? 'rgba(231,76,60,0.15)' : 'rgba(255,255,255,0.08)';
+      biasEl.style.color = d.bias === 'LONG' ? 'var(--success)' : d.bias === 'SHORT' ? 'var(--error)' : 'var(--text-muted)';
+    }
+
+    odinSetVal('odin-omni-time', d.timestamp_et || '');
+    if (summaryEl) summaryEl.textContent = d.summary || '';
+
+    if (sectionsEl && d.sections) {
+      var html = '';
+      var sectionNames = {
+        'eye_vision': 'Eye Vision', 'regime': 'Regime', 'smc_structure': 'SMC Structure',
+        'ob_memory': 'OB Memory', 'liquidity_raids': 'Liquidity Raids', 'sentiment': 'Sentiment',
+        'arb_check': 'Cross-Chain Arb', 'stop_hunt_sim': 'Stop Hunt Sim',
+        'evolution': 'Self-Evolve', 'journal': 'Journal', 'brotherhood': 'Brotherhood'
+      };
+      Object.keys(d.sections).forEach(function(key) {
+        var sec = d.sections[key];
+        var name = sectionNames[key] || key;
+        var avail = sec.available;
+        var statusColor = avail ? 'var(--success)' : 'var(--text-muted)';
+        html += '<div style="padding:8px;background:rgba(139,92,246,0.04);border-radius:6px;border:1px solid rgba(139,92,246,0.1);">';
+        html += '<div style="font-size:0.68rem;font-weight:700;color:' + statusColor + ';margin-bottom:4px;">' + (avail ? '&#9679; ' : '&#9675; ') + name + '</div>';
+        var details = Object.keys(sec).filter(function(k){ return k !== 'available' && k !== 'error'; });
+        details.forEach(function(k) {
+          var v = sec[k];
+          if (typeof v === 'object' && v !== null) v = JSON.stringify(v).substring(0, 80);
+          html += '<div style="font-size:0.62rem;color:var(--text-muted);">' + k + ': <span style="color:var(--text-primary);">' + v + '</span></div>';
+        });
+        html += '</div>';
+      });
+      sectionsEl.innerHTML = html;
+    }
+  })
+  .catch(function(e) {
+    if (loading) loading.style.display = 'none';
+    if (summaryEl) summaryEl.textContent = 'Analysis failed: ' + e;
+  });
+}
+
+// Load last OmniCoin result on tab switch
+function odinLoadLastOmni() {
+  fetch('/api/odin/omnicoin').then(function(r) { return r.json(); }).then(function(d) {
+    if (d && d.symbol) {
+      var section = document.getElementById('odin-omnicoin-section');
+      if (section) section.style.display = 'block';
+      odinSetVal('odin-omni-symbol', d.symbol);
+      var confEl = document.getElementById('odin-omni-confidence');
+      if (confEl) confEl.textContent = (d.confidence || 0) + '/10';
+      var biasEl = document.getElementById('odin-omni-bias');
+      if (biasEl) biasEl.textContent = d.bias || '--';
+      odinSetVal('odin-omni-time', d.timestamp_et || '');
+      var summaryEl = document.getElementById('odin-omni-summary');
+      if (summaryEl) summaryEl.textContent = d.summary || '';
+    }
+  }).catch(function(){});
+}
+
 // Auto-refresh when tab is active + periodic refresh
 var _odinInterval = null;
 (function() {
@@ -500,6 +619,7 @@ var _odinInterval = null;
       origSwitch(tab);
       if (tab === 'odin') {
         odinRefresh();
+        odinLoadLastOmni();
         if (_odinInterval) clearInterval(_odinInterval);
         _odinInterval = setInterval(odinRefresh, 30000);
       } else {

@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 
 from bot.routes._utils import read_fresh, read_fresh_jsonl
 
@@ -20,6 +20,7 @@ STATUS_FILE = DATA_DIR / "odin_status.json"
 TRADES_FILE = DATA_DIR / "odin_trades.jsonl"
 SIGNALS_FILE = DATA_DIR / "odin_signals.jsonl"
 CB_FILE = DATA_DIR / "circuit_breaker.json"
+OMNICOIN_FILE = DATA_DIR / "omnicoin_analysis.json"
 ET = ZoneInfo("America/New_York")
 
 
@@ -121,3 +122,83 @@ def api_odin_brotherhood():
     """Brotherhood intelligence state."""
     status = _load_status()
     return jsonify(status.get("brotherhood") or {})
+
+
+@odin_bp.route("/api/odin/skills")
+def api_odin_skills():
+    """All 13 skill statuses."""
+    status = _load_status()
+    return jsonify({
+        "skills": status.get("skills", {}),
+        "skill_count": status.get("skill_count", 0),
+        "ob_memory": status.get("ob_memory", {}),
+    })
+
+
+@odin_bp.route("/api/odin/omnicoin", methods=["GET"])
+def api_odin_omnicoin_get():
+    """Get last OmniCoin analysis result."""
+    data = read_fresh(OMNICOIN_FILE, "~/odin/data/omnicoin_analysis.json")
+    return jsonify(data if data else {"symbol": None, "confidence": 0})
+
+
+@odin_bp.route("/api/odin/omnicoin", methods=["POST"])
+def api_odin_omnicoin_run():
+    """Trigger OmniCoin analysis on a coin.
+
+    Body: {"symbol": "BTC"} or {"symbol": "ETHUSDT"}
+    Optional: {"chart_image": "base64..."} for Eye-Vision
+    """
+    body = request.get_json(silent=True) or {}
+    symbol = body.get("symbol", "").strip().upper()
+    if not symbol:
+        return jsonify({"error": "symbol required"}), 400
+
+    # Normalize
+    if not symbol.endswith("USDT"):
+        symbol = f"{symbol}USDT"
+
+    chart_image = body.get("chart_image")
+
+    try:
+        import sys
+        sys.path.insert(0, str(ODIN_DIR))
+        from odin.skills.omnicoin import OmniCoinAnalyzer
+        from odin.skills import SkillRegistry
+        from odin.skills.ob_memory import OBMemory
+        from odin.skills.sentiment_fusion import SentimentFusion
+        from odin.skills.cross_chain_arb import CrossChainArbScout
+        from odin.skills.eye_vision import EyeVision
+        from odin.skills.stop_hunt_sim import StopHuntSimulator
+        from odin.skills.liquidity_raid import LiquidityRaidPredictor
+        from odin.skills.auto_reporter import AutoReporter
+        from odin.skills.self_evolve import SelfEvolve
+
+        registry = SkillRegistry()
+        registry.register("ob_memory", OBMemory(DATA_DIR / "ob_memory.db"))
+        registry.register("sentiment_fusion", SentimentFusion())
+        registry.register("cross_chain_arb", CrossChainArbScout())
+        registry.register("eye_vision", EyeVision(DATA_DIR))
+        registry.register("stop_hunt_sim", StopHuntSimulator())
+        registry.register("liquidity_raid", LiquidityRaidPredictor())
+        registry.register("auto_reporter", AutoReporter(DATA_DIR))
+        registry.register("self_evolve", SelfEvolve(DATA_DIR))
+
+        analyzer = OmniCoinAnalyzer(registry, DATA_DIR)
+
+        # Load regime data from status
+        status = _load_status()
+        regime_data = status.get("regime")
+
+        # Run analysis
+        report = analyzer.analyze(
+            symbol=symbol,
+            chart_image=chart_image,
+            regime_data=regime_data,
+        )
+
+        return jsonify(report.to_dict())
+
+    except Exception as e:
+        log.error("[OMNICOIN] Analysis error: %s", str(e)[:300])
+        return jsonify({"error": str(e)[:200], "symbol": symbol}), 500
