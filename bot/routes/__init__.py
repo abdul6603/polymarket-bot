@@ -27,6 +27,7 @@ def register_all_blueprints(app: Flask) -> None:
     from bot.routes.llm import llm_bp
     from bot.routes.odin import odin_bp
     from bot.routes.oracle import oracle_bp
+    from bot.routes.discord_intel import discord_bp
 
     app.register_blueprint(garves_bp)
     app.register_blueprint(soren_bp)
@@ -46,3 +47,4 @@ def register_all_blueprints(app: Flask) -> None:
     app.register_blueprint(llm_bp)
     app.register_blueprint(odin_bp)
     app.register_blueprint(oracle_bp)
+    app.register_blueprint(discord_bp)

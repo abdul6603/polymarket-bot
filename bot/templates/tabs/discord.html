@@ -1,0 +1,267 @@
+<!-- DISCORD — Alpha Intelligence Pipeline -->
+<div class="tab-content" id="tab-discord">
+
+  <!-- A: Header -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+    <span style="font-weight:700;padding:4px 14px;border-radius:6px;font-size:0.78rem;background:rgba(88,101,242,0.15);border:1px solid rgba(88,101,242,0.4);color:#5865F2;">UT Traders Academy</span>
+    <span class="text-muted" style="font-size:0.76rem;">6 Channels — Alpha Pipeline to Brotherhood</span>
+    <button class="btn" onclick="discordRefresh()" style="margin-left:auto;font-size:0.72rem;font-weight:700;border-color:#5865F2;color:#5865F2;">Refresh</button>
+  </div>
+
+  <!-- B: Hero Cards -->
+  <div class="grid-4" style="margin-bottom:12px;">
+    <div class="stat-card" style="border-left:3px solid #5865F2;">
+      <div class="stat-value" id="disc-total-msgs" style="font-size:1.4rem;color:#5865F2;">--</div>
+      <div class="stat-label">Messages Scraped</div>
+    </div>
+    <div class="stat-card" style="border-left:3px solid var(--warning);">
+      <div class="stat-value" id="disc-total-signals" style="font-size:1.4rem;color:var(--warning);">--</div>
+      <div class="stat-label">Signals Extracted</div>
+    </div>
+    <div class="stat-card" style="border-left:3px solid var(--success);">
+      <div class="stat-value" id="disc-total-discussions" style="font-size:1.4rem;color:var(--success);">--</div>
+      <div class="stat-label">Agent Discussions</div>
+    </div>
+    <div class="stat-card" style="border-left:3px solid var(--agent-atlas);">
+      <div class="stat-value" id="disc-signals-24h" style="font-size:1.4rem;color:var(--agent-atlas);">--</div>
+      <div class="stat-label">Signals (24h)</div>
+    </div>
+  </div>
+
+  <!-- C: Channel Status -->
+  <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #5865F2;">
+    <h2 class="section-title" style="color:#5865F2;margin-bottom:8px;">Channel Pipeline</h2>
+    <div id="disc-channels" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+      <div class="text-muted" style="font-size:0.74rem;">Loading channels...</div>
+    </div>
+  </div>
+
+  <!-- D: Three-column layout — Signals | Leaderboard | Agent Comms -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+
+    <!-- D1: Live Signals Feed -->
+    <div class="glass-card" style="border-left:3px solid var(--warning);">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <h2 class="section-title" style="color:var(--warning);margin-bottom:0;">Live Signals</h2>
+        <select id="disc-signal-filter" onchange="discordRefreshSignals()" style="margin-left:auto;font-size:0.66rem;padding:2px 6px;background:var(--glass-bg);border:1px solid var(--glass-border);color:var(--text-primary);border-radius:4px;">
+          <option value="">All Channels</option>
+          <option value="CRITICAL">CRITICAL</option>
+          <option value="CONTEXT">CONTEXT</option>
+          <option value="KNOWLEDGE">KNOWLEDGE</option>
+          <option value="MEDIUM">MEDIUM</option>
+        </select>
+      </div>
+      <div id="disc-signals-list" style="max-height:420px;overflow-y:auto;">
+        <div class="text-muted" style="font-size:0.74rem;">No signals yet...</div>
+      </div>
+    </div>
+
+    <!-- D2: Trader Leaderboard -->
+    <div class="glass-card" style="border-left:3px solid var(--success);">
+      <h2 class="section-title" style="color:var(--success);margin-bottom:8px;">Trader Leaderboard</h2>
+      <div id="disc-leaderboard" style="max-height:420px;overflow-y:auto;">
+        <div class="text-muted" style="font-size:0.74rem;">No trader data yet...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- E: Agent Discussions — Full Width -->
+  <div class="glass-card" style="border-left:3px solid var(--agent-garves);margin-bottom:12px;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <h2 class="section-title" style="color:var(--agent-garves);margin-bottom:0;">Agent Discussions</h2>
+      <span class="text-muted" style="font-size:0.64rem;">Agents react to incoming alpha — their reasoning and actions</span>
+      <select id="disc-agent-filter" onchange="discordRefreshDiscussions()" style="margin-left:auto;font-size:0.66rem;padding:2px 6px;background:var(--glass-bg);border:1px solid var(--glass-border);color:var(--text-primary);border-radius:4px;">
+        <option value="">All Agents</option>
+        <option value="garves">Garves</option>
+        <option value="odin">Odin</option>
+        <option value="oracle">Oracle</option>
+        <option value="atlas">Atlas</option>
+        <option value="quant">Quant</option>
+      </select>
+    </div>
+    <div id="disc-discussions" style="max-height:400px;overflow-y:auto;">
+      <div class="text-muted" style="font-size:0.74rem;">No discussions yet...</div>
+    </div>
+  </div>
+
+  <!-- F: Recent Messages Feed -->
+  <div class="collapsible collapsed">
+    <div class="collapse-header" onclick="this.parentElement.classList.toggle('collapsed')">
+      <h2 class="section-title" style="margin-bottom:0;">Raw Message Feed</h2>
+    </div>
+    <div class="collapse-body">
+      <div id="disc-raw-feed" style="max-height:350px;overflow-y:auto;">
+        <div class="text-muted" style="font-size:0.74rem;">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var _discAgentColors = {
+  garves:'var(--agent-garves)', odin:'var(--agent-odin)', oracle:'var(--agent-oracle)',
+  atlas:'var(--agent-atlas)', quant:'var(--agent-quant)', hawk:'var(--agent-hawk)'
+};
+var _discPriorityColors = {
+  CRITICAL:'var(--error)', CONTEXT:'var(--warning)', KNOWLEDGE:'var(--agent-atlas)', MEDIUM:'var(--text-muted)'
+};
+
+function discordRefresh() {
+  fetch('/api/discord').then(function(r) { return r.json(); }).then(function(d) {
+    discSetVal('disc-total-msgs', d.total_messages || 0);
+    discSetVal('disc-total-signals', d.total_signals || 0);
+    discSetVal('disc-total-discussions', d.total_discussions || 0);
+    discSetVal('disc-signals-24h', d.recent_signals_24h || 0);
+
+    // Channel pipeline
+    var el = document.getElementById('disc-channels');
+    if (el && d.channels && d.channels.length > 0) {
+      var channelMeta = {
+        'sn06-trades': {priority:'CRITICAL',icon:'SN'},
+        'kiku-trades': {priority:'CRITICAL',icon:'KK'},
+        'charts-ideas': {priority:'CONTEXT',icon:'CI'},
+        'ut-education': {priority:'KNOWLEDGE',icon:'UT'},
+        'abns92-trial': {priority:'MEDIUM',icon:'AB'},
+        'miku-trades': {priority:'MEDIUM',icon:'MK'}
+      };
+      el.innerHTML = d.channels.map(function(ch) {
+        var meta = channelMeta[ch.channel_name] || {priority:'MEDIUM',icon:'??'};
+        var pc = _discPriorityColors[meta.priority] || 'var(--text-muted)';
+        return '<div style="background:var(--glass-bg);border:1px solid var(--glass-border);border-radius:6px;padding:8px 10px;display:flex;align-items:center;gap:8px;">'
+          + '<span style="width:28px;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:800;background:rgba(88,101,242,0.15);color:#5865F2;">' + meta.icon + '</span>'
+          + '<div style="flex:1;min-width:0;">'
+          + '<div style="font-size:0.72rem;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">#' + ch.channel_name + '</div>'
+          + '<div style="font-size:0.58rem;color:var(--text-muted);">' + ch.count + ' msgs</div>'
+          + '</div>'
+          + '<span style="font-size:0.54rem;font-weight:700;padding:2px 6px;border-radius:3px;background:rgba(255,255,255,0.06);color:' + pc + ';">' + meta.priority + '</span>'
+          + '</div>';
+      }).join('');
+    }
+  }).catch(function(e) { console.error('discord overview:', e); });
+
+  discordRefreshSignals();
+  discordRefreshLeaderboard();
+  discordRefreshDiscussions();
+  discordRefreshFeed();
+}
+
+function discSetVal(id, val) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = typeof val === 'number' ? val.toLocaleString() : val;
+}
+
+function discordRefreshSignals() {
+  var filter = document.getElementById('disc-signal-filter');
+  var priority = filter ? filter.value : '';
+  fetch('/api/discord/signals?limit=30').then(function(r) { return r.json(); }).then(function(sigs) {
+    var el = document.getElementById('disc-signals-list');
+    if (!el) return;
+    if (priority) sigs = sigs.filter(function(s) { return s.priority === priority; });
+    if (sigs.length === 0) { el.innerHTML = '<div class="text-muted" style="font-size:0.74rem;padding:12px;">No signals yet — waiting for Discord alpha...</div>'; return; }
+    el.innerHTML = sigs.map(function(s) {
+      var pc = _discPriorityColors[s.priority] || 'var(--text-muted)';
+      var dirColor = s.direction === 'LONG' ? 'var(--success)' : s.direction === 'SHORT' ? 'var(--error)' : 'var(--text-muted)';
+      var prices = '';
+      if (s.entry_price) prices += 'Entry: $' + Number(s.entry_price).toFixed(4) + ' ';
+      if (s.stop_loss) prices += 'SL: $' + Number(s.stop_loss).toFixed(4) + ' ';
+      if (s.take_profit) prices += 'TP: $' + Number(s.take_profit).toFixed(4);
+      return '<div style="padding:8px 0;border-bottom:1px solid var(--glass-border);">'
+        + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
+        + '<span style="font-size:0.56rem;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,0.06);color:' + pc + ';">' + (s.priority || '') + '</span>'
+        + '<span style="font-size:0.72rem;font-weight:700;color:var(--text-primary);">' + (s.ticker || '?') + '</span>'
+        + '<span style="font-size:0.66rem;font-weight:700;color:' + dirColor + ';">' + (s.direction || '?') + '</span>'
+        + '<span style="font-size:0.58rem;color:var(--text-muted);margin-left:auto;">' + (s.author || '') + ' in #' + (s.channel_name || '') + '</span>'
+        + '</div>'
+        + (prices ? '<div style="font-size:0.62rem;color:var(--text-secondary);font-family:var(--font-mono);margin-bottom:3px;">' + prices + '</div>' : '')
+        + (s.strategy ? '<div style="font-size:0.62rem;color:var(--agent-atlas);">Strategy: ' + s.strategy + '</div>' : '')
+        + (s.approach ? '<div style="font-size:0.62rem;color:var(--text-muted);font-style:italic;margin-top:2px;">' + s.approach + '</div>' : '')
+        + '<div style="display:flex;gap:4px;margin-top:3px;">'
+        + (s.consumers ? JSON.parse(s.consumers).map(function(c) {
+            return '<span style="font-size:0.5rem;padding:1px 4px;border-radius:2px;background:rgba(255,255,255,0.06);color:' + (_discAgentColors[c] || 'var(--text-muted)') + ';">' + c + '</span>';
+          }).join('') : '')
+        + '</div>'
+        + '</div>';
+    }).join('');
+  }).catch(function(e) { console.error('discord signals:', e); });
+}
+
+function discordRefreshLeaderboard() {
+  fetch('/api/discord/leaderboard').then(function(r) { return r.json(); }).then(function(traders) {
+    var el = document.getElementById('disc-leaderboard');
+    if (!el) return;
+    if (traders.length === 0) { el.innerHTML = '<div class="text-muted" style="font-size:0.74rem;padding:12px;">No trader data yet — calls will be scored after 24h...</div>'; return; }
+    var html = '<table class="data-table" style="width:100%;font-size:0.68rem;">'
+      + '<thead><tr><th>#</th><th>Trader</th><th>Calls</th><th>W</th><th>L</th><th>WR%</th><th>Avg P&L</th></tr></thead><tbody>';
+    traders.forEach(function(t, i) {
+      var wrColor = (t.win_rate || 0) >= 60 ? 'var(--success)' : (t.win_rate || 0) >= 40 ? 'var(--warning)' : 'var(--error)';
+      var pnlColor = (t.avg_pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)';
+      var medal = i === 0 ? ' style="color:#FFD700;font-weight:800;"' : i === 1 ? ' style="color:#C0C0C0;font-weight:700;"' : i === 2 ? ' style="color:#CD7F32;font-weight:700;"' : '';
+      html += '<tr>'
+        + '<td' + medal + '>' + (i + 1) + '</td>'
+        + '<td style="font-weight:600;">' + t.author + '</td>'
+        + '<td>' + t.total_calls + '</td>'
+        + '<td style="color:var(--success);">' + (t.wins || 0) + '</td>'
+        + '<td style="color:var(--error);">' + (t.losses || 0) + '</td>'
+        + '<td style="color:' + wrColor + ';font-weight:700;">' + (t.win_rate != null ? t.win_rate.toFixed(1) + '%' : '--') + '</td>'
+        + '<td style="color:' + pnlColor + ';">' + (t.avg_pnl != null ? (t.avg_pnl >= 0 ? '+' : '') + t.avg_pnl.toFixed(1) + '%' : '--') + '</td>'
+        + '</tr>';
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  }).catch(function(e) { console.error('discord leaderboard:', e); });
+}
+
+function discordRefreshDiscussions() {
+  var filter = document.getElementById('disc-agent-filter');
+  var agent = filter ? filter.value : '';
+  var url = '/api/discord/discussions?limit=30';
+  if (agent) url += '&agent=' + agent;
+  fetch(url).then(function(r) { return r.json(); }).then(function(discs) {
+    var el = document.getElementById('disc-discussions');
+    if (!el) return;
+    if (discs.length === 0) { el.innerHTML = '<div class="text-muted" style="font-size:0.74rem;padding:12px;">No agent discussions yet — agents will react when signals arrive...</div>'; return; }
+    el.innerHTML = discs.map(function(d) {
+      var ac = _discAgentColors[d.agent] || 'var(--text-muted)';
+      return '<div style="padding:8px 0;border-bottom:1px solid var(--glass-border);">'
+        + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
+        + '<span style="font-size:0.6rem;font-weight:800;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.06);color:' + ac + ';text-transform:uppercase;">' + d.agent + '</span>'
+        + (d.ticker ? '<span style="font-size:0.66rem;font-weight:700;color:var(--text-primary);">' + d.ticker + '</span>' : '')
+        + (d.direction ? '<span style="font-size:0.62rem;color:' + (d.direction === 'LONG' ? 'var(--success)' : 'var(--error)') + ';">' + d.direction + '</span>' : '')
+        + '<span style="font-size:0.54rem;color:var(--text-muted);margin-left:auto;">' + (d.author ? d.author + ' in #' + (d.channel_name || '') : '') + '</span>'
+        + '</div>'
+        + '<div style="font-size:0.68rem;color:var(--text-secondary);line-height:1.4;">' + (d.reaction || '') + '</div>'
+        + (d.action_taken ? '<div style="font-size:0.58rem;color:var(--agent-atlas);margin-top:3px;">Action: ' + d.action_taken + '</div>' : '')
+        + '</div>';
+    }).join('');
+  }).catch(function(e) { console.error('discord discussions:', e); });
+}
+
+function discordRefreshFeed() {
+  fetch('/api/discord/feed?limit=30').then(function(r) { return r.json(); }).then(function(msgs) {
+    var el = document.getElementById('disc-raw-feed');
+    if (!el) return;
+    if (msgs.length === 0) { el.innerHTML = '<div class="text-muted" style="font-size:0.74rem;padding:12px;">No messages scraped yet...</div>'; return; }
+    el.innerHTML = msgs.map(function(m) {
+      var pc = _discPriorityColors[m.priority] || 'var(--text-muted)';
+      var content = m.content || '';
+      if (content.length > 200) content = content.substring(0, 200) + '...';
+      return '<div style="padding:6px 0;border-bottom:1px solid var(--glass-border);font-size:0.66rem;">'
+        + '<div style="display:flex;align-items:center;gap:6px;">'
+        + '<span style="font-weight:700;color:#5865F2;">#' + m.channel_name + '</span>'
+        + '<span style="font-weight:600;color:var(--text-primary);">' + m.author + '</span>'
+        + (m.has_image ? '<span style="font-size:0.54rem;padding:1px 4px;border-radius:2px;background:rgba(88,101,242,0.15);color:#5865F2;">IMG</span>' : '')
+        + '<span style="color:var(--text-muted);margin-left:auto;font-size:0.56rem;">' + (m.created_at || '').substring(0, 19) + '</span>'
+        + '</div>'
+        + (content ? '<div style="color:var(--text-secondary);margin-top:2px;">' + discEscape(content) + '</div>' : '')
+        + '</div>';
+    }).join('');
+  }).catch(function(e) { console.error('discord feed:', e); });
+}
+
+function discEscape(str) {
+  var div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+</script>

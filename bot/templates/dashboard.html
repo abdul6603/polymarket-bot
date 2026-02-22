@@ -38,6 +38,9 @@
   <button class="sidebar-btn" data-tab="oracle" onclick="switchTab('oracle')" title="Oracle">
     <span class="sidebar-icon" style="background:var(--agent-oracle);">OR</span><span class="sidebar-label">Oracle $</span>
   </button>
+  <button class="sidebar-btn" data-tab="discord" onclick="switchTab('discord')" title="Discord Intel">
+    <span class="sidebar-icon" style="background:#5865F2;">DI</span><span class="sidebar-label">Discord</span>
+  </button>
   <div class="sidebar-divider"></div>
   <div class="sidebar-section-label">CONTENT</div>
   <button class="sidebar-btn" data-tab="soren" onclick="switchTab('soren')" title="Soren">
@@ -97,6 +100,7 @@
   {% include 'tabs/quant.html' %}
   {% include 'tabs/odin.html' %}
   {% include 'tabs/oracle.html' %}
+  {% include 'tabs/discord.html' %}
   {% include 'tabs/system.html' %}
   {% include 'tabs/intelligence.html' %}
   {% include 'tabs/chat.html' %}

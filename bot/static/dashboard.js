@@ -4208,6 +4208,8 @@ async function refresh() {
       loadOdinTab();
     } else if (currentTab === 'oracle') {
       oracleRefresh();
+    } else if (currentTab === 'discord') {
+      if (typeof discordRefresh === 'function') discordRefresh();
     } else if (currentTab === 'intelligence') {
       if (typeof refreshIntelligence === 'function') refreshIntelligence();
     } else if (currentTab === 'system') {
