@@ -153,9 +153,9 @@ def generate_briefing(opportunities: list[dict], cycle: int = 0) -> dict:
     """
     DATA_DIR.mkdir(exist_ok=True)
 
-    # Sort by edge descending, take top 10
+    # Sort by edge descending, take top 20
     sorted_opps = sorted(opportunities, key=lambda o: abs(o.get("edge", 0)), reverse=True)
-    top_markets = sorted_opps[:10]
+    top_markets = sorted_opps[:20]
 
     markets = []
     for priority, opp in enumerate(top_markets, 1):

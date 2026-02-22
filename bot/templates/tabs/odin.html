@@ -306,10 +306,12 @@ function odinRefresh() {
     var cfgEl = document.getElementById('odin-config');
     if (cfgEl && d.config) {
       var c = d.config;
-      cfgEl.innerHTML = 'Risk: ' + (c.risk_cap || '1R') + ' ($' + (c.risk_per_trade || 150) + ')'
+      cfgEl.innerHTML = 'Exchange: ' + (c.exchange || 'Hyperliquid') + ' (' + (c.hl_pairs || 0) + ' pairs)'
+        + ' | Risk: ' + (c.risk_cap || '1R') + ' ($' + (c.risk_per_trade || 150) + ')'
         + ' | R:R: ' + (c.target_rr || 2) + ':1'
         + ' | Max pos: ' + (c.max_positions || 2)
         + ' | CoinGlass: ' + (c.coinglass ? 'ON' : 'OFF')
+        + ' | Priority: Top ' + (c.priority_coins || 8)
         + ' | Cycle: ' + (c.cycle_seconds || 300) + 's'
         + ' | Skills: ' + (d.skill_count || 13);
     }
