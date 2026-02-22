@@ -160,6 +160,10 @@ def api_overview():
     # Odin
     odin_status = read_fresh(Path.home() / "odin" / "data" / "odin_status.json", "~/odin/data/odin_status.json")
 
+    # Oracle
+    oracle_status = read_fresh(DATA_DIR / "oracle_status.json", "~/polymarket-bot/data/oracle_status.json")
+    oracle_acc = oracle_status.get("accuracy", {})
+
     overview_data = {
         "garves": {
             "running": garves_running,
@@ -201,6 +205,14 @@ def api_overview():
             "total_pnl": odin_status.get("total_pnl", 0),
             "balance": odin_status.get("balance", 1000),
             "drawdown_pct": odin_status.get("drawdown_pct", 0),
+        },
+        "oracle": {
+            "running": bool(oracle_status.get("last_run")),
+            "regime": oracle_status.get("regime", ""),
+            "trades_placed": oracle_status.get("trades_placed", 0),
+            "total_wagered": oracle_status.get("total_wagered", 0),
+            "win_rate": round(oracle_acc.get("overall_win_rate", 0), 1),
+            "dry_run": oracle_status.get("dry_run", True),
         },
     }
 
@@ -1088,10 +1100,50 @@ def api_intelligence():
     except Exception:
         result["odin"] = {"dimensions": {}, "overall": 0, "title": "The Regime Trader"}
 
+    # -- ORACLE -- The Weekly Crypto Oracle --
+    try:
+        oracle_intel = {"dimensions": {}, "overall": 0, "title": "The Weekly Crypto Oracle"}
+        oracle_sf = DATA_DIR / "oracle_status.json"
+        oracle_st = read_fresh(oracle_sf, "~/polymarket-bot/data/oracle_status.json")
+        oracle_acc = oracle_st.get("accuracy", {})
+        oracle_preds_total = oracle_acc.get("total_predictions", 0)
+        oracle_wr = oracle_acc.get("overall_win_rate", 0)
+        oracle_weeks = oracle_acc.get("weeks_tracked", 0)
+
+        # 1. Market Analysis — scanned + tradeable markets
+        scanned = oracle_st.get("markets_scanned", 0)
+        tradeable = oracle_st.get("tradeable_markets", 0)
+        analysis = min(100, 20 + scanned + tradeable * 2)
+        oracle_intel["dimensions"]["Market Analysis"] = analysis
+
+        # 2. Prediction Accuracy
+        pred_acc = min(100, int(oracle_wr * 1.2)) if oracle_preds_total > 0 else 15
+        oracle_intel["dimensions"]["Prediction Accuracy"] = pred_acc
+
+        # 3. Ensemble Quality — multiple models = higher quality
+        ensemble_conf = oracle_st.get("confidence", 0)
+        ensemble = min(100, 30 + int(ensemble_conf * 60))
+        oracle_intel["dimensions"]["Ensemble Quality"] = ensemble
+
+        # 4. Experience — weeks tracked + total predictions
+        experience = min(100, oracle_weeks * 8 + oracle_preds_total * 2 + 5)
+        oracle_intel["dimensions"]["Experience"] = experience
+
+        # 5. Capital Efficiency
+        total_pnl = oracle_acc.get("total_pnl", 0)
+        cap_eff = min(100, 40 + int(total_pnl / 5)) if total_pnl != 0 else 30
+        oracle_intel["dimensions"]["Capital Efficiency"] = max(15, cap_eff)
+
+        dims = list(oracle_intel["dimensions"].values())
+        oracle_intel["overall"] = int(sum(dims) / len(dims)) if dims else 0
+        result["oracle"] = oracle_intel
+    except Exception:
+        result["oracle"] = {"dimensions": {}, "overall": 0, "title": "The Weekly Crypto Oracle"}
+
     # -- TEAM -- Collective Intelligence --
     try:
         team = {"dimensions": {}, "overall": 0, "title": "Brotherhood"}
-        agents = ["garves", "soren", "atlas", "shelby", "lisa", "robotox", "thor", "hawk", "viper", "quant", "odin"]
+        agents = ["garves", "soren", "atlas", "shelby", "lisa", "robotox", "thor", "hawk", "viper", "quant", "odin", "oracle"]
         agent_scores = {a: result.get(a, {}).get("overall", 0) for a in agents}
 
         # 1. Collective Knowledge

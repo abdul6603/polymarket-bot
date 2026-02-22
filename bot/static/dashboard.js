@@ -2,10 +2,10 @@ var currentTab = 'overview';
 var chatLoaded = false;
 var _atlasBgCache = null;
 var _overviewCache = null;
-var AGENT_COLORS = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',sentinel:'#00ff44',thor:'#ff6600',hawk:'#FFD700',viper:'#00ff88',quant:'#00BFFF',odin:'#8B5CF6'};
-var AGENT_INITIALS = {garves:'GA',soren:'SO',shelby:'SH',atlas:'AT',lisa:'LI',sentinel:'RO',thor:'TH',hawk:'HK',viper:'VP',quant:'QT',odin:'OD'};
-var AGENT_ROLES = {garves:'Trading Bot',soren:'Content Creator',shelby:'Team Leader',atlas:'Data Scientist',lisa:'Social Media',sentinel:'Health Monitor',thor:'Coding Lieutenant',hawk:'Market Predator',viper:'Opportunity Hunter',quant:'Strategy Lab',odin:'Futures Trader'};
-var AGENT_NAMES = {garves:'Garves',soren:'Soren',shelby:'Shelby',atlas:'Atlas',lisa:'Lisa',sentinel:'Robotox',thor:'Thor',hawk:'Hawk',viper:'Viper',quant:'Quant',odin:'Odin'};
+var AGENT_COLORS = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',sentinel:'#00ff44',thor:'#ff6600',hawk:'#FFD700',viper:'#00ff88',quant:'#00BFFF',odin:'#8B5CF6',oracle:'#F59E0B'};
+var AGENT_INITIALS = {garves:'GA',soren:'SO',shelby:'SH',atlas:'AT',lisa:'LI',sentinel:'RO',thor:'TH',hawk:'HK',viper:'VP',quant:'QT',odin:'OD',oracle:'OR'};
+var AGENT_ROLES = {garves:'Trading Bot',soren:'Content Creator',shelby:'Team Leader',atlas:'Data Scientist',lisa:'Social Media',sentinel:'Health Monitor',thor:'Coding Lieutenant',hawk:'Market Predator',viper:'Opportunity Hunter',quant:'Strategy Lab',odin:'Futures Trader',oracle:'Weekly Crypto Oracle'};
+var AGENT_NAMES = {garves:'Garves',soren:'Soren',shelby:'Shelby',atlas:'Atlas',lisa:'Lisa',sentinel:'Robotox',thor:'Thor',hawk:'Hawk',viper:'Viper',quant:'Quant',odin:'Odin',oracle:'Oracle'};
 var AGENT_AVATARS = {soren:'/static/soren_profile.png'};
 
 function switchTab(tab) {
@@ -41,7 +41,7 @@ function renderAgentGrid(overview) {
   var g = overview.garves || {};
   var s = overview.soren || {};
   var sh = overview.shelby || {};
-  var brainAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',lisa:'lisa',sentinel:'robotox',thor:'thor',hawk:'hawk',viper:'viper',quant:'quant',odin:'odin'};
+  var brainAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',lisa:'lisa',sentinel:'robotox',thor:'thor',hawk:'hawk',viper:'viper',quant:'quant',odin:'odin',oracle:'oracle'};
   var cards = [
     {id:'garves', stats:[['Win Rate',(g.win_rate||0)+'%'],['Trades',g.total_trades||0],['Pending',g.pending||0]], online:g.running},
     {id:'soren', stats:[['Queue',s.queue_pending||0],['Posted',s.total_posted||0]], online:true},
@@ -53,7 +53,8 @@ function renderAgentGrid(overview) {
     {id:'hawk', stats:[['Win Rate',((overview.hawk||{}).win_rate||0)+'%'],['Open',(overview.hawk||{}).open_bets||0]], online:(overview.hawk||{}).running},
     {id:'viper', stats:[['Found',(overview.viper||{}).opportunities||0],['Pushed',(overview.viper||{}).pushed||0]], online:(overview.viper||{}).running},
     {id:'quant', stats:[['Best WR',((overview.quant||{}).best_win_rate||0)+'%'],['Combos',(overview.quant||{}).total_combos_tested||0]], online:(overview.quant||{}).running},
-    {id:'odin', stats:[['Mode',((overview.odin||{}).mode||'paper').toUpperCase()],['Open',(overview.odin||{}).open_positions||0],['P&L','$'+((overview.odin||{}).total_pnl||0).toFixed(2)]], online:(overview.odin||{}).running}
+    {id:'odin', stats:[['Mode',((overview.odin||{}).mode||'paper').toUpperCase()],['Open',(overview.odin||{}).open_positions||0],['P&L','$'+((overview.odin||{}).total_pnl||0).toFixed(2)]], online:(overview.odin||{}).running},
+    {id:'oracle', stats:[['Regime',((overview.oracle||{}).regime||'--').replace(/_/g,' ')],['Trades',(overview.oracle||{}).trades_placed||0],['WR',((overview.oracle||{}).win_rate||0)+'%']], online:(overview.oracle||{}).running}
   ];
   var html = '';
   for (var i = 0; i < cards.length; i++) {
@@ -4184,6 +4185,8 @@ async function refresh() {
       loadQuantSmartActions();
     } else if (currentTab === 'odin') {
       loadOdinTab();
+    } else if (currentTab === 'oracle') {
+      oracleRefresh();
     } else if (currentTab === 'intelligence') {
       if (typeof refreshIntelligence === 'function') refreshIntelligence();
     } else if (currentTab === 'system') {
