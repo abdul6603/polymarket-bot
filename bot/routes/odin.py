@@ -100,3 +100,24 @@ def api_odin_circuit_breaker():
         "daily_pnl": status.get("daily_pnl", 0),
         "weekly_pnl": status.get("weekly_pnl", 0),
     })
+
+
+@odin_bp.route("/api/odin/conviction")
+def api_odin_conviction():
+    """Last conviction breakdown."""
+    status = _load_status()
+    return jsonify(status.get("conviction") or {})
+
+
+@odin_bp.route("/api/odin/journal")
+def api_odin_journal():
+    """Trade journal stats."""
+    status = _load_status()
+    return jsonify(status.get("journal_stats") or {})
+
+
+@odin_bp.route("/api/odin/brotherhood")
+def api_odin_brotherhood():
+    """Brotherhood intelligence state."""
+    status = _load_status()
+    return jsonify(status.get("brotherhood") or {})

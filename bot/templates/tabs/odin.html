@@ -83,6 +83,24 @@
     </div>
   </div>
 
+  <!-- F2: Conviction Engine -->
+  <div class="collapse-section default-open">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="odin" style="margin-bottom:0;">Conviction Engine <span id="odin-conviction-badge" class="badge" style="font-size:0.56rem;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:8px;background:rgba(139,92,246,0.15);border:1px solid var(--agent-odin);color:var(--agent-odin);">--/100</span></h2>
+    </div>
+    <div class="collapse-body">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <span style="font-size:0.76rem;font-weight:700;color:var(--agent-odin);">Score: <span id="odin-conv-score">--</span>/100</span>
+        <span id="odin-conv-tier" class="badge" style="font-size:0.64rem;padding:2px 8px;border-radius:4px;background:rgba(139,92,246,0.1);color:var(--text-muted);">--</span>
+        <span style="font-size:0.72rem;color:var(--text-muted);">Risk mult: <span id="odin-conv-mult">--</span></span>
+        <span id="odin-conv-rails" class="text-muted" style="font-size:0.68rem;margin-left:auto;"></span>
+      </div>
+      <div id="odin-conviction-bars" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;">
+        <div class="text-muted" style="font-size:0.72rem;grid-column:span 2;">No conviction data yet</div>
+      </div>
+    </div>
+  </div>
+
   <!-- G: Open Positions -->
   <div class="collapse-section default-open">
     <div class="collapse-trigger">
@@ -116,6 +134,33 @@
         <thead><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Entry</th><th>Exit</th><th>P&amp;L</th><th>Reason</th><th>Hold</th></tr></thead>
         <tbody id="odin-trades-tbody"><tr><td colspan="8" class="text-muted">No trades yet</td></tr></tbody>
       </table>
+    </div>
+  </div>
+
+  <!-- I2: Journal & Brotherhood Intelligence -->
+  <div class="collapse-section">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="odin" style="margin-bottom:0;">Journal &amp; Brotherhood</h2>
+    </div>
+    <div class="collapse-body">
+      <div class="grid-6" style="margin-bottom:10px;">
+        <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-j-decisions">0</div><div class="stat-label">Decisions</div></div>
+        <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-j-resolved">0</div><div class="stat-label">Resolved</div></div>
+        <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-j-wr">--</div><div class="stat-label">Memory WR</div></div>
+        <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-j-patterns">0</div><div class="stat-label">Patterns</div></div>
+        <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-j-knowledge">0</div><div class="stat-label">Knowledge</div></div>
+        <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-j-dbsize">0 KB</div><div class="stat-label">DB Size</div></div>
+      </div>
+      <h3 class="section-title" style="font-size:0.68rem;margin-bottom:6px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;">Brotherhood Intel</h3>
+      <div class="grid-6" style="margin-bottom:10px;">
+        <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-b-garves-dir">--</div><div class="stat-label">Garves Dir</div></div>
+        <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-b-garves-wr">--</div><div class="stat-label">Garves WR</div></div>
+        <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-b-garves-streak">0</div><div class="stat-label">Garves Streak</div></div>
+        <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-b-anomaly">OFF</div><div class="stat-label">Anomaly</div></div>
+        <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-b-events">0</div><div class="stat-label">Events Proc</div></div>
+        <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-b-alert">OFF</div><div class="stat-label">Alert</div></div>
+      </div>
+      <div id="odin-top-patterns" class="text-muted" style="font-size:0.7rem;"></div>
     </div>
   </div>
 
@@ -279,6 +324,87 @@ function odinRefresh() {
       html += '</tr>';
     });
     tbody.innerHTML = html;
+  }).catch(function(){});
+
+  // Conviction engine
+  fetch('/api/odin/conviction').then(r => r.json()).then(function(c) {
+    if (!c || !c.active) return;
+    odinSetVal('odin-conv-score', c.total_score || 0);
+    odinSetVal('odin-conv-mult', (c.risk_multiplier || 0).toFixed(2));
+    var badge = document.getElementById('odin-conviction-badge');
+    if (badge) badge.textContent = (c.total_score || 0) + '/100';
+    var tierEl = document.getElementById('odin-conv-tier');
+    if (tierEl) {
+      tierEl.textContent = c.tier || '--';
+      var tierColors = {FULL:'var(--success)',THREE_QUARTER:'var(--success)',HALF:'var(--warning)',QUARTER:'var(--error)',NO_TRADE:'var(--error)'};
+      tierEl.style.color = tierColors[c.tier] || 'var(--text-muted)';
+      tierEl.style.borderColor = tierColors[c.tier] || 'var(--text-muted)';
+      tierEl.style.border = '1px solid ' + (tierColors[c.tier] || 'var(--text-muted)');
+    }
+    var railsEl = document.getElementById('odin-conv-rails');
+    if (railsEl) railsEl.textContent = (c.safety_adjustments || []).join(', ');
+    // Component bars
+    var barsEl = document.getElementById('odin-conviction-bars');
+    if (barsEl && c.components) {
+      var barsHtml = '';
+      var compOrder = ['regime_alignment','smc_quality','multi_tf_agreement','macro_support','funding_rate_edge','sentiment_alignment','volume_confirmation','journal_fitness','brother_alignment','risk_reward_quality'];
+      compOrder.forEach(function(key) {
+        var comp = c.components[key];
+        if (!comp) return;
+        var raw = comp.raw || 0;
+        var weighted = comp.weighted || 0;
+        var weight = comp.weight || 0;
+        var pct = Math.round(raw * 100);
+        var barColor = pct >= 70 ? 'var(--success)' : pct >= 40 ? 'var(--warning)' : 'var(--error)';
+        var label = key.replace(/_/g, ' ').replace(/\b\w/g, function(c){return c.toUpperCase();});
+        barsHtml += '<div style="padding:4px 6px;background:rgba(139,92,246,0.04);border-radius:4px;">';
+        barsHtml += '<div style="display:flex;justify-content:space-between;font-size:0.66rem;margin-bottom:2px;">';
+        barsHtml += '<span style="font-weight:600;">' + label + '</span>';
+        barsHtml += '<span style="color:' + barColor + ';">' + weighted.toFixed(1) + '/' + weight + '</span></div>';
+        barsHtml += '<div style="height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;">';
+        barsHtml += '<div style="width:' + pct + '%;height:100%;background:' + barColor + ';border-radius:2px;"></div></div>';
+        barsHtml += '<div style="font-size:0.58rem;color:var(--text-muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (comp.reason || '') + '</div>';
+        barsHtml += '</div>';
+      });
+      barsEl.innerHTML = barsHtml;
+    }
+  }).catch(function(){});
+
+  // Journal & Brotherhood
+  fetch('/api/odin/journal').then(r => r.json()).then(function(j) {
+    if (!j) return;
+    odinSetVal('odin-j-decisions', j.total_decisions || 0);
+    odinSetVal('odin-j-resolved', j.resolved_decisions || 0);
+    odinSetVal('odin-j-wr', (j.win_rate || 0).toFixed(1) + '%');
+    odinSetVal('odin-j-patterns', j.active_patterns || 0);
+    odinSetVal('odin-j-knowledge', j.total_knowledge || 0);
+    odinSetVal('odin-j-dbsize', (j.db_size_kb || 0).toFixed(0) + ' KB');
+    var patternsEl = document.getElementById('odin-top-patterns');
+    if (patternsEl && j.top_patterns && j.top_patterns.length) {
+      var html = '<strong style="font-size:0.66rem;">Learned Patterns:</strong> ';
+      j.top_patterns.forEach(function(p) {
+        html += '<span style="margin-right:8px;">' + (p.combo || '') + ' (' + ((p.confidence||0)*100).toFixed(0) + '%)</span>';
+      });
+      patternsEl.innerHTML = html;
+    }
+  }).catch(function(){});
+
+  fetch('/api/odin/brotherhood').then(r => r.json()).then(function(b) {
+    if (!b) return;
+    odinSetVal('odin-b-garves-dir', b.garves_direction || '--');
+    odinSetVal('odin-b-garves-wr', b.garves_wr != null ? b.garves_wr + '%' : '--');
+    odinSetVal('odin-b-garves-streak', b.garves_streak || 0);
+    var anomalyEl = document.getElementById('odin-b-anomaly');
+    if (anomalyEl) {
+      anomalyEl.textContent = b.anomaly_active ? 'ACTIVE' : 'OFF';
+      anomalyEl.style.color = b.anomaly_active ? 'var(--error)' : 'var(--success)';
+    }
+    odinSetVal('odin-b-events', b.events_processed_total || 0);
+    var alertEl = document.getElementById('odin-b-alert');
+    if (alertEl) {
+      alertEl.textContent = b.robotox_alert ? 'ACTIVE' : 'OFF';
+      alertEl.style.color = b.robotox_alert ? 'var(--error)' : 'var(--success)';
+    }
   }).catch(function(){});
 }
 
