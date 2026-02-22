@@ -5,7 +5,7 @@
   <div id="intel-odin" class="intel-meter" style="margin-bottom:12px;"></div>
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
     <span class="badge" style="font-weight:700;padding:4px 12px;font-size:0.8rem;background:rgba(139,92,246,0.15);border:1px solid var(--agent-odin);"><span id="odin-mode-label" style="color:var(--agent-odin);">PAPER</span></span>
-    <span class="text-muted" style="font-size:0.76rem;">BTC/ETH Futures — SMC + Macro Confluence (Bitunix)</span>
+    <span class="text-muted" style="font-size:0.76rem;">Top 100 Coins — Regime-Adaptive Trader (CoinGlass + SMC)</span>
     <span class="text-muted" style="font-size:0.68rem;font-style:italic;margin-left:auto;">"I see the structure. I see the trap. I trade the imbalance."</span>
   </div>
 
@@ -32,16 +32,29 @@
     </div>
   </div>
 
-  <!-- D: Macro Regime Bar -->
+  <!-- D: CoinGlass Regime -->
   <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-odin);">
-    <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Macro Regime</h3>
+    <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">CoinGlass Regime</h3>
     <div class="grid-6" style="margin-bottom:0;">
-      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-macro-regime" style="font-size:0.9rem;color:var(--agent-odin);">--</div><div class="stat-label">Regime</div></div>
-      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-macro-score">0</div><div class="stat-label">Score</div></div>
-      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-spy-price">--</div><div class="stat-label">SPY</div></div>
-      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-vix">--</div><div class="stat-label">VIX</div></div>
-      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-btc-d">--</div><div class="stat-label">BTC.D</div></div>
-      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-usdt-d">--</div><div class="stat-label">USDT.D</div></div>
+      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-regime" style="font-size:0.9rem;color:var(--agent-odin);">--</div><div class="stat-label">Regime</div></div>
+      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-regime-score">50</div><div class="stat-label">Score (0-100)</div></div>
+      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-regime-bias">--</div><div class="stat-label">Direction</div></div>
+      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-regime-opps">0</div><div class="stat-label">Opportunities</div></div>
+      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-top-short">--</div><div class="stat-label">Top Short</div></div>
+      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-top-long">--</div><div class="stat-label">Top Long</div></div>
+    </div>
+  </div>
+
+  <!-- D2: Opportunities -->
+  <div class="collapse-section default-open">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="odin" style="margin-bottom:0;">Regime Opportunities</h2>
+    </div>
+    <div class="collapse-body">
+      <table class="data-table">
+        <thead><tr><th>Symbol</th><th>Direction</th><th>Score</th><th>Reasons</th></tr></thead>
+        <tbody id="odin-opps-tbody"><tr><td colspan="4" class="text-muted">No opportunities detected</td></tr></tbody>
+      </table>
     </div>
   </div>
 
@@ -155,14 +168,40 @@ function odinRefresh() {
     odinPnl('odin-weekly-pnl', d.weekly_pnl || 0);
     odinSetVal('odin-peak-balance', '$' + (d.peak_balance || 1000).toFixed(2));
 
-    // Macro
-    var macro = d.macro || {};
-    odinSetVal('odin-macro-regime', macro.regime || '--');
-    odinSetVal('odin-macro-score', macro.score || 0);
-    odinSetVal('odin-spy-price', macro.spy ? '$' + macro.spy.toFixed(0) : '--');
-    odinSetVal('odin-vix', macro.vix ? macro.vix.toFixed(1) : '--');
-    odinSetVal('odin-btc-d', macro.btc_d ? macro.btc_d.toFixed(1) + '%' : '--');
-    odinSetVal('odin-usdt-d', macro.usdt_d ? macro.usdt_d.toFixed(2) + '%' : '--');
+    // CoinGlass Regime
+    var regime = d.regime || {};
+    odinSetVal('odin-regime', (regime.regime || '--').toUpperCase());
+    odinSetVal('odin-regime-score', regime.global_score || 50);
+    var biasEl = document.getElementById('odin-regime-bias');
+    if (biasEl) {
+      var bias = regime.direction_bias || 'NONE';
+      biasEl.textContent = bias;
+      biasEl.style.color = bias === 'SHORT' ? 'var(--error)' : bias === 'LONG' ? 'var(--success)' : 'var(--text-muted)';
+    }
+    odinSetVal('odin-regime-opps', regime.opportunities || 0);
+    odinSetVal('odin-top-short', regime.top_short || '--');
+    odinSetVal('odin-top-long', regime.top_long || '--');
+
+    // Opportunities table
+    var opps = d.opportunities || [];
+    var oppsTbody = document.getElementById('odin-opps-tbody');
+    if (oppsTbody) {
+      if (opps.length === 0) {
+        oppsTbody.innerHTML = '<tr><td colspan="4" class="text-muted">No opportunities detected</td></tr>';
+      } else {
+        var oppsHtml = '';
+        opps.forEach(function(o) {
+          var dirColor = o.direction === 'SHORT' ? 'var(--error)' : 'var(--success)';
+          oppsHtml += '<tr>';
+          oppsHtml += '<td style="font-weight:600;">' + (o.symbol || '') + '</td>';
+          oppsHtml += '<td style="color:' + dirColor + ';font-weight:600;">' + (o.direction || '') + '</td>';
+          oppsHtml += '<td>' + (o.score || 0) + '</td>';
+          oppsHtml += '<td class="text-muted" style="font-size:0.7rem;">' + (o.reasons || []).join(', ') + '</td>';
+          oppsHtml += '</tr>';
+        });
+        oppsTbody.innerHTML = oppsHtml;
+      }
+    }
 
     // Positions
     var positions = d.paper_positions || [];
@@ -208,11 +247,11 @@ function odinRefresh() {
     var cfgEl = document.getElementById('odin-config');
     if (cfgEl && d.config) {
       var c = d.config;
-      cfgEl.innerHTML = 'TF: ' + c.htf + '/' + c.mtf + '/' + c.ltf
-        + ' | Leverage: ' + c.leverage + 'x'
-        + ' | Risk/trade: ' + c.risk_per_trade + '%'
-        + ' | Kelly: ' + c.kelly_fraction
-        + ' | Cycle: ' + c.cycle_seconds + 's';
+      cfgEl.innerHTML = 'Risk/trade: $' + (c.risk_per_trade || 150)
+        + ' | Target R:R: ' + (c.target_rr || 2) + ':1'
+        + ' | Max positions: ' + (c.max_positions || 2)
+        + ' | CoinGlass: ' + (c.coinglass ? 'ON' : 'OFF')
+        + ' | Cycle: ' + (c.cycle_seconds || 300) + 's';
     }
 
     // Intel meter
