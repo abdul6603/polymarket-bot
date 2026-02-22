@@ -90,15 +90,23 @@ class SnipeEngine:
         self.enabled = getattr(cfg, "snipe_enabled", True)
 
     def _effective_threshold(self) -> float:
-        """Dynamic threshold based on market session.
+        """Dynamic threshold based on CME futures session.
 
-        Weekend before 6PM ET: low vol, use 0.070%
-        Weekend after 6PM ET / Weekdays: futures active, use 0.080%
+        Futures closed (weekend): Friday 4:30PM ET → Sunday 6:00PM ET → 0.070%
+        Futures open: Sunday 6:00PM ET → Friday 4:30PM ET → 0.080%
         """
         now = datetime.now(ET)
-        day = now.weekday()  # 0=Mon, 6=Sun
-        if day >= 5 and now.hour < 18:  # Weekend before 6PM ET
+        day = now.weekday()  # 0=Mon, 4=Fri, 5=Sat, 6=Sun
+        hour_min = now.hour * 100 + now.minute  # e.g. 1630 = 4:30PM
+
+        # Weekend = futures closed
+        if day == 5:  # Saturday — always weekend
             return WEEKEND_PREFUTURES_THRESHOLD
+        if day == 4 and hour_min >= 1630:  # Friday after 4:30PM
+            return WEEKEND_PREFUTURES_THRESHOLD
+        if day == 6 and hour_min < 1800:  # Sunday before 6PM
+            return WEEKEND_PREFUTURES_THRESHOLD
+
         return FUTURES_THRESHOLD
 
     def _get_signal(self, asset: str) -> DeltaSignal:
