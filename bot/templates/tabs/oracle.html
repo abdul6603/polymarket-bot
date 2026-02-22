@@ -26,6 +26,7 @@
     <div class="stat-card" data-accent="oracle">
       <div class="stat-value" id="oracle-wagered" style="font-size:1.4rem;">$0</div>
       <div class="stat-label">Capital Deployed</div>
+      <div id="oracle-loss-cap-bar" style="margin-top:6px;"></div>
     </div>
     <div class="stat-card" data-accent="oracle">
       <div class="stat-value" id="oracle-ev" style="font-size:1.4rem;">$0.00</div>
@@ -260,6 +261,8 @@ function oracleRefresh() {
     oracleSetVal('oracle-bankroll', '$150');
     oracleSetVal('oracle-wagered', '$' + (d.total_wagered || 0).toFixed(0));
     oraclePnl('oracle-ev', d.total_expected_value || 0);
+    var oracleTotalPnl = (d.accuracy || {}).total_pnl || 0;
+    if (typeof renderLossCapBar === 'function') renderLossCapBar('oracle-loss-cap-bar', oracleTotalPnl, 75, 'Weekly');
 
     // Market regime
     var regime = (d.regime || '--').replace(/_/g, ' ');

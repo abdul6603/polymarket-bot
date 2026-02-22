@@ -8,6 +8,20 @@ var AGENT_ROLES = {garves:'Trading Bot',soren:'Content Creator',shelby:'Team Lea
 var AGENT_NAMES = {garves:'Garves',soren:'Soren',shelby:'Shelby',atlas:'Atlas',lisa:'Lisa',sentinel:'Robotox',thor:'Thor',hawk:'Hawk',viper:'Viper',quant:'Quant',odin:'Odin',oracle:'Oracle'};
 var AGENT_AVATARS = {soren:'/static/soren_profile.png'};
 
+function renderLossCapBar(containerId, dailyPnl, cap, period) {
+  var el = document.getElementById(containerId);
+  if (!el) return;
+  var loss = Math.max(0, -dailyPnl);
+  var pct = cap > 0 ? Math.min(100, (loss / cap) * 100) : 0;
+  var color = pct >= 100 ? 'var(--error)' : pct >= 70 ? 'var(--warning)' : 'var(--success)';
+  var label = pct >= 100 ? 'CAP HIT' : '$' + loss.toFixed(0) + ' / $' + cap.toFixed(0);
+  var per = period || 'Daily';
+  el.innerHTML = '<div style="font-size:0.58rem;color:var(--text-muted);margin-bottom:2px;">' + per + ' Loss Cap</div>'
+    + '<div style="background:rgba(255,255,255,0.06);border-radius:3px;height:6px;overflow:hidden;">'
+    + '<div style="width:' + pct.toFixed(1) + '%;height:100%;background:' + color + ';border-radius:3px;transition:width 0.5s;"></div></div>'
+    + '<div style="font-size:0.56rem;margin-top:1px;color:' + color + ';font-weight:600;">' + label + '</div>';
+}
+
 function switchTab(tab) {
   currentTab = tab;
   var tabs = document.querySelectorAll('.tab-content');
@@ -4077,6 +4091,13 @@ async function refresh() {
       var resp = await fetch('/api/trades/live');
       var data = await resp.json();
       renderLiveStats(data);
+      // Daily PnL for loss cap bar
+      var _today = new Date().toISOString().slice(0,10);
+      var _gDailyPnl = 0;
+      (data.recent_trades || []).forEach(function(t) {
+        if ((t.time || '').slice(0,10) === _today && t.est_pnl) _gDailyPnl += t.est_pnl;
+      });
+      renderLossCapBar('garves-loss-cap-bar', _gDailyPnl, 50);
       // Wire charts — PnL equity curve + Win Rate donut
       var _garvesResolved = data.recent_trades || [];
       renderPnLChart('garves-pnl-chart', _garvesResolved.slice().reverse().map(function(t){ return {pnl: t.est_pnl || 0, date: t.time}; }), 'Garves');
@@ -6737,6 +6758,7 @@ async function loadHawkTab() {
     if (effEl) { effEl.style.color = effBr >= 200 ? 'var(--success)' : '#FFD700'; }
     animateCount('hawk-daily-pnl', Math.abs(s.daily_pnl || 0), 800, (s.daily_pnl || 0) >= 0 ? '$' : '-$');
     document.getElementById('hawk-daily-pnl').style.color = (s.daily_pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)';
+    renderLossCapBar('hawk-loss-cap-bar', s.daily_pnl || 0, 30);
     // Wire Win Rate donut + streak
     renderWinRateDonut('hawk-wr-donut', s.wins || 0, s.losses || 0);
     var streakEl = document.getElementById('hawk-streak-num');
@@ -9275,6 +9297,7 @@ async function loadOdinTab() {
     var dp = d.daily_pnl || 0;
     dpEl.textContent = (dp >= 0 ? '+$' : '-$') + Math.abs(dp).toFixed(2);
     dpEl.style.color = dp >= 0 ? 'var(--success)' : 'var(--error)';
+    renderLossCapBar('odin-loss-cap-bar', dp, 30);
   }
   var wpEl = document.getElementById('odin-weekly-pnl');
   if (wpEl) {
