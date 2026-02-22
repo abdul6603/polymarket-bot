@@ -29,12 +29,17 @@ log = logging.getLogger("garves.snipe")
 
 ET = ZoneInfo("America/New_York")
 
-# Tick interval in seconds — fast enough for 10+ readings per window
-SNIPE_TICK_INTERVAL = 15
+# Tick interval in seconds — 8s gives ~22 ticks per 180s snipe zone
+SNIPE_TICK_INTERVAL = 8
 
 # Weekend threshold is lower because volatility drops
 WEEKEND_THRESHOLD = 0.0007   # 0.070%
 WEEKDAY_THRESHOLD = 0.00077  # 0.077%
+
+# Minimum CLOB implied price to enter — don't buy tokens the market says are <40% likely.
+# A $0.09 DOWN token = market says 9% chance of DOWN. That's fighting smart money.
+# Whale enters near $0.45-$0.55 (50/50 odds). Floor at $0.40 keeps us honest.
+MIN_IMPLIED_PRICE = 0.40
 
 
 class SnipeState(Enum):
@@ -231,6 +236,14 @@ class SnipeEngine:
             implied = self._fetch_implied_price(window.market_id, token_id)
             if not implied:
                 log.info("[SNIPE] %s: no implied price, trying next", window.asset.upper())
+                continue
+
+            # Price floor: don't buy tokens the market prices as unlikely
+            if implied < MIN_IMPLIED_PRICE:
+                log.info(
+                    "[SNIPE] %s: CLOB $%.3f < floor $%.2f (market says <%d%% likely), skipping",
+                    window.asset.upper(), implied, MIN_IMPLIED_PRICE, int(MIN_IMPLIED_PRICE * 100),
+                )
                 continue
 
             max_cap = WAVES[0][2]
