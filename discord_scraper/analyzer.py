@@ -21,8 +21,11 @@ VISION_COUNT_FILE = Path.home() / "polymarket-bot" / "data" / "discord_vision_co
 
 SIGNAL_SYSTEM_PROMPT = """You are a trading signal parser. Extract structured data from Discord trading messages.
 
+IMPORTANT: Messages can be either NEW TRADE SIGNALS or TRADE RESULTS/UPDATES.
+
 Return ONLY valid JSON with these fields:
 {
+  "msg_type": "signal" or "result",
   "ticker": "BTC" or null,
   "direction": "LONG" or "SHORT" or null,
   "entry_price": 50000.0 or null,
@@ -31,16 +34,28 @@ Return ONLY valid JSON with these fields:
   "strategy": "breakout" or "support_bounce" or "trend_follow" or "reversal" or "scalp" or "swing" or null,
   "approach": "Brief description of the trader's reasoning/method" or null,
   "confidence": 0.0-1.0 based on how clear the signal is,
-  "is_trade_signal": true/false
+  "is_trade_signal": true,
+  "result_outcome": "win" or "loss" or null,
+  "result_r": 2.0 or -1.0 or null,
+  "result_note": "tp1 hit" or "sl hit" or "closed" or null
 }
 
-Rules:
-- If the message is NOT a trade signal (just chat, meme, etc), set is_trade_signal=false
-- Extract exact prices if mentioned (entry, SL, TP)
-- Infer direction from context: "long", "buy", "bullish" = LONG; "short", "sell", "bearish" = SHORT
-- Common crypto tickers: BTC, ETH, SOL, XRP, DOGE, IOTA, AVAX, LINK, etc
+Rules for NEW SIGNALS (msg_type="signal"):
+- Has entry price, SL, TP, direction — it's a new trade call
 - "cmp" = current market price (entry at market)
-- Describe the trader's approach in 1-2 sentences
+- Infer direction: "long", "buy", "bullish" = LONG; "short", "sell", "bearish" = SHORT
+
+Rules for TRADE RESULTS (msg_type="result"):
+- Messages like "sl hit -1R", "tp1 hit +2R", "take tp1 75%", "fail", "closed here", "stopped out"
+- "+2R", "+1R" = win with R-multiple. "-1R", "-0.5R" = loss
+- "fail", "sl hit", "stopped out" = loss
+- "tp hit", "take profit", "closed in profit" = win
+- Extract the R value if mentioned (e.g. "-1R" → result_r=-1.0, "+2R" → result_r=2.0)
+- Set result_outcome to "win" or "loss"
+
+General rules:
+- If the message is NOT trade-related (just chat, meme, etc), set is_trade_signal=false
+- Common crypto tickers: BTC, ETH, SOL, XRP, DOGE, IOTA, AVAX, LINK, etc
 """
 
 VISION_SYSTEM_PROMPT = """You are a trading chart analyzer. A Discord trader posted this chart image with a message.
@@ -180,6 +195,32 @@ def _fallback_parse(content: str) -> dict | None:
 
     text = content.upper()
 
+    # Detect trade RESULT first (sl hit, tp hit, fail, +/-R)
+    r_match = re.search(r"([+-]?\d*\.?\d+)\s*R\b", content, re.I)
+    result_keywords_loss = ["SL HIT", "STOP LOSS HIT", "STOPPED OUT", "FAIL", "LOSS", "LIQUIDATED"]
+    result_keywords_win = ["TP HIT", "TP1 HIT", "TP2 HIT", "TAKE TP", "TAKE PROFIT", "TARGET HIT", "CLOSED IN PROFIT"]
+
+    is_result = False
+    result_outcome = None
+    result_r = None
+    result_note = None
+
+    if r_match:
+        is_result = True
+        result_r = float(r_match.group(1))
+        result_outcome = "win" if result_r > 0 else "loss"
+        result_note = f"{r_match.group(0).strip()}"
+    elif any(kw in text for kw in result_keywords_loss):
+        is_result = True
+        result_outcome = "loss"
+        result_r = -1.0
+        result_note = "sl hit"
+    elif any(kw in text for kw in result_keywords_win):
+        is_result = True
+        result_outcome = "win"
+        result_r = 1.0
+        result_note = "tp hit"
+
     # Detect direction
     direction = None
     if any(w in text for w in ["LONG", "BUY", "BULLISH", "CALLS"]):
@@ -213,17 +254,21 @@ def _fallback_parse(content: str) -> dict | None:
     if tp_match:
         tp = float(tp_match.group(1))
 
-    if not ticker and not direction:
+    if not ticker and not direction and not is_result:
         return None
 
     return {
+        "msg_type": "result" if is_result else "signal",
         "ticker": ticker,
         "direction": direction,
-        "entry_price": entry,
+        "entry_price": entry if not is_result else None,
         "stop_loss": sl,
         "take_profit": tp,
         "strategy": None,
         "approach": "Parsed from text (LLM unavailable)",
         "confidence": 0.4,
         "is_trade_signal": True,
+        "result_outcome": result_outcome,
+        "result_r": result_r,
+        "result_note": result_note,
     }

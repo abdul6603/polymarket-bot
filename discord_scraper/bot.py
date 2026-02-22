@@ -108,6 +108,44 @@ def _publish_signal(signal_data: dict, channel_cfg: dict, author: str, msg_id: i
         log.warning("[DISCORD] Event bus not available")
 
 
+def _resolve_trader_call(author: str, ticker: str | None, outcome: str, r_value: float | None, note: str) -> None:
+    """Resolve a trader's most recent pending call based on their posted result."""
+    import sqlite3
+    conn = sqlite3.connect(str(db.DB_PATH))
+    conn.row_factory = sqlite3.Row
+
+    # Find most recent pending call from this author, optionally matching ticker
+    if ticker:
+        row = conn.execute(
+            """SELECT id FROM trader_scores
+               WHERE author = ? AND outcome = 'pending' AND ticker = ?
+               ORDER BY id DESC LIMIT 1""",
+            (author, ticker),
+        ).fetchone()
+    else:
+        row = conn.execute(
+            """SELECT id FROM trader_scores
+               WHERE author = ? AND outcome = 'pending'
+               ORDER BY id DESC LIMIT 1""",
+            (author,),
+        ).fetchone()
+
+    if row:
+        pnl_pct = (r_value or 0) * 100 if r_value else None
+        conn.execute(
+            """UPDATE trader_scores SET outcome = ?, pnl_pct = ?, resolved_at = ?
+               WHERE id = ?""",
+            (outcome, pnl_pct, datetime.now(ET).isoformat(), row["id"]),
+        )
+        conn.commit()
+        log.info("[DISCORD] Resolved call #%d for %s: %s (R=%s, note=%s)",
+                 row["id"], author, outcome, r_value, note)
+    else:
+        log.debug("[DISCORD] No pending call found for %s/%s to resolve", author, ticker)
+
+    conn.close()
+
+
 def _generate_agent_discussion(signal_data: dict, channel_cfg: dict, author: str, signal_id: int, msg_id: int) -> None:
     """Generate agent reactions/discussion about a signal."""
     try:
@@ -197,37 +235,52 @@ def process_message(msg: dict, channel_id: int) -> None:
         signal_data = analyzer.analyze_text_message(content, author, channel_cfg["name"])
 
     if signal_data:
-        # Save signal
-        signal_id = db.save_signal(
-            message_id=row_id,
-            ticker=signal_data.get("ticker"),
-            direction=signal_data.get("direction"),
-            entry_price=signal_data.get("entry_price"),
-            stop_loss=signal_data.get("stop_loss"),
-            take_profit=signal_data.get("take_profit"),
-            strategy=signal_data.get("strategy"),
-            approach=signal_data.get("approach"),
-            confidence=signal_data.get("confidence"),
-            raw_analysis=json.dumps(signal_data),
-            priority=channel_cfg["priority"],
-            consumers=channel_cfg["consumers"],
-        )
+        msg_type = signal_data.get("msg_type", "signal")
 
-        # Track trader call for leaderboard
-        db.save_trader_call(
-            author=author,
-            author_id=author_id,
-            signal_id=signal_id,
-            ticker=signal_data.get("ticker"),
-            direction=signal_data.get("direction"),
-            entry_price=signal_data.get("entry_price"),
-        )
+        if msg_type == "result":
+            # This is a trade RESULT — resolve the trader's most recent pending call
+            _resolve_trader_call(
+                author=author,
+                ticker=signal_data.get("ticker"),
+                outcome=signal_data.get("result_outcome", "loss"),
+                r_value=signal_data.get("result_r"),
+                note=signal_data.get("result_note", ""),
+            )
+            log.info("[DISCORD] Resolved %s call for %s: %s (%s)",
+                     signal_data.get("ticker", "?"), author,
+                     signal_data.get("result_outcome"), signal_data.get("result_note"))
+        else:
+            # This is a NEW SIGNAL
+            signal_id = db.save_signal(
+                message_id=row_id,
+                ticker=signal_data.get("ticker"),
+                direction=signal_data.get("direction"),
+                entry_price=signal_data.get("entry_price"),
+                stop_loss=signal_data.get("stop_loss"),
+                take_profit=signal_data.get("take_profit"),
+                strategy=signal_data.get("strategy"),
+                approach=signal_data.get("approach"),
+                confidence=signal_data.get("confidence"),
+                raw_analysis=json.dumps(signal_data),
+                priority=channel_cfg["priority"],
+                consumers=channel_cfg["consumers"],
+            )
 
-        # Publish to event bus
-        _publish_signal(signal_data, channel_cfg, author, row_id)
+            # Track trader call for leaderboard
+            db.save_trader_call(
+                author=author,
+                author_id=author_id,
+                signal_id=signal_id,
+                ticker=signal_data.get("ticker"),
+                direction=signal_data.get("direction"),
+                entry_price=signal_data.get("entry_price"),
+            )
 
-        # Generate agent discussions (async-ish — runs inline but fast calls)
-        _generate_agent_discussion(signal_data, channel_cfg, author, signal_id, row_id)
+            # Publish to event bus
+            _publish_signal(signal_data, channel_cfg, author, row_id)
+
+            # Generate agent discussions
+            _generate_agent_discussion(signal_data, channel_cfg, author, signal_id, row_id)
 
 
 def poll_channels() -> int:
