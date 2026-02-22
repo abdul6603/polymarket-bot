@@ -6758,7 +6758,7 @@ async function loadHawkTab() {
     if (effEl) { effEl.style.color = effBr >= 200 ? 'var(--success)' : '#FFD700'; }
     animateCount('hawk-daily-pnl', Math.abs(s.daily_pnl || 0), 800, (s.daily_pnl || 0) >= 0 ? '$' : '-$');
     document.getElementById('hawk-daily-pnl').style.color = (s.daily_pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)';
-    renderLossCapBar('hawk-loss-cap-bar', s.daily_pnl || 0, 30);
+    renderLossCapBar('hawk-loss-cap-bar', s.daily_pnl || 0, 50);
     // Wire Win Rate donut + streak
     renderWinRateDonut('hawk-wr-donut', s.wins || 0, s.losses || 0);
     var streakEl = document.getElementById('hawk-streak-num');
@@ -9297,7 +9297,7 @@ async function loadOdinTab() {
     var dp = d.daily_pnl || 0;
     dpEl.textContent = (dp >= 0 ? '+$' : '-$') + Math.abs(dp).toFixed(2);
     dpEl.style.color = dp >= 0 ? 'var(--success)' : 'var(--error)';
-    renderLossCapBar('odin-loss-cap-bar', dp, 30);
+    renderLossCapBar('odin-loss-cap-bar', dp, 150);
   }
   var wpEl = document.getElementById('odin-weekly-pnl');
   if (wpEl) {

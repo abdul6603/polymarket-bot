@@ -262,7 +262,7 @@ function oracleRefresh() {
     oracleSetVal('oracle-wagered', '$' + (d.total_wagered || 0).toFixed(0));
     oraclePnl('oracle-ev', d.total_expected_value || 0);
     var oracleTotalPnl = (d.accuracy || {}).total_pnl || 0;
-    if (typeof renderLossCapBar === 'function') renderLossCapBar('oracle-loss-cap-bar', oracleTotalPnl, 75, 'Weekly');
+    if (typeof renderLossCapBar === 'function') renderLossCapBar('oracle-loss-cap-bar', oracleTotalPnl, 100, 'Weekly');
 
     // Market regime
     var regime = (d.regime || '--').replace(/_/g, ' ');
