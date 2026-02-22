@@ -38,16 +38,24 @@ def build_questions(markets: list[WeeklyMarket]) -> list[dict[str, str]]:
     for m in markets:
         q_key = m.condition_id[:12]
         if m.market_type == TYPE_ABOVE:
-            q_text = f"Will {m.asset.upper()} be above ${m.threshold:,.0f} at end of week?"
-        elif m.market_type == TYPE_RANGE:
-            if m.range_high == float("inf"):
-                q_text = f"Will {m.asset.upper()} be above ${m.range_low:,.0f} at end of week?"
-            elif m.range_low == 0:
-                q_text = f"Will {m.asset.upper()} be below ${m.range_high:,.0f} at end of week?"
+            if m.threshold is not None:
+                q_text = f"Will {m.asset.upper()} be above ${m.threshold:,.0f} at end of week?"
             else:
-                q_text = f"Will {m.asset.upper()} end the week between ${m.range_low:,.0f}-${m.range_high:,.0f}?"
+                q_text = f"Will {m.asset.upper()} be above the threshold at end of week?"
+        elif m.market_type == TYPE_RANGE:
+            low = m.range_low or 0
+            high = m.range_high or float("inf")
+            if high == float("inf"):
+                q_text = f"Will {m.asset.upper()} be above ${low:,.0f} at end of week?"
+            elif low == 0:
+                q_text = f"Will {m.asset.upper()} be below ${high:,.0f} at end of week?"
+            else:
+                q_text = f"Will {m.asset.upper()} end the week between ${low:,.0f}-${high:,.0f}?"
         elif m.market_type == TYPE_HIT:
-            q_text = f"Will {m.asset.upper()} reach ${m.threshold:,.0f} at any point this week?"
+            if m.threshold is not None:
+                q_text = f"Will {m.asset.upper()} reach ${m.threshold:,.0f} at any point this week?"
+            else:
+                q_text = f"Will {m.asset.upper()} hit the price target this week?"
         else:
             continue
 
