@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import signal
 import sys
 import time
@@ -189,6 +190,103 @@ def _generate_agent_discussion(signal_data: dict, channel_cfg: dict, author: str
             log.debug("[DISCORD] Agent discussion error for %s: %s", consumer, e)
 
 
+_RESULT_PATTERNS = re.compile(
+    r"(?:sl\s*hit|tp\s*hit|tp[12]\s*hit|stopped?\s*out|take\s*tp|"
+    r"closed?\s*(?:in\s*profit|here|at)|[+-]\d*\.?\d+\s*[rR]\b|"
+    r"\bfail\b|\bloss\b|\bliquidated\b)",
+    re.I,
+)
+_CANCEL_PATTERNS = re.compile(
+    r"(?:\bcancel(?:led)?\b|\binvalidated?\b|\bignore\b|\bskip\b|"
+    r"\bvoid\b|\bdont\s*take\b|\bdon.t\s*take\b|\bdisregard\b)",
+    re.I,
+)
+_R_PATTERN = re.compile(r"([+-]?\d*\.?\d+)\s*[rR]\b")
+
+# Ticker detection for override
+_TICKERS = [
+    "BTC", "ETH", "SOL", "XRP", "DOGE", "AVAX", "LINK", "ADA",
+    "DOT", "MATIC", "IOTA", "NEAR", "APT", "ARB", "OP", "SUI",
+    "INJ", "TIA", "SEI", "JUP", "PEPE", "WIF", "BONK", "HYPE",
+    "COW", "ETHBTC", "MOR", "WLFI", "ARC",
+]
+
+
+def _detect_ticker(text: str) -> str | None:
+    upper = text.upper()
+    for t in _TICKERS:
+        if f"${t}" in upper or f" {t} " in f" {upper} ":
+            return t
+    return None
+
+
+def _override_msg_type(content: str, signal_data: dict) -> dict:
+    """Override LLM classification if content is clearly a result/cancel."""
+    if signal_data.get("msg_type") == "result":
+        return signal_data  # already correct
+
+    text = content.upper() if content else ""
+    if _CANCEL_PATTERNS.search(content or ""):
+        signal_data["msg_type"] = "result"
+        signal_data["result_outcome"] = "cancelled"
+        signal_data["result_r"] = 0.0
+        signal_data["result_note"] = "cancelled"
+        signal_data["is_trade_signal"] = True
+    elif _RESULT_PATTERNS.search(content or ""):
+        signal_data["msg_type"] = "result"
+        r_match = _R_PATTERN.search(content or "")
+        if r_match:
+            r_val = float(r_match.group(1))
+            signal_data["result_outcome"] = "win" if r_val > 0 else "loss"
+            signal_data["result_r"] = r_val
+            signal_data["result_note"] = r_match.group(0).strip()
+        elif any(kw in text for kw in ["FAIL", "SL HIT", "STOPPED OUT", "LOSS", "LIQUIDATED"]):
+            signal_data["result_outcome"] = "loss"
+            signal_data["result_r"] = -1.0
+            signal_data["result_note"] = "sl hit"
+        else:
+            signal_data["result_outcome"] = "win"
+            signal_data["result_r"] = 1.0
+            signal_data["result_note"] = "tp hit"
+        signal_data["is_trade_signal"] = True
+    return signal_data
+
+
+def _detect_result_from_text(content: str) -> dict | None:
+    """Catch obvious results even when LLM returned None."""
+    if not content:
+        return None
+    text = content.upper()
+    ticker = _detect_ticker(text)
+
+    if _CANCEL_PATTERNS.search(content):
+        return {
+            "msg_type": "result", "ticker": ticker, "is_trade_signal": True,
+            "result_outcome": "cancelled", "result_r": 0.0, "result_note": "cancelled",
+        }
+
+    if _RESULT_PATTERNS.search(content):
+        r_match = _R_PATTERN.search(content)
+        if r_match:
+            r_val = float(r_match.group(1))
+            outcome = "win" if r_val > 0 else "loss"
+            return {
+                "msg_type": "result", "ticker": ticker, "is_trade_signal": True,
+                "result_outcome": outcome, "result_r": r_val, "result_note": r_match.group(0).strip(),
+            }
+        if any(kw in text for kw in ["FAIL", "SL HIT", "STOPPED OUT", "LOSS", "LIQUIDATED"]):
+            return {
+                "msg_type": "result", "ticker": ticker, "is_trade_signal": True,
+                "result_outcome": "loss", "result_r": -1.0, "result_note": "sl hit",
+            }
+        if any(kw in text for kw in ["TP HIT", "TP1 HIT", "TP2 HIT", "TAKE TP", "TAKE PROFIT", "TARGET HIT"]):
+            return {
+                "msg_type": "result", "ticker": ticker, "is_trade_signal": True,
+                "result_outcome": "win", "result_r": 1.0, "result_note": "tp hit",
+            }
+    return None
+
+
 def process_message(msg: dict, channel_id: int) -> None:
     """Process a single Discord message."""
     channel_cfg = CHANNELS.get(channel_id)
@@ -233,6 +331,15 @@ def process_message(msg: dict, channel_id: int) -> None:
         )
     elif content:
         signal_data = analyzer.analyze_text_message(content, author, channel_cfg["name"])
+
+    # Post-LLM override: catch obvious results/cancellations the LLM missed
+    if signal_data:
+        signal_data = _override_msg_type(content, signal_data)
+    elif content:
+        # LLM returned None but content might be an obvious result
+        override = _detect_result_from_text(content)
+        if override:
+            signal_data = override
 
     if signal_data:
         msg_type = signal_data.get("msg_type", "signal")

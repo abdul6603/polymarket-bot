@@ -21,7 +21,7 @@ VISION_COUNT_FILE = Path.home() / "polymarket-bot" / "data" / "discord_vision_co
 
 SIGNAL_SYSTEM_PROMPT = """You are a trading signal parser. Extract structured data from Discord trading messages.
 
-IMPORTANT: Messages can be either NEW TRADE SIGNALS or TRADE RESULTS/UPDATES.
+CRITICAL: First determine if this is a NEW SIGNAL, a RESULT/UPDATE, or a CANCELLATION.
 
 Return ONLY valid JSON with these fields:
 {
@@ -35,27 +35,38 @@ Return ONLY valid JSON with these fields:
   "approach": "Brief description of the trader's reasoning/method" or null,
   "confidence": 0.0-1.0 based on how clear the signal is,
   "is_trade_signal": true,
-  "result_outcome": "win" or "loss" or null,
+  "result_outcome": "win" or "loss" or "cancelled" or null,
   "result_r": 2.0 or -1.0 or null,
-  "result_note": "tp1 hit" or "sl hit" or "closed" or null
+  "result_note": "tp1 hit" or "sl hit" or "closed" or "cancelled" or null
 }
+
+STEP 1 — CLASSIFY (check in this order):
+A) RESULT: Contains "sl hit", "tp hit", "fail", "stopped out", "closed", "+R", "-R", "-1R", "take tp" → msg_type="result"
+B) CANCELLATION: Contains "cancel", "cancelled", "invalidated", "ignore", "skip", "void", "dont take", "disregard" → msg_type="result", result_outcome="cancelled"
+C) NEW SIGNAL: Has entry/SL/TP/direction → msg_type="signal"
+D) NOT TRADE: Just chat/meme/emoji → is_trade_signal=false
+
+IMPORTANT: Results and cancellations MUST have is_trade_signal=true and msg_type="result".
+A message saying "fail" or "sl hit -1R" is NOT a new signal — it is a RESULT of a previous trade.
+A message saying "cancel" is NOT a new signal — it is CANCELLING a previous trade.
+
+Rules for RESULTS (msg_type="result"):
+- "+2R", "+1R" = win. "-1R", "-0.5R" = loss. "fail" = loss (-1R)
+- "sl hit" = loss. "tp hit" = win. "stopped out" = loss
+- Set result_outcome to "win" or "loss"
+- Set result_r to the R-multiple if mentioned
+
+Rules for CANCELLATIONS (msg_type="result"):
+- result_outcome="cancelled", result_r=0.0, result_note="cancelled"
 
 Rules for NEW SIGNALS (msg_type="signal"):
 - Has entry price, SL, TP, direction — it's a new trade call
-- "cmp" = current market price (entry at market)
-- Infer direction: "long", "buy", "bullish" = LONG; "short", "sell", "bearish" = SHORT
-
-Rules for TRADE RESULTS (msg_type="result"):
-- Messages like "sl hit -1R", "tp1 hit +2R", "take tp1 75%", "fail", "closed here", "stopped out"
-- "+2R", "+1R" = win with R-multiple. "-1R", "-0.5R" = loss
-- "fail", "sl hit", "stopped out" = loss
-- "tp hit", "take profit", "closed in profit" = win
-- Extract the R value if mentioned (e.g. "-1R" → result_r=-1.0, "+2R" → result_r=2.0)
-- Set result_outcome to "win" or "loss"
+- "cmp" = current market price
+- Infer direction: "long"/"buy"/"bullish" = LONG; "short"/"sell"/"bearish" = SHORT
 
 General rules:
-- If the message is NOT trade-related (just chat, meme, etc), set is_trade_signal=false
-- Common crypto tickers: BTC, ETH, SOL, XRP, DOGE, IOTA, AVAX, LINK, etc
+- If NOT trade-related, set is_trade_signal=false
+- Common tickers: BTC, ETH, SOL, XRP, DOGE, IOTA, AVAX, LINK, ADA, DOT, etc
 """
 
 VISION_SYSTEM_PROMPT = """You are a trading chart analyzer. A Discord trader posted this chart image with a message.
@@ -220,6 +231,15 @@ def _fallback_parse(content: str) -> dict | None:
         result_outcome = "win"
         result_r = 1.0
         result_note = "tp hit"
+
+    # Detect CANCELLATION
+    cancel_keywords = ["CANCEL", "CANCELLED", "INVALIDATED", "IGNORE", "SKIP", "VOID", "DONT TAKE", "DON'T TAKE", "DISREGARD"]
+    is_cancel = any(kw in text for kw in cancel_keywords)
+    if is_cancel and not is_result:
+        is_result = True
+        result_outcome = "cancelled"
+        result_r = 0.0
+        result_note = "cancelled"
 
     # Detect direction
     direction = None

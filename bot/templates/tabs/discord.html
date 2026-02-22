@@ -173,6 +173,7 @@ function discordRefreshSignals() {
         + '<span style="font-size:0.66rem;font-weight:700;color:' + dirColor + ';">' + (s.direction || '?') + '</span>'
         + '<span style="font-size:0.58rem;color:var(--text-muted);margin-left:auto;">' + (s.author || '') + ' in #' + (s.channel_name || '') + '</span>'
         + '</div>'
+        + '<div style="font-size:0.54rem;color:var(--text-muted);margin-bottom:3px;">' + discFormatTime(s.published_at) + '</div>'
         + (prices ? '<div style="font-size:0.62rem;color:var(--text-secondary);font-family:var(--font-mono);margin-bottom:3px;">' + prices + '</div>' : '')
         + (s.strategy ? '<div style="font-size:0.62rem;color:var(--agent-atlas);">Strategy: ' + s.strategy + '</div>' : '')
         + (s.approach ? '<div style="font-size:0.62rem;color:var(--text-muted);font-style:italic;margin-top:2px;">' + s.approach + '</div>' : '')
@@ -230,6 +231,7 @@ function discordRefreshDiscussions() {
         + (d.direction ? '<span style="font-size:0.62rem;color:' + (d.direction === 'LONG' ? 'var(--success)' : 'var(--error)') + ';">' + d.direction + '</span>' : '')
         + '<span style="font-size:0.54rem;color:var(--text-muted);margin-left:auto;">' + (d.author ? d.author + ' in #' + (d.channel_name || '') : '') + '</span>'
         + '</div>'
+        + '<div style="font-size:0.52rem;color:var(--text-muted);margin-bottom:3px;">' + discFormatTime(d.created_at) + '</div>'
         + '<div style="font-size:0.68rem;color:var(--text-secondary);line-height:1.4;">' + (d.reaction || '') + '</div>'
         + (d.action_taken ? '<div style="font-size:0.58rem;color:var(--agent-atlas);margin-top:3px;">Action: ' + d.action_taken + '</div>' : '')
         + '</div>';
@@ -257,6 +259,19 @@ function discordRefreshFeed() {
         + '</div>';
     }).join('');
   }).catch(function(e) { console.error('discord feed:', e); });
+}
+
+function discFormatTime(ts) {
+  if (!ts) return '';
+  try {
+    var d = new Date(ts);
+    var now = new Date();
+    var diff = Math.floor((now - d) / 1000);
+    if (diff < 60) return diff + 's ago';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    return d.toLocaleDateString('en-US', {month:'short', day:'numeric'}) + ' ' + d.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+  } catch(e) { return ts.substring(0, 16); }
 }
 
 function discEscape(str) {
