@@ -131,7 +131,8 @@ class PyramidExecutor:
         size_usd = self._budget * budget_frac
 
         # Cross the spread: bid above implied to ensure fill (cap still protects us)
-        price = min(implied_price + 0.02, price_cap)
+        # CLOB fills at maker price, so we pay the ask not our limit
+        price = min(implied_price + 0.04, price_cap)
         price = max(0.01, min(0.99, round(price, 2)))
         shares = size_usd / price
 

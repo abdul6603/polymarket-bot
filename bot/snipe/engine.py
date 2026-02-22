@@ -183,10 +183,11 @@ class SnipeEngine:
             log.info("[SNIPE] Signal but CLOB price too high: $%.3f (Wave 1 cap $0.60)", implied)
             return
 
-        # Start pyramid
+        # Start pyramid and fire waves immediately (event loop delays make next tick unreliable)
         self.pyramid.start_position(window.market_id, signal.direction, window.open_price, window.asset)
         self._state = SnipeState.ARMED
-        log.info("[SNIPE] TRACKING -> ARMED (implied=$%.3f)", implied)
+        log.info("[SNIPE] TRACKING -> ARMED (implied=$%.3f) — firing waves now", implied)
+        self._on_armed()
 
     def _on_armed(self) -> None:
         """Execute pyramid waves as timing conditions are met."""
@@ -211,6 +212,7 @@ class SnipeEngine:
 
         implied = self._fetch_implied_price(window.market_id, token_id)
         if not implied:
+            log.warning("[SNIPE] ARMED but no implied price | T-%.0fs | %s %s", remaining, window.asset.upper(), direction.upper())
             return
 
         # Check and fire each wave
@@ -357,6 +359,7 @@ class SnipeEngine:
                 timeout=5,
             )
             if resp.status_code != 200:
+                log.warning("[SNIPE] Implied price fetch failed: HTTP %d for %s", resp.status_code, market_id[:16])
                 return None
             data = resp.json()
             for t in data.get("tokens", []):
@@ -364,8 +367,9 @@ class SnipeEngine:
                     price = t.get("price")
                     if price is not None:
                         return float(price)
-        except Exception:
-            pass
+            log.warning("[SNIPE] Token %s not found in market %s (tokens: %d)", token_id[:16], market_id[:16], len(data.get("tokens", [])))
+        except Exception as e:
+            log.warning("[SNIPE] Implied price error: %s", str(e)[:150])
         return None
 
     def _save_status(self) -> None:
