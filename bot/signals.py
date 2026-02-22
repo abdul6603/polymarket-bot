@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import sys
 import time
 from dataclasses import dataclass
@@ -842,6 +843,14 @@ class SignalEngine:
         effective_consensus = min(effective_consensus, active_count)  # can't require more than available
         if regime and regime.consensus_offset:
             effective_consensus += regime.consensus_offset
+
+        # Extreme fear + DOWN: lower to 75% consensus (bearish momentum is natural in fear)
+        # UP signals keep full consensus requirement (contrarian plays need full conviction)
+        if regime and regime.label == "extreme_fear" and majority_dir == "down":
+            fear_consensus = max(_consensus_floor, math.ceil(active_count * 0.75))
+            fear_consensus = min(fear_consensus, active_count)
+            if fear_consensus < effective_consensus:
+                effective_consensus = fear_consensus
 
         if agree_count < effective_consensus:
             log.info(
