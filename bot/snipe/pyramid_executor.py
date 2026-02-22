@@ -134,7 +134,7 @@ class PyramidExecutor:
         # CLOB fills at maker price, so we pay the ask not our limit
         price = min(implied_price + 0.04, price_cap)
         price = max(0.01, min(0.99, round(price, 2)))
-        shares = size_usd / price
+        shares = round(size_usd / price, 2)  # CLOB requires max 2 decimal places
 
         if self._dry_run:
             order_id = f"snipe-dry-w{wave_num}-{int(time.time())}"
