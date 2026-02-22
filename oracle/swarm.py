@@ -76,10 +76,26 @@ def _read_odin() -> str:
         return "offline"
 
     regime = status.get("regime", {})
-    regime_name = regime.get("current", "unknown")
-    confidence = regime.get("confidence", 0)
-    btc_bias = status.get("opportunities", {}).get("btc_bias", "neutral")
-    eth_bias = status.get("opportunities", {}).get("eth_bias", "neutral")
+    if isinstance(regime, dict):
+        regime_name = regime.get("current", regime.get("regime", "unknown"))
+        confidence = regime.get("confidence", regime.get("global_score", 0))
+    else:
+        regime_name = str(regime)
+        confidence = 0
+
+    opps = status.get("opportunities", [])
+    btc_bias = "neutral"
+    eth_bias = "neutral"
+    if isinstance(opps, list):
+        for o in opps:
+            sym = (o.get("symbol") or "").upper()
+            if "BTC" in sym:
+                btc_bias = o.get("direction", "neutral").lower()
+            elif "ETH" in sym:
+                eth_bias = o.get("direction", "neutral").lower()
+    elif isinstance(opps, dict):
+        btc_bias = opps.get("btc_bias", "neutral")
+        eth_bias = opps.get("eth_bias", "neutral")
 
     return f"regime={regime_name} conf={confidence:.0f}% BTC={btc_bias} ETH={eth_bias}"
 
