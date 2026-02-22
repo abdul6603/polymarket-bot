@@ -81,8 +81,8 @@ class WindowTracker:
         """
         now = time.time()
 
-        # Clean expired windows
-        expired = [mid for mid, w in self._active.items() if w.end_ts < now - 30]
+        # Clean expired windows (keep 120s for resolution checking)
+        expired = [mid for mid, w in self._active.items() if w.end_ts < now - 120]
         for mid in expired:
             del self._active[mid]
 

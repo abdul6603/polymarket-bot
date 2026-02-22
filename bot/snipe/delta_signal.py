@@ -15,8 +15,10 @@ log = logging.getLogger("garves.snipe")
 DEFAULT_DELTA_THRESHOLD = 0.00077  # 0.077%
 
 # Sustained direction: need N consecutive ticks same direction
-# Bot ticks every 30-90s due to event loop, so we only get 2-3 readings per window
-SUSTAINED_TICKS = 2
+# Event loop takes 80-100s per cycle → only 1-2 ticks per snipe zone.
+# With SUSTAINED_TICKS=2, we miss valid signals every window. Delta threshold
+# (0.077%) is already a meaningful directional filter — fire on first crossing.
+SUSTAINED_TICKS = 1
 
 
 @dataclass

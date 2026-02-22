@@ -3,9 +3,10 @@
 State machine:
   IDLE -> TRACKING -> ARMED -> EXECUTING -> COOLDOWN -> IDLE
 
-Runs as a concurrent async task alongside Garves's taker/maker loops.
-Completely isolated: own budget, own position tracking, own trades file.
-Assets: BTC, ETH, SOL, XRP — whichever shows a delta lock first.
+Runs in its own background thread (independent of Garves's main event loop).
+Ticks every 15s → 10-12 readings per snipe window vs 0-2 when coupled.
+Assets: BTC, ETH, SOL, XRP — all scanned, BTC priority via biggest-delta-first sort.
+Weekend threshold: 0.070% (lower vol). Weekday threshold: 0.077%.
 """
 from __future__ import annotations
 
@@ -13,8 +14,10 @@ import asyncio
 import json
 import logging
 import time
+from datetime import datetime
 from enum import Enum
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from bot.config import Config
 from bot.price_cache import PriceCache
@@ -23,6 +26,15 @@ from bot.snipe.delta_signal import DeltaSignal
 from bot.snipe.pyramid_executor import PyramidExecutor
 
 log = logging.getLogger("garves.snipe")
+
+ET = ZoneInfo("America/New_York")
+
+# Tick interval in seconds — fast enough for 10+ readings per window
+SNIPE_TICK_INTERVAL = 15
+
+# Weekend threshold is lower because volatility drops
+WEEKEND_THRESHOLD = 0.0007   # 0.070%
+WEEKDAY_THRESHOLD = 0.00077  # 0.077%
 
 
 class SnipeState(Enum):
@@ -71,23 +83,49 @@ class SnipeEngine:
         self._status_file = Path(__file__).parent.parent.parent / "data" / "snipe_status.json"
         self.enabled = getattr(cfg, "snipe_enabled", True)
 
+    def _effective_threshold(self) -> float:
+        """Dynamic threshold: lower on weekends (less vol), normal on weekdays."""
+        day = datetime.now(ET).weekday()  # 0=Mon, 6=Sun
+        if day >= 5:  # Saturday or Sunday
+            return WEEKEND_THRESHOLD
+        return WEEKDAY_THRESHOLD
+
     def _get_signal(self, asset: str) -> DeltaSignal:
-        """Get or create per-asset delta signal tracker."""
+        """Get or create per-asset delta signal tracker with dynamic threshold."""
+        threshold = self._effective_threshold()
         if asset not in self._delta_signals:
-            self._delta_signals[asset] = DeltaSignal(threshold=self._delta_threshold)
+            self._delta_signals[asset] = DeltaSignal(threshold=threshold)
+        else:
+            # Update threshold if it changed (weekend <-> weekday transition)
+            self._delta_signals[asset]._threshold = threshold
         return self._delta_signals[asset]
 
     async def run_loop(self, shutdown_event: asyncio.Event) -> None:
-        """Main snipe loop — ticks every 5s."""
+        """Snipe loop — runs in its own thread to avoid starvation from main event loop.
+
+        The taker loop blocks the asyncio event loop for 60-100s per cycle
+        doing synchronous HTTP calls. By running snipe in a separate thread,
+        it ticks every 15s regardless of taker activity.
+        """
         if not self.enabled:
             log.info("[SNIPE] Engine disabled")
             return
 
+        threshold = self._effective_threshold()
+        is_weekend = datetime.now(ET).weekday() >= 5
         log.info(
-            "[SNIPE] Engine started | budget=$%.0f/window | threshold=%.2f%% | dry_run=%s",
-            self.pyramid._budget, self._delta_threshold * 100, self._dry_run,
+            "[SNIPE] Engine started | budget=$%.0f/window | threshold=%.3f%% (%s) | "
+            "tick=%ds | dry_run=%s",
+            self.pyramid._budget, threshold * 100,
+            "weekend" if is_weekend else "weekday",
+            SNIPE_TICK_INTERVAL, self._dry_run,
         )
 
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, self._thread_loop, shutdown_event)
+
+    def _thread_loop(self, shutdown_event: asyncio.Event) -> None:
+        """Blocking loop running in a background thread, ticks every 15s."""
         while not shutdown_event.is_set():
             try:
                 self.tick()
@@ -95,10 +133,11 @@ class SnipeEngine:
             except Exception as e:
                 log.warning("[SNIPE] Tick error: %s", str(e)[:200])
 
-            try:
-                await asyncio.wait_for(shutdown_event.wait(), timeout=5)
-            except asyncio.TimeoutError:
-                pass
+            # Sleep in 1s increments so we can respond to shutdown quickly
+            for _ in range(SNIPE_TICK_INTERVAL):
+                if shutdown_event.is_set():
+                    break
+                time.sleep(1)
 
         log.info("[SNIPE] Engine stopped")
 
@@ -130,14 +169,18 @@ class SnipeEngine:
             if 30 < remaining <= 190:
                 self._state = SnipeState.TRACKING
                 self._delta_signals.clear()  # Reset all per-asset trackers
-                log.info("[SNIPE] IDLE -> TRACKING (scanning all assets, T-%.0fs)", remaining)
+                threshold = self._effective_threshold()
+                log.info(
+                    "[SNIPE] IDLE -> TRACKING (scanning all assets, T-%.0fs, threshold=%.3f%%)",
+                    remaining, threshold * 100,
+                )
                 return
 
     def _on_tracking(self) -> None:
         """Evaluate ALL assets with per-asset signal trackers, arm the best one with a signal."""
         now = time.time()
 
-        # Collect all tradeable windows in snipe zone
+        # Collect all tradeable windows in snipe zone (all assets scanned, BTC priority via delta sort)
         candidates = []
         for w in self.window_tracker.all_active_windows():
             if w.traded:
@@ -285,21 +328,22 @@ class SnipeEngine:
             log.info("[SNIPE] ARMED -> EXECUTING (%d waves filled, T-%.0fs)", self.pyramid.waves_fired, remaining)
 
     def _on_executing(self) -> None:
-        """Wait for CLOB resolution — don't guess from spot price."""
-        window = self.window_tracker.get_window(self._current_window_id)
-        if not window:
-            self._finish_trade()
-            return
-
+        """Wait for CLOB resolution — use stored market_id directly (don't depend on window tracker)."""
         now = time.time()
-        remaining = window.end_ts - now
+        market_id = self._current_window_id
 
-        # Wait at least 30s after window end for CLOB to resolve
-        if remaining > -30:
-            return
+        # Check window end time (try tracker, fall back to 60s timeout)
+        window = self.window_tracker.get_window(market_id)
+        if window:
+            remaining = window.end_ts - now
+            if remaining > -30:
+                return  # Wait for window to finish + 30s settle time
+        else:
+            # Window cleaned up by tracker — at least 30s have passed, check resolution
+            remaining = -60
 
         # Check CLOB for actual resolution
-        resolved_dir = self._fetch_resolution(window.market_id)
+        resolved_dir = self._fetch_resolution(market_id)
         if resolved_dir:
             result = self.pyramid.close_position(resolved_dir)
             if result:
@@ -311,7 +355,7 @@ class SnipeEngine:
 
         # Timeout: 10 min after window end, give up
         if remaining <= -600:
-            log.warning("[SNIPE] Resolution timeout for %s, closing as unknown", window.market_id[:12])
+            log.warning("[SNIPE] Resolution timeout for %s, closing as unknown", market_id[:12])
             self.pyramid.close_position()
             self._cooldown_until = now + 30
             self._state = SnipeState.COOLDOWN
@@ -319,10 +363,8 @@ class SnipeEngine:
 
     def _finish_trade(self) -> None:
         """Clean up current trade and go to cooldown."""
-        window = self.window_tracker.get_window(self._current_window_id)
-        resolved_dir = ""
-        if window:
-            resolved_dir = self._fetch_resolution(window.market_id) or ""
+        market_id = self._current_window_id
+        resolved_dir = self._fetch_resolution(market_id) or "" if market_id else ""
 
         result = self.pyramid.close_position(resolved_dir)
         if result:
@@ -460,6 +502,8 @@ class SnipeEngine:
 
     def get_status(self) -> dict:
         """Dashboard-friendly status."""
+        threshold = self._effective_threshold()
+        is_weekend = datetime.now(ET).weekday() >= 5
         return {
             "enabled": self.enabled,
             "state": self._state.value,
@@ -468,7 +512,9 @@ class SnipeEngine:
             "budget_base": self._base_budget,
             "budget_escalated": self._escalated_budget,
             "consecutive_wins": self._consecutive_wins,
-            "delta_threshold_pct": round(self._delta_threshold * 100, 3),
+            "delta_threshold_pct": round(threshold * 100, 3),
+            "threshold_mode": "weekend" if is_weekend else "weekday",
+            "tick_interval_s": SNIPE_TICK_INTERVAL,
             "stats": self._stats.copy(),
             "window": self.window_tracker.get_status(),
             "position": self.pyramid.get_status(),
