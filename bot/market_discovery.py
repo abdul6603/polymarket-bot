@@ -7,6 +7,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from bot.config import Config
 from bot.http_session import get_session
@@ -239,11 +240,15 @@ _5M_SLUG_PREFIXES = ("btc", "eth", "sol", "xrp")
 
 
 def _fetch_active_from_gamma() -> list[dict[str, Any]]:
-    """Fetch active crypto Up/Down markets from the Gamma events API.
+    """Fetch active crypto Up/Down markets via Gamma slug-based lookups.
 
-    Single API call returns all active events sorted by newest first.
-    Pre-filters by timeframe + remaining time before hitting CLOB,
-    so we only make ~5-15 CLOB calls instead of 200.
+    Uses predictable slug patterns for each timeframe:
+      Hourly: {asset}-up-or-down-{month}-{day}-{hour}{ampm}-et
+      15m:    {short}-updown-15m-{unix_start}
+      4h:     {short}-updown-4h-{unix_start}
+      5m:     handled by snipe engine separately
+
+    Fetches full CLOB data only for markets found via slug.
     """
     global _gamma_cache, _gamma_cached_at
 
@@ -253,62 +258,69 @@ def _fetch_active_from_gamma() -> list[dict[str, Any]]:
 
     results: list[dict[str, Any]] = []
     seen_cids: set[str] = set()
+    sess = get_session()
 
-    try:
-        resp = get_session().get(
-            "https://gamma-api.polymarket.com/events",
-            params={
-                "limit": 200,
-                "active": True,
-                "closed": False,
-                "order": "startDate",
-                "ascending": False,
-            },
-            timeout=15,
-        )
-        if resp.status_code != 200:
-            return _gamma_cache or []
+    from datetime import datetime as _dt
+    et_now = _dt.now(ZoneInfo("America/New_York"))
 
-        events = resp.json()
-        candidates: list[str] = []  # condition_ids that pass time filter
+    asset_short = {"bitcoin": "btc", "ethereum": "eth", "solana": "sol", "xrp": "xrp"}
+    asset_long = {
+        "bitcoin": "bitcoin-up-or-down",
+        "ethereum": "ethereum-up-or-down",
+        "solana": "solana-up-or-down",
+        "xrp": "xrp-up-or-down",
+    }
 
-        for ev in events:
-            title = (ev.get("title") or "").lower()
-            if "up or down" not in title:
+    slugs: list[str] = []
+
+    # ── Hourly: slug = {asset}-up-or-down-{month}-{day}-{hour}{ampm}-et
+    for _asset, prefix in asset_long.items():
+        for hour_offset in range(0, 4):
+            target = et_now + timedelta(hours=hour_offset)
+            month_name = target.strftime("%B").lower()
+            day = target.day
+            hour = target.hour
+            ampm = "am" if hour < 12 else "pm"
+            dh = hour % 12 or 12
+            slugs.append(f"{prefix}-{month_name}-{day}-{dh}{ampm}-et")
+
+    # ── 15m: slug = {short}-updown-15m-{unix_start}
+    min_15 = (et_now.minute // 15) * 15
+    start_15m = et_now.replace(minute=min_15, second=0, microsecond=0)
+    for _asset, short in asset_short.items():
+        for slot in range(0, 4):  # current + next 3 windows
+            target = start_15m + timedelta(minutes=15 * slot)
+            ts = int(target.timestamp())
+            slugs.append(f"{short}-updown-15m-{ts}")
+
+    # ── 4h: slug = {short}-updown-4h-{unix_start}
+    start_4h = et_now.replace(hour=(et_now.hour // 4) * 4, minute=0, second=0, microsecond=0)
+    for _asset, short in asset_short.items():
+        for slot in range(0, 2):  # current + next window
+            target = start_4h + timedelta(hours=4 * slot)
+            ts = int(target.timestamp())
+            slugs.append(f"{short}-updown-4h-{ts}")
+
+    # Fetch each slug from Gamma, then CLOB
+    for slug in slugs:
+        try:
+            resp = sess.get(
+                f"https://gamma-api.polymarket.com/events?slug={slug}",
+                timeout=5,
+            )
+            if resp.status_code != 200 or not resp.json():
                 continue
-            if not any(a in title for a in ("bitcoin", "ethereum", "solana", "xrp")):
-                continue
-
+            ev = resp.json()[0]
             for m in ev.get("markets", []):
                 cid = m.get("conditionId", "")
                 if not cid or cid in seen_cids:
                     continue
                 if not m.get("active") or m.get("closed"):
                     continue
-
-                question = m.get("question", "")
-                if not question:
-                    continue
-
-                # Pre-filter: parse timeframe and remaining time from question
-                # Only CLOB-fetch markets in the tradeable window
-                tf = _classify_timeframe(question)
-                if not tf:
-                    continue
-                candle_end = _parse_candle_end_time(question, m.get("endDate", ""))
-                if candle_end is None:
-                    continue
-                remaining = candle_end - now
-                if remaining < tf.min_remaining_s or remaining > tf.max_remaining_s:
-                    continue
-
                 seen_cids.add(cid)
-                candidates.append(cid)
 
-        # Only fetch CLOB data for markets that passed the time filter
-        for cid in candidates:
-            try:
-                clob_resp = get_session().get(
+                # Fetch full CLOB market data
+                clob_resp = sess.get(
                     f"https://clob.polymarket.com/markets/{cid}",
                     timeout=5,
                 )
@@ -316,15 +328,11 @@ def _fetch_active_from_gamma() -> list[dict[str, Any]]:
                     clob_market = clob_resp.json()
                     if clob_market.get("accepting_orders") and clob_market.get("active"):
                         results.append(clob_market)
-            except Exception:
-                continue
-
-    except Exception:
-        log.debug("Gamma active fetch failed")
-        return _gamma_cache or []
+        except Exception:
+            continue
 
     if results:
-        log.info("Gamma discovery: found %d tradeable markets", len(results))
+        log.info("Gamma discovery: found %d markets (1h+15m+4h)", len(results))
 
     _gamma_cache = results
     _gamma_cached_at = now
