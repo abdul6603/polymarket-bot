@@ -86,7 +86,7 @@
   <!-- G: Open Positions -->
   <div class="collapse-section default-open">
     <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="odin" style="margin-bottom:0;">Open Positions</h2>
+      <h2 class="section-title" data-accent="odin" style="margin-bottom:0;">Open Positions <span id="odin-positions-badge" style="font-size:0.56rem;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:8px;background:rgba(243,156,18,0.15);border:1px solid var(--warning);color:var(--warning);vertical-align:middle;">PAPER</span></h2>
     </div>
     <div class="collapse-body">
       <table class="data-table">
@@ -136,7 +136,15 @@ function odinRefresh() {
   fetch('/api/odin').then(r => r.json()).then(function(d) {
     // Mode
     var modeEl = document.getElementById('odin-mode-label');
+    var modeBadge = document.getElementById('odin-positions-badge');
+    var isLive = (d.mode || 'paper').toLowerCase() === 'live';
     if (modeEl) modeEl.textContent = (d.mode || 'paper').toUpperCase();
+    if (modeBadge) {
+      modeBadge.textContent = isLive ? 'LIVE' : 'PAPER';
+      modeBadge.style.background = isLive ? 'rgba(231,76,60,0.15)' : 'rgba(243,156,18,0.15)';
+      modeBadge.style.borderColor = isLive ? 'var(--error)' : 'var(--warning)';
+      modeBadge.style.color = isLive ? 'var(--error)' : 'var(--warning)';
+    }
 
     // Hero cards
     odinSetVal('odin-balance', '$' + (d.balance || 1000).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
