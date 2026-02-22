@@ -157,9 +157,6 @@ def api_overview():
     # Viper
     viper_status = read_fresh(DATA_DIR / "viper_status.json", "~/polymarket-bot/data/viper_status.json")
 
-    # Razor
-    razor_status = read_fresh(DATA_DIR / "razor_status.json", "~/polymarket-bot/data/razor_status.json")
-
     # Odin
     odin_status = read_fresh(Path.home() / "odin" / "data" / "odin_status.json", "~/odin/data/odin_status.json")
 
@@ -197,14 +194,6 @@ def api_overview():
             "pushed": viper_status.get("pushed_to_shelby", 0),
         },
         "quant": _get_quant_overview(),
-        "razor": {
-            "running": bool(razor_status.get("last_update")),
-            "open_arbs": razor_status.get("open_count", 0),
-            "total_arbs": razor_status.get("total_arbs", 0),
-            "pnl": razor_status.get("total_pnl", 0),
-            "exposure": razor_status.get("exposure", 0),
-            "markets": razor_status.get("total_markets", 0),
-        },
         "odin": {
             "running": odin_status.get("running", False),
             "mode": odin_status.get("mode", "paper"),
@@ -1053,48 +1042,6 @@ def api_intelligence():
     except Exception:
         result["quant"] = {"dimensions": {}, "overall": 0, "title": "The Strategy Alchemist"}
 
-    # -- RAZOR -- The Mathematician --
-    try:
-        razor_intel = {"dimensions": {}, "overall": 0, "title": "The Mathematician"}
-        razor_sf = DATA_DIR / "razor_status.json"
-        razor_st = read_fresh(razor_sf, "~/polymarket-bot/data/razor_status.json")
-        learner = razor_st.get("learner", {})
-        r_total = razor_st.get("total_arbs", 0)
-        r_open = razor_st.get("open_count", 0)
-        r_markets = razor_st.get("total_markets", 0)
-        r_ws = razor_st.get("ws_connected", False)
-        r_hotspots = learner.get("hotspot_count", 0)
-        r_opps = learner.get("total_opportunities", 0)
-        r_executed = learner.get("total_executed", 0)
-        r_scanned = learner.get("total_scanned", 0)
-        r_wr = (razor_st.get("win_rate", 0) * 100) if razor_st.get("win_rate", 0) <= 1 else razor_st.get("win_rate", 0)
-
-        # 1. Market Scanning
-        scanning = min(100, int(r_markets * 0.025) + (25 if r_ws else 0))
-        razor_intel["dimensions"]["Market Scanning"] = scanning
-
-        # 2. Pattern Recognition (hotspots + hourly patterns)
-        pattern = min(100, r_hotspots * 5 + len(learner.get("active_hours", [])) * 3)
-        razor_intel["dimensions"]["Pattern Recognition"] = max(15, pattern)
-
-        # 3. Execution Speed
-        exec_speed = min(100, 40 + (r_executed * 8))
-        razor_intel["dimensions"]["Execution Speed"] = exec_speed
-
-        # 4. Accuracy (win rate)
-        accuracy = min(100, int(r_wr * 1.2)) if r_total > 0 else 20
-        razor_intel["dimensions"]["Accuracy"] = accuracy
-
-        # 5. Capital Efficiency
-        eff = min(100, 30 + (r_total * 5))
-        razor_intel["dimensions"]["Capital Efficiency"] = eff
-
-        dims = list(razor_intel["dimensions"].values())
-        razor_intel["overall"] = int(sum(dims) / len(dims)) if dims else 0
-        result["razor"] = razor_intel
-    except Exception:
-        result["razor"] = {"dimensions": {}, "overall": 0, "title": "The Mathematician"}
-
     # -- ODIN -- The Regime Trader --
     try:
         odin_intel = {"dimensions": {}, "overall": 0, "title": "The Regime Trader"}
@@ -1144,7 +1091,7 @@ def api_intelligence():
     # -- TEAM -- Collective Intelligence --
     try:
         team = {"dimensions": {}, "overall": 0, "title": "Brotherhood"}
-        agents = ["garves", "soren", "atlas", "shelby", "lisa", "robotox", "thor", "hawk", "viper", "quant", "razor", "odin"]
+        agents = ["garves", "soren", "atlas", "shelby", "lisa", "robotox", "thor", "hawk", "viper", "quant", "odin"]
         agent_scores = {a: result.get(a, {}).get("overall", 0) for a in agents}
 
         # 1. Collective Knowledge
@@ -1182,8 +1129,7 @@ def api_intelligence():
         hawk_acc = result.get("hawk", {}).get("dimensions", {}).get("Accuracy", 0)
         viper_rev = result.get("viper", {}).get("dimensions", {}).get("Revenue Potential", 0)
         quant_wf_acc = result.get("quant", {}).get("dimensions", {}).get("Walk-Forward Accuracy", 0)
-        razor_acc = result.get("razor", {}).get("dimensions", {}).get("Accuracy", 0)
-        performance = int((garves_acc + soren_prod + atlas_quality + shelby_task + lisa_disc + robotox_det + thor_exec + hawk_acc + viper_rev + quant_wf_acc + razor_acc) / 11)
+        performance = int((garves_acc + soren_prod + atlas_quality + shelby_task + lisa_disc + robotox_det + thor_exec + hawk_acc + viper_rev + quant_wf_acc) / 10)
         team["dimensions"]["Performance"] = min(100, performance)
 
         # 4. Autonomy

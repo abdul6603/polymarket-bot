@@ -110,7 +110,7 @@ def llm_memory_all():
     agents = [
         "shelby", "atlas", "lisa", "hawk", "soren",
         "garves", "quant", "viper", "robotox", "thor",
-        "razor", "odin",
+        "odin",
     ]
     try:
         sys.path.insert(0, str(SHARED_DIR))

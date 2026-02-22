@@ -15,6 +15,7 @@ from bot.shared import (
     get_atlas,
     ATLAS_ROOT,
     COMPETITOR_INTEL_FILE,
+    DATA_DIR,
 )
 
 # Brain write helpers (shared with brain routes)
@@ -199,6 +200,123 @@ def api_atlas_robotox():
         return jsonify(atlas.api_robotox_deep())
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500, 500
+
+
+@atlas_bp.route("/api/atlas/hawk")
+def api_atlas_hawk():
+    """Atlas analysis of Hawk — scanning, edge, positions."""
+    try:
+        status = read_fresh(DATA_DIR / "hawk_status.json", "~/polymarket-bot/data/hawk_status.json")
+        opps = read_fresh(DATA_DIR / "hawk_opportunities.json", "~/polymarket-bot/data/hawk_opportunities.json")
+        scan = status.get("scan", {})
+        overview = {
+            "running": status.get("running", False),
+            "cycle": status.get("cycle", 0),
+            "total_trades": status.get("total_trades", 0),
+            "win_rate": f"{status.get('win_rate', 0):.1f}%",
+            "pnl": f"${status.get('pnl', 0):.2f}",
+            "open_positions": status.get("open_positions", 0),
+            "total_exposure": f"${status.get('total_exposure', 0):.2f}",
+            "bankroll": f"${status.get('effective_bankroll', 0):.2f}",
+            "markets_eligible": scan.get("total_eligible", 0),
+            "markets_contested": scan.get("contested", 0),
+            "sports_analyzed": scan.get("sports_analyzed", 0),
+            "weather_analyzed": scan.get("weather_analyzed", 0),
+            "last_update": status.get("last_update", "—"),
+        }
+        top_opps = []
+        if isinstance(opps, dict):
+            for o in sorted(opps.get("opportunities", []), key=lambda x: abs(x.get("edge", 0)), reverse=True)[:5]:
+                top_opps.append({"question": o.get("question", "")[:80], "edge": round(o.get("edge", 0) * 100, 1), "side": o.get("side", "")})
+        breakdowns = {}
+        if top_opps:
+            breakdowns["top_opportunities"] = {f"{i+1}. {o['question']}": f"{o['edge']}% edge ({o['side']})" for i, o in enumerate(top_opps)}
+        recs = []
+        if status.get("win_rate", 0) < 40 and status.get("total_trades", 0) > 5:
+            recs.append({"priority": "high", "recommendation": f"Win rate is {status.get('win_rate', 0):.1f}% — review confidence thresholds"})
+        return jsonify({"overview": overview, "breakdowns": breakdowns, "recommendations": recs})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@atlas_bp.route("/api/atlas/quant")
+def api_atlas_quant():
+    """Atlas analysis of Quant — backtesting, recommendations."""
+    try:
+        status = read_fresh(DATA_DIR / "quant_status.json", "~/polymarket-bot/data/quant_status.json")
+        recs = read_fresh(DATA_DIR / "quant_recommendations.json", "~/polymarket-bot/data/quant_recommendations.json")
+        analytics = read_fresh(DATA_DIR / "quant_analytics.json", "~/polymarket-bot/data/quant_analytics.json")
+        overview = {
+            "status": status.get("status", "unknown"),
+            "last_run": status.get("last_run", "—"),
+            "total_backtests": status.get("total_backtests", 0),
+            "recommendations_count": len(recs) if isinstance(recs, list) else len(recs.get("recommendations", [])) if isinstance(recs, dict) else 0,
+        }
+        if isinstance(analytics, dict):
+            overview["win_rate"] = analytics.get("win_rate", "—")
+            overview["avg_edge"] = analytics.get("avg_edge", "—")
+        return jsonify({"overview": overview, "recommendations": []})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@atlas_bp.route("/api/atlas/viper")
+def api_atlas_viper():
+    """Atlas analysis of Viper — revenue, cost audits."""
+    try:
+        status = read_fresh(DATA_DIR / "viper_status.json", "~/polymarket-bot/data/viper_status.json")
+        costs = read_fresh(DATA_DIR / "viper_costs.json", "~/polymarket-bot/data/viper_costs.json")
+        intel = read_fresh(DATA_DIR / "viper_intel.json", "~/polymarket-bot/data/viper_intel.json")
+        overview = {
+            "status": status.get("status", "unknown"),
+            "last_scan": status.get("last_scan", "—"),
+            "opportunities_found": status.get("opportunities", 0),
+            "total_cost_tracked": costs.get("total", "—") if isinstance(costs, dict) else "—",
+        }
+        if isinstance(intel, dict):
+            overview["intel_items"] = len(intel.get("items", intel.get("insights", [])))
+        return jsonify({"overview": overview, "recommendations": []})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@atlas_bp.route("/api/atlas/odin")
+def api_atlas_odin():
+    """Atlas analysis of Odin — futures trading, regime, skills."""
+    try:
+        odin_root = Path.home() / "odin" / "data"
+        status = read_fresh(odin_root / "odin_status.json", "~/odin/data/odin_status.json")
+        config = status.get("config", {})
+        regime = status.get("regime", {})
+        overview = {
+            "exchange": config.get("exchange", "Hyperliquid"),
+            "mode": status.get("mode", "paper").upper(),
+            "skills_loaded": status.get("skill_count", 0),
+            "hl_pairs": config.get("hl_pairs", 0),
+            "priority_coins": config.get("priority_coins", "—"),
+            "cycle": status.get("cycle_count", 0),
+            "last_scan": status.get("timestamp_et", "—"),
+            "balance": status.get("balance", 0),
+            "total_pnl": status.get("total_pnl", 0),
+            "open_positions": status.get("open_positions", 0),
+            "regime": regime.get("regime", "—"),
+            "regime_bias": regime.get("direction_bias", "—"),
+            "top_long": regime.get("top_long", "—"),
+            "top_short": regime.get("top_short", "—"),
+        }
+        positions = status.get("paper_positions", [])
+        opps = status.get("opportunities", [])
+        breakdowns = {}
+        if positions:
+            breakdowns["positions"] = {p.get("symbol", "?"): f"{p.get('side', '?')} @ {p.get('entry_price', '?')}" for p in positions[:5]}
+        if opps:
+            breakdowns["opportunities"] = {o.get("symbol", "?"): f"{o.get('direction', '?')} (score {o.get('score', '?')}) — {', '.join(o.get('reasons', []))[:80]}" for o in opps[:5]}
+        recs = []
+        if status.get("mode", "paper") == "paper":
+            recs.append({"priority": "info", "recommendation": "Odin is in PAPER mode — no real trades"})
+        return jsonify({"overview": overview, "breakdowns": breakdowns, "recommendations": recs})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/improvements", methods=["POST"])
@@ -756,7 +874,7 @@ def api_atlas_hub_eval():
                 {"name": "Hawk", "role": "Non-crypto Polymarket scanner (sports, politics)", "color": "#FFD700"},
                 {"name": "Viper", "role": "Revenue hunter — gigs, cost audits", "color": "#00ff88"},
                 {"name": "Quant", "role": "Backtesting lab — parameter optimization", "color": "#00BFFF"},
-                {"name": "Razor", "role": "Completeness arbitrage — ALL markets, ML-enhanced", "color": "#FF1493"},
+                {"name": "Odin", "role": "BTC/ETH futures swing trader (Hyperliquid) — SMC + Macro", "color": "#E8DCC8"},
             ],
             "features": features,
             "architecture": "Jordan (Owner) > Claude (Godfather) > Thor + Shelby > All Agents. Atlas cross-cuts.",
@@ -1277,7 +1395,7 @@ def api_atlas_suggest_agent():
                 pass
 
         # Current system gaps that might warrant a new agent
-        current_agents = ["garves", "soren", "shelby", "atlas", "lisa", "thor", "robotox", "hawk", "viper", "quant", "razor"]
+        current_agents = ["garves", "soren", "shelby", "atlas", "lisa", "thor", "robotox", "hawk", "viper", "quant", "odin"]
         gap_areas = [
             {"area": "Analytics/BI", "description": "Dedicated data visualization and business intelligence agent",
              "need": "medium", "reason": "Currently Atlas handles both research and analytics — a dedicated BI agent could provide richer dashboards and trend analysis"},

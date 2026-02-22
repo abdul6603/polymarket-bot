@@ -67,6 +67,7 @@
         <option value="thor">Thor</option>
         <option value="robotox">Robotox</option>
         <option value="viper">Viper</option>
+        <option value="odin">Odin</option>
       </select>
       <input type="text" class="input" id="atlas-deep-query" placeholder="Research topic..." style="flex:1;min-width:200px;font-size:0.78rem;padding:6px 10px;" onkeydown="if(event.key==='Enter')atlasDeepResearch()">
       <button class="btn btn-primary" onclick="atlasDeepResearch()" style="font-size:0.76rem;padding:6px 16px;white-space:nowrap;">Research</button>
@@ -105,6 +106,10 @@
         <div class="atlas-cmd-card" data-color="cyan" onclick="atlasAnalyze(&apos;quant&apos;)">
           <span class="cmd-icon">&#x1F9EA;</span>
           <div class="cmd-text"><span class="cmd-title">Quant Analysis</span><span class="cmd-sub">Backtest, walk-forward</span></div>
+        </div>
+        <div class="atlas-cmd-card" data-color="odin" onclick="atlasAnalyze(&apos;odin&apos;)">
+          <span class="cmd-icon">&#x1F441;</span>
+          <div class="cmd-text"><span class="cmd-title">Odin Analysis</span><span class="cmd-sub">Futures, regime, skills</span></div>
         </div>
       </div>
     </div>

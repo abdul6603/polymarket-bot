@@ -9,7 +9,6 @@
     --agent-thor: #ff6600;
     --agent-hawk: #FFD700;
     --agent-viper: #00ff88;
-    --agent-razor: #FF1493;
     --agent-quant: #00BFFF;
     --agent-odin: #8B5CF6;
     --bg: #000000;
@@ -125,7 +124,6 @@
   .sidebar-btn[data-tab="garves-live"].active { color:var(--agent-garves); box-shadow:inset 3px 0 0 var(--agent-garves); }
   .sidebar-btn[data-tab="hawk"].active { color:var(--agent-hawk); box-shadow:inset 3px 0 0 var(--agent-hawk); }
   .sidebar-btn[data-tab="viper"].active { color:var(--agent-viper); box-shadow:inset 3px 0 0 var(--agent-viper); }
-  .sidebar-btn[data-tab="razor"].active { color:var(--agent-razor); box-shadow:inset 3px 0 0 var(--agent-razor); }
   .sidebar-btn[data-tab="quant"].active { color:var(--agent-quant); box-shadow:inset 3px 0 0 var(--agent-quant); }
   .sidebar-btn[data-tab="odin"].active { color:var(--agent-odin); box-shadow:inset 3px 0 0 var(--agent-odin); }
   .sidebar-spacer { flex:1; }
@@ -186,7 +184,6 @@
   .stat-card[data-accent="sentinel"] { border-left-color:var(--agent-sentinel); }
   .stat-card[data-accent="thor"] { border-left-color:var(--agent-thor); }
   .stat-card[data-accent="hawk"] { border-left-color:var(--agent-hawk); }
-  .stat-card[data-accent="razor"] { border-left-color:var(--agent-razor); }
   .stat-card[data-accent="success"] { border-left-color:var(--success); }
   .stat-card[data-accent="warning"] { border-left-color:var(--warning); }
   .stat-card[data-accent="error"] { border-left-color:var(--error); }
@@ -226,11 +223,6 @@
   .btn-hawk { background:rgba(255,215,0,0.12); border-color:rgba(255,215,0,0.25); color:var(--agent-hawk); }
   .btn-hawk:hover { background:rgba(255,215,0,0.2); border-color:rgba(255,215,0,0.4); }
   .badge-hawk { background:rgba(255,215,0,0.1); color:var(--agent-hawk); border:1px solid rgba(255,215,0,0.15); }
-  .section-title[data-accent="razor"]::before { background:var(--agent-razor); }
-  .section-title[data-accent="razor"] { color:var(--agent-razor); }
-  .btn-razor { background:rgba(255,20,147,0.12); border-color:rgba(255,20,147,0.25); color:var(--agent-razor); }
-  .btn-razor:hover { background:rgba(255,20,147,0.2); border-color:rgba(255,20,147,0.4); }
-  .badge-razor { background:rgba(255,20,147,0.1); color:var(--agent-razor); border:1px solid rgba(255,20,147,0.15); }
   .section-spacer { margin-top:var(--space-10); }
 
   /* Tables */
@@ -358,13 +350,10 @@
   .agent-card:hover[data-agent="sentinel"] { border-color:rgba(0,255,68,0.2); }
   .agent-card[data-agent="hawk"]::before { background:var(--agent-hawk); }
   .agent-card[data-agent="viper"]::before { background:var(--agent-viper); }
-  .agent-card[data-agent="razor"]::before { background:var(--agent-razor); }
   .agent-card:hover[data-agent="hawk"] { border-color:rgba(255,215,0,0.2); }
   .agent-card:hover[data-agent="viper"] { border-color:rgba(0,255,136,0.2); }
-  .agent-card:hover[data-agent="razor"] { border-color:rgba(255,20,147,0.2); }
   .agent-card[data-agent="hawk"] .agent-card-name { color:var(--agent-hawk); }
   .agent-card[data-agent="viper"] .agent-card-name { color:var(--agent-viper); }
-  .agent-card[data-agent="razor"] .agent-card-name { color:var(--agent-razor); }
   .agent-card-header { display:flex; align-items:center; justify-content:space-between; gap:6px; }
   .agent-card-avatar { width:30px; height:30px; border-radius:50%; flex-shrink:0; object-fit:cover; border:2px solid rgba(255,255,255,0.1); }
   .agent-card-initial { width:30px; height:30px; border-radius:50%; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:0.62rem; font-weight:700; letter-spacing:0.04em; border:2px solid rgba(255,255,255,0.1); }
@@ -900,6 +889,9 @@
   .atlas-cmd-card[data-color="muted"]  { border-left-color:var(--text-muted); }
   .atlas-cmd-card[data-color="muted"]:hover  { box-shadow:0 6px 28px rgba(136,136,170,0.08); border-color:rgba(136,136,170,0.25); }
   .atlas-cmd-card[data-color="muted"]  .cmd-title { color:var(--text-secondary); }
+  .atlas-cmd-card[data-color="odin"]  { border-left-color:#E8DCC8; }
+  .atlas-cmd-card[data-color="odin"]:hover  { box-shadow:0 6px 28px rgba(232,220,200,0.12); border-color:rgba(232,220,200,0.25); }
+  .atlas-cmd-card[data-color="odin"]  .cmd-title { color:#E8DCC8; }
 
   /* Atlas V3 Report Rendering */
   .atlas-report {
