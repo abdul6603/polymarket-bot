@@ -32,9 +32,10 @@ ET = ZoneInfo("America/New_York")
 # Tick interval in seconds — 8s gives ~22 ticks per 180s snipe zone
 SNIPE_TICK_INTERVAL = 8
 
-# Weekend threshold is lower because volatility drops
-WEEKEND_THRESHOLD = 0.0007   # 0.070%
-WEEKDAY_THRESHOLD = 0.00077  # 0.077%
+# Weekend pre-futures: low vol, lower threshold to catch small moves
+# Futures active (weekdays + weekend after 6PM ET): higher threshold for real moves only
+WEEKEND_PREFUTURES_THRESHOLD = 0.0007  # 0.070%
+FUTURES_THRESHOLD = 0.0008             # 0.080%
 
 # Minimum CLOB implied price to enter — don't buy tokens the market says are <40% likely.
 # A $0.09 DOWN token = market says 9% chance of DOWN. That's fighting smart money.
@@ -89,11 +90,16 @@ class SnipeEngine:
         self.enabled = getattr(cfg, "snipe_enabled", True)
 
     def _effective_threshold(self) -> float:
-        """Dynamic threshold: lower on weekends (less vol), normal on weekdays."""
-        day = datetime.now(ET).weekday()  # 0=Mon, 6=Sun
-        if day >= 5:  # Saturday or Sunday
-            return WEEKEND_THRESHOLD
-        return WEEKDAY_THRESHOLD
+        """Dynamic threshold based on market session.
+
+        Weekend before 6PM ET: low vol, use 0.070%
+        Weekend after 6PM ET / Weekdays: futures active, use 0.080%
+        """
+        now = datetime.now(ET)
+        day = now.weekday()  # 0=Mon, 6=Sun
+        if day >= 5 and now.hour < 18:  # Weekend before 6PM ET
+            return WEEKEND_PREFUTURES_THRESHOLD
+        return FUTURES_THRESHOLD
 
     def _get_signal(self, asset: str) -> DeltaSignal:
         """Get or create per-asset delta signal tracker with dynamic threshold."""
