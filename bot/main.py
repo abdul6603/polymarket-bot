@@ -28,6 +28,7 @@ from bot.daily_cycle import should_reset, archive_and_reset
 from bot.orderbook_check import check_orderbook_depth
 from bot.macro import get_context as get_macro_context
 from bot.maker_engine import MakerEngine
+from bot.snipe.engine import SnipeEngine
 
 log = logging.getLogger("bot")
 
@@ -115,6 +116,14 @@ class TradingBot:
         self.conviction_engine = ConvictionEngine()
         self.straddle_engine = StraddleEngine(cfg, self.executor, self.tracker, self.price_cache)
         self.maker_engine = MakerEngine(cfg, self.client, self.price_cache)
+        self.snipe_engine = SnipeEngine(
+            cfg=cfg,
+            price_cache=self.price_cache,
+            clob_client=self.client,
+            dry_run=cfg.dry_run,
+            budget_per_window=cfg.snipe_budget_per_window,
+            delta_threshold=cfg.snipe_delta_threshold / 100,
+        )
         self.perf_tracker = PerformanceTracker(cfg, position_tracker=self.tracker)
         self.bankroll_manager = BankrollManager()
         self._shutdown_event = asyncio.Event()
@@ -256,6 +265,11 @@ class TradingBot:
                  bankroll_status["bankroll_usd"], bankroll_status["pnl_usd"],
                  bankroll_status["multiplier"])
         log.info("V2: emergency_stop, trade_journal, shelby_commands, trade_alerts")
+        if self.snipe_engine.enabled:
+            log.info("SnipeEngine: ENABLED (budget=$%.0f/window, delta=%.2f%%, 3-wave pyramid)",
+                     self.cfg.snipe_budget_per_window, self.cfg.snipe_delta_threshold)
+        else:
+            log.info("SnipeEngine: disabled (set SNIPE_ENABLED=true to activate)")
         if self.maker_engine.enabled:
             log.info("MakerEngine: ENABLED (quote=$%.0f, max_inv=$%.0f, exposure=$%.0f, tick=%.0fs)",
                      self.maker_engine.quote_size_usd, self.maker_engine.max_inventory_usd,
@@ -274,10 +288,11 @@ class TradingBot:
             loop.add_signal_handler(sig, self._handle_shutdown)
 
         try:
-            # Run taker loop + maker loop concurrently
+            # Run taker + maker + snipe loops concurrently
             taker_task = asyncio.create_task(self._taker_loop())
             maker_task = asyncio.create_task(self._maker_loop())
-            await asyncio.gather(taker_task, maker_task)
+            snipe_task = asyncio.create_task(self._snipe_loop())
+            await asyncio.gather(taker_task, maker_task, snipe_task)
         finally:
             await self._cleanup()
 
@@ -345,6 +360,10 @@ class TradingBot:
                 )
             except asyncio.TimeoutError:
                 pass
+
+    async def _snipe_loop(self) -> None:
+        """Snipe engine loop for BTC 5m markets (5s tick)."""
+        await self.snipe_engine.run_loop(self._shutdown_event)
 
     def _handle_shutdown(self) -> None:
         log.info("Shutdown signal received")
@@ -450,7 +469,14 @@ class TradingBot:
 
         # 1. Discover all markets across assets and timeframes
         all_markets = fetch_markets(self.cfg)
-        ranked = rank_markets(all_markets)
+
+        # Feed BTC 5m markets to snipe engine (isolated from taker)
+        markets_5m = [dm for dm in all_markets if dm.timeframe.name == "5m" and dm.asset == "bitcoin"]
+        if markets_5m:
+            self.snipe_engine.window_tracker.update(markets_5m)
+
+        # Filter 5m out of taker pipeline (snipe handles them separately)
+        ranked = rank_markets([dm for dm in all_markets if dm.timeframe.name != "5m"])
 
         if not ranked:
             log.info("No tradeable markets found, waiting...")

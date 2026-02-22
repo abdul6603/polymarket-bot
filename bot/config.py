@@ -42,6 +42,11 @@ class Config:
     dry_run: bool = _env("DRY_RUN", "true").lower() in ("true", "1", "yes")
     log_level: str = _env("LOG_LEVEL", "INFO")
 
+    # Snipe engine — 5m BTC pyramid accumulation
+    snipe_enabled: bool = _env("SNIPE_ENABLED", "true").lower() in ("true", "1", "yes")
+    snipe_budget_per_window: float = float(_env("SNIPE_BUDGET_PER_WINDOW", "50.0"))
+    snipe_delta_threshold: float = float(_env("SNIPE_DELTA_THRESHOLD", "0.08"))
+
     # Maker engine (disabled by default)
     maker_enabled: bool = _env("MAKER_ENABLED", "false").lower() in ("true", "1", "yes")
     maker_quote_size_usd: float = float(_env("MAKER_QUOTE_SIZE_USD", "8.0"))

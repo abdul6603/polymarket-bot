@@ -22,7 +22,7 @@ class Timeframe:
     max_remaining_s: int
 
 
-TF_5M = Timeframe(name="5m", priority=1, min_remaining_s=60, max_remaining_s=300)
+TF_5M = Timeframe(name="5m", priority=1, min_remaining_s=10, max_remaining_s=300)
 TF_15M = Timeframe(name="15m", priority=2, min_remaining_s=120, max_remaining_s=900)
 TF_1H = Timeframe(name="1h", priority=3, min_remaining_s=300, max_remaining_s=3600)
 TF_4H = Timeframe(name="4h", priority=4, min_remaining_s=900, max_remaining_s=14400)
@@ -72,8 +72,7 @@ def _classify_timeframe(question: str) -> Timeframe | None:
         if duration < 0:
             duration += 24 * 60  # crosses midnight
         if duration <= 5:
-            log.debug("Skipping 5m market (too noisy, 25%% WR)")
-            return None
+            return TF_5M
         elif duration <= 15:
             return TF_15M
         elif duration <= 60:
