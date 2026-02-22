@@ -130,11 +130,11 @@ class PyramidExecutor:
         _, budget_frac, price_cap, _ = WAVES[wave_num - 1]
         size_usd = self._budget * budget_frac
 
-        # Cross the spread: bid above implied to ensure fill (cap still protects us)
-        # CLOB fills at maker price, so we pay the ask not our limit
-        price = min(implied_price + 0.04, price_cap)
+        # Bid at the price cap — CLOB fills at maker (resting) price, not our limit.
+        # Bidding high sweeps all resting sells up to our cap, ensuring maximum fill.
+        price = price_cap
         price = max(0.01, min(0.99, round(price, 2)))
-        shares = round(size_usd / price, 2)  # CLOB requires max 2 decimal places
+        shares = int(size_usd / price)  # CLOB requires integer shares
 
         if self._dry_run:
             order_id = f"snipe-dry-w{wave_num}-{int(time.time())}"
@@ -182,7 +182,7 @@ class PyramidExecutor:
         shares: float,
         size_usd: float,
     ) -> WaveResult | None:
-        """Place a FOK (Fill or Kill) order on CLOB — fills instantly or cancels."""
+        """Place a FAK (Fill and Kill) order on CLOB — fills what's available, cancels rest."""
         if not self._client:
             log.error("[SNIPE] No CLOB client for live order")
             return None
@@ -198,31 +198,52 @@ class PyramidExecutor:
                 token_id=token_id,
             )
             signed_order = self._client.create_order(order_args)
-            resp = self._client.post_order(signed_order, OrderType.FOK)
+            resp = self._client.post_order(signed_order, OrderType.FAK)
             order_id = resp.get("orderID") or resp.get("id", "unknown")
             status = resp.get("status", "")
 
-            # FOK: either fully filled or fully rejected
+            # Log full response for fill debugging
+            log.info("[SNIPE] CLOB response: %s", json.dumps(resp)[:500])
+
+            # FAK: fills whatever liquidity is available, kills the rest
             filled = status.lower() in ("matched", "filled", "live")
             if not filled:
                 log.warning(
-                    "[SNIPE] Wave %d FOK NOT FILLED: status=%s | price=$%.3f | %s",
+                    "[SNIPE] Wave %d FAK NOT FILLED: status=%s | price=$%.3f | %s",
                     wave_num, status, price, order_id,
                 )
                 return None
 
+            # CLOB fills at maker (resting) price, not our limit price
+            # Try to get actual fill info from response
+            actual_shares = shares
+            actual_price = price  # Our limit — updated below if fill data available
+            avg_price = resp.get("averagePrice") or resp.get("average_price")
+            if avg_price is not None:
+                actual_price = float(avg_price)
+            matched = resp.get("matchedAmount") or resp.get("matched_amount")
+            if matched is not None:
+                actual_shares = float(matched)
+            actual_size = round(actual_shares * actual_price, 2)
+            if actual_shares < 1:
+                log.warning(
+                    "[SNIPE] Wave %d FAK near-zero fill: %.2f shares | %s",
+                    wave_num, actual_shares, order_id,
+                )
+                return None
+
             log.info(
-                "[SNIPE][LIVE] Wave %d: %s %.1f shares @ $%.3f ($%.2f) | %s | status=%s",
+                "[SNIPE][LIVE] Wave %d: %s %.1f shares @ $%.3f ($%.2f) | limit=$%.3f | %s | status=%s",
                 wave_num, self._active_position.direction.upper(),
-                shares, price, size_usd, order_id, status,
+                actual_shares, actual_price, actual_size, price, order_id, status,
             )
 
             return WaveResult(
                 wave_num=wave_num,
                 direction=self._active_position.direction,
-                size_usd=size_usd,
-                price=price,
-                shares=shares,
+                size_usd=actual_size,
+                price=actual_price,
+                shares=actual_shares,
                 token_id=token_id,
                 order_id=order_id,
                 filled=True,

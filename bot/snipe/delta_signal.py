@@ -12,7 +12,7 @@ from dataclasses import dataclass
 log = logging.getLogger("garves.snipe")
 
 # Minimum delta to consider direction locked
-DEFAULT_DELTA_THRESHOLD = 0.0008  # 0.08%
+DEFAULT_DELTA_THRESHOLD = 0.00077  # 0.077%
 
 # Sustained direction: need N consecutive ticks same direction
 SUSTAINED_TICKS = 3
@@ -102,11 +102,11 @@ class DeltaSignal:
         )
 
     def get_wave_threshold(self, wave_num: int) -> float:
-        """Return escalating delta threshold for each pyramid wave."""
+        """Return delta threshold for each pyramid wave (same for all — delta already proven)."""
         return {
-            1: self._threshold,              # 0.08% for Wave 1
-            2: self._threshold * 1.25,       # 0.10% for Wave 2
-            3: self._threshold * 1.50,       # 0.12% for Wave 3
+            1: self._threshold,              # 0.077% for Wave 1
+            2: self._threshold,              # 0.077% for Wave 2 (same — delta already proven at entry)
+            3: self._threshold * 1.15,       # 0.089% for Wave 3 (slight escalation for final wave)
         }.get(wave_num, self._threshold)
 
     def reset(self) -> None:

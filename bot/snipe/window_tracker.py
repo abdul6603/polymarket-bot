@@ -69,6 +69,10 @@ class WindowTracker:
                 best = w
         return best
 
+    def all_active_windows(self) -> list:
+        """Return all active windows for multi-asset scanning."""
+        return list(self._active.values())
+
     def update(self, markets_5m: list) -> None:
         """Update window state from discovered 5m markets.
 

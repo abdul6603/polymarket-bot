@@ -113,81 +113,102 @@ class SnipeEngine:
                 log.info("[SNIPE] Cooldown done -> IDLE")
 
     def _on_idle(self) -> None:
-        """Look for a tradeable 5m window."""
-        window = self.window_tracker.get_active_window()
-        if not window:
-            return
-
+        """Wait for windows to enter snipe zone, then start tracking all assets."""
         now = time.time()
-        remaining = window.end_ts - now
-        if remaining > 300 or remaining < 30:
-            return
-
-        self._current_window_id = window.market_id
-        self.delta_signal.reset()
-        self._state = SnipeState.TRACKING
-        log.info(
-            "[SNIPE] IDLE -> TRACKING: %s %s (T-%.0fs, open=$%.2f)",
-            window.asset.upper(), window.market_id[:12], remaining, window.open_price,
-        )
+        for w in self.window_tracker.all_active_windows():
+            if w.traded:
+                continue
+            remaining = w.end_ts - now
+            # Enter TRACKING once any window is within snipe zone
+            if 30 < remaining <= 190:
+                self._state = SnipeState.TRACKING
+                self.delta_signal.reset()
+                log.info("[SNIPE] IDLE -> TRACKING (scanning all assets, T-%.0fs)", remaining)
+                return
 
     def _on_tracking(self) -> None:
-        """Monitor asset delta, waiting for signal to arm."""
-        window = self.window_tracker.get_window(self._current_window_id)
-        if not window:
-            self._state = SnipeState.IDLE
-            return
-
+        """Scan ALL assets each tick, try best delta first, fall back to others on no-liquidity."""
         now = time.time()
-        remaining = window.end_ts - now
 
-        if remaining <= 0:
-            log.info("[SNIPE] Window expired while tracking (%s)", window.asset.upper())
+        # Find all tradeable windows in snipe zone
+        candidates = []
+        for w in self.window_tracker.all_active_windows():
+            if w.traded:
+                continue
+            remaining = w.end_ts - now
+            if remaining <= 0:
+                continue
+            if remaining > 190:
+                continue
+            price = self._cache.get_price(w.asset)
+            if not price or w.open_price <= 0:
+                continue
+            delta = (price - w.open_price) / w.open_price
+            candidates.append((w, price, delta, remaining))
+
+        if not candidates:
             self._state = SnipeState.IDLE
             return
 
-        price = self._cache.get_price(window.asset)
-        if not price:
-            return
+        # Sort by absolute delta (biggest mover first)
+        candidates.sort(key=lambda x: abs(x[2]), reverse=True)
 
-        # Log delta every tick for visibility
-        delta = (price - window.open_price) / window.open_price * 100
-        if remaining <= 185:
+        # Log all assets in snipe zone for visibility
+        remaining_top = candidates[0][3]
+        if remaining_top <= 185:
+            parts = []
+            for w, p, d, r in candidates:
+                parts.append(f"{w.asset[:3].upper()}={d*100:+.4f}%")
             log.info(
-                "[SNIPE] T-%.0fs | %s $%.2f | delta=%+.4f%% (open=$%.2f)",
-                remaining, window.asset.upper(), price, delta, window.open_price,
+                "[SNIPE] T-%.0fs | Best: %s $%.2f | delta=%+.4f%% | All: %s",
+                remaining_top, candidates[0][0].asset.upper(), candidates[0][1],
+                candidates[0][2] * 100, " ".join(parts),
             )
 
-        signal = self.delta_signal.evaluate(price, window.open_price, remaining)
-        if not signal:
-            return
+        # Try each candidate in order (biggest delta first) — fall back on no-liquidity
+        from bot.snipe.pyramid_executor import WAVES
+        for window, price, delta, remaining in candidates:
+            self._current_window_id = window.market_id
 
-        self._stats["signals"] += 1
-        log.info(
-            "[SNIPE] SIGNAL: %s %s | delta=%+.4f%% | conf=%.2f | "
-            "sustained=%d | T-%.0fs | $%.2f (open $%.2f)",
-            window.asset.upper(), signal.direction.upper(), signal.delta_pct,
-            signal.confidence, signal.sustained_ticks, remaining, price, window.open_price,
-        )
+            signal = self.delta_signal.evaluate(price, window.open_price, remaining)
+            if not signal:
+                return  # Delta not strong enough on best candidate — wait
 
-        # Determine target token
-        token_id = window.up_token_id if signal.direction == "up" else window.down_token_id
+            direction = signal.direction
+            token_id = window.up_token_id if direction == "up" else window.down_token_id
 
-        # Check CLOB implied price
-        implied = self._fetch_implied_price(window.market_id, token_id)
-        if not implied:
-            log.info("[SNIPE] Signal but no implied price available")
-            return
+            implied = self._fetch_implied_price(window.market_id, token_id)
+            if not implied:
+                log.info("[SNIPE] %s: no implied price, trying next", window.asset.upper())
+                continue
 
-        if implied > 0.60:
-            log.info("[SNIPE] Signal but CLOB price too high: $%.3f (Wave 1 cap $0.60)", implied)
-            return
+            max_cap = WAVES[0][2]
+            for _, _, cap, fire_below in WAVES:
+                if remaining <= fire_below:
+                    max_cap = cap
+            if implied > max_cap:
+                log.info("[SNIPE] %s: CLOB $%.3f > cap $%.2f, trying next", window.asset.upper(), implied, max_cap)
+                continue
 
-        # Start pyramid and fire waves immediately (event loop delays make next tick unreliable)
-        self.pyramid.start_position(window.market_id, signal.direction, window.open_price, window.asset)
-        self._state = SnipeState.ARMED
-        log.info("[SNIPE] TRACKING -> ARMED (implied=$%.3f) — firing waves now", implied)
-        self._on_armed()
+            self._stats["signals"] += 1
+            log.info(
+                "[SNIPE] SIGNAL: %s %s | delta=%+.4f%% | conf=%.2f | "
+                "sustained=%d | T-%.0fs | $%.2f (open $%.2f)",
+                window.asset.upper(), signal.direction.upper(), signal.delta_pct,
+                signal.confidence, signal.sustained_ticks, remaining, price, window.open_price,
+            )
+
+            # Start pyramid and fire waves immediately
+            self.pyramid.start_position(window.market_id, signal.direction, window.open_price, window.asset)
+            self._state = SnipeState.ARMED
+            log.info("[SNIPE] TRACKING -> ARMED on %s (implied=$%.3f) — firing waves now", window.asset.upper(), implied)
+            self._on_armed()
+
+            # If wave 1 filled, we're done. If not (no liquidity), _on_armed set us back to IDLE.
+            if self._state != SnipeState.IDLE:
+                return
+            # Still IDLE = wave 1 failed, try next asset
+            log.info("[SNIPE] Falling back to next asset...")
 
     def _on_armed(self) -> None:
         """Execute pyramid waves as timing conditions are met."""
@@ -216,9 +237,10 @@ class SnipeEngine:
             return
 
         # Check and fire each wave
+        wave1_failed = False
         for wave_num in (1, 2, 3):
             if self.pyramid.should_fire_wave(wave_num, remaining, implied):
-                # Verify delta still holds for waves 2 and 3 (escalating threshold)
+                # Verify delta still holds for waves 2 and 3
                 if wave_num > 1:
                     asset_price = self._cache.get_price(window.asset)
                     if asset_price and window.open_price > 0:
@@ -234,6 +256,16 @@ class SnipeEngine:
                 result = self.pyramid.execute_wave(wave_num, token_id, implied)
                 if result:
                     log.info("[SNIPE] Wave %d FIRED | T-%.0fs | price=$%.3f", wave_num, remaining, implied)
+                elif wave_num == 1:
+                    wave1_failed = True
+
+        # Wave 1 failed (no liquidity) — abandon this asset, try others
+        if wave1_failed and self.pyramid.waves_fired == 0:
+            log.warning("[SNIPE] Wave 1 failed (no liquidity) on %s — skipping", window.asset.upper())
+            self.window_tracker.mark_traded(window.market_id)
+            self.pyramid.close_position()
+            self._state = SnipeState.IDLE
+            return
 
         # All 3 waves done OR time running out with fills -> wait for resolution
         if self.pyramid.waves_fired >= 3:
@@ -246,7 +278,7 @@ class SnipeEngine:
             log.info("[SNIPE] ARMED -> EXECUTING (%d waves filled, T-%.0fs)", self.pyramid.waves_fired, remaining)
 
     def _on_executing(self) -> None:
-        """Waiting for window to resolve."""
+        """Wait for CLOB resolution — don't guess from spot price."""
         window = self.window_tracker.get_window(self._current_window_id)
         if not window:
             self._finish_trade()
@@ -255,30 +287,35 @@ class SnipeEngine:
         now = time.time()
         remaining = window.end_ts - now
 
-        if remaining <= -5:
-            # Window ended — determine outcome from asset price
-            price = self._cache.get_price(window.asset)
-            if price and window.open_price > 0:
-                actual_dir = "up" if price > window.open_price else "down"
-                result = self.pyramid.close_position(actual_dir)
-                if result:
-                    self._record_outcome(result)
-            else:
-                self.pyramid.close_position()
+        # Wait at least 30s after window end for CLOB to resolve
+        if remaining > -30:
+            return
 
+        # Check CLOB for actual resolution
+        resolved_dir = self._fetch_resolution(window.market_id)
+        if resolved_dir:
+            result = self.pyramid.close_position(resolved_dir)
+            if result:
+                self._record_outcome(result)
             self._cooldown_until = now + 30
             self._state = SnipeState.COOLDOWN
-            log.info("[SNIPE] EXECUTING -> COOLDOWN")
+            log.info("[SNIPE] EXECUTING -> COOLDOWN (resolved=%s)", resolved_dir.upper())
+            return
+
+        # Timeout: 10 min after window end, give up
+        if remaining <= -600:
+            log.warning("[SNIPE] Resolution timeout for %s, closing as unknown", window.market_id[:12])
+            self.pyramid.close_position()
+            self._cooldown_until = now + 30
+            self._state = SnipeState.COOLDOWN
+            return
 
     def _finish_trade(self) -> None:
         """Clean up current trade and go to cooldown."""
-        # Try to determine outcome from asset price
         window = self.window_tracker.get_window(self._current_window_id)
         resolved_dir = ""
         if window:
-            price = self._cache.get_price(window.asset)
-            if price and window.open_price > 0:
-                resolved_dir = "up" if price > window.open_price else "down"
+            resolved_dir = self._fetch_resolution(window.market_id) or ""
 
         result = self.pyramid.close_position(resolved_dir)
         if result:
@@ -286,6 +323,39 @@ class SnipeEngine:
 
         self._cooldown_until = time.time() + 30
         self._state = SnipeState.COOLDOWN
+
+    def _fetch_resolution(self, market_id: str) -> str | None:
+        """Check CLOB API for actual market resolution. Returns 'up', 'down', or None."""
+        try:
+            from bot.http_session import get_session
+            resp = get_session().get(
+                f"{self._cfg.clob_host}/markets/{market_id}",
+                timeout=10,
+            )
+            if resp.status_code != 200:
+                return None
+            data = resp.json()
+            if not data.get("closed"):
+                return None
+            for t in data.get("tokens", []):
+                outcome_label = (t.get("outcome") or "").lower()
+                if t.get("winner", False):
+                    if outcome_label in ("up", "yes"):
+                        return "up"
+                    elif outcome_label in ("down", "no"):
+                        return "down"
+            # Fallback: check final prices
+            for t in data.get("tokens", []):
+                outcome_label = (t.get("outcome") or "").lower()
+                price = float(t.get("price", 0))
+                if price > 0.9:
+                    if outcome_label in ("up", "yes"):
+                        return "up"
+                    elif outcome_label in ("down", "no"):
+                        return "down"
+        except Exception:
+            pass
+        return None
 
     def _record_outcome(self, result: dict) -> None:
         """Record trade outcome in stats and publish to event bus."""
