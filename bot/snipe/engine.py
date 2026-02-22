@@ -1,11 +1,11 @@
-"""Snipe Engine — orchestrates the 5m multi-asset snipe strategy.
+"""Snipe Engine — orchestrates the 5m BTC-only snipe strategy.
 
 State machine:
   IDLE -> TRACKING -> ARMED -> EXECUTING -> COOLDOWN -> IDLE
 
 Runs in its own background thread (independent of Garves's main event loop).
-Ticks every 15s → 10-12 readings per snipe window vs 0-2 when coupled.
-Assets: BTC, ETH, SOL, XRP — all scanned, BTC priority via biggest-delta-first sort.
+Ticks every 8s → ~22 readings per snipe window.
+BTC only — deepest order book, most reliable fills near fair price.
 Weekend threshold: 0.070% (lower vol). Weekday threshold: 0.077%.
 """
 from __future__ import annotations
@@ -71,14 +71,14 @@ class SnipeEngine:
         self._delta_signals: dict[str, DeltaSignal] = {}  # Per-asset signal trackers
         self.pyramid = PyramidExecutor(
             cfg, clob_client, dry_run=dry_run,
-            budget_per_window=budget_per_window,
+            budget_per_window=25.0,
         )
 
         self._state = SnipeState.IDLE
         self._current_window_id: str = ""
         self._cooldown_until = 0.0
-        self._base_budget = budget_per_window
-        self._escalated_budget = 75.0  # After 3 consecutive wins
+        self._base_budget = 25.0  # Conservative: protect the $188
+        self._escalated_budget = 40.0  # After 3 consecutive wins
         self._consecutive_wins = 0
         self._stats = {
             "signals": 0, "trades": 0, "wins": 0,
@@ -185,10 +185,12 @@ class SnipeEngine:
         """Evaluate ALL assets with per-asset signal trackers, arm the best one with a signal."""
         now = time.time()
 
-        # Collect all tradeable windows in snipe zone (all assets scanned, BTC priority via delta sort)
+        # BTC only — deepest book, most reliable fills
         candidates = []
         for w in self.window_tracker.all_active_windows():
             if w.traded:
+                continue
+            if w.asset != "bitcoin":
                 continue
             remaining = w.end_ts - now
             if remaining <= 0 or remaining > 190:
@@ -302,6 +304,16 @@ class SnipeEngine:
         wave1_failed = False
         for wave_num in (1, 2, 3):
             if self.pyramid.should_fire_wave(wave_num, remaining, implied):
+                # After Wave 1, check actual fill price — abort if market says <40%
+                if wave_num > 1 and self.pyramid.has_active_position:
+                    last_wave = self.pyramid._active_position.waves[-1] if self.pyramid._active_position.waves else None
+                    if last_wave and last_wave.price < MIN_IMPLIED_PRICE:
+                        log.warning(
+                            "[SNIPE] ABORT: Wave %d actual fill $%.3f < floor $%.2f — not pyramiding into bad price",
+                            last_wave.wave_num, last_wave.price, MIN_IMPLIED_PRICE,
+                        )
+                        break
+
                 # Verify delta still holds for waves 2 and 3
                 if wave_num > 1:
                     asset_price = self._cache.get_price(window.asset)

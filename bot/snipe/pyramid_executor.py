@@ -159,11 +159,11 @@ class PyramidExecutor:
                 return None
 
         self._active_position.waves.append(result)
-        self._active_position.total_size_usd += size_usd
-        self._active_position.total_shares += shares
+        self._active_position.total_size_usd += result.size_usd
+        self._active_position.total_shares += result.shares
 
-        # Weighted average entry
-        total_cost = sum(w.price * w.shares for w in self._active_position.waves)
+        # Weighted average entry from actual fills
+        total_cost = sum(w.size_usd for w in self._active_position.waves)
         total_shares = sum(w.shares for w in self._active_position.waves)
         self._active_position.avg_entry = total_cost / total_shares if total_shares > 0 else 0
 
@@ -214,17 +214,24 @@ class PyramidExecutor:
                 )
                 return None
 
-            # CLOB fills at maker (resting) price, not our limit price
-            # Try to get actual fill info from response
+            # Read ACTUAL fill data from CLOB response
+            # takingAmount = outcome tokens received, makingAmount = USDC paid
             actual_shares = shares
-            actual_price = price  # Our limit — updated below if fill data available
-            avg_price = resp.get("averagePrice") or resp.get("average_price")
-            if avg_price is not None:
-                actual_price = float(avg_price)
-            matched = resp.get("matchedAmount") or resp.get("matched_amount")
-            if matched is not None:
-                actual_shares = float(matched)
-            actual_size = round(actual_shares * actual_price, 2)
+            actual_price = price
+            taking = resp.get("takingAmount")
+            making = resp.get("makingAmount")
+            if taking is not None and making is not None:
+                actual_shares = float(taking)
+                actual_size = float(making)
+                actual_price = actual_size / actual_shares if actual_shares > 0 else price
+            else:
+                avg_price = resp.get("averagePrice") or resp.get("average_price")
+                if avg_price is not None:
+                    actual_price = float(avg_price)
+                matched = resp.get("matchedAmount") or resp.get("matched_amount")
+                if matched is not None:
+                    actual_shares = float(matched)
+                actual_size = round(actual_shares * actual_price, 2)
             if actual_shares < 1:
                 log.warning(
                     "[SNIPE] Wave %d FAK near-zero fill: %.2f shares | %s",
