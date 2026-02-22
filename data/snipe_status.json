@@ -1,0 +1,27 @@
+{
+  "enabled": true,
+  "state": "idle",
+  "dry_run": false,
+  "budget_per_window": 50.0,
+  "budget_base": 50.0,
+  "budget_escalated": 75.0,
+  "consecutive_wins": 0,
+  "delta_threshold_pct": 0.08,
+  "stats": {
+    "signals": 0,
+    "trades": 0,
+    "wins": 0,
+    "losses": 0,
+    "pnl": 0.0,
+    "total_invested": 0.0
+  },
+  "window": {
+    "active_windows": 0,
+    "windows": []
+  },
+  "position": {
+    "active": false
+  },
+  "history": [],
+  "timestamp": 1771768260.0836842
+}

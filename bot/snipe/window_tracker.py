@@ -1,9 +1,9 @@
-"""Window Tracker — discovers BTC 5m markets and tracks window open prices.
+"""Window Tracker — discovers 5m markets and tracks window open prices.
 
 Responsibilities:
-- Accept discovered 5m markets from the taker loop
+- Accept discovered 5m markets from the taker loop (BTC, ETH, SOL, XRP)
 - Parse window start/end times from market questions
-- Capture BTC open price at window start from PriceCache
+- Capture asset open price at window start from PriceCache
 - Track remaining time for each active window
 """
 from __future__ import annotations
@@ -38,16 +38,17 @@ class Window:
     """A single 5m trading window."""
     market_id: str
     question: str
+    asset: str             # "bitcoin", "ethereum", "solana", "xrp"
     up_token_id: str
     down_token_id: str
     start_ts: float       # Unix timestamp of window start
     end_ts: float          # Unix timestamp of window end
-    open_price: float      # BTC price at window start
+    open_price: float      # Asset price at window start
     traded: bool = False   # Whether we've already traded this window
 
 
 class WindowTracker:
-    """Discovers and tracks BTC 5m windows."""
+    """Discovers and tracks 5m windows across all crypto assets."""
 
     def __init__(self, cfg: Config, price_cache: PriceCache):
         self._cfg = cfg
@@ -106,15 +107,16 @@ class WindowTracker:
             if not start_ts or not end_ts:
                 continue
 
-            # Get BTC open price at window start
-            open_price = self._get_open_price(start_ts)
+            # Get asset open price at window start
+            open_price = self._get_open_price(dm.asset, start_ts)
             if open_price <= 0:
-                log.debug("[SNIPE] No open price for window %s", mid[:12])
+                log.debug("[SNIPE] No open price for window %s (%s)", mid[:12], dm.asset)
                 continue
 
             window = Window(
                 market_id=mid,
                 question=dm.question,
+                asset=dm.asset,
                 up_token_id=up_tid,
                 down_token_id=down_tid,
                 start_ts=start_ts,
@@ -124,8 +126,8 @@ class WindowTracker:
             self._active[mid] = window
             remaining = end_ts - now
             log.info(
-                "[SNIPE] Window tracked: %s | BTC open=$%.2f | T-%.0fs | %s",
-                mid[:12], open_price, remaining, dm.question[:60],
+                "[SNIPE] Window tracked: %s | %s open=$%.2f | T-%.0fs | %s",
+                mid[:12], dm.asset.upper(), open_price, remaining, dm.question[:60],
             )
 
     def _parse_window_times(self, question: str) -> tuple[float, float]:
@@ -172,10 +174,10 @@ class WindowTracker:
 
         return start_dt.timestamp(), end_dt.timestamp()
 
-    def _get_open_price(self, start_ts: float) -> float:
-        """Get BTC price at window start from PriceCache."""
+    def _get_open_price(self, asset: str, start_ts: float) -> float:
+        """Get asset price at window start from PriceCache."""
         start_minute = int(start_ts // 60) * 60
-        candles = self._cache.get_candles("bitcoin", 300)
+        candles = self._cache.get_candles(asset, 300)
 
         # Exact match: candle at window start minute
         for c in candles:
@@ -185,7 +187,7 @@ class WindowTracker:
         # Fallback: if window just started (< 2 min ago), use current price
         now = time.time()
         if now - start_ts < 120:
-            price = self._cache.get_price("bitcoin")
+            price = self._cache.get_price(asset)
             if price:
                 return price
 
@@ -215,6 +217,7 @@ class WindowTracker:
             if remaining > -30:
                 windows.append({
                     "market_id": w.market_id[:12],
+                    "asset": w.asset,
                     "open_price": w.open_price,
                     "remaining_s": round(max(0, remaining)),
                     "traded": w.traded,

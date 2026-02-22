@@ -255,7 +255,7 @@ class TradingBot:
         log.info("=" * 60)
         log.info("Garves V2 — Multi-Timeframe Trading Bot")
         log.info("Signal -> Probability -> Edge -> Action -> Confidence -> P&L")
-        log.info("Assets: BTC, ETH, SOL, XRP | Timeframes: 5m, 15m, 1h, 4h, weekly")
+        log.info("Assets: BTC, ETH, SOL, XRP | Timeframes: 5m(snipe), 15m, 1h, 4h, weekly")
         log.info("Ensemble: 11 indicators + Temporal Arb + ATR Filter + Fee Awareness + ConvictionEngine")
         log.info("Risk: max %d concurrent, $%.2f cap, 5min cooldown",
                  self.cfg.max_concurrent_positions, self.cfg.max_position_usd)
@@ -470,8 +470,8 @@ class TradingBot:
         # 1. Discover all markets across assets and timeframes
         all_markets = fetch_markets(self.cfg)
 
-        # Feed BTC 5m markets to snipe engine (isolated from taker)
-        markets_5m = [dm for dm in all_markets if dm.timeframe.name == "5m" and dm.asset == "bitcoin"]
+        # Feed all 5m markets to snipe engine (BTC, ETH, SOL, XRP — isolated from taker)
+        markets_5m = [dm for dm in all_markets if dm.timeframe.name == "5m"]
         if markets_5m:
             self.snipe_engine.window_tracker.update(markets_5m)
 

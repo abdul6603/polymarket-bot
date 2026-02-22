@@ -47,6 +47,7 @@ class SnipePosition:
     market_id: str
     direction: str
     open_price: float
+    asset: str = "bitcoin"
     waves: list[WaveResult] = field(default_factory=list)
     total_size_usd: float = 0.0
     total_shares: float = 0.0
@@ -71,16 +72,17 @@ class PyramidExecutor:
         self._active_position: SnipePosition | None = None
         self._completed: list[SnipePosition] = []
 
-    def start_position(self, market_id: str, direction: str, open_price: float) -> None:
+    def start_position(self, market_id: str, direction: str, open_price: float, asset: str = "bitcoin") -> None:
         """Initialize a new snipe position for this window."""
         self._active_position = SnipePosition(
             market_id=market_id,
             direction=direction,
             open_price=open_price,
+            asset=asset,
         )
         log.info(
-            "[SNIPE] Position started: %s %s (BTC open=$%.2f)",
-            direction.upper(), market_id[:12], open_price,
+            "[SNIPE] Position started: %s %s %s (open=$%.2f)",
+            asset.upper(), direction.upper(), market_id[:12], open_price,
         )
 
     def should_fire_wave(self, wave_num: int, remaining_s: float, implied_price: float) -> bool:
@@ -236,6 +238,7 @@ class PyramidExecutor:
 
         result = {
             "market_id": pos.market_id,
+            "asset": pos.asset,
             "direction": pos.direction,
             "waves": len(pos.waves),
             "total_size_usd": round(pos.total_size_usd, 2),
@@ -292,6 +295,7 @@ class PyramidExecutor:
             return {
                 "active": True,
                 "market_id": pos.market_id[:12],
+                "asset": pos.asset,
                 "direction": pos.direction,
                 "waves_fired": len(pos.waves),
                 "total_invested": round(pos.total_size_usd, 2),

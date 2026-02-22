@@ -1,10 +1,11 @@
-"""Snipe Engine — orchestrates the 5m BTC snipe strategy.
+"""Snipe Engine — orchestrates the 5m multi-asset snipe strategy.
 
 State machine:
   IDLE -> TRACKING -> ARMED -> EXECUTING -> COOLDOWN -> IDLE
 
 Runs as a concurrent async task alongside Garves's taker/maker loops.
 Completely isolated: own budget, own position tracking, own trades file.
+Assets: BTC, ETH, SOL, XRP — whichever shows a delta lock first.
 """
 from __future__ import annotations
 
@@ -33,7 +34,7 @@ class SnipeState(Enum):
 
 
 class SnipeEngine:
-    """Main 5m BTC snipe orchestrator."""
+    """Main 5m multi-asset snipe orchestrator."""
 
     def __init__(
         self,
@@ -58,6 +59,9 @@ class SnipeEngine:
         self._state = SnipeState.IDLE
         self._current_window_id: str = ""
         self._cooldown_until = 0.0
+        self._base_budget = budget_per_window
+        self._escalated_budget = 75.0  # After 3 consecutive wins
+        self._consecutive_wins = 0
         self._stats = {
             "signals": 0, "trades": 0, "wins": 0,
             "losses": 0, "pnl": 0.0, "total_invested": 0.0,
@@ -123,12 +127,12 @@ class SnipeEngine:
         self.delta_signal.reset()
         self._state = SnipeState.TRACKING
         log.info(
-            "[SNIPE] IDLE -> TRACKING: %s (T-%.0fs, BTC open=$%.2f)",
-            window.market_id[:12], remaining, window.open_price,
+            "[SNIPE] IDLE -> TRACKING: %s %s (T-%.0fs, open=$%.2f)",
+            window.asset.upper(), window.market_id[:12], remaining, window.open_price,
         )
 
     def _on_tracking(self) -> None:
-        """Monitor BTC delta, waiting for signal to arm."""
+        """Monitor asset delta, waiting for signal to arm."""
         window = self.window_tracker.get_window(self._current_window_id)
         if not window:
             self._state = SnipeState.IDLE
@@ -138,32 +142,32 @@ class SnipeEngine:
         remaining = window.end_ts - now
 
         if remaining <= 0:
-            log.info("[SNIPE] Window expired while tracking")
+            log.info("[SNIPE] Window expired while tracking (%s)", window.asset.upper())
             self._state = SnipeState.IDLE
             return
 
-        btc_price = self._cache.get_price("bitcoin")
-        if not btc_price:
+        price = self._cache.get_price(window.asset)
+        if not price:
             return
 
         # Log delta every tick for visibility
-        delta = (btc_price - window.open_price) / window.open_price * 100
+        delta = (price - window.open_price) / window.open_price * 100
         if remaining <= 185:
             log.info(
-                "[SNIPE] T-%.0fs | BTC $%.2f | delta=%+.4f%% (open=$%.2f)",
-                remaining, btc_price, delta, window.open_price,
+                "[SNIPE] T-%.0fs | %s $%.2f | delta=%+.4f%% (open=$%.2f)",
+                remaining, window.asset.upper(), price, delta, window.open_price,
             )
 
-        signal = self.delta_signal.evaluate(btc_price, window.open_price, remaining)
+        signal = self.delta_signal.evaluate(price, window.open_price, remaining)
         if not signal:
             return
 
         self._stats["signals"] += 1
         log.info(
-            "[SNIPE] SIGNAL: %s | delta=%+.4f%% | conf=%.2f | "
-            "sustained=%d | T-%.0fs | BTC $%.2f (open $%.2f)",
-            signal.direction.upper(), signal.delta_pct, signal.confidence,
-            signal.sustained_ticks, remaining, btc_price, window.open_price,
+            "[SNIPE] SIGNAL: %s %s | delta=%+.4f%% | conf=%.2f | "
+            "sustained=%d | T-%.0fs | $%.2f (open $%.2f)",
+            window.asset.upper(), signal.direction.upper(), signal.delta_pct,
+            signal.confidence, signal.sustained_ticks, remaining, price, window.open_price,
         )
 
         # Determine target token
@@ -180,7 +184,7 @@ class SnipeEngine:
             return
 
         # Start pyramid
-        self.pyramid.start_position(window.market_id, signal.direction, window.open_price)
+        self.pyramid.start_position(window.market_id, signal.direction, window.open_price, window.asset)
         self._state = SnipeState.ARMED
         log.info("[SNIPE] TRACKING -> ARMED (implied=$%.3f)", implied)
 
@@ -214,9 +218,9 @@ class SnipeEngine:
             if self.pyramid.should_fire_wave(wave_num, remaining, implied):
                 # Verify delta still holds for waves 2 and 3 (escalating threshold)
                 if wave_num > 1:
-                    btc_price = self._cache.get_price("bitcoin")
-                    if btc_price and window.open_price > 0:
-                        abs_delta = abs((btc_price - window.open_price) / window.open_price)
+                    asset_price = self._cache.get_price(window.asset)
+                    if asset_price and window.open_price > 0:
+                        abs_delta = abs((asset_price - window.open_price) / window.open_price)
                         wave_threshold = self.delta_signal.get_wave_threshold(wave_num)
                         if abs_delta < wave_threshold:
                             log.info(
@@ -246,10 +250,10 @@ class SnipeEngine:
         remaining = window.end_ts - now
 
         if remaining <= -5:
-            # Window ended — determine outcome from BTC price
-            btc_price = self._cache.get_price("bitcoin")
-            if btc_price and window.open_price > 0:
-                actual_dir = "up" if btc_price > window.open_price else "down"
+            # Window ended — determine outcome from asset price
+            price = self._cache.get_price(window.asset)
+            if price and window.open_price > 0:
+                actual_dir = "up" if price > window.open_price else "down"
                 result = self.pyramid.close_position(actual_dir)
                 if result:
                     self._record_outcome(result)
@@ -262,13 +266,13 @@ class SnipeEngine:
 
     def _finish_trade(self) -> None:
         """Clean up current trade and go to cooldown."""
-        # Try to determine outcome from BTC price
+        # Try to determine outcome from asset price
         window = self.window_tracker.get_window(self._current_window_id)
         resolved_dir = ""
         if window:
-            btc_price = self._cache.get_price("bitcoin")
-            if btc_price and window.open_price > 0:
-                resolved_dir = "up" if btc_price > window.open_price else "down"
+            price = self._cache.get_price(window.asset)
+            if price and window.open_price > 0:
+                resolved_dir = "up" if price > window.open_price else "down"
 
         result = self.pyramid.close_position(resolved_dir)
         if result:
@@ -284,9 +288,18 @@ class SnipeEngine:
 
         if result.get("won") is True:
             self._stats["wins"] += 1
+            self._consecutive_wins += 1
         elif result.get("won") is False:
             self._stats["losses"] += 1
+            self._consecutive_wins = 0
         self._stats["pnl"] += result.get("pnl_usd", 0)
+
+        # Budget escalation: $50 → $75 after 3 consecutive wins
+        if self._consecutive_wins >= 3:
+            self.pyramid._budget = self._escalated_budget
+            log.info("[SNIPE] Budget ESCALATED to $%.0f (streak=%d)", self._escalated_budget, self._consecutive_wins)
+        else:
+            self.pyramid._budget = self._base_budget
 
         # Publish to event bus
         try:
@@ -313,9 +326,10 @@ class SnipeEngine:
                 import requests
                 won = result.get("won")
                 emoji = "W" if won else "L" if won is False else "?"
+                asset_name = result.get("asset", "BTC").upper()
                 msg = (
                     f"GARVES SNIPE [{emoji}]\n\n"
-                    f"{result['direction'].upper()} BTC 5m\n"
+                    f"{result['direction'].upper()} {asset_name} 5m\n"
                     f"Waves: {result['waves']} | Invested: ${result['total_size_usd']:.2f}\n"
                     f"Avg Entry: ${result['avg_entry']:.3f}\n"
                     f"PnL: ${result['pnl_usd']:+.2f}\n"
@@ -366,6 +380,9 @@ class SnipeEngine:
             "state": self._state.value,
             "dry_run": self._dry_run,
             "budget_per_window": self.pyramid._budget,
+            "budget_base": self._base_budget,
+            "budget_escalated": self._escalated_budget,
+            "consecutive_wins": self._consecutive_wins,
             "delta_threshold_pct": round(self.delta_signal._threshold * 100, 3),
             "stats": self._stats.copy(),
             "window": self.window_tracker.get_status(),
