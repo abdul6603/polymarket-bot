@@ -369,8 +369,9 @@ def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate |
         weather_est = _get_weather_data(cfg, market)
         if weather_est is not None:
             return weather_est
-        # If no weather data match, fall through to LLM analysis
-        log.info("[WEATHER] No weather data match, falling through to LLM: %s", market.question[:60])
+        # No weather data match — skip (LLM fallthrough is wasted, edge source filter blocks it)
+        log.info("[WEATHER] No weather data match, skipping (no LLM fallthrough): %s", market.question[:60])
+        return None
 
     # ── Sports: get sportsbook + ESPN data first ──
     sportsbook_prob = None
@@ -404,12 +405,18 @@ def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate |
         return None
 
     # V5: Non-sports markets — analyze with local LLM ($0 cost)
-    # Filter out crypto price range markets (Garves territory)
+    # Block categories with historically terrible WR
+    _BLOCKED_CATEGORIES = {"crypto_event", "culture", "other"}
+    if market.category in _BLOCKED_CATEGORIES:
+        log.info("[V5] Skipping blocked category '%s': %s", market.category, market.question[:60])
+        return None
+
+    # Filter out crypto price range markets (Garves/Oracle territory)
     q_lower = market.question.lower()
     _CRYPTO_RANGE_KEYWORDS = ["price of bitcoin", "price of btc", "price of ethereum",
                                "price of eth", "price of xrp", "price of sol",
                                "price of doge", "price of bnb", "price of ada",
-                               "between $", "between \u00a3"]
+                               "between $", "between \u00a3", "market cap"]
     if any(kw in q_lower for kw in _CRYPTO_RANGE_KEYWORDS):
         log.info("[V5] Skipping crypto price range (Garves territory): %s", market.question[:60])
         return None
