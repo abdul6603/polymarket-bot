@@ -81,6 +81,30 @@ CITY_COORDS: dict[str, tuple[float, float]] = {
     "dubai": (25.2048, 55.2708),
     "singapore": (1.3521, 103.8198),
     "bangkok": (13.7563, 100.5018),
+    "ankara": (39.9334, 32.8597),
+    "istanbul": (41.0082, 28.9784),
+    "cairo": (30.0444, 31.2357),
+    "moscow": (55.7558, 37.6173),
+    "oslo": (59.9139, 10.7522),
+    "stockholm": (59.3293, 18.0686),
+    "amsterdam": (52.3676, 4.9041),
+    "brussels": (50.8503, 4.3517),
+    "vienna": (48.2082, 16.3738),
+    "zurich": (47.3769, 8.5417),
+    "athens": (37.9838, 23.7275),
+    "lisbon": (38.7223, -9.1393),
+    "warsaw": (52.2297, 21.0122),
+    "prague": (50.0755, 14.4378),
+    "buenos aires": (34.6037, -58.3816),
+    "sao paulo": (-23.5505, -46.6333),
+    "johannesburg": (-26.2041, 28.0473),
+    "lagos": (6.5244, 3.3792),
+    "nairobi": (-1.2921, 36.8219),
+    "taipei": (25.0330, 121.5654),
+    "jakarta": (-6.2088, 106.8456),
+    "kuala lumpur": (3.1390, 101.6869),
+    "ho chi minh": (10.8231, 106.6297),
+    "manila": (14.5995, 120.9842),
 }
 
 # NWS grid point lookup for US cities (office, gridX, gridY)
@@ -132,6 +156,7 @@ class WeatherQuery:
     metric: str = "temperature_max"  # temperature_max, temperature_min, precipitation, hurricane, sea_ice, hottest_year
     threshold: float | None = None
     direction: str = "above"  # above, below, between, bucket
+    unit: str = "fahrenheit"  # "fahrenheit" or "celsius"
     bucket_ranges: list[tuple[float, float]] | None = None
     raw_question: str = ""
 
@@ -186,6 +211,33 @@ _SEA_ICE_RE = re.compile(r"(sea ice|arctic ice|ice extent|ice minimum)", re.IGNO
 _HOTTEST_YEAR_RE = re.compile(r"(hottest year|warmest year|record.*hot|global.*temperature)", re.IGNORECASE)
 _PRECIP_RE = re.compile(
     r"(rain|rainfall|snow|snowfall|precipitation|inches of rain|inches of snow)",
+    re.IGNORECASE,
+)
+
+# ── Celsius temperature patterns (for international markets) ──
+_TEMP_EXACT_C_RE = re.compile(
+    r"\bbe\s+(-?\d+)\s*°?\s*C\b",
+    re.IGNORECASE,
+)
+_TEMP_ABOVE_C_RE = re.compile(
+    r"(?:above|over|exceed|higher than|at least|reach)\s*(-?\d+)\s*°?\s*C\b",
+    re.IGNORECASE,
+)
+_TEMP_BELOW_C_RE = re.compile(
+    r"(?:below|under|lower than|at most|drop to|fall to)\s*(-?\d+)\s*°?\s*C\b",
+    re.IGNORECASE,
+)
+_TEMP_BUCKET_C_RE = re.compile(
+    r"(-?\d+)\s*°?\s*C\s*or\s+(?:higher|above|more|lower|below|less)",
+    re.IGNORECASE,
+)
+_TEMP_BETWEEN_C_RE = re.compile(
+    r"(?:between|from)\s*(-?\d+)\s*(?:°?\s*C)?\s*(?:and|to|-)\s*(-?\d+)\s*°?\s*C",
+    re.IGNORECASE,
+)
+# Fahrenheit "or below" (e.g., "79°F or below")
+_TEMP_BUCKET_F_BELOW_RE = re.compile(
+    r"(\d+)\s*°?\s*F\s*or\s+(?:lower|below|less)",
     re.IGNORECASE,
 )
 
@@ -291,7 +343,53 @@ def parse_weather_question(question: str) -> WeatherQuery | None:
     # Extract date
     q.target_date = _extract_date(question)
 
-    # Extract threshold and direction
+    # ── Celsius patterns first (more specific, international markets) ──
+    m = _TEMP_BETWEEN_C_RE.search(question)
+    if m:
+        low, high = float(m.group(1)), float(m.group(2))
+        q.direction = "between"
+        q.bucket_ranges = [(low, high)]
+        q.threshold = low
+        q.unit = "celsius"
+        return q
+
+    m = _TEMP_ABOVE_C_RE.search(question)
+    if m:
+        q.direction = "above"
+        q.threshold = float(m.group(1))
+        q.unit = "celsius"
+        return q
+
+    m = _TEMP_BELOW_C_RE.search(question)
+    if m:
+        q.direction = "below"
+        q.threshold = float(m.group(1))
+        q.unit = "celsius"
+        return q
+
+    m = _TEMP_BUCKET_C_RE.search(question)
+    if m:
+        val = float(m.group(1))
+        q_lower = question.lower()
+        if "lower" in q_lower or "below" in q_lower or "less" in q_lower:
+            q.direction = "below"
+        else:
+            q.direction = "above"
+        q.threshold = val
+        q.unit = "celsius"
+        return q
+
+    # "be X°C" exact match → bucket [X, X+1)
+    m = _TEMP_EXACT_C_RE.search(question)
+    if m:
+        val = float(m.group(1))
+        q.direction = "between"
+        q.bucket_ranges = [(val, val + 1)]
+        q.threshold = val
+        q.unit = "celsius"
+        return q
+
+    # ── Fahrenheit patterns ──
     m = _TEMP_BETWEEN_RE.search(question)
     if m:
         low, high = float(m.group(1)), float(m.group(2))
@@ -318,6 +416,13 @@ def parse_weather_question(question: str) -> WeatherQuery | None:
         q.threshold = float(m.group(1))
         return q
 
+    # "79°F or below"
+    m = _TEMP_BUCKET_F_BELOW_RE.search(question)
+    if m:
+        q.direction = "below"
+        q.threshold = float(m.group(1))
+        return q
+
     # For hurricane/sea_ice/hottest_year — no threshold needed
     if q.metric in ("hurricane", "sea_ice", "hottest_year"):
         return q
@@ -331,13 +436,13 @@ def parse_weather_question(question: str) -> WeatherQuery | None:
 
 # ── Open-Meteo Ensemble API ──
 
-def _fetch_ensemble(lat: float, lon: float, target_date: date) -> dict | None:
+def _fetch_ensemble(lat: float, lon: float, target_date: date, unit: str = "fahrenheit") -> dict | None:
     """Fetch ensemble forecast from Open-Meteo (GFS + ECMWF IFS).
 
     Returns dict with keys: temperature_2m_max, temperature_2m_min, precipitation_sum
     Each value is a dict mapping model name to list of member values for target date.
     """
-    cache_key = f"ensemble_{lat:.2f}_{lon:.2f}_{target_date}"
+    cache_key = f"ensemble_{lat:.2f}_{lon:.2f}_{target_date}_{unit}"
     cached = _get_cached(cache_key)
     if cached is not None:
         return cached
@@ -360,7 +465,7 @@ def _fetch_ensemble(lat: float, lon: float, target_date: date) -> dict | None:
                 "longitude": lon,
                 "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum",
                 "models": "gfs_seamless,ecmwf_ifs025",
-                "temperature_unit": "fahrenheit",
+                "temperature_unit": unit,
                 "precipitation_unit": "inch",
                 "forecast_days": min(days_ahead + 2, 16),
             },
@@ -432,8 +537,9 @@ def _fetch_ensemble(lat: float, lon: float, target_date: date) -> dict | None:
 def get_temperature_probability(
     city: str,
     target_date: date,
-    threshold_f: float,
+    threshold: float,
     direction: str = "above",
+    unit: str = "fahrenheit",
 ) -> float | None:
     """Compute probability of temperature above/below threshold from ensemble.
 
@@ -444,7 +550,7 @@ def get_temperature_probability(
         return None
 
     lat, lon = coords
-    ensemble = _fetch_ensemble(lat, lon, target_date)
+    ensemble = _fetch_ensemble(lat, lon, target_date, unit=unit)
     if not ensemble:
         return None
 
@@ -457,17 +563,18 @@ def get_temperature_probability(
     if not members:
         return None
 
+    unit_sym = "°C" if unit == "celsius" else "°F"
     total = len(members)
     if direction == "above":
-        count = sum(1 for v in members if v >= threshold_f)
+        count = sum(1 for v in members if v >= threshold)
     elif direction == "below":
-        count = sum(1 for v in members if v <= threshold_f)
+        count = sum(1 for v in members if v <= threshold)
     else:
-        count = sum(1 for v in members if v >= threshold_f)
+        count = sum(1 for v in members if v >= threshold)
 
     prob = count / total
-    log.info("[NOAA] %s temp %s %.0f°F on %s: %d/%d members = %.1f%%",
-             city, direction, threshold_f, target_date, count, total, prob * 100)
+    log.info("[NOAA] %s temp %s %.0f%s on %s: %d/%d members = %.1f%%",
+             city, direction, threshold, unit_sym, target_date, count, total, prob * 100)
     return prob
 
 
@@ -475,6 +582,7 @@ def get_temperature_bucket_probs(
     city: str,
     target_date: date,
     buckets: list[tuple[float, float]],
+    unit: str = "fahrenheit",
 ) -> dict[str, float] | None:
     """Compute probability distribution across temperature buckets.
 
@@ -488,7 +596,7 @@ def get_temperature_bucket_probs(
         return None
 
     lat, lon = coords
-    ensemble = _fetch_ensemble(lat, lon, target_date)
+    ensemble = _fetch_ensemble(lat, lon, target_date, unit=unit)
     if not ensemble:
         return None
 
@@ -746,10 +854,43 @@ def analyze_weather_market(question: str) -> dict | None:
     else:
         confidence = 0.45
 
-    # Temperature probability from ensemble
+    unit_sym = "°C" if query.unit == "celsius" else "°F"
+
+    # Bucket probabilities first (handles "be X°C" exact and "between X-Y" ranges)
+    if query.bucket_ranges:
+        bucket_probs = get_temperature_bucket_probs(
+            query.city, query.target_date, query.bucket_ranges, unit=query.unit,
+        )
+        if bucket_probs:
+            total_prob = sum(bucket_probs.values())
+            if total_prob > 0:
+                # Count ensemble members for metadata
+                coords = CITY_COORDS.get(query.city.lower(), (0, 0))
+                ensemble = _fetch_ensemble(coords[0], coords[1], query.target_date, unit=query.unit)
+                n_members = 0
+                if ensemble:
+                    var_key = "temperature_2m_max" if query.metric == "temperature_max" else "temperature_2m_min"
+                    n_members = len(ensemble.get(var_key, []))
+
+                return {
+                    "probability": total_prob,
+                    "confidence": confidence,
+                    "reasoning": (
+                        f"Multi-model ensemble consensus: "
+                        + ", ".join(f"{k}{unit_sym}: {v:.0%}" for k, v in bucket_probs.items())
+                        + f" in {query.city} on {query.target_date}. "
+                        f"Based on {n_members} ensemble members (GFS + ECMWF IFS)."
+                    ),
+                    "data_source": "open_meteo_ensemble",
+                    "ensemble_members": n_members,
+                    "forecast_horizon_hours": horizon_hours,
+                }
+
+    # Single threshold (above/below)
     if query.metric in ("temperature_max", "temperature_min") and query.threshold is not None:
         prob = get_temperature_probability(
             query.city, query.target_date, query.threshold, query.direction,
+            unit=query.unit,
         )
         if prob is not None:
             # Cross-verify with NWS for US cities
@@ -760,7 +901,7 @@ def analyze_weather_market(question: str) -> dict | None:
 
             # Count ensemble members
             coords = CITY_COORDS.get(query.city.lower(), (0, 0))
-            ensemble = _fetch_ensemble(coords[0], coords[1], query.target_date)
+            ensemble = _fetch_ensemble(coords[0], coords[1], query.target_date, unit=query.unit)
             n_members = 0
             if ensemble:
                 var_key = "temperature_2m_max" if query.metric == "temperature_max" else "temperature_2m_min"
@@ -771,7 +912,7 @@ def analyze_weather_market(question: str) -> dict | None:
                 "confidence": confidence,
                 "reasoning": (
                     f"Multi-model ensemble consensus: {prob:.0%} probability of "
-                    f"{query.metric.replace('_', ' ')} {query.direction} {query.threshold:.0f}°F "
+                    f"{query.metric.replace('_', ' ')} {query.direction} {query.threshold:.0f}{unit_sym} "
                     f"in {query.city} on {query.target_date}. "
                     f"Based on {n_members} ensemble members (GFS + ECMWF IFS).{nws_info}"
                 ),
@@ -779,26 +920,5 @@ def analyze_weather_market(question: str) -> dict | None:
                 "ensemble_members": n_members,
                 "forecast_horizon_hours": horizon_hours,
             }
-
-    # Bucket probabilities
-    if query.bucket_ranges:
-        bucket_probs = get_temperature_bucket_probs(
-            query.city, query.target_date, query.bucket_ranges,
-        )
-        if bucket_probs:
-            # For bucket markets, return the probability of the specific bucket
-            total_prob = sum(bucket_probs.values())
-            if total_prob > 0:
-                return {
-                    "probability": total_prob,
-                    "confidence": confidence,
-                    "reasoning": (
-                        f"Temperature bucket distribution from ensemble: "
-                        + ", ".join(f"{k}°F: {v:.0%}" for k, v in bucket_probs.items())
-                    ),
-                    "data_source": "open_meteo_ensemble",
-                    "ensemble_members": 0,
-                    "forecast_horizon_hours": horizon_hours,
-                }
 
     return None

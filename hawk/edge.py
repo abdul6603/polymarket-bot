@@ -253,7 +253,8 @@ def calculate_edge(
         return None
 
     # Fix 6: Edge sanity cap — if edge is absurdly large, data is probably wrong
-    if edge > MAX_EDGE_SANITY:
+    # Weather model exempt: NOAA/Open-Meteo ensemble is highly accurate for short-term forecasts
+    if edge > MAX_EDGE_SANITY and not has_weather_model:
         log.warning(
             "SUSPICIOUS EDGE REJECTED: %.1f%% > %.0f%% max | prob=%.2f market=%.2f | %s "
             "(likely bad sportsbook data or stale odds — refusing to bet on phantom edge)",
