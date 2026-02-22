@@ -7,6 +7,17 @@ import logging
 from pathlib import Path
 from typing import Any
 
+# Cross-agent memory (optional — graceful if shared layer missing)
+try:
+    from shared.agent_memory import AgentMemory
+except ImportError:
+    AgentMemory = None
+
+try:
+    from shared.events import get_events
+except ImportError:
+    def get_events(*a, **kw): return []
+
 log = logging.getLogger(__name__)
 
 DATA_DIR = Path.home() / "polymarket-bot" / "data"
@@ -28,6 +39,11 @@ def gather_agent_signals() -> dict[str, Any]:
 
     # Atlas — research engine
     signals["atlas"] = _read_atlas()
+
+    # Cross-agent memory (enhanced swarm intelligence)
+    signals["garves_memory"] = _read_garves_memory()
+    signals["odin_memory"] = _read_odin_memory()
+    signals["recent_events"] = _read_recent_bus_events()
 
     return signals
 
@@ -112,3 +128,60 @@ def _read_atlas() -> str:
     last_topic = status.get("last_research_topic", "")
 
     return f"cycles={cycle} kb={kb_size} last_topic={last_topic[:50]}"
+
+
+def _read_garves_memory() -> str:
+    """Query Garves's AgentMemory for active high-confidence patterns."""
+    if AgentMemory is None:
+        return "memory_unavailable"
+    try:
+        mem = AgentMemory("garves")
+        patterns = mem.get_active_patterns(min_confidence=0.5, limit=5)
+        mem.close()
+        if not patterns:
+            return "no_patterns"
+        summaries = []
+        for p in patterns:
+            summaries.append(f"{p.get('pattern', '')} (conf={p.get('confidence', 0):.0%})")
+        return "; ".join(summaries)
+    except Exception:
+        return "memory_error"
+
+
+def _read_odin_memory() -> str:
+    """Query Odin's AgentMemory for regime patterns and derivatives intel."""
+    if AgentMemory is None:
+        return "memory_unavailable"
+    try:
+        mem = AgentMemory("odin")
+        patterns = mem.get_active_patterns(min_confidence=0.5, limit=5)
+        mem.close()
+        if not patterns:
+            return "no_patterns"
+        summaries = []
+        for p in patterns:
+            summaries.append(f"{p.get('pattern', '')} (conf={p.get('confidence', 0):.0%})")
+        return "; ".join(summaries)
+    except Exception:
+        return "memory_error"
+
+
+def _read_recent_bus_events() -> str:
+    """Read recent trade events from the event bus for cross-agent awareness."""
+    try:
+        events = get_events(limit=10)
+        if not events:
+            return "no_events"
+        trade_events = [e for e in events if "trade" in (e.get("type") or "").lower()
+                        or "prediction" in (e.get("type") or "").lower()]
+        if not trade_events:
+            return "no_trade_events"
+        summaries = []
+        for e in trade_events[:5]:
+            agent = e.get("agent", "?")
+            etype = e.get("type", "?")
+            data = e.get("data", {})
+            summaries.append(f"{agent}:{etype}({json.dumps(data, default=str)[:80]})")
+        return "; ".join(summaries)
+    except Exception:
+        return "bus_error"

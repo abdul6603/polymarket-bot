@@ -59,6 +59,19 @@
     </div>
   </div>
 
+  <!-- E2: Open Positions -->
+  <div class="collapse-section default-open">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="oracle" style="margin-bottom:0;">Open Positions <span id="oracle-positions-badge" style="font-size:0.56rem;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:8px;background:rgba(245,158,11,0.15);border:1px solid var(--agent-oracle);color:var(--agent-oracle);">0</span></h2>
+    </div>
+    <div class="collapse-body">
+      <table class="data-table">
+        <thead><tr><th>Market</th><th>Asset</th><th>Side</th><th>Cost</th><th>Entry</th><th>Now</th><th>P&amp;L</th><th>Payout</th><th>Conv.</th><th>Week</th></tr></thead>
+        <tbody id="oracle-positions-tbody"><tr><td colspan="10" class="text-muted" style="text-align:center;">No open positions</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- F: Track Record -->
   <div class="collapse-section default-open">
     <div class="collapse-trigger">
@@ -87,7 +100,7 @@
       <h2 class="section-title" data-accent="oracle" style="margin-bottom:0;">Oracle Weekly Report</h2>
     </div>
     <div class="collapse-body">
-      <div id="oracle-report" style="font-family:var(--font-mono);font-size:0.74rem;line-height:1.7;white-space:pre-wrap;color:var(--text-secondary);">No report available yet — first cycle runs Sunday 00:00 UTC</div>
+      <div id="oracle-report" class="oracle-report-styled">No report available yet — first cycle runs Sunday 00:00 UTC</div>
     </div>
   </div>
 
@@ -116,7 +129,121 @@
 
 </div>
 
+<style>
+.oracle-report-styled {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.78rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+.oracle-report-styled .oracle-h4 {
+  color: var(--agent-oracle);
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin: 14px 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(245,158,11,0.2);
+}
+.oracle-report-styled .oracle-bullet {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 4px 0;
+  padding-left: 4px;
+}
+.oracle-report-styled .oracle-bullet::before {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--agent-oracle);
+  margin-top: 7px;
+  flex-shrink: 0;
+}
+.oracle-report-styled .oracle-amount { font-weight: 700; }
+.oracle-report-styled .oracle-pos { color: var(--success); font-weight: 600; }
+.oracle-report-styled .oracle-neg { color: var(--error); font-weight: 600; }
+</style>
+
 <script>
+function oracleRenderMarkdown(text) {
+  if (!text) return '';
+  var lines = text.split('\n');
+  var html = '';
+  var inTable = false;
+  var tableRows = [];
+
+  function flushTable() {
+    if (tableRows.length < 2) { inTable = false; tableRows = []; return; }
+    html += '<table class="data-table" style="margin:8px 0;">';
+    var headers = tableRows[0];
+    html += '<thead><tr>';
+    headers.forEach(function(h) { html += '<th>' + h.trim() + '</th>'; });
+    html += '</tr></thead><tbody>';
+    for (var i = 2; i < tableRows.length; i++) {
+      html += '<tr>';
+      tableRows[i].forEach(function(c) {
+        var cell = c.trim();
+        var style = '';
+        if (/^\+\d/.test(cell) || /^\+\$/.test(cell)) style = 'color:var(--success);font-weight:600;';
+        else if (/^-\d/.test(cell) || /^-\$/.test(cell)) style = 'color:var(--error);font-weight:600;';
+        else if (/^\$/.test(cell)) style = 'font-weight:700;';
+        html += '<td' + (style ? ' style="' + style + '"' : '') + '>' + cell + '</td>';
+      });
+      html += '</tr>';
+    }
+    html += '</tbody></table>';
+    tableRows = [];
+    inTable = false;
+  }
+
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+
+    // Table row
+    if (line.trim().indexOf('|') === 0) {
+      var cells = line.split('|').filter(function(c, idx) { return idx > 0 && idx < line.split('|').length - 1; });
+      if (cells.length > 0) {
+        // Skip separator rows (---|---)
+        if (/^[\s\-:|]+$/.test(cells.join('|'))) { tableRows.push(null); inTable = true; continue; }
+        tableRows.push(cells);
+        inTable = true;
+        continue;
+      }
+    }
+    if (inTable) flushTable();
+
+    // Bold headers: **text**
+    if (/^\*\*(.+)\*\*\s*$/.test(line.trim())) {
+      html += '<div class="oracle-h4">' + line.trim().replace(/\*\*/g, '') + '</div>';
+      continue;
+    }
+
+    // Bullet points
+    if (/^\s*[-•]\s+/.test(line)) {
+      var bullet = line.replace(/^\s*[-•]\s+/, '');
+      // Highlight amounts and percentages
+      bullet = bullet.replace(/(\$[\d,.]+)/g, '<span class="oracle-amount">$1</span>');
+      bullet = bullet.replace(/(\+[\d.]+%)/g, '<span class="oracle-pos">$1</span>');
+      bullet = bullet.replace(/(-[\d.]+%)/g, '<span class="oracle-neg">$1</span>');
+      html += '<div class="oracle-bullet"><span>' + bullet + '</span></div>';
+      continue;
+    }
+
+    // Regular line — highlight amounts
+    var processed = line;
+    processed = processed.replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--agent-oracle);">$1</strong>');
+    processed = processed.replace(/(\$[\d,.]+)/g, '<span class="oracle-amount">$1</span>');
+    processed = processed.replace(/(\+[\d.]+%)/g, '<span class="oracle-pos">$1</span>');
+    processed = processed.replace(/(-[\d.]+%)/g, '<span class="oracle-neg">$1</span>');
+    if (line.trim()) html += '<div style="margin:2px 0;">' + processed + '</div>';
+    else html += '<div style="height:8px;"></div>';
+  }
+  if (inTable) flushTable();
+  return html;
+}
+
 function oracleRefresh() {
   fetch('/api/oracle').then(function(r) { return r.json(); }).then(function(d) {
     // Mode
@@ -250,12 +377,48 @@ function oracleRefresh() {
     console.log('[Oracle] Refresh error:', e);
   });
 
-  // Report
+  // Report (styled markdown)
   fetch('/api/oracle/report').then(function(r) { return r.json(); }).then(function(d) {
     var el = document.getElementById('oracle-report');
     if (el && d.report) {
-      el.textContent = d.report;
+      el.innerHTML = oracleRenderMarkdown(d.report);
     }
+  }).catch(function() {});
+
+  // Open Positions
+  fetch('/api/oracle/positions').then(function(r) { return r.json(); }).then(function(positions) {
+    var badge = document.getElementById('oracle-positions-badge');
+    if (badge) badge.textContent = positions.length;
+
+    var tbody = document.getElementById('oracle-positions-tbody');
+    if (!tbody) return;
+
+    if (!positions.length) {
+      tbody.innerHTML = '<tr><td colspan="10" class="text-muted" style="text-align:center;">No open positions</td></tr>';
+      return;
+    }
+
+    var html = '';
+    positions.forEach(function(p) {
+      var sideColor = p.side === 'YES' ? 'var(--success)' : 'var(--error)';
+      var sideBg = p.side === 'YES' ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)';
+      var pnlColor = p.pnl >= 0 ? 'var(--success)' : 'var(--error)';
+      var pnlPrefix = p.pnl >= 0 ? '+$' : '-$';
+      var convColors = {HIGH:'var(--success)', MEDIUM:'var(--warning)', LOW:'var(--text-secondary)', SKIP:'var(--text-muted)'};
+      html += '<tr>';
+      html += '<td style="font-size:0.68rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (p.question || '') + '</td>';
+      html += '<td style="font-weight:600;">' + (p.asset || '') + '</td>';
+      html += '<td><span style="padding:2px 8px;border-radius:3px;font-weight:700;font-size:0.68rem;background:' + sideBg + ';color:' + sideColor + ';">' + p.side + '</span></td>';
+      html += '<td>$' + (p.cost || 0).toFixed(2) + '</td>';
+      html += '<td>' + ((p.entry || 0) * 100).toFixed(0) + '%</td>';
+      html += '<td style="font-weight:600;color:var(--agent-oracle);">' + ((p.now || 0) * 100).toFixed(0) + '%</td>';
+      html += '<td style="color:' + pnlColor + ';font-weight:700;">' + pnlPrefix + Math.abs(p.pnl).toFixed(2) + '</td>';
+      html += '<td>$' + (p.payout || 0).toFixed(2) + '</td>';
+      html += '<td style="color:' + (convColors[p.conviction] || 'var(--text-muted)') + ';font-weight:600;">' + (p.conviction || '') + '</td>';
+      html += '<td style="font-size:0.68rem;">' + (p.week || '') + '</td>';
+      html += '</tr>';
+    });
+    tbody.innerHTML = html;
   }).catch(function() {});
 
   // History

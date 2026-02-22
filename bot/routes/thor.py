@@ -482,6 +482,7 @@ AGENT_COLORS = {
     "garves": "#FFD700", "soren": "#9370DB", "shelby": "#4169E1",
     "atlas": "#32CD32", "lisa": "#FF69B4", "robotox": "#FF4500",
     "thor": "#00CED1", "dashboard": "#708090", "system": "#e0e0e0",
+    "oracle": "#F59E0B",
 }
 
 # Project file mappings
@@ -494,6 +495,7 @@ AGENT_FILE_MAP = {
     "robotox": {"root": "sentinel", "key_files": ["sentinel.py"]},
     "thor": {"root": "thor", "key_files": ["agent.py", "core/brain.py", "core/coder.py"]},
     "dashboard": {"root": "polymarket-bot", "key_files": ["bot/live_dashboard.py", "bot/static/dashboard.js", "bot/templates/dashboard.html"]},
+    "oracle": {"root": "polymarket-bot/oracle", "key_files": ["oracle/main.py", "oracle/ensemble.py", "oracle/swarm.py", "oracle/tracker.py", "oracle/config.py"]},
 }
 
 
@@ -587,6 +589,12 @@ def _detect_installed_infrastructure() -> set[str]:
         "command center":            home / "polymarket-bot" / "bot" / "live_dashboard.py",
         "real-time dashboard":       home / "polymarket-bot" / "bot" / "live_dashboard.py",
         "analytics dashboard":       home / "polymarket-bot" / "bot" / "live_dashboard.py",
+        # Oracle features
+        "weekly oracle":             home / "polymarket-bot" / "oracle" / "main.py",
+        "ensemble model":            home / "polymarket-bot" / "oracle" / "ensemble.py",
+        "oracle tracker":            home / "polymarket-bot" / "oracle" / "tracker.py",
+        "oracle swarm":              home / "polymarket-bot" / "oracle" / "swarm.py",
+        "edge calculator":           home / "polymarket-bot" / "oracle" / "edge_calculator.py",
     }
     for keyword, path in checks.items():
         if path.exists():
@@ -733,6 +741,46 @@ def _generate_smart_actions(agent_filter: str = "") -> list[dict]:
                     "color": AGENT_COLORS["soren"],
                 })
             # NOTE: "Queue Low — Generate Content" removed — that's Soren's job, not Thor's
+    except Exception:
+        pass
+
+    # 4b. Oracle performance → optimization actions
+    try:
+        oracle_status_file = GARVES_DATA / "oracle_status.json"
+        if oracle_status_file.exists():
+            oracle_st = json.loads(oracle_status_file.read_text())
+            o_trades = oracle_st.get("trades_placed", 0)
+            o_acc = oracle_st.get("accuracy", {})
+            o_wr = o_acc.get("overall_win_rate", 0)
+            o_total = o_acc.get("total_predictions", 0)
+
+            if o_trades == 0 and oracle_st.get("last_run"):
+                actions.append({
+                    "id": "oracle_no_trades",
+                    "title": "Oracle: No Trades Last Cycle — Review Edge Thresholds",
+                    "description": "Oracle ran but placed 0 trades. Edge thresholds may be too "
+                                   "strict or market conditions unfavorable. Review min_edge and "
+                                   "conviction settings in oracle/config.py.",
+                    "agent": "oracle",
+                    "source": "live_data",
+                    "priority": "normal",
+                    "target_files": ["oracle/config.py", "oracle/edge_calculator.py"],
+                    "color": AGENT_COLORS["oracle"],
+                })
+
+            if o_total >= 5 and o_wr < 50:
+                actions.append({
+                    "id": "oracle_wr_low",
+                    "title": f"Oracle Win Rate Low ({o_wr:.0f}%) — Optimize Ensemble Weights",
+                    "description": f"Win rate at {o_wr:.0f}% over {o_total} predictions. "
+                                   "Review ensemble model weights, edge calculation, and "
+                                   "conviction thresholds.",
+                    "agent": "oracle",
+                    "source": "live_data",
+                    "priority": "high",
+                    "target_files": ["oracle/ensemble.py", "oracle/config.py", "oracle/edge_calculator.py"],
+                    "color": AGENT_COLORS["oracle"],
+                })
     except Exception:
         pass
 

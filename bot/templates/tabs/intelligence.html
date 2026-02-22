@@ -241,17 +241,24 @@
           <td style="padding:6px 8px;color:var(--text-muted);">Pure Python monitoring — process checks, log watching</td>
           <td style="text-align:center;padding:6px 8px;color:var(--success);">FREE</td>
         </tr>
-        <tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
           <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Odin</td>
           <td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">No LLM</span></td>
           <td style="text-align:center;padding:6px 8px;"><span style="color:var(--warning);">CoinGlass + CoinGecko</span></td>
           <td style="padding:6px 8px;color:var(--text-muted);">CoinGlass (regime data), CoinGecko (prices), Bitunix futures. Pure quant — SMC engine + regime detection</td>
           <td style="text-align:center;padding:6px 8px;color:var(--success);">FREE</td>
         </tr>
+        <tr>
+          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Oracle</td>
+          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--error);font-weight:700;">Cloud Ensemble</span></td>
+          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--error);">Claude + Grok + Gemini</span></td>
+          <td style="padding:6px 8px;color:var(--text-muted);">3-model LLM ensemble (Claude 0.45 + Grok 0.30 + Gemini 0.25), CoinGecko, Polymarket CLOB</td>
+          <td style="text-align:center;padding:6px 8px;color:var(--error);">$$$</td>
+        </tr>
       </tbody>
     </table>
     <div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;font-size:0.62rem;">
-      <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--success);margin-right:4px;"></span><strong>7 agents</strong> on local LLM (Qwen3 32B / Coder 14B / 3B) + <strong>Quant, Odin</strong> use pure math (no LLM)</div>
+      <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--success);margin-right:4px;"></span><strong>7 agents</strong> on local LLM (Qwen3 32B / Coder 14B / 3B) + <strong>Quant, Odin</strong> pure math + <strong>Oracle</strong> cloud ensemble</div>
       <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warning);margin-right:4px;"></span><strong>Atlas</strong> needs Tavily (1K free calls/mo)</div>
       <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--error);margin-right:4px;"></span><strong>Hawk</strong> uses GPT-4o for sports (cloud cost)</div>
       <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#3498DB;margin-right:4px;"></span><strong>3 models</strong> on Pro M3: Qwen3 32B, Qwen 3B, Qwen Coder 14B</div>
@@ -539,6 +546,24 @@
           <td style="padding:4px 6px;"><span style="color:#00FF88;">Viper</span></td>
           <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
         </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#F59E0B;">3-Model Ensemble</td>
+          <td style="padding:4px 6px;">Claude + Grok + Gemini weighted probability consensus for crypto weekly markets</td>
+          <td style="padding:4px 6px;"><span style="color:#F59E0B;">Oracle</span></td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#F59E0B;">Weekly Cycle Engine</td>
+          <td style="padding:4px 6px;">Sunday 00:00 UTC automated scan → analyze → trade → report → resolve pipeline</td>
+          <td style="padding:4px 6px;"><span style="color:#F59E0B;">Oracle</span></td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border-color);">
+          <td style="padding:4px 6px;font-weight:600;color:#F59E0B;">52-Week Tracker</td>
+          <td style="padding:4px 6px;">Tracks predictions across 52 weeks with per-type accuracy, win rate, P&amp;L breakdown</td>
+          <td style="padding:4px 6px;"><span style="color:#F59E0B;">Oracle</span></td>
+          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
+        </tr>
         <tr>
           <td style="padding:4px 6px;font-weight:600;color:#00BFFF;">Backtester</td>
           <td style="padding:4px 6px;">Replays resolved trades against 500 weight/threshold combos to find optimal settings</td>
@@ -573,9 +598,9 @@
 var _INTEL_AGENT_COLORS = {
   shelby:'#FFAA00', atlas:'#22AA44', lisa:'#FF8800', hawk:'#FFD700',
   soren:'#CC66FF', garves:'#00D4FF', quant:'#00BFFF', viper:'#00FF88',
-  robotox:'#00FF44', thor:'#FF6600', odin:'#8B5CF6'
+  robotox:'#00FF44', thor:'#FF6600', odin:'#8B5CF6', oracle:'#F59E0B'
 };
-var _INTEL_AGENT_ORDER = ['garves','hawk','odin','soren','lisa','shelby','atlas','thor','viper','robotox','quant'];
+var _INTEL_AGENT_ORDER = ['garves','hawk','oracle','odin','soren','lisa','shelby','atlas','thor','viper','robotox','quant'];
 
 function calcIntelScore(s) {
   if (!s || s.error) return {score:0, exp:0, know:0, acc:0, mat:0, rec:0};

@@ -4307,6 +4307,7 @@ function renderTeamIntelligence(data) {
     {key:'hawk',   name:'Hawk',    color:'#FFD700'},
     {key:'viper',  name:'Viper',   color:'#00ff88'},
     {key:'odin',   name:'Odin',    color:'#8B5CF6'},
+    {key:'oracle', name:'Oracle',  color:'#F59E0B'},
   ];
 
   html += '<div class="team-agents-row">';
@@ -4335,8 +4336,8 @@ function renderTeamIntelligence(data) {
 
   el.innerHTML = html;
 }
-var _intelAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',lisa:'lisa',sentinel:'robotox',thor:'thor',hawk:'hawk',viper:'viper',quant:'quant',odin:'odin'};
-var _intelColors = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',robotox:'#00ff44',thor:'#ff6600',hawk:'#FFD700',viper:'#00ff88',quant:'#00BFFF',odin:'#8B5CF6'};
+var _intelAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',lisa:'lisa',sentinel:'robotox',thor:'thor',hawk:'hawk',viper:'viper',quant:'quant',odin:'odin',oracle:'oracle'};
+var _intelColors = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',robotox:'#00ff44',thor:'#ff6600',hawk:'#FFD700',viper:'#00ff88',quant:'#00BFFF',odin:'#8B5CF6',oracle:'#F59E0B'};
 
 function radarSVG(size, values, labels, color) {
   var cx = size / 2, cy = size / 2;

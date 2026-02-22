@@ -67,6 +67,64 @@ def api_oracle():
     })
 
 
+@oracle_bp.route("/api/oracle/positions")
+def api_oracle_positions():
+    """Open positions — pending predictions with size > 0."""
+    rows = _query_db("""
+        SELECT question, asset, market_type, side, size, oracle_prob,
+               market_prob, edge, conviction, week_start, created_at
+        FROM predictions
+        WHERE outcome = 'pending' AND size > 0
+        ORDER BY created_at DESC
+    """)
+    if not rows:
+        return jsonify([])
+
+    # Enrich with current market prices from status file
+    status = _load_status()
+    current_preds = {p.get("question", "")[:80]: p for p in status.get("predictions", [])}
+
+    positions = []
+    for r in rows:
+        q_short = (r.get("question") or "")[:80]
+        current = current_preds.get(q_short, {})
+        now_price = current.get("market_prob", r.get("market_prob", 0))
+
+        entry_price = r.get("market_prob", 0)
+        size = r.get("size", 0)
+        side = r.get("side", "YES")
+
+        # Shares = size / entry_price (what you bought)
+        if entry_price > 0:
+            shares = size / entry_price
+        else:
+            shares = size
+
+        # Current value depends on side
+        if side == "YES":
+            current_val = shares * now_price
+        else:
+            current_val = shares * (1 - now_price)
+
+        pnl = current_val - size
+        payout = shares  # max payout if correct
+
+        positions.append({
+            "question": r.get("question", ""),
+            "asset": (r.get("asset") or "").upper(),
+            "side": side,
+            "cost": round(size, 2),
+            "entry": round(entry_price, 3),
+            "now": round(now_price, 3),
+            "pnl": round(pnl, 2),
+            "payout": round(payout, 2),
+            "conviction": r.get("conviction", ""),
+            "week": r.get("week_start", ""),
+        })
+
+    return jsonify(positions)
+
+
 @oracle_bp.route("/api/oracle/predictions")
 def api_oracle_predictions():
     """All predictions from the latest week."""

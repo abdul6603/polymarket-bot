@@ -32,6 +32,17 @@ from oracle.scanner import WeeklyMarket, scan_weekly_markets, filter_tradeable
 from oracle.swarm import gather_agent_signals
 from oracle.tracker import OracleTracker
 
+# Cross-agent communication (optional — graceful if shared layer missing)
+try:
+    from shared.events import publish as bus_publish
+except ImportError:
+    def bus_publish(*a, **kw): pass
+
+try:
+    from shared.agent_brain import AgentBrain
+except ImportError:
+    AgentBrain = None
+
 log = logging.getLogger(__name__)
 
 DATA_DIR = Path.home() / "polymarket-bot" / "data"
@@ -43,6 +54,12 @@ class OracleBot:
     def __init__(self) -> None:
         self.cfg = OracleConfig()
         self.tracker = OracleTracker(self.cfg)
+        self.brain = None
+        if AgentBrain is not None:
+            try:
+                self.brain = AgentBrain("oracle", role="weekly crypto market analyst")
+            except Exception:
+                pass
         self._setup_logging()
 
     def _setup_logging(self) -> None:
@@ -83,6 +100,11 @@ class OracleBot:
                 await asyncio.sleep(300)
 
         self.tracker.close()
+        if self.brain:
+            try:
+                self.brain.close()
+            except Exception:
+                pass
         log.info("Oracle shut down")
 
     def _should_run(self, now: datetime) -> bool:
@@ -147,6 +169,12 @@ class OracleBot:
             if resolution.get("resolved", 0) > 0:
                 log.info("Resolved %d predictions from last week, P&L: $%.2f",
                          resolution["resolved"], resolution.get("pnl", 0))
+                bus_publish("oracle", "predictions_resolved", {
+                    "resolved": resolution["resolved"],
+                    "pnl": resolution.get("pnl", 0),
+                    "week": last_week,
+                })
+                log.info("Published resolution to event bus")
 
         # Step 2: Scan weekly markets
         log.info("Step 2: Scanning weekly markets...")
@@ -254,6 +282,32 @@ class OracleBot:
         log.info("Trades: %d placed, $%.0f wagered", len(selected), sum(t.size for t in selected))
         log.info("Regime: %s (%.0f%% confidence)", ensemble.regime, ensemble.confidence * 100)
         log.info("=" * 60)
+
+        # Publish to event bus for cross-agent communication
+        bus_publish("oracle", "weekly_predictions", {
+            "trades": len(selected),
+            "regime": ensemble.regime,
+            "confidence": round(ensemble.confidence, 3),
+            "wagered": round(sum(t.size for t in selected), 2),
+            "week": week_start,
+        })
+        log.info("Published weekly predictions to event bus")
+
+        # Record brain decision for learning
+        if self.brain:
+            try:
+                self.brain.remember_decision(
+                    context=f"Week {week_start}: {len(all_markets)} markets, "
+                            f"regime={ensemble.regime}, BTC=${btc_price:,.0f}",
+                    decision=f"Placed {len(selected)} trades, ${sum(t.size for t in selected):.0f} wagered",
+                    reasoning=f"Ensemble confidence {ensemble.confidence:.0%}, "
+                              f"{len(tradeable)} tradeable from {len(all_markets)} scanned",
+                    confidence=ensemble.confidence,
+                    tags=["weekly_cycle", ensemble.regime, cycle_type.lower()],
+                )
+                log.info("Recorded brain decision")
+            except Exception:
+                log.debug("Failed to record brain decision")
 
         # Print report to stdout (goes to log file)
         print("\n" + report + "\n")
