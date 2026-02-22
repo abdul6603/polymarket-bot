@@ -251,10 +251,10 @@
       </tbody>
     </table>
     <div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;font-size:0.62rem;">
-      <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--success);margin-right:4px;"></span><strong>7 agents</strong> on local LLM (Qwen 14B / Coder 14B / 3B) + <strong>Razor, Quant</strong> use pure math (no LLM)</div>
+      <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--success);margin-right:4px;"></span><strong>7 agents</strong> on local LLM (Qwen3 32B / Coder 14B / 3B) + <strong>Razor, Quant</strong> use pure math (no LLM)</div>
       <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warning);margin-right:4px;"></span><strong>Atlas</strong> needs Tavily (1K free calls/mo)</div>
       <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--error);margin-right:4px;"></span><strong>Hawk</strong> uses GPT-4o for sports (cloud cost)</div>
-      <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#3498DB;margin-right:4px;"></span><strong>3 models</strong> on Pro M3: Qwen 14B, Qwen 3B, Qwen Coder 14B</div>
+      <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#3498DB;margin-right:4px;"></span><strong>3 models</strong> on Pro M3: Qwen3 32B, Qwen 3B, Qwen Coder 14B</div>
     </div>
   </div>
     </div>
@@ -585,9 +585,9 @@
 var _INTEL_AGENT_COLORS = {
   shelby:'#FFAA00', atlas:'#22AA44', lisa:'#FF8800', hawk:'#FFD700',
   soren:'#CC66FF', garves:'#00D4FF', quant:'#00BFFF', viper:'#00FF88',
-  robotox:'#00FF44', thor:'#FF6600', razor:'#FF1493'
+  robotox:'#00FF44', thor:'#FF6600', razor:'#FF1493', odin:'#8B5CF6'
 };
-var _INTEL_AGENT_ORDER = ['garves','hawk','razor','soren','lisa','shelby','atlas','thor','viper','robotox','quant'];
+var _INTEL_AGENT_ORDER = ['garves','hawk','razor','odin','soren','lisa','shelby','atlas','thor','viper','robotox','quant'];
 
 function calcIntelScore(s) {
   if (!s || s.error) return {score:0, exp:0, know:0, acc:0, mat:0, rec:0};
