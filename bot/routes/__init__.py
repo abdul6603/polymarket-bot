@@ -13,8 +13,8 @@ def register_all_blueprints(app: Flask) -> None:
     from bot.routes.soren import soren_bp
     from bot.routes.atlas import atlas_bp
     from bot.routes.shelby import shelby_bp
-    from bot.routes.mercury import mercury_bp
-    from bot.routes.sentinel import sentinel_bp
+    from bot.routes.lisa import lisa_bp
+    from bot.routes.robotox import robotox_bp
     from bot.routes.chat import chat_bp
     from bot.routes.overview import overview_bp
     from bot.routes.infra import infra_bp
@@ -25,13 +25,14 @@ def register_all_blueprints(app: Flask) -> None:
     from bot.routes.viper import viper_bp
     from bot.routes.quant import quant_bp
     from bot.routes.llm import llm_bp
+    from bot.routes.odin import odin_bp
 
     app.register_blueprint(garves_bp)
     app.register_blueprint(soren_bp)
     app.register_blueprint(atlas_bp)
     app.register_blueprint(shelby_bp)
-    app.register_blueprint(mercury_bp)
-    app.register_blueprint(sentinel_bp)
+    app.register_blueprint(lisa_bp)
+    app.register_blueprint(robotox_bp)
     app.register_blueprint(chat_bp)
     app.register_blueprint(overview_bp)
     app.register_blueprint(infra_bp)
@@ -42,3 +43,4 @@ def register_all_blueprints(app: Flask) -> None:
     app.register_blueprint(viper_bp)
     app.register_blueprint(quant_bp)
     app.register_blueprint(llm_bp)
+    app.register_blueprint(odin_bp)

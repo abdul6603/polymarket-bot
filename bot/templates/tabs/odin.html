@@ -1,0 +1,275 @@
+<!-- ODIN — Crypto Futures Swing Trading Bot -->
+<div class="tab-content" id="tab-odin">
+
+  <!-- A: Intel Meter + Header -->
+  <div id="intel-odin" class="intel-meter" style="margin-bottom:12px;"></div>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+    <span class="badge" style="font-weight:700;padding:4px 12px;font-size:0.8rem;background:rgba(139,92,246,0.15);border:1px solid var(--agent-odin);"><span id="odin-mode-label" style="color:var(--agent-odin);">PAPER</span></span>
+    <span class="text-muted" style="font-size:0.76rem;">BTC/ETH Futures — SMC + Macro Confluence (Bitunix)</span>
+    <span class="text-muted" style="font-size:0.68rem;font-style:italic;margin-left:auto;">"I see the structure. I see the trap. I trade the imbalance."</span>
+  </div>
+
+  <!-- B: Action Bar -->
+  <div class="agent-widget-row">
+    <button class="btn" onclick="odinRefresh()" style="font-size:0.72rem;font-weight:700;border-color:var(--agent-odin);color:var(--agent-odin);">Refresh Status</button>
+    <button class="btn" onclick="healthCheckAgent('odin')" style="font-size:0.72rem;">Health Check</button>
+  </div>
+  <div class="health-inline" id="odin-health-result"></div>
+
+  <!-- C: Hero Cards -->
+  <div class="grid-3" style="margin-bottom:12px;">
+    <div class="stat-card" data-accent="odin">
+      <div class="stat-value" id="odin-balance" style="font-size:1.4rem;color:var(--agent-odin);">$1,000</div>
+      <div class="stat-label">Balance</div>
+    </div>
+    <div class="stat-card" data-accent="odin">
+      <div class="stat-value" id="odin-total-pnl" style="font-size:1.4rem;">$0.00</div>
+      <div class="stat-label">Total P&amp;L</div>
+    </div>
+    <div class="stat-card" data-accent="odin">
+      <div class="stat-value" id="odin-exposure" style="font-size:1.4rem;">$0.00</div>
+      <div class="stat-label">Exposure</div>
+    </div>
+  </div>
+
+  <!-- D: Macro Regime Bar -->
+  <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-odin);">
+    <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Macro Regime</h3>
+    <div class="grid-6" style="margin-bottom:0;">
+      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-macro-regime" style="font-size:0.9rem;color:var(--agent-odin);">--</div><div class="stat-label">Regime</div></div>
+      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-macro-score">0</div><div class="stat-label">Score</div></div>
+      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-spy-price">--</div><div class="stat-label">SPY</div></div>
+      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-vix">--</div><div class="stat-label">VIX</div></div>
+      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-btc-d">--</div><div class="stat-label">BTC.D</div></div>
+      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-usdt-d">--</div><div class="stat-label">USDT.D</div></div>
+    </div>
+  </div>
+
+  <!-- E: Stats Grid -->
+  <div class="grid-6" style="margin-bottom:12px;">
+    <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-winrate" style="color:var(--agent-odin);">--</div><div class="stat-label">Win Rate</div></div>
+    <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-open-count">0</div><div class="stat-label">Open Pos</div></div>
+    <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-trade-count">0</div><div class="stat-label">Trades</div></div>
+    <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-drawdown">0%</div><div class="stat-label">Drawdown</div></div>
+    <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-consec-losses">0</div><div class="stat-label">Consec Loss</div></div>
+    <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-cycle-count">0</div><div class="stat-label">Cycles</div></div>
+  </div>
+
+  <!-- F: Circuit Breaker Status -->
+  <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-odin);">
+    <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Circuit Breaker</h3>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <span id="odin-cb-status" style="font-weight:700;font-size:0.82rem;color:var(--success);">TRADING ALLOWED</span>
+      <span id="odin-cb-reason" class="text-muted" style="font-size:0.72rem;"></span>
+      <span class="text-muted" style="font-size:0.72rem;margin-left:auto;">Size mod: <span id="odin-size-mod">1.0x</span></span>
+    </div>
+    <div class="grid-3" style="margin-top:8px;">
+      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-daily-pnl">$0.00</div><div class="stat-label">Daily P&amp;L</div></div>
+      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-weekly-pnl">$0.00</div><div class="stat-label">Weekly P&amp;L</div></div>
+      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-peak-balance">$1,000</div><div class="stat-label">Peak Balance</div></div>
+    </div>
+  </div>
+
+  <!-- G: Open Positions -->
+  <div class="collapse-section default-open">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="odin" style="margin-bottom:0;">Open Positions</h2>
+    </div>
+    <div class="collapse-body">
+      <table class="data-table">
+        <thead><tr><th>Symbol</th><th>Dir</th><th>Entry</th><th>SL</th><th>TP</th><th>Qty</th><th>Notional</th><th>Conf</th></tr></thead>
+        <tbody id="odin-positions-tbody"><tr><td colspan="8" class="text-muted">No open positions</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- H: Last Signal -->
+  <div class="collapse-section">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="odin" style="margin-bottom:0;">Last Signal</h2>
+    </div>
+    <div class="collapse-body">
+      <div id="odin-last-signal" class="text-muted" style="font-family:var(--font-mono);font-size:0.74rem;">No signal yet</div>
+    </div>
+  </div>
+
+  <!-- I: Trade History -->
+  <div class="collapse-section">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="odin" style="margin-bottom:0;">Trade History</h2>
+    </div>
+    <div class="collapse-body">
+      <table class="data-table">
+        <thead><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Entry</th><th>Exit</th><th>P&amp;L</th><th>Reason</th><th>Hold</th></tr></thead>
+        <tbody id="odin-trades-tbody"><tr><td colspan="8" class="text-muted">No trades yet</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- J: Config -->
+  <div class="collapse-section">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="odin" style="margin-bottom:0;">Config</h2>
+    </div>
+    <div class="collapse-body">
+      <div id="odin-config" class="text-muted" style="font-family:var(--font-mono);font-size:0.72rem;">Loading config...</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function odinRefresh() {
+  fetch('/api/odin').then(r => r.json()).then(function(d) {
+    // Mode
+    var modeEl = document.getElementById('odin-mode-label');
+    if (modeEl) modeEl.textContent = (d.mode || 'paper').toUpperCase();
+
+    // Hero cards
+    odinSetVal('odin-balance', '$' + (d.balance || 1000).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
+    odinPnl('odin-total-pnl', d.total_pnl || 0);
+    odinSetVal('odin-exposure', '$' + (d.total_exposure || 0).toFixed(2));
+
+    // Stats
+    odinSetVal('odin-winrate', (d.win_rate || 0).toFixed(1) + '%');
+    odinSetVal('odin-open-count', d.open_positions || 0);
+    odinSetVal('odin-trade-count', d.trade_count || 0);
+    odinSetVal('odin-drawdown', (d.drawdown_pct || 0).toFixed(1) + '%');
+    odinSetVal('odin-consec-losses', d.consecutive_losses || 0);
+    odinSetVal('odin-cycle-count', d.cycle_count || 0);
+
+    // Circuit breaker
+    var cbEl = document.getElementById('odin-cb-status');
+    if (cbEl) {
+      if (d.trading_allowed) {
+        cbEl.textContent = 'TRADING ALLOWED';
+        cbEl.style.color = 'var(--success)';
+      } else {
+        cbEl.textContent = 'PAUSED';
+        cbEl.style.color = 'var(--error)';
+      }
+    }
+    odinSetVal('odin-cb-reason', d.cb_reason || '');
+    odinSetVal('odin-size-mod', (d.size_modifier || 1).toFixed(2) + 'x');
+    odinPnl('odin-daily-pnl', d.daily_pnl || 0);
+    odinPnl('odin-weekly-pnl', d.weekly_pnl || 0);
+    odinSetVal('odin-peak-balance', '$' + (d.peak_balance || 1000).toFixed(2));
+
+    // Macro
+    var macro = d.macro || {};
+    odinSetVal('odin-macro-regime', macro.regime || '--');
+    odinSetVal('odin-macro-score', macro.score || 0);
+    odinSetVal('odin-spy-price', macro.spy ? '$' + macro.spy.toFixed(0) : '--');
+    odinSetVal('odin-vix', macro.vix ? macro.vix.toFixed(1) : '--');
+    odinSetVal('odin-btc-d', macro.btc_d ? macro.btc_d.toFixed(1) + '%' : '--');
+    odinSetVal('odin-usdt-d', macro.usdt_d ? macro.usdt_d.toFixed(2) + '%' : '--');
+
+    // Positions
+    var positions = d.paper_positions || [];
+    var tbody = document.getElementById('odin-positions-tbody');
+    if (tbody) {
+      if (positions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-muted">No open positions</td></tr>';
+      } else {
+        var html = '';
+        positions.forEach(function(p) {
+          var dirColor = p.direction === 'LONG' ? 'var(--success)' : 'var(--error)';
+          html += '<tr>';
+          html += '<td>' + (p.symbol || '') + '</td>';
+          html += '<td style="color:' + dirColor + ';font-weight:600;">' + (p.direction || '') + '</td>';
+          html += '<td>$' + (p.entry_price || 0).toFixed(2) + '</td>';
+          html += '<td style="color:var(--error);">$' + (p.stop_loss || 0).toFixed(2) + '</td>';
+          html += '<td style="color:var(--success);">$' + (p.take_profit_1 || 0).toFixed(2) + '</td>';
+          html += '<td>' + (p.qty || 0).toFixed(6) + '</td>';
+          html += '<td>$' + (p.notional || 0).toFixed(2) + '</td>';
+          html += '<td>' + ((p.confidence || 0) * 100).toFixed(0) + '%</td>';
+          html += '</tr>';
+        });
+        tbody.innerHTML = html;
+      }
+    }
+
+    // Last signal
+    var sigEl = document.getElementById('odin-last-signal');
+    if (sigEl && d.last_signal) {
+      var s = d.last_signal;
+      var sigColor = s.direction === 'LONG' ? 'var(--success)' : 'var(--error)';
+      sigEl.innerHTML = '<span style="color:' + sigColor + ';font-weight:700;">' + (s.direction || '') + '</span> '
+        + (s.symbol || '') + ' @ $' + (s.entry_price || 0).toFixed(2)
+        + ' | SL: $' + (s.stop_loss || 0).toFixed(2)
+        + ' | TP: $' + (s.take_profit_1 || 0).toFixed(2)
+        + ' | R:R ' + (s.risk_reward || 0).toFixed(1)
+        + ' | Conf: ' + ((s.confidence || 0) * 100).toFixed(0) + '%'
+        + ' | Macro: ' + (s.macro_regime || '--')
+        + '<br><span class="text-muted">' + (s.entry_reason || '') + '</span>';
+    }
+
+    // Config
+    var cfgEl = document.getElementById('odin-config');
+    if (cfgEl && d.config) {
+      var c = d.config;
+      cfgEl.innerHTML = 'TF: ' + c.htf + '/' + c.mtf + '/' + c.ltf
+        + ' | Leverage: ' + c.leverage + 'x'
+        + ' | Risk/trade: ' + c.risk_per_trade + '%'
+        + ' | Kelly: ' + c.kelly_fraction
+        + ' | Cycle: ' + c.cycle_seconds + 's';
+    }
+
+    // Intel meter
+    if (typeof updateIntelMeter === 'function') {
+      var pct = d.running ? 80 : 10;
+      if (d.trade_count > 0) pct = Math.min(95, 60 + d.win_rate * 0.3);
+      updateIntelMeter('intel-odin', pct, 'var(--agent-odin)');
+    }
+  }).catch(function(e) {
+    console.log('[Odin] Refresh error:', e);
+  });
+
+  // Trade history
+  fetch('/api/odin/trades').then(r => r.json()).then(function(trades) {
+    var tbody = document.getElementById('odin-trades-tbody');
+    if (!tbody || !trades.length) return;
+    var html = '';
+    trades.slice(-20).reverse().forEach(function(t) {
+      var pnlColor = t.pnl_usd >= 0 ? 'var(--success)' : 'var(--error)';
+      var dirColor = t.side === 'LONG' ? 'var(--success)' : 'var(--error)';
+      var exitTime = t.exit_time ? new Date(t.exit_time * 1000).toLocaleString() : '--';
+      html += '<tr>';
+      html += '<td style="font-size:0.68rem;">' + exitTime + '</td>';
+      html += '<td>' + (t.symbol || '') + '</td>';
+      html += '<td style="color:' + dirColor + ';">' + (t.side || '') + '</td>';
+      html += '<td>$' + (t.entry_price || 0).toFixed(2) + '</td>';
+      html += '<td>$' + (t.exit_price || 0).toFixed(2) + '</td>';
+      html += '<td style="color:' + pnlColor + ';font-weight:600;">$' + (t.pnl_usd || 0).toFixed(2) + '</td>';
+      html += '<td>' + (t.exit_reason || '') + '</td>';
+      html += '<td>' + (t.hold_hours || 0).toFixed(1) + 'h</td>';
+      html += '</tr>';
+    });
+    tbody.innerHTML = html;
+  }).catch(function(){});
+}
+
+function odinSetVal(id, val) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function odinPnl(id, val) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var prefix = val >= 0 ? '+$' : '-$';
+  el.textContent = prefix + Math.abs(val).toFixed(2);
+  el.style.color = val >= 0 ? 'var(--success)' : 'var(--error)';
+}
+
+// Auto-refresh when tab is active
+(function() {
+  var origSwitch = window.switchTab;
+  if (origSwitch) {
+    window.switchTab = function(tab) {
+      origSwitch(tab);
+      if (tab === 'odin') odinRefresh();
+    };
+  }
+})();
+</script>

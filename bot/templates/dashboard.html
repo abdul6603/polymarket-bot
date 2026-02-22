@@ -35,6 +35,9 @@
   <button class="sidebar-btn" data-tab="quant" onclick="switchTab('quant')" title="Quant">
     <span class="sidebar-icon" style="background:var(--agent-quant);">QT</span><span class="sidebar-label">Quant</span>
   </button>
+  <button class="sidebar-btn" data-tab="odin" onclick="switchTab('odin')" title="Odin">
+    <span class="sidebar-icon" style="background:var(--agent-odin);">OD</span><span class="sidebar-label">Odin $</span>
+  </button>
   <div class="sidebar-divider"></div>
   <div class="sidebar-section-label">CONTENT</div>
   <button class="sidebar-btn" data-tab="soren" onclick="switchTab('soren')" title="Soren">
@@ -76,7 +79,7 @@
   <header class="header">
     <div class="header-left">
       <h1 class="header-title">Command Center</h1>
-      <div class="header-subtitle"><span class="dot-online"></span> <span id="agents-online-count">13</span> Agents Online</div>
+      <div class="header-subtitle"><span class="dot-online"></span> <span id="agents-online-count">14</span> Agents Online</div>
     </div>
     <div class="header-right">Last update: <span id="last-update">--:--:--</span></div>
   </header>
@@ -93,6 +96,7 @@
   {% include 'tabs/viper.html' %}
   {% include 'tabs/razor.html' %}
   {% include 'tabs/quant.html' %}
+  {% include 'tabs/odin.html' %}
   {% include 'tabs/system.html' %}
   {% include 'tabs/intelligence.html' %}
   {% include 'tabs/chat.html' %}

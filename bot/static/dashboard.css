@@ -11,6 +11,7 @@
     --agent-viper: #00ff88;
     --agent-razor: #FF1493;
     --agent-quant: #00BFFF;
+    --agent-odin: #8B5CF6;
     --bg: #000000;
     --surface: #080810;
     --surface-elevated: #0c0c18;
@@ -126,6 +127,7 @@
   .sidebar-btn[data-tab="viper"].active { color:var(--agent-viper); box-shadow:inset 3px 0 0 var(--agent-viper); }
   .sidebar-btn[data-tab="razor"].active { color:var(--agent-razor); box-shadow:inset 3px 0 0 var(--agent-razor); }
   .sidebar-btn[data-tab="quant"].active { color:var(--agent-quant); box-shadow:inset 3px 0 0 var(--agent-quant); }
+  .sidebar-btn[data-tab="odin"].active { color:var(--agent-odin); box-shadow:inset 3px 0 0 var(--agent-odin); }
   .sidebar-spacer { flex:1; }
   .sidebar-divider {
     width:80%;height:1px;background:var(--border);margin:4px auto;
