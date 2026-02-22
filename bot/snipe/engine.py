@@ -50,7 +50,8 @@ class SnipeEngine:
         self._dry_run = dry_run
 
         self.window_tracker = WindowTracker(cfg, price_cache)
-        self.delta_signal = DeltaSignal(threshold=delta_threshold)
+        self._delta_threshold = delta_threshold
+        self._delta_signals: dict[str, DeltaSignal] = {}  # Per-asset signal trackers
         self.pyramid = PyramidExecutor(
             cfg, clob_client, dry_run=dry_run,
             budget_per_window=budget_per_window,
@@ -70,6 +71,12 @@ class SnipeEngine:
         self._status_file = Path(__file__).parent.parent.parent / "data" / "snipe_status.json"
         self.enabled = getattr(cfg, "snipe_enabled", True)
 
+    def _get_signal(self, asset: str) -> DeltaSignal:
+        """Get or create per-asset delta signal tracker."""
+        if asset not in self._delta_signals:
+            self._delta_signals[asset] = DeltaSignal(threshold=self._delta_threshold)
+        return self._delta_signals[asset]
+
     async def run_loop(self, shutdown_event: asyncio.Event) -> None:
         """Main snipe loop — ticks every 5s."""
         if not self.enabled:
@@ -78,7 +85,7 @@ class SnipeEngine:
 
         log.info(
             "[SNIPE] Engine started | budget=$%.0f/window | threshold=%.2f%% | dry_run=%s",
-            self.pyramid._budget, self.delta_signal._threshold * 100, self._dry_run,
+            self.pyramid._budget, self._delta_threshold * 100, self._dry_run,
         )
 
         while not shutdown_event.is_set():
@@ -122,23 +129,21 @@ class SnipeEngine:
             # Enter TRACKING once any window is within snipe zone
             if 30 < remaining <= 190:
                 self._state = SnipeState.TRACKING
-                self.delta_signal.reset()
+                self._delta_signals.clear()  # Reset all per-asset trackers
                 log.info("[SNIPE] IDLE -> TRACKING (scanning all assets, T-%.0fs)", remaining)
                 return
 
     def _on_tracking(self) -> None:
-        """Scan ALL assets each tick, try best delta first, fall back to others on no-liquidity."""
+        """Evaluate ALL assets with per-asset signal trackers, arm the best one with a signal."""
         now = time.time()
 
-        # Find all tradeable windows in snipe zone
+        # Collect all tradeable windows in snipe zone
         candidates = []
         for w in self.window_tracker.all_active_windows():
             if w.traded:
                 continue
             remaining = w.end_ts - now
-            if remaining <= 0:
-                continue
-            if remaining > 190:
+            if remaining <= 0 or remaining > 190:
                 continue
             price = self._cache.get_price(w.asset)
             if not price or w.open_price <= 0:
@@ -150,30 +155,33 @@ class SnipeEngine:
             self._state = SnipeState.IDLE
             return
 
-        # Sort by absolute delta (biggest mover first)
         candidates.sort(key=lambda x: abs(x[2]), reverse=True)
 
-        # Log all assets in snipe zone for visibility
+        # Log all assets
         remaining_top = candidates[0][3]
         if remaining_top <= 185:
-            parts = []
-            for w, p, d, r in candidates:
-                parts.append(f"{w.asset[:3].upper()}={d*100:+.4f}%")
+            parts = [f"{w.asset[:3].upper()}={d*100:+.4f}%" for w, p, d, r in candidates]
             log.info(
                 "[SNIPE] T-%.0fs | Best: %s $%.2f | delta=%+.4f%% | All: %s",
                 remaining_top, candidates[0][0].asset.upper(), candidates[0][1],
                 candidates[0][2] * 100, " ".join(parts),
             )
 
-        # Try each candidate in order (biggest delta first) — fall back on no-liquidity
-        from bot.snipe.pyramid_executor import WAVES
+        # Evaluate EVERY asset with its own signal tracker (builds sustained direction per-asset)
+        signaled = []
         for window, price, delta, remaining in candidates:
+            sig_tracker = self._get_signal(window.asset)
+            signal = sig_tracker.evaluate(price, window.open_price, remaining)
+            if signal:
+                signaled.append((window, price, delta, remaining, signal))
+
+        if not signaled:
+            return
+
+        # Try each signaled asset (strongest delta first) — fall back on no-liquidity
+        from bot.snipe.pyramid_executor import WAVES
+        for window, price, delta, remaining, signal in signaled:
             self._current_window_id = window.market_id
-
-            signal = self.delta_signal.evaluate(price, window.open_price, remaining)
-            if not signal:
-                return  # Delta not strong enough on best candidate — wait
-
             direction = signal.direction
             token_id = window.up_token_id if direction == "up" else window.down_token_id
 
@@ -198,7 +206,6 @@ class SnipeEngine:
                 signal.confidence, signal.sustained_ticks, remaining, price, window.open_price,
             )
 
-            # Start pyramid and fire waves immediately
             self.pyramid.start_position(window.market_id, signal.direction, window.open_price, window.asset)
             self._state = SnipeState.ARMED
             log.info("[SNIPE] TRACKING -> ARMED on %s (implied=$%.3f) — firing waves now", window.asset.upper(), implied)
@@ -207,7 +214,6 @@ class SnipeEngine:
             # If wave 1 filled, we're done. If not (no liquidity), _on_armed set us back to IDLE.
             if self._state != SnipeState.IDLE:
                 return
-            # Still IDLE = wave 1 failed, try next asset
             log.info("[SNIPE] Falling back to next asset...")
 
     def _on_armed(self) -> None:
@@ -245,7 +251,8 @@ class SnipeEngine:
                     asset_price = self._cache.get_price(window.asset)
                     if asset_price and window.open_price > 0:
                         abs_delta = abs((asset_price - window.open_price) / window.open_price)
-                        wave_threshold = self.delta_signal.get_wave_threshold(wave_num)
+                        sig_tracker = self._get_signal(window.asset)
+                        wave_threshold = sig_tracker.get_wave_threshold(wave_num)
                         if abs_delta < wave_threshold:
                             log.info(
                                 "[SNIPE] Wave %d delta check failed: %.4f%% < %.4f%%",
@@ -461,7 +468,7 @@ class SnipeEngine:
             "budget_base": self._base_budget,
             "budget_escalated": self._escalated_budget,
             "consecutive_wins": self._consecutive_wins,
-            "delta_threshold_pct": round(self.delta_signal._threshold * 100, 3),
+            "delta_threshold_pct": round(self._delta_threshold * 100, 3),
             "stats": self._stats.copy(),
             "window": self.window_tracker.get_status(),
             "position": self.pyramid.get_status(),
