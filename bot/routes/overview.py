@@ -160,6 +160,9 @@ def api_overview():
     # Razor
     razor_status = read_fresh(DATA_DIR / "razor_status.json", "~/polymarket-bot/data/razor_status.json")
 
+    # Odin
+    odin_status = read_fresh(Path.home() / "odin" / "data" / "odin_status.json", "~/odin/data/odin_status.json")
+
     overview_data = {
         "garves": {
             "running": garves_running,
@@ -201,6 +204,14 @@ def api_overview():
             "pnl": razor_status.get("total_pnl", 0),
             "exposure": razor_status.get("exposure", 0),
             "markets": razor_status.get("total_markets", 0),
+        },
+        "odin": {
+            "running": odin_status.get("running", False),
+            "mode": odin_status.get("mode", "paper"),
+            "open_positions": odin_status.get("open_positions", 0),
+            "total_pnl": odin_status.get("total_pnl", 0),
+            "balance": odin_status.get("balance", 1000),
+            "drawdown_pct": odin_status.get("drawdown_pct", 0),
         },
     }
 
@@ -1084,10 +1095,56 @@ def api_intelligence():
     except Exception:
         result["razor"] = {"dimensions": {}, "overall": 0, "title": "The Mathematician"}
 
+    # -- ODIN -- The Regime Trader --
+    try:
+        odin_intel = {"dimensions": {}, "overall": 0, "title": "The Regime Trader"}
+        odin_sf = Path.home() / "odin" / "data" / "odin_status.json"
+        odin_st = read_fresh(odin_sf, "~/odin/data/odin_status.json")
+        o_trades_f = Path.home() / "odin" / "data" / "odin_trades.jsonl"
+        o_trades = []
+        if o_trades_f.exists():
+            try:
+                o_trades = [json.loads(l) for l in o_trades_f.read_text().strip().split("\n") if l.strip()]
+            except Exception:
+                pass
+        o_wins = [t for t in o_trades if t.get("is_win")]
+        o_wr = (len(o_wins) / len(o_trades) * 100) if o_trades else 0
+
+        # 1. Regime Detection
+        regime_score = odin_st.get("regime", {}).get("global_score", 50)
+        regime_dim = min(100, int(regime_score * 1.5) + 20)
+        odin_intel["dimensions"]["Regime Detection"] = regime_dim
+
+        # 2. Risk Management
+        dd = odin_st.get("drawdown_pct", 0)
+        risk_dim = max(20, 100 - int(dd * 3))
+        odin_intel["dimensions"]["Risk Management"] = risk_dim
+
+        # 3. Accuracy
+        accuracy = min(100, int(o_wr * 1.2)) if o_trades else 30
+        odin_intel["dimensions"]["Accuracy"] = accuracy
+
+        # 4. Capital Efficiency
+        balance = odin_st.get("balance", 1000)
+        pnl = odin_st.get("total_pnl", 0)
+        cap_eff = min(100, 50 + int(pnl / 10)) if balance > 0 else 30
+        odin_intel["dimensions"]["Capital Efficiency"] = max(20, cap_eff)
+
+        # 5. Market Scanning
+        cycle_count = odin_st.get("cycle_count", 0)
+        scanning = min(100, 30 + cycle_count * 2)
+        odin_intel["dimensions"]["Market Scanning"] = scanning
+
+        dims = list(odin_intel["dimensions"].values())
+        odin_intel["overall"] = int(sum(dims) / len(dims)) if dims else 0
+        result["odin"] = odin_intel
+    except Exception:
+        result["odin"] = {"dimensions": {}, "overall": 0, "title": "The Regime Trader"}
+
     # -- TEAM -- Collective Intelligence --
     try:
         team = {"dimensions": {}, "overall": 0, "title": "Brotherhood"}
-        agents = ["garves", "soren", "atlas", "shelby", "lisa", "robotox", "thor", "hawk", "viper", "quant", "razor"]
+        agents = ["garves", "soren", "atlas", "shelby", "lisa", "robotox", "thor", "hawk", "viper", "quant", "razor", "odin"]
         agent_scores = {a: result.get(a, {}).get("overall", 0) for a in agents}
 
         # 1. Collective Knowledge
