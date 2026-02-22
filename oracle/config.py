@@ -78,15 +78,10 @@ class OracleConfig:
         return self.data_dir / self.db_file
 
     def conviction_size(self, edge: float) -> float:
-        """Return position size based on edge conviction tier."""
+        """Return position size — flat risk_per_trade if edge meets minimum."""
         if edge < self.edge_low:
             return 0.0
-        elif edge < self.edge_medium:
-            return self.bankroll * 0.02
-        elif edge < self.edge_high:
-            return self.bankroll * 0.04
-        else:
-            return self.bankroll * 0.05
+        return self.risk_per_trade
 
     def conviction_label(self, edge: float) -> str:
         if edge < self.edge_low:

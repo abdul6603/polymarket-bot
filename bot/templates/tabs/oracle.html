@@ -359,8 +359,8 @@ function oracleRefresh() {
     var cfgEl = document.getElementById('oracle-config');
     if (cfgEl) {
       cfgEl.innerHTML = 'Mode: ' + (d.dry_run ? 'DRY RUN' : 'LIVE')
-        + ' | Bankroll: $150 | Risk/Trade: $25 | Max Trades: 8/week'
-        + ' | Max Exposure: $100 | Min Edge: 8% | Weekly Loss Limit: $75'
+        + ' | Bankroll: $150 | Flat $25/trade (8% min edge)'
+        + ' | Max Trades: 8/week | Max Exposure: $100 | Weekly Loss Limit: $75'
         + ' | Cycle: Sunday 00:00 UTC | Emergency: 8% BTC move'
         + ' | Ensemble: Claude (0.45) + Grok (0.30) + Gemini (0.25)';
     }
