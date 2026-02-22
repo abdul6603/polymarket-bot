@@ -90,8 +90,8 @@
     </div>
     <div class="collapse-body">
       <table class="data-table">
-        <thead><tr><th>Symbol</th><th>Dir</th><th>Entry</th><th>SL</th><th>TP</th><th>Qty</th><th>Notional</th><th>Conf</th></tr></thead>
-        <tbody id="odin-positions-tbody"><tr><td colspan="8" class="text-muted">No open positions</td></tr></tbody>
+        <thead><tr><th>Asset</th><th>Dir</th><th>Leverage</th><th>Entry</th><th>Now</th><th>SL</th><th>TP</th><th>Qty</th><th>Margin</th><th>P&amp;L</th></tr></thead>
+        <tbody id="odin-positions-tbody"><tr><td colspan="10" class="text-muted">No open positions</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -203,28 +203,14 @@ function odinRefresh() {
       }
     }
 
-    // Positions
+    // Positions — fetch live prices then render
     var positions = d.paper_positions || [];
     var tbody = document.getElementById('odin-positions-tbody');
     if (tbody) {
       if (positions.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-muted">No open positions</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="text-muted">No open positions</td></tr>';
       } else {
-        var html = '';
-        positions.forEach(function(p) {
-          var dirColor = p.direction === 'LONG' ? 'var(--success)' : 'var(--error)';
-          html += '<tr>';
-          html += '<td>' + (p.symbol || '') + '</td>';
-          html += '<td style="color:' + dirColor + ';font-weight:600;">' + (p.direction || '') + '</td>';
-          html += '<td>$' + (p.entry_price || 0).toFixed(2) + '</td>';
-          html += '<td style="color:var(--error);">$' + (p.stop_loss || 0).toFixed(2) + '</td>';
-          html += '<td style="color:var(--success);">$' + (p.take_profit_1 || 0).toFixed(2) + '</td>';
-          html += '<td>' + (p.qty || 0).toFixed(6) + '</td>';
-          html += '<td>$' + (p.notional || 0).toFixed(2) + '</td>';
-          html += '<td>' + ((p.confidence || 0) * 100).toFixed(0) + '%</td>';
-          html += '</tr>';
-        });
-        tbody.innerHTML = html;
+        odinRenderPositions(positions);
       }
     }
 
@@ -301,13 +287,90 @@ function odinPnl(id, val) {
   el.style.color = val >= 0 ? 'var(--success)' : 'var(--error)';
 }
 
-// Auto-refresh when tab is active
+var _odinPriceCache = {};
+
+function odinFetchPrices(symbols, cb) {
+  var ids = symbols.map(function(s) {
+    if (s.indexOf('BTC') >= 0) return 'bitcoin';
+    if (s.indexOf('ETH') >= 0) return 'ethereum';
+    if (s.indexOf('SOL') >= 0) return 'solana';
+    if (s.indexOf('XRP') >= 0) return 'ripple';
+    return '';
+  }).filter(Boolean);
+  if (ids.length === 0) return cb({});
+  var unique = ids.filter(function(v, i, a) { return a.indexOf(v) === i; });
+  fetch('https://api.coingecko.com/api/v3/simple/price?ids=' + unique.join(',') + '&vs_currencies=usd')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var map = {};
+      if (data.bitcoin) map.BTCUSDT = data.bitcoin.usd;
+      if (data.ethereum) map.ETHUSDT = data.ethereum.usd;
+      if (data.solana) map.SOLUSDT = data.solana.usd;
+      if (data.ripple) map.XRPUSDT = data.ripple.usd;
+      _odinPriceCache = map;
+      cb(map);
+    })
+    .catch(function() { cb(_odinPriceCache); });
+}
+
+function odinRenderPositions(positions) {
+  var symbols = positions.map(function(p) { return p.symbol; });
+  odinFetchPrices(symbols, function(prices) {
+    var tbody = document.getElementById('odin-positions-tbody');
+    if (!tbody) return;
+    var html = '';
+    var totalPnl = 0;
+    positions.forEach(function(p) {
+      var dirColor = p.direction === 'LONG' ? 'var(--success)' : 'var(--error)';
+      var curPrice = prices[p.symbol] || 0;
+      var pnl = 0;
+      if (curPrice > 0) {
+        if (p.direction === 'LONG') {
+          pnl = (curPrice - p.entry_price) * p.qty;
+        } else {
+          pnl = (p.entry_price - curPrice) * p.qty;
+        }
+      }
+      totalPnl += pnl;
+      var pnlColor = pnl >= 0 ? 'var(--success)' : 'var(--error)';
+      var pnlPrefix = pnl >= 0 ? '+$' : '-$';
+      var pnlPct = p.margin > 0 ? (pnl / p.margin * 100) : 0;
+      var asset = (p.symbol || '').replace('USDT', '');
+      html += '<tr>';
+      html += '<td style="font-weight:600;">' + asset + '</td>';
+      html += '<td style="color:' + dirColor + ';font-weight:700;">' + (p.direction || '') + '</td>';
+      html += '<td>' + (p.leverage || 3) + 'x</td>';
+      html += '<td>$' + (p.entry_price || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + '</td>';
+      html += '<td style="font-weight:600;">' + (curPrice > 0 ? '$' + curPrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '--') + '</td>';
+      html += '<td style="color:var(--error);">$' + (p.stop_loss || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + '</td>';
+      html += '<td style="color:var(--success);">$' + (p.take_profit_1 || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + '</td>';
+      html += '<td>' + (p.qty || 0).toFixed(4) + '</td>';
+      html += '<td>$' + (p.margin || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + '</td>';
+      html += '<td style="color:' + pnlColor + ';font-weight:700;">' + pnlPrefix + Math.abs(pnl).toFixed(2) + '<div style="font-size:0.58rem;color:' + pnlColor + ';">' + (pnlPct >= 0 ? '+' : '') + pnlPct.toFixed(2) + '%</div></td>';
+      html += '</tr>';
+    });
+    tbody.innerHTML = html;
+    var totalEl = document.getElementById('odin-total-pnl');
+    if (totalEl && totalPnl !== 0) {
+      odinPnl('odin-total-pnl', totalPnl);
+    }
+  });
+}
+
+// Auto-refresh when tab is active + periodic refresh
+var _odinInterval = null;
 (function() {
   var origSwitch = window.switchTab;
   if (origSwitch) {
     window.switchTab = function(tab) {
       origSwitch(tab);
-      if (tab === 'odin') odinRefresh();
+      if (tab === 'odin') {
+        odinRefresh();
+        if (_odinInterval) clearInterval(_odinInterval);
+        _odinInterval = setInterval(odinRefresh, 30000);
+      } else {
+        if (_odinInterval) { clearInterval(_odinInterval); _odinInterval = null; }
+      }
     };
   }
 })();
