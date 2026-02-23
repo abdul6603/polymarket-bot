@@ -9406,6 +9406,23 @@ function refreshSnipeV7() {
       hotEl.style.display = 'none';
     }
 
+    // CandleStore warm-up indicator
+    var warmupEl = document.getElementById('snipe-candle-warmup');
+    var warmup = d.candle_warmup;
+    if (warmupEl && warmup) {
+      if (warmup.warming_up) {
+        var pct = warmup.progress_pct || 0;
+        warmupEl.style.display = 'block';
+        warmupEl.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;' +
+          'background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.2);border-radius:6px;margin-bottom:8px;">' +
+          '<span style="color:#eab308;font-size:0.85em;">CandleStore Warming Up (' + pct + '%)</span>' +
+          '<div style="flex:1;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;">' +
+          '<div style="width:' + pct + '%;height:100%;background:#eab308;border-radius:2px;transition:width 0.5s;"></div></div></div>';
+      } else {
+        warmupEl.style.display = 'none';
+      }
+    }
+
     // Signal Score card (last scorer result)
     var scorer = d.scorer || {};
     var scoreEl = document.getElementById('snipe-signal-score');

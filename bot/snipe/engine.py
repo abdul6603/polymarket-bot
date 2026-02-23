@@ -17,7 +17,9 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -97,6 +99,7 @@ class AssetSlot:
     state: SnipeState = SnipeState.IDLE
     current_window_id: str = ""
     executor: PyramidExecutor = field(default=None)
+    scorer: SignalScorer = field(default=None)
     liquidity_ignited: bool = False
     liquidity_monitor_start: float = 0.0
     initial_spread: float = 0.98
@@ -132,7 +135,7 @@ class SnipeEngine:
         self._delta_threshold = delta_threshold
         self._delta_signals: dict[str, DeltaSignal] = {}
 
-        # Per-asset slots with independent executors
+        # Per-asset slots with independent executors + scorers
         self._slots: dict[str, AssetSlot] = {}
         for asset in ASSETS:
             ac = ASSET_CONFIG.get(asset, {"threshold": 75, "budget": 25.0})
@@ -141,14 +144,19 @@ class SnipeEngine:
                 cfg, clob_client, dry_run=dry_run,
                 budget_per_window=ac["budget"],
             )
+            slot.scorer = SignalScorer(threshold=65)
             self._slots[asset] = slot
 
         self._orderbook = OrderBookSignal()
         self._orderbook.start()
 
-        # v7: Scoring engine + candle structure
+        # Candle structure (shared, but feed_tick per-asset is safe)
         self._candle_store = CandleStore()
-        self._scorer = SignalScorer(threshold=65)
+        self._scorer = SignalScorer(threshold=65)  # Legacy compat
+
+        # Thread pool for parallel per-asset ticking
+        self._tick_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="snipe-tick")
+        self._timing_lock = threading.Lock()
 
         # Execution preference: "15m" or "1h"
         self._exec_preference = "15m"
@@ -237,25 +245,43 @@ class SnipeEngine:
         log.info("[SNIPE] Engine stopped")
 
     def tick(self) -> None:
-        """Single tick — feed candles for all assets, then tick each slot."""
-        # Feed candle store for ALL 4 assets
+        """Single tick — feed candles, then tick all 4 asset slots in parallel."""
+        tick_start = time.time()
+
+        # Phase 1: Fetch prices + feed candles (sequential, fast ~1s for 4 Binance calls)
+        self._live_prices: dict[str, float] = {}
         for asset in ASSETS:
             price = self._fetch_live_price(asset)
             if price:
+                self._live_prices[asset] = price
                 self._candle_store.feed_tick(asset, price)
 
-        # Tick each asset slot independently
+        # Phase 2: Tick all 4 asset slots in PARALLEL (the heavy part — CLOB calls)
+        futures = {}
+        for asset, slot in self._slots.items():
+            futures[self._tick_pool.submit(self._tick_slot, slot)] = asset
+
+        for future in as_completed(futures, timeout=15):
+            try:
+                future.result()
+            except Exception as e:
+                asset = futures[future]
+                log.warning("[SNIPE] %s tick error: %s", asset.upper(), str(e)[:150])
+
+        # Phase 3: Collect scores and evaluate correlation
         tick_scores: dict[str, tuple[str, float]] = {}
         for asset, slot in self._slots.items():
-            self._tick_slot(slot)
             if slot.last_score > 0 and slot.last_direction:
                 tick_scores[asset] = (slot.last_direction, slot.last_score)
 
-        # Evaluate cross-asset correlation
         if tick_scores:
             self._correlation_result = evaluate_correlation(
                 tick_scores, self._active_position_count(),
             )
+
+        elapsed = time.time() - tick_start
+        if elapsed > 5.0:
+            log.warning("[SNIPE] Tick took %.1fs (target <5s)", elapsed)
 
     def _tick_slot(self, slot: AssetSlot) -> None:
         """Tick a single asset's state machine."""
@@ -286,7 +312,7 @@ class SnipeEngine:
                 # Reset per-slot trackers
                 if slot.asset in self._delta_signals:
                     self._delta_signals[slot.asset].reset()
-                self._scorer.reset_spread_history()
+                slot.scorer.reset_spread_history()
                 slot.liquidity_ignited = False
                 slot.ignition_bypassed = False
                 slot.liquidity_monitor_start = time.time()
@@ -305,10 +331,8 @@ class SnipeEngine:
         now = time.time()
         asset = slot.asset
 
-        # Fetch LIVE price
-        live_price = self._fetch_live_price(asset)
-        if live_price:
-            self._candle_store.feed_tick(asset, live_price)
+        # Use pre-fetched price from main tick loop (no duplicate Binance call)
+        live_price = self._live_prices.get(asset)
 
         candidates = []
         for w in self.window_tracker.all_active_windows():
@@ -433,8 +457,8 @@ class SnipeEngine:
             target_book = clob_book.get_orderbook(token_id)
             opp_book = clob_book.get_orderbook(opp_token_id)
 
-            # Score all 10 components
-            score_result = self._scorer.score(
+            # Score all 10 components (per-slot scorer for thread safety)
+            score_result = slot.scorer.score(
                 direction=direction,
                 delta_pct=abs_delta * 100,
                 sustained_ticks=sustained,
@@ -452,15 +476,16 @@ class SnipeEngine:
             slot.last_score = score_result.total_score
             slot.last_direction = direction
 
-            # Timing Assistant
-            self._timing_assistant.evaluate({
-                "score_result": score_result,
-                "clob_book": target_book,
-                "remaining_s": remaining,
-                "direction": direction,
-                "regime": "neutral",
-                "implied_price": implied,
-            })
+            # Timing Assistant (lock for thread safety)
+            with self._timing_lock:
+                self._timing_assistant.evaluate({
+                    "score_result": score_result,
+                    "clob_book": target_book,
+                    "remaining_s": remaining,
+                    "direction": direction,
+                    "regime": "neutral",
+                    "implied_price": implied,
+                })
 
             if not score_result.should_trade:
                 continue
@@ -1012,8 +1037,9 @@ class SnipeEngine:
             "window": self.window_tracker.get_status(),
             "history": history,
             "orderbook": self._orderbook.get_status() if hasattr(self, "_orderbook") else None,
-            "scorer": self._scorer.get_status(),
+            "scorer": self._scorer.get_status(),  # Legacy global scorer status
             "candles": self._candle_store.get_status(),
+            "candle_warmup": self._candle_store.get_warmup_status(),
             "success_rate_50": self._compute_success_rate_50(),
             "avg_latency_ms": avg_latency,
             "performance": performance,

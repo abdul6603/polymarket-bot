@@ -1429,8 +1429,9 @@ SNIPE_STATUS_FILE = DATA_DIR / "snipe_status.json"
 
 
 @garves_bp.route("/api/garves/snipe-v7")
-def api_garves_snipe_v7():
-    """Snipe engine v7 status — scoring, latency, success rate, CLOB spread."""
+@garves_bp.route("/api/garves/snipe-v8")
+def api_garves_snipe():
+    """Snipe engine v8 status — multi-asset scoring, MTF gate, correlation."""
     try:
         if not SNIPE_STATUS_FILE.exists():
             return jsonify({"enabled": False, "detail": "No snipe status file"})

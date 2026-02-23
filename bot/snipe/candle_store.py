@@ -214,6 +214,52 @@ class CandleStore:
             result[asset] = asset_result
         return result
 
+    def get_warmup_status(self) -> dict:
+        """Warm-up progress — how close each asset/timeframe is to structure detection.
+
+        Structure detection needs >=3 closed candles (for swings) and >=5 (for trend).
+        Returns per-asset readiness and overall warm-up percentage.
+        """
+        # Minutes needed for structure detection per timeframe
+        tf_struct_candles = {"5m": 5, "15m": 5, "1h": 5}
+        tf_minutes = {"5m": 25, "15m": 75, "1h": 300}  # 5 candles worth
+
+        assets_status = {}
+        total_ready = 0
+        total_checks = 0
+
+        for asset in ASSETS:
+            asset_info = {}
+            for tf in PERIODS:
+                candle_count = len(self._candles[asset][tf])
+                needed = tf_struct_candles.get(tf, 5)
+                ready = candle_count >= needed
+                structure = self.get_structure(asset, tf)
+                has_trend = structure.get("trend") != "neutral"
+                has_bos = structure.get("bos") is not None
+
+                asset_info[tf] = {
+                    "candles": candle_count,
+                    "needed": needed,
+                    "ready": ready,
+                    "has_trend": has_trend,
+                    "has_bos": has_bos,
+                }
+                total_checks += 1
+                if ready:
+                    total_ready += 1
+
+            assets_status[asset] = asset_info
+
+        pct = round(total_ready / total_checks * 100) if total_checks > 0 else 0
+        warming = pct < 100
+
+        return {
+            "warming_up": warming,
+            "progress_pct": pct,
+            "assets": assets_status,
+        }
+
     def reset_spread_history(self) -> None:
         """Compat — called from engine per-slot. No-op here."""
         pass
