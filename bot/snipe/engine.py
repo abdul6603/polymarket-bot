@@ -72,8 +72,9 @@ class SnipeEngine:
         self.window_tracker = WindowTracker(cfg, price_cache)
         self._delta_threshold = delta_threshold
         self._delta_signals: dict[str, DeltaSignal] = {}  # Per-asset signal trackers
+        # Snipe in DRY RUN — paper trade while we study the math
         self.pyramid = PyramidExecutor(
-            cfg, clob_client, dry_run=dry_run,
+            cfg, clob_client, dry_run=True,
             budget_per_window=25.0,
         )
 
