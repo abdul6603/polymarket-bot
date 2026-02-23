@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import threading
 import time
 from typing import Any
 
@@ -48,8 +49,25 @@ class BinanceFeed:
         self.depth: dict[str, dict[str, Any]] = {}
 
     async def start(self) -> None:
+        """Start WS in a dedicated thread with its own event loop.
+
+        The main asyncio loop is blocked by synchronous _tick() calls,
+        starving coroutines. Own thread = unblocked WS connection.
+        """
         self._running = True
-        self._task = asyncio.create_task(self._run_loop())
+        self._thread = threading.Thread(
+            target=self._thread_entry, daemon=True, name="binance-ws",
+        )
+        self._thread.start()
+
+    def _thread_entry(self) -> None:
+        """Thread entry — create private event loop and run WS."""
+        self._loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self._loop)
+        try:
+            self._loop.run_until_complete(self._run_loop())
+        finally:
+            self._loop.close()
 
     async def stop(self) -> None:
         self._running = False
@@ -57,12 +75,6 @@ class BinanceFeed:
             try:
                 await self._ws.close()
             except Exception:
-                pass
-        if self._task and not self._task.done():
-            self._task.cancel()
-            try:
-                await self._task
-            except asyncio.CancelledError:
                 pass
 
     async def _run_loop(self) -> None:
