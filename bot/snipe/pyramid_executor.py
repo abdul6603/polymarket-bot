@@ -52,6 +52,8 @@ class SnipePosition:
     direction: str
     open_price: float
     asset: str = "bitcoin"
+    score: float = 0.0              # v7 conviction score (0-100)
+    score_breakdown: dict = field(default_factory=dict)  # per-component scores
     waves: list[WaveResult] = field(default_factory=list)
     total_size_usd: float = 0.0
     total_shares: float = 0.0
@@ -79,18 +81,23 @@ class PyramidExecutor:
         self._pending_token_id: str = ""
         self._latencies: list[float] = []  # Recent execution latencies in ms
 
-    def start_position(self, market_id: str, direction: str, open_price: float, asset: str = "bitcoin") -> None:
+    def start_position(
+        self, market_id: str, direction: str, open_price: float,
+        asset: str = "bitcoin", score: float = 0.0, score_breakdown: dict | None = None,
+    ) -> None:
         """Initialize a new snipe position for this window."""
         self._active_position = SnipePosition(
             market_id=market_id,
             direction=direction,
             open_price=open_price,
             asset=asset,
+            score=score,
+            score_breakdown=score_breakdown or {},
         )
         self._pending_order_id = None
         log.info(
-            "[SNIPE] Position started: %s %s %s (open=$%.2f)",
-            asset.upper(), direction.upper(), market_id[:12], open_price,
+            "[SNIPE] Position started: %s %s %s (open=$%.2f, score=%.0f)",
+            asset.upper(), direction.upper(), market_id[:12], open_price, score,
         )
 
     def should_fire_wave(self, wave_num: int, remaining_s: float, implied_price: float) -> bool:
@@ -438,6 +445,8 @@ class PyramidExecutor:
             "won": won,
             "open_price": pos.open_price,
             "hold_s": round(time.time() - pos.started_at),
+            "score": pos.score,
+            "score_breakdown": pos.score_breakdown,
         }
 
         self._log_trade(result)
@@ -526,3 +535,66 @@ class PyramidExecutor:
         except Exception:
             pass
         return trades
+
+    def get_performance_stats(self) -> dict:
+        """Score-bucketed performance stats from all trade history."""
+        trades = self.get_history(limit=200)
+        resolved = [t for t in trades if t.get("won") is not None]
+        if not resolved:
+            return {"total_trades": 0}
+
+        # Overall stats
+        wins = [t for t in resolved if t["won"] is True]
+        losses = [t for t in resolved if t["won"] is False]
+        total_pnl = sum(t.get("pnl_usd", 0) for t in resolved)
+        avg_score_win = round(sum(t.get("score", 0) for t in wins) / len(wins), 1) if wins else 0
+        avg_score_loss = round(sum(t.get("score", 0) for t in losses) / len(losses), 1) if losses else 0
+
+        # Score buckets: 60-69, 70-79, 80-89, 90-100
+        buckets = {}
+        for lo, hi, label in [(60, 70, "60-69"), (70, 80, "70-79"), (80, 90, "80-89"), (90, 101, "90-100")]:
+            bucket_trades = [t for t in resolved if lo <= t.get("score", 0) < hi]
+            bucket_wins = sum(1 for t in bucket_trades if t["won"] is True)
+            bucket_pnl = sum(t.get("pnl_usd", 0) for t in bucket_trades)
+            buckets[label] = {
+                "trades": len(bucket_trades),
+                "wins": bucket_wins,
+                "wr": round(bucket_wins / len(bucket_trades) * 100, 1) if bucket_trades else 0,
+                "pnl": round(bucket_pnl, 2),
+            }
+
+        # Direction stats
+        up_trades = [t for t in resolved if t.get("direction") == "up"]
+        down_trades = [t for t in resolved if t.get("direction") == "down"]
+        up_wins = sum(1 for t in up_trades if t["won"] is True)
+        down_wins = sum(1 for t in down_trades if t["won"] is True)
+
+        # Streak tracking
+        streak = 0
+        streak_type = ""
+        for t in reversed(resolved):
+            if not streak_type:
+                streak_type = "W" if t["won"] else "L"
+                streak = 1
+            elif (t["won"] and streak_type == "W") or (not t["won"] and streak_type == "L"):
+                streak += 1
+            else:
+                break
+
+        return {
+            "total_trades": len(resolved),
+            "wins": len(wins),
+            "losses": len(losses),
+            "win_rate": round(len(wins) / len(resolved) * 100, 1),
+            "total_pnl": round(total_pnl, 2),
+            "avg_score_winners": avg_score_win,
+            "avg_score_losers": avg_score_loss,
+            "score_buckets": buckets,
+            "direction": {
+                "up": {"trades": len(up_trades), "wins": up_wins,
+                       "wr": round(up_wins / len(up_trades) * 100, 1) if up_trades else 0},
+                "down": {"trades": len(down_trades), "wins": down_wins,
+                         "wr": round(down_wins / len(down_trades) * 100, 1) if down_trades else 0},
+            },
+            "streak": f"{streak}{streak_type}",
+        }

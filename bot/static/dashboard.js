@@ -9318,7 +9318,7 @@ function refreshSnipeV7() {
     if (scorer.active && scorer.last_score != null) {
       var sc = scorer.last_score;
       scoreEl.textContent = sc.toFixed(0) + '/100';
-      scoreEl.style.color = sc >= 75 ? '#22c55e' : sc >= 50 ? '#eab308' : '#ef4444';
+      scoreEl.style.color = sc >= 65 ? '#22c55e' : sc >= 50 ? '#eab308' : '#ef4444';
       scoreDirEl.textContent = (scorer.last_direction || '').toUpperCase() + ' | thresh=' + scorer.threshold;
 
       // Show score breakdown
@@ -9396,6 +9396,57 @@ function refreshSnipeV7() {
       }
     } else {
       spreadEl.textContent = '--';
+    }
+
+    // Performance tracking section
+    var perfEl = document.getElementById('snipe-perf-stats');
+    var perf = d.performance || {};
+    if (perfEl && perf.total_trades > 0) {
+      var ph = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;">';
+      ph += '<div><span style="color:var(--text-muted);">WR</span><br><b style="font-size:1.1em;color:' +
+        (perf.win_rate >= 60 ? '#22c55e' : perf.win_rate >= 45 ? '#eab308' : '#ef4444') + ';">' +
+        perf.win_rate.toFixed(1) + '%</b></div>';
+      ph += '<div><span style="color:var(--text-muted);">PnL</span><br><b style="color:' +
+        (perf.total_pnl >= 0 ? '#22c55e' : '#ef4444') + ';">$' + perf.total_pnl.toFixed(2) + '</b></div>';
+      ph += '<div><span style="color:var(--text-muted);">Streak</span><br><b>' + (perf.streak || '--') + '</b></div>';
+      ph += '</div>';
+
+      // Score buckets table
+      var bk = perf.score_buckets || {};
+      ph += '<table style="width:100%;font-size:0.85em;"><tr style="color:var(--text-muted);">' +
+        '<th style="text-align:left;">Score</th><th>Trades</th><th>WR</th><th>PnL</th></tr>';
+      var bucketKeys = ['60-69','70-79','80-89','90-100'];
+      for (var bi = 0; bi < bucketKeys.length; bi++) {
+        var bkey = bucketKeys[bi];
+        var bv = bk[bkey] || {};
+        if (bv.trades > 0) {
+          ph += '<tr><td>' + bkey + '</td><td style="text-align:center;">' + bv.trades + '</td>' +
+            '<td style="text-align:center;color:' + (bv.wr >= 60 ? '#22c55e' : bv.wr >= 45 ? '#eab308' : '#ef4444') +
+            ';">' + bv.wr.toFixed(0) + '%</td>' +
+            '<td style="text-align:center;color:' + (bv.pnl >= 0 ? '#22c55e' : '#ef4444') + ';">$' +
+            bv.pnl.toFixed(2) + '</td></tr>';
+        }
+      }
+      ph += '</table>';
+
+      // Avg score winners vs losers
+      ph += '<div style="margin-top:6px;font-size:0.85em;color:var(--text-muted);">Avg score: ' +
+        '<span style="color:#22c55e;">W=' + (perf.avg_score_winners || 0).toFixed(0) + '</span> vs ' +
+        '<span style="color:#ef4444;">L=' + (perf.avg_score_losers || 0).toFixed(0) + '</span>';
+
+      // Direction stats
+      var dir = perf.direction || {};
+      if (dir.up && dir.down) {
+        ph += ' | UP ' + (dir.up.wr || 0).toFixed(0) + '% (' + dir.up.trades + ')' +
+          ' | DOWN ' + (dir.down.wr || 0).toFixed(0) + '% (' + dir.down.trades + ')';
+      }
+      ph += '</div>';
+
+      perfEl.innerHTML = ph;
+      perfEl.style.display = 'block';
+    } else if (perfEl) {
+      perfEl.innerHTML = '<span style="color:var(--text-muted);">No resolved trades yet</span>';
+      perfEl.style.display = 'block';
     }
 
     // Auto-refresh while on garves tab

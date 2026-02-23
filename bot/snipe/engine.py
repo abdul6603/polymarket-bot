@@ -91,7 +91,7 @@ class SnipeEngine:
 
         # v7: Scoring engine + candle structure + CLOB bridge
         self._candle_store = CandleStore()
-        self._scorer = SignalScorer(threshold=75)
+        self._scorer = SignalScorer(threshold=65)
 
         self._state = SnipeState.IDLE
         self._current_window_id: str = ""
@@ -358,7 +358,11 @@ class SnipeEngine:
 
             # ── Execute ──
             self._current_window_id = window.market_id
-            self.pyramid.start_position(window.market_id, direction, window.open_price, window.asset)
+            self.pyramid.start_position(
+                window.market_id, direction, window.open_price, window.asset,
+                score=score_result.total_score,
+                score_breakdown={k: v["weighted"] for k, v in score_result.components.items()},
+            )
 
             result = self.pyramid.execute_wave(1, token_id, implied)
             if result:
@@ -711,10 +715,11 @@ class SnipeEngine:
             "position": self.pyramid.get_status(),
             "history": self.pyramid.get_history(10),
             "orderbook": self._orderbook.get_status() if hasattr(self, "_orderbook") else None,
-            # v7: scoring engine + candle structure + latency
+            # v7: scoring engine + candle structure + latency + performance
             "scorer": self._scorer.get_status(),
             "candles": self._candle_store.get_status(),
             "success_rate_50": self._compute_success_rate_50(),
             "avg_latency_ms": self.pyramid.get_avg_latency_ms(),
+            "performance": self.pyramid.get_performance_stats(),
             "timestamp": time.time(),
         }
