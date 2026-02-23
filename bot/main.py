@@ -124,9 +124,9 @@ class TradingBot:
             budget_per_window=cfg.snipe_budget_per_window,
             delta_threshold=cfg.snipe_delta_threshold / 100,
         )
-        # Connect CLOB orderbook bridge for snipe engine to read WS feed data
+        # Connect CLOB orderbook bridge — REST-based with 5s cache
         from bot.snipe import clob_book
-        clob_book.set_feed(self.feed)
+        clob_book.init(cfg.clob_host)
         self.perf_tracker = PerformanceTracker(cfg, position_tracker=self.tracker)
         self.bankroll_manager = BankrollManager()
         self._shutdown_event = asyncio.Event()
@@ -487,7 +487,7 @@ class TradingBot:
 
         log.info("Evaluating %d markets for signals...", len(ranked))
 
-        # Collect all tokens we need WS data for
+        # Collect all tokens we need WS data for (taker markets only — 5m uses REST)
         all_tokens = set()
         for dm in ranked:
             tokens = dm.raw.get("tokens", [])

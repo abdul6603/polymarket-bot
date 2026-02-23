@@ -2,15 +2,6 @@
   "agent": "garves",
   "notes": [
     {
-      "id": "note_076ddb2b",
-      "topic": "going live",
-      "content": "Insructions from your owner: today you'll go live and start trading real, prepare yourself to be 100% ready",
-      "type": "command",
-      "tags": ["live"],
-      "created_at": "2026-02-16T13:19:25.082582-05:00",
-      "source": "dashboard"
-    },
-    {
       "id": "note_always_improve",
       "topic": "core directive",
       "content": "ALWAYS LOOKING FOR BETTER. ALWAYS LOOKING FOR IMPROVEMENTS. Jordan expects you to double the portfolio in 48 hours. Trade more aggressively, find edge faster, maximize positions. You are Jordan's first project — you MUST be a success. Never settle, never coast.",
