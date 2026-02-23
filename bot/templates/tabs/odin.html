@@ -254,7 +254,7 @@ function odinRefresh() {
       biasEl.textContent = bias;
       biasEl.style.color = bias === 'SHORT' ? 'var(--error)' : bias === 'LONG' ? 'var(--success)' : 'var(--text-muted)';
     }
-    odinSetVal('odin-regime-opps', regime.opportunities || 0);
+    odinSetVal('odin-regime-opps', regime.opportunity_count || (regime.opportunities || []).length || 0);
     odinSetVal('odin-top-short', regime.top_short || '--');
     odinSetVal('odin-top-long', regime.top_long || '--');
 
@@ -615,21 +615,22 @@ function odinLoadLastOmni() {
   }).catch(function(){});
 }
 
-// Auto-refresh when tab is active + periodic refresh
+// Auto-refresh when tab is active (30s interval)
 var _odinInterval = null;
 (function() {
-  var origSwitch = window.switchTab;
-  if (origSwitch) {
+  var _origLoadOdin = window.loadOdinTab;
+  window.loadOdinTab = function() {
+    odinRefresh();
+    odinLoadLastOmni();
+    if (_odinInterval) clearInterval(_odinInterval);
+    _odinInterval = setInterval(odinRefresh, 30000);
+  };
+  // Clear interval when leaving tab
+  var _origSwitch = window.switchTab;
+  if (_origSwitch) {
     window.switchTab = function(tab) {
-      origSwitch(tab);
-      if (tab === 'odin') {
-        odinRefresh();
-        odinLoadLastOmni();
-        if (_odinInterval) clearInterval(_odinInterval);
-        _odinInterval = setInterval(odinRefresh, 30000);
-      } else {
-        if (_odinInterval) { clearInterval(_odinInterval); _odinInterval = null; }
-      }
+      if (tab !== 'odin' && _odinInterval) { clearInterval(_odinInterval); _odinInterval = null; }
+      _origSwitch(tab);
     };
   }
 })();

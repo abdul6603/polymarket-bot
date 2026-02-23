@@ -187,6 +187,8 @@
   .stat-card[data-accent="sentinel"] { border-left-color:var(--agent-sentinel); }
   .stat-card[data-accent="thor"] { border-left-color:var(--agent-thor); }
   .stat-card[data-accent="hawk"] { border-left-color:var(--agent-hawk); }
+  .stat-card[data-accent="odin"] { border-left-color:var(--agent-odin); }
+  .stat-card[data-accent="oracle"] { border-left-color:var(--agent-oracle); }
   .stat-card[data-accent="success"] { border-left-color:var(--success); }
   .stat-card[data-accent="warning"] { border-left-color:var(--warning); }
   .stat-card[data-accent="error"] { border-left-color:var(--error); }
@@ -223,6 +225,10 @@
   .section-title[data-accent="thor"]::before { background:var(--agent-thor); }
   .section-title[data-accent="hawk"]::before { background:var(--agent-hawk); }
   .section-title[data-accent="hawk"] { color:var(--agent-hawk); }
+  .section-title[data-accent="odin"]::before { background:var(--agent-odin); }
+  .section-title[data-accent="odin"] { color:var(--agent-odin); }
+  .section-title[data-accent="oracle"]::before { background:var(--agent-oracle); }
+  .section-title[data-accent="oracle"] { color:var(--agent-oracle); }
   .btn-hawk { background:rgba(255,215,0,0.12); border-color:rgba(255,215,0,0.25); color:var(--agent-hawk); }
   .btn-hawk:hover { background:rgba(255,215,0,0.2); border-color:rgba(255,215,0,0.4); }
   .badge-hawk { background:rgba(255,215,0,0.1); color:var(--agent-hawk); border:1px solid rgba(255,215,0,0.15); }

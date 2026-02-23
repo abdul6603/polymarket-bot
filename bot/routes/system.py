@@ -268,10 +268,11 @@ BROTHERHOOD_DIRS = {
     "shelby": "Shelby",
     "atlas": "Atlas",
     "sentinel": "Robotox",
-    "lisa": "Lisa",
+    "mercury": "Lisa",
     "thor": "Thor",
     "soren-content": "Soren",
     "shared": "Shared",
+    "odin": "Odin",
 }
 
 CODE_EXTENSIONS = {".py", ".html", ".js", ".css", ".json", ".sh", ".yml", ".yaml", ".toml", ".cfg", ".md"}
