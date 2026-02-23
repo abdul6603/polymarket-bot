@@ -75,7 +75,7 @@ class BinanceFeed:
 
     async def _connect(self) -> None:
         log.info("Connecting to Binance WS: %s", self._url[:80])
-        async with websockets.connect(self._url, ping_interval=20) as ws:
+        async with websockets.connect(self._url, ping_interval=20, open_timeout=30) as ws:
             self._ws = ws
             log.info("Binance WebSocket connected (trade + depth5)")
             try:
