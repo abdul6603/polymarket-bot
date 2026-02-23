@@ -1,5 +1,4 @@
 var currentTab = 'overview';
-var chatLoaded = false;
 var _atlasBgCache = null;
 var _overviewCache = null;
 var AGENT_COLORS = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',sentinel:'#00ff44',thor:'#ff6600',hawk:'#FFD700',viper:'#00ff88',quant:'#00BFFF',odin:'#8B5CF6',oracle:'#F59E0B'};
@@ -3744,69 +3743,6 @@ async function sentinelBugs() {
   } catch (e) { el.textContent = 'Error: ' + e.message; }
 }
 
-async function loadChatHistory() {
-  try {
-    var resp = await fetch('/api/chat/history');
-    var data = await resp.json();
-    renderChatMessages(data.history || []);
-    chatLoaded = true;
-  } catch (e) {}
-}
-
-function renderChatMessages(history) {
-  var container = document.getElementById('chat-messages');
-  if (!history || history.length === 0) {
-    container.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:40px;font-family:var(--font-mono);font-size:0.78rem;">Send a message to talk with all agents.</div>';
-    return;
-  }
-  var html = '';
-  for (var i = 0; i < history.length; i++) {
-    var msg = history[i];
-    var isUser = msg.role === 'user';
-    var agent = msg.agent || 'shelby';
-    var color = isUser ? 'var(--agent-garves)' : (AGENT_COLORS[agent] || 'var(--text-secondary)');
-    var initials = isUser ? 'YOU' : (AGENT_INITIALS[agent] || agent.substring(0,2).toUpperCase());
-    var name = isUser ? 'You' : (AGENT_NAMES[agent] || agent.charAt(0).toUpperCase() + agent.slice(1));
-    html += '<div class="chat-msg' + (isUser ? ' user' : '') + '">';
-    html += '<div class="chat-msg-avatar" style="color:' + color + ';border-color:' + color + ';">' + initials + '</div>';
-    html += '<div class="chat-msg-body"><div style="font-size:0.68rem;color:' + color + ';margin-bottom:2px;font-weight:600;">' + esc(name) + '</div>';
-    html += esc(msg.content || '').replace(/\\n/g, '<br>');
-    html += '</div></div>';
-  }
-  container.innerHTML = html;
-  container.scrollTop = container.scrollHeight;
-}
-
-function chatKeyDown(e) { if (e.key === 'Enter') sendMessage(); }
-
-async function sendMessage() {
-  var input = document.getElementById('chat-input');
-  var btn = document.getElementById('chat-send-btn');
-  var msg = input.value.trim();
-  if (!msg) return;
-  input.value = '';
-  btn.disabled = true;
-  btn.textContent = 'Sending...';
-
-  var container = document.getElementById('chat-messages');
-  container.innerHTML += '<div class="chat-msg user"><div class="chat-msg-avatar" style="color:var(--agent-garves);">YOU</div><div class="chat-msg-body"><div style="font-size:0.68rem;color:var(--agent-garves);margin-bottom:2px;font-weight:600;">You</div>' + esc(msg) + '</div></div>';
-  container.innerHTML += '<div id="chat-typing" style="color:var(--text-muted);padding:8px;font-family:var(--font-mono);font-size:0.72rem;">Agents are typing...</div>';
-  container.scrollTop = container.scrollHeight;
-
-  try {
-    var agentSelect = document.getElementById('chat-agent-select').value;
-    var resp = await fetch('/api/chat', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({message:msg, agent:agentSelect})});
-    var data = await resp.json();
-    var typing = document.getElementById('chat-typing');
-    if (typing) typing.remove();
-    renderChatMessages(data.history || []);
-  } catch (e) {
-    var typing = document.getElementById('chat-typing');
-    if (typing) typing.textContent = 'Error sending message.';
-  }
-  btn.disabled = false;
-  btn.textContent = 'Send';
-}
 
 function toggleScheduleDetail(id) {
   var el = document.getElementById(id);
@@ -4215,8 +4151,6 @@ async function refresh() {
       if (typeof refreshIntelligence === 'function') refreshIntelligence();
     } else if (currentTab === 'system') {
       loadSystemTab();
-    } else if (currentTab === 'chat') {
-      if (!chatLoaded) loadChatHistory();
     }
     // Always cache overview + atlas bg for intel live panels
     if (currentTab !== 'overview') {
@@ -5982,13 +5916,8 @@ function setBrainType(agent, type, btn) {
 }
 
 async function executeBrainNote(agent, content) {
-  // Send the note content to the agent via chat
-  openAgentChat(agent);
-  var inputEl = document.getElementById('agent-chat-input');
-  if (inputEl) {
-    inputEl.value = content;
-    sendAgentChat();
-  }
+  // Brain note execution (chat removed)
+  alert('Note sent to ' + agent + ': ' + content.substring(0, 100));
 }
 
 async function addBrainNote(agent) {
@@ -6051,100 +5980,6 @@ async function addBrainNote(agent) {
   } catch(e) { alert('Failed: ' + e.message); }
 }
 
-// ═══════════════════════════════════════════════════════
-// AGENT CHAT POPUP — Per-agent direct chat
-// ═══════════════════════════════════════════════════════
-var _agentChatTarget = null;
-
-function openAgentChat(agent) {
-  _agentChatTarget = agent;
-  var popup = document.getElementById('agent-chat-popup');
-  var titleEl = document.getElementById('agent-chat-title');
-  var agentName = AGENT_NAMES[agent] || agent;
-  var agentColor = AGENT_COLORS[agent] || '#888';
-  if (titleEl) titleEl.innerHTML = '<span style="color:' + agentColor + ';">Chat with ' + esc(agentName) + '</span>';
-  if (popup) popup.style.display = 'flex';
-  // Load history
-  loadAgentChatHistory(agent);
-  var inputEl = document.getElementById('agent-chat-input');
-  if (inputEl) inputEl.focus();
-}
-
-function closeAgentChat() {
-  var popup = document.getElementById('agent-chat-popup');
-  if (popup) popup.style.display = 'none';
-  _agentChatTarget = null;
-}
-
-async function loadAgentChatHistory(agent) {
-  var msgsEl = document.getElementById('agent-chat-messages');
-  if (!msgsEl) return;
-  try {
-    var resp = await fetch('/api/chat/agent/' + agent + '/history');
-    var data = await resp.json();
-    renderAgentChatMessages(data.history || [], agent);
-  } catch(e) {
-    msgsEl.innerHTML = '<div class="text-muted" style="padding:12px;text-align:center;">Start a conversation...</div>';
-  }
-}
-
-function renderAgentChatMessages(history, agent) {
-  var msgsEl = document.getElementById('agent-chat-messages');
-  if (!msgsEl) return;
-  if (!history.length) {
-    var agentName = AGENT_NAMES[agent] || agent;
-    msgsEl.innerHTML = '<div class="text-muted" style="padding:20px;text-align:center;font-size:0.74rem;">Send a message to ' + esc(agentName) + '...</div>';
-    return;
-  }
-  var agentColor = AGENT_COLORS[agent] || '#888';
-  var html = '';
-  for (var i = 0; i < history.length; i++) {
-    var m = history[i];
-    if (m.role === 'user') {
-      html += '<div class="agent-chat-msg agent-chat-msg-user"><div class="chat-bubble">' + esc(m.content) + '</div></div>';
-    } else {
-      html += '<div class="agent-chat-msg agent-chat-msg-agent"><div class="chat-bubble" style="border-left:2px solid ' + agentColor + ';">' + esc(m.content) + '</div></div>';
-    }
-  }
-  msgsEl.innerHTML = html;
-  msgsEl.scrollTop = msgsEl.scrollHeight;
-}
-
-async function sendAgentChat() {
-  if (!_agentChatTarget) return;
-  var inputEl = document.getElementById('agent-chat-input');
-  var sendBtn = document.getElementById('agent-chat-send');
-  if (!inputEl || !inputEl.value.trim()) return;
-  var msg = inputEl.value.trim();
-  inputEl.value = '';
-  if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = '...'; }
-
-  // Show user message immediately
-  var msgsEl = document.getElementById('agent-chat-messages');
-  if (msgsEl) {
-    // Remove "Start a conversation" placeholder
-    var placeholder = msgsEl.querySelector('.text-muted');
-    if (placeholder && msgsEl.children.length === 1) msgsEl.innerHTML = '';
-    msgsEl.innerHTML += '<div class="agent-chat-msg agent-chat-msg-user"><div class="chat-bubble">' + esc(msg) + '</div></div>';
-    msgsEl.innerHTML += '<div id="agent-chat-typing" class="agent-chat-msg agent-chat-msg-agent"><div class="chat-bubble" style="color:var(--text-muted);font-style:italic;">Thinking...</div></div>';
-    msgsEl.scrollTop = msgsEl.scrollHeight;
-  }
-
-  try {
-    var resp = await fetch('/api/chat/agent/' + _agentChatTarget, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({message: msg})
-    });
-    var data = await resp.json();
-    // Remove typing indicator and render full history
-    renderAgentChatMessages(data.history || [], _agentChatTarget);
-  } catch(e) {
-    var typing = document.getElementById('agent-chat-typing');
-    if (typing) typing.querySelector('.chat-bubble').textContent = 'Error: ' + e.message;
-  }
-  if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = 'Send'; }
-}
 
 // ══════════════════════════════════════════════
 // COMMAND TABLES — Agent capabilities registry

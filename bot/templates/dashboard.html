@@ -71,10 +71,6 @@
   <button class="sidebar-btn" data-tab="intelligence" onclick="switchTab('intelligence')" title="Intelligence">
     <span class="sidebar-icon" style="background:#9B59B6;">AI</span><span class="sidebar-label">Intelligence</span>
   </button>
-  <div class="sidebar-divider"></div>
-  <button class="sidebar-btn" data-tab="chat" onclick="switchTab('chat')" title="Chat">
-    <span class="sidebar-icon" style="background:#888;">CH</span><span class="sidebar-label">Chat</span>
-  </button>
   <div class="sidebar-spacer"></div>
 </nav>
 
@@ -103,21 +99,6 @@
   {% include 'tabs/discord.html' %}
   {% include 'tabs/system.html' %}
   {% include 'tabs/intelligence.html' %}
-  {% include 'tabs/chat.html' %}
-
-  <!-- Agent Chat Popup -->
-  <div id="agent-chat-popup" class="agent-chat-popup" style="display:none;">
-    <div class="agent-chat-header">
-      <span id="agent-chat-title">Chat with Agent</span>
-      <button onclick="closeAgentChat()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.1rem;">&times;</button>
-    </div>
-    <div id="agent-chat-messages" class="agent-chat-messages"></div>
-    <div class="agent-chat-input-row">
-      <input type="text" class="input" id="agent-chat-input" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendAgentChat()" style="flex:1;font-size:0.76rem;padding:6px 10px;">
-      <button class="btn btn-primary" onclick="sendAgentChat()" id="agent-chat-send" style="padding:6px 14px;font-size:0.74rem;">Send</button>
-    </div>
-  </div>
-
   <!-- Video Modal -->
   <div class="video-modal" id="video-modal">
     <div class="video-modal-inner">

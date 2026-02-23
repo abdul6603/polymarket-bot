@@ -1,13 +1,12 @@
 <!-- GARVES — Unified Trading Tab -->
 <div class="tab-content" id="tab-garves-live">
-  <!-- Always visible: Intel meter + mode + chat -->
+  <!-- Always visible: Intel meter + mode -->
   <div id="intel-garves" class="intel-meter" style="margin-bottom:12px;"></div>
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
     <span id="garves-mode-badge" class="trading-mode-badge trading-mode-live">Trading: Real Money</span>
     <button class="trading-mode-toggle" id="garves-mode-toggle" onclick="toggleGarvesMode()">Switch</button>
     <span class="text-muted" style="font-size:0.76rem;">BTC/ETH/SOL/XRP — <span id="garves-bankroll-label">-- bankroll</span></span>
-    <button class="agent-chat-trigger" onclick="openAgentChat('garves')" style="margin-left:auto;">Chat</button>
-  </div>
+</div>
   <div class="agent-widget-row" id="garves-widgets" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
     <div class="widget-badge" id="garves-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
     <button class="btn" onclick="healthCheckAgent('garves')" style="font-size:0.72rem;">Health Check</button>
