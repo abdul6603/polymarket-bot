@@ -1,4 +1,4 @@
-"""Hawk V2 Main Bot Loop — The Smart Degen."""
+"""Hawk V7 Main Bot Loop — The Smart Degen."""
 from __future__ import annotations
 
 import asyncio
@@ -45,7 +45,8 @@ def _load_brain_notes() -> list[dict]:
 
 def _save_status(tracker: HawkTracker, risk: HawkRiskManager | None = None,
                  running: bool = True, cycle: int = 0,
-                 scan_stats: dict | None = None) -> None:
+                 scan_stats: dict | None = None,
+                 regime: dict | None = None) -> None:
     """Save current status to data/hawk_status.json for dashboard."""
     DATA_DIR.mkdir(exist_ok=True)
     summary = tracker.summary()
@@ -57,6 +58,8 @@ def _save_status(tracker: HawkTracker, risk: HawkRiskManager | None = None,
         summary["consecutive_losses"] = risk.consecutive_losses
     if scan_stats:
         summary["scan"] = scan_stats
+    if regime:
+        summary["regime"] = regime
     try:
         STATUS_FILE.write_text(json.dumps(summary, indent=2))
     except Exception:
@@ -386,7 +389,7 @@ class HawkBot:
             format="%(asctime)s %(levelname)-7s [HAWK] %(message)s",
             datefmt="%H:%M:%S",
         )
-        log.info("Hawk V6 starting — Live Intelligence + Arb Engine + Dynamic Cycles")
+        log.info("Hawk V7 starting — Data-First Intelligence + Regime Filters + Odds Movement")
         log.info("Config: bankroll=$%.0f, max_bet=$%.0f, kelly=%.0f%%, min_edge=%.0f%%",
                  self.cfg.bankroll_usd, self.cfg.max_bet_usd,
                  self.cfg.kelly_fraction * 100, self.cfg.min_edge * 100)
@@ -400,7 +403,7 @@ class HawkBot:
 
         while True:
             self.cycle += 1
-            log.info("=== Hawk V6 Cycle %d ===", self.cycle)
+            log.info("=== Hawk V7 Cycle %d ===", self.cycle)
 
             try:
                 self._check_mode_toggle()
@@ -425,6 +428,23 @@ class HawkBot:
                     _save_status(self.tracker, self.risk, running=True, cycle=self.cycle)
                     await asyncio.sleep(self.cfg.cycle_minutes_normal * 60)
                     continue
+
+                # V7 Phase 2: Regime check — skip or reduce sizing if market conditions are bad
+                try:
+                    from hawk.regime import check_regime
+                    _regime = check_regime(consecutive_losses=self.risk.consecutive_losses)
+                    if _regime.should_skip_cycle:
+                        log.warning("[REGIME] PAUSED — skipping cycle: %s", ", ".join(_regime.reasons))
+                        _save_status(self.tracker, self.risk, running=True, cycle=self.cycle)
+                        await asyncio.sleep(self.cfg.cycle_minutes_normal * 60)
+                        continue
+                    _regime_mult = _regime.size_multiplier
+                    if _regime.regime != "normal":
+                        log.info("[REGIME] %s (%.2fx): %s", _regime.regime.upper(),
+                                 _regime_mult, ", ".join(_regime.reasons))
+                except Exception:
+                    _regime_mult = 1.0
+                    log.debug("[REGIME] Check failed (non-fatal)")
 
                 # 1. Scan all markets
                 log.info("Scanning Polymarket markets...")
@@ -850,6 +870,31 @@ class HawkBot:
                     except Exception:
                         log.debug("[VPIN] Check failed (non-fatal)")
 
+                    # V7 Phase 2: Odds movement tracking + sizing
+                    try:
+                        from hawk.odds_movement import record_odds, get_movement
+                        _yes_price = _get_yes_price(opp.market)
+                        record_odds(opp.market.condition_id, _yes_price)
+                        _mv = get_movement(opp.market.condition_id, _yes_price, opp.direction.lower())
+                        if _mv.direction != "neutral":
+                            old_sz = opp.position_size_usd
+                            opp.position_size_usd = round(opp.position_size_usd * _mv.size_multiplier, 2)
+                            if _mv.is_steam and _mv.direction == "weakening":
+                                log.warning("[ODDS-MOVE] REVERSE STEAM — skipping | %s", opp.market.question[:60])
+                                continue
+                            log.info("[ODDS-MOVE] %s: $%.2f→$%.2f (%.1fx) | %s",
+                                     _mv.direction.upper(), old_sz, opp.position_size_usd,
+                                     _mv.size_multiplier, opp.market.question[:60])
+                    except Exception:
+                        log.debug("[ODDS-MOVE] Check failed (non-fatal)")
+
+                    # V7 Phase 2: Apply regime multiplier to sizing
+                    if _regime_mult < 1.0:
+                        old_sz = opp.position_size_usd
+                        opp.position_size_usd = round(opp.position_size_usd * _regime_mult, 2)
+                        log.info("[REGIME] Size: $%.2f→$%.2f (%.2fx) | %s",
+                                 old_sz, opp.position_size_usd, _regime_mult, opp.market.question[:60])
+
                     # V6: Atlas pre-bet gate — check alignment before execution
                     atlas_mult, atlas_reason = self._check_atlas_alignment(opp)
                     if atlas_mult == 0.0:
@@ -911,7 +956,7 @@ class HawkBot:
                 if self.executor and not self.cfg.dry_run:
                     self.executor.check_fills()
 
-                # V7: Early exit — check open positions for adverse movement
+                # V7 Phase 2: Enhanced early exit — graduated levels + time-based urgency
                 try:
                     from hawk.vpin import compute_vpin
                     from bot.http_session import get_session
@@ -935,21 +980,60 @@ class HawkBot:
                                     break
                             if _cur_price is None:
                                 continue
-                            # Exit if price dropped >15% from entry (edge gone)
                             _drop = (_entry - _cur_price) / max(_entry, 0.01)
+                            _q = _pos.get("question", "")[:60]
+
+                            # Level 1: Flag (>5% drop)
+                            if _drop > 0.05 and not _pos.get("_flagged"):
+                                log.info("[EARLY-EXIT] FLAG: price down %.0f%% ($%.2f→$%.2f) | %s",
+                                         _drop * 100, _entry, _cur_price, _q)
+                                _pos["_flagged"] = True
+
+                            # Level 2: Hard exit (>15% drop — edge gone)
                             if _drop > 0.15:
-                                log.warning("[EARLY-EXIT] Price dropped %.0f%% ($%.2f -> $%.2f) | %s",
-                                            _drop * 100, _entry, _cur_price, _pos.get("question", "")[:60])
-                                # Mark for resolution on next cycle (set flag)
+                                log.warning("[EARLY-EXIT] EXIT: price dropped %.0f%% ($%.2f→$%.2f) | %s",
+                                            _drop * 100, _entry, _cur_price, _q)
                                 _pos["_early_exit"] = True
                                 _pos["_exit_reason"] = f"price_drop_{_drop:.0%}"
-                            # Exit if VPIN spikes on our position
-                            _vpin = compute_vpin(_cid, _tid)
-                            if _vpin.toxicity == "high" and _drop > 0.05:
-                                log.warning("[EARLY-EXIT] VPIN spike + adverse movement | VPIN=%.4f | %s",
-                                            _vpin.vpin, _pos.get("question", "")[:60])
-                                _pos["_early_exit"] = True
-                                _pos["_exit_reason"] = f"vpin_spike_{_vpin.vpin:.2f}"
+
+                            # VPIN spike + any adverse movement
+                            if not _pos.get("_early_exit"):
+                                _vpin = compute_vpin(_cid, _tid)
+                                if _vpin.toxicity == "high" and _drop > 0.05:
+                                    log.warning("[EARLY-EXIT] VPIN spike + adverse | VPIN=%.4f | %s",
+                                                _vpin.vpin, _q)
+                                    _pos["_early_exit"] = True
+                                    _pos["_exit_reason"] = f"vpin_spike_{_vpin.vpin:.2f}"
+
+                            # Time-based urgency: <2h to resolution + underwater = cut losses
+                            if not _pos.get("_early_exit"):
+                                _end = _pos.get("end_date", "")
+                                if _end:
+                                    try:
+                                        from datetime import datetime, timezone
+                                        _end_dt = datetime.fromisoformat(_end.replace("Z", "+00:00"))
+                                        _hours_left = (_end_dt - datetime.now(timezone.utc)).total_seconds() / 3600
+                                        if _hours_left < 2 and _drop > 0.02:
+                                            log.warning("[EARLY-EXIT] URGENCY: %.1fh left + down %.0f%% | %s",
+                                                        _hours_left, _drop * 100, _q)
+                                            _pos["_early_exit"] = True
+                                            _pos["_exit_reason"] = f"time_urgency_{_hours_left:.1f}h"
+                                    except (ValueError, TypeError):
+                                        pass
+
+                            # Sportsbook re-check for sports positions
+                            if not _pos.get("_early_exit") and _drop > 0.05:
+                                _esrc = (_pos.get("edge_source") or "").lower()
+                                if "sportsbook" in _esrc:
+                                    try:
+                                        from hawk.odds_movement import get_movement
+                                        _mv = get_movement(_cid, _cur_price, "yes")
+                                        if _mv.direction == "weakening" and _mv.is_steam:
+                                            log.warning("[EARLY-EXIT] REVERSE STEAM on sports pos | %s", _q)
+                                            _pos["_early_exit"] = True
+                                            _pos["_exit_reason"] = "reverse_steam"
+                                    except Exception:
+                                        pass
                         except Exception:
                             continue
                 except Exception:
@@ -1085,17 +1169,24 @@ class HawkBot:
                     except Exception:
                         log.debug("[PATTERN MINER] Failed (non-fatal)")
 
-                _save_status(self.tracker, self.risk, running=True, cycle=self.cycle, scan_stats=_scan_stats)
+                _regime_info = None
+                try:
+                    _regime_info = {"state": _regime.regime, "multiplier": _regime.size_multiplier,
+                                    "reasons": _regime.reasons}
+                except Exception:
+                    pass
+                _save_status(self.tracker, self.risk, running=True, cycle=self.cycle,
+                             scan_stats=_scan_stats, regime=_regime_info)
 
             except Exception:
-                log.exception("Hawk V6 cycle %d failed", self.cycle)
+                log.exception("Hawk V7 cycle %d failed", self.cycle)
                 _save_status(self.tracker, self.risk, running=True, cycle=self.cycle)
 
             # V6: Dynamic cycle timing
             _cycle_markets = target_markets if 'target_markets' in locals() else []
             next_min = self._calculate_next_cycle(_cycle_markets)
             _save_next_cycle(next_min)
-            log.info("Hawk V6 cycle %d complete. Next cycle in %d minutes (%s mode)...",
+            log.info("Hawk V7 cycle %d complete. Next cycle in %d minutes (%s mode)...",
                      self.cycle, next_min, "fast" if next_min <= self.cfg.cycle_minutes_fast else "normal")
             await asyncio.sleep(next_min * 60)
 

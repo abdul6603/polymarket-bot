@@ -1228,3 +1228,34 @@ def api_hawk_clv():
     except Exception:
         return jsonify({"total_trades": 0, "resolved": 0, "avg_clv": 0.0,
                         "avg_clv_pct": 0.0, "positive_clv_rate": 0.0, "trades": []})
+
+
+@hawk_bp.route("/api/hawk/regime")
+def api_hawk_regime():
+    """V7 Phase 2: Current market regime state."""
+    try:
+        from hawk.regime import check_regime
+        status = _load_status()
+        losses = status.get("consecutive_losses", 0)
+        r = check_regime(consecutive_losses=losses)
+        return jsonify({
+            "regime": r.regime,
+            "reasons": r.reasons,
+            "size_multiplier": r.size_multiplier,
+            "should_skip": r.should_skip_cycle,
+        })
+    except Exception:
+        return jsonify({"regime": "unknown", "reasons": [], "size_multiplier": 1.0, "should_skip": False})
+
+
+@hawk_bp.route("/api/hawk/odds-movement")
+def api_hawk_odds_movement():
+    """V7 Phase 2: Odds movement data for open positions."""
+    try:
+        movement_file = DATA_DIR / "hawk_odds_movement.json"
+        if movement_file.exists():
+            data = json.loads(movement_file.read_text())
+            return jsonify({"markets": len(data), "data": data})
+        return jsonify({"markets": 0, "data": {}})
+    except Exception:
+        return jsonify({"markets": 0, "data": {}})
