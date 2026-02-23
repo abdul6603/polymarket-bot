@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
+import time
 from pathlib import Path
 
 from flask import Blueprint, jsonify, request
@@ -204,3 +205,62 @@ def api_discord_trader(author):
         "win_rate": round((stats.get("wins") or 0) / resolved * 100, 1) if resolved > 0 else 0,
         "recent": [dict(r) for r in recent],
     })
+
+
+# ── Discord → Odin Pipeline Endpoints ──
+
+ODIN_STATUS_FILE = Path.home() / "odin" / "data" / "odin_status.json"
+DISCORD_APPROVALS_FILE = Path.home() / "odin" / "data" / "discord_approvals.json"
+
+
+@discord_bp.route("/api/discord/pipeline")
+def api_discord_pipeline():
+    """Pipeline status from Odin's status file."""
+    try:
+        if ODIN_STATUS_FILE.exists():
+            data = json.loads(ODIN_STATUS_FILE.read_text())
+            pipeline = data.get("discord_pipeline")
+            if pipeline:
+                return jsonify(pipeline)
+    except Exception as e:
+        log.debug("Pipeline status error: %s", str(e)[:100])
+    return jsonify({"attached": False, "stats": {}, "recent_signals": []})
+
+
+@discord_bp.route("/api/discord/votes")
+def api_discord_votes():
+    """Recent voting results from pipeline status."""
+    try:
+        if ODIN_STATUS_FILE.exists():
+            data = json.loads(ODIN_STATUS_FILE.read_text())
+            pipeline = data.get("discord_pipeline", {})
+            recent = pipeline.get("recent_signals", [])
+            # Return only signals that went through voting
+            voted = [s for s in recent if s.get("vote_result")]
+            return jsonify(voted)
+    except Exception as e:
+        log.debug("Votes fetch error: %s", str(e)[:100])
+    return jsonify([])
+
+
+@discord_bp.route("/api/discord/approve/<signal_id>", methods=["POST"])
+def api_discord_approve(signal_id):
+    """Write approval for a manual-review signal."""
+    try:
+        approvals = {}
+        if DISCORD_APPROVALS_FILE.exists():
+            approvals = json.loads(DISCORD_APPROVALS_FILE.read_text())
+
+        approvals[signal_id] = {
+            "decision": "approve",
+            "approved_at": time.time(),
+            "processed": False,
+        }
+
+        DISCORD_APPROVALS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        DISCORD_APPROVALS_FILE.write_text(json.dumps(approvals, indent=2))
+        log.info("Discord signal %s approved via dashboard", signal_id)
+        return jsonify({"ok": True, "signal_id": signal_id})
+    except Exception as e:
+        log.error("Approve error: %s", str(e)[:100])
+        return jsonify({"ok": False, "error": str(e)[:100]}), 500

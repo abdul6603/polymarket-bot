@@ -28,6 +28,43 @@
     </div>
   </div>
 
+  <!-- B2: Odin Pipeline Status -->
+  <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #8B5CF6;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <h2 class="section-title" style="color:#8B5CF6;margin-bottom:0;">Odin Execution Pipeline</h2>
+      <span id="disc-pipeline-badge" style="font-size:0.56rem;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.06);color:var(--text-muted);">OFFLINE</span>
+    </div>
+    <div class="grid-4" style="margin-bottom:10px;">
+      <div class="stat-card" style="border-left:3px solid #8B5CF6;">
+        <div class="stat-value" id="disc-pipe-processed" style="font-size:1.2rem;color:#8B5CF6;">0</div>
+        <div class="stat-label">Signals Processed</div>
+      </div>
+      <div class="stat-card" style="border-left:3px solid var(--success);">
+        <div class="stat-value" id="disc-pipe-executed" style="font-size:1.2rem;color:var(--success);">0</div>
+        <div class="stat-label">Trades Executed</div>
+      </div>
+      <div class="stat-card" style="border-left:3px solid var(--warning);">
+        <div class="stat-value" id="disc-pipe-review" style="font-size:1.2rem;color:var(--warning);">0</div>
+        <div class="stat-label">Pending Review</div>
+      </div>
+      <div class="stat-card" style="border-left:3px solid var(--agent-odin);">
+        <div class="stat-value" id="disc-pipe-positions" style="font-size:1.2rem;color:var(--agent-odin);">0</div>
+        <div class="stat-label">Open Positions</div>
+      </div>
+    </div>
+
+    <!-- Trader Tier Cards -->
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <div id="disc-tier-trusted" style="flex:1;"></div>
+      <div id="disc-tier-good" style="flex:1;"></div>
+    </div>
+
+    <!-- Recent Voting Display -->
+    <div id="disc-voting-list" style="max-height:300px;overflow-y:auto;">
+      <div class="text-muted" style="font-size:0.74rem;">No pipeline signals yet...</div>
+    </div>
+  </div>
+
   <!-- C: Channel Status -->
   <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #5865F2;">
     <h2 class="section-title" style="color:#5865F2;margin-bottom:8px;">Channel Pipeline</h2>
@@ -107,7 +144,118 @@ var _discPriorityColors = {
   CRITICAL:'var(--error)', CONTEXT:'var(--warning)', KNOWLEDGE:'var(--agent-atlas)', MEDIUM:'var(--text-muted)'
 };
 
+function discordRefreshPipeline() {
+  fetch('/api/discord/pipeline').then(function(r) { return r.json(); }).then(function(p) {
+    var stats = p.stats || {};
+    var badge = document.getElementById('disc-pipeline-badge');
+    if (badge) {
+      if (p.attached) {
+        badge.textContent = 'ACTIVE';
+        badge.style.color = 'var(--success)';
+        badge.style.background = 'rgba(34,170,68,0.15)';
+      } else {
+        badge.textContent = 'OFFLINE';
+        badge.style.color = 'var(--text-muted)';
+        badge.style.background = 'rgba(255,255,255,0.06)';
+      }
+    }
+    discSetVal('disc-pipe-processed', stats.processed || 0);
+    discSetVal('disc-pipe-executed', (stats.auto_taken || 0) + (stats.approved || 0));
+    discSetVal('disc-pipe-review', stats.manual_review || 0);
+    discSetVal('disc-pipe-positions', p.open_positions || 0);
+
+    // Trader tier cards
+    var traders = p.registered_traders || {};
+    var trustedEl = document.getElementById('disc-tier-trusted');
+    var goodEl = document.getElementById('disc-tier-good');
+    if (trustedEl) {
+      var trusted = Object.keys(traders).filter(function(k) { return traders[k] === 'trusted'; });
+      trustedEl.innerHTML = '<div style="background:var(--glass-bg);border:1px solid rgba(255,215,0,0.3);border-radius:6px;padding:8px 10px;">'
+        + '<div style="font-size:0.62rem;font-weight:700;color:#FFD700;margin-bottom:4px;">TRUSTED — Auto-Execute</div>'
+        + '<div style="display:flex;gap:6px;">' + trusted.map(function(t) {
+          return '<span style="font-size:0.66rem;font-weight:600;padding:2px 8px;border-radius:4px;background:rgba(255,215,0,0.1);color:#FFD700;">' + t + '</span>';
+        }).join('') + '</div></div>';
+    }
+    if (goodEl) {
+      var good = Object.keys(traders).filter(function(k) { return traders[k] === 'good'; });
+      goodEl.innerHTML = '<div style="background:var(--glass-bg);border:1px solid rgba(192,192,192,0.3);border-radius:6px;padding:8px 10px;">'
+        + '<div style="font-size:0.62rem;font-weight:700;color:#C0C0C0;margin-bottom:4px;">GOOD — 4-Agent Voting</div>'
+        + '<div style="display:flex;gap:6px;">' + good.map(function(t) {
+          return '<span style="font-size:0.66rem;font-weight:600;padding:2px 8px;border-radius:4px;background:rgba(192,192,192,0.1);color:#C0C0C0;">' + t + '</span>';
+        }).join('') + '</div></div>';
+    }
+
+    // Recent voting display
+    var votingEl = document.getElementById('disc-voting-list');
+    var recent = p.recent_signals || [];
+    if (votingEl && recent.length > 0) {
+      votingEl.innerHTML = recent.map(function(s) {
+        var dirColor = s.direction === 'LONG' ? 'var(--success)' : 'var(--error)';
+        var decColor = s.decision === 'auto_take' || s.decision === 'approved' ? 'var(--success)'
+          : s.decision === 'manual_review' ? 'var(--warning)'
+          : s.decision === 'rejected' ? 'var(--error)'
+          : s.decision === 'blocked' ? 'var(--error)' : 'var(--text-muted)';
+        var decLabel = (s.decision || 'pending').replace('_', ' ').toUpperCase();
+        var tierColor = s.tier === 'trusted' ? '#FFD700' : s.tier === 'good' ? '#C0C0C0' : 'var(--text-muted)';
+
+        var html = '<div style="padding:8px 0;border-bottom:1px solid var(--glass-border);">'
+          + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
+          + '<span style="font-size:0.56rem;font-weight:700;padding:1px 5px;border-radius:3px;color:' + tierColor + ';background:rgba(255,255,255,0.06);">' + (s.tier || '').toUpperCase() + '</span>'
+          + '<span style="font-size:0.72rem;font-weight:700;color:var(--text-primary);">' + (s.ticker || '?') + '</span>'
+          + '<span style="font-size:0.66rem;font-weight:700;color:' + dirColor + ';">' + (s.direction || '') + '</span>'
+          + '<span style="font-size:0.58rem;color:var(--text-muted);">' + (s.trader || '') + '</span>'
+          + '<span style="font-size:0.56rem;font-weight:700;padding:1px 6px;border-radius:3px;margin-left:auto;background:rgba(255,255,255,0.06);color:' + decColor + ';">' + decLabel + '</span>'
+          + '</div>';
+
+        // Score bar
+        var score = s.decision_score || 0;
+        var barColor = score >= 82 ? 'var(--success)' : score >= 65 ? 'var(--warning)' : 'var(--error)';
+        html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">'
+          + '<div style="flex:1;background:rgba(255,255,255,0.06);border-radius:3px;height:5px;overflow:hidden;">'
+          + '<div style="width:' + Math.min(score, 100) + '%;height:100%;background:' + barColor + ';border-radius:3px;"></div></div>'
+          + '<span style="font-size:0.58rem;font-weight:700;color:' + barColor + ';">' + score.toFixed(0) + '</span></div>';
+
+        // Vote badges (if present)
+        if (s.vote_result) {
+          html += '<div style="display:flex;gap:4px;flex-wrap:wrap;">';
+          var agents = ['oracle', 'odin', 'garves', 'atlas'];
+          agents.forEach(function(a) {
+            var v = s.vote_result[a];
+            if (!v) return;
+            var vc = v.vote === 'YES' ? 'var(--success)' : v.vote === 'NO' ? 'var(--error)' : 'var(--text-muted)';
+            html += '<span style="font-size:0.5rem;padding:1px 5px;border-radius:2px;border:1px solid ' + vc + ';color:' + vc + ';">'
+              + a.toUpperCase() + ' ' + (v.vote === 'YES' ? 'Y' : v.vote === 'NO' ? 'N' : '?') + ' ' + (v.confidence || 0) + '%</span>';
+          });
+          html += '</div>';
+        }
+
+        // Approve button for manual_review
+        if (s.decision === 'manual_review') {
+          html += '<button onclick="discordApproveSignal(\'' + s.signal_id + '\')" '
+            + 'style="margin-top:4px;font-size:0.6rem;font-weight:700;padding:3px 10px;border-radius:4px;'
+            + 'background:rgba(34,170,68,0.15);border:1px solid var(--success);color:var(--success);cursor:pointer;">'
+            + 'APPROVE</button>';
+        }
+
+        html += '</div>';
+        return html;
+      }).join('');
+    } else if (votingEl) {
+      votingEl.innerHTML = '<div class="text-muted" style="font-size:0.74rem;">No pipeline signals yet — waiting for Discord traders...</div>';
+    }
+  }).catch(function(e) { console.error('discord pipeline:', e); });
+}
+
+function discordApproveSignal(signalId) {
+  fetch('/api/discord/approve/' + signalId, {method: 'POST'}).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.ok) {
+      discordRefreshPipeline();
+    }
+  }).catch(function(e) { console.error('approve error:', e); });
+}
+
 function discordRefresh() {
+  discordRefreshPipeline();
   fetch('/api/discord').then(function(r) { return r.json(); }).then(function(d) {
     discSetVal('disc-total-msgs', d.total_messages || 0);
     discSetVal('disc-total-signals', d.total_signals || 0);
