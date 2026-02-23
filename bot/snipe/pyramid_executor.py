@@ -20,9 +20,10 @@ log = logging.getLogger("garves.snipe")
 SNIPE_TRADES_FILE = Path(__file__).parent.parent.parent / "data" / "snipe_trades.jsonl"
 
 # (wave_num, budget_fraction, price_cap, fire_when_remaining_below)
+# Caps match whale entry range ($0.62-$0.63) — buy when direction is confirmed
 WAVES = [
-    (1, 0.40, 0.60, 180),   # Wave 1: 40%, cap $0.60, T-180s
-    (2, 0.35, 0.70, 120),   # Wave 2: 35%, cap $0.70, T-120s
+    (1, 0.40, 0.65, 180),   # Wave 1: 40%, cap $0.65, T-180s
+    (2, 0.35, 0.72, 120),   # Wave 2: 35%, cap $0.72, T-120s
     (3, 0.25, 0.75, 65),    # Wave 3: 25%, cap $0.75, T-65s
 ]
 
