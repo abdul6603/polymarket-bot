@@ -39,7 +39,9 @@ class BinanceFeed:
         self._ws = None
         self._running = False
         self._task: asyncio.Task | None = None
-        base = getattr(cfg, "binance_ws_url", "wss://stream.binance.us:9443")
+        # Use global Binance WS (stream.binance.com) — .us WS blocks non-US IPs
+        # REST API stays on api.binance.us (works from any IP)
+        base = getattr(cfg, "binance_ws_url", "wss://stream.binance.com:9443")
         self._url = f"{base}/stream?streams={STREAMS}"
 
         # Order book depth: asset -> {"bids": [[price, qty], ...], "asks": [...], "timestamp": float}

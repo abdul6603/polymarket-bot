@@ -9423,22 +9423,35 @@ function refreshSnipeV7() {
       }
     }
 
-    // Price Freshness warning
+    // Price Feed Status (WS health + freshness)
     var freshEl = document.getElementById('snipe-price-freshness');
     var freshness = d.price_freshness;
     if (freshEl && freshness) {
-      var staleAssets = [];
+      var wsCount = 0; var restCount = 0; var failCount = 0; var total = 0;
+      var details = [];
       for (var a in freshness) {
-        if (freshness[a].stale) staleAssets.push(a.toUpperCase() + ' (' + freshness[a].age_s + 's, ' + freshness[a].source + ')');
+        total++;
+        var f = freshness[a];
+        if (f.source === 'ws' && !f.stale) { wsCount++; }
+        else if (f.source === 'rest') { restCount++; details.push(a.toUpperCase() + ' ' + f.age_s + 's'); }
+        else if (f.stale) { failCount++; details.push(a.toUpperCase() + ' STALE'); }
       }
-      if (staleAssets.length > 0) {
-        freshEl.style.display = 'block';
-        freshEl.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;' +
-          'background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:6px;margin-bottom:8px;">' +
-          '<span style="color:#ef4444;font-size:0.85em;">Stale Prices: ' + staleAssets.join(', ') + '</span></div>';
+      var color, bg, border, label;
+      if (wsCount === total) {
+        color = '#22c55e'; bg = 'rgba(34,197,94,0.08)'; border = 'rgba(34,197,94,0.2)';
+        label = 'Binance WS: Healthy (' + total + '/' + total + ' live)';
+      } else if (restCount > 0 && failCount === 0) {
+        color = '#eab308'; bg = 'rgba(234,179,8,0.08)'; border = 'rgba(234,179,8,0.2)';
+        label = 'Binance WS: REST Fallback (' + restCount + '/' + total + ') — ' + details.join(', ');
       } else {
-        freshEl.style.display = 'none';
+        color = '#ef4444'; bg = 'rgba(239,68,68,0.08)'; border = 'rgba(239,68,68,0.2)';
+        label = 'Binance WS: Failed — ' + details.join(', ');
       }
+      freshEl.style.display = 'block';
+      freshEl.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;' +
+        'background:' + bg + ';border:1px solid ' + border + ';border-radius:6px;">' +
+        '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + color + ';"></span>' +
+        '<span style="color:' + color + ';font-size:0.85em;">' + label + '</span></div>';
     }
 
     // Signal Score card (last scorer result)
