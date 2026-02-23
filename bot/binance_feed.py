@@ -66,8 +66,22 @@ class BinanceFeed:
         asyncio.set_event_loop(self._loop)
         try:
             self._loop.run_until_complete(self._run_loop())
+        except Exception:
+            log.exception("Binance WS thread crashed")
         finally:
             self._loop.close()
+            log.error("Binance WS thread exited — will not auto-restart")
+
+    def ensure_alive(self) -> None:
+        """Restart WS thread if it died. Call from main tick loop."""
+        if not self._running:
+            return
+        if not hasattr(self, '_thread') or not self._thread.is_alive():
+            log.warning("Binance WS thread dead, restarting")
+            self._thread = threading.Thread(
+                target=self._thread_entry, daemon=True, name="binance-ws",
+            )
+            self._thread.start()
 
     async def stop(self) -> None:
         self._running = False
@@ -87,25 +101,36 @@ class BinanceFeed:
                 log.exception("Binance WS error, reconnecting in 5s")
                 await asyncio.sleep(5)
 
+    async def _watchdog(self, ws) -> None:
+        """Independent watchdog — closes WS if no data for 30s."""
+        while True:
+            await asyncio.sleep(10)
+            age = time.time() - self._last_msg_ts
+            if age > 30:
+                log.warning("Binance WS stale (%.0fs no data), forcing reconnect", age)
+                await ws.close()
+                return
+
     async def _connect(self) -> None:
         log.info("Connecting to Binance WS: %s", self._url[:80])
         async with websockets.connect(
             self._url, ping_interval=20, ping_timeout=10,
-            open_timeout=30, close_timeout=5,
+            open_timeout=15, close_timeout=5,
         ) as ws:
             self._ws = ws
             self._last_msg_ts = time.time()
+            self._msg_count = 0
             log.info("Binance WebSocket connected (trade + depth5)")
+            watchdog = asyncio.ensure_future(self._watchdog(ws))
             try:
                 async for raw in ws:
                     self._last_msg_ts = time.time()
+                    self._msg_count += 1
                     self._handle_message(raw)
-                    # Stale watchdog: if no message for 60s, force reconnect
-                    if time.time() - self._last_msg_ts > 60:
-                        log.warning("Binance WS stale (>60s no data), forcing reconnect")
-                        break
             except ConnectionClosed:
-                log.warning("Binance WS connection closed, will reconnect")
+                log.warning("Binance WS closed (received %d msgs), will reconnect", self._msg_count)
+            finally:
+                watchdog.cancel()
 
     def _handle_message(self, raw: str) -> None:
         try:

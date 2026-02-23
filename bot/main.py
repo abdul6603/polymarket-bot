@@ -398,6 +398,9 @@ class TradingBot:
         log.info("--- Tick ---")
         self._tick_counter += 1
 
+        # Ensure Binance WS thread is alive (auto-restart if crashed)
+        self.binance_feed.ensure_alive()
+
         # Clear SDK fee rate cache every 60 ticks (~30 min) to avoid stale rates
         if self.client and self._tick_counter % 60 == 0:
             try:
