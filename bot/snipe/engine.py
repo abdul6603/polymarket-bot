@@ -1,19 +1,16 @@
-"""Snipe Engine v7 — 5m BTC binary scalper with 10-component scoring.
+"""Snipe Engine v8 — Multi-Asset Hybrid Snipe with MTF Confirmation.
 
-State machine:
+State machine per asset slot:
   IDLE -> TRACKING -> ARMED -> EXECUTING -> COOLDOWN -> IDLE
 
 Runs in its own background thread (independent of Garves's main event loop).
-Ticks every 2s. BTC only — deepest order book, most reliable fills.
+Ticks every 2s. BTC/ETH/SOL/XRP — 4 independent state machines.
 
-v7 upgrade: Combines Binance L2 orderflow + Polymarket CLOB orderbook +
-SMC structure (BOS/CHoCH on 5m/15m candles) into a 0-100 signal score.
-Only executes when score >= threshold (default 65).
+v8 upgrade: Multi-asset scanning with cross-asset correlation.
+5m scanner detects direction, MTF gate confirms on 15m/1h structure,
+executes on 15m/1h markets where real liquidity exists.
 
-Liquidity Seeker: 5m books are structurally one-sided (bid=$0.01, ask=$0.99).
-Monitors CLOB book in first 90s of each window for "ignition" — spread
-compression + real ask depth at mid-prices. Only fires FOK when real
-liquidity exists. Skips dead windows entirely.
+Max 3 concurrent positions. Correlation bonus when 3/4+ assets align.
 """
 from __future__ import annotations
 
@@ -21,6 +18,7 @@ import asyncio
 import json
 import logging
 import time
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
@@ -40,33 +38,48 @@ from bot.snipe import clob_book
 from bot.snipe.fill_simulator import estimate_fill
 from bot.snipe.timing_learner import TimingLearner
 from bot.snipe.timing_assistant import TimingAssistant
+from bot.snipe.mtf_gate import check_mtf
+from bot.snipe.correlation import evaluate_correlation
 
 log = logging.getLogger("garves.snipe")
 
 ET = ZoneInfo("America/New_York")
 
-# Tick interval in seconds — 8s gives ~22 ticks per 180s snipe zone
-SNIPE_TICK_INTERVAL = 2  # 2s ticks for T-30s precision
+# Tick interval in seconds — 2s gives ~22 ticks per 180s snipe zone
+SNIPE_TICK_INTERVAL = 2
 
 # Weekend pre-futures: low vol, lower threshold to catch small moves
-# Futures active (weekdays + weekend after 6PM ET): higher threshold for real moves only
 WEEKEND_PREFUTURES_THRESHOLD = 0.0007  # 0.070%
 FUTURES_THRESHOLD = 0.0008             # 0.080%
 
-# Minimum CLOB implied price to enter — don't buy tokens the market says are <40% likely.
-# A $0.09 DOWN token = market says 9% chance of DOWN. That's fighting smart money.
-# Whale enters near $0.45-$0.55 (50/50 odds). Floor at $0.40 keeps us honest.
+# Minimum CLOB implied price to enter
 MIN_IMPLIED_PRICE = 0.40
 
-# Delta confirmation threshold — lower than standalone because imbalance provides direction
-DELTA_CONFIRM_THRESHOLD = 0.0005  # 0.05% confirms imbalance direction
+# Delta confirmation threshold
+DELTA_CONFIRM_THRESHOLD = 0.0005  # 0.05%
 
-# ── Liquidity Seeker: only trade when real book depth detected ──
-LIQ_SPREAD_MAX = 0.40       # Spread must compress below $0.40 (normally $0.98)
-LIQ_ASK_MAX = 0.65          # Sellers must exist below $0.65
-LIQ_DEPTH_MIN = 20          # Minimum 20 shares on ask side
-LIQ_MONITOR_S = 90          # Give up after 90s of no ignition
-LIQ_SPREAD_COMPRESSION = 0.60  # Spread must drop at least 60% from initial
+# Liquidity Seeker thresholds
+LIQ_SPREAD_MAX = 0.40
+LIQ_ASK_MAX = 0.65
+LIQ_DEPTH_MIN = 20
+LIQ_MONITOR_S = 90
+LIQ_SPREAD_COMPRESSION = 0.60
+
+# Multi-asset config
+ASSETS = ("bitcoin", "ethereum", "solana", "xrp")
+BINANCE_SYMBOLS = {
+    "bitcoin": "BTCUSDT",
+    "ethereum": "ETHUSDT",
+    "solana": "SOLUSDT",
+    "xrp": "XRPUSDT",
+}
+ASSET_CONFIG = {
+    "bitcoin":  {"threshold": 75, "budget": 25.0},
+    "ethereum": {"threshold": 73, "budget": 25.0},
+    "solana":   {"threshold": 72, "budget": 20.0},
+    "xrp":      {"threshold": 72, "budget": 20.0},
+}
+MAX_CONCURRENT_POSITIONS = 3
 
 
 class SnipeState(Enum):
@@ -77,8 +90,29 @@ class SnipeState(Enum):
     COOLDOWN = "cooldown"
 
 
+@dataclass
+class AssetSlot:
+    """Per-asset state machine with independent executor."""
+    asset: str
+    state: SnipeState = SnipeState.IDLE
+    current_window_id: str = ""
+    executor: PyramidExecutor = field(default=None)
+    liquidity_ignited: bool = False
+    liquidity_monitor_start: float = 0.0
+    initial_spread: float = 0.98
+    ignition_failures: dict = field(default_factory=dict)
+    cooldown_until: float = 0.0
+    executing_since: float = 0.0
+    last_score: float = 0.0
+    last_direction: str = ""
+    # MTF execution info
+    exec_market_id: str = ""
+    exec_end_ts: float = 0.0
+    exec_timeframe: str = ""
+
+
 class SnipeEngine:
-    """Main 5m multi-asset snipe orchestrator."""
+    """Main multi-asset snipe orchestrator with MTF confirmation."""
 
     def __init__(
         self,
@@ -95,78 +129,76 @@ class SnipeEngine:
 
         self.window_tracker = WindowTracker(cfg, price_cache)
         self._delta_threshold = delta_threshold
-        self._delta_signals: dict[str, DeltaSignal] = {}  # Per-asset signal trackers
-        self.pyramid = PyramidExecutor(
-            cfg, clob_client, dry_run=dry_run,
-            budget_per_window=25.0,
-        )
+        self._delta_signals: dict[str, DeltaSignal] = {}
+
+        # Per-asset slots with independent executors
+        self._slots: dict[str, AssetSlot] = {}
+        for asset in ASSETS:
+            ac = ASSET_CONFIG.get(asset, {"threshold": 75, "budget": 25.0})
+            slot = AssetSlot(asset=asset)
+            slot.executor = PyramidExecutor(
+                cfg, clob_client, dry_run=dry_run,
+                budget_per_window=ac["budget"],
+            )
+            self._slots[asset] = slot
+
         self._orderbook = OrderBookSignal()
         self._orderbook.start()
 
-        # v7: Scoring engine + candle structure + CLOB bridge
+        # v7: Scoring engine + candle structure
         self._candle_store = CandleStore()
         self._scorer = SignalScorer(threshold=65)
 
-        self._state = SnipeState.IDLE
-        self._current_window_id: str = ""
-        self._cooldown_until = 0.0
-        self._executing_since = 0.0  # Track when we entered EXECUTING
-        self._liquidity_ignited = False       # Liquidity Seeker: book has real depth
-        self._liquidity_monitor_start = 0.0   # When we started monitoring book
-        self._initial_spread = 0.98           # Track starting spread for compression calc
-        self._ignition_failures: dict[str, int] = {}  # token_id -> consecutive failures
-        self._base_budget = 25.0  # Conservative: protect the $188
-        self._escalated_budget = 40.0  # After 3 consecutive wins
+        # Execution preference: "15m" or "1h"
+        self._exec_preference = "15m"
+
+        self._base_budget = 25.0
+        self._escalated_budget = 40.0
         self._consecutive_wins = 0
         self._stats = {
             "signals": 0, "trades": 0, "wins": 0,
             "losses": 0, "pnl": 0.0, "total_invested": 0.0,
         }
+        self._correlation_result = None
 
         self._status_file = Path(__file__).parent.parent.parent / "data" / "snipe_status.json"
         self.enabled = getattr(cfg, "snipe_enabled", True)
 
-        # Timing Assistant — unified timing oracle for all crypto agents
+        # Timing Assistant
         self._timing_learner = TimingLearner()
         self._timing_assistant = TimingAssistant(self._timing_learner)
 
     def _effective_threshold(self) -> float:
-        """Dynamic threshold based on CME futures session.
-
-        Futures closed (weekend): Friday 4:30PM ET → Sunday 6:00PM ET → 0.070%
-        Futures open: Sunday 6:00PM ET → Friday 4:30PM ET → 0.080%
-        """
+        """Dynamic threshold based on CME futures session."""
         now = datetime.now(ET)
-        day = now.weekday()  # 0=Mon, 4=Fri, 5=Sat, 6=Sun
-        hour_min = now.hour * 100 + now.minute  # e.g. 1630 = 4:30PM
-
-        # Weekend = futures closed
-        if day == 5:  # Saturday — always weekend
+        day = now.weekday()
+        hour_min = now.hour * 100 + now.minute
+        if day == 5:
             return WEEKEND_PREFUTURES_THRESHOLD
-        if day == 4 and hour_min >= 1630:  # Friday after 4:30PM
+        if day == 4 and hour_min >= 1630:
             return WEEKEND_PREFUTURES_THRESHOLD
-        if day == 6 and hour_min < 1800:  # Sunday before 6PM
+        if day == 6 and hour_min < 1800:
             return WEEKEND_PREFUTURES_THRESHOLD
-
         return FUTURES_THRESHOLD
 
     def _get_signal(self, asset: str) -> DeltaSignal:
-        """Get or create per-asset delta signal tracker with dynamic threshold."""
+        """Get or create per-asset delta signal tracker."""
         threshold = self._effective_threshold()
         if asset not in self._delta_signals:
             self._delta_signals[asset] = DeltaSignal(threshold=threshold)
         else:
-            # Update threshold if it changed (weekend <-> weekday transition)
             self._delta_signals[asset]._threshold = threshold
         return self._delta_signals[asset]
 
-    async def run_loop(self, shutdown_event: asyncio.Event) -> None:
-        """Snipe loop — runs in its own thread to avoid starvation from main event loop.
+    def _active_position_count(self) -> int:
+        """Count how many slots currently have active positions."""
+        return sum(
+            1 for s in self._slots.values()
+            if s.state in (SnipeState.ARMED, SnipeState.EXECUTING)
+        )
 
-        The taker loop blocks the asyncio event loop for 60-100s per cycle
-        doing synchronous HTTP calls. By running snipe in a separate thread,
-        it ticks every 15s regardless of taker activity.
-        """
+    async def run_loop(self, shutdown_event: asyncio.Event) -> None:
+        """Snipe loop — runs in its own thread."""
         if not self.enabled:
             log.info("[SNIPE] Engine disabled")
             return
@@ -174,11 +206,13 @@ class SnipeEngine:
         threshold = self._effective_threshold()
         is_weekend = datetime.now(ET).weekday() >= 5
         log.info(
-            "[SNIPE] Engine v7 started | budget=$%.0f/window | threshold=%.3f%% (%s) | "
-            "score_threshold=%d | tick=%ds | dry_run=%s | orderbook=%s",
-            self.pyramid._budget, threshold * 100,
+            "[SNIPE] Engine v8 started | multi-asset (BTC/ETH/SOL/XRP) | "
+            "exec_pref=%s | threshold=%.3f%% (%s) | "
+            "max_positions=%d | tick=%ds | dry_run=%s | orderbook=%s",
+            self._exec_preference, threshold * 100,
             "weekend" if is_weekend else "weekday",
-            self._scorer.threshold, SNIPE_TICK_INTERVAL, self._dry_run,
+            MAX_CONCURRENT_POSITIONS, SNIPE_TICK_INTERVAL,
+            self._dry_run,
             "connected" if self._orderbook.is_connected else "disconnected",
         )
 
@@ -186,7 +220,7 @@ class SnipeEngine:
         await loop.run_in_executor(None, self._thread_loop, shutdown_event)
 
     def _thread_loop(self, shutdown_event: asyncio.Event) -> None:
-        """Blocking loop running in a background thread, ticks every 15s."""
+        """Blocking loop running in a background thread."""
         while not shutdown_event.is_set():
             try:
                 self.tick()
@@ -194,7 +228,6 @@ class SnipeEngine:
             except Exception as e:
                 log.warning("[SNIPE] Tick error: %s", str(e)[:200])
 
-            # Sleep in 1s increments so we can respond to shutdown quickly
             for _ in range(SNIPE_TICK_INTERVAL):
                 if shutdown_event.is_set():
                     break
@@ -203,156 +236,171 @@ class SnipeEngine:
         log.info("[SNIPE] Engine stopped")
 
     def tick(self) -> None:
-        """Single tick of the snipe state machine."""
+        """Single tick — feed candles for all assets, then tick each slot."""
+        # Feed candle store for ALL 4 assets
+        for asset in ASSETS:
+            price = self._fetch_live_price(asset)
+            if price:
+                self._candle_store.feed_tick(asset, price)
+
+        # Tick each asset slot independently
+        tick_scores: dict[str, tuple[str, float]] = {}
+        for asset, slot in self._slots.items():
+            self._tick_slot(slot)
+            if slot.last_score > 0 and slot.last_direction:
+                tick_scores[asset] = (slot.last_direction, slot.last_score)
+
+        # Evaluate cross-asset correlation
+        if tick_scores:
+            self._correlation_result = evaluate_correlation(
+                tick_scores, self._active_position_count(),
+            )
+
+    def _tick_slot(self, slot: AssetSlot) -> None:
+        """Tick a single asset's state machine."""
         now = time.time()
 
-        # Feed candle store every tick (needs continuous data for 5m/15m candles)
-        btc_price = self._cache.get_price("bitcoin")
-        if btc_price:
-            self._candle_store.feed_tick(btc_price)
+        if slot.state == SnipeState.IDLE:
+            self._slot_on_idle(slot)
+        elif slot.state == SnipeState.TRACKING:
+            self._slot_on_tracking(slot)
+        elif slot.state == SnipeState.ARMED:
+            self._slot_on_armed(slot)
+        elif slot.state == SnipeState.EXECUTING:
+            self._slot_on_executing(slot)
+        elif slot.state == SnipeState.COOLDOWN:
+            if now > slot.cooldown_until:
+                slot.state = SnipeState.IDLE
+                log.info("[SNIPE] %s: Cooldown done -> IDLE", slot.asset.upper())
 
-        if self._state == SnipeState.IDLE:
-            self._on_idle()
-        elif self._state == SnipeState.TRACKING:
-            self._on_tracking()
-        elif self._state == SnipeState.ARMED:
-            self._on_armed()
-        elif self._state == SnipeState.EXECUTING:
-            self._on_executing()
-        elif self._state == SnipeState.COOLDOWN:
-            if now > self._cooldown_until:
-                self._state = SnipeState.IDLE
-                log.info("[SNIPE] Cooldown done -> IDLE")
-
-    def _on_idle(self) -> None:
-        """Wait for windows to enter snipe zone, then start tracking all assets."""
+    def _slot_on_idle(self, slot: AssetSlot) -> None:
+        """Wait for windows to enter snipe zone."""
         now = time.time()
         for w in self.window_tracker.all_active_windows():
-            if w.traded:
+            if w.traded or w.asset != slot.asset:
                 continue
             remaining = w.end_ts - now
-            # Enter TRACKING once any window is within snipe zone
             if 30 < remaining <= 240:
-                self._state = SnipeState.TRACKING
-                self._delta_signals.clear()  # Reset all per-asset trackers
-                self._scorer.reset_spread_history()  # Fresh spread tracking
-                self._liquidity_ignited = False
-                self._liquidity_monitor_start = time.time()
-                self._initial_spread = 0.98  # Reset for compression tracking
+                slot.state = SnipeState.TRACKING
+                # Reset per-slot trackers
+                if slot.asset in self._delta_signals:
+                    self._delta_signals[slot.asset].reset()
+                self._scorer.reset_spread_history()
+                slot.liquidity_ignited = False
+                slot.liquidity_monitor_start = time.time()
+                slot.initial_spread = 0.98
+                slot.last_score = 0.0
+                slot.last_direction = ""
                 threshold = self._effective_threshold()
                 log.info(
-                    "[SNIPE] IDLE -> TRACKING (T-%.0fs, delta_thresh=%.3f%%, score_thresh=%d)",
-                    remaining, threshold * 100, self._scorer.threshold,
+                    "[SNIPE] %s: IDLE -> TRACKING (T-%.0fs, thresh=%.3f%%)",
+                    slot.asset.upper(), remaining, threshold * 100,
                 )
                 return
 
-    def _on_tracking(self) -> None:
-        """Evaluate BTC windows with 10-component scoring engine (v7)."""
+    def _slot_on_tracking(self, slot: AssetSlot) -> None:
+        """Evaluate windows with 10-component scoring + MTF gate."""
         now = time.time()
+        asset = slot.asset
 
-        # Fetch LIVE BTC price (PriceCache is stale between taker ticks)
-        live_btc = self._fetch_btc_price()
-        if live_btc:
-            self._candle_store.feed_tick(live_btc)
+        # Fetch LIVE price
+        live_price = self._fetch_live_price(asset)
+        if live_price:
+            self._candle_store.feed_tick(asset, live_price)
 
         candidates = []
         for w in self.window_tracker.all_active_windows():
-            if w.traded or w.asset != "bitcoin":
+            if w.traded or w.asset != asset:
                 continue
             remaining = w.end_ts - now
             if remaining <= 0 or remaining > 190:
                 continue
-            price = live_btc if live_btc else self._cache.get_price(w.asset)
+            price = live_price if live_price else self._cache.get_price(w.asset)
             if not price or w.open_price <= 0:
                 continue
             delta = (price - w.open_price) / w.open_price
             candidates.append((w, price, delta, remaining))
 
         if not candidates:
-            self._state = SnipeState.IDLE
+            slot.state = SnipeState.IDLE
+            slot.last_score = 0.0
+            slot.last_direction = ""
             return
 
         candidates.sort(key=lambda x: abs(x[2]), reverse=True)
 
-        # Log top candidates
+        # Log top candidate
         remaining_top = candidates[0][3]
         if remaining_top <= 245:
-            parts = [f"{w.asset[:3].upper()}={d*100:+.4f}%" for w, p, d, r in candidates]
             log.info(
-                "[SNIPE] T-%.0fs | Best: %s $%.2f | delta=%+.4f%% | All: %s",
-                remaining_top, candidates[0][0].asset.upper(), candidates[0][1],
-                candidates[0][2] * 100, " ".join(parts),
+                "[SNIPE] %s T-%.0fs | $%.2f | delta=%+.4f%%",
+                asset.upper(), remaining_top, candidates[0][1],
+                candidates[0][2] * 100,
             )
 
-        # ── Liquidity Seeker: gate execution on CLOB book ignition ──
-        if not self._liquidity_ignited:
+        # Liquidity Seeker gate
+        if not slot.liquidity_ignited:
             best_w, best_p, best_d, best_r = candidates[0]
             if abs(best_d) >= DELTA_CONFIRM_THRESHOLD:
                 direction = "up" if best_d > 0 else "down"
                 liq_token = best_w.up_token_id if direction == "up" else best_w.down_token_id
 
-                # Skip tokens that failed ignition 4+ times recently
-                if self._ignition_failures.get(liq_token, 0) >= 4:
+                if slot.ignition_failures.get(liq_token, 0) >= 4:
                     log.info(
-                        "[IGNITION] Skipping %s — %d consecutive dead windows",
-                        liq_token[:16], self._ignition_failures[liq_token],
+                        "[IGNITION] %s: Skipping %s — %d consecutive dead windows",
+                        asset.upper(), liq_token[:16],
+                        slot.ignition_failures[liq_token],
                     )
-                    self._state = SnipeState.IDLE
-                    self._liquidity_monitor_start = 0
+                    slot.state = SnipeState.IDLE
+                    slot.liquidity_monitor_start = 0
                     return
 
                 liq_book = clob_book.get_orderbook(liq_token)
-                if self._check_liquidity_ignition(liq_book):
-                    self._liquidity_ignited = True
-                    # Reset failure counter on success
-                    self._ignition_failures[liq_token] = 0
+                if self._check_liquidity_ignition(liq_book, slot):
+                    slot.liquidity_ignited = True
+                    slot.ignition_failures[liq_token] = 0
 
-            if not self._liquidity_ignited:
-                elapsed = time.time() - self._liquidity_monitor_start
+            if not slot.liquidity_ignited:
+                elapsed = time.time() - slot.liquidity_monitor_start
                 if elapsed > LIQ_MONITOR_S:
-                    # Record ignition failure for this token
                     if candidates:
                         best_w = candidates[0][0]
                         best_d = candidates[0][2]
                         direction = "up" if best_d > 0 else "down"
                         fail_token = best_w.up_token_id if direction == "up" else best_w.down_token_id
-                        self._ignition_failures[fail_token] = self._ignition_failures.get(fail_token, 0) + 1
-                    log.info(
-                        "[IGNITION] No ignition after %.0fs — dead book, skipping window",
-                        elapsed,
-                    )
-                    self._state = SnipeState.IDLE
-                    self._liquidity_monitor_start = 0
+                        slot.ignition_failures[fail_token] = slot.ignition_failures.get(fail_token, 0) + 1
+                    log.info("[IGNITION] %s: No ignition after %.0fs — skipping", asset.upper(), elapsed)
+                    slot.state = SnipeState.IDLE
+                    slot.liquidity_monitor_start = 0
                     return
-                return  # Keep monitoring, wait for liquidity
+                return  # Keep monitoring
 
-        # Gather Binance L2 data (shared across all candidates)
-        ob_signal = self._orderbook.get_signal() if self._orderbook.is_connected else None
-        ob_reading = self._orderbook.get_latest_reading() if self._orderbook.is_connected else None
+        # Gather Binance L2 data
+        ob_signal = self._orderbook.get_signal(asset) if self._orderbook.is_connected else None
+        ob_reading = self._orderbook.get_latest_reading(asset) if self._orderbook.is_connected else None
 
-        # Gather SMC structure (shared — all candidates are BTC)
-        structure_5m = self._candle_store.get_structure("5m")
-        structure_15m = self._candle_store.get_structure("15m")
+        # Gather SMC structure
+        structure_5m = self._candle_store.get_structure(asset, "5m")
+        structure_15m = self._candle_store.get_structure(asset, "15m")
 
         from bot.snipe.pyramid_executor import WAVES
 
         for window, price, delta, remaining in candidates:
-            # Timing guard — allow earlier entry when liquidity confirmed
-            if remaining > (240 if self._liquidity_ignited else 180) or remaining < 5:
+            # Timing guard
+            if remaining > (240 if slot.liquidity_ignited else 180) or remaining < 5:
                 continue
 
-            # Track delta direction (keeps DeltaSignal's history for reversal detection)
+            # Track delta direction
             sig_tracker = self._get_signal(window.asset)
             sig_tracker.evaluate(price, window.open_price, remaining)
 
-            # Pre-filter: minimum delta to even consider scoring
             abs_delta = abs(delta)
             if abs_delta < DELTA_CONFIRM_THRESHOLD:
                 continue
 
             direction = "up" if delta > 0 else "down"
 
-            # Count sustained ticks in same direction
+            # Count sustained ticks
             sustained = 0
             for d in reversed(sig_tracker._recent_dirs):
                 if d == direction:
@@ -360,42 +408,31 @@ class SnipeEngine:
                 else:
                     break
 
-            # Token IDs for target and opposite
             token_id = window.up_token_id if direction == "up" else window.down_token_id
             opp_token_id = window.down_token_id if direction == "up" else window.up_token_id
 
             # Fetch CLOB implied price
             implied = self._fetch_implied_price(window.market_id, token_id)
             if not implied:
-                log.info("[SNIPE] %s: no implied price, trying next", window.asset.upper())
                 continue
 
-            # Price floor
             if implied < MIN_IMPLIED_PRICE:
-                log.info(
-                    "[SNIPE] %s: CLOB $%.3f < floor $%.2f, skipping",
-                    window.asset.upper(), implied, MIN_IMPLIED_PRICE,
-                )
                 continue
 
-            # Cap check
             max_cap = WAVES[0][2]
             for _, _, cap, fire_below in WAVES:
                 if remaining <= fire_below:
                     max_cap = cap
             if implied > max_cap:
-                log.info("[SNIPE] %s: CLOB $%.3f > cap $%.2f, trying next",
-                         window.asset.upper(), implied, max_cap)
                 continue
 
-            # Get CLOB orderbook data for both tokens
             target_book = clob_book.get_orderbook(token_id)
             opp_book = clob_book.get_orderbook(opp_token_id)
 
-            # ── SCORE all 10 components ──
+            # Score all 10 components
             score_result = self._scorer.score(
                 direction=direction,
-                delta_pct=abs_delta * 100,  # Convert to percent (0.12 = 0.12%)
+                delta_pct=abs_delta * 100,
                 sustained_ticks=sustained,
                 ob_imbalance=ob_reading.imbalance if ob_reading else None,
                 ob_strength=ob_signal.strength if ob_signal else None,
@@ -407,7 +444,11 @@ class SnipeEngine:
                 implied_price=implied,
             )
 
-            # ── Timing Assistant: evaluate every scored candidate ──
+            # Update slot tracking
+            slot.last_score = score_result.total_score
+            slot.last_direction = direction
+
+            # Timing Assistant
             self._timing_assistant.evaluate({
                 "score_result": score_result,
                 "clob_book": target_book,
@@ -418,126 +459,183 @@ class SnipeEngine:
             })
 
             if not score_result.should_trade:
-                continue  # Score logged by scorer itself
+                continue
 
-            # ── Fill simulation ──
-            shares_est = int(self.pyramid._budget / max_cap)
-            fill_est = estimate_fill(token_id, max_cap, shares_est)
-            log.info("[SNIPE] FILL SIM: %s", fill_est.detail)
+            # Apply correlation bonus
+            bonus = 0.0
+            if self._correlation_result and self._correlation_result.score_bonus > 0:
+                bonus = self._correlation_result.score_bonus
+                score_result = score_result  # Score already computed, bonus is informational
+
+            # ── MTF Gate: check 15m/1h structure confirmation ──
+            mtf_result = check_mtf(
+                asset, direction, self._candle_store, self._exec_preference,
+            )
+
+            # Determine execution market and token IDs
+            exec_market_id = window.market_id
+            exec_token_id = token_id
+            exec_end_ts = window.end_ts
+            exec_timeframe = "5m"
+
+            if mtf_result.confirmed and mtf_result.exec_market:
+                # Execute on higher timeframe market (real liquidity)
+                emkt = mtf_result.exec_market
+                exec_market_id = emkt.market_id
+                exec_token_id = emkt.up_token_id if direction == "up" else emkt.down_token_id
+                exec_end_ts = emkt.end_ts
+                exec_timeframe = emkt.timeframe
+                log.info(
+                    "[SNIPE] %s: MTF confirmed → executing on %s market %s",
+                    asset.upper(), exec_timeframe, exec_market_id[:16],
+                )
+            elif not mtf_result.confirmed:
+                # MTF gate rejected — fall back to 5m execution (existing behavior)
+                log.info(
+                    "[SNIPE] %s: MTF not confirmed (%s) — falling back to 5m execution",
+                    asset.upper(), mtf_result.strength,
+                )
+                # Still execute on 5m if score is high enough
+                # (preserves existing behavior for dead 15m markets)
+
+            # Check max concurrent positions
+            if self._active_position_count() >= MAX_CONCURRENT_POSITIONS:
+                log.info(
+                    "[SNIPE] %s: Max positions (%d/%d), skipping",
+                    asset.upper(), self._active_position_count(),
+                    MAX_CONCURRENT_POSITIONS,
+                )
+                return
+
+            # Fill simulation
+            shares_est = int(slot.executor._budget / max_cap)
+            fill_est = estimate_fill(exec_token_id, max_cap, shares_est)
+            log.info("[SNIPE] %s: FILL SIM: %s", asset.upper(), fill_est.detail)
 
             self._stats["signals"] += 1
             log.info(
-                "[SNIPE] SIGNAL: %s %s | score=%.0f/100 | delta=%+.4f%% | "
-                "sustained=%d | T-%.0fs | $%.2f (open $%.2f)",
-                window.asset.upper(), direction.upper(), score_result.total_score,
-                delta * 100, sustained, remaining, price, window.open_price,
+                "[SNIPE] SIGNAL: %s %s | score=%.0f/100 (+%.0f corr) | "
+                "delta=%+.4f%% | sustained=%d | T-%.0fs | exec=%s",
+                asset.upper(), direction.upper(), score_result.total_score,
+                bonus, delta * 100, sustained, remaining, exec_timeframe,
             )
 
-            # ── Execute ──
-            self._current_window_id = window.market_id
-            self.pyramid.start_position(
-                window.market_id, direction, window.open_price, window.asset,
+            # Execute
+            slot.current_window_id = exec_market_id
+            slot.exec_market_id = exec_market_id
+            slot.exec_end_ts = exec_end_ts
+            slot.exec_timeframe = exec_timeframe
+
+            # Apply MTF size multiplier and correlation sizing
+            size_mult = mtf_result.size_multiplier if mtf_result.confirmed else 1.0
+            if self._correlation_result:
+                size_mult *= self._correlation_result.size_multiplier
+            slot.executor._budget = ASSET_CONFIG.get(asset, {}).get("budget", 25.0) * size_mult
+
+            slot.executor.start_position(
+                exec_market_id, direction, window.open_price, asset,
                 score=score_result.total_score,
                 score_breakdown={k: v["weighted"] for k, v in score_result.components.items()},
             )
 
-            result = self.pyramid.execute_wave(
-                1, token_id, implied,
+            # Fetch implied price for execution market token
+            exec_implied = implied  # default to 5m implied
+            if exec_market_id != window.market_id:
+                exec_implied = self._fetch_implied_price(exec_market_id, exec_token_id)
+                if not exec_implied:
+                    exec_implied = implied  # Fallback
+
+            result = slot.executor.execute_wave(
+                1, exec_token_id, exec_implied,
                 score=score_result.total_score,
                 book_data=target_book,
-                liquidity_confirmed=self._liquidity_ignited,
+                liquidity_confirmed=slot.liquidity_ignited,
             )
             if result:
                 log.info(
-                    "[SNIPE] FILLED | T-%.0fs | %s %s | $%.2f | %.0f shares @ $%.3f | score=%.0f",
-                    remaining, window.asset.upper(), direction.upper(),
-                    result.size_usd, result.shares, result.price, score_result.total_score,
+                    "[SNIPE] %s: FILLED | T-%.0fs | %s | $%.2f | %.0f shares @ $%.3f | "
+                    "exec=%s | score=%.0f",
+                    asset.upper(), remaining, direction.upper(),
+                    result.size_usd, result.shares, result.price,
+                    exec_timeframe, score_result.total_score,
                 )
-                self._state = SnipeState.EXECUTING
-                self._executing_since = time.time()
+                slot.state = SnipeState.EXECUTING
+                slot.executing_since = time.time()
                 self.window_tracker.mark_traded(window.market_id)
-                log.info("[SNIPE] TRACKING -> EXECUTING (filled)")
+                log.info("[SNIPE] %s: TRACKING -> EXECUTING (filled on %s)", asset.upper(), exec_timeframe)
                 return
-            elif self.pyramid.has_pending_order:
-                self._state = SnipeState.ARMED
+            elif slot.executor.has_pending_order:
+                slot.state = SnipeState.ARMED
                 self.window_tracker.mark_traded(window.market_id)
-                log.info("[SNIPE] TRACKING -> ARMED (resting, score=%.0f)", score_result.total_score)
+                log.info("[SNIPE] %s: TRACKING -> ARMED (resting)", asset.upper())
                 return
             else:
-                if self._liquidity_ignited:
-                    log.info("[IGNITION] FOK failed despite confirmed liquidity — phantom depth")
+                if slot.liquidity_ignited:
+                    log.info("[IGNITION] %s: FOK failed despite confirmed liquidity", asset.upper())
                 else:
-                    log.warning("[SNIPE] Order failed on %s — trying next", window.asset.upper())
-                self.pyramid.close_position()
+                    log.warning("[SNIPE] %s: Order failed — trying next", asset.upper())
+                slot.executor.close_position()
                 continue
 
-    def _on_armed(self) -> None:
-        """Monitor resting GTC order for fills. Cancel at T-5s or on reversal."""
-        window = self.window_tracker.get_window(self._current_window_id)
-        if not window:
-            self.pyramid.cancel_pending_order()
-            self._finish_trade()
+    def _slot_on_armed(self, slot: AssetSlot) -> None:
+        """Monitor resting GTC order for fills."""
+        window = self.window_tracker.get_window(slot.current_window_id)
+        # Use exec_end_ts for resolution timing (may be 15m/1h market)
+        end_ts = slot.exec_end_ts if slot.exec_end_ts > 0 else (window.end_ts if window else 0)
+
+        if not window and not slot.exec_end_ts:
+            slot.executor.cancel_pending_order()
+            self._finish_trade(slot)
             return
 
         now = time.time()
-        remaining = window.end_ts - now
+        remaining = end_ts - now
 
         if remaining <= 0:
-            self.pyramid.cancel_pending_order()
-            self._finish_trade()
+            slot.executor.cancel_pending_order()
+            self._finish_trade(slot)
             return
 
-        # Cancel at T-5s — don't hold unfilled orders into resolution
+        # Cancel at T-5s
         if remaining <= 5:
-            # Check for partial fills before cancelling
-            partial = self.pyramid.finalize_partial_fill()
-            self.pyramid.cancel_pending_order()
-            if self.pyramid.has_active_position and self.pyramid.waves_fired > 0:
-                self._state = SnipeState.EXECUTING
-                log.info("[SNIPE] T-5s: have fills, holding through resolution")
+            slot.executor.finalize_partial_fill()
+            slot.executor.cancel_pending_order()
+            if slot.executor.has_active_position and slot.executor.waves_fired > 0:
+                slot.state = SnipeState.EXECUTING
+                slot.executing_since = time.time()
+                log.info("[SNIPE] %s: T-5s — have fills, holding through resolution", slot.asset.upper())
             else:
-                self.pyramid.close_position()
-                self._state = SnipeState.IDLE
-                log.info("[SNIPE] T-5s: no fills, order cancelled")
+                slot.executor.close_position()
+                slot.state = SnipeState.IDLE
+                log.info("[SNIPE] %s: T-5s — no fills, cancelled", slot.asset.upper())
             return
 
-        # Poll for order fill
-        if self.pyramid.has_pending_order:
-            fill = self.pyramid.poll_pending_order()
+        # Poll for fill
+        if slot.executor.has_pending_order:
+            fill = slot.executor.poll_pending_order()
             if fill:
                 log.info(
-                    "[SNIPE] GTC FILLED | T-%.0fs | %s %s | $%.2f | %.0f shares",
-                    remaining, window.asset.upper(), fill.direction.upper(),
-                    fill.size_usd, fill.shares,
+                    "[SNIPE] %s: GTC FILLED | T-%.0fs | %s | $%.2f",
+                    slot.asset.upper(), remaining, fill.direction.upper(), fill.size_usd,
                 )
-                self._state = SnipeState.EXECUTING
-                self.window_tracker.mark_traded(window.market_id)
-                self._executing_since = time.time()
-                log.info("[SNIPE] ARMED -> EXECUTING (GTC filled)")
+                slot.state = SnipeState.EXECUTING
+                slot.executing_since = time.time()
+                log.info("[SNIPE] %s: ARMED -> EXECUTING (GTC filled)", slot.asset.upper())
                 return
-        elif not self.pyramid.has_active_position:
-            self._state = SnipeState.IDLE
+        elif not slot.executor.has_active_position:
+            slot.state = SnipeState.IDLE
             return
 
-        # Update delta tracking + log + check reversal
-        live_btc = self._fetch_btc_price()
-        if live_btc and self.pyramid.has_active_position and window.open_price > 0:
-            direction = self.pyramid.active_direction
-            delta = (live_btc - window.open_price) / window.open_price
+        # Reversal detection
+        live_price = self._fetch_live_price(slot.asset)
+        if live_price and slot.executor.has_active_position and window and window.open_price > 0:
+            direction = slot.executor.active_direction
+            delta = (live_price - window.open_price) / window.open_price
             current_dir = "up" if delta > 0 else "down"
 
-            # Update signal tracker for reversal detection
-            sig = self._get_signal(window.asset)
+            sig = self._get_signal(slot.asset)
             sig._recent_dirs.append(current_dir)
 
-            ob_reading = self._orderbook.get_latest_reading() if hasattr(self, "_orderbook") else None
-            ob_str = f" | OB={ob_reading.imbalance:+.3f}" if ob_reading else ""
-            log.info(
-                "[SNIPE] ARMED T-%.0fs | %s $%.2f | delta=%+.4f%% (%s)%s",
-                remaining, window.asset.upper(), live_btc, delta * 100, current_dir.upper(), ob_str,
-            )
-
-            # Reversal: direction flipped with strong sustained opposition
             if current_dir != direction and abs(delta) > self._effective_threshold():
                 reversal_count = 0
                 for d in reversed(sig._recent_dirs):
@@ -547,132 +645,130 @@ class SnipeEngine:
                         break
                 if reversal_count >= 3:
                     log.warning(
-                        "[SNIPE] REVERSAL %s->%s (delta=%+.3f%%, %d ticks) | Cancelling GTC",
-                        direction.upper(), current_dir.upper(), delta * 100, reversal_count,
+                        "[SNIPE] %s: REVERSAL %s->%s (delta=%+.3f%%) | Cancelling",
+                        slot.asset.upper(), direction.upper(), current_dir.upper(),
+                        delta * 100,
                     )
-                    partial = self.pyramid.finalize_partial_fill()
-                    self.pyramid.cancel_pending_order()
-                    if self.pyramid.waves_fired > 0:
-                        # We have partial fills — hold through resolution
-                        self._state = SnipeState.EXECUTING
-                        log.info("[SNIPE] Reversal but have fills — holding")
+                    slot.executor.finalize_partial_fill()
+                    slot.executor.cancel_pending_order()
+                    if slot.executor.waves_fired > 0:
+                        slot.state = SnipeState.EXECUTING
+                        slot.executing_since = time.time()
                     else:
-                        self.pyramid.close_position()
-                        self._state = SnipeState.IDLE
+                        slot.executor.close_position()
+                        slot.state = SnipeState.IDLE
                     return
 
-
-    def _on_executing(self) -> None:
-        """Wait for resolution. Paper mode: resolve via BTC price. Live: check CLOB API."""
+    def _slot_on_executing(self, slot: AssetSlot) -> None:
+        """Wait for resolution — use exec_end_ts for timing."""
         now = time.time()
-        market_id = self._current_window_id
-        elapsed = now - self._executing_since if self._executing_since > 0 else 0
+        elapsed = now - slot.executing_since if slot.executing_since > 0 else 0
 
-        # Check window end time if still in tracker
-        window = self.window_tracker.get_window(market_id)
+        # Use execution market end time (may be 15m/1h)
+        end_ts = slot.exec_end_ts
+        if end_ts > 0 and now < end_ts + 30:
+            return  # Wait for market to close + 30s settle
+
+        # Also check via window tracker
+        window = self.window_tracker.get_window(slot.current_window_id)
         if window:
             remaining = window.end_ts - now
             if remaining > -30:
-                return  # Wait for window to finish + 30s settle time
+                return
 
-        # Need at least 30s after entering EXECUTING
         if elapsed < 30:
             return
 
-        # Paper mode: resolve using BTC price comparison
-        if self._dry_run and self.pyramid.has_active_position:
-            live_btc = self._fetch_btc_price()
-            if live_btc and self.pyramid._active_position:
-                open_price = self.pyramid._active_position.open_price
-                delta = (live_btc - open_price) / open_price if open_price > 0 else 0
+        # Paper mode: resolve using asset price
+        if self._dry_run and slot.executor.has_active_position:
+            live_price = self._fetch_live_price(slot.asset)
+            if live_price and slot.executor._active_position:
+                open_price = slot.executor._active_position.open_price
+                delta = (live_price - open_price) / open_price if open_price > 0 else 0
                 resolved_dir = "up" if delta > 0 else "down"
-                result = self.pyramid.close_position(resolved_dir)
+                result = slot.executor.close_position(resolved_dir)
                 if result:
-                    self._record_outcome(result)
-                self._cooldown_until = now + 30
-                self._state = SnipeState.COOLDOWN
+                    self._record_outcome(result, slot)
+                slot.cooldown_until = now + 30
+                slot.state = SnipeState.COOLDOWN
+                slot.exec_end_ts = 0
+                slot.exec_timeframe = ""
                 log.info(
-                    "[SNIPE] PAPER RESOLVED: %s (BTC $%.0f vs open $%.0f, delta=%+.3f%%)",
-                    resolved_dir.upper(), live_btc, open_price, delta * 100,
+                    "[SNIPE] %s: PAPER RESOLVED: %s (delta=%+.3f%%)",
+                    slot.asset.upper(), resolved_dir.upper(), delta * 100,
                 )
                 return
 
-        # Live mode: Check CLOB for actual resolution
-        resolved_dir = self._fetch_resolution(market_id)
+        # Live mode: Check CLOB for resolution
+        resolved_dir = self._fetch_resolution(slot.current_window_id)
         if resolved_dir:
-            result = self.pyramid.close_position(resolved_dir)
+            result = slot.executor.close_position(resolved_dir)
             if result:
-                self._record_outcome(result)
-            self._cooldown_until = now + 30
-            self._state = SnipeState.COOLDOWN
-            log.info("[SNIPE] EXECUTING -> COOLDOWN (resolved=%s)", resolved_dir.upper())
+                self._record_outcome(result, slot)
+            slot.cooldown_until = now + 30
+            slot.state = SnipeState.COOLDOWN
+            slot.exec_end_ts = 0
+            slot.exec_timeframe = ""
+            log.info("[SNIPE] %s: EXECUTING -> COOLDOWN (%s)", slot.asset.upper(), resolved_dir.upper())
             return
 
-        # Timeout: 10 min after entering EXECUTING
-        if elapsed >= 600:
-            log.warning("[SNIPE] Resolution timeout for %s (%.0fs elapsed)", market_id[:12], elapsed)
-            self.pyramid.close_position()
-            self._cooldown_until = now + 30
-            self._state = SnipeState.COOLDOWN
+        # Timeout: 20 min for 15m markets, 70 min for 1h, 10 min for 5m
+        timeout_map = {"15m": 1200, "1h": 4200, "5m": 600}
+        timeout = timeout_map.get(slot.exec_timeframe, 600)
+        if elapsed >= timeout:
+            log.warning("[SNIPE] %s: Resolution timeout (%.0fs)", slot.asset.upper(), elapsed)
+            slot.executor.close_position()
+            slot.cooldown_until = now + 30
+            slot.state = SnipeState.COOLDOWN
+            slot.exec_end_ts = 0
+            slot.exec_timeframe = ""
             return
 
-    def _check_liquidity_ignition(self, book: dict | None) -> bool:
-        """Check if CLOB book shows real mid-price liquidity (ignition).
-
-        Normal 5m books: spread=$0.98, ask=$0.99 (dead — no mid-price sellers).
-        Ignition requires ALL conditions:
-          1. Spread compression: drop >= 60% from initial OR absolute < $0.40
-          2. Ask depth > 20 shares below $0.65
-          3. Buy pressure > 0 (real activity, not stale)
-          4. Score gate is checked separately by the scoring loop
-        """
+    def _check_liquidity_ignition(self, book: dict | None, slot: AssetSlot) -> bool:
+        """Check if CLOB book shows real mid-price liquidity."""
         if not book:
             return False
 
         spread = book.get("spread", 1.0)
         best_ask = book.get("best_ask", 0)
-        best_bid = book.get("best_bid", 0)
-        sell_pressure = book.get("sell_pressure", 0)
         buy_pressure = book.get("buy_pressure", 0)
+        sell_pressure = book.get("sell_pressure", 0)
 
-        # Condition 1: Spread compression
-        compression = 1.0 - (spread / self._initial_spread) if self._initial_spread > 0 else 0
+        compression = 1.0 - (spread / slot.initial_spread) if slot.initial_spread > 0 else 0
         spread_ok = spread < LIQ_SPREAD_MAX or compression >= LIQ_SPREAD_COMPRESSION
         if not spread_ok:
             return False
 
-        # Condition 2: Ask depth at reasonable prices
         if best_ask <= 0 or best_ask >= LIQ_ASK_MAX:
             return False
         depth = int(sell_pressure / best_ask) if best_ask > 0 else 0
         if depth < LIQ_DEPTH_MIN:
             return False
 
-        # Condition 3: Buy-side activity (not just stale book)
         if buy_pressure <= 0:
             return False
 
         log.info(
-            "[IGNITION] Liquidity detected! spread=$%.3f (%.0f%% compressed) | "
-            "ask=$%.3f depth=%d shares | buy_pressure=%.1f",
-            spread, compression * 100, best_ask, depth, buy_pressure,
+            "[IGNITION] %s: Liquidity detected! spread=$%.3f (%.0f%% compressed) | "
+            "ask=$%.3f depth=%d | buy_pressure=%.1f",
+            slot.asset.upper(), spread, compression * 100, best_ask, depth, buy_pressure,
         )
         return True
 
-    def _finish_trade(self) -> None:
-        """Clean up current trade and go to cooldown."""
-        market_id = self._current_window_id
+    def _finish_trade(self, slot: AssetSlot) -> None:
+        """Clean up trade and go to cooldown."""
+        market_id = slot.current_window_id
         resolved_dir = self._fetch_resolution(market_id) or "" if market_id else ""
-
-        result = self.pyramid.close_position(resolved_dir)
+        result = slot.executor.close_position(resolved_dir)
         if result:
-            self._record_outcome(result)
-
-        self._cooldown_until = time.time() + 30
-        self._state = SnipeState.COOLDOWN
+            self._record_outcome(result, slot)
+        slot.cooldown_until = time.time() + 30
+        slot.state = SnipeState.COOLDOWN
+        slot.exec_end_ts = 0
+        slot.exec_timeframe = ""
 
     def _fetch_resolution(self, market_id: str) -> str | None:
-        """Check CLOB API for actual market resolution. Returns 'up', 'down', or None."""
+        """Check CLOB API for actual market resolution."""
         try:
             from bot.http_session import get_session
             resp = get_session().get(
@@ -691,7 +787,6 @@ class SnipeEngine:
                         return "up"
                     elif outcome_label in ("down", "no"):
                         return "down"
-            # Fallback: check final prices
             for t in data.get("tokens", []):
                 outcome_label = (t.get("outcome") or "").lower()
                 price = float(t.get("price", 0))
@@ -704,7 +799,7 @@ class SnipeEngine:
             pass
         return None
 
-    def _record_outcome(self, result: dict) -> None:
+    def _record_outcome(self, result: dict, slot: AssetSlot) -> None:
         """Record trade outcome in stats and publish to event bus."""
         self._stats["trades"] += 1
         self._stats["total_invested"] += result.get("total_size_usd", 0)
@@ -717,7 +812,7 @@ class SnipeEngine:
             self._consecutive_wins = 0
         self._stats["pnl"] += result.get("pnl_usd", 0)
 
-        # Timing Assistant: record outcome for self-learning
+        # Timing Assistant
         try:
             last_rec = self._timing_assistant.get_last_recommendation()
             t_score = last_rec.timing_score if last_rec else 0
@@ -733,14 +828,16 @@ class SnipeEngine:
         except Exception:
             pass
 
-        # Budget escalation: $50 → $75 after 3 consecutive wins
+        # Budget escalation
         if self._consecutive_wins >= 3:
-            self.pyramid._budget = self._escalated_budget
-            log.info("[SNIPE] Budget ESCALATED to $%.0f (streak=%d)", self._escalated_budget, self._consecutive_wins)
+            for s in self._slots.values():
+                s.executor._budget = self._escalated_budget
         else:
-            self.pyramid._budget = self._base_budget
+            for s in self._slots.values():
+                ac = ASSET_CONFIG.get(s.asset, {"budget": 25.0})
+                s.executor._budget = ac["budget"]
 
-        # Publish to event bus
+        # Event bus
         try:
             from shared.events import publish
             publish(
@@ -748,9 +845,9 @@ class SnipeEngine:
                 event_type="snipe_trade_resolved",
                 data=result,
                 summary=(
-                    f"Snipe {result['direction'].upper()} "
+                    f"Snipe {result['direction'].upper()} {slot.asset.upper()} "
                     f"${result['total_size_usd']:.2f} -> "
-                    f"PnL ${result['pnl_usd']:+.2f}"
+                    f"PnL ${result['pnl_usd']:+.2f} (exec={slot.exec_timeframe or '5m'})"
                 ),
             )
         except Exception:
@@ -762,13 +859,12 @@ class SnipeEngine:
             tg_token = os.environ.get("TG_BOT_TOKEN", "")
             tg_chat = os.environ.get("TG_CHAT_ID", "")
             if tg_token and tg_chat:
-                import requests
                 won = result.get("won")
                 emoji = "W" if won else "L" if won is False else "?"
-                asset_name = result.get("asset", "BTC").upper()
+                asset_name = result.get("asset", slot.asset).upper()
                 msg = (
                     f"GARVES SNIPE [{emoji}]\n\n"
-                    f"{result['direction'].upper()} {asset_name} 5m\n"
+                    f"{result['direction'].upper()} {asset_name} {slot.exec_timeframe or '5m'}\n"
                     f"Waves: {result['waves']} | Invested: ${result['total_size_usd']:.2f}\n"
                     f"Avg Entry: ${result['avg_entry']:.3f}\n"
                     f"PnL: ${result['pnl_usd']:+.2f}\n"
@@ -783,19 +879,21 @@ class SnipeEngine:
         except Exception:
             pass
 
-    def _fetch_btc_price(self) -> float | None:
-        """Fetch live BTC price directly — bypasses stale PriceCache."""
+    def _fetch_live_price(self, asset: str) -> float | None:
+        """Fetch live price for any asset — bypasses stale PriceCache."""
+        symbol = BINANCE_SYMBOLS.get(asset)
+        if not symbol:
+            return self._cache.get_price(asset)
         try:
             resp = requests.get(
-                "https://api.binance.us/api/v3/ticker/price?symbol=BTCUSDT",
+                f"https://api.binance.us/api/v3/ticker/price?symbol={symbol}",
                 timeout=5,
             )
             if resp.status_code == 200:
                 return float(resp.json()["price"])
         except Exception:
             pass
-        # Fallback to cache
-        return self._cache.get_price("bitcoin")
+        return self._cache.get_price(asset)
 
     def _fetch_implied_price(self, market_id: str, token_id: str) -> float | None:
         """Fetch current CLOB implied price for a token."""
@@ -806,7 +904,6 @@ class SnipeEngine:
                 timeout=5,
             )
             if resp.status_code != 200:
-                log.warning("[SNIPE] Implied price fetch failed: HTTP %d for %s", resp.status_code, market_id[:16])
                 return None
             data = resp.json()
             for t in data.get("tokens", []):
@@ -814,7 +911,6 @@ class SnipeEngine:
                     price = t.get("price")
                     if price is not None:
                         return float(price)
-            log.warning("[SNIPE] Token %s not found in market %s (tokens: %d)", token_id[:16], market_id[:16], len(data.get("tokens", [])))
         except Exception as e:
             log.warning("[SNIPE] Implied price error: %s", str(e)[:150])
         return None
@@ -829,8 +925,12 @@ class SnipeEngine:
             pass
 
     def _compute_success_rate_50(self) -> float | None:
-        """Compute win rate from last 50 resolved trades."""
-        history = self.pyramid.get_history(50)
+        """Compute win rate from last 50 resolved trades (across all slots)."""
+        # Use first slot's executor for history (all write to same file)
+        first_slot = next(iter(self._slots.values()), None)
+        if not first_slot:
+            return None
+        history = first_slot.executor.get_history(50)
         if not history:
             return None
         wins = sum(1 for t in history if t.get("won") is True)
@@ -840,31 +940,80 @@ class SnipeEngine:
         return round(wins / resolved * 100, 1)
 
     def get_status(self) -> dict:
-        """Dashboard-friendly status."""
+        """Dashboard-friendly status — multi-asset with per-slot info."""
         threshold = self._effective_threshold()
         is_weekend = datetime.now(ET).weekday() >= 5
+
+        # Per-asset slot status
+        slots_status = {}
+        for asset, slot in self._slots.items():
+            slots_status[asset] = {
+                "state": slot.state.value,
+                "last_score": slot.last_score,
+                "last_direction": slot.last_direction,
+                "exec_timeframe": slot.exec_timeframe,
+                "position": slot.executor.get_status(),
+                "liquidity_ignited": slot.liquidity_ignited,
+            }
+
+        # Hot windows: all assets in TRACKING with scores
+        hot_windows = []
+        for asset, slot in self._slots.items():
+            if slot.state == SnipeState.TRACKING and slot.last_score > 0:
+                hot_windows.append({
+                    "asset": asset,
+                    "direction": slot.last_direction,
+                    "score": slot.last_score,
+                    "state": slot.state.value,
+                })
+
+        # Correlation
+        corr = None
+        if self._correlation_result:
+            cr = self._correlation_result
+            corr = {
+                "dominant_direction": cr.dominant_direction,
+                "aligned_count": cr.aligned_count,
+                "total_scored": cr.total_scored,
+                "score_bonus": cr.score_bonus,
+                "size_multiplier": cr.size_multiplier,
+            }
+
+        # Use first slot for shared history/perf
+        first_slot = next(iter(self._slots.values()), None)
+        history = first_slot.executor.get_history(10) if first_slot else []
+        performance = first_slot.executor.get_performance_stats() if first_slot else {}
+        avg_latency = first_slot.executor.get_avg_latency_ms() if first_slot else None
+
         return {
             "enabled": self.enabled,
-            "state": self._state.value,
+            "version": "v8-multi-asset",
             "dry_run": self._dry_run,
-            "budget_per_window": self.pyramid._budget,
-            "budget_base": self._base_budget,
-            "budget_escalated": self._escalated_budget,
-            "consecutive_wins": self._consecutive_wins,
+            "exec_preference": self._exec_preference,
             "delta_threshold_pct": round(threshold * 100, 3),
             "threshold_mode": "weekend" if is_weekend else "weekday",
             "tick_interval_s": SNIPE_TICK_INTERVAL,
+            "max_positions": MAX_CONCURRENT_POSITIONS,
+            "active_positions": self._active_position_count(),
+            "consecutive_wins": self._consecutive_wins,
             "stats": self._stats.copy(),
+            "slots": slots_status,
+            "hot_windows": hot_windows,
+            "correlation": corr,
             "window": self.window_tracker.get_status(),
-            "position": self.pyramid.get_status(),
-            "history": self.pyramid.get_history(10),
+            "history": history,
             "orderbook": self._orderbook.get_status() if hasattr(self, "_orderbook") else None,
-            # v7: scoring engine + candle structure + latency + performance
             "scorer": self._scorer.get_status(),
             "candles": self._candle_store.get_status(),
             "success_rate_50": self._compute_success_rate_50(),
-            "avg_latency_ms": self.pyramid.get_avg_latency_ms(),
-            "performance": self.pyramid.get_performance_stats(),
+            "avg_latency_ms": avg_latency,
+            "performance": performance,
             "timing_assistant": self._timing_assistant.get_status(),
             "timestamp": time.time(),
         }
+
+    # Legacy compat properties
+    @property
+    def pyramid(self):
+        """Legacy compat — return first slot's executor."""
+        return next(iter(self._slots.values())).executor if self._slots else None

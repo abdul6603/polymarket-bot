@@ -1,10 +1,12 @@
-"""In-memory candle accumulator — builds 5m/15m candles from BTC price ticks.
+"""In-memory candle accumulator — builds 5m/15m/1h candles from price ticks.
 
 Detects BOS (Break of Structure) and CHoCH (Change of Character) patterns
-for Smart Money Concepts analysis on the 5-minute BTC chart.
+for Smart Money Concepts analysis on multi-asset, multi-timeframe charts.
 
-Fed by the snipe engine every 2s tick with the latest Binance BTC price.
+Fed by the snipe engine every 2s tick with the latest Binance prices.
 No external data source needed — builds candles from ticks we already fetch.
+
+v8: Multi-asset (BTC/ETH/SOL/XRP) + 1h timeframe for MTF confirmation.
 """
 from __future__ import annotations
 
@@ -34,7 +36,8 @@ class SwingPoint:
 
 
 # Period sizes in seconds
-PERIODS = {"5m": 300, "15m": 900}
+PERIODS = {"5m": 300, "15m": 900, "1h": 3600}
+ASSETS = ("bitcoin", "ethereum", "solana", "xrp")
 MAX_CANDLES = 50
 MAX_SWINGS = 20
 
@@ -43,33 +46,41 @@ class CandleStore:
     """Accumulates price ticks into OHLC candles and detects structure."""
 
     def __init__(self):
-        self._candles: dict[str, deque[Candle]] = {
-            tf: deque(maxlen=MAX_CANDLES) for tf in PERIODS
+        # Nested: asset -> timeframe -> deque
+        self._candles: dict[str, dict[str, deque[Candle]]] = {
+            asset: {tf: deque(maxlen=MAX_CANDLES) for tf in PERIODS}
+            for asset in ASSETS
         }
-        self._current: dict[str, Candle | None] = {tf: None for tf in PERIODS}
-        self._swings: dict[str, deque[SwingPoint]] = {
-            tf: deque(maxlen=MAX_SWINGS) for tf in PERIODS
+        self._current: dict[str, dict[str, Candle | None]] = {
+            asset: {tf: None for tf in PERIODS}
+            for asset in ASSETS
+        }
+        self._swings: dict[str, dict[str, deque[SwingPoint]]] = {
+            asset: {tf: deque(maxlen=MAX_SWINGS) for tf in PERIODS}
+            for asset in ASSETS
         }
 
-    def feed_tick(self, price: float, timestamp: float | None = None) -> None:
-        """Feed a new price tick. Updates all timeframe candles."""
+    def feed_tick(self, asset: str, price: float, timestamp: float | None = None) -> None:
+        """Feed a new price tick for an asset. Updates all timeframe candles."""
         if timestamp is None:
             timestamp = time.time()
         if price <= 0:
             return
+        if asset not in self._candles:
+            return
 
         for tf, period_s in PERIODS.items():
             candle_start = (int(timestamp) // period_s) * period_s
-            current = self._current[tf]
+            current = self._current[asset][tf]
 
             if current is None or current.timestamp != candle_start:
                 # Close previous candle and start new one
                 if current is not None:
                     current.closed = True
-                    self._candles[tf].append(current)
-                    self._detect_swings(tf)
+                    self._candles[asset][tf].append(current)
+                    self._detect_swings(asset, tf)
 
-                self._current[tf] = Candle(
+                self._current[asset][tf] = Candle(
                     timestamp=candle_start,
                     open=price, high=price, low=price, close=price,
                     tick_count=1,
@@ -80,9 +91,9 @@ class CandleStore:
                 current.close = price
                 current.tick_count += 1
 
-    def _detect_swings(self, tf: str) -> None:
+    def _detect_swings(self, asset: str, tf: str) -> None:
         """Detect swing highs/lows from completed candles (3-bar pattern)."""
-        candles = self._candles[tf]
+        candles = self._candles[asset][tf]
         if len(candles) < 3:
             return
 
@@ -92,7 +103,7 @@ class CandleStore:
 
         # Swing high: candidate.high > both neighbors
         if candidate.high > prev.high and candidate.high > confirm.high:
-            self._swings[tf].append(SwingPoint(
+            self._swings[asset][tf].append(SwingPoint(
                 timestamp=candidate.timestamp,
                 price=candidate.high,
                 type="high",
@@ -100,14 +111,14 @@ class CandleStore:
 
         # Swing low: candidate.low < both neighbors
         if candidate.low < prev.low and candidate.low < confirm.low:
-            self._swings[tf].append(SwingPoint(
+            self._swings[asset][tf].append(SwingPoint(
                 timestamp=candidate.timestamp,
                 price=candidate.low,
                 type="low",
             ))
 
-    def get_structure(self, tf: str) -> dict:
-        """Get BOS/CHoCH analysis for a timeframe.
+    def get_structure(self, asset: str, tf: str) -> dict:
+        """Get BOS/CHoCH analysis for an asset on a timeframe.
 
         Returns:
             bos: "bullish" | "bearish" | None
@@ -115,14 +126,17 @@ class CandleStore:
             trend: "bullish" | "bearish" | "neutral"
             last_swing_high / last_swing_low: float | None
         """
-        swings = list(self._swings.get(tf, []))
-        current = self._current.get(tf)
-
         empty = {
             "bos": None, "choch": None,
             "last_swing_high": None, "last_swing_low": None,
             "trend": "neutral",
         }
+        if asset not in self._swings:
+            return empty
+
+        swings = list(self._swings[asset].get(tf, []))
+        current = self._current.get(asset, {}).get(tf)
+
         if len(swings) < 2 or current is None:
             return empty
 
@@ -178,21 +192,28 @@ class CandleStore:
         }
 
     def get_status(self) -> dict:
-        """Dashboard-friendly status."""
+        """Dashboard-friendly status — nested by asset then timeframe."""
         result = {}
-        for tf in PERIODS:
-            candles = self._candles[tf]
-            current = self._current[tf]
-            structure = self.get_structure(tf)
-            result[tf] = {
-                "completed_candles": len(candles),
-                "current": {
-                    "open": current.open,
-                    "high": current.high,
-                    "low": current.low,
-                    "close": current.close,
-                    "ticks": current.tick_count,
-                } if current else None,
-                "structure": structure,
-            }
+        for asset in ASSETS:
+            asset_result = {}
+            for tf in PERIODS:
+                candles = self._candles[asset][tf]
+                current = self._current[asset][tf]
+                structure = self.get_structure(asset, tf)
+                asset_result[tf] = {
+                    "completed_candles": len(candles),
+                    "current": {
+                        "open": current.open,
+                        "high": current.high,
+                        "low": current.low,
+                        "close": current.close,
+                        "ticks": current.tick_count,
+                    } if current else None,
+                    "structure": structure,
+                }
+            result[asset] = asset_result
         return result
+
+    def reset_spread_history(self) -> None:
+        """Compat — called from engine per-slot. No-op here."""
+        pass

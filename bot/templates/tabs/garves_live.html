@@ -47,13 +47,40 @@
   </div>
   <div class="health-inline" id="garves-health-result"></div>
 
-  <!-- ═══ Snipe Engine v7 — Signal Scoring Cards ═══ -->
-  <div id="snipe-v7-cards" class="grid-4" style="margin-bottom:12px;">
-    <div class="stat-card" style="border-left:3px solid #8b5cf6;">
-      <div class="stat-value" id="snipe-signal-score" style="font-size:1.3rem;color:#8b5cf6;">--</div>
-      <div class="stat-label">Signal Score</div>
-      <div id="snipe-score-dir" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div>
+  <!-- ═══ Snipe Engine v8 — Multi-Asset Scanner ═══ -->
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+    <div style="font-weight:700;font-size:0.76rem;">Snipe v8 Multi-Asset Scanner</div>
+    <div id="snipe-exec-venue" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;font-weight:600;cursor:pointer;" onclick="toggleExecVenue()">15m</div>
+    <div id="snipe-positions-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,0.15);color:#22c55e;font-weight:600;">0/3</div>
+    <div id="snipe-correlation-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;display:none;"></div>
+  </div>
+
+  <!-- 4-Asset Scanner Cards -->
+  <div id="snipe-v8-cards" class="grid-4" style="margin-bottom:12px;">
+    <div class="stat-card" id="snipe-card-bitcoin" style="border-left:3px solid #f7931a;">
+      <div class="stat-value" id="snipe-score-bitcoin" style="font-size:1.2rem;color:#f7931a;">--</div>
+      <div class="stat-label">BTC</div>
+      <div id="snipe-state-bitcoin" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;">idle</div>
     </div>
+    <div class="stat-card" id="snipe-card-ethereum" style="border-left:3px solid #627eea;">
+      <div class="stat-value" id="snipe-score-ethereum" style="font-size:1.2rem;color:#627eea;">--</div>
+      <div class="stat-label">ETH</div>
+      <div id="snipe-state-ethereum" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;">idle</div>
+    </div>
+    <div class="stat-card" id="snipe-card-solana" style="border-left:3px solid #00ffa3;">
+      <div class="stat-value" id="snipe-score-solana" style="font-size:1.2rem;color:#00ffa3;">--</div>
+      <div class="stat-label">SOL</div>
+      <div id="snipe-state-solana" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;">idle</div>
+    </div>
+    <div class="stat-card" id="snipe-card-xrp" style="border-left:3px solid #00aae4;">
+      <div class="stat-value" id="snipe-score-xrp" style="font-size:1.2rem;color:#00aae4;">--</div>
+      <div class="stat-label">XRP</div>
+      <div id="snipe-state-xrp" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;">idle</div>
+    </div>
+  </div>
+
+  <!-- Aggregate Stats Row -->
+  <div id="snipe-v7-cards" class="grid-4" style="margin-bottom:12px;">
     <div class="stat-card" style="border-left:3px solid #22c55e;">
       <div class="stat-value" id="snipe-success-rate" style="font-size:1.3rem;">--</div>
       <div class="stat-label">Success Rate (50)</div>
@@ -64,10 +91,24 @@
       <div class="stat-label">Avg Latency</div>
       <div id="snipe-latency-detail" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div>
     </div>
+    <div class="stat-card" style="border-left:3px solid #8b5cf6;">
+      <div class="stat-value" id="snipe-signal-score" style="font-size:1.3rem;color:#8b5cf6;">--</div>
+      <div class="stat-label">Last Score</div>
+      <div id="snipe-score-dir" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div>
+    </div>
     <div class="stat-card" style="border-left:3px solid #06b6d4;">
       <div class="stat-value" id="snipe-clob-spread" style="font-size:1.3rem;">--</div>
       <div class="stat-label">CLOB Spread</div>
       <div id="snipe-state-label" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div>
+    </div>
+  </div>
+
+  <!-- Hot Windows Table (collapsible) -->
+  <div id="snipe-hot-windows" style="margin-bottom:12px;display:none;">
+    <div class="glass-card" style="padding:10px 14px;">
+      <div style="font-weight:700;font-size:0.76rem;margin-bottom:8px;">Hot Windows</div>
+      <table class="data-table"><thead><tr><th>Asset</th><th>Direction</th><th>Score</th><th>State</th></tr></thead>
+      <tbody id="snipe-hot-tbody"><tr><td colspan="4" class="text-muted" style="text-align:center;">No hot windows</td></tr></tbody></table>
     </div>
   </div>
 
@@ -79,9 +120,9 @@
     </div>
   </div>
 
-  <!-- Snipe v7 Performance Tracking -->
+  <!-- Snipe v8 Performance Tracking -->
   <div class="glass-card" style="padding:10px 14px;margin-bottom:12px;">
-    <div style="font-weight:700;font-size:0.76rem;margin-bottom:8px;">Snipe v7 Performance</div>
+    <div style="font-weight:700;font-size:0.76rem;margin-bottom:8px;">Snipe v8 Performance</div>
     <div id="snipe-perf-stats" style="font-size:0.78rem;"></div>
   </div>
 

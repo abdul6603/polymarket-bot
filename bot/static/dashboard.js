@@ -9323,7 +9323,90 @@ function refreshSnipeV7() {
       return;
     }
 
-    // Signal Score card
+    // ── Multi-Asset Scanner Cards (v8) ──
+    var slots = d.slots || {};
+    var assetColors = {bitcoin:'#f7931a', ethereum:'#627eea', solana:'#00ffa3', xrp:'#00aae4'};
+    var assetNames = ['bitcoin','ethereum','solana','xrp'];
+    for (var ai = 0; ai < assetNames.length; ai++) {
+      var aName = assetNames[ai];
+      var slot = slots[aName] || {};
+      var scoreEl_a = document.getElementById('snipe-score-' + aName);
+      var stateEl_a = document.getElementById('snipe-state-' + aName);
+      var cardEl = document.getElementById('snipe-card-' + aName);
+      if (!scoreEl_a) continue;
+      var slotScore = slot.last_score || 0;
+      var slotDir = (slot.last_direction || '').toUpperCase();
+      var slotState = (slot.state || 'idle').toUpperCase();
+      if (slotScore > 0) {
+        scoreEl_a.textContent = slotScore.toFixed(0);
+        scoreEl_a.style.color = slotScore >= 75 ? '#22c55e' : slotScore >= 50 ? '#eab308' : assetColors[aName];
+      } else {
+        scoreEl_a.textContent = '--';
+        scoreEl_a.style.color = assetColors[aName];
+      }
+      var stateLabel = slotState;
+      if (slotDir && slotState === 'TRACKING') stateLabel = slotState + ' ' + slotDir;
+      if (slot.exec_timeframe) stateLabel += ' [' + slot.exec_timeframe + ']';
+      stateEl_a.textContent = stateLabel;
+      // Highlight active states
+      if (cardEl) {
+        if (slotState === 'EXECUTING' || slotState === 'ARMED') {
+          cardEl.style.background = 'rgba(34,197,94,0.08)';
+        } else if (slotState === 'TRACKING') {
+          cardEl.style.background = 'rgba(234,179,8,0.06)';
+        } else {
+          cardEl.style.background = '';
+        }
+      }
+    }
+
+    // Exec venue badge
+    var venueEl = document.getElementById('snipe-exec-venue');
+    if (venueEl) venueEl.textContent = d.exec_preference || '15m';
+
+    // Positions badge
+    var posBadge = document.getElementById('snipe-positions-badge');
+    if (posBadge) {
+      var ap = d.active_positions || 0;
+      var mp = d.max_positions || 3;
+      posBadge.textContent = ap + '/' + mp;
+      posBadge.style.color = ap >= mp ? '#ef4444' : ap > 0 ? '#eab308' : '#22c55e';
+    }
+
+    // Correlation badge
+    var corrBadge = document.getElementById('snipe-correlation-badge');
+    var corr = d.correlation;
+    if (corrBadge && corr && corr.score_bonus > 0) {
+      corrBadge.style.display = '';
+      corrBadge.textContent = corr.aligned_count + '/' + corr.total_scored + ' ' +
+        (corr.dominant_direction || '').toUpperCase() + ' +' + corr.score_bonus.toFixed(0);
+      corrBadge.style.background = 'rgba(34,197,94,0.15)';
+      corrBadge.style.color = '#22c55e';
+    } else if (corrBadge) {
+      corrBadge.style.display = 'none';
+    }
+
+    // Hot windows table
+    var hotWindows = d.hot_windows || [];
+    var hotEl = document.getElementById('snipe-hot-windows');
+    var hotTbody = document.getElementById('snipe-hot-tbody');
+    if (hotWindows.length > 0 && hotEl && hotTbody) {
+      hotEl.style.display = 'block';
+      var hh = '';
+      for (var hi = 0; hi < hotWindows.length; hi++) {
+        var hw = hotWindows[hi];
+        var dirColor = hw.direction === 'up' ? '#22c55e' : '#ef4444';
+        hh += '<tr><td>' + (hw.asset || '').toUpperCase() + '</td>' +
+          '<td style="color:' + dirColor + ';">' + (hw.direction || '').toUpperCase() + '</td>' +
+          '<td>' + (hw.score || 0).toFixed(0) + '</td>' +
+          '<td>' + (hw.state || '').toUpperCase() + '</td></tr>';
+      }
+      hotTbody.innerHTML = hh;
+    } else if (hotEl) {
+      hotEl.style.display = 'none';
+    }
+
+    // Signal Score card (last scorer result)
     var scorer = d.scorer || {};
     var scoreEl = document.getElementById('snipe-signal-score');
     var scoreDirEl = document.getElementById('snipe-score-dir');
@@ -9363,7 +9446,7 @@ function refreshSnipeV7() {
     } else {
       scoreEl.textContent = '--';
       scoreEl.style.color = '#8b5cf6';
-      scoreDirEl.textContent = d.state || 'idle';
+      scoreDirEl.textContent = '';
       document.getElementById('snipe-v7-breakdown').style.display = 'none';
     }
 
@@ -9394,8 +9477,9 @@ function refreshSnipeV7() {
     // CLOB Spread card
     var spreadEl = document.getElementById('snipe-clob-spread');
     var stateEl = document.getElementById('snipe-state-label');
-    stateEl.textContent = (d.state || 'idle').toUpperCase() + ' | ' + (d.threshold_mode || '') +
-      ' | budget=$' + (d.budget_per_window || 0).toFixed(0);
+    stateEl.textContent = (d.threshold_mode || '') +
+      ' | pos=' + (d.active_positions || 0) + '/' + (d.max_positions || 3) +
+      ' | exec=' + (d.exec_preference || '15m');
 
     // Try to get spread from scorer CLOB data
     if (scorer.active && scorer.components && scorer.components.clob_spread_compression) {
@@ -9699,6 +9783,15 @@ function toggleClobPopover() {
   if (!pop) return;
   _clobPopoverOpen = !_clobPopoverOpen;
   pop.style.display = _clobPopoverOpen ? 'block' : 'none';
+}
+
+function toggleExecVenue() {
+  var el = document.getElementById('snipe-exec-venue');
+  if (!el) return;
+  var current = el.textContent.trim();
+  var next = current === '15m' ? '1h' : '15m';
+  el.textContent = next;
+  showToast('Exec venue toggled to ' + next + ' (UI only — restart Garves to apply)', 'info');
 }
 
 function forceReconnectClob() {
