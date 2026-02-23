@@ -177,6 +177,11 @@ class SnipeEngine:
         self._timing_learner = TimingLearner()
         self._timing_assistant = TimingAssistant(self._timing_learner)
 
+        # Warm-up tracking
+        self._engine_start_ts = time.time()
+        self._last_warmup_log = 0.0
+        self._warmup_notified = False
+
     def _effective_threshold(self) -> float:
         """Dynamic threshold based on CME futures session."""
         now = datetime.now(ET)
@@ -234,6 +239,7 @@ class SnipeEngine:
             try:
                 self.tick()
                 self._save_status()
+                self._warmup_log()
             except Exception as e:
                 log.warning("[SNIPE] Tick error: %s", str(e)[:200])
 
@@ -985,6 +991,93 @@ class SnipeEngine:
             return None
         return round(wins / resolved * 100, 1)
 
+    def _get_warmup_diagnostics(self) -> dict:
+        """Compute warm-up diagnostics: max realistic score, base-value components."""
+        elapsed_min = (time.time() - self._engine_start_ts) / 60.0
+        warmup = self._candle_store.get_warmup_status()
+
+        # Components stuck at base values
+        base_components = []
+        # CLOB components always dead when 5m books are bypassed
+        any_bypassed = any(s.ignition_bypassed for s in self._slots.values())
+        if any_bypassed:
+            base_components.append(("clob_spread_compression", 3.0, 10))
+            base_components.append(("clob_yes_no_pressure", 3.0, 10))
+
+        # BOS/structure — check if any asset has real structure
+        has_5m_structure = any(
+            self._candle_store.get_structure(a, "5m").get("trend") != "neutral"
+            for a in ASSETS
+        )
+        has_15m_structure = any(
+            self._candle_store.get_structure(a, "15m").get("trend") != "neutral"
+            for a in ASSETS
+        )
+        if not has_5m_structure:
+            base_components.append(("bos_choch_5m", 3.6, 12))
+        if not has_15m_structure:
+            base_components.append(("bos_choch_15m", 2.4, 8))
+
+        # Volume delta — needs candle history
+        has_volume = warmup["progress_pct"] >= 50
+        if not has_volume:
+            base_components.append(("volume_delta", 2.4, 8))
+
+        # Max realistic score = 100 - (max - base) for each stuck component
+        points_lost = sum(mx - base for _, base, mx in base_components)
+        max_realistic = round(100 - points_lost)
+
+        return {
+            "elapsed_min": round(elapsed_min, 1),
+            "target_min": 60,
+            "progress_pct": warmup["progress_pct"],
+            "max_realistic_score": max_realistic,
+            "threshold": 65,
+            "can_reach_threshold": max_realistic >= 65,
+            "base_components": [
+                {"name": n, "current": b, "max": m}
+                for n, b, m in base_components
+            ],
+            "has_5m_structure": has_5m_structure,
+            "has_15m_structure": has_15m_structure,
+            "clob_bypassed": any_bypassed,
+            "ready": elapsed_min >= 60 and warmup["progress_pct"] >= 80,
+        }
+
+    def _warmup_log(self) -> None:
+        """Log warm-up progress every 30s. Notify at 60 min."""
+        now = time.time()
+        if now - self._last_warmup_log < 30:
+            return
+        self._last_warmup_log = now
+
+        diag = self._get_warmup_diagnostics()
+        base_names = ", ".join(c["name"] for c in diag["base_components"])
+        clob_note = " | CLOB bypassed" if diag["clob_bypassed"] else ""
+
+        log.info(
+            "[WARMUP] %.0f/%.0f min (%d%%) | Max realistic score: ~%d/100 (thresh=%d) | "
+            "Base components: %s%s",
+            diag["elapsed_min"], diag["target_min"], diag["progress_pct"],
+            diag["max_realistic_score"], diag["threshold"],
+            base_names or "none", clob_note,
+        )
+
+        # Auto-notify at 60 min
+        if diag["elapsed_min"] >= 60 and not self._warmup_notified:
+            self._warmup_notified = True
+            log.info(
+                "[WARMUP] === 60 MINUTES REACHED === "
+                "CandleStore mature. Max realistic score: %d/100. "
+                "Structure: 5m=%s 15m=%s. "
+                "Suggest re-evaluating threshold (currently %d). "
+                "If CLOB still dead, consider redistributing 20pts from clob_sp+clob_p.",
+                diag["max_realistic_score"],
+                "YES" if diag["has_5m_structure"] else "NO",
+                "YES" if diag["has_15m_structure"] else "NO",
+                diag["threshold"],
+            )
+
     def get_status(self) -> dict:
         """Dashboard-friendly status — multi-asset with per-slot info."""
         threshold = self._effective_threshold()
@@ -1052,6 +1145,7 @@ class SnipeEngine:
             "scorer": self._scorer.get_status(),  # Legacy global scorer status
             "candles": self._candle_store.get_status(),
             "candle_warmup": self._candle_store.get_warmup_status(),
+            "warmup_diagnostics": self._get_warmup_diagnostics(),
             "price_freshness": {
                 asset: {
                     "age_s": round(self._cache.get_price_age(asset), 1),

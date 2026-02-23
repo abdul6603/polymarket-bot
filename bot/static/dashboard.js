@@ -9407,19 +9407,46 @@ function refreshSnipeV7() {
     }
 
     // CandleStore warm-up indicator
-    var warmupEl = document.getElementById('snipe-candle-warmup');
-    var warmup = d.candle_warmup;
-    if (warmupEl && warmup) {
-      if (warmup.warming_up) {
-        var pct = warmup.progress_pct || 0;
-        warmupEl.style.display = 'block';
-        warmupEl.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;' +
-          'background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.2);border-radius:6px;margin-bottom:8px;">' +
-          '<span style="color:#eab308;font-size:0.85em;">CandleStore Warming Up (' + pct + '%)</span>' +
-          '<div style="flex:1;height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;">' +
-          '<div style="width:' + pct + '%;height:100%;background:#eab308;border-radius:2px;transition:width 0.5s;"></div></div></div>';
+    // Snipe Engine Warm-up Status card
+    var warmupCard = document.getElementById('snipe-warmup-card');
+    var diag = d.warmup_diagnostics;
+    if (warmupCard && diag) {
+      if (diag.ready) {
+        warmupCard.style.display = 'none';
       } else {
-        warmupEl.style.display = 'none';
+        warmupCard.style.display = 'block';
+        var pct = Math.min(100, Math.round(diag.elapsed_min / diag.target_min * 100));
+        var barColor = diag.can_reach_threshold ? '#eab308' : '#ef4444';
+        var scoreColor = diag.can_reach_threshold ? '#22c55e' : '#ef4444';
+        var compLabels = {
+          clob_spread_compression: 'CLOB Spread', clob_yes_no_pressure: 'CLOB Pressure',
+          bos_choch_5m: 'BOS 5m', bos_choch_15m: 'BOS 15m', volume_delta: 'Volume Delta'
+        };
+        var compHtml = '';
+        for (var i = 0; i < diag.base_components.length; i++) {
+          var c = diag.base_components[i];
+          var lbl = compLabels[c.name] || c.name;
+          compHtml += '<span style="display:inline-block;padding:2px 6px;border-radius:3px;' +
+            'background:rgba(239,68,68,0.1);color:#ef4444;font-size:0.68rem;margin:2px;">' +
+            lbl + ' (' + c.current.toFixed(1) + '/' + c.max + ')</span>';
+        }
+        if (!compHtml) compHtml = '<span style="color:#22c55e;font-size:0.72rem;">All active</span>';
+        warmupCard.innerHTML = '<div class="glass-card" style="padding:10px 14px;">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+          '<span style="font-weight:700;font-size:0.76rem;">Snipe Engine Warm-up</span>' +
+          '<span style="font-size:0.72rem;color:' + scoreColor + ';">Max Score: ~' +
+          diag.max_realistic_score + '/100 (thresh=' + diag.threshold + ')</span></div>' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+          '<span style="font-size:0.72rem;color:rgba(255,255,255,0.6);min-width:80px;">' +
+          diag.elapsed_min.toFixed(0) + '/' + diag.target_min + ' min</span>' +
+          '<div style="flex:1;height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">' +
+          '<div style="width:' + pct + '%;height:100%;background:' + barColor +
+          ';border-radius:3px;transition:width 0.5s;"></div></div>' +
+          '<span style="font-size:0.72rem;color:rgba(255,255,255,0.6);">' + pct + '%</span></div>' +
+          '<div style="margin-bottom:4px;font-size:0.68rem;color:rgba(255,255,255,0.5);">Components at base values:</div>' +
+          '<div>' + compHtml + '</div>' +
+          (diag.clob_bypassed ? '<div style="margin-top:6px;font-size:0.68rem;color:#eab308;">5m CLOB books dead — executing via MTF gate (15m/1h)</div>' : '') +
+          '</div>';
       }
     }
 
