@@ -364,25 +364,29 @@ class SnipeEngine:
                 score_breakdown={k: v["weighted"] for k, v in score_result.components.items()},
             )
 
-            result = self.pyramid.execute_wave(1, token_id, implied)
+            result = self.pyramid.execute_wave(
+                1, token_id, implied,
+                score=score_result.total_score,
+                book_data=target_book,  # dict with best_ask, sell_pressure, etc.
+            )
             if result:
                 log.info(
-                    "[SNIPE] GTC FILLED | T-%.0fs | %s %s | $%.2f | %.0f shares @ $%.3f | score=%.0f",
+                    "[SNIPE] FILLED | T-%.0fs | %s %s | $%.2f | %.0f shares @ $%.3f | score=%.0f",
                     remaining, window.asset.upper(), direction.upper(),
                     result.size_usd, result.shares, result.price, score_result.total_score,
                 )
                 self._state = SnipeState.EXECUTING
                 self._executing_since = time.time()
                 self.window_tracker.mark_traded(window.market_id)
-                log.info("[SNIPE] TRACKING -> EXECUTING (GTC filled)")
+                log.info("[SNIPE] TRACKING -> EXECUTING (filled)")
                 return
             elif self.pyramid.has_pending_order:
                 self._state = SnipeState.ARMED
                 self.window_tracker.mark_traded(window.market_id)
-                log.info("[SNIPE] TRACKING -> ARMED (GTC resting, score=%.0f)", score_result.total_score)
+                log.info("[SNIPE] TRACKING -> ARMED (resting, score=%.0f)", score_result.total_score)
                 return
             else:
-                log.warning("[SNIPE] GTC failed on %s — trying next", window.asset.upper())
+                log.warning("[SNIPE] Order failed on %s — trying next", window.asset.upper())
                 self.pyramid.close_position()
                 continue
 

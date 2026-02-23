@@ -1,13 +1,10 @@
-"""Snipe Executor — GTC LIMIT orders on CLOB for snipe trades.
+"""Snipe Executor — Aggressive taker logic for thin 5-minute binary books.
 
-Strategy: Place GTC (Good Till Cancelled) LIMIT BUY orders at $0.65.
-Unlike FAK (Fill and Kill), GTC orders rest on the book when liquidity is thin.
-This matches the whale approach (Feisty-Garage: LIMIT at $0.62-$0.63).
-
-Benefits over FAK:
-  - Survives empty order books (rests as a bid, attracts sellers)
-  - Zero taker fees (maker order) + earns maker rebates
-  - Gets filled at resting sell prices (often cheaper than our limit)
+Strategy:
+  - Score >= 75 (high conviction): FOK at best_ask + 3c (cross the spread)
+  - Score 65-74 (moderate): GTC at best_ask + 1c (mild taker, can rest)
+  - Dynamic sizing: min(desired, 60% of ask-side liquidity)
+  - Falls back to GTC at price cap if no book data available
 """
 from __future__ import annotations
 
@@ -23,12 +20,16 @@ log = logging.getLogger("garves.snipe")
 
 SNIPE_TRADES_FILE = Path(__file__).parent.parent.parent / "data" / "snipe_trades.jsonl"
 
-# GTC LIMIT order config
-# Price cap $0.65: whale range ($0.62-$0.63), sweeps book up to this price
-# Entry at T-120s: direction confirmed, book still has liquidity
+# Wave config: (wave_num, budget_fraction, price_cap, fire_below_seconds)
 WAVES = [
-    (1, 1.00, 0.65, 120),   # GTC LIMIT: 100% budget, $0.65 cap, T-120s
+    (1, 1.00, 0.72, 120),   # 100% budget, $0.72 cap (raised for taker fills), T-120s
 ]
+
+# Taker premium by conviction tier
+TAKER_PREMIUM_HIGH = 0.03   # Score >= 75: cross spread by 3 cents
+TAKER_PREMIUM_MOD = 0.01    # Score 65-74: cross spread by 1 cent
+HIGH_CONVICTION_SCORE = 75  # Threshold for aggressive IOC/FOK execution
+LIQUIDITY_CAP_PCT = 0.60    # Max 60% of available ask-side liquidity
 
 
 @dataclass
@@ -125,24 +126,59 @@ class PyramidExecutor:
         wave_num: int,
         token_id: str,
         implied_price: float,
+        score: float = 0.0,
+        book_data: dict | None = None,
     ) -> WaveResult | None:
-        """Execute a single wave — places GTC LIMIT order."""
+        """Execute a single wave with aggressive taker logic for thin books.
+
+        Args:
+            score: v7 conviction score (0-100) — determines aggressiveness
+            book_data: CLOB orderbook dict with 'asks' list for liquidity check
+        """
         if not self._active_position:
             return None
 
         _, budget_frac, price_cap, _ = WAVES[wave_num - 1]
         size_usd = self._budget * budget_frac
 
-        price = price_cap
+        # ── Determine price from book + conviction ──
+        best_ask = self._get_best_ask(book_data)
+        ask_depth_shares = self._get_ask_depth(book_data, price_cap)
+        is_high_conviction = score >= HIGH_CONVICTION_SCORE
+
+        if best_ask and best_ask < price_cap:
+            premium = TAKER_PREMIUM_HIGH if is_high_conviction else TAKER_PREMIUM_MOD
+            price = min(price_cap, round(best_ask + premium, 2))
+        else:
+            price = price_cap
+
         price = max(0.01, min(0.99, round(price, 2)))
         shares = int(size_usd / price)
+
+        # ── Dynamic sizing: cap at 60% of ask-side liquidity ──
+        if ask_depth_shares > 0 and shares > ask_depth_shares * LIQUIDITY_CAP_PCT:
+            capped_shares = max(1, int(ask_depth_shares * LIQUIDITY_CAP_PCT))
+            log.info(
+                "[SNIPE EXEC] Liquidity cap: %d -> %d shares (book has %d on ask side)",
+                shares, capped_shares, ask_depth_shares,
+            )
+            shares = capped_shares
+            size_usd = round(shares * price, 2)
+
+        order_type = "FOK" if is_high_conviction else "GTC"
+        log.info(
+            "[SNIPE EXEC] Score: %.0f | Book depth: %d shares | Best ask: $%.3f | "
+            "Order: %s @ $%.3f | Size: %d shares ($%.2f)",
+            score, ask_depth_shares, best_ask or 0,
+            order_type, price, shares, size_usd,
+        )
 
         t0 = time.time()
         if self._dry_run:
             order_id = f"snipe-dry-w{wave_num}-{int(time.time())}"
             log.info(
-                "[SNIPE][DRY] GTC Wave %d: %s %.1f shares @ $%.3f ($%.2f) | %s",
-                wave_num, self._active_position.direction.upper(),
+                "[SNIPE][DRY] %s Wave %d: %s %.1f shares @ $%.3f ($%.2f) | %s",
+                order_type, wave_num, self._active_position.direction.upper(),
                 shares, price, size_usd, order_id,
             )
             result = WaveResult(
@@ -159,11 +195,53 @@ class PyramidExecutor:
             self._record_latency(t0)
             return result
         else:
-            result = self._place_gtc_order(wave_num, token_id, price, shares, size_usd)
+            result = self._place_order(
+                wave_num, token_id, price, shares, size_usd,
+                use_fok=is_high_conviction,
+            )
             self._record_latency(t0)
             if result:
                 self._record_fill(result)
+                log.info("[SNIPE EXEC] Filled: YES | %s | %.0f shares @ $%.3f", order_type, result.shares, result.price)
+            else:
+                if is_high_conviction and not self._pending_order_id:
+                    # FOK failed (no liquidity) — retry as GTC to rest on book
+                    log.info("[SNIPE EXEC] FOK failed, falling back to GTC resting")
+                    result = self._place_order(
+                        wave_num, token_id, price, shares, size_usd,
+                        use_fok=False,
+                    )
+                    if result:
+                        self._record_fill(result)
+                        log.info("[SNIPE EXEC] Filled: YES (GTC fallback) | %.0f shares @ $%.3f", result.shares, result.price)
+                    elif not self._pending_order_id:
+                        log.info("[SNIPE EXEC] Filled: NO | book too thin for %s", order_type)
+                else:
+                    log.info("[SNIPE EXEC] Filled: NO (resting as GTC)")
             return result
+
+    @staticmethod
+    def _get_best_ask(book_data: dict | None) -> float | None:
+        """Extract best ask price from CLOB book metrics."""
+        if not book_data:
+            return None
+        best_ask = book_data.get("best_ask", 0)
+        return best_ask if best_ask > 0 else None
+
+    @staticmethod
+    def _get_ask_depth(book_data: dict | None, max_price: float) -> int:
+        """Estimate ask-side depth in shares from sell_pressure metric.
+
+        sell_pressure = sum(price * size) for top 5 levels.
+        We estimate shares = sell_pressure / avg_price.
+        """
+        if not book_data:
+            return 0
+        sell_pressure = book_data.get("sell_pressure", 0)
+        best_ask = book_data.get("best_ask", 0)
+        if sell_pressure <= 0 or best_ask <= 0:
+            return 0
+        return int(sell_pressure / best_ask)
 
     def _record_fill(self, result: WaveResult) -> None:
         """Record a fill in the active position."""
@@ -181,24 +259,25 @@ class PyramidExecutor:
             self._active_position.total_shares, self._active_position.avg_entry,
         )
 
-    def _place_gtc_order(
+    def _place_order(
         self,
         wave_num: int,
         token_id: str,
         price: float,
         shares: float,
         size_usd: float,
+        use_fok: bool = False,
     ) -> WaveResult | None:
-        """Place a GTC LIMIT order on CLOB.
+        """Place order on CLOB — FOK for high conviction, GTC otherwise.
 
-        GTC sweeps existing sells up to our price, then rests the remainder as a bid.
-        Fills at resting sell prices (often cheaper than our limit).
-        Zero taker fees as maker + earns rebates.
+        FOK (Fill or Kill): entire order fills immediately or cancels.
+        GTC: sweeps existing asks, rests remainder as a bid.
         """
         if not self._client:
             log.error("[SNIPE] No CLOB client for live order")
             return None
 
+        order_type_label = "FOK" if use_fok else "GTC"
         try:
             from py_clob_client.clob_types import OrderArgs, OrderType
             from py_clob_client.order_builder.constants import BUY
@@ -210,23 +289,23 @@ class PyramidExecutor:
                 token_id=token_id,
             )
             signed_order = self._client.create_order(order_args)
-            resp = self._client.post_order(signed_order, OrderType.GTC)
+            clob_type = OrderType.FOK if use_fok else OrderType.GTC
+            resp = self._client.post_order(signed_order, clob_type)
             order_id = resp.get("orderID") or resp.get("id", "unknown")
             status = resp.get("status", "")
 
-            log.info("[SNIPE] CLOB GTC response: %s", json.dumps(resp)[:500])
+            log.info("[SNIPE] CLOB %s response: %s", order_type_label, json.dumps(resp)[:500])
 
             if status.lower() in ("matched", "filled"):
-                # Parse fill data only for filled orders
                 actual_shares, actual_price, actual_size = self._parse_fill_data(
                     resp, shares, price, size_usd
                 )
                 if actual_shares < 1:
-                    log.warning("[SNIPE] GTC near-zero fill: %.2f shares | %s", actual_shares, order_id)
+                    log.warning("[SNIPE] %s near-zero fill: %.2f shares | %s", order_type_label, actual_shares, order_id)
                     return None
                 log.info(
-                    "[SNIPE][LIVE] GTC FILLED: %s %.1f shares @ $%.3f ($%.2f) | %s",
-                    self._active_position.direction.upper(),
+                    "[SNIPE][LIVE] %s FILLED: %s %.1f shares @ $%.3f ($%.2f) | %s",
+                    order_type_label, self._active_position.direction.upper(),
                     actual_shares, actual_price, actual_size, order_id,
                 )
                 self._pending_order_id = None
@@ -245,7 +324,6 @@ class PyramidExecutor:
                 self._pending_order_id = order_id
                 self._pending_token_id = token_id
 
-                # Check for partial immediate fills
                 taking = resp.get("takingAmount") or ""
                 making = resp.get("makingAmount") or ""
                 if taking and making:
@@ -254,8 +332,8 @@ class PyramidExecutor:
                     partial_price = partial_size / partial_shares if partial_shares > 0 else price
                     if partial_shares >= 1:
                         log.info(
-                            "[SNIPE][LIVE] GTC PARTIAL: %.1f/%d shares @ $%.3f + resting | %s",
-                            partial_shares, shares, partial_price, order_id,
+                            "[SNIPE][LIVE] %s PARTIAL: %.1f/%d shares @ $%.3f + resting | %s",
+                            order_type_label, partial_shares, shares, partial_price, order_id,
                         )
                         return WaveResult(
                             wave_num=wave_num,
@@ -269,17 +347,17 @@ class PyramidExecutor:
                         )
 
                 log.info(
-                    "[SNIPE] GTC RESTING at $%.3f (%d shares) | %s",
-                    price, shares, order_id,
+                    "[SNIPE] %s RESTING at $%.3f (%d shares) | %s",
+                    order_type_label, price, shares, order_id,
                 )
                 return None
 
             else:
-                log.warning("[SNIPE] GTC unexpected status: %s | %s", status, order_id)
+                log.warning("[SNIPE] %s unexpected status: %s | %s", order_type_label, status, order_id)
                 return None
 
         except Exception as e:
-            log.error("[SNIPE] GTC order failed (wave %d): %s", wave_num, str(e)[:200])
+            log.error("[SNIPE] %s order failed (wave %d): %s", order_type_label, wave_num, str(e)[:200])
             return None
 
     def _parse_fill_data(
