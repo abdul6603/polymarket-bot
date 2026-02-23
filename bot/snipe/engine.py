@@ -433,29 +433,28 @@ class SnipeEngine:
             token_id = window.up_token_id if direction == "up" else window.down_token_id
             opp_token_id = window.down_token_id if direction == "up" else window.up_token_id
 
-            # Fetch CLOB implied price (5m market)
-            implied = self._fetch_implied_price(window.market_id, token_id)
-
             # Compute max price cap from pyramid wave schedule
             max_cap = WAVES[0][2]
             for _, _, cap, fire_below in WAVES:
                 if remaining <= fire_below:
                     max_cap = cap
 
-            # When ignition bypassed (5m book dead), relax implied price
-            # checks — actual execution routes to 15m/1h via MTF gate
+            # When ignition bypassed (5m book dead), skip CLOB API calls
+            # — dead books return spread=0.98 every time, just wastes 3-4s
             if slot.ignition_bypassed:
-                implied = implied or 0.50  # Default for dead books
+                implied = 0.50  # Default for dead books
+                target_book = None
+                opp_book = None
             else:
+                implied = self._fetch_implied_price(window.market_id, token_id)
                 if not implied:
                     continue
                 if implied < MIN_IMPLIED_PRICE:
                     continue
                 if implied > max_cap:
                     continue
-
-            target_book = clob_book.get_orderbook(token_id)
-            opp_book = clob_book.get_orderbook(opp_token_id)
+                target_book = clob_book.get_orderbook(token_id)
+                opp_book = clob_book.get_orderbook(opp_token_id)
 
             # Score all 10 components (per-slot scorer for thread safety)
             score_result = slot.scorer.score(
