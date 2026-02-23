@@ -800,6 +800,32 @@ class HawkBot:
                         except Exception:
                             pass
 
+                    # ── Snipe Assist timing gate (crypto-adjacent only, advisory) ──
+                    if category in ("crypto", "cryptocurrency", "crypto_event"):
+                        try:
+                            import json as _json
+                            from pathlib import Path as _Path
+                            _assist_file = _Path(__file__).parent.parent / "data" / "snipe_assist.json"
+                            if _assist_file.exists():
+                                _assist = _json.loads(_assist_file.read_text())
+                                import time as _time
+                                _age = _time.time() - _assist.get("timestamp", 0)
+                                if _age < 120:
+                                    _hawk_ovr = (_assist.get("agent_overrides") or {}).get("hawk", {})
+                                    _ta_action = _hawk_ovr.get("action", _assist.get("action", ""))
+                                    _ta_score = _assist.get("timing_score", 0)
+                                    if _ta_action == "auto_skip" and _ta_score < 65:
+                                        log.info("[SNIPE-ASSIST] AUTO-SKIP crypto market (score=%.0f): %s",
+                                                 _ta_score, opp.market.question[:60])
+                                        continue
+                                    elif _ta_action == "conservative":
+                                        _old = opp.position_size_usd
+                                        opp.position_size_usd *= 0.70
+                                        log.info("[SNIPE-ASSIST] CONSERVATIVE (score=%.0f) $%.2f->$%.2f: %s",
+                                                 _ta_score, _old, opp.position_size_usd, opp.market.question[:60])
+                        except Exception:
+                            pass
+
                     # ── Apply combined learner + brain adjustment ──
                     combined_adj = learner_adj + brain_edge_adj
                     if combined_adj < 0:

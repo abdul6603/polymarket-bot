@@ -38,6 +38,8 @@ from bot.snipe.candle_store import CandleStore
 from bot.snipe.signal_scorer import SignalScorer
 from bot.snipe import clob_book
 from bot.snipe.fill_simulator import estimate_fill
+from bot.snipe.timing_learner import TimingLearner
+from bot.snipe.timing_assistant import TimingAssistant
 
 log = logging.getLogger("garves.snipe")
 
@@ -123,6 +125,10 @@ class SnipeEngine:
 
         self._status_file = Path(__file__).parent.parent.parent / "data" / "snipe_status.json"
         self.enabled = getattr(cfg, "snipe_enabled", True)
+
+        # Timing Assistant — unified timing oracle for all crypto agents
+        self._timing_learner = TimingLearner()
+        self._timing_assistant = TimingAssistant(self._timing_learner)
 
     def _effective_threshold(self) -> float:
         """Dynamic threshold based on CME futures session.
@@ -400,6 +406,16 @@ class SnipeEngine:
                 remaining_s=remaining,
                 implied_price=implied,
             )
+
+            # ── Timing Assistant: evaluate every scored candidate ──
+            self._timing_assistant.evaluate({
+                "score_result": score_result,
+                "clob_book": target_book,
+                "remaining_s": remaining,
+                "direction": direction,
+                "regime": "neutral",
+                "implied_price": implied,
+            })
 
             if not score_result.should_trade:
                 continue  # Score logged by scorer itself
@@ -701,6 +717,22 @@ class SnipeEngine:
             self._consecutive_wins = 0
         self._stats["pnl"] += result.get("pnl_usd", 0)
 
+        # Timing Assistant: record outcome for self-learning
+        try:
+            last_rec = self._timing_assistant.get_last_recommendation()
+            t_score = last_rec.timing_score if last_rec else 0
+            t_size = last_rec.recommended_size_pct if last_rec else 1.0
+            self._timing_assistant.record_outcome(
+                agent="garves_snipe",
+                direction=result.get("direction", ""),
+                won=result.get("won", False),
+                timing_score=t_score,
+                size_pct=t_size,
+                pnl_usd=result.get("pnl_usd", 0.0),
+            )
+        except Exception:
+            pass
+
         # Budget escalation: $50 → $75 after 3 consecutive wins
         if self._consecutive_wins >= 3:
             self.pyramid._budget = self._escalated_budget
@@ -833,5 +865,6 @@ class SnipeEngine:
             "success_rate_50": self._compute_success_rate_50(),
             "avg_latency_ms": self.pyramid.get_avg_latency_ms(),
             "performance": self.pyramid.get_performance_stats(),
+            "timing_assistant": self._timing_assistant.get_status(),
             "timestamp": time.time(),
         }

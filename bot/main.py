@@ -817,6 +817,32 @@ class TradingBot:
                 )
                 continue
 
+            # ── Snipe Assist timing gate (advisory, non-fatal) ──
+            try:
+                import json as _json
+                from pathlib import Path as _Path
+                _assist_file = _Path(__file__).parent.parent / "data" / "snipe_assist.json"
+                if _assist_file.exists():
+                    _assist = _json.loads(_assist_file.read_text())
+                    _age = time.time() - _assist.get("timestamp", 0)
+                    if _age < 120:  # Fresh recommendation (< 2 min)
+                        _ta_action = _assist.get("action", "")
+                        _ta_score = _assist.get("timing_score", 0)
+                        _taker_ovr = (_assist.get("agent_overrides") or {}).get("garves_taker", {})
+                        _ta_action = _taker_ovr.get("action", _ta_action)
+                        if _ta_action == "auto_skip" and _ta_score < 65:
+                            log.info("  -> Snipe Assist: AUTO-SKIP (score=%.0f)", _ta_score)
+                            continue
+                        elif _ta_action == "conservative":
+                            _old_size = conviction.position_size_usd
+                            conviction.position_size_usd *= 0.70
+                            log.info("  -> Snipe Assist: CONSERVATIVE (score=%.0f) $%.2f -> $%.2f",
+                                     _ta_score, _old_size, conviction.position_size_usd)
+                        else:
+                            log.info("  -> Snipe Assist: AUTO-EXECUTE (score=%.0f)", _ta_score)
+            except Exception:
+                pass  # Timing assist is advisory — never block trades on errors
+
             # Risk check (pass actual conviction size, not default $10)
             allowed, reason = check_risk(self.cfg, sig, self.tracker, market_id,
                                          trade_size_usd=conviction.position_size_usd,

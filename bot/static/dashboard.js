@@ -4063,6 +4063,7 @@ async function refresh() {
       loadJournal();
       refreshClobPill();
       refreshSnipeV7();
+      refreshSnipeAssist();
     } else if (currentTab === 'soren') {
       var resp = await fetch('/api/soren');
       renderSoren(await resp.json());
@@ -9470,6 +9471,138 @@ function refreshSnipeV7() {
     if (currentTab === 'garves-live') {
       _snipeV7Timer = setTimeout(refreshSnipeV7, 5000);
     }
+  });
+}
+
+// ── Snipe Assist Live ───────────────────────────────────────
+
+var _snipeAssistTimer = null;
+
+function refreshSnipeAssist() {
+  fetch('/api/snipe-assist/status').then(function(r){ return r.json(); }).then(function(d) {
+    var scoreEl = document.getElementById('sa-timing-score');
+    var dirEl = document.getElementById('sa-direction');
+    var sizeEl = document.getElementById('sa-size-rec');
+    var accEl = document.getElementById('sa-accuracy');
+    var badgeEl = document.getElementById('sa-action-badge');
+    var ageEl = document.getElementById('sa-age');
+    var factorsEl = document.getElementById('sa-factors');
+    var agentsEl = document.getElementById('sa-agents-row');
+    var learnerEl = document.getElementById('sa-learner-footer');
+    var overrideEl = document.getElementById('sa-override-badge');
+
+    if (!scoreEl || !d || d.active === false) {
+      if (scoreEl) scoreEl.textContent = '--';
+      clearTimeout(_snipeAssistTimer);
+      if (currentTab === 'garves-live') _snipeAssistTimer = setTimeout(refreshSnipeAssist, 5000);
+      return;
+    }
+
+    // Timing Score
+    var sc = d.timing_score || 0;
+    scoreEl.textContent = sc.toFixed(0) + '/100';
+    scoreEl.style.color = sc >= 80 ? '#22c55e' : sc >= 65 ? '#eab308' : '#ef4444';
+
+    // Direction
+    var dir = (d.direction || '--').toUpperCase();
+    dirEl.textContent = dir;
+    dirEl.style.color = dir === 'UP' ? '#22c55e' : dir === 'DOWN' ? '#ef4444' : 'var(--text-muted)';
+
+    // Size Rec
+    var sizePct = d.recommended_size_pct || 0;
+    sizeEl.textContent = (sizePct * 100).toFixed(0) + '%';
+    sizeEl.style.color = sizePct >= 1.0 ? '#22c55e' : sizePct >= 0.5 ? '#eab308' : '#ef4444';
+
+    // Accuracy from learner
+    var learner = d.learner || {};
+    if (learner.overall_wr != null) {
+      accEl.textContent = learner.overall_wr.toFixed(1) + '%';
+      accEl.style.color = learner.overall_wr >= 55 ? '#22c55e' : learner.overall_wr >= 45 ? '#eab308' : '#ef4444';
+    } else {
+      accEl.textContent = '--';
+    }
+
+    // Action badge
+    var action = (d.action || 'idle').replace('_', ' ').toUpperCase();
+    badgeEl.textContent = action;
+    if (d.action === 'auto_execute') {
+      badgeEl.style.background = 'rgba(34,197,94,0.2)'; badgeEl.style.color = '#22c55e';
+    } else if (d.action === 'conservative') {
+      badgeEl.style.background = 'rgba(234,179,8,0.2)'; badgeEl.style.color = '#eab308';
+    } else {
+      badgeEl.style.background = 'rgba(239,68,68,0.2)'; badgeEl.style.color = '#ef4444';
+    }
+
+    // Age
+    if (d.age_s != null) {
+      ageEl.textContent = d.stale ? 'STALE (' + d.age_s.toFixed(0) + 's)' : d.age_s.toFixed(0) + 's ago';
+      ageEl.style.color = d.stale ? '#ef4444' : 'var(--text-muted)';
+    }
+
+    // Confidence factors
+    var factors = d.confidence_factors || {};
+    var fhtml = '';
+    var fLabels = {snipe_signal_strength:'Signal(40)',liquidity_quality:'Liquidity(20)',time_positioning:'Timing(15)',regime_alignment:'Regime(10)',historical_accuracy:'History(15)'};
+    var fKeys = ['snipe_signal_strength','liquidity_quality','time_positioning','regime_alignment','historical_accuracy'];
+    for (var i = 0; i < fKeys.length; i++) {
+      var fk = fKeys[i];
+      var fv = factors[fk] || {};
+      var fpct = ((fv.raw || 0) * 100).toFixed(0);
+      var fColor = fpct >= 60 ? '#22c55e' : fpct >= 30 ? '#eab308' : '#ef4444';
+      fhtml += '<div style="display:flex;align-items:center;gap:4px;">' +
+        '<span style="width:80px;text-align:right;color:var(--text-muted);">' + (fLabels[fk] || fk) + '</span>' +
+        '<div style="flex:1;height:5px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">' +
+        '<div style="width:' + fpct + '%;height:100%;background:' + fColor + ';border-radius:3px;"></div></div>' +
+        '<span style="width:24px;font-family:var(--font-mono);">' + (fv.weighted != null ? fv.weighted.toFixed(1) : '--') + '</span></div>';
+    }
+    factorsEl.innerHTML = fhtml;
+
+    // Agent overrides row
+    var overrides = d.agent_overrides || {};
+    var ahtml = '';
+    var agentNames = {garves_snipe:'Garves Snipe',garves_taker:'Garves Taker',odin:'Odin',hawk:'Hawk'};
+    for (var ak in agentNames) {
+      if (!overrides[ak]) continue;
+      var ao = overrides[ak];
+      var aColor = ao.action === 'auto_execute' ? '#22c55e' : ao.action === 'conservative' ? '#eab308' : '#ef4444';
+      ahtml += '<span style="color:' + aColor + ';">' + agentNames[ak] + ': ' + (ao.action || '--').replace('_',' ').toUpperCase() + ' ' + ((ao.size_pct || 0) * 100).toFixed(0) + '%</span>';
+    }
+    agentsEl.innerHTML = ahtml;
+
+    // Learner footer
+    if (learner.total_records > 0) {
+      learnerEl.textContent = 'Learning: ' + learner.resolved + '/' + learner.total_records + ' resolved | ' +
+        (learner.overall_wr != null ? learner.overall_wr.toFixed(1) + '% WR' : 'no data') +
+        ' | PnL $' + (learner.total_pnl || 0).toFixed(2);
+    } else {
+      learnerEl.textContent = 'Learning: no data yet';
+    }
+
+    // Override badge
+    if (d.action === 'auto_execute' || d.action === 'auto_skip') {
+      // Check if it is from override file
+    }
+    overrideEl.style.display = 'none';
+
+    clearTimeout(_snipeAssistTimer);
+    if (currentTab === 'garves-live') _snipeAssistTimer = setTimeout(refreshSnipeAssist, 5000);
+  }).catch(function() {
+    clearTimeout(_snipeAssistTimer);
+    if (currentTab === 'garves-live') _snipeAssistTimer = setTimeout(refreshSnipeAssist, 5000);
+  });
+}
+
+function snipeAssistOverride(action) {
+  fetch('/api/snipe-assist/override', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({action: action, duration_s: 300})
+  }).then(function(r){ return r.json(); }).then(function(d) {
+    if (d.status === 'ok') {
+      refreshSnipeAssist();
+    }
+  }).catch(function(e) {
+    console.warn('Override error:', e);
   });
 }
 

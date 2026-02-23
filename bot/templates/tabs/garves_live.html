@@ -85,6 +85,44 @@
     <div id="snipe-perf-stats" style="font-size:0.78rem;"></div>
   </div>
 
+  <!-- ═══ Snipe Assist Live — Entry Timing Oracle ═══ -->
+  <div class="glass-card" style="padding:10px 14px;margin-bottom:12px;border-left:3px solid #a855f7;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <div style="font-weight:700;font-size:0.76rem;">Snipe Assist Live</div>
+      <div id="sa-override-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;display:none;"></div>
+    </div>
+    <div class="grid-4" style="margin-bottom:8px;">
+      <div class="stat-card" style="border-left:3px solid #a855f7;">
+        <div class="stat-value" id="sa-timing-score" style="font-size:1.3rem;color:#a855f7;">--</div>
+        <div class="stat-label">Timing Score</div>
+      </div>
+      <div class="stat-card" style="border-left:3px solid #06b6d4;">
+        <div class="stat-value" id="sa-direction" style="font-size:1.3rem;">--</div>
+        <div class="stat-label">Direction</div>
+      </div>
+      <div class="stat-card" style="border-left:3px solid #22c55e;">
+        <div class="stat-value" id="sa-size-rec" style="font-size:1.3rem;">--</div>
+        <div class="stat-label">Size Rec</div>
+      </div>
+      <div class="stat-card" style="border-left:3px solid #eab308;">
+        <div class="stat-value" id="sa-accuracy" style="font-size:1.3rem;">--</div>
+        <div class="stat-label">Accuracy (50)</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <div id="sa-action-badge" style="font-size:0.72rem;font-weight:700;padding:3px 12px;border-radius:6px;background:rgba(255,255,255,0.06);">--</div>
+      <span id="sa-age" style="font-size:0.62rem;color:var(--text-muted);"></span>
+      <div style="margin-left:auto;display:flex;gap:6px;">
+        <button onclick="snipeAssistOverride('force_execute')" style="font-size:0.64rem;padding:3px 8px;border:1px solid #22c55e;border-radius:4px;background:rgba(34,197,94,0.1);color:#22c55e;cursor:pointer;">Force Execute</button>
+        <button onclick="snipeAssistOverride('force_skip')" style="font-size:0.64rem;padding:3px 8px;border:1px solid #ef4444;border-radius:4px;background:rgba(239,68,68,0.1);color:#ef4444;cursor:pointer;">Force Skip</button>
+        <button onclick="snipeAssistOverride('clear')" style="font-size:0.64rem;padding:3px 8px;border:1px solid #888;border-radius:4px;background:rgba(255,255,255,0.05);color:#888;cursor:pointer;">Clear</button>
+      </div>
+    </div>
+    <div id="sa-factors" style="display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;font-size:0.66rem;margin-bottom:6px;"></div>
+    <div id="sa-agents-row" style="display:flex;gap:12px;font-size:0.64rem;color:var(--text-muted);margin-bottom:4px;"></div>
+    <div id="sa-learner-footer" style="font-size:0.62rem;color:var(--text-muted);"></div>
+  </div>
+
   <!-- Hero cards: Portfolio, Cash, Real PnL -->
   <div class="grid-3" style="margin-bottom:12px;">
     <div class="stat-card" data-accent="success" style="border-left:3px solid var(--success);">
