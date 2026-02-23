@@ -90,9 +90,13 @@ class HawkExecutor:
             return None
 
     def check_fills(self) -> None:
-        """Poll order status."""
+        """Poll order status — only remove unfilled/dead orders.
+
+        On Polymarket CLOB, "matched" means filled and active (we own tokens).
+        These stay open until the MARKET resolves (handled by resolver.py).
+        Only remove canceled/expired orders that never filled.
+        """
         if self.cfg.dry_run:
-            # Paper trades stay open until market resolves (handled by resolver.py)
             return
 
         if not self.client:
@@ -102,8 +106,9 @@ class HawkExecutor:
             try:
                 order = self.client.get_order(pos["order_id"])
                 status = order.get("status", "").lower()
-                if status in ("matched", "filled", "canceled", "expired"):
-                    log.info("Order %s status: %s", pos["order_id"], status)
+                log.info("Order %s status: %s", pos["order_id"], status)
+                if status in ("canceled", "expired"):
+                    log.info("Removing dead order %s (status=%s)", pos["order_id"], status)
                     self.tracker.remove_position(pos["order_id"])
             except Exception:
                 log.debug("Could not check order %s", pos.get("order_id", "?"))
