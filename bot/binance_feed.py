@@ -89,14 +89,23 @@ class BinanceFeed:
 
     async def _connect(self) -> None:
         log.info("Connecting to Binance WS: %s", self._url[:80])
-        async with websockets.connect(self._url, ping_interval=20, open_timeout=30) as ws:
+        async with websockets.connect(
+            self._url, ping_interval=20, ping_timeout=10,
+            open_timeout=30, close_timeout=5,
+        ) as ws:
             self._ws = ws
+            self._last_msg_ts = time.time()
             log.info("Binance WebSocket connected (trade + depth5)")
             try:
                 async for raw in ws:
+                    self._last_msg_ts = time.time()
                     self._handle_message(raw)
+                    # Stale watchdog: if no message for 60s, force reconnect
+                    if time.time() - self._last_msg_ts > 60:
+                        log.warning("Binance WS stale (>60s no data), forcing reconnect")
+                        break
             except ConnectionClosed:
-                log.warning("Binance WS connection closed")
+                log.warning("Binance WS connection closed, will reconnect")
 
     def _handle_message(self, raw: str) -> None:
         try:

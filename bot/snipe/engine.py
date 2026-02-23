@@ -276,16 +276,22 @@ class SnipeEngine:
                 self._candle_store.feed_tick(asset, price)
 
         # Phase 2: Tick all 4 asset slots in PARALLEL (the heavy part — CLOB calls)
-        futures = {}
-        for asset, slot in self._slots.items():
-            futures[self._tick_pool.submit(self._tick_slot, slot)] = asset
+        try:
+            futures = {}
+            for asset, slot in self._slots.items():
+                futures[self._tick_pool.submit(self._tick_slot, slot)] = asset
 
-        for future in as_completed(futures, timeout=15):
-            try:
-                future.result()
-            except Exception as e:
-                asset = futures[future]
-                log.warning("[SNIPE] %s tick error: %s", asset.upper(), str(e)[:150])
+            for future in as_completed(futures, timeout=15):
+                try:
+                    future.result()
+                except Exception as e:
+                    asset = futures[future]
+                    log.warning("[SNIPE] %s tick error: %s", asset.upper(), str(e)[:150])
+        except RuntimeError:
+            # ThreadPoolExecutor shut down — recreate it
+            log.warning("[SNIPE] ThreadPool died, recreating")
+            self._tick_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="snipe-tick")
+            return
 
         # Phase 3: Collect scores and evaluate correlation
         tick_scores: dict[str, tuple[str, float]] = {}
