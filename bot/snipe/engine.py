@@ -463,8 +463,8 @@ class SnipeEngine:
         # Paper mode: resolve using BTC price comparison
         if self._dry_run and self.pyramid.has_active_position:
             live_btc = self._fetch_btc_price()
-            if live_btc and self.pyramid._position:
-                open_price = self.pyramid._position.open_price
+            if live_btc and self.pyramid._active_position:
+                open_price = self.pyramid._active_position.open_price
                 delta = (live_btc - open_price) / open_price if open_price > 0 else 0
                 resolved_dir = "up" if delta > 0 else "down"
                 result = self.pyramid.close_position(resolved_dir)
