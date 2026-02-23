@@ -101,6 +101,7 @@ class AssetSlot:
     liquidity_monitor_start: float = 0.0
     initial_spread: float = 0.98
     ignition_failures: dict = field(default_factory=dict)
+    ignition_bypassed: bool = False  # True when 5m book dead, scoring proceeds via MTF
     cooldown_until: float = 0.0
     executing_since: float = 0.0
     last_score: float = 0.0
@@ -287,6 +288,7 @@ class SnipeEngine:
                     self._delta_signals[slot.asset].reset()
                 self._scorer.reset_spread_history()
                 slot.liquidity_ignited = False
+                slot.ignition_bypassed = False
                 slot.liquidity_monitor_start = time.time()
                 slot.initial_spread = 0.98
                 slot.last_score = 0.0
@@ -338,22 +340,13 @@ class SnipeEngine:
                 candidates[0][2] * 100,
             )
 
-        # Liquidity Seeker gate
-        if not slot.liquidity_ignited:
+        # Liquidity Seeker gate — try to detect 5m CLOB ignition,
+        # but don't block scoring. v8 routes to 15m/1h via MTF gate.
+        if not slot.liquidity_ignited and not slot.ignition_bypassed:
             best_w, best_p, best_d, best_r = candidates[0]
             if abs(best_d) >= DELTA_CONFIRM_THRESHOLD:
                 direction = "up" if best_d > 0 else "down"
                 liq_token = best_w.up_token_id if direction == "up" else best_w.down_token_id
-
-                if slot.ignition_failures.get(liq_token, 0) >= 4:
-                    log.info(
-                        "[IGNITION] %s: Skipping %s — %d consecutive dead windows",
-                        asset.upper(), liq_token[:16],
-                        slot.ignition_failures[liq_token],
-                    )
-                    slot.state = SnipeState.IDLE
-                    slot.liquidity_monitor_start = 0
-                    return
 
                 liq_book = clob_book.get_orderbook(liq_token)
                 if self._check_liquidity_ignition(liq_book, slot):
@@ -362,18 +355,22 @@ class SnipeEngine:
 
             if not slot.liquidity_ignited:
                 elapsed = time.time() - slot.liquidity_monitor_start
-                if elapsed > LIQ_MONITOR_S:
+                # 30s grace period — then bypass to scoring (MTF will route to 15m/1h)
+                if elapsed > 30:
                     if candidates:
                         best_w = candidates[0][0]
                         best_d = candidates[0][2]
-                        direction = "up" if best_d > 0 else "down"
-                        fail_token = best_w.up_token_id if direction == "up" else best_w.down_token_id
+                        dir_str = "up" if best_d > 0 else "down"
+                        fail_token = best_w.up_token_id if dir_str == "up" else best_w.down_token_id
                         slot.ignition_failures[fail_token] = slot.ignition_failures.get(fail_token, 0) + 1
-                    log.info("[IGNITION] %s: No ignition after %.0fs — skipping", asset.upper(), elapsed)
-                    slot.state = SnipeState.IDLE
-                    slot.liquidity_monitor_start = 0
-                    return
-                return  # Keep monitoring
+                    slot.ignition_bypassed = True  # Don't re-check, proceed to scoring
+                    log.info(
+                        "[IGNITION] %s: No 5m ignition after %.0fs — bypassing to scorer (MTF route)",
+                        asset.upper(), elapsed,
+                    )
+                    # Fall through to scoring below
+                else:
+                    return  # Keep monitoring ignition (first 30s)
 
         # Gather Binance L2 data
         ob_signal = self._orderbook.get_signal(asset) if self._orderbook.is_connected else None
@@ -386,8 +383,9 @@ class SnipeEngine:
         from bot.snipe.pyramid_executor import WAVES
 
         for window, price, delta, remaining in candidates:
-            # Timing guard
-            if remaining > (240 if slot.liquidity_ignited else 180) or remaining < 5:
+            # Timing guard — allow more time when ignition bypassed (scoring via MTF)
+            max_remaining = 240 if (slot.liquidity_ignited or slot.ignition_bypassed) else 180
+            if remaining > max_remaining or remaining < 5:
                 continue
 
             # Track delta direction
@@ -411,20 +409,26 @@ class SnipeEngine:
             token_id = window.up_token_id if direction == "up" else window.down_token_id
             opp_token_id = window.down_token_id if direction == "up" else window.up_token_id
 
-            # Fetch CLOB implied price
+            # Fetch CLOB implied price (5m market)
             implied = self._fetch_implied_price(window.market_id, token_id)
-            if not implied:
-                continue
 
-            if implied < MIN_IMPLIED_PRICE:
-                continue
-
+            # Compute max price cap from pyramid wave schedule
             max_cap = WAVES[0][2]
             for _, _, cap, fire_below in WAVES:
                 if remaining <= fire_below:
                     max_cap = cap
-            if implied > max_cap:
-                continue
+
+            # When ignition bypassed (5m book dead), relax implied price
+            # checks — actual execution routes to 15m/1h via MTF gate
+            if slot.ignition_bypassed:
+                implied = implied or 0.50  # Default for dead books
+            else:
+                if not implied:
+                    continue
+                if implied < MIN_IMPLIED_PRICE:
+                    continue
+                if implied > max_cap:
+                    continue
 
             target_book = clob_book.get_orderbook(token_id)
             opp_book = clob_book.get_orderbook(opp_token_id)
@@ -490,13 +494,18 @@ class SnipeEngine:
                     asset.upper(), exec_timeframe, exec_market_id[:16],
                 )
             elif not mtf_result.confirmed:
+                if slot.ignition_bypassed:
+                    # 5m book dead AND MTF rejected — no viable execution venue
+                    log.info(
+                        "[SNIPE] %s: MTF rejected (%s) + 5m dead — no execution venue, skipping",
+                        asset.upper(), mtf_result.strength,
+                    )
+                    continue
                 # MTF gate rejected — fall back to 5m execution (existing behavior)
                 log.info(
                     "[SNIPE] %s: MTF not confirmed (%s) — falling back to 5m execution",
                     asset.upper(), mtf_result.strength,
                 )
-                # Still execute on 5m if score is high enough
-                # (preserves existing behavior for dead 15m markets)
 
             # Check max concurrent positions
             if self._active_position_count() >= MAX_CONCURRENT_POSITIONS:
