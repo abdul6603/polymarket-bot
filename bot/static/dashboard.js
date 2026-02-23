@@ -9423,6 +9423,24 @@ function refreshSnipeV7() {
       }
     }
 
+    // Price Freshness warning
+    var freshEl = document.getElementById('snipe-price-freshness');
+    var freshness = d.price_freshness;
+    if (freshEl && freshness) {
+      var staleAssets = [];
+      for (var a in freshness) {
+        if (freshness[a].stale) staleAssets.push(a.toUpperCase() + ' (' + freshness[a].age_s + 's, ' + freshness[a].source + ')');
+      }
+      if (staleAssets.length > 0) {
+        freshEl.style.display = 'block';
+        freshEl.innerHTML = '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;' +
+          'background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:6px;margin-bottom:8px;">' +
+          '<span style="color:#ef4444;font-size:0.85em;">Stale Prices: ' + staleAssets.join(', ') + '</span></div>';
+      } else {
+        freshEl.style.display = 'none';
+      }
+    }
+
     // Signal Score card (last scorer result)
     var scorer = d.scorer || {};
     var scoreEl = document.getElementById('snipe-signal-score');

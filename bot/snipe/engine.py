@@ -248,12 +248,23 @@ class SnipeEngine:
         """Single tick — feed candles, then tick all 4 asset slots in parallel."""
         tick_start = time.time()
 
-        # Phase 1: Fetch prices from WS-fed PriceCache (instant), REST only if stale
+        # Phase 1: Fetch prices — WS cache first, REST fallback if stale (>10s)
         self._live_prices: dict[str, float] = {}
+        self._price_sources: dict[str, str] = {}
+        stale_threshold = 10.0
         for asset in ASSETS:
-            price = self._cache.get_price(asset)
-            if not price:
-                price = self._fetch_live_price(asset)  # REST fallback
+            age = self._cache.get_price_age(asset)
+            if age <= stale_threshold:
+                price = self._cache.get_price(asset)
+                self._price_sources[asset] = "ws"
+            else:
+                price = self._fetch_live_price(asset)
+                self._price_sources[asset] = "rest"
+                if age < float("inf"):
+                    log.warning(
+                        "[PRICE] %s: PriceCache stale (%.1fs old) — REST fallback",
+                        asset.upper(), age,
+                    )
             if price:
                 self._live_prices[asset] = price
                 self._candle_store.feed_tick(asset, price)
@@ -1041,6 +1052,14 @@ class SnipeEngine:
             "scorer": self._scorer.get_status(),  # Legacy global scorer status
             "candles": self._candle_store.get_status(),
             "candle_warmup": self._candle_store.get_warmup_status(),
+            "price_freshness": {
+                asset: {
+                    "age_s": round(self._cache.get_price_age(asset), 1),
+                    "source": getattr(self, "_price_sources", {}).get(asset, "unknown"),
+                    "stale": self._cache.get_price_age(asset) > 10.0,
+                }
+                for asset in ASSETS
+            },
             "success_rate_50": self._compute_success_rate_50(),
             "avg_latency_ms": avg_latency,
             "performance": performance,

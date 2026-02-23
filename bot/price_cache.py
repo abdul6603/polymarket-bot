@@ -36,6 +36,8 @@ class PriceCache:
         self._current_minute: dict[str, int] = {}
         # asset -> latest tick price
         self._latest_price: dict[str, float] = {}
+        # asset -> timestamp of latest price update (epoch seconds)
+        self._latest_ts: dict[str, float] = {}
         # Order flow delta tracking: buy vs sell volume (rolling window)
         self._buy_volume: dict[str, deque[float]] = {}   # per-minute buy vol
         self._sell_volume: dict[str, deque[float]] = {}   # per-minute sell vol
@@ -53,8 +55,9 @@ class PriceCache:
             # Only load the most recent candles up to maxlen
             recent = candles[-self._maxlen:]
             self._candles[asset] = deque(recent, maxlen=self._maxlen)
-            # Set latest price from the last candle
+            # Set latest price from the last candle (marked with candle timestamp)
             self._latest_price[asset] = recent[-1].close
+            self._latest_ts[asset] = recent[-1].timestamp
             self._prev_price[asset] = recent[-1].close
             log.info("Preloaded %d candles for %s from disk", len(recent), asset)
 
@@ -66,6 +69,7 @@ class PriceCache:
         is_buy = price >= prev if prev is not None else True
 
         self._latest_price[asset] = price
+        self._latest_ts[asset] = timestamp
         minute = int(timestamp // 60)
 
         if asset not in self._current_minute:
@@ -135,6 +139,24 @@ class PriceCache:
     def get_price(self, asset: str) -> float | None:
         """Return the latest spot price for an asset."""
         return self._latest_price.get(asset)
+
+    def get_price_age(self, asset: str) -> float:
+        """Return age in seconds of the latest price for an asset.
+
+        Returns float('inf') if no price has ever been recorded.
+        """
+        ts = self._latest_ts.get(asset)
+        if ts is None:
+            return float("inf")
+        return time.time() - ts
+
+    def get_price_freshness(self) -> dict[str, float]:
+        """Return age in seconds for all assets. Used by dashboard."""
+        now = time.time()
+        return {
+            asset: now - ts if ts else float("inf")
+            for asset, ts in self._latest_ts.items()
+        }
 
     def get_order_flow(self, asset: str, window: int = 30) -> tuple[float, float]:
         """Return (total_buy_volume, total_sell_volume) over last N minutes."""
