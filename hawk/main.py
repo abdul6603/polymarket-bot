@@ -16,7 +16,6 @@ from hawk.executor import HawkExecutor
 from hawk.tracker import HawkTracker
 from hawk.risk import HawkRiskManager
 from hawk.resolver import resolve_paper_trades
-from hawk.briefing import generate_briefing
 from hawk.learner import record_trade_outcome, get_dimension_adjustments
 
 log = logging.getLogger(__name__)
@@ -449,13 +448,13 @@ class HawkBot:
                 # 3. V2: Urgency-weighted ranking (ending-soon first)
                 ranked_markets = _urgency_rank(contested)
 
-                # Split: ALL sports + weather get analyzed ($0 cost),
-                # only cap non-sports at 30 to control LLM costs
+                # V7: All categories analyzed ($0 cost — all data-driven)
+                # Cap non-sports at 30 to limit cross-platform API calls
                 sports_markets = [m for m in ranked_markets if m.category == "sports"]
                 weather_markets = [m for m in ranked_markets if m.category == "weather"]
                 non_sports_markets = [m for m in ranked_markets if m.category not in ("sports", "weather")]
                 target_markets = sports_markets + weather_markets + non_sports_markets[:30]
-                log.info("Analyzing %d markets: %d sports ($0) + %d weather ($0) + %d/%d non-sports (local LLM)",
+                log.info("V7 Analyzing %d markets: %d sports + %d weather + %d/%d non-sports (all $0)",
                          len(target_markets), len(sports_markets), len(weather_markets),
                          min(len(non_sports_markets), 30), len(non_sports_markets))
 
@@ -509,19 +508,6 @@ class HawkBot:
                         "edge_source": o.estimate.edge_source,
                     })
                 _save_opportunities(opp_data)
-
-                # V6: Briefing gated by config flag (default OFF)
-                if self.cfg.viper_briefing_enabled:
-                    try:
-                        all_market_data = [{
-                            "question": m.question[:200],
-                            "condition_id": m.condition_id,
-                            "category": m.category,
-                            "volume": m.volume,
-                        } for m in target_markets]
-                        generate_briefing(all_market_data if not opp_data else opp_data, self.cycle)
-                    except Exception:
-                        log.exception("Failed to generate Hawk briefing")
 
                 # 6. Build suggestions + auto-execute in single pass (one risk check per opp)
                 # ML scoring — predict win probability with XGBoost
@@ -836,12 +822,33 @@ class HawkBot:
                                      effective_edge * 100, self.cfg.min_edge * 100, opp.market.question[:60])
                             continue
 
-                    # Only bet with real data-backed edge (sportsbook, weather, or live score shift)
+                    # V7: Only bet with real data-backed edge
+                    _ALLOWED_EDGE_SOURCES = {
+                        "sportsbook_divergence", "weather_model",
+                        "live_score_shift", "cross_platform",
+                    }
                     _esrc = (opp.estimate.edge_source or "").lower()
-                    if _esrc not in ("sportsbook_divergence", "weather_model", "live_score_shift"):
-                        log.info("[FILTER] Blocked %s edge source (need sportsbook/weather/live data): %s",
+                    if _esrc not in _ALLOWED_EDGE_SOURCES:
+                        log.info("[FILTER] Blocked %s edge source (need data-backed): %s",
                                  _esrc, opp.market.question[:60])
                         continue
+
+                    # V7: VPIN toxicity check — detect informed flow
+                    try:
+                        from hawk.vpin import compute_vpin
+                        _vpin = compute_vpin(opp.market.condition_id)
+                        if _vpin.recommendation == "block":
+                            log.info("[VPIN] BLOCKED: VPIN=%.4f (%s) | %s",
+                                     _vpin.vpin, _vpin.toxicity, opp.market.question[:60])
+                            continue
+                        if _vpin.size_multiplier < 1.0:
+                            old_sz = opp.position_size_usd
+                            opp.position_size_usd = round(opp.position_size_usd * _vpin.size_multiplier, 2)
+                            log.info("[VPIN] Size reduced: $%.2f -> $%.2f (VPIN=%.4f %s) | %s",
+                                     old_sz, opp.position_size_usd, _vpin.vpin,
+                                     _vpin.toxicity, opp.market.question[:60])
+                    except Exception:
+                        log.debug("[VPIN] Check failed (non-fatal)")
 
                     # V6: Atlas pre-bet gate — check alignment before execution
                     atlas_mult, atlas_reason = self._check_atlas_alignment(opp)
@@ -867,6 +874,19 @@ class HawkBot:
                             log.info("TRADE PLACED: %s %s | $%.2f | edge=%.1f%%%s | %s",
                                      opp.direction.upper(), opp.market.question[:60],
                                      opp.position_size_usd, opp.edge * 100, adj_tag, order_id)
+                            # V7: CLV tracking — record entry price
+                            try:
+                                from hawk.clv import record_entry
+                                record_entry(
+                                    condition_id=opp.market.condition_id,
+                                    token_id=opp.token_id,
+                                    direction=opp.direction.upper(),
+                                    entry_price=opp.entry_price if hasattr(opp, 'entry_price') else _get_yes_price(opp.market),
+                                    question=opp.market.question,
+                                )
+                            except Exception:
+                                log.debug("[CLV] Entry recording failed (non-fatal)")
+
                             # Brain: record trade decision
                             if self._brain:
                                 try:
@@ -890,6 +910,50 @@ class HawkBot:
                 # Check fills (live mode only)
                 if self.executor and not self.cfg.dry_run:
                     self.executor.check_fills()
+
+                # V7: Early exit — check open positions for adverse movement
+                try:
+                    from hawk.vpin import compute_vpin
+                    from bot.http_session import get_session
+                    _exit_session = get_session()
+                    for _pos in self.tracker.open_positions:
+                        _cid = _pos.get("condition_id") or _pos.get("market_id", "")
+                        _tid = _pos.get("token_id", "")
+                        _entry = _pos.get("entry_price", 0.5)
+                        if not _cid or not _tid:
+                            continue
+                        try:
+                            _resp = _exit_session.get(
+                                f"https://clob.polymarket.com/markets/{_cid}", timeout=5)
+                            if _resp.status_code != 200:
+                                continue
+                            _mdata = _resp.json()
+                            _cur_price = None
+                            for _tk in _mdata.get("tokens", []):
+                                if _tk.get("token_id") == _tid:
+                                    _cur_price = float(_tk.get("price", 0.5))
+                                    break
+                            if _cur_price is None:
+                                continue
+                            # Exit if price dropped >15% from entry (edge gone)
+                            _drop = (_entry - _cur_price) / max(_entry, 0.01)
+                            if _drop > 0.15:
+                                log.warning("[EARLY-EXIT] Price dropped %.0f%% ($%.2f -> $%.2f) | %s",
+                                            _drop * 100, _entry, _cur_price, _pos.get("question", "")[:60])
+                                # Mark for resolution on next cycle (set flag)
+                                _pos["_early_exit"] = True
+                                _pos["_exit_reason"] = f"price_drop_{_drop:.0%}"
+                            # Exit if VPIN spikes on our position
+                            _vpin = compute_vpin(_cid, _tid)
+                            if _vpin.toxicity == "high" and _drop > 0.05:
+                                log.warning("[EARLY-EXIT] VPIN spike + adverse movement | VPIN=%.4f | %s",
+                                            _vpin.vpin, _pos.get("question", "")[:60])
+                                _pos["_early_exit"] = True
+                                _pos["_exit_reason"] = f"vpin_spike_{_vpin.vpin:.2f}"
+                        except Exception:
+                            continue
+                except Exception:
+                    log.debug("[EARLY-EXIT] Check failed (non-fatal)")
 
                 # Resolve trades (check market outcomes)
                 res = resolve_paper_trades()
@@ -1020,20 +1084,6 @@ class HawkBot:
                             log.info("[PATTERN MINER] Skipped: %s", mine_result.get("reason", "unknown"))
                     except Exception:
                         log.debug("[PATTERN MINER] Failed (non-fatal)")
-
-                # V6: Arb engine — scan and execute after main trades
-                if self.cfg.arb_enabled:
-                    try:
-                        from hawk.arb import ArbEngine
-                        _arb_client = self.executor.client if self.executor else None
-                        arb_engine = ArbEngine(self.cfg, _arb_client)
-                        arb_opps = arb_engine.scan(markets)
-                        for _arb_opp in arb_opps[:3]:
-                            arb_engine.execute(_arb_opp)
-                        arb_engine.resolve()
-                        arb_engine.save_status()
-                    except Exception:
-                        log.exception("[ARB] Arb engine cycle failed (non-fatal)")
 
                 _save_status(self.tracker, self.risk, running=True, cycle=self.cycle, scan_stats=_scan_stats)
 

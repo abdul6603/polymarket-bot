@@ -203,11 +203,9 @@ def scan_all_markets(cfg: HawkConfig) -> list[HawkMarket]:
                         log.debug("Blocked esports market: %s", question[:80])
                         continue
 
-                    # Only allow sports + weather — everything else loses money
+                    # V7: Categorize market — allow all categories with data sources
+                    # Sports: sportsbook data, Weather: NOAA ensemble, Non-sports: cross-platform (Kalshi, etc.)
                     _market_cat = _categorize_market(question)
-                    if _market_cat not in ("sports", "weather"):
-                        log.debug("Blocked %s market (sports/weather only): %s", _market_cat, question[:80])
-                        continue
 
                     # Skip closed/inactive
                     if m.get("closed") or not m.get("active", True):

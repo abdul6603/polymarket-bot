@@ -1,4 +1,4 @@
-"""Edge Calculator + Kelly Sizing + Risk Meter for Hawk V2."""
+"""Edge Calculator + Kelly Sizing + Risk Meter for Hawk V7."""
 from __future__ import annotations
 
 import logging
@@ -343,8 +343,34 @@ def calculate_edge(
         )
         return None
 
-    # Fix 5: Confidence floor — reject low-confidence GPT guesses (sportsbook + weather exempt)
-    if not has_sportsbook and not has_weather_model and estimate.confidence < MIN_CONFIDENCE:
+    # V7: Odds Quality Gate — sportsbook trades need minimum data quality
+    if has_sportsbook:
+        consensus_obj = getattr(estimate, '_consensus', None)
+        _num_books = getattr(consensus_obj, 'num_books', 0) if consensus_obj else estimate.sportsbook_books
+        _book_stdev = getattr(consensus_obj, 'book_stdev', 999) if consensus_obj else 999
+
+        # Require at least 8 sportsbooks for reliable consensus
+        if _num_books < 8:
+            log.info("[QUALITY] Rejected: only %d books (need 8+) | %s",
+                     _num_books, market.question[:60])
+            return None
+
+        # Reject if books strongly disagree (stdev > 0.06 = noisy signal)
+        if _book_stdev < 999 and _book_stdev > 0.06:
+            log.info("[QUALITY] Rejected: book stdev=%.4f > 0.06 (weak consensus) | %s",
+                     _book_stdev, market.question[:60])
+            return None
+
+    # V7: Cross-platform quality — need at least 1 source for non-sports
+    has_cross_platform = getattr(estimate, 'edge_source', '') == 'cross_platform'
+    if has_cross_platform:
+        xp_count = getattr(estimate, 'cross_platform_count', 0)
+        if xp_count < 1:
+            log.info("[QUALITY] Rejected: no cross-platform data | %s", market.question[:60])
+            return None
+
+    # Confidence floor — reject low-confidence guesses (data-backed exempt)
+    if not has_sportsbook and not has_weather_model and not has_cross_platform and estimate.confidence < MIN_CONFIDENCE:
         log.info("Rejected low-confidence trade: conf=%.2f < %.2f | %s",
                  estimate.confidence, MIN_CONFIDENCE, market.question[:50])
         return None

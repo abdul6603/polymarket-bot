@@ -1219,17 +1219,12 @@ def api_hawk_learner():
     return jsonify(data)
 
 
-@hawk_bp.route("/api/hawk/arb-status")
-def api_hawk_arb_status():
-    """V6: Arb engine status + open positions."""
-    data = read_fresh(ARB_STATUS_FILE, "~/polymarket-bot/data/hawk_arb_status.json")
-    if not data:
-        data = {
-            "enabled": True,
-            "open_arbs": 0,
-            "total_executed": 0,
-            "total_resolved": 0,
-            "total_profit": 0,
-            "positions": [],
-        }
-    return jsonify(data)
+@hawk_bp.route("/api/hawk/clv")
+def api_hawk_clv():
+    """V7: CLV (Closing Line Value) tracking stats."""
+    try:
+        from hawk.clv import get_clv_stats
+        return jsonify(get_clv_stats())
+    except Exception:
+        return jsonify({"total_trades": 0, "resolved": 0, "avg_clv": 0.0,
+                        "avg_clv_pct": 0.0, "positive_clv_rate": 0.0, "trades": []})

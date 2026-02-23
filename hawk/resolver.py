@@ -153,6 +153,13 @@ def resolve_paper_trades() -> dict:
                     t.get("risk_score", "?"),
                 )
 
+                # V7: Update CLV tracking
+                try:
+                    from hawk.clv import update_on_resolution
+                    update_on_resolution(cid, won)
+                except Exception:
+                    pass  # CLV failure must never crash resolver
+
                 # Telegram notification
                 emoji = "\U0001f7e2" if won else "\U0001f534"
                 pnl_str = f"+${pnl:.2f}" if pnl >= 0 else f"-${abs(pnl):.2f}"
