@@ -4125,6 +4125,7 @@ async function refresh() {
       loadMLWinPredictor();
       loadMLStatus();
       loadJournal();
+      refreshClobPill();
     } else if (currentTab === 'soren') {
       var resp = await fetch('/api/soren');
       renderSoren(await resp.json());
@@ -9462,3 +9463,122 @@ function odinRefresh() {
   showToast('Refreshing Odin...', 'info');
   loadOdinTab().then(function() { showToast('Odin refreshed', 'success'); });
 }
+
+// ── CLOB Status Pill ────────────────────────────────────────
+
+var _clobPopoverOpen = false;
+var _clobAutoTimer = null;
+
+function refreshClobPill() {
+  fetch('/api/garves/clob-status').then(function(r){ return r.json(); }).then(function(d) {
+    var pill = document.getElementById('clob-pill');
+    var dot = document.getElementById('clob-pill-dot');
+    var label = document.getElementById('clob-pill-label');
+    var age = document.getElementById('clob-pill-age');
+    if (!pill) return;
+
+    var status = (d.status || 'UNKNOWN').toUpperCase();
+    var emoji, color, bgColor, alertClass;
+
+    if (status === 'CONNECTED') {
+      emoji = '\uD83D\uDFE2'; color = '#22c55e'; bgColor = 'rgba(34,197,94,0.1)';
+      alertClass = '';
+    } else if (status === 'CONNECTING') {
+      emoji = '\uD83D\uDFE1'; color = '#eab308'; bgColor = 'rgba(234,179,8,0.1)';
+      alertClass = '';
+    } else if (status === 'DEGRADED') {
+      emoji = '\uD83D\uDFE1'; color = '#eab308'; bgColor = 'rgba(234,179,8,0.12)';
+      alertClass = 'clob-pill-alert';
+    } else {
+      emoji = '\uD83D\uDD34'; color = '#ef4444'; bgColor = 'rgba(239,68,68,0.12)';
+      alertClass = 'clob-pill-alert';
+    }
+
+    dot.textContent = emoji;
+    label.textContent = status;
+    label.style.color = color;
+    pill.style.background = bgColor;
+    pill.style.borderColor = color + '33';
+    pill.className = alertClass;
+
+    // Age / last seen
+    if (status === 'CONNECTED' && d.uptime_s > 0) {
+      age.textContent = formatDuration(d.uptime_s);
+      age.style.color = '#22c55e';
+    } else if (d.silence_s > 0) {
+      age.textContent = 'Last seen ' + formatDuration(d.silence_s) + ' ago';
+      age.style.color = status === 'DISCONNECTED' ? '#ef4444' : 'var(--text-muted)';
+    } else {
+      age.textContent = '';
+    }
+
+    // Popover data
+    var popStatus = document.getElementById('clob-pop-status');
+    var popDetail = document.getElementById('clob-pop-detail');
+    var popReconn = document.getElementById('clob-pop-reconnects');
+    var popProactive = document.getElementById('clob-pop-proactive');
+    var popUptime = document.getElementById('clob-pop-uptime');
+    var popSilence = document.getElementById('clob-pop-silence');
+    if (popStatus) popStatus.innerHTML = '<span style="color:' + color + ';font-weight:700;">' + emoji + ' ' + status + '</span>';
+    if (popDetail) popDetail.textContent = d.detail ? 'Detail: ' + d.detail : '';
+    if (popReconn) popReconn.textContent = 'Reconnects today: ' + (d.reconnects_today || 0);
+    if (popProactive) popProactive.textContent = 'Proactive cycles: ' + (d.proactive_reconnects || 0);
+    if (popUptime) popUptime.textContent = status === 'CONNECTED' ? 'Uptime: ' + formatDuration(d.uptime_s || 0) : 'Last connected: ' + formatTimestamp(d.last_connected);
+    if (popSilence) popSilence.textContent = d.silence_s > 0 ? 'Last data: ' + formatDuration(d.silence_s) + ' ago' : 'Last data: just now';
+
+    // Auto-refresh while on garves tab
+    clearTimeout(_clobAutoTimer);
+    if (currentTab === 'garves-live') {
+      _clobAutoTimer = setTimeout(refreshClobPill, 5000);
+    }
+  }).catch(function() {
+    clearTimeout(_clobAutoTimer);
+    if (currentTab === 'garves-live') {
+      _clobAutoTimer = setTimeout(refreshClobPill, 5000);
+    }
+  });
+}
+
+function formatDuration(s) {
+  s = Math.round(s);
+  if (s < 60) return s + 's';
+  if (s < 3600) return Math.floor(s / 60) + 'm ' + (s % 60) + 's';
+  return Math.floor(s / 3600) + 'h ' + Math.floor((s % 3600) / 60) + 'm';
+}
+
+function formatTimestamp(ts) {
+  if (!ts || ts <= 0) return 'never';
+  var d = new Date(ts * 1000);
+  return d.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:true});
+}
+
+function toggleClobPopover() {
+  var pop = document.getElementById('clob-popover');
+  if (!pop) return;
+  _clobPopoverOpen = !_clobPopoverOpen;
+  pop.style.display = _clobPopoverOpen ? 'block' : 'none';
+}
+
+function forceReconnectClob() {
+  fetch('/api/garves/force-reconnect', {method:'POST'}).then(function(r){ return r.json(); }).then(function(d) {
+    if (d.ok) {
+      showToast('Force reconnect sent', 'info');
+    } else {
+      showToast('Reconnect failed: ' + (d.error || 'unknown'), 'error');
+    }
+    _clobPopoverOpen = false;
+    document.getElementById('clob-popover').style.display = 'none';
+    setTimeout(refreshClobPill, 1000);
+  }).catch(function() {
+    showToast('Reconnect request failed', 'error');
+  });
+}
+
+// Close popover on outside click
+document.addEventListener('click', function(e) {
+  var wrap = document.getElementById('clob-pill-wrap');
+  if (wrap && !wrap.contains(e.target) && _clobPopoverOpen) {
+    _clobPopoverOpen = false;
+    document.getElementById('clob-popover').style.display = 'none';
+  }
+});

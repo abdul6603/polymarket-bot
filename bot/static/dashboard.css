@@ -152,6 +152,8 @@
   .tab-content.active { display:block; }
   @keyframes fadeSlideIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
   @keyframes pulse-glow { 0%,100%{opacity:1} 50%{opacity:0.5} }
+  @keyframes clob-pulse { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.4)} 50%{box-shadow:0 0 8px 4px rgba(239,68,68,0.15)} }
+  .clob-pill-alert { animation:clob-pulse 1.8s ease-in-out infinite; }
 
   /* Glass Card */
   .glass-card {

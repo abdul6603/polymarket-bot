@@ -72,6 +72,9 @@ _last_connected_at: float = 0.0
 _last_message_at: float = 0.0
 
 
+CLOB_STATUS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "clob_status.json")
+
+
 def get_clob_status() -> dict:
     """Dashboard-friendly connection status. Called by route handlers."""
     now = time.time()
@@ -85,6 +88,17 @@ def get_clob_status() -> dict:
         "silence_s": round(now - _last_message_at, 1) if _last_message_at > 0 else 0,
         "uptime_s": round(now - _last_connected_at, 1) if _last_connected_at > 0 and _connection_status == "CONNECTED" else 0,
     }
+
+
+def _write_clob_status() -> None:
+    """Persist CLOB status to file for dashboard (separate process)."""
+    try:
+        data = get_clob_status()
+        data["written_at"] = time.time()
+        with open(CLOB_STATUS_FILE, "w") as f:
+            json.dump(data, f)
+    except Exception:
+        pass
 
 
 def _ws_is_closed(ws) -> bool:
@@ -274,6 +288,7 @@ class MarketFeed:
             except Exception as e:
                 self._proactive_close = True
                 log.warning("Proactive timer error: %s", str(e)[:150])
+            _write_clob_status()
 
         self._lifetime_timer = threading.Timer(LIFETIME_TARGET_S, _force_close)
         self._lifetime_timer.daemon = True
@@ -359,6 +374,7 @@ class MarketFeed:
             log.info("WebSocket connected (ping=%ds/%ds)", WS_PING_INTERVAL_S, WS_PING_TIMEOUT_S)
             _connection_status = "CONNECTED"
             _status_detail = ""
+            _write_clob_status()
 
             if self._token_ids:
                 await self._send_subscribe()
@@ -410,6 +426,7 @@ class MarketFeed:
         try:
             while not _ws_is_closed(ws):
                 await asyncio.sleep(APP_KEEPALIVE_S)
+                _write_clob_status()
                 silence = time.time() - _last_message_at if _last_message_at > 0 else APP_KEEPALIVE_S + 1
                 if silence >= APP_KEEPALIVE_S:
                     try:
@@ -447,6 +464,7 @@ class MarketFeed:
         else:
             _connection_status = "CONNECTING"
             _status_detail = reason
+        _write_clob_status()
 
     def _maybe_send_alert(self, detail: str) -> None:
         """Send Telegram alert with 15-minute cooldown to avoid spam."""

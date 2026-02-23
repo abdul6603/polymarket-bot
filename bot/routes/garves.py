@@ -1379,3 +1379,45 @@ def api_garves_journal():
         })
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500
+
+
+# ── CLOB WebSocket connection status ─────────────────────────
+
+CLOB_STATUS_FILE = DATA_DIR / "clob_status.json"
+
+
+@garves_bp.route("/api/garves/clob-status")
+def api_garves_clob_status():
+    """Connection status for Polymarket CLOB WebSocket feed.
+
+    Reads from a shared status file written by Garves (separate process).
+    Recalculates time-sensitive fields (silence_s, uptime_s) from timestamps.
+    """
+    try:
+        if not CLOB_STATUS_FILE.exists():
+            return jsonify({"status": "DISCONNECTED", "detail": "No status file"})
+        data = json.loads(CLOB_STATUS_FILE.read_text())
+        now = time.time()
+        lm = data.get("last_message", 0)
+        lc = data.get("last_connected", 0)
+        status = data.get("status", "UNKNOWN")
+        data["silence_s"] = round(now - lm, 1) if lm > 0 else 0
+        data["uptime_s"] = round(now - lc, 1) if lc > 0 and status == "CONNECTED" else 0
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"status": "UNKNOWN", "error": str(e)[:200]}), 500
+
+
+@garves_bp.route("/api/garves/force-reconnect", methods=["POST"])
+def api_garves_force_reconnect():
+    """Signal the CLOB WebSocket to reconnect (updates status file)."""
+    try:
+        data = {"status": "CONNECTING", "detail": "Force reconnect requested"}
+        if CLOB_STATUS_FILE.exists():
+            data = json.loads(CLOB_STATUS_FILE.read_text())
+            data["status"] = "CONNECTING"
+            data["detail"] = "Force reconnect requested"
+        CLOB_STATUS_FILE.write_text(json.dumps(data))
+        return jsonify({"ok": True, "message": "Reconnect signal sent"})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)[:200]}), 500
