@@ -1,0 +1,19 @@
+{
+  "odin": {
+    "name": "Odin",
+    "role": "Futures Trader",
+    "status": "active",
+    "version": "4.1.0",
+    "skills": 13,
+    "total_trades": 8,
+    "win_rate": 62.5,
+    "total_pnl": 164.11,
+    "last_trade": "2026-02-23 13:37",
+    "updated_at": "2026-02-23T13:37:21.034422-05:00",
+    "capabilities": [
+      "Dynamic Exit Management (trailing SL, partial TPs, time exits)",
+      "ATR-based trailing with regime-aware width",
+      "5-tier funding rate mean-reversion scoring"
+    ]
+  }
+}
