@@ -4062,6 +4062,7 @@ async function refresh() {
       loadMLStatus();
       loadJournal();
       refreshClobPill();
+      refreshBinancePill();
       refreshSnipeV7();
       refreshSnipeAssist();
     } else if (currentTab === 'soren') {
@@ -9884,11 +9885,85 @@ function forceReconnectClob() {
   });
 }
 
-// Close popover on outside click
+// Close popovers on outside click
 document.addEventListener('click', function(e) {
-  var wrap = document.getElementById('clob-pill-wrap');
-  if (wrap && !wrap.contains(e.target) && _clobPopoverOpen) {
+  var clobWrap = document.getElementById('clob-pill-wrap');
+  if (clobWrap && !clobWrap.contains(e.target) && _clobPopoverOpen) {
     _clobPopoverOpen = false;
     document.getElementById('clob-popover').style.display = 'none';
   }
+  var binWrap = document.getElementById('binance-pill-wrap');
+  if (binWrap && !binWrap.contains(e.target) && _binancePopoverOpen) {
+    _binancePopoverOpen = false;
+    document.getElementById('binance-popover').style.display = 'none';
+  }
 });
+
+// ── Binance WS Status Pill ──────────────────────────────────
+var _binancePopoverOpen = false;
+var _binanceAutoTimer = null;
+
+function refreshBinancePill() {
+  fetch('/api/garves/binance-status').then(function(r){ return r.json(); }).then(function(d) {
+    var pill = document.getElementById('binance-pill');
+    var dot = document.getElementById('binance-pill-dot');
+    var label = document.getElementById('binance-pill-label');
+    var age = document.getElementById('binance-pill-age');
+    if (!pill) return;
+
+    var status = (d.status || 'UNKNOWN').toUpperCase();
+    var emoji, color, bgColor;
+
+    if (status === 'CONNECTED') {
+      emoji = '\uD83D\uDFE2'; color = '#22c55e'; bgColor = 'rgba(34,197,94,0.1)';
+    } else if (status === 'CONNECTING' || status === 'RECONNECTING') {
+      emoji = '\uD83D\uDFE1'; color = '#eab308'; bgColor = 'rgba(234,179,8,0.1)';
+    } else {
+      emoji = '\uD83D\uDD34'; color = '#ef4444'; bgColor = 'rgba(239,68,68,0.12)';
+    }
+
+    dot.textContent = emoji;
+    label.textContent = 'Binance';
+    label.style.color = color;
+    pill.style.background = bgColor;
+    pill.style.borderColor = color + '33';
+
+    // Age display
+    if (status === 'CONNECTED' && d.silence_s >= 0 && d.silence_s < 30) {
+      age.textContent = d.silence_s + 's';
+      age.style.color = '#22c55e';
+    } else if (d.silence_s > 0) {
+      age.textContent = formatDuration(d.silence_s) + ' ago';
+      age.style.color = d.silence_s > 30 ? '#ef4444' : 'var(--text-muted)';
+    } else {
+      age.textContent = '';
+    }
+
+    // Popover data
+    var popStatus = document.getElementById('binance-pop-status');
+    var popReconn = document.getElementById('binance-pop-reconnects');
+    var popStream = document.getElementById('binance-pop-stream');
+    var popSilence = document.getElementById('binance-pop-silence');
+    if (popStatus) popStatus.innerHTML = '<span style="color:' + color + ';font-weight:700;">' + emoji + ' ' + status + '</span>';
+    if (popReconn) popReconn.textContent = 'Reconnects: ' + (d.reconnect_count || 0);
+    if (popStream) popStream.textContent = 'Stream: ' + (d.stream_url || 'unknown');
+    if (popSilence) popSilence.textContent = d.silence_s > 0 ? 'Last data: ' + formatDuration(d.silence_s) + ' ago' : 'Last data: just now';
+
+    clearTimeout(_binanceAutoTimer);
+    if (currentTab === 'garves-live') {
+      _binanceAutoTimer = setTimeout(refreshBinancePill, 5000);
+    }
+  }).catch(function() {
+    clearTimeout(_binanceAutoTimer);
+    if (currentTab === 'garves-live') {
+      _binanceAutoTimer = setTimeout(refreshBinancePill, 5000);
+    }
+  });
+}
+
+function toggleBinancePopover() {
+  var pop = document.getElementById('binance-popover');
+  if (!pop) return;
+  _binancePopoverOpen = !_binancePopoverOpen;
+  pop.style.display = _binancePopoverOpen ? 'block' : 'none';
+}

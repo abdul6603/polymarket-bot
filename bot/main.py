@@ -117,10 +117,11 @@ class TradingBot:
             cfg=cfg,
             price_cache=self.price_cache,
             clob_client=self.client,
-            dry_run=False,  # LIVE MODE: v7 validated (4W-0L, +$60)
+            dry_run=cfg.dry_run,  # Uses .env DRY_RUN as single source of truth
             budget_per_window=cfg.snipe_budget_per_window,
             delta_threshold=cfg.snipe_delta_threshold / 100,
         )
+        log.info("[SNIPE] dry_run=%s (from .env)", cfg.dry_run)
         # Connect CLOB orderbook bridge — REST-based with 5s cache
         from bot.snipe import clob_book
         clob_book.init(cfg.clob_host)

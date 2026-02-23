@@ -156,6 +156,8 @@ class SnipeEngine:
 
         # Thread pool for parallel per-asset ticking
         self._tick_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="snipe-tick")
+        self._tick_pool_recreate_count = 0
+        self._last_tick_elapsed = 0.0
         self._timing_lock = threading.Lock()
 
         # Execution preference: "15m" or "1h"
@@ -254,18 +256,28 @@ class SnipeEngine:
         """Single tick — feed candles, then tick all 4 asset slots in parallel."""
         tick_start = time.time()
 
-        # Phase 1: Fetch prices — WS cache first, REST fallback if stale (>10s)
+        # Skip tick if previous one is still draining (>10s)
+        if self._last_tick_elapsed > 10.0:
+            log.warning("[SNIPE] Skipping tick — previous took %.1fs, letting pool drain", self._last_tick_elapsed)
+            self._last_tick_elapsed = 0.0
+            return
+
+        # Phase 1: Fetch prices — WS cache first, REST fallback if stale (>12s)
         self._live_prices: dict[str, float] = {}
         self._price_sources: dict[str, str] = {}
-        stale_threshold = 10.0
+        stale_threshold = 12.0
+        n_ws = 0
+        n_rest = 0
         for asset in ASSETS:
             age = self._cache.get_price_age(asset)
             if age <= stale_threshold:
                 price = self._cache.get_price(asset)
                 self._price_sources[asset] = "ws"
+                n_ws += 1
             else:
                 price = self._fetch_live_price(asset)
                 self._price_sources[asset] = "rest"
+                n_rest += 1
                 if age < float("inf"):
                     log.warning(
                         "[PRICE] %s: PriceCache stale (%.1fs old) — REST fallback",
@@ -275,7 +287,16 @@ class SnipeEngine:
                 self._live_prices[asset] = price
                 self._candle_store.feed_tick(asset, price)
 
+        price_elapsed = time.time() - tick_start
+        log.info("[PRICE] Fetched %d assets in %.1fs (ws:%d rest:%d)", len(ASSETS), price_elapsed, n_ws, n_rest)
+
         # Phase 2: Tick all 4 asset slots in PARALLEL (the heavy part — CLOB calls)
+        pool_alive = not getattr(self._tick_pool, '_shutdown', False)
+        if not pool_alive:
+            self._tick_pool_recreate_count += 1
+            log.warning("[SNIPE] ThreadPool died (#%d), recreating", self._tick_pool_recreate_count)
+            self._tick_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="snipe-tick")
+
         try:
             futures = {}
             for asset, slot in self._slots.items():
@@ -288,8 +309,8 @@ class SnipeEngine:
                     asset = futures[future]
                     log.warning("[SNIPE] %s tick error: %s", asset.upper(), str(e)[:150])
         except RuntimeError:
-            # ThreadPoolExecutor shut down — recreate it
-            log.warning("[SNIPE] ThreadPool died, recreating")
+            self._tick_pool_recreate_count += 1
+            log.warning("[SNIPE] ThreadPool died (#%d), recreating", self._tick_pool_recreate_count)
             self._tick_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="snipe-tick")
             return
 
@@ -305,6 +326,7 @@ class SnipeEngine:
             )
 
         elapsed = time.time() - tick_start
+        self._last_tick_elapsed = elapsed
         if elapsed > 5.0:
             log.warning("[SNIPE] Tick took %.1fs (target <5s)", elapsed)
 

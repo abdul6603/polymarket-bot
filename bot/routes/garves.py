@@ -1384,6 +1384,22 @@ def api_garves_journal():
 # ── CLOB WebSocket connection status ─────────────────────────
 
 CLOB_STATUS_FILE = DATA_DIR / "clob_status.json"
+BINANCE_STATUS_FILE = DATA_DIR / "binance_status.json"
+
+
+@garves_bp.route("/api/garves/binance-status")
+def api_garves_binance_status():
+    """Connection status for Binance WebSocket feed."""
+    try:
+        if not BINANCE_STATUS_FILE.exists():
+            return jsonify({"status": "DISCONNECTED", "detail": "No status file"})
+        data = json.loads(BINANCE_STATUS_FILE.read_text())
+        now = time.time()
+        lm = data.get("last_message", 0)
+        data["silence_s"] = round(now - lm, 1) if lm > 0 else 0
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"status": "UNKNOWN", "error": str(e)[:200]}), 500
 
 
 @garves_bp.route("/api/garves/clob-status")

@@ -387,6 +387,8 @@ class MarketFeed:
 
             # Light keepalive in background
             keepalive_task = asyncio.create_task(self._app_keepalive_loop(ws))
+            # Stale-data monitor: detect zombie connections (WS open but no data for 25min)
+            stale_monitor_task = asyncio.create_task(self._stale_data_monitor(ws))
 
             try:
                 async for raw in ws:
@@ -414,8 +416,13 @@ class MarketFeed:
             finally:
                 self._cancel_lifetime_timer()
                 keepalive_task.cancel()
+                stale_monitor_task.cancel()
                 try:
                     await keepalive_task
+                except asyncio.CancelledError:
+                    pass
+                try:
+                    await stale_monitor_task
                 except asyncio.CancelledError:
                     pass
 
@@ -433,6 +440,28 @@ class MarketFeed:
                         await ws.send(json.dumps({"type": "ping"}))
                     except ConnectionClosed:
                         return
+        except asyncio.CancelledError:
+            pass
+
+    async def _stale_data_monitor(self, ws) -> None:
+        """Detect zombie connections: WS appears connected but CDN sends no data."""
+        try:
+            while not _ws_is_closed(ws):
+                await asyncio.sleep(60)
+                if _last_message_at <= 0:
+                    continue
+                silence = time.time() - _last_message_at
+                if silence >= STALE_DATA_TIMEOUT_S:
+                    log.warning(
+                        "CLOB WS zombie detected: connected but %.0fs without data (threshold=%ds) — forcing reconnect",
+                        silence, STALE_DATA_TIMEOUT_S,
+                    )
+                    self._proactive_close = True
+                    try:
+                        await ws.close(1000, "stale_data")
+                    except Exception:
+                        pass
+                    return
         except asyncio.CancelledError:
             pass
 
@@ -486,8 +515,16 @@ class MarketFeed:
                 "type": "market",
                 "assets_ids": [token_id],
             })
-            await self._ws.send(msg)
-            log.debug("Subscribed to token %s", token_id[:16])
+            try:
+                await self._ws.send(msg)
+                log.debug("Subscribed to token %s", token_id[:16])
+            except (ConnectionClosed, OSError) as e:
+                log.warning("Subscribe send failed for %s: %s — closing for reconnect", token_id[:16], str(e)[:80])
+                try:
+                    await self._ws.close()
+                except Exception:
+                    pass
+                return
 
     # ── Message handling (UNTOUCHED — same logic as before) ──
 

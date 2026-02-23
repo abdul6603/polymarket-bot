@@ -10,8 +10,35 @@
   <div class="agent-widget-row" id="garves-widgets" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
     <div class="widget-badge" id="garves-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
     <button class="btn" onclick="healthCheckAgent('garves')" style="font-size:0.72rem;">Health Check</button>
+    <!-- Binance Status Pill -->
+    <div id="binance-pill-wrap" style="margin-left:auto;position:relative;">
+      <div id="binance-pill" onclick="toggleBinancePopover()" style="
+        display:inline-flex;align-items:center;gap:5px;
+        padding:4px 12px;border-radius:20px;cursor:pointer;
+        font-size:0.72rem;font-weight:600;font-family:var(--font-mono);
+        background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);
+        transition:all 0.3s ease;user-select:none;
+      ">
+        <span id="binance-pill-dot" style="font-size:0.8rem;">&#x26AB;</span>
+        <span id="binance-pill-label">Binance</span>
+        <span id="binance-pill-age" style="font-size:0.62rem;color:var(--text-muted);"></span>
+      </div>
+      <!-- Popover -->
+      <div id="binance-popover" style="
+        display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:100;
+        background:var(--bg-secondary);border:1px solid rgba(255,255,255,0.12);
+        border-radius:10px;padding:14px 18px;min-width:260px;
+        box-shadow:0 8px 32px rgba(0,0,0,0.4);font-size:0.72rem;
+      ">
+        <div style="font-weight:700;margin-bottom:8px;font-size:0.76rem;">Binance WebSocket</div>
+        <div id="binance-pop-status" style="margin-bottom:4px;"></div>
+        <div id="binance-pop-reconnects" style="color:var(--text-muted);margin-bottom:4px;"></div>
+        <div id="binance-pop-stream" style="color:var(--text-muted);margin-bottom:4px;"></div>
+        <div id="binance-pop-silence" style="color:var(--text-muted);margin-bottom:4px;"></div>
+      </div>
+    </div>
     <!-- CLOB Status Pill -->
-    <div id="clob-pill-wrap" style="margin-left:auto;position:relative;">
+    <div id="clob-pill-wrap" style="position:relative;">
       <div id="clob-pill" onclick="toggleClobPopover()" style="
         display:inline-flex;align-items:center;gap:5px;
         padding:4px 12px;border-radius:20px;cursor:pointer;
