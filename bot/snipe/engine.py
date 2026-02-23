@@ -87,6 +87,7 @@ class SnipeEngine:
         self._state = SnipeState.IDLE
         self._current_window_id: str = ""
         self._cooldown_until = 0.0
+        self._executing_since = 0.0  # Track when we entered EXECUTING
         self._base_budget = 25.0  # Conservative: protect the $188
         self._escalated_budget = 40.0  # After 3 consecutive wins
         self._consecutive_wins = 0
@@ -335,6 +336,7 @@ class SnipeEngine:
                     result.size_usd, result.shares, result.price,
                 )
                 self._state = SnipeState.EXECUTING
+                self._executing_since = time.time()
                 self.window_tracker.mark_traded(window.market_id)
                 log.info("[SNIPE] TRACKING -> EXECUTING (GTC filled)")
                 return
@@ -391,6 +393,7 @@ class SnipeEngine:
                 )
                 self._state = SnipeState.EXECUTING
                 self.window_tracker.mark_traded(window.market_id)
+                self._executing_since = time.time()
                 log.info("[SNIPE] ARMED -> EXECUTING (GTC filled)")
                 return
         elif not self.pyramid.has_active_position:
@@ -441,21 +444,41 @@ class SnipeEngine:
 
 
     def _on_executing(self) -> None:
-        """Wait for CLOB resolution — use stored market_id directly (don't depend on window tracker)."""
+        """Wait for resolution. Paper mode: resolve via BTC price. Live: check CLOB API."""
         now = time.time()
         market_id = self._current_window_id
+        elapsed = now - self._executing_since if self._executing_since > 0 else 0
 
-        # Check window end time (try tracker, fall back to 60s timeout)
+        # Check window end time if still in tracker
         window = self.window_tracker.get_window(market_id)
         if window:
             remaining = window.end_ts - now
             if remaining > -30:
                 return  # Wait for window to finish + 30s settle time
-        else:
-            # Window cleaned up by tracker — at least 30s have passed, check resolution
-            remaining = -60
 
-        # Check CLOB for actual resolution
+        # Need at least 30s after entering EXECUTING
+        if elapsed < 30:
+            return
+
+        # Paper mode: resolve using BTC price comparison
+        if self._dry_run and self.pyramid.has_active_position:
+            live_btc = self._fetch_btc_price()
+            if live_btc and self.pyramid._position:
+                open_price = self.pyramid._position.open_price
+                delta = (live_btc - open_price) / open_price if open_price > 0 else 0
+                resolved_dir = "up" if delta > 0 else "down"
+                result = self.pyramid.close_position(resolved_dir)
+                if result:
+                    self._record_outcome(result)
+                self._cooldown_until = now + 30
+                self._state = SnipeState.COOLDOWN
+                log.info(
+                    "[SNIPE] PAPER RESOLVED: %s (BTC $%.0f vs open $%.0f, delta=%+.3f%%)",
+                    resolved_dir.upper(), live_btc, open_price, delta * 100,
+                )
+                return
+
+        # Live mode: Check CLOB for actual resolution
         resolved_dir = self._fetch_resolution(market_id)
         if resolved_dir:
             result = self.pyramid.close_position(resolved_dir)
@@ -466,9 +489,9 @@ class SnipeEngine:
             log.info("[SNIPE] EXECUTING -> COOLDOWN (resolved=%s)", resolved_dir.upper())
             return
 
-        # Timeout: 10 min after window end, give up
-        if remaining <= -600:
-            log.warning("[SNIPE] Resolution timeout for %s, closing as unknown", market_id[:12])
+        # Timeout: 10 min after entering EXECUTING
+        if elapsed >= 600:
+            log.warning("[SNIPE] Resolution timeout for %s (%.0fs elapsed)", market_id[:12], elapsed)
             self.pyramid.close_position()
             self._cooldown_until = now + 30
             self._state = SnipeState.COOLDOWN
