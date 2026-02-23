@@ -19,6 +19,8 @@ from enum import Enum
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+import requests
+
 from bot.config import Config
 from bot.price_cache import PriceCache
 from bot.snipe.window_tracker import WindowTracker
@@ -200,6 +202,8 @@ class SnipeEngine:
         now = time.time()
 
         # BTC only — deepest book, most reliable fills
+        # Fetch LIVE BTC price directly (PriceCache is stale between taker ticks)
+        live_btc = self._fetch_btc_price()
         candidates = []
         for w in self.window_tracker.all_active_windows():
             if w.traded:
@@ -209,7 +213,7 @@ class SnipeEngine:
             remaining = w.end_ts - now
             if remaining <= 0 or remaining > 190:
                 continue
-            price = self._cache.get_price(w.asset)
+            price = live_btc if w.asset == "bitcoin" and live_btc else self._cache.get_price(w.asset)
             if not price or w.open_price <= 0:
                 continue
             delta = (price - w.open_price) / w.open_price
@@ -330,7 +334,7 @@ class SnipeEngine:
 
                 # Verify delta still holds for waves 2 and 3
                 if wave_num > 1:
-                    asset_price = self._cache.get_price(window.asset)
+                    asset_price = self._fetch_btc_price() if window.asset == "bitcoin" else self._cache.get_price(window.asset)
                     if asset_price and window.open_price > 0:
                         abs_delta = abs((asset_price - window.open_price) / window.open_price)
                         sig_tracker = self._get_signal(window.asset)
@@ -507,6 +511,20 @@ class SnipeEngine:
                 )
         except Exception:
             pass
+
+    def _fetch_btc_price(self) -> float | None:
+        """Fetch live BTC price directly — bypasses stale PriceCache."""
+        try:
+            resp = requests.get(
+                "https://api.binance.us/api/v3/ticker/price?symbol=BTCUSDT",
+                timeout=5,
+            )
+            if resp.status_code == 200:
+                return float(resp.json()["price"])
+        except Exception:
+            pass
+        # Fallback to cache
+        return self._cache.get_price("bitcoin")
 
     def _fetch_implied_price(self, market_id: str, token_id: str) -> float | None:
         """Fetch current CLOB implied price for a token."""
