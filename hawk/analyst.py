@@ -36,6 +36,47 @@ except ImportError:
 
 log = logging.getLogger(__name__)
 
+# Sport-specific live score thresholds (replaces hard score_diff >= 10)
+_LIVE_THRESHOLDS: dict[str, dict] = {
+    "basketball_nba": {"significant": 15, "late_period": 3, "late_threshold": 10, "blowout": 25},
+    "basketball_ncaab": {"significant": 15, "late_period": 3, "late_threshold": 10, "blowout": 25},
+    "basketball_euroleague": {"significant": 15, "late_period": 3, "late_threshold": 10, "blowout": 25},
+    "americanfootball_nfl": {"significant": 14, "late_period": 3, "late_threshold": 7, "blowout": 25},
+    "americanfootball_ncaaf": {"significant": 14, "late_period": 3, "late_threshold": 7, "blowout": 25},
+    "icehockey_nhl": {"significant": 2, "late_period": 3, "late_threshold": 2, "blowout": 4},
+    "baseball_mlb": {"significant": 3, "late_period": 6, "late_threshold": 2, "blowout": 7},
+}
+# Soccer defaults (all soccer_ keys)
+_SOCCER_THRESHOLD = {"significant": 1, "late_period": 2, "late_threshold": 1, "blowout": 3}
+_DEFAULT_THRESHOLD = {"significant": 10, "late_period": 3, "late_threshold": 7, "blowout": 25}
+
+
+def _get_live_threshold(sport_key: str) -> dict:
+    """Get sport-specific live score thresholds."""
+    if sport_key in _LIVE_THRESHOLDS:
+        return _LIVE_THRESHOLDS[sport_key]
+    if sport_key.startswith("soccer_"):
+        return _SOCCER_THRESHOLD
+    return _DEFAULT_THRESHOLD
+
+
+def _live_confidence_boost(score_diff: int, sport_key: str) -> float:
+    """Calculate confidence boost from live score lead.
+
+    Returns 0.0 to 0.15 depending on score differential.
+    """
+    thresholds = _get_live_threshold(sport_key)
+    blowout = thresholds.get("blowout", 25)
+    significant = thresholds.get("significant", 10)
+    # Scale: blowout → +0.15, significant → +0.10, half-significant → +0.05
+    if score_diff >= blowout:
+        return 0.15
+    if score_diff >= significant:
+        return 0.10
+    if score_diff >= max(1, significant // 2):
+        return 0.05
+    return 0.0
+
 
 @dataclass
 class ProbabilityEstimate:
@@ -56,6 +97,7 @@ class ProbabilityEstimate:
     metaculus_prob: float | None = None
     predictit_prob: float | None = None
     cross_platform_count: int = 0  # How many cross-platform matches found
+    _consensus: object = None  # SportsbookConsensus for smart sizing (not serialized)
 
 
 # ─────────────────────────────────────────────────────
@@ -278,15 +320,17 @@ def _get_weather_context(market: HawkMarket) -> str:
     return ""
 
 
-def _get_sportsbook_data(cfg: HawkConfig, market: HawkMarket) -> tuple[float | None, int, str, bool]:
+def _get_sportsbook_data(cfg: HawkConfig, market: HawkMarket) -> tuple[float | None, int, str, bool, object, int]:
     """Get sportsbook consensus probability + ESPN context for a sports market.
 
-    Returns (sportsbook_prob, num_books, espn_context_str, is_live_score_shift).
+    Returns (sportsbook_prob, num_books, espn_context_str, is_live_score_shift, consensus_obj, live_score_diff).
     """
     sportsbook_prob = None
     num_books = 0
     espn_context = ""
     is_live_score_shift = False
+    consensus_obj = None
+    live_score_diff = 0
 
     try:
         from hawk.odds import get_sportsbook_probability, _detect_sport, _extract_teams
@@ -300,8 +344,10 @@ def _get_sportsbook_data(cfg: HawkConfig, market: HawkMarket) -> tuple[float | N
         if sb_prob is not None and consensus is not None:
             sportsbook_prob = sb_prob
             num_books = consensus.num_books
-            log.info("Sportsbook data for %s: prob=%.2f (%d books)",
-                     market.question[:40], sb_prob, num_books)
+            consensus_obj = consensus
+            log.info("Sportsbook data for %s: prob=%.2f (%d books, stdev=%.4f)",
+                     market.question[:40], sb_prob, num_books,
+                     getattr(consensus, 'book_stdev', 0.0))
 
         # Get ESPN context
         sport_key = _detect_sport(market.question)
@@ -310,19 +356,31 @@ def _get_sportsbook_data(cfg: HawkConfig, market: HawkMarket) -> tuple[float | N
             ctx = get_match_context(market.question, sport_key, teams)
             if ctx:
                 espn_context = format_context_for_gpt(ctx)
-                # V6: Detect live score shift (significant lead in a live game)
+                # V6: Detect live score shift with sport-specific thresholds
                 if ctx.is_live and ctx.home_score is not None and ctx.away_score is not None:
                     score_diff = abs(ctx.home_score - ctx.away_score)
-                    if score_diff >= 10:
+                    detected_sport = sport_key or ""
+                    thresholds = _get_live_threshold(detected_sport)
+                    period = getattr(ctx, 'period', 0) or 0
+
+                    # Check late-game threshold first (lower bar)
+                    late_period = thresholds.get("late_period", 3)
+                    late_threshold = thresholds.get("late_threshold", 7)
+                    significant = thresholds.get("significant", 10)
+                    blowout = thresholds.get("blowout", 25)
+
+                    if score_diff >= significant or (period >= late_period and score_diff >= late_threshold):
                         is_live_score_shift = True
-                        log.info("[LIVE] Score shift detected: %d-%d (diff=%d) | %s",
-                                 ctx.home_score, ctx.away_score, score_diff,
-                                 market.question[:60])
+                        live_score_diff = score_diff
+                        tag = "[LIVE-BLOWOUT]" if score_diff >= blowout else "[LIVE]"
+                        log.info("%s Score shift: %d-%d (diff=%d, period=%d, sport=%s) | %s",
+                                 tag, ctx.home_score, ctx.away_score, score_diff,
+                                 period, detected_sport, market.question[:60])
 
     except Exception:
         log.debug("Sportsbook/ESPN data fetch failed for %s", market.condition_id[:12])
 
-    return sportsbook_prob, num_books, espn_context, is_live_score_shift
+    return sportsbook_prob, num_books, espn_context, is_live_score_shift, consensus_obj, live_score_diff
 
 
 def _get_weather_data(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate | None:
@@ -388,7 +446,7 @@ def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate |
     espn_context = ""
 
     if is_sports:
-        sportsbook_prob, sportsbook_books, espn_context, live_shift = _get_sportsbook_data(cfg, market)
+        sportsbook_prob, sportsbook_books, espn_context, live_shift, consensus, live_diff = _get_sportsbook_data(cfg, market)
 
         # V4: Sports with sportsbook data → pure math, skip GPT entirely ($0 cost)
         if sportsbook_prob is not None:
@@ -396,21 +454,50 @@ def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate |
             edge_src = "live_score_shift" if live_shift else "sportsbook_divergence"
             log.info("[V4] Sportsbook-pure: prob=%.2f (%d books) edge_src=%s | %s",
                      sportsbook_prob, sportsbook_books, edge_src, market.question[:60])
-            return ProbabilityEstimate(
+            # V6: Graduated live confidence boost based on score differential
+            base_conf = 0.75
+            if live_shift:
+                try:
+                    from hawk.odds import _detect_sport as _ds
+                    _sport = _ds(market.question) or ""
+                except Exception:
+                    _sport = ""
+                boost = _live_confidence_boost(live_diff, _sport)
+                base_conf = min(0.95, 0.80 + boost)
+
+            # V6: Spread confirmation boost (+0.05 when spread and h2h agree within 8%)
+            # Compare home_prob to spread_derived (both represent HOME team)
+            spread_confirmed = False
+            if consensus is not None:
+                spread_derived = getattr(consensus, 'spread_derived_prob', None)
+                home_prob = getattr(consensus, 'consensus_home_prob', None)
+                if spread_derived is not None and home_prob is not None and abs(home_prob - spread_derived) < 0.08:
+                    base_conf = min(0.95, base_conf + 0.05)
+                    spread_confirmed = True
+                    log.info("[SPREAD] Confirmation boost: h2h_home=%.3f spread=%.3f → conf=%.2f",
+                             home_prob, spread_derived, base_conf)
+
+            est = ProbabilityEstimate(
                 market_id=market.condition_id,
                 question=market.question,
                 estimated_prob=sportsbook_prob,
-                confidence=0.80 if live_shift else 0.75,
+                confidence=base_conf,
                 reasoning=f"Pure sportsbook consensus from {sportsbook_books} bookmakers — no GPT needed"
-                          + (" (LIVE score shift detected)" if live_shift else ""),
+                          + (" (LIVE score shift detected)" if live_shift else "")
+                          + (" (spread confirms)" if spread_confirmed else ""),
                 category=market.category,
                 risk_level=3,
                 edge_source=edge_src,
                 money_thesis=f"Sportsbook says {sportsbook_prob:.0%}, Polymarket disagrees — free edge",
-                news_factor="sportsbook consensus" + (" + live score shift" if live_shift else ""),
+                news_factor="sportsbook consensus" + (" + live score shift" if live_shift else "")
+                            + (" + spread confirmation" if spread_confirmed else ""),
                 sportsbook_prob=sportsbook_prob,
                 sportsbook_books=sportsbook_books,
             )
+            # Thread consensus object through for smart sizing in edge.py
+            if consensus is not None:
+                est._consensus = consensus
+            return est
 
         # V5: Sports WITHOUT sportsbook data → skip (GPT guesses are -EV, confirmed by trade history)
         log.info("[V5] No sportsbook data — skipping sports: %s", market.question[:60])

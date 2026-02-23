@@ -40,6 +40,87 @@ _YES_OUTCOMES = {"yes", "up", "over"}
 _NO_OUTCOMES = {"no", "down", "under"}
 
 
+@dataclass
+class SizingContext:
+    """Data quality signals for smart Kelly sizing."""
+    domain_wr: float = 0.0  # Historical WR for this category (0-1)
+    domain_total: int = 0  # Number of resolved trades in this category
+    num_books: int = 0  # How many sportsbooks contributed
+    book_stdev: float = 0.0  # Consensus strength (lower = stronger)
+    line_movement: float = 0.0  # Change from prev cycle (positive = edge growing)
+
+
+def smart_kelly_size(
+    true_prob: float,
+    market_price: float,
+    bankroll: float,
+    max_bet: float,
+    cfg: HawkConfig,
+    ctx: SizingContext,
+) -> tuple[float, int]:
+    """Kelly sizing with 4 data-quality multiplier layers.
+
+    Returns (position_size_usd, conviction_score 0-100).
+    """
+    base_size = kelly_size(true_prob, market_price, bankroll, max_bet, cfg.kelly_fraction)
+    if base_size < 1.0:
+        return 0.0, 0
+
+    multiplier = 1.0
+    conviction_parts: list[str] = []
+
+    # Layer 1: Domain win rate (needs 3+ samples to activate)
+    if ctx.domain_total >= 3:
+        if ctx.domain_wr > 0.60:
+            multiplier *= cfg.sizing_domain_wr_boost
+            conviction_parts.append(f"domain_wr={ctx.domain_wr:.0%}↑")
+        elif ctx.domain_wr < 0.40:
+            multiplier *= cfg.sizing_domain_wr_penalty
+            conviction_parts.append(f"domain_wr={ctx.domain_wr:.0%}↓")
+
+    # Layer 2: Book count (more books = better price discovery)
+    if ctx.num_books >= 15:
+        multiplier *= cfg.sizing_books_boost
+        conviction_parts.append(f"books={ctx.num_books}↑")
+    elif ctx.num_books < 5:
+        multiplier *= cfg.sizing_books_penalty
+        conviction_parts.append(f"books={ctx.num_books}↓")
+
+    # Layer 3: Consensus strength (low stdev = books agree = strong signal)
+    if ctx.book_stdev > 0:
+        if ctx.book_stdev < 0.03:
+            multiplier *= cfg.sizing_consensus_boost
+            conviction_parts.append(f"stdev={ctx.book_stdev:.3f}↑")
+        elif ctx.book_stdev > 0.08:
+            multiplier *= cfg.sizing_consensus_penalty
+            conviction_parts.append(f"stdev={ctx.book_stdev:.3f}↓")
+
+    # Layer 4: Line movement (edge growing = confidence boost)
+    if abs(ctx.line_movement) > 0.02:
+        if ctx.line_movement > 0.02:
+            multiplier *= cfg.sizing_movement_boost
+            conviction_parts.append(f"movement={ctx.line_movement:+.1%}↑")
+        elif ctx.line_movement < -0.02:
+            multiplier *= cfg.sizing_movement_penalty
+            conviction_parts.append(f"movement={ctx.line_movement:+.1%}↓")
+
+    final_size = max(1.0, min(max_bet, base_size * multiplier))
+
+    # Conviction score: 0-100 based on multiplier + base quality
+    conviction = int(min(100, max(0,
+        50
+        + (multiplier - 1.0) * 40  # multiplier contribution
+        + min(20, ctx.num_books)  # book count contribution (capped at 20)
+        + (true_prob - market_price) * 100  # edge contribution
+    )))
+
+    if conviction_parts:
+        log.info("[SIZING] base=$%.2f mult=%.2fx → $%.2f | conviction=%d | %s",
+                 base_size, multiplier, final_size, conviction, " ".join(conviction_parts))
+
+    return final_size, conviction
+
+
 def _get_market_price(market: HawkMarket, outcome: str = "yes") -> float:
     """Get current market price for a given outcome (handles Yes/No/Over/Under)."""
     target = _YES_OUTCOMES if outcome == "yes" else _NO_OUTCOMES
@@ -286,7 +367,26 @@ def calculate_edge(
     # V4: Cross-platform intelligence (used for risk adjustment, NOT edge inflation)
     xp_count = getattr(estimate, 'cross_platform_count', 0)
 
-    kf = kelly_size(true_prob, buy_price, effective_bankroll, cfg.max_bet_usd, cfg.kelly_fraction)
+    # V6: Smart sizing — build context from consensus + learner data
+    consensus_obj = getattr(estimate, '_consensus', None)
+    sizing_ctx = SizingContext(
+        num_books=getattr(consensus_obj, 'num_books', 0) if consensus_obj else 0,
+        book_stdev=getattr(consensus_obj, 'book_stdev', 0.0) if consensus_obj else 0.0,
+        line_movement=getattr(consensus_obj, 'line_movement', 0.0) if consensus_obj else 0.0,
+    )
+
+    # Pull domain WR from learner if available
+    try:
+        from hawk.learner import _load_accuracy
+        accuracy_data = _load_accuracy()
+        cat_data = accuracy_data.get("category", {}).get(market.category)
+        if cat_data and cat_data.get("total", 0) >= 3:
+            sizing_ctx.domain_wr = cat_data["accuracy"]
+            sizing_ctx.domain_total = cat_data["total"]
+    except Exception:
+        pass
+
+    kf, conviction = smart_kelly_size(true_prob, buy_price, effective_bankroll, cfg.max_bet_usd, cfg, sizing_ctx)
     if kf < 1.0:
         return None
 

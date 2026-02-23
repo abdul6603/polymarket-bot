@@ -9,11 +9,15 @@ Quota-aware: circuit breaker stops all API calls once quota is exhausted.
 """
 from __future__ import annotations
 
+import json
 import logging
+import math
+import os
 import re
 import time
 from dataclasses import dataclass
 from difflib import SequenceMatcher
+from pathlib import Path
 
 from bot.http_session import get_session
 
@@ -77,6 +81,97 @@ _ALL_SOCCER_KEYS = [
 _cache: dict[str, tuple[float, list[dict]]] = {}
 _CACHE_TTL = 300  # 5 minutes — matches Hawk cycle
 
+# Sharp book weights — Pinnacle/Circa are the sharpest, promo books are softest
+_SHARP_WEIGHTS: dict[str, float] = {
+    "pinnacle": 2.0, "pinnaclesports": 2.0,
+    "circa": 2.0, "circasports": 2.0,
+    "bookmaker": 2.0,
+    "betfair": 1.5, "betfairexchange": 1.5, "betfair_ex_uk": 1.5,
+    "bet365": 1.5, "williamhill": 1.5,
+    "draftkings": 1.0, "fanduel": 1.0, "betmgm": 1.0,
+    "caesars": 1.0, "pointsbet": 1.0, "unibet": 1.0,
+    "bovada": 1.0, "betonlineag": 1.0, "mybookieag": 1.0,
+    "betrivers": 1.0, "superbook": 1.0, "wynnbet": 1.0,
+    "lowvig": 1.0, "betus": 1.0,
+}
+_DEFAULT_BOOK_WEIGHT = 0.8  # Unknown/small books
+
+# Spread-to-moneyline conversion (NFL/NBA historical data)
+# Spread (absolute) → approximate win probability for the favored team
+_SPREAD_TO_WIN_PROB: list[tuple[float, float]] = [
+    (0.5, 0.510), (1.0, 0.520), (1.5, 0.530), (2.0, 0.545),
+    (2.5, 0.555), (3.0, 0.575), (3.5, 0.590), (4.0, 0.610),
+    (4.5, 0.620), (5.0, 0.635), (5.5, 0.645), (6.0, 0.660),
+    (6.5, 0.670), (7.0, 0.690), (7.5, 0.700), (8.0, 0.715),
+    (9.0, 0.735), (10.0, 0.760), (11.0, 0.775), (12.0, 0.790),
+    (13.0, 0.805), (14.0, 0.820), (15.0, 0.835), (17.0, 0.860),
+    (20.0, 0.890), (24.0, 0.920), (28.0, 0.940), (35.0, 0.965),
+]
+
+# Line movement tracking
+_DATA_DIR = Path(__file__).parent.parent / "data"
+_PREV_ODDS_FILE = _DATA_DIR / "hawk_prev_odds.json"
+
+
+def _get_book_weight(book_key: str) -> float:
+    """Get sharp weight for a bookmaker."""
+    key = book_key.lower().replace(" ", "").replace("-", "")
+    return _SHARP_WEIGHTS.get(key, _DEFAULT_BOOK_WEIGHT)
+
+
+def _spread_to_win_prob(spread: float) -> float | None:
+    """Convert a point spread to win probability via linear interpolation.
+
+    spread: negative = home team favored (e.g., -7 means home -7).
+    Returns win probability for the HOME team, or None if |spread| < 0.5.
+    """
+    abs_spread = abs(spread)
+    if abs_spread < 0.5:
+        return None
+
+    table = _SPREAD_TO_WIN_PROB
+    # Below table minimum
+    if abs_spread <= table[0][0]:
+        return table[0][1]
+    # Above table maximum
+    if abs_spread >= table[-1][0]:
+        return table[-1][1]
+
+    # Linear interpolation
+    for i in range(len(table) - 1):
+        s0, p0 = table[i]
+        s1, p1 = table[i + 1]
+        if s0 <= abs_spread <= s1:
+            frac = (abs_spread - s0) / (s1 - s0) if s1 != s0 else 0.0
+            prob = p0 + frac * (p1 - p0)
+            # Table gives favored team's prob. Negative spread = home favored.
+            return prob if spread < 0 else 1.0 - prob
+
+    return None
+
+
+def _load_prev_odds() -> dict:
+    """Load previous cycle's consensus odds for line movement tracking."""
+    if not _PREV_ODDS_FILE.exists():
+        return {}
+    try:
+        with open(_PREV_ODDS_FILE) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
+def _save_prev_odds(data: dict) -> None:
+    """Save current cycle's consensus odds (overwritten each cycle)."""
+    _DATA_DIR.mkdir(exist_ok=True)
+    tmp = _PREV_ODDS_FILE.with_suffix(".json.tmp")
+    try:
+        with open(tmp, "w") as f:
+            json.dump(data, f)
+        os.replace(str(tmp), str(_PREV_ODDS_FILE))
+    except Exception:
+        log.debug("Failed to save prev odds for line movement tracking")
+
 
 @dataclass
 class SportsbookConsensus:
@@ -94,6 +189,9 @@ class SportsbookConsensus:
     over_prob: float | None = None  # Probability of going over
     match_confidence: float = 0.0  # How well the market matched (0-1)
     raw_odds: list[dict] | None = None
+    book_stdev: float = 0.0  # Stdev of devigged probs across books (consensus strength)
+    line_movement: float = 0.0  # Change from previous cycle (positive = edge growing)
+    spread_derived_prob: float | None = None  # Win prob derived from spread line
 
 
 def _american_to_prob(odds: int) -> float:
@@ -317,7 +415,7 @@ def fetch_odds(api_key: str, sport_key: str) -> list[dict]:
             f"{_BASE_URL}/sports/{sport_key}/odds",
             params={
                 "apiKey": api_key,
-                "regions": "us",
+                "regions": "us,eu,uk,au",
                 "markets": "h2h,spreads,totals",
                 "oddsFormat": "american",
             },
@@ -380,7 +478,8 @@ def fetch_odds(api_key: str, sport_key: str) -> list[dict]:
 def calculate_consensus(event: dict) -> SportsbookConsensus | None:
     """Calculate devigged consensus probability from all bookmakers for an event.
 
-    Averages implied probabilities across all bookmakers, then removes vig.
+    V6: Sharp-weighted mean (Pinnacle 2x, bet365 1.5x, DraftKings 1x).
+    Also computes book_stdev (consensus strength) and spread-derived win prob.
     """
     bookmakers = event.get("bookmakers", [])
     if not bookmakers:
@@ -390,16 +489,20 @@ def calculate_consensus(event: dict) -> SportsbookConsensus | None:
     away = event.get("away_team", "")
     sport_key = event.get("sport_key", "")
 
-    # Collect h2h (moneyline) probabilities
-    home_probs = []
-    away_probs = []
-    draw_probs = []
+    # Collect h2h (moneyline) probabilities with sharp weights
+    home_weighted: list[tuple[float, float]] = []  # (prob, weight)
+    away_weighted: list[tuple[float, float]] = []
+    draw_weighted: list[tuple[float, float]] = []
+    home_probs_raw: list[float] = []  # Unweighted, for stdev
     spread_probs = []
     spread_lines = []
     total_over_probs = []
     total_lines = []
 
     for book in bookmakers:
+        book_key = book.get("key", "")
+        weight = _get_book_weight(book_key)
+
         for market in book.get("markets", []):
             key = market.get("key", "")
 
@@ -408,17 +511,18 @@ def calculate_consensus(event: dict) -> SportsbookConsensus | None:
                 if home in outcomes and away in outcomes:
                     h_prob = _american_to_prob(outcomes[home])
                     a_prob = _american_to_prob(outcomes[away])
-                    # 3-way market (soccer) — includes Draw
                     if "Draw" in outcomes:
                         d_prob = _american_to_prob(outcomes["Draw"])
                         devigged = _devig_probs([h_prob, d_prob, a_prob])
-                        home_probs.append(devigged[0])
-                        draw_probs.append(devigged[1])
-                        away_probs.append(devigged[2])
+                        home_weighted.append((devigged[0], weight))
+                        draw_weighted.append((devigged[1], weight))
+                        away_weighted.append((devigged[2], weight))
+                        home_probs_raw.append(devigged[0])
                     else:
                         devigged = _devig_probs([h_prob, a_prob])
-                        home_probs.append(devigged[0])
-                        away_probs.append(devigged[1])
+                        home_weighted.append((devigged[0], weight))
+                        away_weighted.append((devigged[1], weight))
+                        home_probs_raw.append(devigged[0])
 
             elif key == "spreads":
                 for o in market.get("outcomes", []):
@@ -432,17 +536,48 @@ def calculate_consensus(event: dict) -> SportsbookConsensus | None:
                         total_lines.append(o.get("point", 0))
                         total_over_probs.append(_american_to_prob(o["price"]))
 
-    if not home_probs:
+    if not home_weighted:
         return None
+
+    # Weighted mean
+    total_w = sum(w for _, w in home_weighted)
+    w_home = sum(p * w for p, w in home_weighted) / total_w
+    w_away = sum(p * w for p, w in away_weighted) / total_w if away_weighted else 1.0 - w_home
+    w_draw = sum(p * w for p, w in draw_weighted) / sum(w for _, w in draw_weighted) if draw_weighted else 0.0
+
+    # Book stdev — consensus strength signal
+    book_stdev = 0.0
+    if len(home_probs_raw) >= 2:
+        mean_raw = sum(home_probs_raw) / len(home_probs_raw)
+        variance = sum((p - mean_raw) ** 2 for p in home_probs_raw) / (len(home_probs_raw) - 1)
+        book_stdev = math.sqrt(variance)
+
+    # Spread-derived win probability (cross-signal)
+    spread_derived_prob = None
+    if spread_lines:
+        avg_spread = sum(spread_lines) / len(spread_lines)
+        spread_derived_prob = _spread_to_win_prob(avg_spread)
+
+    # Blend h2h + spread-derived (80/20) when spread data exists
+    blended_home = w_home
+    if spread_derived_prob is not None:
+        blended_home = 0.80 * w_home + 0.20 * spread_derived_prob
+        blended_away = 1.0 - blended_home - w_draw
+        log.debug("Spread cross-signal: h2h=%.3f spread_derived=%.3f → blended=%.3f",
+                  w_home, spread_derived_prob, blended_home)
+    else:
+        blended_away = w_away
 
     consensus = SportsbookConsensus(
         home_team=home,
         away_team=away,
         sport_key=sport_key,
-        consensus_home_prob=sum(home_probs) / len(home_probs),
-        consensus_away_prob=sum(away_probs) / len(away_probs),
-        consensus_draw_prob=sum(draw_probs) / len(draw_probs) if draw_probs else 0.0,
-        num_books=len(home_probs),
+        consensus_home_prob=blended_home,
+        consensus_away_prob=max(0.0, blended_away),
+        consensus_draw_prob=w_draw,
+        num_books=len(home_weighted),
+        book_stdev=book_stdev,
+        spread_derived_prob=spread_derived_prob,
     )
 
     if spread_probs:
@@ -452,6 +587,12 @@ def calculate_consensus(event: dict) -> SportsbookConsensus | None:
     if total_over_probs:
         consensus.total_line = sum(total_lines) / len(total_lines)
         consensus.over_prob = sum(total_over_probs) / len(total_over_probs)
+
+    # Log sharp book presence
+    sharp_books = [b.get("key", "") for b in bookmakers if _get_book_weight(b.get("key", "")) >= 1.5]
+    if sharp_books:
+        log.info("Sharp books present: %s | stdev=%.4f | %d total books",
+                 ", ".join(sharp_books[:5]), book_stdev, len(home_weighted))
 
     return consensus
 
@@ -518,6 +659,17 @@ def get_sportsbook_probability(
 
     consensus.match_confidence = confidence
 
+    # Line movement tracking: compare to previous cycle
+    event_id = event.get("id", f"{consensus.home_team}_v_{consensus.away_team}")
+    prev_odds = _load_prev_odds()
+    prev_prob = prev_odds.get(event_id)
+    if prev_prob is not None:
+        consensus.line_movement = consensus.consensus_home_prob - prev_prob
+        if abs(consensus.line_movement) > 0.005:
+            log.info("Line movement: %s %.3f → %.3f (%+.1f%%)",
+                     event_id[:40], prev_prob, consensus.consensus_home_prob,
+                     consensus.line_movement * 100)
+
     # Determine which probability to return based on market type
     if market_type == "auto":
         q_lower = question.lower()
@@ -582,8 +734,27 @@ def get_sportsbook_probability(
         else:
             prob = consensus.consensus_away_prob
 
-    log.info("Sportsbook h2h: %s vs %s → prob=%.2f (%d books, conf=%.2f)",
-             consensus.home_team, consensus.away_team, prob, consensus.num_books, confidence)
+    # Spread-h2h agreement check (cross-signal quality)
+    # Compare home_prob to spread_derived_prob (both represent HOME team)
+    if consensus.spread_derived_prob is not None:
+        gap = abs(consensus.consensus_home_prob - consensus.spread_derived_prob)
+        if gap < 0.08:
+            log.info("Spread CONFIRMS h2h: h2h_home=%.3f spread_derived=%.3f (gap=%.1f%%) | %s",
+                     consensus.consensus_home_prob, consensus.spread_derived_prob, gap * 100,
+                     consensus.home_team)
+        else:
+            log.info("Spread DIVERGES from h2h: h2h_home=%.3f spread_derived=%.3f (gap=%.1f%%) | %s",
+                     consensus.consensus_home_prob, consensus.spread_derived_prob, gap * 100,
+                     consensus.home_team)
+
+    log.info("Sportsbook h2h: %s vs %s → prob=%.2f (%d books, stdev=%.4f, conf=%.2f)",
+             consensus.home_team, consensus.away_team, prob, consensus.num_books,
+             consensus.book_stdev, confidence)
+
+    # Save consensus for line movement tracking next cycle
+    prev_odds[event_id] = consensus.consensus_home_prob
+    _save_prev_odds(prev_odds)
+
     return prob, consensus
 
 

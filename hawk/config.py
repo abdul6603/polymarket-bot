@@ -67,6 +67,16 @@ class HawkConfig:
     cycle_minutes_fast: int = int(_env("HAWK_CYCLE_MINUTES_FAST", "5"))
     cycle_minutes_normal: int = int(_env("HAWK_CYCLE_MINUTES_NORMAL", "30"))
 
+    # V6: Smart sizing multipliers
+    sizing_domain_wr_boost: float = float(_env("HAWK_SIZING_DOMAIN_WR_BOOST", "1.3"))
+    sizing_domain_wr_penalty: float = float(_env("HAWK_SIZING_DOMAIN_WR_PENALTY", "0.5"))
+    sizing_books_boost: float = float(_env("HAWK_SIZING_BOOKS_BOOST", "1.2"))
+    sizing_books_penalty: float = float(_env("HAWK_SIZING_BOOKS_PENALTY", "0.6"))
+    sizing_consensus_boost: float = float(_env("HAWK_SIZING_CONSENSUS_BOOST", "1.2"))
+    sizing_consensus_penalty: float = float(_env("HAWK_SIZING_CONSENSUS_PENALTY", "0.7"))
+    sizing_movement_boost: float = float(_env("HAWK_SIZING_MOVEMENT_BOOST", "1.2"))
+    sizing_movement_penalty: float = float(_env("HAWK_SIZING_MOVEMENT_PENALTY", "0.7"))
+
     # V6: Arbitrage engine
     arb_enabled: bool = _env("HAWK_ARB_ENABLED", "true").lower() in ("true", "1", "yes")
     arb_bankroll_usd: float = float(_env("HAWK_ARB_BANKROLL_USD", "100"))
