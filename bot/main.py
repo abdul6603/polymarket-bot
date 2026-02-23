@@ -120,10 +120,13 @@ class TradingBot:
             cfg=cfg,
             price_cache=self.price_cache,
             clob_client=self.client,
-            dry_run=True,  # PAPER MODE: validating orderbook imbalance signal
+            dry_run=True,  # PAPER MODE: validating scoring engine v7
             budget_per_window=cfg.snipe_budget_per_window,
             delta_threshold=cfg.snipe_delta_threshold / 100,
         )
+        # Connect CLOB orderbook bridge for snipe engine to read WS feed data
+        from bot.snipe import clob_book
+        clob_book.set_feed(self.feed)
         self.perf_tracker = PerformanceTracker(cfg, position_tracker=self.tracker)
         self.bankroll_manager = BankrollManager()
         self._shutdown_event = asyncio.Event()

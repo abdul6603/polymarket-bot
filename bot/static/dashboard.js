@@ -4062,6 +4062,7 @@ async function refresh() {
       loadMLStatus();
       loadJournal();
       refreshClobPill();
+      refreshSnipeV7();
     } else if (currentTab === 'soren') {
       var resp = await fetch('/api/soren');
       renderSoren(await resp.json());
@@ -9297,6 +9298,117 @@ async function loadOdinTrades() {
 function odinRefresh() {
   showToast('Refreshing Odin...', 'info');
   loadOdinTab().then(function() { showToast('Odin refreshed', 'success'); });
+}
+
+// ── Snipe Engine v7 Dashboard Cards ─────────────────────────
+
+var _snipeV7Timer = null;
+
+function refreshSnipeV7() {
+  fetch('/api/garves/snipe-v7').then(function(r){ return r.json(); }).then(function(d) {
+    if (!d || !d.enabled) {
+      document.getElementById('snipe-signal-score').textContent = 'OFF';
+      return;
+    }
+
+    // Signal Score card
+    var scorer = d.scorer || {};
+    var scoreEl = document.getElementById('snipe-signal-score');
+    var scoreDirEl = document.getElementById('snipe-score-dir');
+    if (scorer.active && scorer.last_score != null) {
+      var sc = scorer.last_score;
+      scoreEl.textContent = sc.toFixed(0) + '/100';
+      scoreEl.style.color = sc >= 75 ? '#22c55e' : sc >= 50 ? '#eab308' : '#ef4444';
+      scoreDirEl.textContent = (scorer.last_direction || '').toUpperCase() + ' | thresh=' + scorer.threshold;
+
+      // Show score breakdown
+      var barsEl = document.getElementById('snipe-score-bars');
+      var comps = scorer.components || {};
+      var html = '';
+      var compNames = ['delta_magnitude','delta_sustained','binance_imbalance',
+        'clob_spread_compression','clob_yes_no_pressure','volume_delta',
+        'bos_choch_5m','bos_choch_15m','time_positioning','implied_price_edge'];
+      var compLabels = {
+        delta_magnitude: 'Delta Mag', delta_sustained: 'Sustained',
+        binance_imbalance: 'Binance OB', clob_spread_compression: 'Spread Comp',
+        clob_yes_no_pressure: 'YES/NO Pres', volume_delta: 'Vol Delta',
+        bos_choch_5m: 'BOS 5m', bos_choch_15m: 'BOS 15m',
+        time_positioning: 'Timing', implied_price_edge: 'Price Edge'
+      };
+      for (var i = 0; i < compNames.length; i++) {
+        var cn = compNames[i];
+        var cv = comps[cn] || {};
+        var pct = ((cv.score || 0) * 100).toFixed(0);
+        var barColor = pct >= 60 ? '#22c55e' : pct >= 30 ? '#eab308' : '#ef4444';
+        html += '<div style="display:flex;align-items:center;gap:6px;">' +
+          '<span style="width:72px;text-align:right;color:var(--text-muted);">' + (compLabels[cn] || cn) + '</span>' +
+          '<div style="flex:1;height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">' +
+          '<div style="width:' + pct + '%;height:100%;background:' + barColor + ';border-radius:3px;"></div></div>' +
+          '<span style="width:24px;font-family:var(--font-mono);">' + (cv.weighted != null ? cv.weighted.toFixed(1) : '--') + '</span></div>';
+      }
+      barsEl.innerHTML = html;
+      document.getElementById('snipe-v7-breakdown').style.display = 'block';
+    } else {
+      scoreEl.textContent = '--';
+      scoreEl.style.color = '#8b5cf6';
+      scoreDirEl.textContent = d.state || 'idle';
+      document.getElementById('snipe-v7-breakdown').style.display = 'none';
+    }
+
+    // Success Rate card
+    var rateEl = document.getElementById('snipe-success-rate');
+    var wlEl = document.getElementById('snipe-wl-record');
+    var stats = d.stats || {};
+    if (d.success_rate_50 != null) {
+      rateEl.textContent = d.success_rate_50.toFixed(1) + '%';
+      rateEl.style.color = d.success_rate_50 >= 60 ? '#22c55e' : d.success_rate_50 >= 45 ? '#eab308' : '#ef4444';
+    } else {
+      rateEl.textContent = '--';
+    }
+    wlEl.textContent = (stats.wins || 0) + 'W-' + (stats.losses || 0) + 'L | $' + (stats.pnl || 0).toFixed(2);
+
+    // Avg Latency card
+    var latEl = document.getElementById('snipe-avg-latency');
+    var latDetailEl = document.getElementById('snipe-latency-detail');
+    if (d.avg_latency_ms != null) {
+      latEl.textContent = d.avg_latency_ms.toFixed(0) + 'ms';
+      latEl.style.color = d.avg_latency_ms < 500 ? '#22c55e' : d.avg_latency_ms < 2000 ? '#eab308' : '#ef4444';
+      latDetailEl.textContent = d.dry_run ? 'paper mode' : 'live';
+    } else {
+      latEl.textContent = '--';
+      latDetailEl.textContent = 'no trades yet';
+    }
+
+    // CLOB Spread card
+    var spreadEl = document.getElementById('snipe-clob-spread');
+    var stateEl = document.getElementById('snipe-state-label');
+    stateEl.textContent = (d.state || 'idle').toUpperCase() + ' | ' + (d.threshold_mode || '') +
+      ' | budget=$' + (d.budget_per_window || 0).toFixed(0);
+
+    // Try to get spread from scorer CLOB data
+    if (scorer.active && scorer.components && scorer.components.clob_spread_compression) {
+      var spreadDetail = scorer.components.clob_spread_compression.detail || '';
+      var spreadMatch = spreadDetail.match(/spread=([0-9.]+)/);
+      if (spreadMatch) {
+        spreadEl.textContent = '$' + parseFloat(spreadMatch[1]).toFixed(4);
+      } else {
+        spreadEl.textContent = '--';
+      }
+    } else {
+      spreadEl.textContent = '--';
+    }
+
+    // Auto-refresh while on garves tab
+    clearTimeout(_snipeV7Timer);
+    if (currentTab === 'garves-live') {
+      _snipeV7Timer = setTimeout(refreshSnipeV7, 5000);
+    }
+  }).catch(function() {
+    clearTimeout(_snipeV7Timer);
+    if (currentTab === 'garves-live') {
+      _snipeV7Timer = setTimeout(refreshSnipeV7, 5000);
+    }
+  });
 }
 
 // ── CLOB Status Pill ────────────────────────────────────────

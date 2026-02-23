@@ -1,13 +1,14 @@
-"""Snipe Engine — orchestrates the 5m BTC-only snipe strategy.
+"""Snipe Engine v7 — 5m BTC binary scalper with 10-component scoring.
 
 State machine:
   IDLE -> TRACKING -> ARMED -> EXECUTING -> COOLDOWN -> IDLE
 
 Runs in its own background thread (independent of Garves's main event loop).
-Ticks every 3s → ~22 readings per snipe window.
-BTC only — deepest order book, most reliable fills near fair price.
-Combined signal: order book imbalance (predictive) + delta (confirmation).
-GTC LIMIT orders rest on book. Cancels at T-5s or on reversal.
+Ticks every 2s. BTC only — deepest order book, most reliable fills.
+
+v7 upgrade: Combines Binance L2 orderflow + Polymarket CLOB orderbook +
+SMC structure (BOS/CHoCH on 5m/15m candles) into a 0-100 signal score.
+Only executes when score >= threshold (default 75).
 """
 from __future__ import annotations
 
@@ -28,6 +29,10 @@ from bot.snipe.window_tracker import WindowTracker
 from bot.snipe.delta_signal import DeltaSignal
 from bot.snipe.pyramid_executor import PyramidExecutor
 from bot.snipe.orderbook_signal import OrderBookSignal
+from bot.snipe.candle_store import CandleStore
+from bot.snipe.signal_scorer import SignalScorer
+from bot.snipe import clob_book
+from bot.snipe.fill_simulator import estimate_fill
 
 log = logging.getLogger("garves.snipe")
 
@@ -83,6 +88,10 @@ class SnipeEngine:
         )
         self._orderbook = OrderBookSignal()
         self._orderbook.start()
+
+        # v7: Scoring engine + candle structure + CLOB bridge
+        self._candle_store = CandleStore()
+        self._scorer = SignalScorer(threshold=75)
 
         self._state = SnipeState.IDLE
         self._current_window_id: str = ""
@@ -143,11 +152,11 @@ class SnipeEngine:
         threshold = self._effective_threshold()
         is_weekend = datetime.now(ET).weekday() >= 5
         log.info(
-            "[SNIPE] Engine started | budget=$%.0f/window | threshold=%.3f%% (%s) | "
-            "tick=%ds | dry_run=%s | orderbook=%s",
+            "[SNIPE] Engine v7 started | budget=$%.0f/window | threshold=%.3f%% (%s) | "
+            "score_threshold=%d | tick=%ds | dry_run=%s | orderbook=%s",
             self.pyramid._budget, threshold * 100,
             "weekend" if is_weekend else "weekday",
-            SNIPE_TICK_INTERVAL, self._dry_run,
+            self._scorer.threshold, SNIPE_TICK_INTERVAL, self._dry_run,
             "connected" if self._orderbook.is_connected else "disconnected",
         )
 
@@ -175,6 +184,11 @@ class SnipeEngine:
         """Single tick of the snipe state machine."""
         now = time.time()
 
+        # Feed candle store every tick (needs continuous data for 5m/15m candles)
+        btc_price = self._cache.get_price("bitcoin")
+        if btc_price:
+            self._candle_store.feed_tick(btc_price)
+
         if self._state == SnipeState.IDLE:
             self._on_idle()
         elif self._state == SnipeState.TRACKING:
@@ -199,30 +213,31 @@ class SnipeEngine:
             if 30 < remaining <= 190:
                 self._state = SnipeState.TRACKING
                 self._delta_signals.clear()  # Reset all per-asset trackers
+                self._scorer.reset_spread_history()  # Fresh spread tracking
                 threshold = self._effective_threshold()
                 log.info(
-                    "[SNIPE] IDLE -> TRACKING (scanning all assets, T-%.0fs, threshold=%.3f%%)",
-                    remaining, threshold * 100,
+                    "[SNIPE] IDLE -> TRACKING (T-%.0fs, delta_thresh=%.3f%%, score_thresh=%d)",
+                    remaining, threshold * 100, self._scorer.threshold,
                 )
                 return
 
     def _on_tracking(self) -> None:
-        """Evaluate ALL assets with per-asset signal trackers, arm the best one with a signal."""
+        """Evaluate BTC windows with 10-component scoring engine (v7)."""
         now = time.time()
 
-        # BTC only — deepest book, most reliable fills
-        # Fetch LIVE BTC price directly (PriceCache is stale between taker ticks)
+        # Fetch LIVE BTC price (PriceCache is stale between taker ticks)
         live_btc = self._fetch_btc_price()
+        if live_btc:
+            self._candle_store.feed_tick(live_btc)
+
         candidates = []
         for w in self.window_tracker.all_active_windows():
-            if w.traded:
-                continue
-            if w.asset != "bitcoin":
+            if w.traded or w.asset != "bitcoin":
                 continue
             remaining = w.end_ts - now
             if remaining <= 0 or remaining > 190:
                 continue
-            price = live_btc if w.asset == "bitcoin" and live_btc else self._cache.get_price(w.asset)
+            price = live_btc if live_btc else self._cache.get_price(w.asset)
             if not price or w.open_price <= 0:
                 continue
             delta = (price - w.open_price) / w.open_price
@@ -234,7 +249,7 @@ class SnipeEngine:
 
         candidates.sort(key=lambda x: abs(x[2]), reverse=True)
 
-        # Log all assets
+        # Log top candidates
         remaining_top = candidates[0][3]
         if remaining_top <= 185:
             parts = [f"{w.asset[:3].upper()}={d*100:+.4f}%" for w, p, d, r in candidates]
@@ -244,96 +259,113 @@ class SnipeEngine:
                 candidates[0][2] * 100, " ".join(parts),
             )
 
-        # Evaluate EVERY asset with combined signal: orderbook imbalance + delta confirmation
-        signaled = []
+        # Gather Binance L2 data (shared across all candidates)
         ob_signal = self._orderbook.get_signal() if self._orderbook.is_connected else None
+        ob_reading = self._orderbook.get_latest_reading() if self._orderbook.is_connected else None
+
+        # Gather SMC structure (shared — all candidates are BTC)
+        structure_5m = self._candle_store.get_structure("5m")
+        structure_15m = self._candle_store.get_structure("15m")
+
+        from bot.snipe.pyramid_executor import WAVES
 
         for window, price, delta, remaining in candidates:
-            sig_tracker = self._get_signal(window.asset)
-            delta_signal = sig_tracker.evaluate(price, window.open_price, remaining)
-
-            # COMBINED SIGNAL: imbalance (predictive) + delta (confirmation)
-            # Mode 1: Imbalance + delta confirm — enter early (T-180s to T-5s)
-            # Mode 2: Delta-only fallback — enter later (T-120s to T-5s) if WS down
-            if ob_signal and abs(delta) >= DELTA_CONFIRM_THRESHOLD:
-                ob_dir = ob_signal.direction
-                delta_dir = "up" if delta > 0 else "down"
-                if ob_dir == delta_dir:
-                    # Both agree — strong combined signal
-                    from bot.snipe.delta_signal import SnipeSignal
-                    combined = SnipeSignal(
-                        direction=ob_dir,
-                        delta_pct=round(delta * 100, 4),
-                        confidence=min(0.98, 0.60 + ob_signal.strength * 0.30 + abs(delta) * 100),
-                        sustained_ticks=ob_signal.sustained_ticks,
-                        current_price=price,
-                        open_price=window.open_price,
-                        remaining_s=remaining,
-                    )
-                    signaled.append((window, price, delta, remaining, combined))
-                    log.info(
-                        "[SNIPE] COMBINED: OB=%s(%.3f, %dt) + Delta=%+.4f%% -> %s",
-                        ob_dir.upper(), ob_signal.imbalance, ob_signal.sustained_ticks,
-                        delta * 100, ob_dir.upper(),
-                    )
-            elif delta_signal:
-                # Fallback: delta-only (WS down or no imbalance signal)
-                signaled.append((window, price, delta, remaining, delta_signal))
-
-        if not signaled:
-            return
-
-        # Try each signaled asset — fall back on no-liquidity
-        from bot.snipe.pyramid_executor import WAVES
-        for window, price, delta, remaining, signal in signaled:
-            # Combined mode: enter anytime T-180s to T-5s (imbalance is early)
-            # Fallback mode: enter T-120s to T-5s (delta needs more time)
-            max_entry_time = 180 if ob_signal else 120
-            if remaining > max_entry_time or remaining < 5:
+            # Timing guard
+            if remaining > 180 or remaining < 5:
                 continue
 
-            self._current_window_id = window.market_id
-            direction = signal.direction
-            token_id = window.up_token_id if direction == "up" else window.down_token_id
+            # Track delta direction (keeps DeltaSignal's history for reversal detection)
+            sig_tracker = self._get_signal(window.asset)
+            sig_tracker.evaluate(price, window.open_price, remaining)
 
+            # Pre-filter: minimum delta to even consider scoring
+            abs_delta = abs(delta)
+            if abs_delta < DELTA_CONFIRM_THRESHOLD:
+                continue
+
+            direction = "up" if delta > 0 else "down"
+
+            # Count sustained ticks in same direction
+            sustained = 0
+            for d in reversed(sig_tracker._recent_dirs):
+                if d == direction:
+                    sustained += 1
+                else:
+                    break
+
+            # Token IDs for target and opposite
+            token_id = window.up_token_id if direction == "up" else window.down_token_id
+            opp_token_id = window.down_token_id if direction == "up" else window.up_token_id
+
+            # Fetch CLOB implied price
             implied = self._fetch_implied_price(window.market_id, token_id)
             if not implied:
                 log.info("[SNIPE] %s: no implied price, trying next", window.asset.upper())
                 continue
 
-            # Price floor: don't buy tokens the market prices as unlikely
+            # Price floor
             if implied < MIN_IMPLIED_PRICE:
                 log.info(
-                    "[SNIPE] %s: CLOB $%.3f < floor $%.2f (market says <%d%% likely), skipping",
-                    window.asset.upper(), implied, MIN_IMPLIED_PRICE, int(MIN_IMPLIED_PRICE * 100),
+                    "[SNIPE] %s: CLOB $%.3f < floor $%.2f, skipping",
+                    window.asset.upper(), implied, MIN_IMPLIED_PRICE,
                 )
                 continue
 
+            # Cap check
             max_cap = WAVES[0][2]
             for _, _, cap, fire_below in WAVES:
                 if remaining <= fire_below:
                     max_cap = cap
             if implied > max_cap:
-                log.info("[SNIPE] %s: CLOB $%.3f > cap $%.2f, trying next", window.asset.upper(), implied, max_cap)
+                log.info("[SNIPE] %s: CLOB $%.3f > cap $%.2f, trying next",
+                         window.asset.upper(), implied, max_cap)
                 continue
+
+            # Get CLOB orderbook data for both tokens
+            target_book = clob_book.get_orderbook(token_id)
+            opp_book = clob_book.get_orderbook(opp_token_id)
+
+            # ── SCORE all 10 components ──
+            score_result = self._scorer.score(
+                direction=direction,
+                delta_pct=abs_delta * 100,  # Convert to percent (0.12 = 0.12%)
+                sustained_ticks=sustained,
+                ob_imbalance=ob_reading.imbalance if ob_reading else None,
+                ob_strength=ob_signal.strength if ob_signal else None,
+                clob_book=target_book,
+                clob_book_opposite=opp_book,
+                structure_5m=structure_5m,
+                structure_15m=structure_15m,
+                remaining_s=remaining,
+                implied_price=implied,
+            )
+
+            if not score_result.should_trade:
+                continue  # Score logged by scorer itself
+
+            # ── Fill simulation ──
+            shares_est = int(self.pyramid._budget / max_cap)
+            fill_est = estimate_fill(token_id, max_cap, shares_est)
+            log.info("[SNIPE] FILL SIM: %s", fill_est.detail)
 
             self._stats["signals"] += 1
             log.info(
-                "[SNIPE] SIGNAL: %s %s | delta=%+.4f%% | conf=%.2f | "
+                "[SNIPE] SIGNAL: %s %s | score=%.0f/100 | delta=%+.4f%% | "
                 "sustained=%d | T-%.0fs | $%.2f (open $%.2f)",
-                window.asset.upper(), signal.direction.upper(), signal.delta_pct,
-                signal.confidence, signal.sustained_ticks, remaining, price, window.open_price,
+                window.asset.upper(), direction.upper(), score_result.total_score,
+                delta * 100, sustained, remaining, price, window.open_price,
             )
 
-            self.pyramid.start_position(window.market_id, signal.direction, window.open_price, window.asset)
+            # ── Execute ──
+            self._current_window_id = window.market_id
+            self.pyramid.start_position(window.market_id, direction, window.open_price, window.asset)
 
             result = self.pyramid.execute_wave(1, token_id, implied)
             if result:
-                # Immediate fill (GTC matched existing sells)
                 log.info(
-                    "[SNIPE] GTC FILLED | T-%.0fs | %s %s | $%.2f | %.0f shares @ $%.3f",
-                    remaining, window.asset.upper(), signal.direction.upper(),
-                    result.size_usd, result.shares, result.price,
+                    "[SNIPE] GTC FILLED | T-%.0fs | %s %s | $%.2f | %.0f shares @ $%.3f | score=%.0f",
+                    remaining, window.asset.upper(), direction.upper(),
+                    result.size_usd, result.shares, result.price, score_result.total_score,
                 )
                 self._state = SnipeState.EXECUTING
                 self._executing_since = time.time()
@@ -341,13 +373,11 @@ class SnipeEngine:
                 log.info("[SNIPE] TRACKING -> EXECUTING (GTC filled)")
                 return
             elif self.pyramid.has_pending_order:
-                # GTC order resting on book — wait for fills
                 self._state = SnipeState.ARMED
                 self.window_tracker.mark_traded(window.market_id)
-                log.info("[SNIPE] TRACKING -> ARMED (GTC resting at $%.2f)", WAVES[0][2])
+                log.info("[SNIPE] TRACKING -> ARMED (GTC resting, score=%.0f)", score_result.total_score)
                 return
             else:
-                # Order completely failed
                 log.warning("[SNIPE] GTC failed on %s — trying next", window.asset.upper())
                 self.pyramid.close_position()
                 continue
@@ -650,6 +680,17 @@ class SnipeEngine:
         except Exception:
             pass
 
+    def _compute_success_rate_50(self) -> float | None:
+        """Compute win rate from last 50 resolved trades."""
+        history = self.pyramid.get_history(50)
+        if not history:
+            return None
+        wins = sum(1 for t in history if t.get("won") is True)
+        resolved = sum(1 for t in history if t.get("won") is not None)
+        if resolved == 0:
+            return None
+        return round(wins / resolved * 100, 1)
+
     def get_status(self) -> dict:
         """Dashboard-friendly status."""
         threshold = self._effective_threshold()
@@ -670,5 +711,10 @@ class SnipeEngine:
             "position": self.pyramid.get_status(),
             "history": self.pyramid.get_history(10),
             "orderbook": self._orderbook.get_status() if hasattr(self, "_orderbook") else None,
+            # v7: scoring engine + candle structure + latency
+            "scorer": self._scorer.get_status(),
+            "candles": self._candle_store.get_status(),
+            "success_rate_50": self._compute_success_rate_50(),
+            "avg_latency_ms": self.pyramid.get_avg_latency_ms(),
             "timestamp": time.time(),
         }

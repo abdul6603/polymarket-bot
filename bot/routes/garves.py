@@ -1421,3 +1421,20 @@ def api_garves_force_reconnect():
         return jsonify({"ok": True, "message": "Reconnect signal sent"})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)[:200]}), 500
+
+
+# ── Snipe Engine v7 ─────────────────────────────────────────
+
+SNIPE_STATUS_FILE = DATA_DIR / "snipe_status.json"
+
+
+@garves_bp.route("/api/garves/snipe-v7")
+def api_garves_snipe_v7():
+    """Snipe engine v7 status — scoring, latency, success rate, CLOB spread."""
+    try:
+        if not SNIPE_STATUS_FILE.exists():
+            return jsonify({"enabled": False, "detail": "No snipe status file"})
+        data = json.loads(SNIPE_STATUS_FILE.read_text())
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500

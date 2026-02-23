@@ -77,6 +77,7 @@ class PyramidExecutor:
         self._completed: list[SnipePosition] = []
         self._pending_order_id: str | None = None
         self._pending_token_id: str = ""
+        self._latencies: list[float] = []  # Recent execution latencies in ms
 
     def start_position(self, market_id: str, direction: str, open_price: float, asset: str = "bitcoin") -> None:
         """Initialize a new snipe position for this window."""
@@ -129,6 +130,7 @@ class PyramidExecutor:
         price = max(0.01, min(0.99, round(price, 2)))
         shares = int(size_usd / price)
 
+        t0 = time.time()
         if self._dry_run:
             order_id = f"snipe-dry-w{wave_num}-{int(time.time())}"
             log.info(
@@ -147,9 +149,11 @@ class PyramidExecutor:
                 filled=True,
             )
             self._record_fill(result)
+            self._record_latency(t0)
             return result
         else:
             result = self._place_gtc_order(wave_num, token_id, price, shares, size_usd)
+            self._record_latency(t0)
             if result:
                 self._record_fill(result)
             return result
@@ -478,6 +482,20 @@ class PyramidExecutor:
     @property
     def has_pending_order(self) -> bool:
         return self._pending_order_id is not None
+
+    def _record_latency(self, t0: float) -> None:
+        """Record order execution latency."""
+        elapsed_ms = round((time.time() - t0) * 1000, 1)
+        self._latencies.append(elapsed_ms)
+        if len(self._latencies) > 50:
+            self._latencies = self._latencies[-50:]
+        log.info("[SNIPE] Execution latency: %.1fms", elapsed_ms)
+
+    def get_avg_latency_ms(self) -> float | None:
+        """Average execution latency from recent trades."""
+        if not self._latencies:
+            return None
+        return round(sum(self._latencies) / len(self._latencies), 1)
 
     def get_status(self) -> dict:
         """Dashboard-friendly status."""

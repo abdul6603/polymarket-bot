@@ -47,6 +47,38 @@
   </div>
   <div class="health-inline" id="garves-health-result"></div>
 
+  <!-- ═══ Snipe Engine v7 — Signal Scoring Cards ═══ -->
+  <div id="snipe-v7-cards" class="grid-4" style="margin-bottom:12px;">
+    <div class="stat-card" style="border-left:3px solid #8b5cf6;">
+      <div class="stat-value" id="snipe-signal-score" style="font-size:1.3rem;color:#8b5cf6;">--</div>
+      <div class="stat-label">Signal Score</div>
+      <div id="snipe-score-dir" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div>
+    </div>
+    <div class="stat-card" style="border-left:3px solid #22c55e;">
+      <div class="stat-value" id="snipe-success-rate" style="font-size:1.3rem;">--</div>
+      <div class="stat-label">Success Rate (50)</div>
+      <div id="snipe-wl-record" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div>
+    </div>
+    <div class="stat-card" style="border-left:3px solid #eab308;">
+      <div class="stat-value" id="snipe-avg-latency" style="font-size:1.3rem;">--</div>
+      <div class="stat-label">Avg Latency</div>
+      <div id="snipe-latency-detail" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div>
+    </div>
+    <div class="stat-card" style="border-left:3px solid #06b6d4;">
+      <div class="stat-value" id="snipe-clob-spread" style="font-size:1.3rem;">--</div>
+      <div class="stat-label">CLOB Spread</div>
+      <div id="snipe-state-label" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div>
+    </div>
+  </div>
+
+  <!-- Snipe v7 Scoring Breakdown (collapsible) -->
+  <div id="snipe-v7-breakdown" style="margin-bottom:12px;display:none;">
+    <div class="glass-card" style="padding:10px 14px;">
+      <div style="font-weight:700;font-size:0.76rem;margin-bottom:8px;">Signal Score Breakdown</div>
+      <div id="snipe-score-bars" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:0.68rem;"></div>
+    </div>
+  </div>
+
   <!-- Hero cards: Portfolio, Cash, Real PnL -->
   <div class="grid-3" style="margin-bottom:12px;">
     <div class="stat-card" data-accent="success" style="border-left:3px solid var(--success);">
