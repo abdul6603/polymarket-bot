@@ -6697,6 +6697,181 @@ async function loadHawkTab() {
 
   // Smart actions from Thor
   loadAgentSmartActions('hawk');
+
+  // V6: New loaders
+  loadHawkNextCycle();
+  loadHawkDomainWR();
+  loadHawkGapHeatmap();
+  loadHawkLearner();
+  loadHawkArbStatus();
+}
+
+// ═══ V6: New Hawk Functions ═══
+
+var _hawkCycleInterval = null;
+
+async function loadHawkNextCycle() {
+  try {
+    var resp = await fetch('/api/hawk/next-cycle');
+    var d = await resp.json();
+    var nextAt = d.next_at || 0;
+    var mode = d.mode || 'normal';
+    var badge = document.getElementById('hawk-cycle-mode-badge');
+    if (badge) {
+      badge.textContent = mode.toUpperCase();
+      badge.style.background = mode === 'fast' ? 'rgba(255,68,68,0.2)' : 'rgba(255,215,0,0.15)';
+      badge.style.color = mode === 'fast' ? '#ff4444' : 'var(--agent-hawk)';
+    }
+    if (_hawkCycleInterval) clearInterval(_hawkCycleInterval);
+    _hawkCycleInterval = setInterval(function() {
+      var now = Date.now() / 1000;
+      var remaining = Math.max(0, nextAt - now);
+      var mins = Math.floor(remaining / 60);
+      var secs = Math.floor(remaining % 60);
+      var el = document.getElementById('hawk-cycle-countdown');
+      if (el) el.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+      if (remaining <= 0 && el) el.textContent = '00:00';
+    }, 1000);
+  } catch(e) { console.error('hawk next-cycle:', e); }
+}
+
+async function loadHawkDomainWR() {
+  try {
+    var resp = await fetch('/api/hawk/domain-winrates');
+    var d = await resp.json();
+    var domains = d.domains || {};
+    var setDomain = function(name, data) {
+      var wrEl = document.getElementById('hawk-domain-' + name + '-wr');
+      var pnlEl = document.getElementById('hawk-domain-' + name + '-pnl');
+      if (wrEl) {
+        wrEl.textContent = data.win_rate > 0 ? data.win_rate.toFixed(1) + '%' : '--';
+        wrEl.style.color = data.win_rate >= 50 ? 'var(--success)' : data.win_rate > 0 ? 'var(--warning)' : 'var(--text-muted)';
+      }
+      if (pnlEl) {
+        var prefix = data.pnl >= 0 ? '$' : '-$';
+        pnlEl.textContent = prefix + Math.abs(data.pnl).toFixed(2) + ' P&L (' + (data.wins + data.losses) + ' trades)';
+      }
+    };
+    if (domains.sports) setDomain('sports', domains.sports);
+    if (domains.weather) setDomain('weather', domains.weather);
+    if (domains.arb) setDomain('arb', domains.arb);
+  } catch(e) { console.error('hawk domain-wr:', e); }
+}
+
+async function loadHawkGapHeatmap() {
+  try {
+    var resp = await fetch('/api/hawk/gap-heatmap');
+    var d = await resp.json();
+    var points = d.points || [];
+    var canvas = document.getElementById('hawk-gap-scatter');
+    if (!canvas || points.length === 0) return;
+    var catColors = {sports: '#00ff44', weather: '#4FC3F7', politics: '#FFD700', other: '#aaa'};
+    var datasets = {};
+    for (var i = 0; i < points.length; i++) {
+      var p = points[i];
+      var cat = p.category || 'other';
+      if (!datasets[cat]) datasets[cat] = {label: cat, data: [], backgroundColor: catColors[cat] || '#aaa', pointRadius: 5};
+      datasets[cat].data.push({x: p.market_price, y: p.estimated_prob});
+    }
+    if (canvas._chartInstance) canvas._chartInstance.destroy();
+    canvas._chartInstance = new Chart(canvas, {
+      type: 'scatter',
+      data: {datasets: Object.values(datasets)},
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          x: {title: {display: true, text: 'Market Price', color: '#888'}, min: 0, max: 1, grid: {color: 'rgba(255,255,255,0.05)'}},
+          y: {title: {display: true, text: 'Model Estimate', color: '#888'}, min: 0, max: 1, grid: {color: 'rgba(255,255,255,0.05)'}}
+        },
+        plugins: {
+          legend: {labels: {color: '#ccc', font: {size: 10}}},
+          annotation: {annotations: {line1: {type: 'line', yMin: 0, yMax: 1, xMin: 0, xMax: 1, borderColor: 'rgba(255,255,255,0.2)', borderDash: [5,5]}}}
+        }
+      }
+    });
+  } catch(e) { console.error('hawk gap-heatmap:', e); }
+}
+
+async function loadHawkLearner() {
+  try {
+    var resp = await fetch('/api/hawk/learner');
+    var d = await resp.json();
+    var dims = d.dimensions || {};
+    var dimMap = {
+      'Edge Source': 'edge-source',
+      'Category': 'category',
+      'Direction': 'direction',
+      'Confidence': 'confidence',
+      'Risk Level': 'risk',
+      'Time Horizon': 'time'
+    };
+    for (var dimName in dimMap) {
+      var elId = 'hawk-learner-' + dimMap[dimName] + '-wr';
+      var el = document.getElementById(elId);
+      if (!el) continue;
+      var dimData = dims[dimName] || {};
+      var totalW = 0, totalL = 0;
+      for (var k in dimData) {
+        totalW += dimData[k].wins || 0;
+        totalL += dimData[k].losses || 0;
+      }
+      var total = totalW + totalL;
+      if (total > 0) {
+        var wr = (totalW / total * 100).toFixed(1);
+        el.textContent = wr + '%';
+        el.style.color = wr >= 50 ? 'var(--success)' : 'var(--warning)';
+        var parent = el.parentElement;
+        var detailEl = parent.querySelector('.learner-detail');
+        if (!detailEl) {
+          detailEl = document.createElement('div');
+          detailEl.className = 'learner-detail';
+          detailEl.style.cssText = 'font-size:0.58rem;color:var(--text-muted);margin-top:4px;';
+          parent.appendChild(detailEl);
+        }
+        detailEl.textContent = totalW + 'W / ' + totalL + 'L (' + total + ')';
+      } else {
+        el.textContent = '--';
+      }
+    }
+  } catch(e) { console.error('hawk learner:', e); }
+}
+
+async function loadHawkArbStatus() {
+  try {
+    var resp = await fetch('/api/hawk/arb-status');
+    var d = await resp.json();
+    var openEl = document.getElementById('hawk-arb-open');
+    var totalEl = document.getElementById('hawk-arb-total');
+    var profitEl = document.getElementById('hawk-arb-profit');
+    if (openEl) openEl.textContent = d.open_arbs || 0;
+    if (totalEl) totalEl.textContent = d.total_executed || 0;
+    if (profitEl) {
+      var profit = d.total_profit || 0;
+      profitEl.textContent = (profit >= 0 ? '$' : '-$') + Math.abs(profit).toFixed(2);
+      profitEl.style.color = profit >= 0 ? 'var(--success)' : 'var(--error)';
+    }
+    var tbody = document.getElementById('hawk-arb-tbody');
+    if (tbody) {
+      var positions = d.positions || [];
+      if (positions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:16px;">No open arb positions</td></tr>';
+      } else {
+        var html = '';
+        for (var i = 0; i < positions.length; i++) {
+          var p = positions[i];
+          html += '<tr>'
+            + '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + esc(p.question) + '">' + esc(p.question) + '</td>'
+            + '<td>$' + (p.combined_cost || 0).toFixed(4) + '</td>'
+            + '<td style="color:var(--success);">$' + (p.profit_per_share || 0).toFixed(4) + '</td>'
+            + '<td>' + (p.shares || 0).toFixed(1) + '</td>'
+            + '<td style="color:var(--success);">$' + (p.expected_profit || 0).toFixed(2) + '</td>'
+            + '<td style="font-size:0.72rem;">' + esc(p.time_str) + '</td>'
+            + '</tr>';
+        }
+        tbody.innerHTML = html;
+      }
+    }
+  } catch(e) { console.error('hawk arb-status:', e); }
 }
 
 async function hawkRefreshIntel() {

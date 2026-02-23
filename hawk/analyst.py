@@ -278,14 +278,15 @@ def _get_weather_context(market: HawkMarket) -> str:
     return ""
 
 
-def _get_sportsbook_data(cfg: HawkConfig, market: HawkMarket) -> tuple[float | None, int, str]:
+def _get_sportsbook_data(cfg: HawkConfig, market: HawkMarket) -> tuple[float | None, int, str, bool]:
     """Get sportsbook consensus probability + ESPN context for a sports market.
 
-    Returns (sportsbook_prob, num_books, espn_context_str).
+    Returns (sportsbook_prob, num_books, espn_context_str, is_live_score_shift).
     """
     sportsbook_prob = None
     num_books = 0
     espn_context = ""
+    is_live_score_shift = False
 
     try:
         from hawk.odds import get_sportsbook_probability, _detect_sport, _extract_teams
@@ -309,11 +310,19 @@ def _get_sportsbook_data(cfg: HawkConfig, market: HawkMarket) -> tuple[float | N
             ctx = get_match_context(market.question, sport_key, teams)
             if ctx:
                 espn_context = format_context_for_gpt(ctx)
+                # V6: Detect live score shift (significant lead in a live game)
+                if ctx.is_live and ctx.home_score is not None and ctx.away_score is not None:
+                    score_diff = abs(ctx.home_score - ctx.away_score)
+                    if score_diff >= 10:
+                        is_live_score_shift = True
+                        log.info("[LIVE] Score shift detected: %d-%d (diff=%d) | %s",
+                                 ctx.home_score, ctx.away_score, score_diff,
+                                 market.question[:60])
 
     except Exception:
         log.debug("Sportsbook/ESPN data fetch failed for %s", market.condition_id[:12])
 
-    return sportsbook_prob, num_books, espn_context
+    return sportsbook_prob, num_books, espn_context, is_live_score_shift
 
 
 def _get_weather_data(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate | None:
@@ -379,23 +388,26 @@ def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate |
     espn_context = ""
 
     if is_sports:
-        sportsbook_prob, sportsbook_books, espn_context = _get_sportsbook_data(cfg, market)
+        sportsbook_prob, sportsbook_books, espn_context, live_shift = _get_sportsbook_data(cfg, market)
 
         # V4: Sports with sportsbook data → pure math, skip GPT entirely ($0 cost)
         if sportsbook_prob is not None:
-            log.info("[V4] Sportsbook-pure: prob=%.2f (%d books) | %s",
-                     sportsbook_prob, sportsbook_books, market.question[:60])
+            # V6: Tag live score shifts as separate edge source
+            edge_src = "live_score_shift" if live_shift else "sportsbook_divergence"
+            log.info("[V4] Sportsbook-pure: prob=%.2f (%d books) edge_src=%s | %s",
+                     sportsbook_prob, sportsbook_books, edge_src, market.question[:60])
             return ProbabilityEstimate(
                 market_id=market.condition_id,
                 question=market.question,
                 estimated_prob=sportsbook_prob,
-                confidence=0.75,
-                reasoning=f"Pure sportsbook consensus from {sportsbook_books} bookmakers — no GPT needed",
+                confidence=0.80 if live_shift else 0.75,
+                reasoning=f"Pure sportsbook consensus from {sportsbook_books} bookmakers — no GPT needed"
+                          + (" (LIVE score shift detected)" if live_shift else ""),
                 category=market.category,
                 risk_level=3,
-                edge_source="sportsbook_divergence",
+                edge_source=edge_src,
                 money_thesis=f"Sportsbook says {sportsbook_prob:.0%}, Polymarket disagrees — free edge",
-                news_factor="sportsbook consensus",
+                news_factor="sportsbook consensus" + (" + live score shift" if live_shift else ""),
                 sportsbook_prob=sportsbook_prob,
                 sportsbook_books=sportsbook_books,
             )
@@ -404,24 +416,12 @@ def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate |
         log.info("[V5] No sportsbook data — skipping sports: %s", market.question[:60])
         return None
 
-    # V5: Non-sports markets — analyze with local LLM ($0 cost)
-    # Block categories with historically terrible WR
-    _BLOCKED_CATEGORIES = {"crypto_event", "culture", "other"}
-    if market.category in _BLOCKED_CATEGORIES:
-        log.info("[V5] Skipping blocked category '%s': %s", market.category, market.question[:60])
-        return None
+    # V6: Non-sports/non-weather markets — dead code path removed.
+    # Scanner + edge source filter already block anything not sportsbook/weather.
+    log.info("[V6] Non-sports/non-weather market skipped: %s", market.question[:60])
+    return None
 
-    # Filter out crypto price range markets (Garves/Oracle territory)
-    q_lower = market.question.lower()
-    _CRYPTO_RANGE_KEYWORDS = ["price of bitcoin", "price of btc", "price of ethereum",
-                               "price of eth", "price of xrp", "price of sol",
-                               "price of doge", "price of bnb", "price of ada",
-                               "between $", "between \u00a3", "market cap"]
-    if any(kw in q_lower for kw in _CRYPTO_RANGE_KEYWORDS):
-        log.info("[V5] Skipping crypto price range (Garves territory): %s", market.question[:60])
-        return None
-
-    # ── Build LLM prompt ──
+    # ── Build LLM prompt (legacy, unreachable) ──
     time_info = ""
     if market.time_left_hours > 0:
         if market.time_left_hours < 24:

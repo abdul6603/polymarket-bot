@@ -72,6 +72,22 @@ def _save_opportunities(opps: list[dict]) -> None:
         log.exception("Failed to save Hawk opportunities")
 
 
+NEXT_CYCLE_FILE = DATA_DIR / "hawk_next_cycle.json"
+
+
+def _save_next_cycle(minutes: int) -> None:
+    """V6: Write next cycle info for dashboard countdown."""
+    try:
+        DATA_DIR.mkdir(exist_ok=True)
+        NEXT_CYCLE_FILE.write_text(json.dumps({
+            "cycle_minutes": minutes,
+            "next_at": time.time() + minutes * 60,
+            "mode": "fast" if minutes <= 10 else "normal",
+        }, indent=2))
+    except Exception:
+        pass
+
+
 def _save_suggestions(suggestions: list[dict]) -> None:
     """Save trade suggestions for dashboard review."""
     try:
@@ -204,6 +220,46 @@ def _urgency_rank(markets) -> list:
     return [m for _, m in scored]
 
 
+def _get_domain_tag(category: str, question: str) -> str:
+    """Map a market to a granular domain tag for pattern learning."""
+    q = question.lower()
+    if category == "weather":
+        if "highest temperature" in q or "high temperature" in q:
+            return "weather_exact_high"
+        if "lowest temperature" in q or "low temperature" in q:
+            return "weather_exact_low"
+        if "rain" in q or "precipitation" in q:
+            return "weather_precipitation"
+        if "snow" in q or "frost" in q:
+            return "weather_snow"
+        if "wind" in q:
+            return "weather_wind"
+        return "weather_other"
+    if category == "sports":
+        if "o/u" in q or "over/under" in q or "total" in q:
+            return "sports_over_under"
+        if "win" in q or " vs " in q or " vs." in q:
+            return "sports_team_win"
+        if "goal" in q or "score" in q or "point" in q:
+            return "sports_player_prop"
+        if "spread" in q:
+            return "sports_spread"
+        return "sports_other"
+    if category == "politics":
+        if "approval" in q:
+            return "politics_approval"
+        if "election" in q or "vote" in q:
+            return "politics_election"
+        return "politics_other"
+    if category == "crypto_event":
+        if "between" in q or "price" in q:
+            return "crypto_price_range"
+        if "above" in q or "below" in q:
+            return "crypto_price_threshold"
+        return "crypto_other"
+    return f"{category}_other"
+
+
 class HawkBot:
     """The Poker Shark V2 — The Smart Degen."""
 
@@ -255,14 +311,83 @@ class HawkBot:
                 log.warning("Could not initialize CLOB client, running in dry-run mode")
         self.executor = HawkExecutor(self.cfg, client, self.tracker)
 
+    def _check_atlas_alignment(self, opp) -> tuple[float, str]:
+        """V6: Atlas pre-bet gate. Returns (size_multiplier, reason).
+
+        1.0 = aligned/neutral (proceed), 0.5 = opposes (reduce), 0.0 = strong opposition (block).
+        """
+        try:
+            import sys as _sys
+            _sys.path.insert(0, str(Path.home() / "shared"))
+            from events import get_events
+            events = get_events(agent="atlas", limit=20)
+            if events:
+                q_lower = opp.market.question.lower()
+                q_words = set(q_lower.split())
+                for evt in events:
+                    summary = (evt.get("summary", "") or "").lower()
+                    data = evt.get("data", {}) or {}
+                    severity = data.get("severity", "info")
+                    # Keyword overlap check
+                    overlap = sum(1 for w in q_words if len(w) > 4 and w in summary)
+                    if overlap < 2:
+                        continue
+                    # Atlas has relevant intelligence about this market
+                    if severity == "critical":
+                        log.info("[ATLAS-GATE] Critical Atlas intel opposes trade")
+                        return 0.0, f"Atlas critical: {summary[:100]}"
+                    elif severity in ("warning", "high"):
+                        return 0.5, f"Atlas warning: {summary[:100]}"
+        except Exception:
+            log.debug("[ATLAS-GATE] Event bus check failed (non-fatal)")
+
+        # Check Atlas news_sentiment.json for macro sentiment
+        try:
+            sentiment_file = DATA_DIR / "atlas_news_sentiment.json"
+            if sentiment_file.exists():
+                sent_data = json.loads(sentiment_file.read_text())
+                macro_sent = sent_data.get("macro_sentiment", 0)
+                # If macro strongly opposes trade direction → reduce
+                direction = opp.direction.lower()
+                if (direction == "yes" and macro_sent < -0.6) or (direction == "no" and macro_sent > 0.6):
+                    return 0.5, f"Atlas macro sentiment opposes ({macro_sent:.2f})"
+        except Exception:
+            pass
+
+        return 1.0, "aligned"
+
+    def _calculate_next_cycle(self, markets) -> int:
+        """V6: Dynamic cycle timing. Returns minutes until next cycle."""
+        # Check for live games
+        try:
+            from hawk.espn import get_live_games
+            live = get_live_games()
+            if live:
+                log.info("[CYCLE] %d live games detected — fast mode", len(live))
+                return self.cfg.cycle_minutes_fast
+        except Exception:
+            pass
+
+        # Check for same-day weather events
+        try:
+            from hawk.noaa import is_same_day_weather_event
+            for m in markets:
+                if m.category == "weather" and is_same_day_weather_event(m.question):
+                    log.info("[CYCLE] Same-day weather event detected — fast mode")
+                    return self.cfg.cycle_minutes_fast
+        except Exception:
+            pass
+
+        return self.cfg.cycle_minutes_normal
+
     async def run(self) -> None:
-        """Main loop — V2 Smart Degen."""
+        """Main loop — V6 Smart Degen."""
         logging.basicConfig(
             level=logging.INFO,
             format="%(asctime)s %(levelname)-7s [HAWK] %(message)s",
             datefmt="%H:%M:%S",
         )
-        log.info("Hawk V2 starting — The Smart Degen")
+        log.info("Hawk V6 starting — Live Intelligence + Arb Engine + Dynamic Cycles")
         log.info("Config: bankroll=$%.0f, max_bet=$%.0f, kelly=%.0f%%, min_edge=%.0f%%",
                  self.cfg.bankroll_usd, self.cfg.max_bet_usd,
                  self.cfg.kelly_fraction * 100, self.cfg.min_edge * 100)
@@ -276,7 +401,7 @@ class HawkBot:
 
         while True:
             self.cycle += 1
-            log.info("=== Hawk V2 Cycle %d ===", self.cycle)
+            log.info("=== Hawk V6 Cycle %d ===", self.cycle)
 
             try:
                 self._check_mode_toggle()
@@ -299,7 +424,7 @@ class HawkBot:
                 if self.risk.is_shutdown():
                     log.warning("Daily loss cap hit — skipping cycle")
                     _save_status(self.tracker, self.risk, running=True, cycle=self.cycle)
-                    await asyncio.sleep(self.cfg.cycle_minutes * 60)
+                    await asyncio.sleep(self.cfg.cycle_minutes_normal * 60)
                     continue
 
                 # 1. Scan all markets
@@ -309,7 +434,7 @@ class HawkBot:
 
                 if not markets:
                     _save_status(self.tracker, self.risk, running=True, cycle=self.cycle)
-                    await asyncio.sleep(self.cfg.cycle_minutes * 60)
+                    await asyncio.sleep(self.cfg.cycle_minutes_normal * 60)
                     continue
 
                 # 2. Filter contested (12-88% YES price)
@@ -385,17 +510,18 @@ class HawkBot:
                     })
                 _save_opportunities(opp_data)
 
-                # Generate briefing for Viper (always, not just when opps exist)
-                try:
-                    all_market_data = [{
-                        "question": m.question[:200],
-                        "condition_id": m.condition_id,
-                        "category": m.category,
-                        "volume": m.volume,
-                    } for m in target_markets]
-                    generate_briefing(all_market_data if not opp_data else opp_data, self.cycle)
-                except Exception:
-                    log.exception("Failed to generate Hawk briefing")
+                # V6: Briefing gated by config flag (default OFF)
+                if self.cfg.viper_briefing_enabled:
+                    try:
+                        all_market_data = [{
+                            "question": m.question[:200],
+                            "condition_id": m.condition_id,
+                            "category": m.category,
+                            "volume": m.volume,
+                        } for m in target_markets]
+                        generate_briefing(all_market_data if not opp_data else opp_data, self.cycle)
+                    except Exception:
+                        log.exception("Failed to generate Hawk briefing")
 
                 # 6. Build suggestions + auto-execute in single pass (one risk check per opp)
                 # ML scoring — predict win probability with XGBoost
@@ -492,93 +618,216 @@ class HawkBot:
                     except Exception:
                         log.debug("[LEARNER] Consultation failed (non-fatal)")
 
-                    # ── Brain Memory Consultation (pre-decision) ──
-                    # Query learned patterns + past decisions BEFORE placing bet
+                    # ── Brain V2: Hard Guardrails + Dynamic Penalties + Domain Memory ──
                     brain_edge_adj = 0.0
+                    brain_blocked = False
+                    market_price = _get_yes_price(opp.market)
+                    model_prob = opp.estimate.estimated_prob
+                    category = opp.market.category or "unknown"
+
+                    # ── HARD BLOCK: Model-Market Divergence > 3x ──
+                    divergence_ratio = 0.0
+                    if market_price > 0.01:
+                        if opp.direction.lower() == "yes":
+                            divergence_ratio = model_prob / market_price
+                        else:
+                            divergence_ratio = (1 - model_prob) / (1 - market_price) if market_price < 0.99 else 1.0
+
+                    if divergence_ratio > 3.0:
+                        log.warning("[BRAIN-V2] HARD BLOCK: Model-Market gap %.1fx (model=%.0f%% market=%.0f%%) | %s",
+                                    divergence_ratio, model_prob * 100, market_price * 100,
+                                    opp.market.question[:80])
+                        # Telegram alert
+                        try:
+                            from hawk.executor import _notify_tg
+                            _notify_tg(
+                                f"🚫 <b>HAWK HARD BLOCK</b>\n"
+                                f"Model-Market Gap: <b>{divergence_ratio:.1f}x</b>\n"
+                                f"Model: {model_prob*100:.0f}% | Market: {market_price*100:.0f}%\n"
+                                f"{opp.market.question[:100]}\n"
+                                f"Edge: {opp.edge*100:.1f}% — BLOCKED (gap > 3x)"
+                            )
+                        except Exception:
+                            pass
+                        brain_blocked = True
+
+                    if brain_blocked:
+                        continue
+
+                    # ── Divergence Skepticism Penalty (2x-3x range) ──
+                    if divergence_ratio > 2.0:
+                        # Scale: 2x = -5%, 2.5x = -10%, 3x = -15%
+                        skepticism_penalty = -0.05 * (divergence_ratio - 1.0)
+                        skepticism_penalty = max(-0.15, skepticism_penalty)
+                        brain_edge_adj += skepticism_penalty
+                        log.info("[BRAIN-V2] Divergence skepticism: gap=%.1fx → penalty %.1f%% | %s",
+                                 divergence_ratio, skepticism_penalty * 100, opp.market.question[:60])
+
                     if self._brain:
                         try:
-                            category = opp.market.category or "unknown"
+                            # ── 1. Granular Domain Memory (weather_exact_degree, sports_team_win, etc.) ──
+                            domain_tag = _get_domain_tag(category, opp.market.question)
+                            domain_patterns = self._brain.memory.get_active_patterns(
+                                pattern_type="hawk_domain_outcome"
+                            )
+                            domain_wins = 0
+                            domain_losses = 0
+                            for pat in domain_patterns:
+                                desc = pat.get("description", "")
+                                if f"'{domain_tag}'" in desc:
+                                    ev = pat.get("evidence_count", 1)
+                                    if "WON" in desc.upper():
+                                        domain_wins += ev
+                                    elif "LOST" in desc.upper():
+                                        domain_losses += ev
 
-                            # 1. Check category-level patterns (e.g., "Category 'politics': LOST")
+                            domain_total = domain_wins + domain_losses
+                            if domain_total >= 2:
+                                domain_wr = domain_wins / domain_total if domain_total > 0 else 0
+                                # Dynamic penalty: scales with loss rate AND edge size AND streak
+                                if domain_wr < 0.4:
+                                    # Aggressive: up to -80% penalty for heavily losing domains
+                                    loss_severity = (1 - domain_wr)  # 0.6 to 1.0
+                                    edge_scale = min(opp.edge / 0.10, 4.0)  # Higher edge = bigger penalty
+                                    streak_scale = min(domain_losses / 3.0, 3.0)  # More losses = stronger
+                                    domain_penalty = -0.05 * loss_severity * edge_scale * streak_scale
+                                    domain_penalty = max(-0.80, domain_penalty)
+                                    brain_edge_adj += domain_penalty
+                                    log.info("[BRAIN-V2] Domain '%s' penalty: WR=%.0f%% (%dW/%dL) → %.1f%% | %s",
+                                             domain_tag, domain_wr * 100, domain_wins, domain_losses,
+                                             domain_penalty * 100, opp.market.question[:60])
+                                elif domain_wr >= 0.6 and domain_total >= 3:
+                                    domain_boost = min(0.03, 0.01 * (domain_wr - 0.5) * 10)
+                                    brain_edge_adj += domain_boost
+                                    log.info("[BRAIN-V2] Domain '%s' boost: WR=%.0f%% (%dW/%dL) → +%.1f%%",
+                                             domain_tag, domain_wr * 100, domain_wins, domain_losses,
+                                             domain_boost * 100)
+
+                            # ── 2. Category-level patterns (existing V1 logic, upgraded caps) ──
                             cat_patterns = self._brain.memory.get_active_patterns(
                                 pattern_type="hawk_category_outcome"
                             )
                             cat_wins = 0
                             cat_losses = 0
-                            cat_avg_conf = 0.0
-                            cat_count = 0
                             for pat in cat_patterns:
                                 desc = pat.get("description", "")
                                 if f"'{category}'" in desc.lower() or f"'{category}'" in desc:
-                                    cat_count += 1
-                                    cat_avg_conf += pat.get("confidence", 0.5)
                                     if "WON" in desc.upper():
                                         cat_wins += 1
                                     elif "LOST" in desc.upper():
                                         cat_losses += 1
 
-                            if cat_count > 0:
-                                cat_avg_conf /= cat_count
+                            cat_total = cat_wins + cat_losses
+                            if cat_total > 0:
+                                cat_wr = cat_wins / cat_total
+                                if cat_wr < 0.35 and cat_losses > cat_wins:
+                                    cat_penalty = -0.05 * (1 - cat_wr) * min(cat_losses / 2.0, 3.0)
+                                    cat_penalty = max(-0.30, cat_penalty)
+                                    brain_edge_adj += cat_penalty
+                                    log.info("[BRAIN-V2] Category '%s' losing hard (WR=%.0f%%, %dW/%dL) → %.1f%%",
+                                             category, cat_wr * 100, cat_wins, cat_losses, cat_penalty * 100)
+                                elif cat_wr < 0.5 and cat_losses > cat_wins:
+                                    cat_penalty = -0.02 * min(cat_losses, 5)
+                                    cat_penalty = max(-0.15, cat_penalty)
+                                    brain_edge_adj += cat_penalty
+                                    log.info("[BRAIN-V2] Category '%s' weak (WR=%.0f%%, %dW/%dL) → %.1f%%",
+                                             category, cat_wr * 100, cat_wins, cat_losses, cat_penalty * 100)
+                                elif cat_wr >= 0.6 and cat_wins > cat_losses:
+                                    brain_edge_adj += 0.02
+                                    log.info("[BRAIN-V2] Category '%s' winning (WR=%.0f%%, %dW/%dL) → +2.0%%",
+                                             category, cat_wr * 100, cat_wins, cat_losses)
 
-                                # Losing category (avg confidence < 0.5) → penalize edge
-                                # Winning category (avg confidence >= 0.5) → small boost
-                                if cat_avg_conf < 0.45 and cat_losses > cat_wins:
-                                    brain_edge_adj = -0.03  # Max penalty
-                                    log.info("[BRAIN] Category '%s' losing pattern (conf=%.2f, W=%d L=%d) → edge penalty %.1f%%",
-                                             category, cat_avg_conf, cat_wins, cat_losses, brain_edge_adj * 100)
-                                elif cat_avg_conf < 0.5 and cat_losses > cat_wins:
-                                    brain_edge_adj = -0.015
-                                    log.info("[BRAIN] Category '%s' weak pattern (conf=%.2f, W=%d L=%d) → edge penalty %.1f%%",
-                                             category, cat_avg_conf, cat_wins, cat_losses, brain_edge_adj * 100)
-                                elif cat_avg_conf >= 0.55 and cat_wins > cat_losses:
-                                    brain_edge_adj = 0.02  # Small boost for winning categories
-                                    log.info("[BRAIN] Category '%s' winning pattern (conf=%.2f, W=%d L=%d) → edge boost +%.1f%%",
-                                             category, cat_avg_conf, cat_wins, cat_losses, brain_edge_adj * 100)
-
-                            # 2. Check similar past decisions for this market
+                            # ── 3. Similar past decisions ──
                             situation_str = f"{category}: {opp.market.question[:120]}"
                             similar = self._brain.memory.get_relevant_context(situation_str, limit=5)
                             if similar:
                                 resolved = [d for d in similar if d.get("resolved")]
                                 if resolved:
                                     avg_score = sum(d.get("outcome_score", 0) for d in resolved) / len(resolved)
-                                    # Similar markets that lost → additional penalty (up to -0.015)
-                                    # Similar markets that won → additional boost (up to +0.01)
                                     if avg_score < -0.3:
-                                        sim_adj = -0.015
+                                        sim_adj = -0.03 * len(resolved)
+                                        sim_adj = max(-0.15, sim_adj)
                                     elif avg_score < 0:
-                                        sim_adj = -0.008
+                                        sim_adj = -0.015 * len(resolved)
+                                        sim_adj = max(-0.08, sim_adj)
                                     elif avg_score > 0.3:
                                         sim_adj = 0.01
                                     else:
                                         sim_adj = 0.0
-
                                     if sim_adj != 0:
-                                        # Clamp total adjustment to +/- 0.03
-                                        brain_edge_adj = max(-0.03, min(0.03, brain_edge_adj + sim_adj))
-                                        log.info("[BRAIN] %d similar past decisions (avg_score=%.2f) → adj %.1f%% | total brain adj: %.1f%%",
-                                                 len(resolved), avg_score, sim_adj * 100, brain_edge_adj * 100)
-
-                            # 3. Apply combined learner + brain adjustment
-                            combined_adj = learner_adj + brain_edge_adj
-                            if combined_adj < 0:
-                                effective_edge = opp.edge + combined_adj
-                                if effective_edge < self.cfg.min_edge:
-                                    log.info("[BRAIN+LEARNER] BLOCKED: edge %.1f%% + learner %.1f%% + brain %.1f%% = %.1f%% < min %.1f%% | %s",
-                                             opp.edge * 100, learner_adj * 100, brain_edge_adj * 100,
-                                             effective_edge * 100, self.cfg.min_edge * 100, opp.market.question[:60])
-                                    continue
+                                        brain_edge_adj += sim_adj
+                                        log.info("[BRAIN-V2] %d similar decisions (avg_score=%.2f) → %.1f%%",
+                                                 len(resolved), avg_score, sim_adj * 100)
 
                         except Exception:
-                            log.debug("[BRAIN] Memory consultation failed (non-fatal)")
-                            brain_edge_adj = 0.0
+                            log.debug("[BRAIN-V2] Memory consultation failed (non-fatal)")
 
-                    # Only bet with real data-backed edge (sportsbook odds or weather model)
+                    # ── Clamp total brain adjustment to -80% / +5% ──
+                    brain_edge_adj = max(-0.80, min(0.05, brain_edge_adj))
+
+                    # ── Dashboard warning flag for divergence > 2x ──
+                    if divergence_ratio > 2.0:
+                        try:
+                            _warn_file = DATA_DIR / "hawk_warnings.json"
+                            _warnings = []
+                            if _warn_file.exists():
+                                _warnings = json.loads(_warn_file.read_text()).get("warnings", [])
+                            _warnings = [w for w in _warnings if time.time() - w.get("ts", 0) < 3600]
+                            _warnings.append({
+                                "ts": time.time(),
+                                "question": opp.market.question[:150],
+                                "divergence": round(divergence_ratio, 2),
+                                "model_prob": round(model_prob, 3),
+                                "market_price": round(market_price, 3),
+                                "edge": round(opp.edge, 4),
+                                "action": "BLOCKED" if divergence_ratio > 3.0 else f"PENALTY {brain_edge_adj*100:.1f}%",
+                                "category": category,
+                            })
+                            _warn_file.write_text(json.dumps({"warnings": _warnings}, indent=2))
+                        except Exception:
+                            pass
+
+                    # ── Telegram alert for high-risk bets that pass through ──
+                    if divergence_ratio > 2.0 and brain_edge_adj > -opp.edge:
+                        try:
+                            from hawk.executor import _notify_tg
+                            _notify_tg(
+                                f"⚠️ <b>HAWK HIGH-RISK BET</b>\n"
+                                f"Gap: <b>{divergence_ratio:.1f}x</b> | Penalty: {brain_edge_adj*100:.1f}%\n"
+                                f"Edge: {opp.edge*100:.1f}% → {(opp.edge+brain_edge_adj)*100:.1f}%\n"
+                                f"{opp.market.question[:100]}"
+                            )
+                        except Exception:
+                            pass
+
+                    # ── Apply combined learner + brain adjustment ──
+                    combined_adj = learner_adj + brain_edge_adj
+                    if combined_adj < 0:
+                        effective_edge = opp.edge + combined_adj
+                        if effective_edge < self.cfg.min_edge:
+                            log.info("[BRAIN-V2] BLOCKED: edge %.1f%% + learner %.1f%% + brain %.1f%% = %.1f%% < min %.1f%% | %s",
+                                     opp.edge * 100, learner_adj * 100, brain_edge_adj * 100,
+                                     effective_edge * 100, self.cfg.min_edge * 100, opp.market.question[:60])
+                            continue
+
+                    # Only bet with real data-backed edge (sportsbook, weather, or live score shift)
                     _esrc = (opp.estimate.edge_source or "").lower()
-                    if _esrc not in ("sportsbook_divergence", "weather_model"):
-                        log.info("[FILTER] Blocked %s edge source (need sportsbook/weather data): %s",
+                    if _esrc not in ("sportsbook_divergence", "weather_model", "live_score_shift"):
+                        log.info("[FILTER] Blocked %s edge source (need sportsbook/weather/live data): %s",
                                  _esrc, opp.market.question[:60])
                         continue
+
+                    # V6: Atlas pre-bet gate — check alignment before execution
+                    atlas_mult, atlas_reason = self._check_atlas_alignment(opp)
+                    if atlas_mult == 0.0:
+                        log.info("[ATLAS-GATE] BLOCKED: %s | %s", atlas_reason, opp.market.question[:60])
+                        continue
+                    elif atlas_mult < 1.0:
+                        old_size = opp.position_size_usd
+                        opp.position_size_usd *= atlas_mult
+                        log.info("[ATLAS-GATE] Reduced: $%.2f → $%.2f (%.0fx) | %s | %s",
+                                 old_size, opp.position_size_usd, atlas_mult,
+                                 atlas_reason, opp.market.question[:60])
 
                     # Auto-execute immediately after risk approval
                     if self.executor:
@@ -633,7 +882,7 @@ class HawkBot:
                             record_trade_outcome(resolved_trade)
                         except Exception:
                             log.debug("[LEARNER] Failed to record outcome (non-fatal)")
-                    # Brain: record resolved outcomes
+                    # Brain V2: record resolved outcomes with granular domain patterns
                     if self._brain:
                         try:
                             for resolved_trade in res.get("resolved_trades", []):
@@ -679,10 +928,29 @@ class HawkBot:
                                 self._brain.learn_pattern("hawk_time_outcome",
                                     f"Time '{time_band}': {_label}", confidence=_conf)
 
-                                log.info("[BRAIN] Recorded 6 patterns for %s trade: %s | %s | %s",
-                                         _label, cat, esrc, direction)
+                                # 7. V2: Granular domain pattern
+                                _question = resolved_trade.get("question", "")
+                                _domain_tag = _get_domain_tag(cat, _question)
+                                self._brain.learn_pattern("hawk_domain_outcome",
+                                    f"Domain '{_domain_tag}': {_label}", confidence=_conf)
+
+                                # 8. V2: Divergence lesson — record when model-market gap was big
+                                _entry = resolved_trade.get("entry_price", 0)
+                                _est = resolved_trade.get("estimated_prob", 0)
+                                if _entry > 0.01 and _est > 0:
+                                    _div = _est / _entry if resolved_trade.get("direction", "").lower() == "yes" else (1 - _est) / (1 - _entry) if _entry < 0.99 else 1.0
+                                    if _div > 2.0:
+                                        _div_label = f"high_divergence_{_domain_tag}"
+                                        self._brain.learn_pattern("hawk_divergence_outcome",
+                                            f"Divergence '{_div_label}' gap={_div:.1f}x: {_label}",
+                                            confidence=_conf)
+                                        log.info("[BRAIN-V2] Divergence lesson: %s gap=%.1fx %s | %s",
+                                                 _domain_tag, _div, _label, _question[:60])
+
+                                log.info("[BRAIN-V2] Recorded 8 patterns for %s trade: %s | %s | domain=%s",
+                                         _label, cat, esrc, _domain_tag)
                         except Exception:
-                            log.debug("[BRAIN] Outcome recording failed (non-fatal)")
+                            log.debug("[BRAIN-V2] Outcome recording failed (non-fatal)")
                     # Reload tracker
                     self.tracker._positions = []
                     self.tracker._load_positions()
@@ -727,14 +995,33 @@ class HawkBot:
                     except Exception:
                         log.debug("[PATTERN MINER] Failed (non-fatal)")
 
+                # V6: Arb engine — scan and execute after main trades
+                if self.cfg.arb_enabled:
+                    try:
+                        from hawk.arb import ArbEngine
+                        _arb_client = self.executor.client if self.executor else None
+                        arb_engine = ArbEngine(self.cfg, _arb_client)
+                        arb_opps = arb_engine.scan(markets)
+                        for _arb_opp in arb_opps[:3]:
+                            arb_engine.execute(_arb_opp)
+                        arb_engine.resolve()
+                        arb_engine.save_status()
+                    except Exception:
+                        log.exception("[ARB] Arb engine cycle failed (non-fatal)")
+
                 _save_status(self.tracker, self.risk, running=True, cycle=self.cycle, scan_stats=_scan_stats)
 
             except Exception:
-                log.exception("Hawk V2 cycle %d failed", self.cycle)
+                log.exception("Hawk V6 cycle %d failed", self.cycle)
                 _save_status(self.tracker, self.risk, running=True, cycle=self.cycle)
 
-            log.info("Hawk V2 cycle %d complete. Sleeping %d minutes...", self.cycle, self.cfg.cycle_minutes)
-            await asyncio.sleep(self.cfg.cycle_minutes * 60)
+            # V6: Dynamic cycle timing
+            _cycle_markets = target_markets if 'target_markets' in locals() else []
+            next_min = self._calculate_next_cycle(_cycle_markets)
+            _save_next_cycle(next_min)
+            log.info("Hawk V6 cycle %d complete. Next cycle in %d minutes (%s mode)...",
+                     self.cycle, next_min, "fast" if next_min <= self.cfg.cycle_minutes_fast else "normal")
+            await asyncio.sleep(next_min * 60)
 
 
 def _get_yes_price(market) -> float:

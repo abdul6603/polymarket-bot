@@ -176,7 +176,15 @@ class ArbEngine:
         if available_bankroll <= 0:
             return None
 
-        max_usd = min(self.cfg.arb_max_per_trade, available_bankroll)
+        # V6: Auto-scale sizing by profit margin
+        if profit_per_share >= 0.03:
+            scale = 1.5    # 3%+ profit → go bigger
+        elif profit_per_share >= 0.02:
+            scale = 1.25   # 2%+ → moderate scale
+        else:
+            scale = 1.0    # standard
+
+        max_usd = min(self.cfg.arb_max_per_trade * scale, available_bankroll)
         max_shares_by_budget = max_usd / combined if combined > 0 else 0
         shares = min(max_shares_by_depth, max_shares_by_budget)
 
@@ -319,7 +327,7 @@ class ArbEngine:
             return None
 
     def _unwind_leg(self, token_id: str, shares: float) -> bool:
-        """Emergency sell a leg via GTC at best bid to exit quickly."""
+        """Emergency sell a leg via FOK at best bid for immediate execution."""
         if not self.client:
             return False
         try:
@@ -350,8 +358,9 @@ class ArbEngine:
                 token_id=token_id,
             )
             signed = self.client.create_order(args)
-            resp = self.client.post_order(signed, OrderType.GTC)
-            log.info("[ARB] Unwind order placed: %s @ $%.2f for %.2f shares",
+            # V6: Use FOK for immediate execution on emergency unwind
+            resp = self.client.post_order(signed, OrderType.FOK)
+            log.info("[ARB] Unwind FOK order placed: %s @ $%.2f for %.2f shares",
                      token_id[:16], sell_price, shares)
             return True
         except Exception:

@@ -1106,3 +1106,130 @@ def api_hawk_weather():
         "data_sources": ["Open-Meteo Ensemble (GFS+ECMWF)", "api.weather.gov (NWS)", "NOAA NHC"],
         "cost": "$0 (all free APIs)",
     })
+
+
+# ═══════════════════════════════════════════════════════
+# V6: New API Endpoints
+# ═══════════════════════════════════════════════════════
+
+NEXT_CYCLE_FILE = DATA_DIR / "hawk_next_cycle.json"
+ARB_STATUS_FILE = DATA_DIR / "hawk_arb_status.json"
+LEARNER_FILE = DATA_DIR / "hawk_learner_dimensions.json"
+
+
+@hawk_bp.route("/api/hawk/next-cycle")
+def api_hawk_next_cycle():
+    """V6: Next cycle countdown info."""
+    data = read_fresh(NEXT_CYCLE_FILE, "~/polymarket-bot/data/hawk_next_cycle.json")
+    if not data:
+        data = {"cycle_minutes": 30, "next_at": 0, "mode": "normal"}
+    return jsonify(data)
+
+
+@hawk_bp.route("/api/hawk/domain-winrates")
+def api_hawk_domain_winrates():
+    """V6: Win rates broken down by domain (sports, weather, arb)."""
+    trades = _load_trades()
+    resolved = [t for t in trades if t.get("resolved")]
+
+    domains = {}
+    for domain in ["sports", "weather"]:
+        dt = [t for t in resolved if t.get("category") == domain]
+        wins = sum(1 for t in dt if t.get("won"))
+        losses = len(dt) - wins
+        pnl = sum(t.get("pnl", 0) for t in dt)
+        domains[domain] = {
+            "wins": wins,
+            "losses": losses,
+            "pnl": round(pnl, 2),
+            "win_rate": round(wins / len(dt) * 100, 1) if dt else 0,
+        }
+
+    # Arb domain from arb status file
+    arb_data = read_fresh(ARB_STATUS_FILE, "~/polymarket-bot/data/hawk_arb_status.json")
+    arb = arb_data or {}
+    domains["arb"] = {
+        "wins": arb.get("total_resolved", 0),
+        "losses": 0,
+        "pnl": round(arb.get("total_profit", 0), 2),
+        "win_rate": 100.0 if arb.get("total_resolved", 0) > 0 else 0,
+    }
+
+    return jsonify({"domains": domains})
+
+
+@hawk_bp.route("/api/hawk/gap-heatmap")
+def api_hawk_gap_heatmap():
+    """V6: Model-market gap scatter data for Chart.js."""
+    data = read_fresh(OPPS_FILE, "~/polymarket-bot/data/hawk_opportunities.json")
+    opps = (data or {}).get("opportunities", [])
+    points = []
+    for o in opps:
+        points.append({
+            "market_price": round(o.get("market_price", 0.5), 3),
+            "estimated_prob": round(o.get("estimated_prob", 0.5), 3),
+            "edge": round(o.get("edge", 0), 4),
+            "category": o.get("category", "other"),
+            "question": (o.get("question", ""))[:100],
+        })
+    return jsonify({"points": points})
+
+
+@hawk_bp.route("/api/hawk/learner")
+def api_hawk_learner():
+    """V6: Learner dimension accuracy report."""
+    data = read_fresh(LEARNER_FILE, "~/polymarket-bot/data/hawk_learner_dimensions.json")
+    if not data:
+        # Build from trades
+        trades = _load_trades()
+        resolved = [t for t in trades if t.get("resolved")]
+        dimensions = {}
+        for dim_name, dim_key in [
+            ("Edge Source", "edge_source"),
+            ("Category", "category"),
+            ("Direction", "direction"),
+            ("Confidence", "confidence"),
+            ("Risk Level", "risk_score"),
+            ("Time Horizon", "time_left_hours"),
+        ]:
+            dim_data = {}
+            for t in resolved:
+                val = t.get(dim_key, "unknown")
+                # Bucket numeric values
+                if dim_key == "confidence":
+                    val = "high" if (val or 0) > 0.7 else "medium" if (val or 0) >= 0.5 else "low"
+                elif dim_key == "risk_score":
+                    val = "low" if (val or 5) <= 3 else "medium" if (val or 5) <= 6 else "high"
+                elif dim_key == "time_left_hours":
+                    val = "ending_soon" if (val or 24) < 6 else "today" if (val or 24) <= 24 else "this_week"
+                val = str(val)
+                if val not in dim_data:
+                    dim_data[val] = {"wins": 0, "losses": 0}
+                if t.get("won"):
+                    dim_data[val]["wins"] += 1
+                else:
+                    dim_data[val]["losses"] += 1
+            # Calculate WR for each value
+            for v_key, v_data in dim_data.items():
+                total = v_data["wins"] + v_data["losses"]
+                v_data["total"] = total
+                v_data["win_rate"] = round(v_data["wins"] / total * 100, 1) if total > 0 else 0
+            dimensions[dim_name] = dim_data
+        data = {"dimensions": dimensions}
+    return jsonify(data)
+
+
+@hawk_bp.route("/api/hawk/arb-status")
+def api_hawk_arb_status():
+    """V6: Arb engine status + open positions."""
+    data = read_fresh(ARB_STATUS_FILE, "~/polymarket-bot/data/hawk_arb_status.json")
+    if not data:
+        data = {
+            "enabled": True,
+            "open_arbs": 0,
+            "total_executed": 0,
+            "total_resolved": 0,
+            "total_profit": 0,
+            "positions": [],
+        }
+    return jsonify(data)

@@ -33,7 +33,7 @@ _LEAGUE_MAP = {
 
 # Cache: {cache_key: (timestamp, data)}
 _cache: dict[str, tuple[float, dict]] = {}
-_CACHE_TTL = 600  # 10 minutes
+_CACHE_TTL = 120  # V6: 2 minutes (need fresher data for live games)
 
 
 @dataclass
@@ -46,6 +46,7 @@ class TeamInfo:
     standing: str = ""  # e.g., "3rd in ACC"
     injuries: list[str] = field(default_factory=list)  # Key injuries
     recent_games: list[str] = field(default_factory=list)  # Last 5 results
+    score: int | None = None  # V6: live game score
 
 
 @dataclass
@@ -58,6 +59,13 @@ class MatchContext:
     headline: str = ""
     sport: str = ""
     league: str = ""
+    # V6: Live game fields
+    game_status: str = ""       # "scheduled" | "in_progress" | "final"
+    home_score: int | None = None
+    away_score: int | None = None
+    game_clock: str = ""        # "8:42"
+    period: int = 0             # Quarter/half/inning
+    is_live: bool = False
 
 
 def _get_cached(key: str) -> dict | None:
@@ -206,7 +214,69 @@ def get_match_context(
         ctx.home_team = _extract_team_info(competitors[0])
         ctx.away_team = _extract_team_info(competitors[1])
 
+        # V6: Extract live scores from competitor data
+        try:
+            ctx.home_team.score = int(competitors[0].get("score", 0)) if competitors[0].get("score") else None
+            ctx.away_team.score = int(competitors[1].get("score", 0)) if competitors[1].get("score") else None
+            ctx.home_score = ctx.home_team.score
+            ctx.away_score = ctx.away_team.score
+        except (ValueError, TypeError):
+            pass
+
+    # V6: Extract live game status from competition status block
+    status = competition.get("status", {})
+    status_type = status.get("type", {})
+    state = status_type.get("state", "")  # "pre", "in", "post"
+    if state == "in":
+        ctx.is_live = True
+        ctx.game_status = "in_progress"
+    elif state == "post":
+        ctx.game_status = "final"
+    elif state == "pre":
+        ctx.game_status = "scheduled"
+    ctx.game_clock = status.get("displayClock", "")
+    ctx.period = int(status.get("period", 0) or 0)
+
     return ctx
+
+
+def is_live_game(question: str, sport_key: str, teams: tuple[str, str] | None = None) -> bool:
+    """Check if the market's game is currently live."""
+    ctx = get_match_context(question, sport_key, teams)
+    return ctx is not None and ctx.is_live
+
+
+def get_live_games() -> list[dict]:
+    """Get all live games across all leagues. Returns list of dicts with scores/clock/period."""
+    live = []
+    for sport_key, (sport, league) in _LEAGUE_MAP.items():
+        events = _fetch_scoreboard(sport, league)
+        for event in events:
+            competition = event.get("competitions", [{}])[0]
+            status = competition.get("status", {})
+            state = status.get("type", {}).get("state", "")
+            if state != "in":
+                continue
+            competitors = competition.get("competitors", [])
+            home_name = competitors[0].get("team", {}).get("displayName", "") if len(competitors) > 0 else ""
+            away_name = competitors[1].get("team", {}).get("displayName", "") if len(competitors) > 1 else ""
+            home_score = competitors[0].get("score", "0") if len(competitors) > 0 else "0"
+            away_score = competitors[1].get("score", "0") if len(competitors) > 1 else "0"
+            live.append({
+                "sport_key": sport_key,
+                "sport": sport,
+                "league": league,
+                "headline": event.get("name", ""),
+                "home_team": home_name,
+                "away_team": away_name,
+                "home_score": int(home_score) if home_score else 0,
+                "away_score": int(away_score) if away_score else 0,
+                "clock": status.get("displayClock", ""),
+                "period": int(status.get("period", 0) or 0),
+            })
+    if live:
+        log.info("[ESPN] %d live games across all leagues", len(live))
+    return live
 
 
 def format_context_for_gpt(ctx: MatchContext) -> str:
@@ -243,5 +313,16 @@ def format_context_for_gpt(ctx: MatchContext) -> str:
 
     if ctx.venue:
         lines.append(f"Venue: {ctx.venue}")
+
+    # V6: Live game data
+    if ctx.is_live:
+        score_line = f"LIVE SCORE: {ctx.home_score}-{ctx.away_score}"
+        if ctx.game_clock:
+            score_line += f" | Clock: {ctx.game_clock}"
+        if ctx.period:
+            score_line += f" | Period: {ctx.period}"
+        lines.append(score_line)
+    elif ctx.game_status == "final":
+        lines.append(f"FINAL: {ctx.home_score}-{ctx.away_score}")
 
     return "\n".join(lines)

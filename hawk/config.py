@@ -59,3 +59,18 @@ class HawkConfig:
 
     # V6: Weather intelligence — Open-Meteo ensemble + NWS, $0 cost
     weather_min_volume: int = int(_env("HAWK_WEATHER_MIN_VOLUME", "1000"))  # Lower threshold for weather markets
+
+    # V6: Feature flags
+    viper_briefing_enabled: bool = _env("HAWK_VIPER_BRIEFING", "false").lower() in ("true", "1", "yes")
+
+    # V6: Dynamic cycle timing
+    cycle_minutes_fast: int = int(_env("HAWK_CYCLE_MINUTES_FAST", "5"))
+    cycle_minutes_normal: int = int(_env("HAWK_CYCLE_MINUTES_NORMAL", "30"))
+
+    # V6: Arbitrage engine
+    arb_enabled: bool = _env("HAWK_ARB_ENABLED", "true").lower() in ("true", "1", "yes")
+    arb_bankroll_usd: float = float(_env("HAWK_ARB_BANKROLL_USD", "100"))
+    arb_max_per_trade: float = float(_env("HAWK_ARB_MAX_PER_TRADE", "30"))
+    arb_min_profit_pct: float = float(_env("HAWK_ARB_MIN_PROFIT_PCT", "0.005"))
+    arb_min_depth_usd: float = float(_env("HAWK_ARB_MIN_DEPTH_USD", "20"))
+    arb_max_concurrent: int = int(_env("HAWK_ARB_MAX_CONCURRENT", "5"))

@@ -784,6 +784,63 @@ def get_climate_data(question: str) -> dict | None:
     return None
 
 
+# ── V6: Hourly Nowcast (Open-Meteo) ──
+
+_NOWCAST_CACHE_TTL = 900  # 15 minutes
+
+
+def _fetch_hourly_nowcast(lat: float, lon: float) -> dict | None:
+    """Fetch hourly forecast for next 6 hours from Open-Meteo.
+
+    Free, no API key, 15-min cache. Returns hourly arrays for 0-6h ahead.
+    """
+    cache_key = f"nowcast_{lat:.2f}_{lon:.2f}"
+    if cache_key in _cache:
+        ts, val = _cache[cache_key]
+        if time.time() - ts < _NOWCAST_CACHE_TTL:
+            return val
+        del _cache[cache_key]
+
+    session = get_session()
+    try:
+        resp = session.get(
+            "https://api.open-meteo.com/v1/forecast",
+            params={
+                "latitude": lat,
+                "longitude": lon,
+                "hourly": "temperature_2m,precipitation,precipitation_probability,weathercode",
+                "forecast_hours": 6,
+                "temperature_unit": "fahrenheit",
+                "precipitation_unit": "inch",
+            },
+            timeout=10,
+        )
+        if resp.status_code != 200:
+            log.warning("[NOWCAST] Open-Meteo hourly returned %d", resp.status_code)
+            return None
+
+        data = resp.json()
+        hourly = data.get("hourly", {})
+        if not hourly.get("time"):
+            return None
+
+        _cache[cache_key] = (time.time(), hourly)
+        log.info("[NOWCAST] Fetched %d hourly points for (%.2f, %.2f)",
+                 len(hourly.get("time", [])), lat, lon)
+        return hourly
+    except Exception:
+        log.exception("[NOWCAST] Open-Meteo hourly fetch failed")
+        return None
+
+
+def is_same_day_weather_event(question: str) -> bool:
+    """Check if a weather market is for today (same-day event)."""
+    query = parse_weather_question(question)
+    if not query or not query.target_date:
+        return False
+    return query.target_date == date.today()
+
+
 # ── Main Analysis Entry Point ──
 
 def analyze_weather_market(question: str) -> dict | None:
@@ -855,6 +912,44 @@ def analyze_weather_market(question: str) -> dict | None:
         confidence = 0.45
 
     unit_sym = "°C" if query.unit == "celsius" else "°F"
+
+    # V6: Same-day nowcast — prefer hourly data for <24h markets
+    if horizon_hours < 24 and query.threshold is not None and query.lat and query.lon:
+        nowcast = _fetch_hourly_nowcast(query.lat, query.lon)
+        if nowcast and nowcast.get("temperature_2m"):
+            temps = [t for t in nowcast["temperature_2m"] if t is not None]
+            if temps:
+                # For same-day, use hourly max/min from nowcast
+                if query.direction == "above":
+                    count = sum(1 for t in temps if t >= query.threshold)
+                    nowcast_prob = count / len(temps)
+                elif query.direction == "below":
+                    count = sum(1 for t in temps if t <= query.threshold)
+                    nowcast_prob = count / len(temps)
+                elif query.direction == "between" and query.bucket_ranges:
+                    low, high = query.bucket_ranges[0]
+                    count = sum(1 for t in temps if low <= t < high)
+                    nowcast_prob = count / len(temps)
+                else:
+                    nowcast_prob = None
+
+                if nowcast_prob is not None:
+                    # Nowcast is very reliable for <6h
+                    nowcast_conf = 0.90 if horizon_hours < 6 else 0.85
+                    log.info("[NOWCAST] Same-day analysis: prob=%.2f conf=%.2f | %dh horizon | %s",
+                             nowcast_prob, nowcast_conf, int(horizon_hours), question[:60])
+                    return {
+                        "probability": nowcast_prob,
+                        "confidence": nowcast_conf,
+                        "reasoning": (
+                            f"Hourly nowcast: {nowcast_prob:.0%} probability based on "
+                            f"{len(temps)} hourly readings for next 6h. "
+                            f"Threshold: {query.direction} {query.threshold:.0f}{unit_sym} in {query.city}."
+                        ),
+                        "data_source": "open_meteo_nowcast",
+                        "ensemble_members": len(temps),
+                        "forecast_horizon_hours": horizon_hours,
+                    }
 
     # Bucket probabilities first (handles "be X°C" exact and "between X-Y" ranges)
     if query.bucket_ranges:
