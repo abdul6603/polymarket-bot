@@ -1,6 +1,7 @@
-"""Snipe Executor — Aggressive taker logic for thin 5-minute binary books.
+"""Snipe Executor — Liquidity Seeker taker for 5-minute binary books.
 
 Strategy:
+  - Liquidity confirmed (ignition): FOK only, no GTC fallback
   - Score >= 75 (high conviction): FOK at best_ask + 3c (cross the spread)
   - Score 65-74 (moderate): GTC at best_ask + 1c (mild taker, can rest)
   - Dynamic sizing: min(desired, 60% of ask-side liquidity)
@@ -128,12 +129,14 @@ class PyramidExecutor:
         implied_price: float,
         score: float = 0.0,
         book_data: dict | None = None,
+        liquidity_confirmed: bool = False,
     ) -> WaveResult | None:
-        """Execute a single wave with aggressive taker logic for thin books.
+        """Execute a single wave with Liquidity Seeker taker logic.
 
         Args:
             score: v7 conviction score (0-100) — determines aggressiveness
-            book_data: CLOB orderbook dict with 'asks' list for liquidity check
+            book_data: CLOB orderbook dict with best_ask, sell_pressure, etc.
+            liquidity_confirmed: if True, use FOK only (no GTC fallback)
         """
         if not self._active_position:
             return None
@@ -147,7 +150,7 @@ class PyramidExecutor:
         is_high_conviction = score >= HIGH_CONVICTION_SCORE
 
         if best_ask and best_ask < price_cap:
-            premium = TAKER_PREMIUM_HIGH if is_high_conviction else TAKER_PREMIUM_MOD
+            premium = TAKER_PREMIUM_HIGH if (liquidity_confirmed or is_high_conviction) else TAKER_PREMIUM_MOD
             price = min(price_cap, round(best_ask + premium, 2))
         else:
             price = price_cap
@@ -165,7 +168,9 @@ class PyramidExecutor:
             shares = capped_shares
             size_usd = round(shares * price, 2)
 
-        order_type = "FOK" if is_high_conviction else "GTC"
+        # Liquidity confirmed → always FOK (no point resting on confirmed-liquid book)
+        use_fok = liquidity_confirmed or is_high_conviction
+        order_type = "FOK" if use_fok else "GTC"
         log.info(
             "[SNIPE EXEC] Score: %.0f | Book depth: %d shares | Best ask: $%.3f | "
             "Order: %s @ $%.3f | Size: %d shares ($%.2f)",
@@ -197,14 +202,17 @@ class PyramidExecutor:
         else:
             result = self._place_order(
                 wave_num, token_id, price, shares, size_usd,
-                use_fok=is_high_conviction,
+                use_fok=use_fok,
             )
             self._record_latency(t0)
             if result:
                 self._record_fill(result)
                 log.info("[SNIPE EXEC] Filled: YES | %s | %.0f shares @ $%.3f", order_type, result.shares, result.price)
             else:
-                if is_high_conviction and not self._pending_order_id:
+                if liquidity_confirmed:
+                    # Liquidity Seeker: FOK-only, no GTC fallback
+                    log.info("[IGNITION] FOK failed despite confirmed liquidity — phantom depth, no fallback")
+                elif is_high_conviction and not self._pending_order_id:
                     # FOK failed (no liquidity) — retry as GTC to rest on book
                     log.info("[SNIPE EXEC] FOK failed, falling back to GTC resting")
                     result = self._place_order(

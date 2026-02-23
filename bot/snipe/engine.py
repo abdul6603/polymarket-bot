@@ -8,7 +8,12 @@ Ticks every 2s. BTC only — deepest order book, most reliable fills.
 
 v7 upgrade: Combines Binance L2 orderflow + Polymarket CLOB orderbook +
 SMC structure (BOS/CHoCH on 5m/15m candles) into a 0-100 signal score.
-Only executes when score >= threshold (default 75).
+Only executes when score >= threshold (default 65).
+
+Liquidity Seeker: 5m books are structurally one-sided (bid=$0.01, ask=$0.99).
+Monitors CLOB book in first 90s of each window for "ignition" — spread
+compression + real ask depth at mid-prices. Only fires FOK when real
+liquidity exists. Skips dead windows entirely.
 """
 from __future__ import annotations
 
@@ -54,6 +59,13 @@ MIN_IMPLIED_PRICE = 0.40
 # Delta confirmation threshold — lower than standalone because imbalance provides direction
 DELTA_CONFIRM_THRESHOLD = 0.0005  # 0.05% confirms imbalance direction
 
+# ── Liquidity Seeker: only trade when real book depth detected ──
+LIQ_SPREAD_MAX = 0.40       # Spread must compress below $0.40 (normally $0.98)
+LIQ_ASK_MAX = 0.65          # Sellers must exist below $0.65
+LIQ_DEPTH_MIN = 20          # Minimum 20 shares on ask side
+LIQ_MONITOR_S = 90          # Give up after 90s of no ignition
+LIQ_SPREAD_COMPRESSION = 0.60  # Spread must drop at least 60% from initial
+
 
 class SnipeState(Enum):
     IDLE = "idle"
@@ -97,6 +109,10 @@ class SnipeEngine:
         self._current_window_id: str = ""
         self._cooldown_until = 0.0
         self._executing_since = 0.0  # Track when we entered EXECUTING
+        self._liquidity_ignited = False       # Liquidity Seeker: book has real depth
+        self._liquidity_monitor_start = 0.0   # When we started monitoring book
+        self._initial_spread = 0.98           # Track starting spread for compression calc
+        self._ignition_failures: dict[str, int] = {}  # token_id -> consecutive failures
         self._base_budget = 25.0  # Conservative: protect the $188
         self._escalated_budget = 40.0  # After 3 consecutive wins
         self._consecutive_wins = 0
@@ -210,10 +226,13 @@ class SnipeEngine:
                 continue
             remaining = w.end_ts - now
             # Enter TRACKING once any window is within snipe zone
-            if 30 < remaining <= 190:
+            if 30 < remaining <= 240:
                 self._state = SnipeState.TRACKING
                 self._delta_signals.clear()  # Reset all per-asset trackers
                 self._scorer.reset_spread_history()  # Fresh spread tracking
+                self._liquidity_ignited = False
+                self._liquidity_monitor_start = time.time()
+                self._initial_spread = 0.98  # Reset for compression tracking
                 threshold = self._effective_threshold()
                 log.info(
                     "[SNIPE] IDLE -> TRACKING (T-%.0fs, delta_thresh=%.3f%%, score_thresh=%d)",
@@ -251,13 +270,55 @@ class SnipeEngine:
 
         # Log top candidates
         remaining_top = candidates[0][3]
-        if remaining_top <= 185:
+        if remaining_top <= 245:
             parts = [f"{w.asset[:3].upper()}={d*100:+.4f}%" for w, p, d, r in candidates]
             log.info(
                 "[SNIPE] T-%.0fs | Best: %s $%.2f | delta=%+.4f%% | All: %s",
                 remaining_top, candidates[0][0].asset.upper(), candidates[0][1],
                 candidates[0][2] * 100, " ".join(parts),
             )
+
+        # ── Liquidity Seeker: gate execution on CLOB book ignition ──
+        if not self._liquidity_ignited:
+            best_w, best_p, best_d, best_r = candidates[0]
+            if abs(best_d) >= DELTA_CONFIRM_THRESHOLD:
+                direction = "up" if best_d > 0 else "down"
+                liq_token = best_w.up_token_id if direction == "up" else best_w.down_token_id
+
+                # Skip tokens that failed ignition 4+ times recently
+                if self._ignition_failures.get(liq_token, 0) >= 4:
+                    log.info(
+                        "[IGNITION] Skipping %s — %d consecutive dead windows",
+                        liq_token[:16], self._ignition_failures[liq_token],
+                    )
+                    self._state = SnipeState.IDLE
+                    self._liquidity_monitor_start = 0
+                    return
+
+                liq_book = clob_book.get_orderbook(liq_token)
+                if self._check_liquidity_ignition(liq_book):
+                    self._liquidity_ignited = True
+                    # Reset failure counter on success
+                    self._ignition_failures[liq_token] = 0
+
+            if not self._liquidity_ignited:
+                elapsed = time.time() - self._liquidity_monitor_start
+                if elapsed > LIQ_MONITOR_S:
+                    # Record ignition failure for this token
+                    if candidates:
+                        best_w = candidates[0][0]
+                        best_d = candidates[0][2]
+                        direction = "up" if best_d > 0 else "down"
+                        fail_token = best_w.up_token_id if direction == "up" else best_w.down_token_id
+                        self._ignition_failures[fail_token] = self._ignition_failures.get(fail_token, 0) + 1
+                    log.info(
+                        "[IGNITION] No ignition after %.0fs — dead book, skipping window",
+                        elapsed,
+                    )
+                    self._state = SnipeState.IDLE
+                    self._liquidity_monitor_start = 0
+                    return
+                return  # Keep monitoring, wait for liquidity
 
         # Gather Binance L2 data (shared across all candidates)
         ob_signal = self._orderbook.get_signal() if self._orderbook.is_connected else None
@@ -270,8 +331,8 @@ class SnipeEngine:
         from bot.snipe.pyramid_executor import WAVES
 
         for window, price, delta, remaining in candidates:
-            # Timing guard
-            if remaining > 180 or remaining < 5:
+            # Timing guard — allow earlier entry when liquidity confirmed
+            if remaining > (240 if self._liquidity_ignited else 180) or remaining < 5:
                 continue
 
             # Track delta direction (keeps DeltaSignal's history for reversal detection)
@@ -367,7 +428,8 @@ class SnipeEngine:
             result = self.pyramid.execute_wave(
                 1, token_id, implied,
                 score=score_result.total_score,
-                book_data=target_book,  # dict with best_ask, sell_pressure, etc.
+                book_data=target_book,
+                liquidity_confirmed=self._liquidity_ignited,
             )
             if result:
                 log.info(
@@ -386,7 +448,10 @@ class SnipeEngine:
                 log.info("[SNIPE] TRACKING -> ARMED (resting, score=%.0f)", score_result.total_score)
                 return
             else:
-                log.warning("[SNIPE] Order failed on %s — trying next", window.asset.upper())
+                if self._liquidity_ignited:
+                    log.info("[IGNITION] FOK failed despite confirmed liquidity — phantom depth")
+                else:
+                    log.warning("[SNIPE] Order failed on %s — trying next", window.asset.upper())
                 self.pyramid.close_position()
                 continue
 
@@ -534,6 +599,49 @@ class SnipeEngine:
             self._cooldown_until = now + 30
             self._state = SnipeState.COOLDOWN
             return
+
+    def _check_liquidity_ignition(self, book: dict | None) -> bool:
+        """Check if CLOB book shows real mid-price liquidity (ignition).
+
+        Normal 5m books: spread=$0.98, ask=$0.99 (dead — no mid-price sellers).
+        Ignition requires ALL conditions:
+          1. Spread compression: drop >= 60% from initial OR absolute < $0.40
+          2. Ask depth > 20 shares below $0.65
+          3. Buy pressure > 0 (real activity, not stale)
+          4. Score gate is checked separately by the scoring loop
+        """
+        if not book:
+            return False
+
+        spread = book.get("spread", 1.0)
+        best_ask = book.get("best_ask", 0)
+        best_bid = book.get("best_bid", 0)
+        sell_pressure = book.get("sell_pressure", 0)
+        buy_pressure = book.get("buy_pressure", 0)
+
+        # Condition 1: Spread compression
+        compression = 1.0 - (spread / self._initial_spread) if self._initial_spread > 0 else 0
+        spread_ok = spread < LIQ_SPREAD_MAX or compression >= LIQ_SPREAD_COMPRESSION
+        if not spread_ok:
+            return False
+
+        # Condition 2: Ask depth at reasonable prices
+        if best_ask <= 0 or best_ask >= LIQ_ASK_MAX:
+            return False
+        depth = int(sell_pressure / best_ask) if best_ask > 0 else 0
+        if depth < LIQ_DEPTH_MIN:
+            return False
+
+        # Condition 3: Buy-side activity (not just stale book)
+        if buy_pressure <= 0:
+            return False
+
+        log.info(
+            "[IGNITION] Liquidity detected! spread=$%.3f (%.0f%% compressed) | "
+            "ask=$%.3f depth=%d shares | buy_pressure=%.1f",
+            spread, compression * 100, best_ask, depth, buy_pressure,
+        )
+        return True
 
     def _finish_trade(self) -> None:
         """Clean up current trade and go to cooldown."""
