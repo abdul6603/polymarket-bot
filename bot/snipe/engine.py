@@ -248,10 +248,12 @@ class SnipeEngine:
         """Single tick — feed candles, then tick all 4 asset slots in parallel."""
         tick_start = time.time()
 
-        # Phase 1: Fetch prices + feed candles (sequential, fast ~1s for 4 Binance calls)
+        # Phase 1: Fetch prices from WS-fed PriceCache (instant), REST only if stale
         self._live_prices: dict[str, float] = {}
         for asset in ASSETS:
-            price = self._fetch_live_price(asset)
+            price = self._cache.get_price(asset)
+            if not price:
+                price = self._fetch_live_price(asset)  # REST fallback
             if price:
                 self._live_prices[asset] = price
                 self._candle_store.feed_tick(asset, price)
@@ -660,7 +662,7 @@ class SnipeEngine:
             return
 
         # Reversal detection
-        live_price = self._fetch_live_price(slot.asset)
+        live_price = self._live_prices.get(slot.asset) or self._cache.get_price(slot.asset)
         if live_price and slot.executor.has_active_position and window and window.open_price > 0:
             direction = slot.executor.active_direction
             delta = (live_price - window.open_price) / window.open_price
@@ -714,7 +716,7 @@ class SnipeEngine:
 
         # Paper mode: resolve using asset price
         if self._dry_run and slot.executor.has_active_position:
-            live_price = self._fetch_live_price(slot.asset)
+            live_price = self._live_prices.get(slot.asset) or self._cache.get_price(slot.asset)
             if live_price and slot.executor._active_position:
                 open_price = slot.executor._active_position.open_price
                 delta = (live_price - open_price) / open_price if open_price > 0 else 0
