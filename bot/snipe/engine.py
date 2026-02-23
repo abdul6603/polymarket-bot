@@ -4,9 +4,10 @@ State machine:
   IDLE -> TRACKING -> ARMED -> EXECUTING -> COOLDOWN -> IDLE
 
 Runs in its own background thread (independent of Garves's main event loop).
-Ticks every 8s → ~22 readings per snipe window.
+Ticks every 3s → ~22 readings per snipe window.
 BTC only — deepest order book, most reliable fills near fair price.
-Weekend threshold: 0.070% (lower vol). Weekday threshold: 0.077%.
+Combined signal: order book imbalance (predictive) + delta (confirmation).
+GTC LIMIT orders rest on book. Cancels at T-5s or on reversal.
 """
 from __future__ import annotations
 
@@ -26,13 +27,14 @@ from bot.price_cache import PriceCache
 from bot.snipe.window_tracker import WindowTracker
 from bot.snipe.delta_signal import DeltaSignal
 from bot.snipe.pyramid_executor import PyramidExecutor
+from bot.snipe.orderbook_signal import OrderBookSignal
 
 log = logging.getLogger("garves.snipe")
 
 ET = ZoneInfo("America/New_York")
 
 # Tick interval in seconds — 8s gives ~22 ticks per 180s snipe zone
-SNIPE_TICK_INTERVAL = 8
+SNIPE_TICK_INTERVAL = 2  # 2s ticks for T-30s precision
 
 # Weekend pre-futures: low vol, lower threshold to catch small moves
 # Futures active (weekdays + weekend after 6PM ET): higher threshold for real moves only
@@ -43,6 +45,9 @@ FUTURES_THRESHOLD = 0.0008             # 0.080%
 # A $0.09 DOWN token = market says 9% chance of DOWN. That's fighting smart money.
 # Whale enters near $0.45-$0.55 (50/50 odds). Floor at $0.40 keeps us honest.
 MIN_IMPLIED_PRICE = 0.40
+
+# Delta confirmation threshold — lower than standalone because imbalance provides direction
+DELTA_CONFIRM_THRESHOLD = 0.0005  # 0.05% confirms imbalance direction
 
 
 class SnipeState(Enum):
@@ -72,11 +77,12 @@ class SnipeEngine:
         self.window_tracker = WindowTracker(cfg, price_cache)
         self._delta_threshold = delta_threshold
         self._delta_signals: dict[str, DeltaSignal] = {}  # Per-asset signal trackers
-        # Snipe in DRY RUN — paper trade while we study the math
         self.pyramid = PyramidExecutor(
-            cfg, clob_client, dry_run=True,
+            cfg, clob_client, dry_run=dry_run,
             budget_per_window=25.0,
         )
+        self._orderbook = OrderBookSignal()
+        self._orderbook.start()
 
         self._state = SnipeState.IDLE
         self._current_window_id: str = ""
@@ -137,10 +143,11 @@ class SnipeEngine:
         is_weekend = datetime.now(ET).weekday() >= 5
         log.info(
             "[SNIPE] Engine started | budget=$%.0f/window | threshold=%.3f%% (%s) | "
-            "tick=%ds | dry_run=%s",
+            "tick=%ds | dry_run=%s | orderbook=%s",
             self.pyramid._budget, threshold * 100,
             "weekend" if is_weekend else "weekday",
             SNIPE_TICK_INTERVAL, self._dry_run,
+            "connected" if self._orderbook.is_connected else "disconnected",
         )
 
         loop = asyncio.get_event_loop()
@@ -236,20 +243,54 @@ class SnipeEngine:
                 candidates[0][2] * 100, " ".join(parts),
             )
 
-        # Evaluate EVERY asset with its own signal tracker (builds sustained direction per-asset)
+        # Evaluate EVERY asset with combined signal: orderbook imbalance + delta confirmation
         signaled = []
+        ob_signal = self._orderbook.get_signal() if self._orderbook.is_connected else None
+
         for window, price, delta, remaining in candidates:
             sig_tracker = self._get_signal(window.asset)
-            signal = sig_tracker.evaluate(price, window.open_price, remaining)
-            if signal:
-                signaled.append((window, price, delta, remaining, signal))
+            delta_signal = sig_tracker.evaluate(price, window.open_price, remaining)
+
+            # COMBINED SIGNAL: imbalance (predictive) + delta (confirmation)
+            # Mode 1: Imbalance + delta confirm — enter early (T-180s to T-5s)
+            # Mode 2: Delta-only fallback — enter later (T-120s to T-5s) if WS down
+            if ob_signal and abs(delta) >= DELTA_CONFIRM_THRESHOLD:
+                ob_dir = ob_signal.direction
+                delta_dir = "up" if delta > 0 else "down"
+                if ob_dir == delta_dir:
+                    # Both agree — strong combined signal
+                    from bot.snipe.delta_signal import SnipeSignal
+                    combined = SnipeSignal(
+                        direction=ob_dir,
+                        delta_pct=round(delta * 100, 4),
+                        confidence=min(0.98, 0.60 + ob_signal.strength * 0.30 + abs(delta) * 100),
+                        sustained_ticks=ob_signal.sustained_ticks,
+                        current_price=price,
+                        open_price=window.open_price,
+                        remaining_s=remaining,
+                    )
+                    signaled.append((window, price, delta, remaining, combined))
+                    log.info(
+                        "[SNIPE] COMBINED: OB=%s(%.3f, %dt) + Delta=%+.4f%% -> %s",
+                        ob_dir.upper(), ob_signal.imbalance, ob_signal.sustained_ticks,
+                        delta * 100, ob_dir.upper(),
+                    )
+            elif delta_signal:
+                # Fallback: delta-only (WS down or no imbalance signal)
+                signaled.append((window, price, delta, remaining, delta_signal))
 
         if not signaled:
             return
 
-        # Try each signaled asset (strongest delta first) — fall back on no-liquidity
+        # Try each signaled asset — fall back on no-liquidity
         from bot.snipe.pyramid_executor import WAVES
         for window, price, delta, remaining, signal in signaled:
+            # Combined mode: enter anytime T-180s to T-5s (imbalance is early)
+            # Fallback mode: enter T-120s to T-5s (delta needs more time)
+            max_entry_time = 180 if ob_signal else 120
+            if remaining > max_entry_time or remaining < 5:
+                continue
+
             self._current_window_id = window.market_id
             direction = signal.direction
             token_id = window.up_token_id if direction == "up" else window.down_token_id
@@ -284,19 +325,36 @@ class SnipeEngine:
             )
 
             self.pyramid.start_position(window.market_id, signal.direction, window.open_price, window.asset)
-            self._state = SnipeState.ARMED
-            log.info("[SNIPE] TRACKING -> ARMED on %s (implied=$%.3f) — firing waves now", window.asset.upper(), implied)
-            self._on_armed()
 
-            # If wave 1 filled, we're done. If not (no liquidity), _on_armed set us back to IDLE.
-            if self._state != SnipeState.IDLE:
+            result = self.pyramid.execute_wave(1, token_id, implied)
+            if result:
+                # Immediate fill (GTC matched existing sells)
+                log.info(
+                    "[SNIPE] GTC FILLED | T-%.0fs | %s %s | $%.2f | %.0f shares @ $%.3f",
+                    remaining, window.asset.upper(), signal.direction.upper(),
+                    result.size_usd, result.shares, result.price,
+                )
+                self._state = SnipeState.EXECUTING
+                self.window_tracker.mark_traded(window.market_id)
+                log.info("[SNIPE] TRACKING -> EXECUTING (GTC filled)")
                 return
-            log.info("[SNIPE] Falling back to next asset...")
+            elif self.pyramid.has_pending_order:
+                # GTC order resting on book — wait for fills
+                self._state = SnipeState.ARMED
+                self.window_tracker.mark_traded(window.market_id)
+                log.info("[SNIPE] TRACKING -> ARMED (GTC resting at $%.2f)", WAVES[0][2])
+                return
+            else:
+                # Order completely failed
+                log.warning("[SNIPE] GTC failed on %s — trying next", window.asset.upper())
+                self.pyramid.close_position()
+                continue
 
     def _on_armed(self) -> None:
-        """Execute pyramid waves as timing conditions are met."""
+        """Monitor resting GTC order for fills. Cancel at T-5s or on reversal."""
         window = self.window_tracker.get_window(self._current_window_id)
         if not window:
+            self.pyramid.cancel_pending_order()
             self._finish_trade()
             return
 
@@ -304,72 +362,83 @@ class SnipeEngine:
         remaining = window.end_ts - now
 
         if remaining <= 0:
+            self.pyramid.cancel_pending_order()
             self._finish_trade()
             return
 
-        if not self.pyramid.has_active_position:
+        # Cancel at T-5s — don't hold unfilled orders into resolution
+        if remaining <= 5:
+            # Check for partial fills before cancelling
+            partial = self.pyramid.finalize_partial_fill()
+            self.pyramid.cancel_pending_order()
+            if self.pyramid.has_active_position and self.pyramid.waves_fired > 0:
+                self._state = SnipeState.EXECUTING
+                log.info("[SNIPE] T-5s: have fills, holding through resolution")
+            else:
+                self.pyramid.close_position()
+                self._state = SnipeState.IDLE
+                log.info("[SNIPE] T-5s: no fills, order cancelled")
+            return
+
+        # Poll for order fill
+        if self.pyramid.has_pending_order:
+            fill = self.pyramid.poll_pending_order()
+            if fill:
+                log.info(
+                    "[SNIPE] GTC FILLED | T-%.0fs | %s %s | $%.2f | %.0f shares",
+                    remaining, window.asset.upper(), fill.direction.upper(),
+                    fill.size_usd, fill.shares,
+                )
+                self._state = SnipeState.EXECUTING
+                self.window_tracker.mark_traded(window.market_id)
+                log.info("[SNIPE] ARMED -> EXECUTING (GTC filled)")
+                return
+        elif not self.pyramid.has_active_position:
             self._state = SnipeState.IDLE
             return
 
-        direction = self.pyramid.active_direction
-        token_id = window.up_token_id if direction == "up" else window.down_token_id
+        # Update delta tracking + log + check reversal
+        live_btc = self._fetch_btc_price()
+        if live_btc and self.pyramid.has_active_position and window.open_price > 0:
+            direction = self.pyramid.active_direction
+            delta = (live_btc - window.open_price) / window.open_price
+            current_dir = "up" if delta > 0 else "down"
 
-        implied = self._fetch_implied_price(window.market_id, token_id)
-        if not implied:
-            log.warning("[SNIPE] ARMED but no implied price | T-%.0fs | %s %s", remaining, window.asset.upper(), direction.upper())
-            return
+            # Update signal tracker for reversal detection
+            sig = self._get_signal(window.asset)
+            sig._recent_dirs.append(current_dir)
 
-        # Check and fire each wave
-        wave1_failed = False
-        for wave_num in (1, 2, 3):
-            if self.pyramid.should_fire_wave(wave_num, remaining, implied):
-                # After Wave 1, check actual fill price — abort if market says <40%
-                if wave_num > 1 and self.pyramid.has_active_position:
-                    last_wave = self.pyramid._active_position.waves[-1] if self.pyramid._active_position.waves else None
-                    if last_wave and last_wave.price < MIN_IMPLIED_PRICE:
-                        log.warning(
-                            "[SNIPE] ABORT: Wave %d actual fill $%.3f < floor $%.2f — not pyramiding into bad price",
-                            last_wave.wave_num, last_wave.price, MIN_IMPLIED_PRICE,
-                        )
+            ob_reading = self._orderbook.get_latest_reading() if hasattr(self, "_orderbook") else None
+            ob_str = f" | OB={ob_reading.imbalance:+.3f}" if ob_reading else ""
+            log.info(
+                "[SNIPE] ARMED T-%.0fs | %s $%.2f | delta=%+.4f%% (%s)%s",
+                remaining, window.asset.upper(), live_btc, delta * 100, current_dir.upper(), ob_str,
+            )
+
+            # Reversal: direction flipped with strong sustained opposition
+            if current_dir != direction and abs(delta) > self._effective_threshold():
+                reversal_count = 0
+                for d in reversed(sig._recent_dirs):
+                    if d == current_dir:
+                        reversal_count += 1
+                    else:
                         break
+                if reversal_count >= 3:
+                    log.warning(
+                        "[SNIPE] REVERSAL %s->%s (delta=%+.3f%%, %d ticks) | Cancelling GTC",
+                        direction.upper(), current_dir.upper(), delta * 100, reversal_count,
+                    )
+                    partial = self.pyramid.finalize_partial_fill()
+                    self.pyramid.cancel_pending_order()
+                    if self.pyramid.waves_fired > 0:
+                        # We have partial fills — hold through resolution
+                        self._state = SnipeState.EXECUTING
+                        log.info("[SNIPE] Reversal but have fills — holding")
+                    else:
+                        self.pyramid.close_position()
+                        self._state = SnipeState.IDLE
+                    return
 
-                # Verify delta still holds for waves 2 and 3
-                if wave_num > 1:
-                    asset_price = self._fetch_btc_price() if window.asset == "bitcoin" else self._cache.get_price(window.asset)
-                    if asset_price and window.open_price > 0:
-                        abs_delta = abs((asset_price - window.open_price) / window.open_price)
-                        sig_tracker = self._get_signal(window.asset)
-                        wave_threshold = sig_tracker.get_wave_threshold(wave_num)
-                        if abs_delta < wave_threshold:
-                            log.info(
-                                "[SNIPE] Wave %d delta check failed: %.4f%% < %.4f%%",
-                                wave_num, abs_delta * 100, wave_threshold * 100,
-                            )
-                            continue
-
-                result = self.pyramid.execute_wave(wave_num, token_id, implied)
-                if result:
-                    log.info("[SNIPE] Wave %d FIRED | T-%.0fs | price=$%.3f", wave_num, remaining, implied)
-                elif wave_num == 1:
-                    wave1_failed = True
-
-        # Wave 1 failed (no liquidity) — abandon this asset, try others
-        if wave1_failed and self.pyramid.waves_fired == 0:
-            log.warning("[SNIPE] Wave 1 failed (no liquidity) on %s — skipping", window.asset.upper())
-            self.window_tracker.mark_traded(window.market_id)
-            self.pyramid.close_position()
-            self._state = SnipeState.IDLE
-            return
-
-        # All 3 waves done OR time running out with fills -> wait for resolution
-        if self.pyramid.waves_fired >= 3:
-            self._state = SnipeState.EXECUTING
-            self.window_tracker.mark_traded(window.market_id)
-            log.info("[SNIPE] ARMED -> EXECUTING (all 3 waves filled)")
-        elif remaining < 30 and self.pyramid.waves_fired > 0:
-            self._state = SnipeState.EXECUTING
-            self.window_tracker.mark_traded(window.market_id)
-            log.info("[SNIPE] ARMED -> EXECUTING (%d waves filled, T-%.0fs)", self.pyramid.waves_fired, remaining)
 
     def _on_executing(self) -> None:
         """Wait for CLOB resolution — use stored market_id directly (don't depend on window tracker)."""
@@ -577,5 +646,6 @@ class SnipeEngine:
             "window": self.window_tracker.get_status(),
             "position": self.pyramid.get_status(),
             "history": self.pyramid.get_history(10),
+            "orderbook": self._orderbook.get_status() if hasattr(self, "_orderbook") else None,
             "timestamp": time.time(),
         }
