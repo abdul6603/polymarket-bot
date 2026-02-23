@@ -98,15 +98,12 @@ class TradingBot:
         self.binance_feed = BinanceFeed(cfg, self.price_cache)
         self.feed = MarketFeed(cfg)
 
-        # Build CLOB client (None if no credentials)
-        if cfg.private_key and not cfg.dry_run:
+        # Build CLOB client (needed for snipe live mode even when taker is dry-run)
+        if cfg.private_key:
             self.client = build_client(cfg)
         else:
             self.client = None
-            if cfg.dry_run:
-                log.info("Running in DRY RUN mode — no CLOB client needed")
-            else:
-                log.warning("No private key configured")
+            log.warning("No private key configured")
 
         # Sync tracker with real Polymarket positions
         self.tracker.sync_from_chain(self.client)
