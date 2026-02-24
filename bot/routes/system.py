@@ -31,7 +31,7 @@ AGENT_PROCESS_MAP = {
 
 WATCHED_PORTS = {
     8877: "Dashboard",
-    7777: "Shelby",
+    7778: "Shelby Webhook",
 }
 
 
