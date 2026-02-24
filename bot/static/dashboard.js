@@ -11583,7 +11583,7 @@ function refreshSnipeV7() {
       var slotState = (btcSlot.state || 'idle').toUpperCase();
       if (slotScore > 0) {
         scoreEl_a.textContent = slotScore.toFixed(0);
-        scoreEl_a.style.color = slotScore >= 72 ? '#22c55e' : slotScore >= 50 ? '#eab308' : '#f7931a';
+        scoreEl_a.style.color = slotScore >= 75 ? '#22c55e' : slotScore >= 50 ? '#eab308' : '#f7931a';
       } else {
         scoreEl_a.textContent = '--';
         scoreEl_a.style.color = '#f7931a';
@@ -11644,6 +11644,32 @@ function refreshSnipeV7() {
         flowCard.style.background = '';
         flowCard.style.borderLeftColor = '#8b5cf6';
       }
+    }
+
+    // Execution routing badge + last route
+    var execVenueEl = document.getElementById('snipe-exec-venue');
+    var execBadge = document.getElementById('exec-routing-badge');
+    var execLastRoute = document.getElementById('exec-last-route');
+    if (execVenueEl) {
+      var execTf = d.default_exec_tf || '15m';
+      execVenueEl.textContent = '5m \u2192 ' + execTf;
+    }
+    if (execBadge) {
+      var execTf2 = d.default_exec_tf || '15m';
+      execBadge.textContent = '5m \u2192 ' + execTf2;
+    }
+    if (execLastRoute && d.last_exec_routing && d.last_exec_routing.timestamp) {
+      var lr = d.last_exec_routing;
+      var ago = Math.round(Date.now() / 1000 - lr.timestamp);
+      var agoStr = ago < 60 ? ago + 's ago' : Math.round(ago / 60) + 'm ago';
+      execLastRoute.style.display = '';
+      execLastRoute.innerHTML = 'Last: <span style="color:' +
+        (lr.direction === 'up' ? '#22c55e' : '#ef4444') + ';">' +
+        (lr.direction || '').toUpperCase() + '</span> ' +
+        lr.scanner_tf + ' \u2192 ' + lr.exec_tf +
+        ' | score=' + (lr.score || 0).toFixed(0) +
+        ' | flow=' + (lr.flow_strength || 0).toFixed(2) +
+        ' | ' + agoStr;
     }
 
     // Positions badge
@@ -12190,9 +12216,9 @@ function toggleExecVenue() {
   var el = document.getElementById('snipe-exec-venue');
   if (!el) return;
   var current = el.textContent.trim();
-  var next = current === '15m' ? '1h' : '15m';
+  var next = current.indexOf('1h') >= 0 ? '5m \u2192 15m' : '5m \u2192 1h';
   el.textContent = next;
-  showToast('Exec venue toggled to ' + next + ' (UI only — restart Garves to apply)', 'info');
+  showToast('Exec venue toggled to ' + next + ' (UI only — edit DEFAULT_EXEC_TF in engine.py to apply)', 'info');
 }
 
 function forceReconnectClob() {

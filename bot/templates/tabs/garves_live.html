@@ -103,11 +103,24 @@
   </div>
   <div class="health-inline" id="garves-health-result"></div>
 
-  <!-- ═══ Snipe Engine v9 — BTC Flow Anticipation Sniper ═══ -->
+  <!-- ═══ Snipe Engine v10 — BTC Flow Scanner + 15m/1h Exec ═══ -->
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-    <div style="font-weight:700;font-size:0.76rem;">Snipe v9 Flow Sniper</div>
-    <div id="snipe-exec-venue" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;font-weight:600;">5m</div>
+    <div style="font-weight:700;font-size:0.76rem;">Snipe v10 Flow Scanner</div>
+    <div id="snipe-exec-venue" onclick="toggleExecVenue()" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;font-weight:600;cursor:pointer;">5m → 15m</div>
     <div id="snipe-positions-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,0.15);color:#22c55e;font-weight:600;">0/3</div>
+  </div>
+
+  <!-- Execution Routing Card -->
+  <div id="exec-routing-card" class="glass-card" style="padding:10px 14px;margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-weight:700;font-size:0.76rem;">Execution Routing</span>
+      <span id="exec-routing-badge" style="padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:600;
+        background:rgba(139,92,246,0.15);color:#8b5cf6;">5m → 15m</span>
+    </div>
+    <div id="exec-routing-detail" style="font-size:0.68rem;color:var(--text-muted);margin-top:6px;">
+      Scanner detects flow on 5m, executes on 15m/1h where liquidity exists
+    </div>
+    <div id="exec-last-route" style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;display:none;"></div>
   </div>
 
   <!-- BTC Scanner Card + Flow Detection Status -->
@@ -189,7 +202,7 @@
 
   <!-- Snipe v8 Performance Tracking -->
   <div class="glass-card" style="padding:10px 14px;margin-bottom:12px;">
-    <div style="font-weight:700;font-size:0.76rem;margin-bottom:8px;">Snipe v8 Performance</div>
+    <div style="font-weight:700;font-size:0.76rem;margin-bottom:8px;">Snipe v10 Performance</div>
     <div id="snipe-perf-stats" style="font-size:0.78rem;"></div>
   </div>
 

@@ -1,4 +1,4 @@
-"""Snipe Engine v9 — BTC-Only CLOB Flow Anticipation Sniper.
+"""Snipe Engine v10 — BTC Flow Scanner + 15m/1h Execution.
 
 State machine:
   IDLE -> TRACKING -> ARMED -> EXECUTING -> COOLDOWN -> IDLE
@@ -6,9 +6,9 @@ State machine:
 Runs in its own background thread (independent of Garves's main event loop).
 Ticks every 2s. BTC only — single state machine.
 
-v9 redesign: Detects strong directional CLOB flow in the first 30-60s of
-each 5m window and bets in the flow direction before market makers stabilize.
-Two-stage firing: FlowDetector.is_strong + SignalScorer >= 72 + implied <= 0.52.
+5m windows provide high-resolution flow detection. When signal fires
+(flow strong + score >=75 + implied <=0.52), execution routes to the
+active 15m or 1h market where real liquidity exists.
 """
 from __future__ import annotations
 
@@ -38,6 +38,7 @@ from bot.snipe.fill_simulator import estimate_fill
 from bot.snipe.timing_learner import TimingLearner
 from bot.snipe.timing_assistant import TimingAssistant
 from bot.snipe.flow_detector import FlowDetector, FlowResult
+from bot.snipe.market_bridge import find_execution_market
 
 log = logging.getLogger("garves.snipe")
 
@@ -64,15 +65,18 @@ LIQ_DEPTH_MIN = 20
 LIQ_MONITOR_S = 90
 LIQ_SPREAD_COMPRESSION = 0.60
 
-# BTC-only config — v9 flow anticipation sniper
+# BTC-only config — v10 flow scanner + MTF execution
 ASSETS = ("bitcoin",)
 SNIPE_ASSET_BLACKLIST = set()  # BTC is the only asset
 BINANCE_SYMBOLS = {
     "bitcoin": "BTCUSDT",
 }
 ASSET_CONFIG = {
-    "bitcoin": {"base_threshold": 72, "budget": 25.0},
+    "bitcoin": {"base_threshold": 75, "budget": 25.0},
 }
+
+# Default execution timeframe — 5m scanner signals execute on 15m/1h markets
+DEFAULT_EXEC_TF = "15m"  # "15m" or "1h" — where real liquidity lives
 
 # Max implied price for entry — tighter gate for flow sniper
 MAX_IMPLIED_FLOW = 0.52  # Never buy above $0.52 — good risk/reward
@@ -142,7 +146,7 @@ class SnipeEngine:
         # BTC-only slot with executor + scorer
         self._slots: dict[str, AssetSlot] = {}
         for asset in ASSETS:
-            ac = ASSET_CONFIG.get(asset, {"base_threshold": 72, "budget": 25.0})
+            ac = ASSET_CONFIG.get(asset, {"base_threshold": 75, "budget": 25.0})
             slot = AssetSlot(asset=asset)
             slot.executor = PyramidExecutor(
                 cfg, clob_client, dry_run=dry_run,
@@ -156,7 +160,7 @@ class SnipeEngine:
 
         # Candle structure
         self._candle_store = CandleStore()
-        self._scorer = SignalScorer(threshold=72)  # Legacy compat
+        self._scorer = SignalScorer(threshold=75)  # Legacy compat
 
         # Data-quality-aware threshold state
         self._last_threshold_log: dict[str, float] = {}
@@ -189,6 +193,9 @@ class SnipeEngine:
         self._engine_start_ts = time.time()
         self._last_warmup_log = 0.0
         self._warmup_notified = False
+
+        # Execution routing tracking (for dashboard)
+        self._last_exec_routing: dict = {}
 
     def _effective_threshold(self) -> float:
         """Dynamic threshold based on CME futures session."""
@@ -228,9 +235,10 @@ class SnipeEngine:
         threshold = self._effective_threshold()
         is_weekend = datetime.now(ET).weekday() >= 5
         log.info(
-            "[SNIPE] Engine v9 started | BTC-only flow sniper | "
+            "[SNIPE] Engine v10 started | 5m scanner → %s execution | "
             "threshold=%.3f%% (%s) | "
             "max_positions=%d | tick=%ds | dry_run=%s | orderbook=%s",
+            DEFAULT_EXEC_TF,
             threshold * 100,
             "weekend" if is_weekend else "weekday",
             MAX_CONCURRENT_POSITIONS, SNIPE_TICK_INTERVAL,
@@ -535,11 +543,35 @@ class SnipeEngine:
                          asset.upper(), implied, MAX_IMPLIED_FLOW)
                 continue  # Price too high — bad risk/reward
 
-            # Execute on 5m market directly (no MTF routing in v9)
-            exec_market_id = window.market_id
-            exec_token_id = token_id
-            exec_end_ts = window.end_ts
-            exec_timeframe = "5m"
+            # ── Resolve execution market — 15m/1h where real liquidity exists ──
+            exec_mkt = find_execution_market("bitcoin", DEFAULT_EXEC_TF)
+            if exec_mkt:
+                exec_market_id = exec_mkt.market_id
+                exec_end_ts = exec_mkt.end_ts
+                exec_timeframe = exec_mkt.timeframe
+                exec_token_id = exec_mkt.up_token_id if direction == "up" else exec_mkt.down_token_id
+                # Re-check implied price on EXECUTION market (not scanner)
+                exec_implied = self._fetch_implied_price(exec_market_id, exec_token_id)
+                if exec_implied and exec_implied > MAX_IMPLIED_FLOW:
+                    log.info("[SNIPE] BTC: exec market implied $%.3f > $%.2f — skipping",
+                             exec_implied, MAX_IMPLIED_FLOW)
+                    continue
+                if exec_implied:
+                    implied = exec_implied  # Use execution market's implied for fill pricing
+                # Fetch execution market's book for fill simulation
+                target_book = clob_book.get_orderbook(exec_token_id)
+                log.info(
+                    "[SNIPE] BTC: Signal on 5m → Executing on %s | market=%s... | "
+                    "direction=%s | implied=$%.3f",
+                    exec_timeframe, exec_market_id[:16], direction.upper(), implied,
+                )
+            else:
+                # Fallback to 5m if no 15m/1h market found
+                exec_market_id = window.market_id
+                exec_token_id = token_id
+                exec_end_ts = window.end_ts
+                exec_timeframe = "5m"
+                log.warning("[SNIPE] BTC: No %s market found — falling back to 5m", DEFAULT_EXEC_TF)
 
             # Check max concurrent positions
             if self._active_position_count() >= MAX_CONCURRENT_POSITIONS:
@@ -558,10 +590,21 @@ class SnipeEngine:
             self._stats["signals"] += 1
             log.info(
                 "[SNIPE] SIGNAL: %s %s | score=%.0f/100 | flow=%.2f | "
-                "delta=%+.4f%% | sustained=%d | T-%.0fs",
+                "delta=%+.4f%% | sustained=%d | T-%.0fs | exec=%s",
                 asset.upper(), direction.upper(), score_result.total_score,
-                flow.strength, delta * 100, sustained, remaining,
+                flow.strength, delta * 100, sustained, remaining, exec_timeframe,
             )
+
+            # Track execution routing for dashboard
+            self._last_exec_routing = {
+                "scanner_tf": "5m",
+                "exec_tf": exec_timeframe,
+                "exec_market": exec_market_id[:16],
+                "direction": direction,
+                "score": score_result.total_score,
+                "flow_strength": flow.strength,
+                "timestamp": time.time(),
+            }
 
             # Execute
             slot.current_window_id = exec_market_id
@@ -593,15 +636,15 @@ class SnipeEngine:
             if result:
                 log.info(
                     "[SNIPE] %s: FILLED | T-%.0fs | %s | $%.2f | %.0f shares @ $%.3f | "
-                    "flow=%.2f | score=%.0f",
+                    "flow=%.2f | score=%.0f | exec=%s",
                     asset.upper(), remaining, direction.upper(),
                     result.size_usd, result.shares, result.price,
-                    flow.strength, score_result.total_score,
+                    flow.strength, score_result.total_score, exec_timeframe,
                 )
                 slot.state = SnipeState.EXECUTING
                 slot.executing_since = time.time()
                 self.window_tracker.mark_traded(window.market_id)
-                log.info("[SNIPE] %s: TRACKING -> EXECUTING (flow snipe filled)", asset.upper())
+                log.info("[SNIPE] %s: TRACKING -> EXECUTING (flow snipe filled on %s)", asset.upper(), exec_timeframe)
                 try:
                     from shared.events import publish, TRADE_EXECUTED
                     publish(
@@ -614,7 +657,7 @@ class SnipeEngine:
                             "size_usd": round(result.size_usd, 2),
                             "shares": round(result.shares, 1),
                             "price": round(result.price, 3),
-                            "exec_tf": "5m",
+                            "exec_tf": exec_timeframe,
                             "market_id": exec_market_id[:12],
                             "fill_type": "instant",
                             "flow_strength": round(flow.strength, 2),
@@ -622,7 +665,8 @@ class SnipeEngine:
                         summary=(
                             f"FLOW SNIPE {direction.upper()} BTC "
                             f"${result.size_usd:.2f} @ ${result.price:.3f} "
-                            f"score={score_result.total_score:.0f} flow={flow.strength:.2f}"
+                            f"score={score_result.total_score:.0f} flow={flow.strength:.2f} "
+                            f"exec={exec_timeframe}"
                         ),
                     )
                 except Exception:
@@ -631,7 +675,7 @@ class SnipeEngine:
             elif slot.executor.has_pending_order:
                 slot.state = SnipeState.ARMED
                 self.window_tracker.mark_traded(window.market_id)
-                log.info("[SNIPE] %s: TRACKING -> ARMED (resting)", asset.upper())
+                log.info("[SNIPE] %s: TRACKING -> ARMED (resting on %s)", asset.upper(), exec_timeframe)
                 return
             else:
                 log.warning("[SNIPE] %s: Order failed — trying next", asset.upper())
@@ -884,7 +928,7 @@ class SnipeEngine:
             self._threshold_override = None
             self._threshold_override_expires = 0.0
 
-        base = ASSET_CONFIG.get(asset, {"base_threshold": 72})["base_threshold"]
+        base = ASSET_CONFIG.get(asset, {"base_threshold": 75})["base_threshold"]
         quality = self._assess_clob_quality(book, slot)
 
         if quality == "good":
@@ -1163,7 +1207,7 @@ class SnipeEngine:
         # Per-asset thresholds from data-quality system
         per_asset_thresholds = {}
         for a, s in self._slots.items():
-            per_asset_thresholds[a] = self._last_threshold_value.get(a, ASSET_CONFIG.get(a, {"base_threshold": 72})["base_threshold"])
+            per_asset_thresholds[a] = self._last_threshold_value.get(a, ASSET_CONFIG.get(a, {"base_threshold": 75})["base_threshold"])
 
         # Use max per-asset threshold for can_reach check
         max_thresh = max(per_asset_thresholds.values()) if per_asset_thresholds else 72
@@ -1239,7 +1283,7 @@ class SnipeEngine:
                 "last_direction": slot.last_direction,
                 "exec_timeframe": slot.exec_timeframe,
                 "position": slot.executor.get_status(),
-                "threshold": self._last_threshold_value.get(asset, ASSET_CONFIG.get(asset, {"base_threshold": 72})["base_threshold"]),
+                "threshold": self._last_threshold_value.get(asset, ASSET_CONFIG.get(asset, {"base_threshold": 75})["base_threshold"]),
             }
 
         # Hot windows
@@ -1261,8 +1305,11 @@ class SnipeEngine:
 
         return {
             "enabled": self.enabled,
-            "version": "v9-flow-sniper",
-            "strategy": "flow_anticipation_sniper",
+            "version": "v10-flow-scanner-mtf-exec",
+            "strategy": "flow_scanner_mtf_exec",
+            "default_exec_tf": DEFAULT_EXEC_TF,
+            "execution_routing": "5m → " + DEFAULT_EXEC_TF,
+            "last_exec_routing": self._last_exec_routing,
             "dry_run": self._dry_run,
             "delta_threshold_pct": round(threshold * 100, 3),
             "threshold_mode": "weekend" if is_weekend else "weekday",
@@ -1284,7 +1331,7 @@ class SnipeEngine:
             "threshold_info": {
                 "mode": "data_quality",
                 "per_asset": {
-                    a: self._last_threshold_value.get(a, ASSET_CONFIG.get(a, {"base_threshold": 72})["base_threshold"])
+                    a: self._last_threshold_value.get(a, ASSET_CONFIG.get(a, {"base_threshold": 75})["base_threshold"])
                     for a in ASSETS
                 },
                 "override_active": (self._threshold_override is not None
