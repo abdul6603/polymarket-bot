@@ -56,6 +56,7 @@ FUTURES_THRESHOLD = 0.0008             # 0.080%
 
 # Minimum CLOB implied price to enter
 MIN_IMPLIED_PRICE = 0.40
+MAX_IMPLIED_PRICE = 0.55  # Never buy above $0.55 — break-even WR = 55%
 
 # Delta confirmation threshold
 DELTA_CONFIRM_THRESHOLD = 0.0005  # 0.05%
@@ -69,6 +70,7 @@ LIQ_SPREAD_COMPRESSION = 0.60
 
 # Multi-asset config
 ASSETS = ("bitcoin", "ethereum", "solana", "xrp")
+SNIPE_ASSET_BLACKLIST = {"xrp"}  # 39% WR overall, 0W-4L today — no edge
 BINANCE_SYMBOLS = {
     "bitcoin": "BTCUSDT",
     "ethereum": "ETHUSDT",
@@ -393,6 +395,8 @@ class SnipeEngine:
 
     def _slot_on_idle(self, slot: AssetSlot) -> None:
         """Wait for windows to enter snipe zone."""
+        if slot.asset in SNIPE_ASSET_BLACKLIST:
+            return
         now = time.time()
         for w in self.window_tracker.all_active_windows():
             if w.traded or w.asset != slot.asset:
@@ -419,8 +423,11 @@ class SnipeEngine:
 
     def _slot_on_tracking(self, slot: AssetSlot) -> None:
         """Evaluate windows with 10-component scoring + MTF gate."""
-        now = time.time()
         asset = slot.asset
+        if asset in SNIPE_ASSET_BLACKLIST:
+            slot.state = SnipeState.IDLE
+            return
+        now = time.time()
 
         # Use pre-fetched price from main tick loop (no duplicate Binance call)
         live_price = self._live_prices.get(asset)
@@ -542,6 +549,10 @@ class SnipeEngine:
                     continue
                 if implied < MIN_IMPLIED_PRICE:
                     continue
+                if implied > MAX_IMPLIED_PRICE:
+                    log.info("[SNIPE] %s: implied $%.3f > cap $%.3f — payout math, skipping",
+                             asset.upper(), implied, MAX_IMPLIED_PRICE)
+                    continue
                 if implied > max_cap:
                     continue
                 target_book = clob_book.get_orderbook(token_id)
@@ -551,6 +562,8 @@ class SnipeEngine:
             elapsed_min = (time.time() - self._engine_start_ts) / 60.0
             dynamic_thresh = self._threshold_normal if elapsed_min >= 60 else self._threshold_warmup
             slot.scorer.threshold = dynamic_thresh
+            if asset == "bitcoin":
+                slot.scorer.threshold = max(dynamic_thresh, 80)
 
             # Score all 10 components (per-slot scorer for thread safety)
             score_result = slot.scorer.score(
@@ -659,6 +672,13 @@ class SnipeEngine:
             size_mult = mtf_result.size_multiplier if mtf_result.confirmed else 1.0
             if self._correlation_result:
                 size_mult *= self._correlation_result.size_multiplier
+
+            # Overnight sizing — thin liquidity, less conviction
+            now_et = datetime.now(ET)
+            if 2 <= now_et.hour < 6:
+                size_mult *= 0.50
+                log.info("[SNIPE] %s: Overnight sizing (2-6AM) — 50%% budget", asset.upper())
+
             slot.executor._budget = ASSET_CONFIG.get(asset, {}).get("budget", 25.0) * size_mult
 
             slot.executor.start_position(

@@ -114,7 +114,26 @@ def api_garves_health_warnings():
             "hours_since_trade": round(hours_since_trade, 1),
         })
 
-    # 3. Self-healing: if 0 trades for >12h, auto-lower consensus_floor
+    # 3. Average implied entry price warning
+    try:
+        snipe_file = DATA_DIR / "snipe_trades.jsonl"
+        if snipe_file.exists():
+            lines = snipe_file.read_text().strip().split("\n")
+            recent = [json.loads(l) for l in lines[-10:] if l.strip()]
+            if recent:
+                prices = [t.get("price", 0) for t in recent if t.get("price", 0) > 0]
+                if prices:
+                    avg_price = sum(prices) / len(prices)
+                    if avg_price > 0.58:
+                        warnings.append({
+                            "level": "warning",
+                            "message": f"Avg snipe entry price ${avg_price:.3f} > $0.58 — "
+                                       f"need {avg_price * 100:.0f}%+ WR to break even.",
+                        })
+    except Exception:
+        pass
+
+    # 4. Self-healing: if 0 trades for >12h, auto-lower consensus_floor
     global _self_heal_applied
     if hours_since_trade > 12 and consensus_floor > 2 and not _self_heal_applied:
         try:

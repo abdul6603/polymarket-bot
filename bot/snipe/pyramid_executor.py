@@ -23,7 +23,7 @@ SNIPE_TRADES_FILE = Path(__file__).parent.parent.parent / "data" / "snipe_trades
 
 # Wave config: (wave_num, budget_fraction, price_cap, fire_below_seconds)
 WAVES = [
-    (1, 1.00, 0.72, 120),   # 100% budget, $0.72 cap (raised for taker fills), T-120s
+    (1, 1.00, 0.55, 120),   # 100% budget, $0.55 cap (break-even WR = 55%), T-120s
 ]
 
 # Taker premium by conviction tier
