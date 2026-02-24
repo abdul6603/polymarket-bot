@@ -66,6 +66,13 @@ class CoinglassData:
     liq_long_24h_usd: float = 0.0
     liq_short_24h_usd: float = 0.0
 
+    # Liquidation heatmap — price-level clusters
+    liq_cluster_above_usd: float = 0.0   # total liq $ in clusters above current price
+    liq_cluster_below_usd: float = 0.0   # total liq $ in clusters below current price
+    liq_nearest_above_pct: float = 0.0   # distance to nearest heavy cluster above (%)
+    liq_nearest_below_pct: float = 0.0   # distance to nearest heavy cluster below (%)
+    liq_heatmap_available: bool = False
+
 
 def _api_get(endpoint: str, params: dict | None = None) -> dict | None:
     """Make authenticated GET request to Coinglass V4 API."""
@@ -96,10 +103,105 @@ def _api_get(endpoint: str, params: dict | None = None) -> dict | None:
         return None
 
 
-def get_data(asset: str) -> CoinglassData | None:
+# Heatmap cache: symbol -> (heatmap_dict, timestamp)
+_heatmap_cache: dict[str, tuple[dict | None, float]] = {}
+_HEATMAP_CACHE_TTL = 300  # 5 min — slow-changing data, saves API calls
+
+
+def get_liquidation_heatmap(symbol: str, current_price: float) -> dict | None:
+    """Fetch liquidation price-level clusters for a symbol.
+
+    Returns dict with cluster_above_usd, cluster_below_usd, nearest_above_pct,
+    nearest_below_pct. Uses the liquidation-map endpoint (aggregated liq levels).
+
+    Separate 5-min cache to avoid burning API quota — heatmap changes slowly.
+    """
+    if not _API_KEY or current_price <= 0:
+        return None
+
+    now = time.time()
+    cached = _heatmap_cache.get(symbol)
+    if cached and now - cached[1] < _HEATMAP_CACHE_TTL:
+        return cached[0]
+
+    try:
+        data = _api_get("futures/liquidation/detail/chart", {
+            "symbol": symbol,
+            "interval": "1h",
+        })
+        if not data:
+            _heatmap_cache[symbol] = (None, now)
+            return None
+
+        # V4 returns list of price-level liquidation entries
+        # Each entry: {"price": float, "longLiqUsd": float, "shortLiqUsd": float, ...}
+        # or nested structure under "y" / "prices" keys
+        entries = []
+        if isinstance(data, list):
+            entries = data
+        elif isinstance(data, dict):
+            entries = data.get("data", data.get("y", []))
+            if not isinstance(entries, list):
+                entries = []
+
+        if not entries:
+            _heatmap_cache[symbol] = (None, now)
+            return None
+
+        above_usd = 0.0
+        below_usd = 0.0
+        nearest_above_dist = float("inf")
+        nearest_below_dist = float("inf")
+        min_cluster_usd = 1_000_000  # $1M minimum to count as meaningful cluster
+
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            price = float(entry.get("price", 0))
+            long_liq = float(entry.get("longLiqUsd", 0) or entry.get("liqLong", 0))
+            short_liq = float(entry.get("shortLiqUsd", 0) or entry.get("liqShort", 0))
+            total_liq = long_liq + short_liq
+
+            if price <= 0 or total_liq < min_cluster_usd:
+                continue
+
+            dist_pct = (price - current_price) / current_price * 100
+
+            if price > current_price:
+                above_usd += total_liq
+                if abs(dist_pct) < nearest_above_dist:
+                    nearest_above_dist = abs(dist_pct)
+            else:
+                below_usd += total_liq
+                if abs(dist_pct) < nearest_below_dist:
+                    nearest_below_dist = abs(dist_pct)
+
+        result = {
+            "cluster_above_usd": above_usd,
+            "cluster_below_usd": below_usd,
+            "nearest_above_pct": nearest_above_dist if nearest_above_dist != float("inf") else 0.0,
+            "nearest_below_pct": nearest_below_dist if nearest_below_dist != float("inf") else 0.0,
+        }
+
+        _heatmap_cache[symbol] = (result, now)
+        log.debug(
+            "[CG] %s heatmap: above=$%.0fM(%.1f%%) below=$%.0fM(%.1f%%)",
+            symbol, above_usd / 1e6, result["nearest_above_pct"],
+            below_usd / 1e6, result["nearest_below_pct"],
+        )
+        return result
+
+    except Exception as e:
+        log.warning("[CG] %s heatmap failed: %s", symbol, str(e)[:80])
+        _heatmap_cache[symbol] = (None, now)
+        return None
+
+
+def get_data(asset: str, current_price: float = 0.0) -> CoinglassData | None:
     """Fetch aggregated derivatives data for an asset.
 
-    V4 API endpoints — ~6 calls per refresh, well within 30 req/min limit.
+    V4 API endpoints — ~7 calls per refresh, well within 30 req/min limit.
+    Pass current_price to enable liquidation heatmap analysis.
     Returns None if API key is missing or all requests fail.
     """
     if not _API_KEY:
@@ -238,6 +340,17 @@ def get_data(asset: str) -> CoinglassData | None:
             log.debug("[CG] %s liquidations: no data returned", symbol)
     except Exception as e:
         log.warning("[CG] %s liquidation data failed: %s", symbol, str(e)[:80])
+
+    # 7. Liquidation heatmap — price-level clusters (separate 5-min cache)
+    if current_price > 0:
+        heatmap = get_liquidation_heatmap(symbol, current_price)
+        if heatmap:
+            result.liq_cluster_above_usd = heatmap["cluster_above_usd"]
+            result.liq_cluster_below_usd = heatmap["cluster_below_usd"]
+            result.liq_nearest_above_pct = heatmap["nearest_above_pct"]
+            result.liq_nearest_below_pct = heatmap["nearest_below_pct"]
+            result.liq_heatmap_available = True
+            any_success = True
 
     if not any_success:
         log.warning("[CG] %s: ALL endpoints failed — check API key and network", symbol)

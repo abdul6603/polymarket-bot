@@ -564,7 +564,7 @@ class TradingBot:
             ext: dict = {}
             try:
                 from bot.coinglass import get_data as get_coinglass
-                ext["coinglass"] = get_coinglass(asset_name)
+                ext["coinglass"] = get_coinglass(asset_name, self.price_cache.get_price(asset_name) or 0.0)
             except Exception:
                 ext["coinglass"] = None
             ext["macro"] = macro_ctx
@@ -778,8 +778,9 @@ class TradingBot:
             from bot.signals import WEIGHTS
             dw = get_dynamic_weights(WEIGHTS)
             active_votes = {k: v for k, v in votes.items() if dw.get(k, 1.0) > 0}
-            up_count = sum(1 for d in active_votes.values() if d == "up")
-            down_count = sum(1 for d in active_votes.values() if d == "down")
+            _vote_dir = lambda v: v if isinstance(v, str) else v.get("direction", "")
+            up_count = sum(1 for d in active_votes.values() if _vote_dir(d) == "up")
+            down_count = sum(1 for d in active_votes.values() if _vote_dir(d) == "down")
             snapshot = ConvictionEngine.build_snapshot(
                 signal=sig,
                 indicator_votes=active_votes,

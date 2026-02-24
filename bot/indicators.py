@@ -707,6 +707,70 @@ def mempool_congestion_signal(
     return IndicatorVote(direction=direction, confidence=conf, raw_value=fee_ratio)
 
 
+def liquidation_heatmap_signal(
+    cluster_above_usd: float,
+    cluster_below_usd: float,
+    nearest_above_pct: float,
+    nearest_below_pct: float,
+) -> IndicatorVote | None:
+    """Liquidation heatmap cluster signal (Coinglass).
+
+    Price near heavy long liquidation cluster above → bearish (cascade risk).
+    Price near heavy short liquidation cluster below → bullish (squeeze potential).
+    Only triggers when within 2% of a significant cluster.
+    """
+    # Need meaningful clusters on at least one side
+    min_cluster_usd = 5_000_000  # $5M minimum
+    proximity_threshold = 2.0  # within 2% of current price
+
+    above_sig = (
+        cluster_above_usd >= min_cluster_usd
+        and 0 < nearest_above_pct <= proximity_threshold
+    )
+    below_sig = (
+        cluster_below_usd >= min_cluster_usd
+        and 0 < nearest_below_pct <= proximity_threshold
+    )
+
+    if not above_sig and not below_sig:
+        return None
+
+    # Compare relative cluster sizes and proximity
+    if above_sig and below_sig:
+        # Both sides have clusters — direction follows the larger/closer one
+        above_score = cluster_above_usd / max(nearest_above_pct, 0.1)
+        below_score = cluster_below_usd / max(nearest_below_pct, 0.1)
+        if above_score > below_score:
+            # Heavy longs above about to get liquidated → cascade down
+            direction = "down"
+            proximity = nearest_above_pct
+            cluster_usd = cluster_above_usd
+        else:
+            # Heavy shorts below about to get squeezed → pump up
+            direction = "up"
+            proximity = nearest_below_pct
+            cluster_usd = cluster_below_usd
+    elif above_sig:
+        direction = "down"
+        proximity = nearest_above_pct
+        cluster_usd = cluster_above_usd
+    else:
+        direction = "up"
+        proximity = nearest_below_pct
+        cluster_usd = cluster_below_usd
+
+    # Confidence: closer + bigger cluster = higher confidence
+    proximity_conf = (proximity_threshold - proximity) / proximity_threshold  # 1.0 at price, 0.0 at 2%
+    size_conf = min(cluster_usd / 50_000_000, 1.0)  # $50M = max confidence
+    conf = min(proximity_conf * 0.6 + size_conf * 0.4, 0.9)
+
+    return IndicatorVote(
+        direction=direction,
+        confidence=max(conf, 0.1),
+        raw_value=cluster_above_usd / 1e6 - cluster_below_usd / 1e6,
+    )
+
+
 def whale_flow_signal(
     deposits_usd: float,
     withdrawals_usd: float,

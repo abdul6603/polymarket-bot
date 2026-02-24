@@ -35,6 +35,7 @@ from bot.indicators import (
     get_params,
     heikin_ashi,
     liquidation_cascade_signal,
+    liquidation_heatmap_signal,
     liquidity_signal,
     long_short_ratio_signal,
     macd,
@@ -79,7 +80,7 @@ INDICATOR_GROUPS = {
     "external": {"open_interest", "long_short_ratio", "etf_flow", "whale_flow"},
     "price_action": {"temporal_arb", "price_div", "volume_spike"},
     "macro": {"news", "dxy_trend", "stablecoin_flow", "tvl_momentum", "mempool", "tavily_news", "atlas_market_intel"},
-    "derivatives": {"funding_rate", "liquidation"},
+    "derivatives": {"funding_rate", "liquidation", "liq_heatmap"},
     "neural": {"lstm"},
 }
 MAX_GROUP_WEIGHT_FRACTION = 0.35  # No single group can contribute > 35% of total weight
@@ -124,6 +125,7 @@ WEIGHTS = {
     # Feb 20 Quant moderate tune: volume_spike 2.5→4.5, order_flow 2.5→4.5, momentum 1.2→2.0
     "volume_spike": 4.5,
     "liquidation": 2.0,
+    "liq_heatmap": 1.2,   # Coinglass: price-level liquidation cluster proximity
     # MID TIER — above coin flip (55-60%)
     "temporal_arb": 1.8,
     "price_div": 1.4,
@@ -165,32 +167,32 @@ WEIGHTS = {
 TF_WEIGHT_SCALE = {
     "5m":  {"order_flow": 1.8, "orderbook": 2.0, "temporal_arb": 2.5, "price_div": 2.0,
             "rsi": 0.6, "macd": 0.6, "heikin_ashi": 0.5,
-            "spot_depth": 1.5, "liquidation": 1.8, "funding_rate": 0.5,
+            "spot_depth": 1.5, "liquidation": 1.8, "liq_heatmap": 1.5, "funding_rate": 0.5,
             # External: slow data gets low weight on fast timeframes
             "open_interest": 0.4, "long_short_ratio": 0.3, "etf_flow": 0.3,
             "dxy_trend": 0.2, "stablecoin_flow": 0.2, "tvl_momentum": 0.2,
             "mempool": 0.5, "whale_flow": 0.5, "tavily_news": 0.3, "atlas_market_intel": 0.3},
     "15m": {"order_flow": 1.5, "orderbook": 1.8, "temporal_arb": 2.0, "price_div": 1.5,
             "rsi": 0.8, "macd": 0.9,
-            "spot_depth": 1.3, "liquidation": 1.5, "funding_rate": 0.8,
+            "spot_depth": 1.3, "liquidation": 1.5, "liq_heatmap": 1.3, "funding_rate": 0.8,
             "open_interest": 0.6, "long_short_ratio": 0.5, "etf_flow": 0.5,
             "dxy_trend": 0.3, "stablecoin_flow": 0.3, "tvl_momentum": 0.3,
             "mempool": 0.6, "whale_flow": 0.6, "tavily_news": 0.5, "atlas_market_intel": 0.5},
     "1h":  {"order_flow": 1.0, "orderbook": 1.2, "rsi": 1.0, "macd": 1.1,
-            "funding_rate": 1.2, "liquidation": 1.0,
+            "funding_rate": 1.2, "liquidation": 1.0, "liq_heatmap": 1.0,
             "open_interest": 1.0, "long_short_ratio": 0.8, "etf_flow": 0.8,
             "dxy_trend": 0.6, "stablecoin_flow": 0.6, "tvl_momentum": 0.6,
             "mempool": 0.8, "whale_flow": 1.0, "tavily_news": 0.9, "atlas_market_intel": 0.9},
     "4h":  {"order_flow": 0.8, "orderbook": 0.8, "price_div": 0.7,
             "rsi": 1.2, "macd": 1.3, "heikin_ashi": 1.3,
-            "funding_rate": 1.5, "liquidation": 0.8,
+            "funding_rate": 1.5, "liquidation": 0.8, "liq_heatmap": 0.7,
             "open_interest": 1.3, "long_short_ratio": 1.2, "etf_flow": 1.2,
             "dxy_trend": 1.0, "stablecoin_flow": 1.0, "tvl_momentum": 1.0,
             "mempool": 0.6, "whale_flow": 1.2, "tavily_news": 1.0, "atlas_market_intel": 1.0},
     "weekly": {"rsi": 1.5, "macd": 1.5, "heikin_ashi": 1.5, "ema": 1.5,
                "momentum": 1.3, "bollinger": 1.2, "order_flow": 0.5,
                "orderbook": 0.5, "temporal_arb": 0.5, "price_div": 0.5,
-               "funding_rate": 1.5, "liquidation": 0.5,
+               "funding_rate": 1.5, "liquidation": 0.5, "liq_heatmap": 0.4,
                "open_interest": 1.5, "long_short_ratio": 1.5, "etf_flow": 1.5,
                "dxy_trend": 1.3, "stablecoin_flow": 1.3, "tvl_momentum": 1.3,
                "mempool": 0.4, "whale_flow": 1.3, "tavily_news": 1.0, "atlas_market_intel": 1.0},
@@ -672,10 +674,21 @@ class SignalEngine:
                     votes["etf_flow"] = None
             except Exception:
                 votes["etf_flow"] = None
+            try:
+                if cg.liq_heatmap_available:
+                    votes["liq_heatmap"] = liquidation_heatmap_signal(
+                        cg.liq_cluster_above_usd, cg.liq_cluster_below_usd,
+                        cg.liq_nearest_above_pct, cg.liq_nearest_below_pct,
+                    )
+                else:
+                    votes["liq_heatmap"] = None
+            except Exception:
+                votes["liq_heatmap"] = None
         else:
             votes["open_interest"] = None
             votes["long_short_ratio"] = None
             votes["etf_flow"] = None
+            votes["liq_heatmap"] = None
 
         # FRED Macro: DXY trend
         macro = ext.get("macro")
@@ -1161,8 +1174,11 @@ class SignalEngine:
             )
             return None
 
-        # Build indicator vote snapshot for weight learning
-        ind_votes = {name: vote.direction for name, vote in active.items()}
+        # Build indicator vote snapshot for weight learning (rich format)
+        ind_votes = {
+            name: {"direction": vote.direction, "confidence": vote.confidence, "raw_value": vote.raw_value}
+            for name, vote in active.items()
+        }
 
         if consensus_edge > 0:
             import time as _time

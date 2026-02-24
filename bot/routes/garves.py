@@ -696,6 +696,60 @@ def api_garves_conviction():
         return jsonify({"error": str(e)[:200]}), 500
 
 
+@garves_bp.route("/api/garves/indicator-scorecards")
+def api_garves_indicator_scorecards():
+    """Per-indicator accuracy scorecards: by asset, regime, confidence band."""
+    try:
+        if not INDICATOR_ACCURACY_FILE.exists():
+            return jsonify({"scorecards": {}, "message": "No accuracy data yet"})
+
+        with open(INDICATOR_ACCURACY_FILE) as f:
+            raw = json.load(f)
+
+        scorecards = {}
+        for name, entry in raw.items():
+            scorecards[name] = {
+                "total_votes": entry.get("total_votes", 0),
+                "correct_votes": entry.get("correct_votes", 0),
+                "accuracy": round(entry.get("accuracy", 0) * 100, 1),
+                "confidence_weighted_accuracy": round(
+                    entry.get("confidence_weighted_accuracy", 0) * 100, 1
+                ),
+                "by_asset": {
+                    asset: {
+                        "total": sub.get("total", 0),
+                        "correct": sub.get("correct", 0),
+                        "accuracy": round(sub.get("accuracy", 0) * 100, 1),
+                    }
+                    for asset, sub in entry.get("by_asset", {}).items()
+                },
+                "by_regime": {
+                    regime: {
+                        "total": sub.get("total", 0),
+                        "correct": sub.get("correct", 0),
+                        "accuracy": round(sub.get("accuracy", 0) * 100, 1),
+                    }
+                    for regime, sub in entry.get("by_regime", {}).items()
+                },
+                "by_confidence_band": {
+                    band: {
+                        "total": sub.get("total", 0),
+                        "correct": sub.get("correct", 0),
+                        "accuracy": round(sub.get("accuracy", 0) * 100, 1),
+                    }
+                    for band, sub in entry.get("by_confidence_band", {}).items()
+                },
+            }
+
+        # Sort by total votes descending
+        sorted_cards = dict(
+            sorted(scorecards.items(), key=lambda x: x[1]["total_votes"], reverse=True)
+        )
+        return jsonify({"scorecards": sorted_cards})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
 @garves_bp.route("/api/garves/maker")
 def api_garves_maker():
     """MakerEngine status — active quotes, inventory, estimated rebates."""
