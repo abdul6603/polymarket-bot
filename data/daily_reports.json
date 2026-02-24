@@ -418,5 +418,70 @@
         "detail": "Clean trading day. All systems performed within expected parameters."
       }
     ]
+  },
+  {
+    "date": "2026-02-24",
+    "generated_at": "2026-02-24T07:30:24.399611-05:00",
+    "summary": {
+      "total_trades": 2,
+      "resolved": 2,
+      "pending": 0,
+      "stale": 0,
+      "wins": 0,
+      "losses": 2,
+      "win_rate": 0.0,
+      "pnl": -14.98,
+      "avg_edge": 13.15,
+      "avg_confidence": 0.622
+    },
+    "by_asset": {
+      "xrp": {
+        "wins": 0,
+        "losses": 1,
+        "pnl": -7.31
+      },
+      "bitcoin": {
+        "wins": 0,
+        "losses": 1,
+        "pnl": -7.67
+      }
+    },
+    "by_timeframe": {
+      "15m": {
+        "wins": 0,
+        "losses": 2
+      }
+    },
+    "by_direction": {
+      "up": {
+        "wins": 0,
+        "losses": 2
+      }
+    },
+    "regime_distribution": {
+      "extreme_fear": 2
+    },
+    "strategy": {
+      "engine": "11-indicator ensemble + ConvictionEngine",
+      "conviction_scoring": "9-layer evidence (0-100)",
+      "safety_rails": "losing streak 0.75x, low WR 0.7x, extreme fear 0.90x, $50 daily loss cap",
+      "sizing": "conviction-based $25-$50",
+      "assets": [
+        "bitcoin",
+        "xrp"
+      ],
+      "timeframes": [
+        "15m"
+      ],
+      "regime": "extreme_fear"
+    },
+    "mistakes": [
+      {
+        "type": "info",
+        "severity": "low",
+        "title": "No Major Issues Detected",
+        "detail": "Clean trading day. All systems performed within expected parameters."
+      }
+    ]
   }
 ]

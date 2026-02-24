@@ -5,10 +5,10 @@
     "status": "active",
     "version": "4.0.0",
     "skills": 13,
-    "total_trades": 45,
-    "win_rate": 80.0,
-    "total_pnl": 194.39,
-    "last_trade": "2026-02-24 00:13",
-    "updated_at": "2026-02-24T00:13:48.401951-05:00"
+    "total_trades": 61,
+    "win_rate": 83.6,
+    "total_pnl": 273.68,
+    "last_trade": "2026-02-24 08:00",
+    "updated_at": "2026-02-24T08:00:51.111356-05:00"
   }
 }

@@ -3,62 +3,62 @@
   "items": [
     {
       "headline": "Top spender: infrastructure ($200.00/mo)",
-      "detail": "Total: $301.64/mo across 10 agents",
+      "detail": "Total: $299.54/mo across 10 agents",
       "source": "cost_audit",
       "score": 50,
-      "ts": 1771624726.7789319,
+      "ts": 1771938464.687404,
       "category": "cost_trend"
     },
     {
-      "headline": "Active intel category: economy",
-      "detail": "Latest: Discussion Thread: President Trump Holds Press Conference Responding to Supreme Court Striking Down Most Tariffs",
+      "headline": "Active intel category: crypto",
+      "detail": "Latest: Bitcoin falls below $65,000 as Trump tariff moves raise uncertainty",
       "source": "intel_categories",
       "score": 30,
-      "ts": 1771624726.779097,
+      "ts": 1771938464.687595,
       "category": "research_topic"
     },
     {
       "headline": "Active intel category: politics",
-      "detail": "Latest: Supreme Court rules that Trump\u2019s sweeping emergency tariffs are illegal | CNN Politics",
+      "detail": "Latest: Why prediction markets are thriving \u2013 and facing scrutiny | PBS News",
       "source": "intel_categories",
       "score": 30,
-      "ts": 1771624726.779098,
-      "category": "research_topic"
-    },
-    {
-      "headline": "Active intel category: culture",
-      "detail": "Latest: Down to my last $160. What should I do?",
-      "source": "intel_categories",
-      "score": 30,
-      "ts": 1771624726.7791,
-      "category": "research_topic"
-    },
-    {
-      "headline": "Active intel category: crypto",
-      "detail": "Latest: Delete Three Forever From MegaETH, Eclipse, Monad, and Berachain",
-      "source": "intel_categories",
-      "score": 30,
-      "ts": 1771624726.779101,
+      "ts": 1771938464.687596,
       "category": "research_topic"
     },
     {
       "headline": "Active intel category: sports",
-      "detail": "Latest: Pick of the Day - 2/20/26 (Friday)",
+      "detail": "Latest: Prediction-Market Battle Heats Up - Front Office Sports",
       "source": "intel_categories",
       "score": 30,
-      "ts": 1771624726.779103,
+      "ts": 1771938464.687598,
+      "category": "research_topic"
+    },
+    {
+      "headline": "Active intel category: culture",
+      "detail": "Latest: Data centres seek credit ratings to unlock billions in funding for AI push",
+      "source": "intel_categories",
+      "score": 30,
+      "ts": 1771938464.6875992,
+      "category": "research_topic"
+    },
+    {
+      "headline": "Active intel category: economy",
+      "detail": "Latest: Market Trends Predictions & Real-Time Odds - Polymarket",
+      "source": "intel_categories",
+      "score": 30,
+      "ts": 1771938464.6876009,
       "category": "research_topic"
     },
     {
       "headline": "Monitoring 10 agents",
-      "detail": "Baselines updated: 2026-02-20T16:58:46.777127",
+      "detail": "Baselines updated: 2026-02-24T08:07:44.683771",
       "source": "anomaly_detector",
       "score": 20,
-      "ts": 1771624726.779145,
+      "ts": 1771938464.6876428,
       "category": "system_health"
     }
   ],
-  "generated_at": 1771624726.779146,
+  "generated_at": 1771938464.687645,
   "item_count": 7,
   "fresh": true
 }

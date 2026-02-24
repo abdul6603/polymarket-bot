@@ -1,32 +1,5 @@
 {
-  "holdings": [
-    {
-      "market": "Ethereum Up or Down - February 20, 4:45PM-5:00PM ET",
-      "asset": "ETH",
-      "outcome": "Up",
-      "size": 13.89,
-      "avg_price": 0.51,
-      "cur_price": 1.0,
-      "cost": 7.08,
-      "value": 13.89,
-      "pnl": 6.81,
-      "pnl_pct": 96.1,
-      "status": "won"
-    },
-    {
-      "market": "XRP Up or Down - February 20, 11:00AM-11:15AM ET",
-      "asset": "XRP",
-      "outcome": "Up",
-      "size": 12.0,
-      "avg_price": 0.61,
-      "cur_price": 1.0,
-      "cost": 7.32,
-      "value": 12.0,
-      "pnl": 4.68,
-      "pnl_pct": 63.9,
-      "status": "won"
-    }
-  ],
+  "holdings": [],
   "history": [
     {
       "market": "Ethereum Up or Down - February 19, 2PM ET",
@@ -108,6 +81,15 @@
       "cost": 18.27,
       "won": true,
       "result_pnl": 30.09
+    },
+    {
+      "market": "XRP Up or Down - February 22, 4:15PM-4:20PM ET",
+      "asset": "XRP",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 36.73,
+      "won": true,
+      "result_pnl": 29.83
     },
     {
       "market": "XRP Up or Down - February 19, 8:30AM-8:45AM ET",
@@ -389,6 +371,33 @@
       "result_pnl": 9.75
     },
     {
+      "market": "Bitcoin Up or Down - February 24, 3:15AM-3:30AM ET",
+      "asset": "BTC",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 24.48,
+      "won": true,
+      "result_pnl": 9.52
+    },
+    {
+      "market": "Ethereum Up or Down - February 24, 4:30AM-4:45AM ET",
+      "asset": "ETH",
+      "outcome": "Down",
+      "size": 0,
+      "cost": 24.48,
+      "won": true,
+      "result_pnl": 9.52
+    },
+    {
+      "market": "Ethereum Up or Down - February 24, 5:30AM-5:45AM ET",
+      "asset": "ETH",
+      "outcome": "Down",
+      "size": 0,
+      "cost": 24.47,
+      "won": true,
+      "result_pnl": 9.52
+    },
+    {
       "market": "Bitcoin Up or Down - February 17, 12:00PM-4:00PM ET",
       "asset": "BTC",
       "outcome": "Up",
@@ -434,6 +443,51 @@
       "result_pnl": 7.7
     },
     {
+      "market": "Ethereum Up or Down - February 24, 3:30AM-3:45AM ET",
+      "asset": "ETH",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 19.44,
+      "won": true,
+      "result_pnl": 7.56
+    },
+    {
+      "market": "Solana Up or Down - February 24, 3:45AM-4:00AM ET",
+      "asset": "SOL",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 19.43,
+      "won": true,
+      "result_pnl": 7.56
+    },
+    {
+      "market": "Solana Up or Down - February 24, 2:15AM-2:30AM ET",
+      "asset": "SOL",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 19.43,
+      "won": true,
+      "result_pnl": 7.56
+    },
+    {
+      "market": "Ethereum Up or Down - February 21, 4AM ET",
+      "asset": "ETH",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 7.8,
+      "won": true,
+      "result_pnl": 6.91
+    },
+    {
+      "market": "Ethereum Up or Down - February 20, 4:45PM-5:00PM ET",
+      "asset": "ETH",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 7.08,
+      "won": true,
+      "result_pnl": 6.81
+    },
+    {
       "market": "Bitcoin Up or Down - February 17, 1:30PM-1:45PM ET",
       "asset": "BTC",
       "outcome": "Up",
@@ -441,6 +495,24 @@
       "cost": 11.78,
       "won": true,
       "result_pnl": 6.63
+    },
+    {
+      "market": "Bitcoin Up or Down - February 24, 3:30AM-3:45AM ET",
+      "asset": "BTC",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 13.19,
+      "won": true,
+      "result_pnl": 6.57
+    },
+    {
+      "market": "Solana Up or Down - February 24, 3:30AM-3:45AM ET",
+      "asset": "SOL",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 15.84,
+      "won": true,
+      "result_pnl": 6.16
     },
     {
       "market": "Ethereum Up or Down - February 17, 4:00PM-8:00PM ET",
@@ -470,6 +542,15 @@
       "result_pnl": 5.41
     },
     {
+      "market": "XRP Up or Down - February 20, 11:00AM-11:15AM ET",
+      "asset": "XRP",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 7.32,
+      "won": true,
+      "result_pnl": 4.68
+    },
+    {
       "market": "Solana Up or Down - February 18, 6:30AM-6:45AM ET",
       "asset": "SOL",
       "outcome": "Down",
@@ -488,6 +569,15 @@
       "result_pnl": 2.93
     },
     {
+      "market": "XRP Up or Down - February 21, 9:30AM-9:45AM ET",
+      "asset": "XRP",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 4.09,
+      "won": true,
+      "result_pnl": 2.73
+    },
+    {
       "market": "Bitcoin Up or Down - February 20, 7PM ET",
       "asset": "BTC",
       "outcome": "Up",
@@ -495,6 +585,24 @@
       "cost": 0.55,
       "won": false,
       "result_pnl": -0.55
+    },
+    {
+      "market": "Ethereum Up or Down - February 22, 12:00PM-4:00PM ET",
+      "asset": "ETH",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 0.73,
+      "won": false,
+      "result_pnl": -0.73
+    },
+    {
+      "market": "Bitcoin Up or Down - February 22, 11AM ET",
+      "asset": "BTC",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 1.51,
+      "won": false,
+      "result_pnl": -1.51
     },
     {
       "market": "XRP Up or Down - February 20, 4:45PM-5:00PM ET",
@@ -542,6 +650,15 @@
       "result_pnl": -2.56
     },
     {
+      "market": "Bitcoin Up or Down - February 20, 11:00PM-11:15PM ET",
+      "asset": "BTC",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 2.9,
+      "won": false,
+      "result_pnl": -2.9
+    },
+    {
       "market": "Ethereum Up or Down - February 17, 6:15PM-6:30PM ET",
       "asset": "ETH",
       "outcome": "Down",
@@ -551,6 +668,15 @@
       "result_pnl": -2.95
     },
     {
+      "market": "XRP Up or Down - February 21, 4:00AM-4:15AM ET",
+      "asset": "XRP",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 3.13,
+      "won": false,
+      "result_pnl": -3.13
+    },
+    {
       "market": "XRP Up or Down - February 20, 9PM ET",
       "asset": "XRP",
       "outcome": "Up",
@@ -558,6 +684,15 @@
       "cost": 3.17,
       "won": false,
       "result_pnl": -3.17
+    },
+    {
+      "market": "Ethereum Up or Down - February 22, 8:00AM-12:00PM ET",
+      "asset": "ETH",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 3.28,
+      "won": false,
+      "result_pnl": -3.28
     },
     {
       "market": "Bitcoin Up or Down - February 20, 5:00PM-5:15PM ET",
@@ -585,6 +720,15 @@
       "cost": 4.56,
       "won": false,
       "result_pnl": -4.56
+    },
+    {
+      "market": "Bitcoin Up or Down - February 20, 10:45PM-11:00PM ET",
+      "asset": "BTC",
+      "outcome": "Down",
+      "size": 0,
+      "cost": 4.62,
+      "won": false,
+      "result_pnl": -4.62
     },
     {
       "market": "XRP Up or Down - February 20, 8:15PM-8:30PM ET",
@@ -621,6 +765,33 @@
       "cost": 5.35,
       "won": false,
       "result_pnl": -5.35
+    },
+    {
+      "market": "XRP Up or Down - February 22, 9:45AM-10:00AM ET",
+      "asset": "XRP",
+      "outcome": "Down",
+      "size": 0,
+      "cost": 5.69,
+      "won": false,
+      "result_pnl": -5.69
+    },
+    {
+      "market": "Bitcoin Up or Down - February 22, 12:00PM-4:00PM ET",
+      "asset": "BTC",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 5.86,
+      "won": false,
+      "result_pnl": -5.86
+    },
+    {
+      "market": "XRP Up or Down - February 20, 10:45PM-11:00PM ET",
+      "asset": "XRP",
+      "outcome": "Down",
+      "size": 0,
+      "cost": 6.11,
+      "won": false,
+      "result_pnl": -6.11
     },
     {
       "market": "XRP Up or Down - February 18, 11:00PM-11:15PM ET",
@@ -704,6 +875,24 @@
       "result_pnl": -8.46
     },
     {
+      "market": "Bitcoin Up or Down - February 21, 10PM ET",
+      "asset": "BTC",
+      "outcome": "Down",
+      "size": 0,
+      "cost": 8.87,
+      "won": false,
+      "result_pnl": -8.87
+    },
+    {
+      "market": "Bitcoin Up or Down - February 22, 9:45AM-10:00AM ET",
+      "asset": "BTC",
+      "outcome": "Down",
+      "size": 0,
+      "cost": 8.9,
+      "won": false,
+      "result_pnl": -8.9
+    },
+    {
       "market": "XRP Up or Down - February 18, 10:45AM-11:00AM ET",
       "asset": "XRP",
       "outcome": "Up",
@@ -758,6 +947,15 @@
       "result_pnl": -10.37
     },
     {
+      "market": "Will Leeds United FC win on 2026-02-21?",
+      "asset": "?",
+      "outcome": "Yes",
+      "size": 0,
+      "cost": 10.96,
+      "won": false,
+      "result_pnl": -10.96
+    },
+    {
       "market": "XRP Up or Down - February 20, 9:45AM-10:00AM ET",
       "asset": "XRP",
       "outcome": "Up",
@@ -792,6 +990,15 @@
       "cost": 11.49,
       "won": false,
       "result_pnl": -11.49
+    },
+    {
+      "market": "Solana Up or Down - February 24, 4:30AM-4:45AM ET",
+      "asset": "SOL",
+      "outcome": "Down",
+      "size": 0,
+      "cost": 11.52,
+      "won": false,
+      "result_pnl": -11.52
     },
     {
       "market": "Solana Up or Down - February 20, 4:45AM-5:00AM ET",
@@ -846,6 +1053,15 @@
       "cost": 13.36,
       "won": false,
       "result_pnl": -13.36
+    },
+    {
+      "market": "Bitcoin Up or Down - February 22, 10:45PM-11:00PM ET",
+      "asset": "BTC",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 13.57,
+      "won": false,
+      "result_pnl": -13.57
     },
     {
       "market": "Bitcoin Up or Down - February 18, 9PM ET",
@@ -929,6 +1145,15 @@
       "result_pnl": -17.01
     },
     {
+      "market": "Pistons vs. Bulls",
+      "asset": "?",
+      "outcome": "Bulls",
+      "size": 0,
+      "cost": 17.48,
+      "won": false,
+      "result_pnl": -17.48
+    },
+    {
       "market": "Bitcoin Up or Down - February 20, 5:00AM-5:15AM ET",
       "asset": "BTC",
       "outcome": "Up",
@@ -954,6 +1179,24 @@
       "cost": 17.66,
       "won": false,
       "result_pnl": -17.66
+    },
+    {
+      "market": "Manchester City FC vs. Newcastle United FC: O/U 2.5",
+      "asset": "?",
+      "outcome": "Under",
+      "size": 0,
+      "cost": 17.72,
+      "won": false,
+      "result_pnl": -17.72
+    },
+    {
+      "market": "Bitcoin Up or Down - February 22, 6:20PM-6:25PM ET",
+      "asset": "BTC",
+      "outcome": "Down",
+      "size": 0,
+      "cost": 17.75,
+      "won": false,
+      "result_pnl": -17.75
     },
     {
       "market": "Bitcoin Up or Down - February 20, 10:00AM-10:15AM ET",
@@ -983,6 +1226,24 @@
       "result_pnl": -18.91
     },
     {
+      "market": "XRP Up or Down - February 24, 2:45AM-3:00AM ET",
+      "asset": "XRP",
+      "outcome": "Down",
+      "size": 0,
+      "cost": 18.99,
+      "won": false,
+      "result_pnl": -18.99
+    },
+    {
+      "market": "Will the highest temperature in London be 12\u00b0C on February 23?",
+      "asset": "?",
+      "outcome": "Yes",
+      "size": 0,
+      "cost": 19.02,
+      "won": false,
+      "result_pnl": -19.02
+    },
+    {
       "market": "Bitcoin Up or Down - February 20, 8:15AM-8:30AM ET",
       "asset": "BTC",
       "outcome": "Down",
@@ -990,6 +1251,33 @@
       "cost": 19.41,
       "won": false,
       "result_pnl": -19.41
+    },
+    {
+      "market": "Ethereum Up or Down - February 24, 4:00AM-4:15AM ET",
+      "asset": "ETH",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 19.43,
+      "won": false,
+      "result_pnl": -19.43
+    },
+    {
+      "market": "Solana Up or Down - February 24, 6:00AM-6:15AM ET",
+      "asset": "SOL",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 19.44,
+      "won": false,
+      "result_pnl": -19.44
+    },
+    {
+      "market": "XRP Up or Down - February 24, 4:30AM-4:45AM ET",
+      "asset": "XRP",
+      "outcome": "Down",
+      "size": 0,
+      "cost": 19.44,
+      "won": false,
+      "result_pnl": -19.44
     },
     {
       "market": "Ethereum Up or Down - February 17, 8:00AM-8:15AM ET",
@@ -1010,6 +1298,24 @@
       "result_pnl": -19.56
     },
     {
+      "market": "Solana Up or Down - February 22, 1:05PM-1:10PM ET",
+      "asset": "SOL",
+      "outcome": "Down",
+      "size": 0,
+      "cost": 19.68,
+      "won": false,
+      "result_pnl": -19.68
+    },
+    {
+      "market": "Cagliari Calcio vs. SS Lazio: O/U 2.5",
+      "asset": "?",
+      "outcome": "Over",
+      "size": 0,
+      "cost": 19.89,
+      "won": false,
+      "result_pnl": -19.89
+    },
+    {
       "market": "Bitcoin Up or Down - February 19, 6:30PM-6:45PM ET",
       "asset": "BTC",
       "outcome": "Up",
@@ -1026,6 +1332,15 @@
       "cost": 20.41,
       "won": false,
       "result_pnl": -20.41
+    },
+    {
+      "market": "Bitcoin Up or Down - February 22, 9:15PM-9:20PM ET",
+      "asset": "BTC",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 20.96,
+      "won": false,
+      "result_pnl": -20.96
     },
     {
       "market": "Solana Up or Down - February 18, 10PM ET",
@@ -1046,6 +1361,24 @@
       "result_pnl": -21.47
     },
     {
+      "market": "Bitcoin Up or Down - February 21, 8AM ET",
+      "asset": "BTC",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 22.15,
+      "won": false,
+      "result_pnl": -22.15
+    },
+    {
+      "market": "Bitcoin Up or Down - February 22, 8AM ET",
+      "asset": "BTC",
+      "outcome": "Down",
+      "size": 0,
+      "cost": 23.1,
+      "won": false,
+      "result_pnl": -23.1
+    },
+    {
       "market": "Ethereum Up or Down - February 18, 4PM ET",
       "asset": "ETH",
       "outcome": "Down",
@@ -1053,6 +1386,33 @@
       "cost": 23.32,
       "won": false,
       "result_pnl": -23.32
+    },
+    {
+      "market": "Bitcoin Up or Down - February 22, 7:50PM-7:55PM ET",
+      "asset": "BTC",
+      "outcome": "Down",
+      "size": 0,
+      "cost": 24.04,
+      "won": false,
+      "result_pnl": -24.04
+    },
+    {
+      "market": "Bitcoin Up or Down - February 22, 9:10PM-9:15PM ET",
+      "asset": "BTC",
+      "outcome": "Down",
+      "size": 0,
+      "cost": 24.7,
+      "won": false,
+      "result_pnl": -24.7
+    },
+    {
+      "market": "Solana Up or Down - February 22, 5PM ET",
+      "asset": "SOL",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 25.05,
+      "won": false,
+      "result_pnl": -25.05
     },
     {
       "market": "Ethereum Up or Down - February 20, 8:00AM-12:00PM ET",
@@ -1145,6 +1505,24 @@
       "result_pnl": -44.47
     },
     {
+      "market": "XRP Up or Down - February 22, 4:25PM-4:30PM ET",
+      "asset": "XRP",
+      "outcome": "Up",
+      "size": 0,
+      "cost": 48.75,
+      "won": false,
+      "result_pnl": -48.75
+    },
+    {
+      "market": "Ethereum Up or Down - February 22, 4:00PM-4:05PM ET",
+      "asset": "ETH",
+      "outcome": "Down",
+      "size": 0,
+      "cost": 49.03,
+      "won": false,
+      "result_pnl": -49.03
+    },
+    {
       "market": "XRP Up or Down - February 19, 9:00PM-9:15PM ET",
       "asset": "XRP",
       "outcome": "Up",
@@ -1208,6 +1586,15 @@
       "result_pnl": -103.2
     },
     {
+      "market": "Manchester City FC vs. Newcastle United FC: O/U 1.5",
+      "asset": "?",
+      "outcome": "Under",
+      "size": 0,
+      "cost": 110.0,
+      "won": false,
+      "result_pnl": -110.0
+    },
+    {
       "market": "Bitcoin Up or Down - February 18, 8:00PM-12:00AM ET",
       "asset": "BTC",
       "outcome": "Up",
@@ -1227,15 +1614,15 @@
     }
   ],
   "totals": {
-    "open_count": 2,
-    "open_margin": 14.4,
-    "open_value": 25.89,
-    "open_pnl": 11.49,
-    "record_wins": 51,
-    "record_losses": 82,
-    "realized_pnl": -976.33
+    "open_count": 0,
+    "open_margin": 0.0,
+    "open_value": 0.0,
+    "open_pnl": 0.0,
+    "record_wins": 64,
+    "record_losses": 115,
+    "realized_pnl": -1485.68
   },
   "live": true,
-  "fetched_at": 1771644072.504224,
+  "fetched_at": 1771937371.061225,
   "error": null
 }

@@ -1,5 +1,5 @@
 {
-  "total_monthly": 301.64,
+  "total_monthly": 299.54,
   "costs": [
     {
       "agent": "infrastructure",
@@ -18,47 +18,11 @@
       "service": "Tavily (Research)",
       "model": "tavily",
       "cost_per_call": 0.005,
-      "daily_calls": 303.0,
-      "cost_usd": 45.45,
-      "usage_count": 1818,
+      "daily_calls": 237.8,
+      "cost_usd": 35.66,
+      "usage_count": 1902,
       "source": "atlas/data/cost_tracker.json",
       "trend": "up",
-      "waste": false
-    },
-    {
-      "agent": "viper",
-      "service": "Tavily (Web Search)",
-      "model": "tavily",
-      "cost_per_call": 0.005,
-      "daily_calls": 250.0,
-      "cost_usd": 37.5,
-      "usage_count": 1500,
-      "source": "viper_intel.json + viper_opportunities.json",
-      "trend": "stable",
-      "waste": false
-    },
-    {
-      "agent": "thor",
-      "service": "Anthropic (Claude Sonnet)",
-      "model": "claude-sonnet",
-      "cost_per_call": 0.0135,
-      "daily_calls": 24.2,
-      "cost_usd": 9.79,
-      "usage_count": 145,
-      "source": "thor/data/results/ (x5 calls/task)",
-      "trend": "stable",
-      "waste": false
-    },
-    {
-      "agent": "atlas",
-      "service": "OpenAI (GPT-4o-mini)",
-      "model": "gpt-4o-mini",
-      "cost_per_call": 0.000108,
-      "daily_calls": 936.5,
-      "cost_usd": 3.03,
-      "usage_count": 5619,
-      "source": "atlas/data/cost_tracker.json",
-      "trend": "stable",
       "waste": false
     },
     {
@@ -66,9 +30,9 @@
       "service": "ElevenLabs (TTS Brian)",
       "model": "elevenlabs",
       "cost_per_call": 0.06,
-      "daily_calls": 1.5,
-      "cost_usd": 2.7,
-      "usage_count": 9,
+      "daily_calls": 13.3,
+      "cost_usd": 23.96,
+      "usage_count": 106,
       "source": "~50% of content items",
       "trend": "stable",
       "waste": false
@@ -78,10 +42,22 @@
       "service": "OpenAI (DALL-E 3)",
       "model": "dall-e-3",
       "cost_per_call": 0.04,
-      "daily_calls": 2.1,
-      "cost_usd": 2.52,
-      "usage_count": 12,
+      "daily_calls": 18.6,
+      "cost_usd": 22.36,
+      "usage_count": 149,
       "source": "~70% of content items",
+      "trend": "stable",
+      "waste": false
+    },
+    {
+      "agent": "thor",
+      "service": "Anthropic (Claude Sonnet)",
+      "model": "claude-sonnet",
+      "cost_per_call": 0.0135,
+      "daily_calls": 21.2,
+      "cost_usd": 8.61,
+      "usage_count": 170,
+      "source": "thor/data/results/ (x5 calls/task)",
       "trend": "stable",
       "waste": false
     },
@@ -90,10 +66,34 @@
       "service": "OpenAI (GPT-4o)",
       "model": "gpt-4o",
       "cost_per_call": 0.00225,
-      "daily_calls": 6,
-      "cost_usd": 0.4,
-      "usage_count": 34,
+      "daily_calls": 53.2,
+      "cost_usd": 3.59,
+      "usage_count": 426,
       "source": "content_queue.json (x2 calls/item)",
+      "trend": "stable",
+      "waste": false
+    },
+    {
+      "agent": "viper",
+      "service": "Tavily (Web Search)",
+      "model": "tavily",
+      "cost_per_call": 0.005,
+      "daily_calls": 18,
+      "cost_usd": 2.7,
+      "usage_count": 144,
+      "source": "viper_intel.json + viper_opportunities.json",
+      "trend": "stable",
+      "waste": false
+    },
+    {
+      "agent": "atlas",
+      "service": "OpenAI (GPT-4o-mini)",
+      "model": "gpt-4o-mini",
+      "cost_per_call": 0.000108,
+      "daily_calls": 754.9,
+      "cost_usd": 2.45,
+      "usage_count": 6039,
+      "source": "atlas/data/cost_tracker.json",
       "trend": "stable",
       "waste": false
     },
@@ -102,9 +102,9 @@
       "service": "OpenAI (GPT-4o)",
       "model": "gpt-4o",
       "cost_per_call": 0.00225,
-      "daily_calls": 2.7,
-      "cost_usd": 0.18,
-      "usage_count": 16,
+      "daily_calls": 2.1,
+      "cost_usd": 0.14,
+      "usage_count": 17,
       "source": "hawk_trades.jsonl + hawk_opportunities.json",
       "trend": "stable",
       "waste": false
@@ -116,7 +116,7 @@
       "cost_per_call": 0.000108,
       "daily_calls": 15,
       "cost_usd": 0.05,
-      "usage_count": 3,
+      "usage_count": 120,
       "source": "trades.jsonl (x3 calls/trade)",
       "trend": "stable",
       "waste": false
@@ -128,7 +128,7 @@
       "cost_per_call": 0.000108,
       "daily_calls": 5,
       "cost_usd": 0.02,
-      "usage_count": 30,
+      "usage_count": 40,
       "source": "content_queue.json (reviewed items)",
       "trend": "stable",
       "waste": false
@@ -140,7 +140,7 @@
       "cost_per_call": 0.0,
       "daily_calls": 1440,
       "cost_usd": 0.0,
-      "usage_count": 8640,
+      "usage_count": 11520,
       "source": "free API (WebSocket stream)",
       "trend": "stable",
       "waste": false
@@ -150,9 +150,9 @@
       "service": "Polymarket (CLOB API)",
       "model": "polymarket",
       "cost_per_call": 0.0,
-      "daily_calls": 5.3,
+      "daily_calls": 4.2,
       "cost_usd": 0.0,
-      "usage_count": 32,
+      "usage_count": 34,
       "source": "free API",
       "trend": "stable",
       "waste": false
@@ -164,7 +164,7 @@
       "cost_per_call": 0.0,
       "daily_calls": 288,
       "cost_usd": 0.0,
-      "usage_count": 1728,
+      "usage_count": 2304,
       "source": "local system calls only",
       "trend": "stable",
       "waste": false
@@ -176,7 +176,7 @@
       "cost_per_call": 0.0,
       "daily_calls": 20,
       "cost_usd": 0.0,
-      "usage_count": 120,
+      "usage_count": 160,
       "source": "free API (Telegram bot)",
       "trend": "stable",
       "waste": false
@@ -186,9 +186,9 @@
       "service": "Reddit (JSON API)",
       "model": "reddit",
       "cost_per_call": 0.0,
-      "daily_calls": 166.7,
+      "daily_calls": 12,
       "cost_usd": 0.0,
-      "usage_count": 1000,
+      "usage_count": 96,
       "source": "free API",
       "trend": "stable",
       "waste": false
@@ -198,9 +198,9 @@
       "service": "Polymarket (CLOB API)",
       "model": "polymarket",
       "cost_per_call": 0.0,
-      "daily_calls": 166.7,
+      "daily_calls": 12,
       "cost_usd": 0.0,
-      "usage_count": 1000,
+      "usage_count": 96,
       "source": "free API",
       "trend": "stable",
       "waste": false
@@ -208,17 +208,17 @@
   ],
   "agent_totals": {
     "infrastructure": 200.0,
-    "atlas": 48.48,
-    "viper": 37.5,
-    "thor": 9.79,
-    "soren": 5.62,
-    "hawk": 0.18,
+    "soren": 49.91,
+    "atlas": 38.11,
+    "thor": 8.61,
+    "viper": 2.7,
+    "hawk": 0.14,
     "garves": 0.05,
     "lisa": 0.02,
     "robotox": 0.0,
     "shelby": 0.0
   },
-  "days_tracked": 6,
+  "days_tracked": 8,
   "pricing": {
     "gpt-4o": 0.00225,
     "gpt-4o-mini": 0.000108,
@@ -244,7 +244,7 @@
       "waste": false
     }
   ],
-  "last_computed": "2026-02-20T16:58:24.829204",
+  "last_computed": "2026-02-24T07:36:26.321748",
   "waste": [
     {
       "agent": "infrastructure",
@@ -257,58 +257,74 @@
     {
       "agent": "atlas",
       "service": "Tavily (Research)",
-      "monthly": 45.45,
-      "daily_calls": 303.0,
-      "cost_per_call": 0.005,
-      "reason": "High monthly spend \u2014 review if all calls are necessary"
-    },
-    {
-      "agent": "viper",
-      "service": "Tavily (Web Search)",
-      "monthly": 37.5,
-      "daily_calls": 250.0,
+      "monthly": 35.66,
+      "daily_calls": 237.8,
       "cost_per_call": 0.005,
       "reason": "High monthly spend \u2014 review if all calls are necessary"
     }
   ],
-  "recommendations": "Based on the provided monthly API costs, here are three actionable optimizations that can significantly reduce expenses:\n\n### 1. **Batch Processing for Atlas and Viper**\n- **Current Costs**: \n  - Atlas (Tavily Research): $48.48 (303 daily calls)\n  - Viper (Tavily Web Search): $37.50 (250 daily calls)\n- **Optimization**: Implement batch processing for both Atlas and Viper. Instead of making individual calls for each request, aggregate requests and send them in batches.\n- **Estimated Savings**: \n  - If we assume that batching can reduce the number of calls by 30%, this would lead to:\n    - Atlas: 303 daily calls reduced to 212 (savings of 91 calls)\n    - Viper: 250 daily calls reduced to 175 (savings of 75 calls)\n  - Assuming an average cost per call of $0.15 (based on total monthly divided by total calls), the savings would be approximately:\n    - Atlas: 91 calls * $0.15 = $13.65\n    - Viper: 75 calls * $0.15 = $11.25\n  - **Total Estimated Savings from Batch Processing**: **$24.90**\n\n### 2. **Model Downgrades for Thor**\n- **Current Cost**: Thor (Anthropic Claude Sonnet): $9.79 (24.2 daily calls)\n- **Optimization**: Evaluate if a less expensive model can be used for the tasks currently handled by Thor. If the tasks are not highly complex, a downgrade to a less expensive model could be feasible.\n- **Estimated Savings**: \n  - If switching to a model that costs $5.00 per month instead of $9.79, the savings would be:\n    - **Savings**: $9.79 - $5.00 = **$4.79**\n\n### 3. **Caching for Atlas and Viper**\n- **Current Costs**: \n  - Atlas: $48.48\n  - Viper: $37.50\n- **Optimization**: Implement caching strategies for frequently requested data. This would reduce the number of API calls made to both services.\n- **Estimated Savings**: \n  - If caching can reduce calls by 40%, this would lead to:\n    - Atlas: 303 calls reduced to 182 (savings of",
+  "recommendations": "Based on the provided monthly API costs, here are the top three actionable optimizations that can lead to significant savings:\n\n### 1. **Batch Processing for Atlas (Tavily Research)**\n- **Current Cost**: $35.66/month with 237.8 daily calls.\n- **Optimization Strategy**: Implement batch processing to reduce the number of API calls. If you can batch requests to reduce the frequency of calls by 50%, you could potentially save around $17.83/month (assuming the cost scales linearly with the number of calls).\n- **Estimated Savings**: $17.83/month.\n\n### 2. **Model Downgrade for Soren (OpenAI DALL-E 3)**\n- **Current Cost**: $22.36/month with 18.6 daily calls.\n- **Optimization Strategy**: If the use case allows, consider downgrading from DALL-E 3 to a less expensive model (e.g., DALL-E 2 or a local alternative). If the cost of DALL-E 3 is approximately $0.12 per call, switching to a local model could save the entire $22.36/month if you can eliminate the need for DALL-E 3.\n- **Estimated Savings**: $22.36/month.\n\n### 3. **Caching for Soren (ElevenLabs TTS Brian)**\n- **Current Cost**: $23.96/month with 13.3 daily calls.\n- **Optimization Strategy**: Implement caching for repeated TTS requests. If 30% of the calls are for repeated text, caching could save about $7.19/month (30% of $23.96).\n- **Estimated Savings**: $7.19/month.\n\n### Summary of Potential Savings\n- **Batch Processing for Atlas**: $17.83/month\n- **Model Downgrade for Soren (DALL-E 3)**: $22.36/month\n- **Caching for Soren (TTS)**: $7.19/month\n\n### **Total Estimated Savings**: \n**$47.38/month**\n\nBy implementing these optimizations, you can significantly reduce the total monthly API costs from $299.54 to approximately $252.16, resulting in a more efficient and cost-effective multi-agent AI system.",
   "llm_patterns": [
+    {
+      "agent": "viper",
+      "task_type": "fast",
+      "issue": "High volume (650 cloud calls for 'fast')",
+      "recommendation": "Route to local MLX (Qwen 3B/14B) to eliminate cost",
+      "estimated_savings_monthly": 2.11,
+      "severity": "medium"
+    },
     {
       "agent": "atlas",
       "task_type": "analysis",
-      "issue": "High volume (33 cloud calls for 'analysis')",
+      "issue": "High volume (369 cloud calls for 'analysis')",
+      "recommendation": "Route to local MLX (Qwen 3B/14B) to eliminate cost",
+      "estimated_savings_monthly": 1.2,
+      "severity": "medium"
+    },
+    {
+      "agent": "hawk",
+      "task_type": "analysis",
+      "issue": "High volume (284 cloud calls for 'analysis')",
+      "recommendation": "Route to local MLX (Qwen 3B/14B) to eliminate cost",
+      "estimated_savings_monthly": 0.92,
+      "severity": "medium"
+    },
+    {
+      "agent": "garves",
+      "task_type": "fast",
+      "issue": "High volume (103 cloud calls for 'fast')",
+      "recommendation": "Route to local MLX (Qwen 3B/14B) to eliminate cost",
+      "estimated_savings_monthly": 0.33,
+      "severity": "medium"
+    },
+    {
+      "agent": "garves",
+      "task_type": "analysis",
+      "issue": "High volume (68 cloud calls for 'analysis')",
+      "recommendation": "Route to local MLX (Qwen 3B/14B) to eliminate cost",
+      "estimated_savings_monthly": 0.22,
+      "severity": "medium"
+    },
+    {
+      "agent": "viper",
+      "task_type": "analysis",
+      "issue": "High volume (34 cloud calls for 'analysis')",
       "recommendation": "Route to local MLX (Qwen 3B/14B) to eliminate cost",
       "estimated_savings_monthly": 0.11,
       "severity": "medium"
     },
     {
-      "agent": "viper",
+      "agent": "robotox",
       "task_type": "fast",
-      "issue": "High volume (32 cloud calls for 'fast')",
-      "recommendation": "Route to local MLX (Qwen 3B/14B) to eliminate cost",
-      "estimated_savings_monthly": 0.1,
-      "severity": "medium"
-    },
-    {
-      "agent": "garves",
-      "task_type": "fast",
-      "issue": "High volume (10 cloud calls for 'fast')",
+      "issue": "High volume (9 cloud calls for 'fast')",
       "recommendation": "Route to local MLX (Qwen 3B/14B) to eliminate cost",
       "estimated_savings_monthly": 0.03,
       "severity": "medium"
     },
     {
-      "agent": "garves",
-      "task_type": "analysis",
-      "issue": "High volume (3 cloud calls for 'analysis')",
-      "recommendation": "Route to local MLX (Qwen 3B/14B) to eliminate cost",
-      "estimated_savings_monthly": 0.01,
-      "severity": "medium"
-    },
-    {
-      "agent": "viper",
-      "task_type": "analysis",
-      "issue": "High volume (4 cloud calls for 'analysis')",
+      "agent": "discord_scraper",
+      "task_type": "fast",
+      "issue": "High volume (2 cloud calls for 'fast')",
       "recommendation": "Route to local MLX (Qwen 3B/14B) to eliminate cost",
       "estimated_savings_monthly": 0.01,
       "severity": "medium"

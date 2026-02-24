@@ -1,0 +1,145 @@
+{
+  "garves": {
+    "running": true,
+    "win_rate": 0,
+    "total_trades": 0,
+    "resolved": 0,
+    "wins": 0,
+    "losses": 0,
+    "pending": 0,
+    "indicator_accuracy": {
+      "macd": {
+        "total_votes": 280,
+        "correct_votes": 174,
+        "accuracy": 0.6214285714285714
+      },
+      "ema": {
+        "total_votes": 280,
+        "correct_votes": 179,
+        "accuracy": 0.6392857142857142
+      },
+      "heikin_ashi": {
+        "total_votes": 236,
+        "correct_votes": 142,
+        "accuracy": 0.6016949152542372
+      },
+      "bollinger": {
+        "total_votes": 211,
+        "correct_votes": 67,
+        "accuracy": 0.3175355450236967
+      },
+      "momentum": {
+        "total_votes": 280,
+        "correct_votes": 181,
+        "accuracy": 0.6464285714285715
+      },
+      "price_div": {
+        "total_votes": 223,
+        "correct_votes": 137,
+        "accuracy": 0.6143497757847534
+      },
+      "temporal_arb": {
+        "total_votes": 174,
+        "correct_votes": 110,
+        "accuracy": 0.632183908045977
+      },
+      "order_flow": {
+        "total_votes": 255,
+        "correct_votes": 148,
+        "accuracy": 0.5803921568627451
+      },
+      "volume_spike": {
+        "total_votes": 51,
+        "correct_votes": 43,
+        "accuracy": 0.8431372549019608
+      },
+      "rsi": {
+        "total_votes": 132,
+        "correct_votes": 42,
+        "accuracy": 0.3181818181818182
+      },
+      "news": {
+        "total_votes": 142,
+        "correct_votes": 83,
+        "accuracy": 0.5845070422535211
+      },
+      "liquidation": {
+        "total_votes": 91,
+        "correct_votes": 63,
+        "accuracy": 0.6923076923076923
+      },
+      "spot_depth": {
+        "total_votes": 115,
+        "correct_votes": 68,
+        "accuracy": 0.591304347826087
+      },
+      "funding_rate": {
+        "total_votes": 14,
+        "correct_votes": 2,
+        "accuracy": 0.14285714285714285
+      },
+      "orderbook": {
+        "total_votes": 5,
+        "correct_votes": 3,
+        "accuracy": 0.6
+      },
+      "liquidity": {
+        "total_votes": 5,
+        "correct_votes": 3,
+        "accuracy": 0.6
+      },
+      "tvl_momentum": {
+        "total_votes": 1,
+        "correct_votes": 1,
+        "accuracy": 1.0
+      }
+    }
+  },
+  "soren": {
+    "queue_pending": 213,
+    "total_posted": 0
+  },
+  "shelby": {
+    "running": true
+  },
+  "lisa": {
+    "total_posts": 0,
+    "review_avg": null
+  },
+  "thor": {
+    "state": "idle",
+    "pending": 0,
+    "completed": 0
+  },
+  "hawk": {
+    "running": true,
+    "win_rate": 33.3,
+    "open_bets": 2
+  },
+  "viper": {
+    "running": true,
+    "opportunities": 0,
+    "pushed": 193
+  },
+  "quant": {
+    "running": true,
+    "total_combos_tested": 500,
+    "best_win_rate": 69.9
+  },
+  "odin": {
+    "running": true,
+    "mode": "paper",
+    "open_positions": 0,
+    "total_pnl": 232.2,
+    "balance": 1232.2,
+    "drawdown_pct": 0.0
+  },
+  "oracle": {
+    "running": false,
+    "regime": "",
+    "trades_placed": 0,
+    "total_wagered": 0,
+    "win_rate": 0,
+    "dry_run": true
+  }
+}

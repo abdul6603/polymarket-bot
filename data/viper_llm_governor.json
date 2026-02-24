@@ -1,0 +1,100 @@
+{
+  "governor_active": true,
+  "last_run": "2026-02-24T08:23:29.167405-05:00",
+  "budgets": {
+    "thor": {
+      "daily_limit": 5.0,
+      "spent_today": 0.0,
+      "pct": 0.0,
+      "status": "normal"
+    },
+    "shelby": {
+      "daily_limit": 2.0,
+      "spent_today": 0.0,
+      "pct": 0.0,
+      "status": "normal"
+    },
+    "hawk": {
+      "daily_limit": 1.0,
+      "spent_today": 0.0,
+      "pct": 0.0,
+      "status": "normal"
+    },
+    "atlas": {
+      "daily_limit": 0.5,
+      "spent_today": 0.005394,
+      "pct": 1.1,
+      "status": "normal"
+    },
+    "robotox": {
+      "daily_limit": 0.5,
+      "spent_today": 0.0,
+      "pct": 0.0,
+      "status": "normal"
+    },
+    "garves": {
+      "daily_limit": 0.25,
+      "spent_today": 0.000216,
+      "pct": 0.1,
+      "status": "normal"
+    },
+    "odin": {
+      "daily_limit": 0.25,
+      "spent_today": 0.0,
+      "pct": 0.0,
+      "status": "normal"
+    },
+    "viper": {
+      "daily_limit": 0.25,
+      "spent_today": 0.002079,
+      "pct": 0.8,
+      "status": "normal"
+    },
+    "soren": {
+      "daily_limit": 0.25,
+      "spent_today": 0.001113,
+      "pct": 0.4,
+      "status": "normal"
+    },
+    "quant": {
+      "daily_limit": 0.25,
+      "spent_today": 0.0,
+      "pct": 0.0,
+      "status": "normal"
+    },
+    "oracle": {
+      "daily_limit": 0.25,
+      "spent_today": 0.0,
+      "pct": 0.0,
+      "status": "normal"
+    }
+  },
+  "system_budget": {
+    "daily_limit": 12.0,
+    "spent_today": 0.0096,
+    "pct": 0.1
+  },
+  "overrides_applied": [],
+  "alerts": [],
+  "roi": {
+    "garves": {
+      "pnl": 0.0,
+      "llm_cost": 0.0002,
+      "ratio": 0.0,
+      "rating": "poor"
+    },
+    "hawk": {
+      "pnl": -2.82,
+      "llm_cost": 0.0,
+      "ratio": 0.0,
+      "rating": "poor"
+    },
+    "odin": {
+      "pnl": 0.0,
+      "llm_cost": 0.0,
+      "ratio": 0.0,
+      "rating": "paper_mode"
+    }
+  },
+  "last_reset": "2026-02-24"
+}

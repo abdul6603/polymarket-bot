@@ -1,0 +1,64 @@
+{
+  "timing_score": 54.3,
+  "action": "auto_skip",
+  "direction": "down",
+  "recommended_size_pct": 0.0,
+  "optimal_entry_window_s": 0,
+  "confidence_factors": {
+    "snipe_signal_strength": {
+      "raw": 0.644,
+      "weighted": 25.8
+    },
+    "liquidity_quality": {
+      "raw": 0.0,
+      "weighted": 0.0
+    },
+    "time_positioning": {
+      "raw": 1.0,
+      "weighted": 15.0
+    },
+    "regime_alignment": {
+      "raw": 0.5,
+      "weighted": 5.0
+    },
+    "historical_accuracy": {
+      "raw": 0.571,
+      "weighted": 8.6,
+      "total_samples": 7
+    }
+  },
+  "agent_overrides": {
+    "garves_snipe": {
+      "action": "auto_skip",
+      "size_pct": 0.0
+    },
+    "garves_taker": {
+      "action": "auto_skip",
+      "size_pct": 0.0
+    },
+    "odin": {
+      "action": "auto_skip",
+      "size_pct": 0.0,
+      "direction_hint": "SHORT",
+      "confirmation": false
+    },
+    "hawk": {
+      "action": "auto_skip",
+      "size_pct": 0.0,
+      "crypto_only": true
+    }
+  },
+  "expires_at": 1771939573.619139,
+  "timestamp": 1771939453.6191401,
+  "thresholds": {
+    "auto": 80,
+    "conservative": 65
+  },
+  "learner": {
+    "total_records": 16,
+    "resolved": 16,
+    "wins": 10,
+    "overall_wr": 62.5,
+    "total_pnl": -30.27
+  }
+}

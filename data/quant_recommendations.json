@@ -1,83 +1,23 @@
 {
   "recommendations": [
     {
-      "param": "WEIGHTS",
-      "current": {
-        "volume_spike": 4.5,
-        "liquidation": 2.0,
-        "temporal_arb": 1.8,
-        "price_div": 1.4,
-        "macd": 1.1,
-        "order_flow": 2.0,
-        "news": 0.5,
-        "momentum": 2.0,
-        "ema": 0.6,
-        "heikin_ashi": 0.5,
-        "spot_depth": 0.5,
-        "orderbook": 0.5,
-        "liquidity": 0.4,
-        "open_interest": 0.8,
-        "long_short_ratio": 0.6,
-        "etf_flow": 0.7,
-        "dxy_trend": 0.5,
-        "stablecoin_flow": 0.5,
-        "tvl_momentum": 0.4,
-        "mempool": 0.5,
-        "whale_flow": 0.7,
-        "poly_flow": 1.0
-      },
-      "suggested": {
-        "volume_spike": 4.5,
-        "liquidation": 2.0,
-        "temporal_arb": 1.8,
-        "price_div": 1.4,
-        "macd": 1.65,
-        "order_flow": 4.0,
-        "news": 0.5,
-        "momentum": 2.0,
-        "ema": 0.6,
-        "heikin_ashi": 0.5,
-        "spot_depth": 0.5,
-        "orderbook": 0.5,
-        "liquidity": 0.4,
-        "open_interest": 0.8,
-        "long_short_ratio": 0.6,
-        "etf_flow": 0.7,
-        "dxy_trend": 0.5,
-        "stablecoin_flow": 0.5,
-        "tvl_momentum": 0.4,
-        "mempool": 0.5,
-        "whale_flow": 0.7,
-        "poly_flow": 1.0
-      },
-      "changes": [
-        {
-          "indicator": "macd",
-          "current": 1.1,
-          "suggested": 1.65,
-          "change": "+0.55"
-        },
-        {
-          "indicator": "order_flow",
-          "current": 2.0,
-          "suggested": 4.0,
-          "change": "+2.00"
-        }
-      ],
-      "impact": "Weight rebalancing improves WR by 4.2pp",
-      "reasoning": "Specific indicator weight changes based on 88 trade replay",
-      "confidence": "medium"
+      "param": "MIN_CONSENSUS",
+      "current": 2,
+      "suggested": 7,
+      "impact": "WR 62.4% -> 69.9%",
+      "reasoning": "Consensus of 7 filters noise better (143 signals vs 319)",
+      "confidence": "high"
     }
   ],
-  "best_win_rate": 60.2,
-  "baseline_win_rate": 56.0,
-  "improvement": 4.2,
+  "best_win_rate": 69.9,
+  "baseline_win_rate": 62.4,
+  "improvement": 7.5,
   "best_params": {
-    "label": "weight_v198",
-    "min_consensus": 2,
+    "label": "thresh_c7_e0.12_conf0.20_up0.00",
+    "min_consensus": 7,
     "min_confidence": 0.2,
     "up_confidence_premium": 0.0,
-    "min_edge_absolute": 0.08,
+    "min_edge_absolute": 0.12,
     "asset_edge_premiums": {
       "bitcoin": 1.0,
       "ethereum": 1.0,
@@ -89,10 +29,11 @@
     "weights": {
       "volume_spike": 4.5,
       "liquidation": 2.0,
+      "liq_heatmap": 1.2,
       "temporal_arb": 1.8,
       "price_div": 1.4,
-      "macd": 1.65,
-      "order_flow": 4.0,
+      "macd": 1.1,
+      "order_flow": 2.0,
       "news": 0.5,
       "momentum": 2.0,
       "ema": 0.6,
@@ -108,8 +49,10 @@
       "tvl_momentum": 0.4,
       "mempool": 0.5,
       "whale_flow": 0.7,
-      "poly_flow": 1.0
+      "poly_flow": 1.0,
+      "tavily_news": 0.7,
+      "atlas_market_intel": 1.0
     }
   },
-  "updated": "2026-02-20 07:42 PM ET"
+  "updated": "2026-02-24 08:00 AM ET"
 }

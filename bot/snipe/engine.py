@@ -652,6 +652,30 @@ class SnipeEngine:
                 slot.executing_since = time.time()
                 self.window_tracker.mark_traded(window.market_id)
                 log.info("[SNIPE] %s: TRACKING -> EXECUTING (filled on %s)", asset.upper(), exec_timeframe)
+                try:
+                    from shared.events import publish, TRADE_EXECUTED
+                    publish(
+                        agent="garves",
+                        event_type=TRADE_EXECUTED,
+                        data={
+                            "asset": asset.upper(),
+                            "direction": direction.upper(),
+                            "score": round(score_result.total_score, 1),
+                            "size_usd": round(result.size_usd, 2),
+                            "shares": round(result.shares, 1),
+                            "price": round(result.price, 3),
+                            "exec_tf": exec_timeframe,
+                            "market_id": exec_market_id[:12],
+                            "fill_type": "instant",
+                        },
+                        summary=(
+                            f"FILLED {direction.upper()} {asset.upper()} "
+                            f"${result.size_usd:.2f} @ ${result.price:.3f} "
+                            f"score={score_result.total_score:.0f} ({exec_timeframe})"
+                        ),
+                    )
+                except Exception:
+                    pass
                 return
             elif slot.executor.has_pending_order:
                 slot.state = SnipeState.ARMED
@@ -710,6 +734,25 @@ class SnipeEngine:
                 slot.state = SnipeState.EXECUTING
                 slot.executing_since = time.time()
                 log.info("[SNIPE] %s: ARMED -> EXECUTING (GTC filled)", slot.asset.upper())
+                try:
+                    from shared.events import publish, TRADE_EXECUTED
+                    publish(
+                        agent="garves",
+                        event_type=TRADE_EXECUTED,
+                        data={
+                            "asset": slot.asset.upper(),
+                            "direction": fill.direction.upper(),
+                            "size_usd": round(fill.size_usd, 2),
+                            "market_id": (slot.current_window_id or "")[:12],
+                            "fill_type": "gtc",
+                        },
+                        summary=(
+                            f"GTC FILLED {fill.direction.upper()} {slot.asset.upper()} "
+                            f"${fill.size_usd:.2f}"
+                        ),
+                    )
+                except Exception:
+                    pass
                 return
         elif not slot.executor.has_active_position:
             slot.state = SnipeState.IDLE
