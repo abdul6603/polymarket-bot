@@ -117,21 +117,25 @@
       <div class="stat-value" id="snipe-score-bitcoin" style="font-size:1.2rem;color:#f7931a;">--</div>
       <div class="stat-label">BTC</div>
       <div id="snipe-state-bitcoin" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;">idle</div>
+      <div id="snipe-thresh-bitcoin" style="font-size:0.58rem;color:var(--text-muted);margin-top:1px;"></div>
     </div>
     <div class="stat-card" id="snipe-card-ethereum" style="border-left:3px solid #627eea;">
       <div class="stat-value" id="snipe-score-ethereum" style="font-size:1.2rem;color:#627eea;">--</div>
       <div class="stat-label">ETH</div>
       <div id="snipe-state-ethereum" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;">idle</div>
+      <div id="snipe-thresh-ethereum" style="font-size:0.58rem;color:var(--text-muted);margin-top:1px;"></div>
     </div>
     <div class="stat-card" id="snipe-card-solana" style="border-left:3px solid #00ffa3;">
       <div class="stat-value" id="snipe-score-solana" style="font-size:1.2rem;color:#00ffa3;">--</div>
       <div class="stat-label">SOL</div>
       <div id="snipe-state-solana" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;">idle</div>
+      <div id="snipe-thresh-solana" style="font-size:0.58rem;color:var(--text-muted);margin-top:1px;"></div>
     </div>
     <div class="stat-card" id="snipe-card-xrp" style="border-left:3px solid #00aae4;">
       <div class="stat-value" id="snipe-score-xrp" style="font-size:1.2rem;color:#00aae4;">--</div>
       <div class="stat-label">XRP</div>
       <div id="snipe-state-xrp" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;">idle</div>
+      <div id="snipe-thresh-xrp" style="font-size:0.58rem;color:var(--text-muted);margin-top:1px;"></div>
     </div>
   </div>
 
@@ -170,6 +174,9 @@
 
   <!-- Snipe Engine Warm-up Status -->
   <div id="snipe-warmup-card" style="margin-bottom:12px;display:none;"></div>
+
+  <!-- Snipe Threshold Status -->
+  <div id="snipe-threshold-card" style="margin-bottom:12px;display:none;"></div>
 
   <!-- Price Freshness Warning -->
   <div id="snipe-price-freshness" style="margin-bottom:12px;display:none;"></div>

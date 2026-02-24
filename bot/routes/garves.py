@@ -163,6 +163,29 @@ def api_garves_health_warnings():
         except Exception:
             pass
 
+    # 5. Snipe threshold check — warn if CLOB data quality is poor
+    try:
+        snipe_status_file = DATA_DIR / "snipe_status.json"
+        if snipe_status_file.exists():
+            ss = json.loads(snipe_status_file.read_text())
+            thresh_info = ss.get("threshold_info", {})
+            per_asset = thresh_info.get("per_asset", {})
+            high_assets = [f"{a.upper()}={v}" for a, v in per_asset.items() if v > 70]
+            if high_assets:
+                warnings.append({
+                    "level": "warning",
+                    "message": f"High snipe thresholds: {', '.join(high_assets)} — CLOB data may be dead/stale",
+                })
+            if thresh_info.get("override_active"):
+                ttl_min = thresh_info.get("override_ttl_s", 0) / 60
+                warnings.append({
+                    "level": "info",
+                    "message": f"Snipe threshold override active: {thresh_info.get('override_value', '?')} "
+                               f"(expires in {ttl_min:.0f}m)",
+                })
+    except Exception:
+        pass
+
     return jsonify({
         "warnings": warnings,
         "consensus_floor": consensus_floor,

@@ -11569,6 +11569,63 @@ function refreshSnipeV7() {
       }
     }
 
+    // Snipe Threshold Status Card
+    var threshCard = document.getElementById('snipe-threshold-card');
+    var threshInfo = d.threshold_info;
+    if (threshCard && threshInfo) {
+      var perAsset = threshInfo.per_asset || {};
+      var assetNames = {bitcoin: 'BTC', ethereum: 'ETH', solana: 'SOL', xrp: 'XRP'};
+      var assetColors = {bitcoin: '#f7931a', ethereum: '#627eea', solana: '#00ffa3', xrp: '#00aae4'};
+      var badges = '';
+      var hasAny = false;
+      for (var ta in perAsset) {
+        hasAny = true;
+        var tv = perAsset[ta];
+        var tColor = tv <= 66 ? '#22c55e' : (tv > 70 ? '#ef4444' : '#eab308');
+        var tBg = tv <= 66 ? 'rgba(34,197,94,0.12)' : (tv > 70 ? 'rgba(239,68,68,0.12)' : 'rgba(234,179,8,0.12)');
+        badges += '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;' +
+          'background:' + tBg + ';border:1px solid ' + tColor + '30;font-size:0.72rem;font-weight:600;">' +
+          '<span style="color:' + (assetColors[ta] || '#fff') + ';">' + (assetNames[ta] || ta.toUpperCase()) + '</span>' +
+          '<span style="color:' + tColor + ';">T=' + tv + '</span></span> ';
+      }
+      if (hasAny) {
+        threshCard.style.display = 'block';
+        var overrideHtml = '';
+        if (threshInfo.override_active) {
+          var ttlMin = Math.round((threshInfo.override_ttl_s || 0) / 60);
+          overrideHtml = '<div style="margin-top:6px;padding:4px 10px;border-radius:4px;' +
+            'background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.25);' +
+            'font-size:0.68rem;color:#eab308;">Override active: T=' +
+            (threshInfo.override_value || '?') + ' (expires in ' + ttlMin + 'm)</div>';
+        }
+        threshCard.innerHTML = '<div class="glass-card" style="padding:10px 14px;">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
+          '<span style="font-weight:700;font-size:0.76rem;">Snipe Thresholds</span>' +
+          '<span style="font-size:0.62rem;padding:2px 8px;border-radius:10px;' +
+          'background:rgba(139,92,246,0.15);color:#8b5cf6;font-weight:600;">Data Quality Mode</span></div>' +
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;">' + badges + '</div>' +
+          overrideHtml + '</div>';
+      } else {
+        threshCard.style.display = 'none';
+      }
+    }
+
+    // Per-asset threshold labels on scanner cards
+    if (d.slots) {
+      var threshAssets = ['bitcoin', 'ethereum', 'solana', 'xrp'];
+      for (var ti = 0; ti < threshAssets.length; ti++) {
+        var tAsset = threshAssets[ti];
+        var tEl = document.getElementById('snipe-thresh-' + tAsset);
+        if (tEl && d.slots[tAsset]) {
+          var slotThresh = d.slots[tAsset].threshold;
+          if (slotThresh) {
+            var stColor = slotThresh <= 66 ? '#22c55e' : (slotThresh > 70 ? '#ef4444' : '#eab308');
+            tEl.innerHTML = '<span style="color:' + stColor + ';">T=' + slotThresh + '</span>';
+          }
+        }
+      }
+    }
+
     // Price Feed Status (WS health + freshness)
     var freshEl = document.getElementById('snipe-price-freshness');
     var freshness = d.price_freshness;
