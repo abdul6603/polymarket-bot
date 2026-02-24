@@ -1,0 +1,159 @@
+{
+  "garves": {
+    "dimensions": {
+      "Market Knowledge": 100,
+      "Accuracy": 76,
+      "Experience": 100,
+      "Risk Management": 80,
+      "Adaptability": 100
+    },
+    "overall": 91,
+    "title": "The Trader"
+  },
+  "soren": {
+    "dimensions": {
+      "Creativity": 100,
+      "Productivity": 100,
+      "Brand Voice": 85,
+      "Platform Reach": 95,
+      "Trend Awareness": 30
+    },
+    "overall": 82,
+    "title": "The Thinker"
+  },
+  "atlas": {
+    "dimensions": {
+      "Knowledge Depth": 100,
+      "Research Quality": 82,
+      "Learning Rate": 100,
+      "Agent Coverage": 100,
+      "Synthesis": 86
+    },
+    "overall": 93,
+    "title": "The Scientist"
+  },
+  "shelby": {
+    "dimensions": {
+      "Team Awareness": 25,
+      "Task Management": 50,
+      "Communication": 40,
+      "Scheduling": 35,
+      "Decision Quality": 10
+    },
+    "overall": 32,
+    "title": "The Commander"
+  },
+  "lisa": {
+    "dimensions": {
+      "Platform Knowledge": 25,
+      "Posting Discipline": 20,
+      "Brand Alignment": 40,
+      "Strategy Depth": 30,
+      "Engagement IQ": 25
+    },
+    "overall": 28,
+    "title": "The Operator"
+  },
+  "robotox": {
+    "dimensions": {
+      "Detection": 40,
+      "Auto-Fix": 100,
+      "Vigilance": 35,
+      "Coverage": 95,
+      "Response Speed": 100
+    },
+    "overall": 74,
+    "title": "The Watchman"
+  },
+  "thor": {
+    "dimensions": {
+      "Code Quality": 30,
+      "Knowledge Depth": 100,
+      "Task Execution": 40,
+      "System Coverage": 15,
+      "Efficiency": 54
+    },
+    "overall": 47,
+    "title": "The Engineer"
+  },
+  "hawk": {
+    "dimensions": {
+      "Market Scanning": 99,
+      "Edge Detection": 100,
+      "Accuracy": 39,
+      "Experience": 75,
+      "Category Breadth": 95
+    },
+    "overall": 81,
+    "title": "The Market Predator"
+  },
+  "viper": {
+    "dimensions": {
+      "Discovery": 100,
+      "Cost Intelligence": 100,
+      "Revenue Potential": 100,
+      "Push Rate": 100,
+      "Monetization IQ": 100
+    },
+    "overall": 100,
+    "title": "The Opportunity Hunter"
+  },
+  "quant": {
+    "dimensions": {
+      "Backtesting Volume": 20,
+      "Statistical Rigor": 35,
+      "Walk-Forward Accuracy": 15,
+      "Indicator Diversity": 100,
+      "Strategy Optimization": 70
+    },
+    "overall": 48,
+    "title": "The Strategy Alchemist"
+  },
+  "odin": {
+    "dimensions": {
+      "Regime Detection": 72,
+      "Risk Management": 100,
+      "Accuracy": 100,
+      "Capital Efficiency": 77,
+      "Market Scanning": 50
+    },
+    "overall": 79,
+    "title": "The Regime Trader"
+  },
+  "oracle": {
+    "dimensions": {
+      "Market Analysis": 20,
+      "Prediction Accuracy": 15,
+      "Ensemble Quality": 30,
+      "Experience": 5,
+      "Capital Efficiency": 30
+    },
+    "overall": 20,
+    "title": "The Weekly Crypto Oracle"
+  },
+  "team": {
+    "dimensions": {
+      "Collective Knowledge": 79,
+      "Coordination": 62,
+      "Performance": 56,
+      "Autonomy": 84,
+      "Adaptability": 55
+    },
+    "overall": 67,
+    "title": "Brotherhood",
+    "agent_scores": {
+      "garves": 91,
+      "soren": 82,
+      "atlas": 93,
+      "shelby": 32,
+      "lisa": 28,
+      "robotox": 74,
+      "thor": 47,
+      "hawk": 81,
+      "viper": 100,
+      "quant": 48,
+      "odin": 79,
+      "oracle": 20
+    }
+  }
+}

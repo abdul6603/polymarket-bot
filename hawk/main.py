@@ -18,6 +18,15 @@ from hawk.risk import HawkRiskManager
 from hawk.resolver import resolve_paper_trades
 from hawk.learner import record_trade_outcome, get_dimension_adjustments
 
+# Brotherhood kill switch
+_killswitch_check = None
+try:
+    import sys as _ks_sys
+    _ks_sys.path.insert(0, str(Path.home() / "shared"))
+    from killswitch import is_killed as _killswitch_check
+except ImportError:
+    pass
+
 log = logging.getLogger(__name__)
 
 DATA_DIR = Path(__file__).parent.parent / "data"
@@ -560,6 +569,15 @@ class HawkBot:
                 suggestions = []
                 trades_placed = 0
                 placed_cids: set[str] = set()  # Per-cycle dedup
+
+                # Brotherhood kill switch — halt ALL trading
+                if _killswitch_check:
+                    _ks = _killswitch_check()
+                    if _ks:
+                        log.warning("[KILLSWITCH] Trading halted: %s (by %s)",
+                                    _ks.get("reason", "?"), _ks.get("activated_by", "?"))
+                        continue
+
                 for opp in ranked:
                     # Per-cycle duplicate guard
                     if opp.market.condition_id in placed_cids:
@@ -854,12 +872,18 @@ class HawkBot:
                                      effective_edge * 100, effective_min_edge * 100, opp.market.question[:60])
                             continue
 
+                    # P0-2: Toxic source kill switch — hard block before any other checks
+                    _esrc = (opp.estimate.edge_source or "").lower()
+                    if _esrc in self.cfg.blocked_sources:
+                        log.info("[KILL-SWITCH] Blocked toxic source '%s': %s",
+                                 _esrc, opp.market.question[:60])
+                        continue
+
                     # V7: Only bet with real data-backed edge
                     _ALLOWED_EDGE_SOURCES = {
                         "sportsbook_divergence", "weather_model",
                         "live_score_shift", "cross_platform",
                     }
-                    _esrc = (opp.estimate.edge_source or "").lower()
                     if _esrc not in _ALLOWED_EDGE_SOURCES:
                         log.info("[FILTER] Blocked %s edge source (need data-backed): %s",
                                  _esrc, opp.market.question[:60])

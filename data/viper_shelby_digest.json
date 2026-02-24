@@ -2,67 +2,59 @@
   "agent": "shelby",
   "items": [
     {
-      "headline": "[ACTION] Megathread: Supreme Court strikes down President Donald Trump's Tariff Policy",
-      "detail": "The U.S. Supreme Court ruled Friday in [Learning Resources, Inc. v. Trump](https://www.supremecourt.gov/opinions/25pdf/24-1287_4gcj.pdf) that the International Emergency Economic Powers Act (IEEPA) \"does not authorize the President to impose tariffs.\"\n\nThe Roberts decision is joined by Justices Sotomayor, Kagan, Gorsuch, Barrett, and Jackson, with Justices Thomas, Kavanaugh, and Alito dissenting.\n",
-      "source": "reddit/r/politics",
-      "score": 95,
-      "ts": 1771624726.778629,
-      "category": "action_item"
-    },
-    {
-      "headline": "[ACTION] Discussion Thread: President Trump Holds Press Conference Responding to Supreme Court Striking Down Most Tariffs",
-      "detail": "The news conference is scheduled to begin at 12:45 p.m. Eastern.\n\n**News and Analysis**\n\n- AP: [Supreme Court strikes down Trump\u2019s sweeping tariffs, upending central plank of economic agenda](https://apnews.com/article/supreme-court-tariffs-trump-0485fcda30a7310501123e4931dba3f9)\n\n- r/politics: [Megathread: Supreme Court strikes down President Donald Trump's Tariff Policy](https://www.reddit.com/r",
-      "source": "reddit/r/politics",
-      "score": 95,
-      "ts": 1771624726.7786298,
-      "category": "action_item"
-    },
-    {
-      "headline": "[ACTION] Supreme Court rules that Trump\u2019s sweeping emergency tariffs are illegal | CNN Politics",
-      "detail": "Score: 31014, Comments: 1455",
-      "source": "reddit/r/wallstreetbets",
-      "score": 86,
-      "ts": 1771624726.7786298,
-      "category": "action_item"
-    },
-    {
-      "headline": "[ACTION] Trump Announces New 10% Global Tariff",
-      "detail": "During his speech regarding the Supreme Court decision, a new 10% global tariff was announced. \n\n\"Today I will sign an order to impose a 10% global tariff under section 122, over and above our normal tariffs already being charged\"\n\nSection 232 and section 301 tariffs remain fully in place\n\nEdit 2: Tariffs are limited to 150 days according to AI\n&gt;Section 122 of the Trade Act of 1974 (19 U.S.C. \u00a7",
+      "headline": "[ACTION] Bitcoin falls below $65,000 as Trump tariff moves raise uncertainty",
+      "detail": "&gt;tldr:\n\n&gt;Bitcoin fell more than 5% to below $65,000 on Monday after U.S. President Donald Trump announced plans to raise global tariffs to 15%.\n\n&gt;The drop came as Asian equities rose in early trade, underscoring crypto\u2019s divergence from regional stock markets amid renewed tariff uncertainty.",
       "source": "reddit/r/wallstreetbets",
       "score": 85,
-      "ts": 1771624726.778631,
+      "ts": 1771938464.687003,
       "category": "action_item"
     },
     {
-      "headline": "[ACTION] Investors brace for 'knee-jerk market reaction' to a coming Supreme Court tariff decision",
-      "detail": "tldr:\n\n&gt;The US Supreme Court will convene Friday at 10 a.m. ET for the first time in weeks, with markets keyed in on a possible decision around tariffs.\n\n&gt;A decision in the case, Learning Resources, Inc. v. Trump, will have significant ramifications for US trade, ranging from President Trump's \"Liberation Day\" tariffs that have spanned the globe to his regular threats aimed at specific natio",
+      "headline": "[ACTION] Why prediction markets are thriving \u2013 and facing scrutiny | PBS News",
+      "detail": "The day before the election, Polymarket gave candidate Trump a 58 percent chance of winning. Now, part of the prediction market boom has been",
+      "source": "tavily",
+      "score": 83,
+      "ts": 1771938464.6870039,
+      "category": "action_item"
+    },
+    {
+      "headline": "[ACTION] FedEx sues for refund of Trump tariffs, days after Supreme Court ruling",
+      "detail": "Score: 576, Comments: 76",
       "source": "reddit/r/wallstreetbets",
-      "score": 85,
-      "ts": 1771624726.778631,
+      "score": 80,
+      "ts": 1771938464.687005,
       "category": "action_item"
     },
     {
-      "headline": "[ACTION] McConnell Stalls Trump\u2019s Election Overhaul Bill as Republicans Fume",
-      "detail": "Score: 2785, Comments: 261",
-      "source": "reddit/r/politics",
-      "score": 78,
-      "ts": 1771624726.778632,
-      "category": "action_item"
-    },
-    {
-      "headline": "[ACTION] Klarna beats all metrics, sees 38% revenue growth, 28% new customer growth to 180 million - Stock dumps 25% in response",
-      "detail": "What the FUCK ",
-      "source": "reddit/r/wallstreetbets",
+      "headline": "[ACTION] Michael Saylor\u2019s Strategy Acquires Another 592 Bitcoin For $40 Million",
+      "detail": "Score: 305, Comments: 61",
+      "source": "reddit/r/cryptocurrency",
       "score": 77,
-      "ts": 1771624726.778632,
+      "ts": 1771938464.687006,
       "category": "action_item"
     },
     {
-      "headline": "[ACTION] GDP Miss badly",
-      "detail": "[https://www.cnbc.com/2026/02/20/pce-inflation-december-2025.html](https://www.cnbc.com/2026/02/20/pce-inflation-december-2025.html)\n\nMore headache..more degenerates in the mkt.",
-      "source": "reddit/r/wallstreetbets",
+      "headline": "[ACTION] Strategy Acquires 592 BTC, Total Holdings Now 717,722 Bitcoin",
+      "detail": "Score: 259, Comments: 87",
+      "source": "reddit/r/cryptocurrency",
       "score": 76,
-      "ts": 1771624726.778632,
+      "ts": 1771938464.687007,
+      "category": "action_item"
+    },
+    {
+      "headline": "[ACTION] FedEx sues U.S. seeking full refund of Trump tariffs days after Supreme Court ruling",
+      "detail": "Score: 8786, Comments: 297",
+      "source": "reddit/r/politics",
+      "score": 75,
+      "ts": 1771938464.687008,
+      "category": "action_item"
+    },
+    {
+      "headline": "[ACTION] All of the sudden this sub is real quiet with people going all in Bitcoin with their life savings",
+      "detail": "All the people that hated Bitcoin on the previous bear market piled in at the top and this sub was littered with\n\n\u201cI sold my stocks and went all in Bitcoin\u201d\n\n\u201cI\u2019m about to go all in is it a good idea?\u201d\n\n\u201cSold my house for Bitcoin\u201d\n\n\u201cIs it a good price to buy here at 120k?\u201d\n\n\u201cDeploying my retirement money\u201d\n\nEvery.single.one.\n\nAnd if you dared to have a different opinion you were attacked. I know I ",
+      "source": "reddit/r/cryptocurrency",
+      "score": 75,
+      "ts": 1771938464.687008,
       "category": "action_item"
     },
     {
@@ -70,19 +62,27 @@
       "detail": "High monthly spend \u2014 review if all calls are necessary",
       "source": "cost_audit",
       "score": 60,
-      "ts": 1771624726.778682,
+      "ts": 1771938464.6870852,
       "category": "cost_waste"
     },
     {
-      "headline": "[WASTE] atlas: $45.45/mo",
+      "headline": "[WASTE] atlas: $35.66/mo",
       "detail": "High monthly spend \u2014 review if all calls are necessary",
       "source": "cost_audit",
       "score": 60,
-      "ts": 1771624726.778683,
+      "ts": 1771938464.687087,
       "category": "cost_waste"
+    },
+    {
+      "headline": "Pipeline stats: 167 total pushes to Shelby",
+      "detail": "System cost: $299.54/mo",
+      "source": "pipeline",
+      "score": 20,
+      "ts": 1771938464.687135,
+      "category": "stats"
     }
   ],
-  "generated_at": 1771624726.7787268,
+  "generated_at": 1771938464.6871371,
   "item_count": 10,
   "fresh": true
 }

@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import sys
 import time
@@ -30,6 +31,26 @@ try:
     _USE_SHARED_LLM = True
 except ImportError:
     pass
+
+# P0-3: LLM rate limiter — prevent runaway LLM usage (109K calls in 5 days)
+_LLM_CALL_TIMESTAMPS: list[float] = []
+_LLM_MAX_CALLS_PER_HOUR = int(os.environ.get("VIPER_LLM_MAX_PER_HOUR", "50"))
+
+
+def _llm_rate_limited() -> bool:
+    now = time.time()
+    cutoff = now - 3600
+    while _LLM_CALL_TIMESTAMPS and _LLM_CALL_TIMESTAMPS[0] < cutoff:
+        _LLM_CALL_TIMESTAMPS.pop(0)
+    if len(_LLM_CALL_TIMESTAMPS) >= _LLM_MAX_CALLS_PER_HOUR:
+        log.debug("[RATE-LIMIT] %d/%d LLM calls this hour — skipping",
+                  len(_LLM_CALL_TIMESTAMPS), _LLM_MAX_CALLS_PER_HOUR)
+        return True
+    return False
+
+
+def _llm_rate_track() -> None:
+    _LLM_CALL_TIMESTAMPS.append(time.time())
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 
@@ -492,8 +513,9 @@ def _extract_tags(text: str) -> list[str]:
 def _categorize_intel(text: str) -> str:
     """Categorize intel item — LLM-enhanced with keyword fallback."""
     # Try LLM categorization (fast -> 3B for speed)
-    if _USE_SHARED_LLM and _shared_llm_call:
+    if _USE_SHARED_LLM and _shared_llm_call and not _llm_rate_limited():
         try:
+            _llm_rate_track()
             result = _shared_llm_call(
                 system="You categorize news/intel items. Reply with EXACTLY one word: politics, sports, crypto, culture, economy, or other.",
                 user=f"Categorize this: {text[:300]}",
@@ -537,8 +559,9 @@ def _estimate_sentiment(text: str) -> float:
         pass
 
     # Fallback: LLM sentiment (cloud API cost)
-    if _USE_SHARED_LLM and _shared_llm_call:
+    if _USE_SHARED_LLM and _shared_llm_call and not _llm_rate_limited():
         try:
+            _llm_rate_track()
             result = _shared_llm_call(
                 system="You score sentiment of news items. Reply with ONLY a number from -1.0 (very negative) to 1.0 (very positive). Example: 0.6",
                 user=f"Score sentiment: {text[:300]}",

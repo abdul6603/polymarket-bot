@@ -140,7 +140,7 @@ def get_dimension_adjustments(trade_context: dict) -> tuple[float, list[str]]:
     # a "today" time band picks up all the crypto garbage. These need many
     # more samples before we trust them.
     primary_dims = {"category", "edge_source"}
-    min_samples_primary = 8   # penalties + blocks
+    min_samples_primary = 5   # penalties + blocks (lowered from 8 for faster detection)
     min_samples_secondary = 15  # penalties only, no blocks
 
     for dim_name, dim_value in dims.items():
@@ -155,9 +155,9 @@ def get_dimension_adjustments(trade_context: dict) -> tuple[float, list[str]]:
         total = entry["total"]
 
         # Truly toxic: block outright (only primary dims, need 8+ samples)
-        if is_primary and total >= min_samples_primary and accuracy < 0.20:
+        if is_primary and total >= min_samples_primary and accuracy < 0.30:
             blocked.append(f"{dim_name}={dim_value}")
-            adjustments_log.append(f"{dim_name}={dim_value}: BLOCKED (acc={accuracy:.0%}, n={total})")
+            adjustments_log.append(f"{dim_name}={dim_value}: BLOCKED (<30% acc={accuracy:.0%}, n={total})")
             continue
 
         # Penalty tiers

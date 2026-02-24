@@ -1,0 +1,29 @@
+{
+  "0x78541e7dbc150ea9890d66616fd120466ca85bc0ffe07ed58cf355dab05f8b58": {
+    "snapshots": [
+      {
+        "prob": 0.395,
+        "time": 1771936425.965235
+      }
+    ],
+    "last_seen": 1771936425.965235
+  },
+  "0xd9f6d772608eee1652b7a6aedf80494fa456db87e56240befb6a029de6fc163d": {
+    "snapshots": [
+      {
+        "prob": 0.515,
+        "time": 1771936428.530815
+      }
+    ],
+    "last_seen": 1771936428.530815
+  },
+  "0x14377f9fa76cc0e5385360ab1e2386fdb1b8e61bb202a7bba2f18a763f6d86e5": {
+    "snapshots": [
+      {
+        "prob": 0.535,
+        "time": 1771936431.152995
+      }
+    ],
+    "last_seen": 1771936431.152995
+  }
+}

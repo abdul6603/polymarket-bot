@@ -1960,8 +1960,207 @@
         }
       ],
       "lisa_action": null
+    },
+    {
+      "id": "bc_1771937023_e0fc",
+      "opportunity_id": "da6745c265928468",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-24T07:43:43.185613-05:00",
+      "opportunity": {
+        "title": "Join Our Affiliate & Influencer Network - Uprise Nutrition",
+        "description": "Our team will support you every step of the way as you work to grow your personal brand and network! As a brand ambassador, you'll receive special discounts on supplements and apparel. Our brand ambassadors represents are largest most popular segment of our affiliate network. Fitness minded individuals can jump in and get involved right away and begin earning great commissions from their already e",
+        "type": "brand_deal",
+        "category": "fitness",
+        "url": "https://www.uprisenutrition.com/pages/join-our-affiliate-influencer-network",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 41
+      },
+      "brand_assessment": {
+        "brand_fit_score": 45,
+        "pillar_match": "gym_warrior",
+        "archetype_alignment": "Moderate",
+        "value_alignment": [
+          "Discipline over motivation",
+          "Actions over words"
+        ],
+        "content_suggestion": "Create a raw gym footage video featuring intense workouts using Uprise Nutrition supplements, with a voiceover emphasizing discipline and action. Caption: 'Fuel the warrior within. #DisciplineOverMotivation'",
+        "risk_flags": [
+          "Potential brand dilution if perceived as too commercial"
+        ],
+        "auto_verdict": "needs_review",
+        "reasoning": "While the fitness category aligns with Soren's gym focus, the commercial nature of the deal may dilute the brand's intense, lone wolf image."
+      },
+      "status": "assessed",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-24T07:43:43.185613-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "assessed",
+          "at": "2026-02-24T07:43:43.185613-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771937028_e437",
+      "opportunity_id": "533d08296fc4e584",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-24T07:43:48.444755-05:00",
+      "opportunity": {
+        "title": "Innovator Program | Kaged",
+        "description": "Become a Kaged Innovator program and join a community of like minded individuals, earn free product, sales commissions, and exclusive access. A Kaged Ambassador (Innovator) is a fitness enthusiast who promotes health and wellness, embodies an active lifestyle, and possesses a friendly and approachable personality. Being a part of the Kaged Ambassador program is your ticket to free product, sales c",
+        "type": "brand_deal",
+        "category": "fitness",
+        "url": "https://www.kaged.com/pages/innovator-program?srsltid=AfmBOop3TC3JF1b7R2LOxd7zg-zpio4K3drqApzhfgpdHTuyqBctSPLi",
+        "source": "tavily",
+        "estimated_value": "$20-50/post",
+        "fit_score": 17
+      },
+      "brand_assessment": {
+        "brand_fit_score": 45,
+        "pillar_match": "gym_warrior",
+        "archetype_alignment": "Moderate",
+        "value_alignment": [
+          "Discipline over motivation",
+          "Actions over words"
+        ],
+        "content_suggestion": "Create a raw gym footage video showcasing intense workouts using Kaged products, emphasizing discipline and action. Caption could focus on the relentless pursuit of progress.",
+        "risk_flags": [
+          "Misalignment with 'friendly and approachable' personality"
+        ],
+        "auto_verdict": "needs_review",
+        "reasoning": "The opportunity aligns with Soren's fitness focus but conflicts with his lone wolf and dark warrior persona, which contrasts with Kaged's friendly ambassador image."
+      },
+      "status": "assessed",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-24T07:43:48.444755-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "assessed",
+          "at": "2026-02-24T07:43:48.444755-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771937032_0831",
+      "opportunity_id": "ea8927f8e6c53a3a",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-24T07:43:52.520311-05:00",
+      "opportunity": {
+        "title": "17 Best Nutritional Supplement Affiliate Programs to Try in 2026",
+        "description": "* Well-known supplement affiliate programs (e.g., major health retailers and brands) provide competitive commissions and reliable products. Check out our list of the top affiliate programs paying the best rates and offering the greatest perks in the nutritional supplement space to help you begin! As a Love Life Supplements affiliate, you will be able to earn a 15% commission on all successful refe",
+        "type": "affiliate",
+        "category": "fitness",
+        "url": "https://www.evolup.com/blog/nutritional-supplement-affiliate-programs",
+        "source": "tavily",
+        "estimated_value": "$10-50/mo",
+        "fit_score": 17
+      },
+      "brand_assessment": {
+        "brand_fit_score": 35,
+        "pillar_match": "gym_warrior",
+        "archetype_alignment": "Weak",
+        "value_alignment": [],
+        "content_suggestion": "Create a raw gym video showcasing intense workouts, subtly mentioning the importance of nutrition without directly promoting any brands.",
+        "risk_flags": [
+          "reputation risks",
+          "brand misalignment"
+        ],
+        "auto_verdict": "auto_rejected",
+        "reasoning": "The affiliate opportunity does not align well with Soren's brand, which focuses on discipline and self-reliance rather than product promotion. The content lacks the raw, intense, and poetic voice that defines Soren's identity."
+      },
+      "status": "rejected",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-24T07:43:52.520311-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "rejected",
+          "at": "2026-02-24T07:43:52.520311-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
+    },
+    {
+      "id": "bc_1771937036_80a7",
+      "opportunity_id": "a635487f426d7774",
+      "sender": "viper",
+      "recipients": [
+        "soren",
+        "lisa"
+      ],
+      "type": "opportunity_submitted",
+      "timestamp": "2026-02-24T07:43:56.192253-05:00",
+      "opportunity": {
+        "title": "Motivational Clips for Self-Improvement - TikTok",
+        "description": "Explore powerful mindset motivation and quotes to win today. ... #saltpapi #foryoupage #bustabreezie #viral #trending #gymtiktok",
+        "type": "trending_content",
+        "category": "core",
+        "url": "https://www.tiktok.com/@growthofwisdom/video/7538482576923659542",
+        "source": "tavily",
+        "estimated_value": "Low reach",
+        "fit_score": 16
+      },
+      "brand_assessment": {
+        "brand_fit_score": 45,
+        "pillar_match": "wisdom_quotes",
+        "archetype_alignment": "Moderate",
+        "value_alignment": [
+          "Discipline over motivation",
+          "Pain as fuel"
+        ],
+        "content_suggestion": "Create a cinematic video with a dark, moody aesthetic featuring a powerful quote about using pain as fuel, ending with a CTA to reflect on personal growth.",
+        "risk_flags": [
+          "Low reach",
+          "Potential overuse of trending hashtags"
+        ],
+        "auto_verdict": "needs_review",
+        "reasoning": "The opportunity aligns moderately with Soren's brand due to its focus on mindset motivation, but the low reach and potential overuse of trending hashtags may dilute the brand's unique voice and intensity."
+      },
+      "status": "assessed",
+      "status_history": [
+        {
+          "status": "new",
+          "at": "2026-02-24T07:43:56.192253-05:00",
+          "by": "viper"
+        },
+        {
+          "status": "assessed",
+          "at": "2026-02-24T07:43:56.192253-05:00",
+          "by": "brand_filter"
+        }
+      ],
+      "lisa_action": null
     }
   ],
-  "count": 40,
-  "updated": "2026-02-20T16:17:07.724973-05:00"
+  "count": 44,
+  "updated": "2026-02-24T07:44:00.615718-05:00"
 }

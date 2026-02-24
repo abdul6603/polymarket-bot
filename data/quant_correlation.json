@@ -1,0 +1,14 @@
+{
+  "overall_risk": "low",
+  "alert_message": "No significant position correlation between Garves and Odin.",
+  "direct_overlaps": 0,
+  "correlated_overlaps": 0,
+  "garves_exposure": 0,
+  "odin_exposure": 1705.14,
+  "combined_exposure": 1705.14,
+  "max_single_asset": 705.14,
+  "trade_correlation": 0.0,
+  "overlaps": [],
+  "recommendations": [],
+  "updated": "2026-02-24 08:00 AM ET"
+}

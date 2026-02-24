@@ -49,6 +49,11 @@ class HawkConfig:
     max_per_event_usd: float = float(_env("HAWK_MAX_PER_EVENT_USD", "20"))  # Max total exposure per event
     kelly_fraction: float = float(_env("HAWK_KELLY_FRACTION", "0.15"))
     max_risk_score: int = int(_env("HAWK_MAX_RISK_SCORE", "6"))
+
+    # Toxic source kill switch — hard-block these edge sources immediately
+    blocked_sources: tuple[str, ...] = tuple(
+        s.strip() for s in _env("HAWK_BLOCKED_SOURCES", "news,base_rate").split(",") if s.strip()
+    )
     compound_bankroll: bool = _env("HAWK_COMPOUND_BANKROLL", "true").lower() in ("true", "1", "yes")
     news_enrichment: bool = _env("HAWK_NEWS_ENRICHMENT", "true").lower() in ("true", "1", "yes")
 

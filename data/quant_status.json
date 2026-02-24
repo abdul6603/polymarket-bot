@@ -1,21 +1,21 @@
 {
   "running": true,
-  "cycle": 1,
-  "last_run": "2026-02-20 07:42 PM ET",
+  "cycle": 2,
+  "last_run": "2026-02-24 08:00 AM ET",
   "total_combos_tested": 500,
-  "baseline_win_rate": 56.0,
-  "baseline_signals": 100,
-  "baseline_avg_edge": 19.88,
-  "trade_count": 118,
+  "baseline_win_rate": 62.4,
+  "baseline_signals": 319,
+  "baseline_avg_edge": 23.29,
+  "trade_count": 416,
   "candle_counts": {
-    "xrp": 856,
-    "bitcoin": 1811,
-    "solana": 1102,
-    "ethereum": 1849
+    "xrp": 1084,
+    "bitcoin": 2039,
+    "solana": 1330,
+    "ethereum": 2077
   },
   "filter_reasons": {
-    "edge_too_low": 12,
-    "confidence": 5,
+    "edge_too_low": 32,
+    "confidence": 6,
     "market_safety": 1
   },
   "mode": "historical_replay"

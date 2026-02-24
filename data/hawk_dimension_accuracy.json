@@ -14,8 +14,8 @@
     },
     "news": {
       "wins": 0,
-      "losses": 2,
-      "total": 2,
+      "losses": 4,
+      "total": 4,
       "accuracy": 0.0
     },
     "recency": {
@@ -34,8 +34,8 @@
     },
     "other": {
       "wins": 0,
-      "losses": 2,
-      "total": 2,
+      "losses": 3,
+      "total": 3,
       "accuracy": 0.0
     },
     "crypto_event": {
@@ -49,6 +49,12 @@
       "losses": 0,
       "total": 1,
       "accuracy": 1.0
+    },
+    "culture": {
+      "wins": 0,
+      "losses": 1,
+      "total": 1,
+      "accuracy": 0.0
     }
   },
   "confidence_band": {
@@ -66,17 +72,17 @@
     },
     "medium": {
       "wins": 1,
-      "losses": 0,
-      "total": 1,
-      "accuracy": 1.0
+      "losses": 2,
+      "total": 3,
+      "accuracy": 0.3333333333333333
     }
   },
   "risk_band": {
     "low": {
       "wins": 3,
-      "losses": 7,
-      "total": 10,
-      "accuracy": 0.3
+      "losses": 9,
+      "total": 12,
+      "accuracy": 0.25
     },
     "medium": {
       "wins": 1,
@@ -88,9 +94,9 @@
   "direction": {
     "yes": {
       "wins": 2,
-      "losses": 5,
-      "total": 7,
-      "accuracy": 0.2857142857142857
+      "losses": 7,
+      "total": 9,
+      "accuracy": 0.2222222222222222
     },
     "no": {
       "wins": 2,
@@ -108,15 +114,15 @@
     },
     "today": {
       "wins": 1,
-      "losses": 10,
-      "total": 11,
-      "accuracy": 0.09090909090909091
+      "losses": 11,
+      "total": 12,
+      "accuracy": 0.08333333333333333
     },
     "tomorrow": {
       "wins": 1,
-      "losses": 1,
-      "total": 2,
-      "accuracy": 0.5
+      "losses": 2,
+      "total": 3,
+      "accuracy": 0.3333333333333333
     }
   }
 }

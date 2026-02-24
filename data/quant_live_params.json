@@ -1,6 +1,6 @@
 {
   "params": {
-    "consensus_floor": 2
+    "consensus_floor": 7
   },
   "validation": {
     "walk_forward_passed": true,
@@ -12,10 +12,5 @@
     "trades_analyzed": 143,
     "best_label": "thresh_c7_e0.12_conf0.20_up0.00"
   },
-  "applied_at": "2026-02-23 09:27 PM ET",
-  "guardrail_applied": {
-    "original_value": 7,
-    "clamped_to": 2,
-    "reason": "consensus_floor=7 paralyzed trading"
-  }
+  "applied_at": "2026-02-24 08:00 AM ET"
 }

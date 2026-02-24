@@ -1,0 +1,71 @@
+{
+  "regime": {
+    "current": "low_vol_ranging",
+    "current_vol": "low_vol",
+    "current_trend": "ranging",
+    "best_regime": "low_vol_ranging",
+    "worst_regime": "high_vol_down",
+    "regime_count": 4,
+    "distribution": {
+      "normal_ranging": 116,
+      "high_vol_down": 158,
+      "low_vol_ranging": 141
+    },
+    "performance": {
+      "normal_ranging": {
+        "wins": 59,
+        "losses": 57,
+        "total": 116,
+        "win_rate": 50.9,
+        "avg_edge": 9.82,
+        "total_pnl": 0
+      },
+      "high_vol_down": {
+        "wins": 65,
+        "losses": 93,
+        "total": 158,
+        "win_rate": 41.1,
+        "avg_edge": 10.02,
+        "total_pnl": 0
+      },
+      "low_vol_ranging": {
+        "wins": 83,
+        "losses": 58,
+        "total": 141,
+        "win_rate": 58.9,
+        "avg_edge": 15.43,
+        "total_pnl": -14.98
+      }
+    }
+  },
+  "correlation": {
+    "overall_risk": "low",
+    "alert_message": "No significant position correlation between Garves and Odin.",
+    "direct_overlaps": 0,
+    "correlated_overlaps": 0,
+    "garves_exposure": 0,
+    "odin_exposure": 1705.14,
+    "combined_exposure": 1705.14,
+    "trade_correlation": 0.0,
+    "recommendations": []
+  },
+  "learning": {
+    "outcomes_measured": 0,
+    "recommendation_accuracy": 0.0,
+    "param_confidence": {},
+    "garves_wr": 49.8,
+    "garves_trades": 416,
+    "odin_wr": 83.3,
+    "odin_trades": 60,
+    "combined_wr": 54.0,
+    "combined_trades": 476,
+    "odin_insights": [
+      "Odin strong on fartcoin: 96% WR (46 trades) \u2014 Garves could increase fartcoin conviction",
+      "Odin performs well in 'bear' regime (88% WR) \u2014 Garves can be more aggressive in this regime",
+      "Both traders should reduce size in 'neutral' regime (Odin WR=33%)"
+    ],
+    "successful_outcomes": [],
+    "failed_outcomes": []
+  },
+  "updated": "2026-02-24 08:00 AM ET"
+}

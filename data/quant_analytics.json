@@ -1,321 +1,375 @@
 {
   "kelly": {
-    "win_rate": 56.0,
-    "avg_win_return": 19.9,
-    "full_kelly_pct": 12.0,
-    "half_kelly_pct": 6.0,
-    "quarter_kelly_pct": 3.0,
-    "recommended_usd": 15.0,
+    "win_rate": 62.4,
+    "avg_win_return": 60.9,
+    "full_kelly_pct": 25.0,
+    "half_kelly_pct": 12.5,
+    "quarter_kelly_pct": 6.2,
+    "recommended_usd": 31.25,
     "current_size_usd": 10.0,
-    "bankroll": 250.0
+    "bankroll": 250.0,
+    "expected_pnl_per_trade": 7.2793,
+    "per_asset": {
+      "ethereum": {
+        "win_rate": 57.1,
+        "trades": 140,
+        "full_kelly_pct": 20.9,
+        "half_kelly_pct": 10.5,
+        "recommended_usd": 26.15
+      },
+      "bitcoin": {
+        "win_rate": 45.7,
+        "trades": 129,
+        "full_kelly_pct": 16.6,
+        "half_kelly_pct": 8.3,
+        "recommended_usd": 20.71
+      },
+      "solana": {
+        "win_rate": 39.3,
+        "trades": 89,
+        "full_kelly_pct": 16.4,
+        "half_kelly_pct": 8.2,
+        "recommended_usd": 20.53
+      },
+      "xrp": {
+        "win_rate": 56.9,
+        "trades": 58,
+        "full_kelly_pct": 25.0,
+        "half_kelly_pct": 12.5,
+        "recommended_usd": 31.25
+      }
+    },
+    "per_timeframe": {
+      "15m": {
+        "win_rate": 55.3,
+        "trades": 313,
+        "full_kelly_pct": 22.0,
+        "half_kelly_pct": 11.0,
+        "recommended_usd": 27.54
+      },
+      "4h": {
+        "win_rate": 35.1,
+        "trades": 94,
+        "full_kelly_pct": 11.6,
+        "half_kelly_pct": 5.8,
+        "recommended_usd": 14.53
+      },
+      "1h": {
+        "win_rate": 11.1,
+        "trades": 9,
+        "full_kelly_pct": 10.2,
+        "half_kelly_pct": 5.1,
+        "recommended_usd": 12.77
+      }
+    }
   },
   "diversity": {
-    "n_indicators": 15,
-    "avg_agreement": 53.1,
-    "diversity_score": 93.8,
+    "n_indicators": 19,
+    "avg_agreement": 50.6,
+    "diversity_score": 98.8,
     "redundant_pairs": [
       {
         "indicator_a": "bollinger",
         "indicator_b": "rsi",
         "agreement": 100.0,
-        "compared": 25,
+        "compared": 126,
+        "suggestion": "Consider removing one \u2014 they agree 100% of the time"
+      },
+      {
+        "indicator_a": "ema",
+        "indicator_b": "liquidation",
+        "agreement": 100.0,
+        "compared": 75,
+        "suggestion": "Consider removing one \u2014 they agree 100% of the time"
+      },
+      {
+        "indicator_a": "liquidation",
+        "indicator_b": "temporal_arb",
+        "agreement": 100.0,
+        "compared": 54,
+        "suggestion": "Consider removing one \u2014 they agree 100% of the time"
+      },
+      {
+        "indicator_a": "liquidation",
+        "indicator_b": "volume_spike",
+        "agreement": 100.0,
+        "compared": 21,
         "suggestion": "Consider removing one \u2014 they agree 100% of the time"
       },
       {
         "indicator_a": "price_div",
         "indicator_b": "temporal_arb",
         "agreement": 100.0,
-        "compared": 71,
+        "compared": 236,
         "suggestion": "Consider removing one \u2014 they agree 100% of the time"
       },
       {
-        "indicator_a": "ema",
+        "indicator_a": "liquidation",
+        "indicator_b": "price_div",
+        "agreement": 96.9,
+        "compared": 64,
+        "suggestion": "Consider removing one \u2014 they agree 97% of the time"
+      },
+      {
+        "indicator_a": "liquidation",
         "indicator_b": "momentum",
-        "agreement": 94.7,
-        "compared": 113,
+        "agreement": 96.0,
+        "compared": 75,
+        "suggestion": "Consider removing one \u2014 they agree 96% of the time"
+      },
+      {
+        "indicator_a": "ema",
+        "indicator_b": "temporal_arb",
+        "agreement": 95.3,
+        "compared": 236,
         "suggestion": "Consider removing one \u2014 they agree 95% of the time"
       },
       {
         "indicator_a": "heikin_ashi",
-        "indicator_b": "temporal_arb",
-        "agreement": 94.4,
-        "compared": 71,
-        "suggestion": "Consider removing one \u2014 they agree 94% of the time"
-      },
-      {
-        "indicator_a": "heikin_ashi",
         "indicator_b": "price_div",
-        "agreement": 93.5,
-        "compared": 92,
-        "suggestion": "Consider removing one \u2014 they agree 93% of the time"
+        "agreement": 95.3,
+        "compared": 316,
+        "suggestion": "Consider removing one \u2014 they agree 95% of the time"
       },
       {
         "indicator_a": "ema",
-        "indicator_b": "temporal_arb",
-        "agreement": 91.5,
-        "compared": 71,
-        "suggestion": "Consider removing one \u2014 they agree 92% of the time"
-      },
-      {
-        "indicator_a": "ema",
-        "indicator_b": "price_div",
-        "agreement": 91.3,
-        "compared": 92,
-        "suggestion": "Consider removing one \u2014 they agree 91% of the time"
-      },
-      {
-        "indicator_a": "ema",
-        "indicator_b": "volume_spike",
-        "agreement": 91.3,
-        "compared": 23,
-        "suggestion": "Consider removing one \u2014 they agree 91% of the time"
-      },
-      {
-        "indicator_a": "ema",
-        "indicator_b": "vwap",
-        "agreement": 85.3,
-        "compared": 116,
-        "suggestion": "Consider removing one \u2014 they agree 85% of the time"
-      },
-      {
-        "indicator_a": "momentum",
-        "indicator_b": "volume_spike",
-        "agreement": 85.0,
-        "compared": 20,
-        "suggestion": "Consider removing one \u2014 they agree 85% of the time"
+        "indicator_b": "momentum",
+        "agreement": 95.1,
+        "compared": 411,
+        "suggestion": "Consider removing one \u2014 they agree 95% of the time"
       }
     ],
     "independent_indicators": [
       "bollinger",
-      "liquidity",
+      "funding_rate",
       "news",
-      "orderbook",
-      "price_div",
       "rsi",
       "sentiment",
-      "temporal_arb"
+      "spot_depth",
+      "tvl_momentum",
+      "vwap"
     ]
   },
   "decay": {
     "is_decaying": true,
-    "trend_direction": "decaying",
-    "current_rolling_wr": 70.0,
-    "peak_rolling_wr": 80.0,
-    "decay_amount": 10.0,
+    "trend_direction": "improving",
+    "current_rolling_wr": 45.0,
+    "peak_rolling_wr": 95.0,
+    "decay_amount": 50.0,
     "rolling_window": 20,
-    "alert_message": "Strategy decay detected: rolling WR dropped 10pp from peak 80% to 70%",
+    "alert_message": "Strategy decay detected: rolling WR dropped 50pp from peak 95% to 45%",
     "rolling_history": [
       {
-        "trade_index": 88,
-        "timestamp": 1771157826.578298,
-        "rolling_wr": 45.0,
-        "window_wins": 9,
-        "window_losses": 11
+        "trade_index": 386,
+        "timestamp": 1771390824.030824,
+        "rolling_wr": 30.0,
+        "window_wins": 6,
+        "window_losses": 14
       },
       {
-        "trade_index": 89,
-        "timestamp": 1771157845.40462,
-        "rolling_wr": 40.0,
-        "window_wins": 8,
-        "window_losses": 12
+        "trade_index": 387,
+        "timestamp": 1771391005.572049,
+        "rolling_wr": 30.0,
+        "window_wins": 6,
+        "window_losses": 14
       },
       {
-        "trade_index": 90,
-        "timestamp": 1771158642.814993,
+        "trade_index": 388,
+        "timestamp": 1771391137.4619951,
         "rolling_wr": 35.0,
         "window_wins": 7,
         "window_losses": 13
       },
       {
-        "trade_index": 91,
-        "timestamp": 1771158975.144254,
-        "rolling_wr": 30.0,
-        "window_wins": 6,
-        "window_losses": 14
-      },
-      {
-        "trade_index": 92,
-        "timestamp": 1771159638.979511,
-        "rolling_wr": 30.0,
-        "window_wins": 6,
-        "window_losses": 14
-      },
-      {
-        "trade_index": 93,
-        "timestamp": 1771159810.6198988,
-        "rolling_wr": 30.0,
-        "window_wins": 6,
-        "window_losses": 14
-      },
-      {
-        "trade_index": 94,
-        "timestamp": 1771160236.793994,
-        "rolling_wr": 30.0,
-        "window_wins": 6,
-        "window_losses": 14
-      },
-      {
-        "trade_index": 95,
-        "timestamp": 1771160403.8035882,
-        "rolling_wr": 25.0,
-        "window_wins": 5,
-        "window_losses": 15
-      },
-      {
-        "trade_index": 96,
-        "timestamp": 1771160403.8050828,
-        "rolling_wr": 20.0,
-        "window_wins": 4,
-        "window_losses": 16
-      },
-      {
-        "trade_index": 97,
-        "timestamp": 1771160419.716021,
-        "rolling_wr": 15.0,
-        "window_wins": 3,
-        "window_losses": 17
-      },
-      {
-        "trade_index": 98,
-        "timestamp": 1771161329.12156,
-        "rolling_wr": 20.0,
-        "window_wins": 4,
-        "window_losses": 16
-      },
-      {
-        "trade_index": 99,
-        "timestamp": 1771161804.835934,
-        "rolling_wr": 25.0,
-        "window_wins": 5,
-        "window_losses": 15
-      },
-      {
-        "trade_index": 100,
-        "timestamp": 1771162202.7441332,
-        "rolling_wr": 30.0,
-        "window_wins": 6,
-        "window_losses": 14
-      },
-      {
-        "trade_index": 101,
-        "timestamp": 1771162202.748566,
+        "trade_index": 389,
+        "timestamp": 1771411912.233259,
         "rolling_wr": 35.0,
         "window_wins": 7,
         "window_losses": 13
       },
       {
-        "trade_index": 102,
-        "timestamp": 1771162220.628587,
+        "trade_index": 390,
+        "timestamp": 1771412001.22766,
+        "rolling_wr": 35.0,
+        "window_wins": 7,
+        "window_losses": 13
+      },
+      {
+        "trade_index": 391,
+        "timestamp": 1771412094.135623,
+        "rolling_wr": 35.0,
+        "window_wins": 7,
+        "window_losses": 13
+      },
+      {
+        "trade_index": 392,
+        "timestamp": 1771414897.853251,
         "rolling_wr": 40.0,
         "window_wins": 8,
         "window_losses": 12
       },
       {
-        "trade_index": 103,
-        "timestamp": 1771162528.6353211,
+        "trade_index": 393,
+        "timestamp": 1771414901.538489,
         "rolling_wr": 45.0,
         "window_wins": 9,
         "window_losses": 11
       },
       {
-        "trade_index": 104,
-        "timestamp": 1771162544.9554439,
+        "trade_index": 394,
+        "timestamp": 1771415402.752672,
         "rolling_wr": 50.0,
         "window_wins": 10,
         "window_losses": 10
       },
       {
-        "trade_index": 105,
-        "timestamp": 1771163113.631837,
+        "trade_index": 395,
+        "timestamp": 1771416087.0908768,
+        "rolling_wr": 50.0,
+        "window_wins": 10,
+        "window_losses": 10
+      },
+      {
+        "trade_index": 396,
+        "timestamp": 1771416488.630305,
+        "rolling_wr": 50.0,
+        "window_wins": 10,
+        "window_losses": 10
+      },
+      {
+        "trade_index": 397,
+        "timestamp": 1771417156.934653,
+        "rolling_wr": 50.0,
+        "window_wins": 10,
+        "window_losses": 10
+      },
+      {
+        "trade_index": 398,
+        "timestamp": 1771417160.557003,
         "rolling_wr": 55.0,
         "window_wins": 11,
         "window_losses": 9
       },
       {
-        "trade_index": 106,
-        "timestamp": 1771163129.889386,
+        "trade_index": 399,
+        "timestamp": 1771417844.691521,
         "rolling_wr": 60.0,
         "window_wins": 12,
         "window_losses": 8
       },
       {
-        "trade_index": 107,
-        "timestamp": 1771163148.241324,
+        "trade_index": 400,
+        "timestamp": 1771418070.181302,
         "rolling_wr": 60.0,
         "window_wins": 12,
         "window_losses": 8
       },
       {
-        "trade_index": 108,
-        "timestamp": 1771163446.667029,
-        "rolling_wr": 65.0,
-        "window_wins": 13,
-        "window_losses": 7
+        "trade_index": 401,
+        "timestamp": 1771418861.451704,
+        "rolling_wr": 55.0,
+        "window_wins": 11,
+        "window_losses": 9
       },
       {
-        "trade_index": 109,
-        "timestamp": 1771163464.536318,
-        "rolling_wr": 70.0,
-        "window_wins": 14,
-        "window_losses": 6
+        "trade_index": 402,
+        "timestamp": 1771419704.207925,
+        "rolling_wr": 60.0,
+        "window_wins": 12,
+        "window_losses": 8
       },
       {
-        "trade_index": 110,
-        "timestamp": 1771163480.5526881,
-        "rolling_wr": 70.0,
-        "window_wins": 14,
-        "window_losses": 6
+        "trade_index": 403,
+        "timestamp": 1771419862.7086248,
+        "rolling_wr": 55.0,
+        "window_wins": 11,
+        "window_losses": 9
       },
       {
-        "trade_index": 111,
-        "timestamp": 1771164160.6860669,
-        "rolling_wr": 70.0,
-        "window_wins": 14,
-        "window_losses": 6
+        "trade_index": 404,
+        "timestamp": 1771419866.235788,
+        "rolling_wr": 50.0,
+        "window_wins": 10,
+        "window_losses": 10
       },
       {
-        "trade_index": 112,
-        "timestamp": 1771164735.411951,
-        "rolling_wr": 70.0,
-        "window_wins": 14,
-        "window_losses": 6
+        "trade_index": 405,
+        "timestamp": 1771419968.885507,
+        "rolling_wr": 45.0,
+        "window_wins": 9,
+        "window_losses": 11
       },
       {
-        "trade_index": 113,
-        "timestamp": 1771164994.5102131,
-        "rolling_wr": 65.0,
-        "window_wins": 13,
-        "window_losses": 7
+        "trade_index": 406,
+        "timestamp": 1771422490.391211,
+        "rolling_wr": 45.0,
+        "window_wins": 9,
+        "window_losses": 11
       },
       {
-        "trade_index": 114,
-        "timestamp": 1771165980.0495749,
-        "rolling_wr": 65.0,
-        "window_wins": 13,
-        "window_losses": 7
+        "trade_index": 407,
+        "timestamp": 1771422494.124009,
+        "rolling_wr": 40.0,
+        "window_wins": 8,
+        "window_losses": 12
       },
       {
-        "trade_index": 115,
-        "timestamp": 1771166456.372737,
-        "rolling_wr": 70.0,
-        "window_wins": 14,
-        "window_losses": 6
+        "trade_index": 408,
+        "timestamp": 1771429691.1105568,
+        "rolling_wr": 35.0,
+        "window_wins": 7,
+        "window_losses": 13
       },
       {
-        "trade_index": 116,
+        "trade_index": 409,
+        "timestamp": 1771433475.094073,
+        "rolling_wr": 40.0,
+        "window_wins": 8,
+        "window_losses": 12
+      },
+      {
+        "trade_index": 410,
+        "timestamp": 1771440099.4953039,
+        "rolling_wr": 45.0,
+        "window_wins": 9,
+        "window_losses": 11
+      },
+      {
+        "trade_index": 411,
+        "timestamp": 1771441566.1777642,
+        "rolling_wr": 50.0,
+        "window_wins": 10,
+        "window_losses": 10
+      },
+      {
+        "trade_index": 412,
+        "timestamp": 1771441597.660896,
+        "rolling_wr": 50.0,
+        "window_wins": 10,
+        "window_losses": 10
+      },
+      {
+        "trade_index": 413,
+        "timestamp": 1771441621.50134,
+        "rolling_wr": 50.0,
+        "window_wins": 10,
+        "window_losses": 10
+      },
+      {
+        "trade_index": 414,
         "timestamp": 1771624561.1539478,
-        "rolling_wr": 70.0,
-        "window_wins": 14,
-        "window_losses": 6
+        "rolling_wr": 45.0,
+        "window_wins": 9,
+        "window_losses": 11
       },
       {
-        "trade_index": 117,
+        "trade_index": 415,
         "timestamp": 1771624865.0782442,
-        "rolling_wr": 70.0,
-        "window_wins": 14,
-        "window_losses": 6
+        "rolling_wr": 45.0,
+        "window_wins": 9,
+        "window_losses": 11
       }
     ]
   },
-  "updated": "2026-02-20 07:42 PM ET"
+  "updated": "2026-02-24 08:00 AM ET"
 }
