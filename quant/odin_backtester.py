@@ -440,7 +440,11 @@ def run_odin_backtest(
 
         # Extract windows
         mtf_window = df.iloc[i - window_size:i]  # 4H (200 bars = ~33 days)
-        htf_window = _resample_to_daily(mtf_window)  # ~33 daily bars
+
+        # HTF: use all history up to current point for daily resampling
+        # Need 50+ daily bars → 300+ 4H bars
+        htf_start = max(0, i - 400)  # Up to ~66 daily bars
+        htf_window = _resample_to_daily(df.iloc[htf_start:i])
 
         # For LTF, we use the most recent 50 bars of 4H as a proxy
         # (no 15m data in this dataset)
