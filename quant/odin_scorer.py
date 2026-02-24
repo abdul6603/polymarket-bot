@@ -127,9 +127,9 @@ def score_odin_backtest(
     loss_pnls = [t.pnl_usd for t in losses]
 
     score.total_pnl = round(sum(pnls), 2)
-    score.avg_pnl_per_trade = round(np.mean(pnls), 2) if pnls else 0
-    score.avg_win = round(np.mean(win_pnls), 2) if win_pnls else 0
-    score.avg_loss = round(np.mean(loss_pnls), 2) if loss_pnls else 0
+    score.avg_pnl_per_trade = round(float(np.mean(pnls)), 2) if pnls else 0
+    score.avg_win = round(float(np.mean(win_pnls)), 2) if win_pnls else 0
+    score.avg_loss = round(float(np.mean(loss_pnls)), 2) if loss_pnls else 0
     score.largest_win = round(max(pnls), 2) if pnls else 0
     score.largest_loss = round(min(pnls), 2) if pnls else 0
 
@@ -140,9 +140,9 @@ def score_odin_backtest(
 
     # R-multiples
     r_mults = [t.r_multiple for t in all_trades]
-    score.avg_r = round(np.mean(r_mults), 2) if r_mults else 0
-    score.avg_win_r = round(np.mean([t.r_multiple for t in wins]), 2) if wins else 0
-    score.avg_loss_r = round(np.mean([t.r_multiple for t in losses]), 2) if losses else 0
+    score.avg_r = round(float(np.mean(r_mults)), 2) if r_mults else 0
+    score.avg_win_r = round(float(np.mean([t.r_multiple for t in wins])), 2) if wins else 0
+    score.avg_loss_r = round(float(np.mean([t.r_multiple for t in losses])), 2) if losses else 0
     score.r_distribution = [round(r, 2) for r in r_mults]
 
     # Consecutive wins/losses
@@ -183,7 +183,7 @@ def score_odin_backtest(
             days_span = (score.last_trade_time - score.first_trade_time) / 86400
             trades_per_day = len(all_trades) / max(1, days_span)
             annualize_factor = math.sqrt(252 * trades_per_day) if trades_per_day > 0 else math.sqrt(252)
-            score.sharpe_ratio = round(mean_r / std_r * annualize_factor, 2)
+            score.sharpe_ratio = round(float(mean_r / std_r * annualize_factor), 2)
 
     # Calmar ratio (annual return / max DD)
     if max_dd_pct > 0:
@@ -195,9 +195,9 @@ def score_odin_backtest(
     hold_times = [t.hold_hours for t in all_trades if t.hold_hours > 0]
     win_holds = [t.hold_hours for t in wins if t.hold_hours > 0]
     loss_holds = [t.hold_hours for t in losses if t.hold_hours > 0]
-    score.avg_hold_hours = round(np.mean(hold_times), 1) if hold_times else 0
-    score.avg_win_hold_hours = round(np.mean(win_holds), 1) if win_holds else 0
-    score.avg_loss_hold_hours = round(np.mean(loss_holds), 1) if loss_holds else 0
+    score.avg_hold_hours = round(float(np.mean(hold_times)), 1) if hold_times else 0
+    score.avg_win_hold_hours = round(float(np.mean(win_holds)), 1) if win_holds else 0
+    score.avg_loss_hold_hours = round(float(np.mean(loss_holds)), 1) if loss_holds else 0
 
     # Exit reason breakdown
     for t in all_trades:
@@ -239,7 +239,7 @@ def _breakdown(trades: list, key_fn) -> dict:
             "losses": len(group) - wins,
             "win_rate": round(wins / len(group) * 100, 1) if group else 0,
             "pnl": round(pnl, 2),
-            "avg_r": round(np.mean([t.r_multiple for t in group]), 2) if group else 0,
+            "avg_r": round(float(np.mean([t.r_multiple for t in group])), 2) if group else 0,
         }
     return result
 
