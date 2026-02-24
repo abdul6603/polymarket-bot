@@ -218,7 +218,7 @@ MIN_EDGE_BY_TF = {
     "5m": 0.08,     # 8% — raised from 6% (below 8% = 20% WR)
     "15m": 0.08,    # 8% — data-backed breakeven floor
     "1h": 0.10,     # Re-enabled: was 0.99 (disabled). Weight learner fixed bad indicators. 10% edge = conservative re-entry.
-    "4h": 0.08,     # Re-enabled: was 0.99 (disabled). Brain notes show 74% WR on 4h recent trades. 8% edge floor.
+    "4h": 0.99,     # Disabled: 35.1% WR on 94 trades = anti-signal. Set to 0.99 to block all 4h trades.
     "weekly": 0.03, # 3% — lowest edge floor for longest timeframe
 }
 
