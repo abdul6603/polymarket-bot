@@ -84,6 +84,17 @@ class HawkConfig:
     inplay_min_edge: float = float(_env("HAWK_INPLAY_MIN_EDGE", "0.10"))
     inplay_max_bet: float = float(_env("HAWK_INPLAY_MAX_BET", "8"))
 
+    # V9: Live In-Play Position Management
+    live_enabled: bool = _env("HAWK_LIVE_ENABLED", "true").lower() in ("true", "1", "yes")
+    live_poll_seconds: int = int(_env("HAWK_LIVE_POLL_SECONDS", "30"))
+    live_stop_loss_pct: float = float(_env("HAWK_LIVE_STOP_LOSS_PCT", "0.40"))
+    live_max_scale: float = float(_env("HAWK_LIVE_MAX_SCALE", "1.5"))
+    live_min_hold_minutes: int = int(_env("HAWK_LIVE_MIN_HOLD_MINUTES", "5"))
+    live_max_actions_per_game: int = int(_env("HAWK_LIVE_MAX_ACTIONS_PER_GAME", "3"))
+    live_score_exit_threshold: int = int(_env("HAWK_LIVE_SCORE_EXIT_THRESHOLD", "15"))
+    live_scale_up_margin: int = int(_env("HAWK_LIVE_SCALE_UP_MARGIN", "10"))
+    live_odds_check_minutes: int = int(_env("HAWK_LIVE_ODDS_CHECK_MINUTES", "5"))
+
     # V9: Kalshi trading integration
     kalshi_api_key: str = _env("KALSHI_API_KEY", "")
     kalshi_private_key_path: str = _env("KALSHI_PRIVATE_KEY_PATH", "")

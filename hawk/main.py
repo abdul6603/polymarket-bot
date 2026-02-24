@@ -280,6 +280,7 @@ class HawkBot:
         self.risk = HawkRiskManager(self.cfg, self.tracker)
         self.executor: HawkExecutor | None = None
         self.kalshi_executor: KalshiExecutor | None = None
+        self.live_manager = None  # V9: Live in-play position manager
         self.cycle = 0
 
         # Agent Brain — learning memory
@@ -338,6 +339,15 @@ class HawkBot:
                 self.kalshi_executor = None
         else:
             self.kalshi_executor = None
+
+        # V9: Live in-play position manager
+        try:
+            from hawk.live_manager import LivePositionManager
+            self.live_manager = LivePositionManager(self.cfg, self.executor, self.tracker)
+            log.info("[LIVE] Live position manager initialized (enabled=%s)", self.cfg.live_enabled)
+        except Exception:
+            log.debug("[LIVE] Could not initialize live manager (non-fatal)")
+            self.live_manager = None
 
     def _check_atlas_alignment(self, opp) -> tuple[float, str]:
         """V6: Atlas pre-bet gate. Returns (size_multiplier, reason).
@@ -1337,7 +1347,30 @@ class HawkBot:
             _save_next_cycle(next_min)
             log.info("Hawk V8 cycle %d complete. Next cycle in %d minutes (%s mode)...",
                      self.cycle, next_min, "fast" if next_min <= self.cfg.cycle_minutes_fast else "normal")
-            await asyncio.sleep(next_min * 60)
+
+            # V9: Live in-play monitoring during sleep intervals
+            if (self.live_manager and self.cfg.live_enabled
+                    and any(p.get("category") == "sports" and not p.get("resolved")
+                            for p in self.tracker.open_positions)):
+                poll_secs = self.cfg.live_poll_seconds
+                total_secs = next_min * 60
+                polls = total_secs // poll_secs
+                for i in range(polls):
+                    await asyncio.sleep(poll_secs)
+                    try:
+                        actions = self.live_manager.monitor_positions()
+                        if actions:
+                            for act in actions:
+                                log.info("[LIVE] %s: %s | %s", act.action, act.reason,
+                                         act.condition_id[:12])
+                    except Exception:
+                        log.debug("[LIVE] Monitor cycle failed (non-fatal)")
+                # Sleep remaining seconds
+                remainder = total_secs - (polls * poll_secs)
+                if remainder > 0:
+                    await asyncio.sleep(remainder)
+            else:
+                await asyncio.sleep(next_min * 60)
 
 
 def _get_yes_price(market) -> float:

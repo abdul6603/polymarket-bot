@@ -9,7 +9,7 @@ from pathlib import Path
 
 from py_clob_client.client import ClobClient
 from py_clob_client.clob_types import OrderArgs, OrderType
-from py_clob_client.order_builder.constants import BUY
+from py_clob_client.order_builder.constants import BUY, SELL
 
 from hawk.config import HawkConfig
 from hawk.edge import TradeOpportunity
@@ -98,6 +98,164 @@ class HawkExecutor:
             return order_id
         except Exception:
             log.exception("Failed to place order")
+            return None
+
+    def sell_position(self, pos: dict, reason: str = "") -> str | None:
+        """Sell tokens to exit a position. Returns sell order ID or None.
+
+        V9: Live in-play exit. Creates a SELL order at current market bid
+        to close the position quickly. Uses aggressive pricing for fast fill.
+        """
+        token_id = pos.get("token_id", "")
+        entry_price = pos.get("entry_price", 0.5)
+        size_usd = pos.get("size_usd", 0)
+        if not token_id or size_usd <= 0:
+            log.warning("[LIVE] Cannot sell — missing token_id or size")
+            return None
+
+        # Calculate shares held (size_usd / entry_price)
+        shares = size_usd / entry_price if entry_price > 0 else 0
+        if shares <= 0:
+            return None
+
+        log.info("[LIVE] Selling %s | %.1f shares | reason: %s | %s",
+                 pos.get("condition_id", "")[:12], shares, reason,
+                 pos.get("question", "")[:60])
+
+        if self.cfg.dry_run:
+            sell_id = f"hawk-sell-dry-{pos.get('condition_id', '')[:8]}-{int(time.time())}"
+            log.info("[LIVE DRY] Simulated sell: %s", sell_id)
+            return sell_id
+
+        if not self.client:
+            log.error("[LIVE] No CLOB client for sell")
+            return None
+
+        try:
+            # Get current market price for aggressive sell
+            mid = self.client.get_midpoint(token_id)
+            mid_price = float(mid) if mid else entry_price
+            # Sell at mid - 0.02 for fast fill (willing to take slightly less)
+            sell_price = max(0.01, round(mid_price - 0.02, 2))
+
+            order_args = OrderArgs(
+                price=sell_price,
+                size=round(shares, 2),
+                side=SELL,
+                token_id=token_id,
+            )
+            signed_order = self.client.create_order(order_args)
+            resp = self.client.post_order(signed_order, OrderType.GTC)
+            sell_id = resp.get("orderID") or resp.get("id", "unknown")
+            log.info("[LIVE] Sell order placed: %s @ $%.2f (%d shares) | reason: %s",
+                     sell_id, sell_price, shares, reason)
+
+            # Notify TG
+            pnl_est = (sell_price - entry_price) * shares
+            _notify_tg(
+                f"\U0001f6a8 <b>Hawk LIVE EXIT</b>\n"
+                f"{pos.get('question', '')[:100]}\n"
+                f"<b>SOLD</b> {shares:.1f} shares @ ${sell_price:.2f} "
+                f"(entry ${entry_price:.2f})\n"
+                f"Est P&L: ${pnl_est:+.2f} | Reason: {reason}"
+            )
+
+            # Publish to event bus
+            try:
+                from shared.events import publish as bus_publish
+                bus_publish(
+                    agent="hawk",
+                    event_type="live_exit",
+                    data={
+                        "order_id": pos.get("order_id", ""),
+                        "sell_order_id": sell_id,
+                        "condition_id": pos.get("condition_id", ""),
+                        "question": pos.get("question", "")[:200],
+                        "sell_price": sell_price,
+                        "entry_price": entry_price,
+                        "shares": round(shares, 2),
+                        "pnl_estimate": round(pnl_est, 2),
+                        "reason": reason,
+                    },
+                    summary=f"Hawk LIVE EXIT: {pos.get('question', '')[:80]} | ${pnl_est:+.2f} | {reason}",
+                )
+            except Exception:
+                pass
+
+            return sell_id
+        except Exception:
+            log.exception("[LIVE] Failed to sell position %s", pos.get("order_id", ""))
+            return None
+
+    def add_to_position(self, pos: dict, extra_usd: float, reason: str = "") -> str | None:
+        """Buy more tokens to scale up an existing position.
+
+        V9: Live in-play scale-up. Buys additional tokens at current market price.
+        """
+        token_id = pos.get("token_id", "")
+        if not token_id or extra_usd <= 0:
+            return None
+
+        log.info("[LIVE] Adding $%.2f to %s | reason: %s | %s",
+                 extra_usd, pos.get("condition_id", "")[:12], reason,
+                 pos.get("question", "")[:60])
+
+        if self.cfg.dry_run:
+            add_id = f"hawk-add-dry-{pos.get('condition_id', '')[:8]}-{int(time.time())}"
+            log.info("[LIVE DRY] Simulated add: %s ($%.2f)", add_id, extra_usd)
+            return add_id
+
+        if not self.client:
+            log.error("[LIVE] No CLOB client for add")
+            return None
+
+        try:
+            mid = self.client.get_midpoint(token_id)
+            buy_price = float(mid) if mid else pos.get("entry_price", 0.5)
+            size = extra_usd / buy_price if buy_price > 0 else 0
+            if size <= 0:
+                return None
+
+            order_args = OrderArgs(
+                price=round(buy_price, 2),
+                size=round(size, 2),
+                side=BUY,
+                token_id=token_id,
+            )
+            signed_order = self.client.create_order(order_args)
+            resp = self.client.post_order(signed_order, OrderType.GTC)
+            add_id = resp.get("orderID") or resp.get("id", "unknown")
+            log.info("[LIVE] Add order placed: %s | $%.2f @ $%.2f | reason: %s",
+                     add_id, extra_usd, buy_price, reason)
+
+            _notify_tg(
+                f"\U0001f4c8 <b>Hawk LIVE SCALE-UP</b>\n"
+                f"{pos.get('question', '')[:100]}\n"
+                f"<b>ADDED</b> ${extra_usd:.2f} @ ${buy_price:.2f}\n"
+                f"Reason: {reason}"
+            )
+
+            try:
+                from shared.events import publish as bus_publish
+                bus_publish(
+                    agent="hawk",
+                    event_type="live_scale_up",
+                    data={
+                        "order_id": pos.get("order_id", ""),
+                        "add_order_id": add_id,
+                        "condition_id": pos.get("condition_id", ""),
+                        "extra_usd": extra_usd,
+                        "buy_price": buy_price,
+                        "reason": reason,
+                    },
+                    summary=f"Hawk SCALE-UP: +${extra_usd:.2f} on {pos.get('question', '')[:80]}",
+                )
+            except Exception:
+                pass
+
+            return add_id
+        except Exception:
+            log.exception("[LIVE] Failed to add to position %s", pos.get("order_id", ""))
             return None
 
     def check_fills(self) -> None:
