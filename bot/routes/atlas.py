@@ -1417,3 +1417,290 @@ def api_atlas_suggest_agent():
         })
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500, 500
+
+
+# ═══════════════════════════════════════════════════════
+# V8: Priority Queue + Dashboard Summary
+# ═══════════════════════════════════════════════════════
+
+import time as _time
+
+_AGENTS_ALL = ["garves", "hawk", "odin", "soren", "lisa", "shelby", "thor", "robotox", "viper", "quant", "oracle"]
+
+
+def _read_json(path: Path) -> dict | list | None:
+    """Read a JSON file, return None on failure."""
+    try:
+        if path.exists():
+            return json.loads(path.read_text())
+    except Exception:
+        pass
+    return None
+
+
+@atlas_bp.route("/api/atlas/priority-queue")
+def api_atlas_priority_queue():
+    """Smart priority queue — ranked actions based on real system state.
+
+    Reads KB health, agent feeds, research log, costs to generate
+    a ranked list of what Atlas should do next.
+    """
+    actions: list[dict] = []
+    now = _time.time()
+
+    # ── 1. KB Health Actions ──
+    kb_file = ATLAS_ROOT / "data" / "knowledge_base.json"
+    kb_data = _read_json(kb_file)
+    if kb_data:
+        observations = kb_data.get("observations", [])
+        learnings = kb_data.get("learnings", [])
+        old_obs = [o for o in observations
+                   if (now - o.get("timestamp", now)) > 7 * 86400]
+        low_conf = [l for l in learnings if l.get("confidence", 1.0) < 0.4]
+
+        if len(old_obs) > 10:
+            actions.append({
+                "id": "compress_kb",
+                "title": f"Compress KB ({len(old_obs)} stale observations)",
+                "description": f"{len(old_obs)} observations older than 7 days. Compress into learnings to keep brain sharp.",
+                "priority": 70 + min(len(old_obs), 30),
+                "category": "kb",
+                "action_endpoint": "/api/atlas/summarize",
+                "action_method": "POST",
+                "impact": f"Reduce {len(observations)} obs to ~{len(observations) - len(old_obs) + len(old_obs) // 3}",
+            })
+
+        if low_conf:
+            actions.append({
+                "id": "prune_low_conf",
+                "title": f"Review {len(low_conf)} low-confidence learnings",
+                "description": "Learnings with <40% confidence may be wrong. Consolidate or remove.",
+                "priority": 50 + len(low_conf) * 2,
+                "category": "kb",
+                "action_endpoint": "/api/atlas/kb-consolidate",
+                "action_method": "POST",
+                "impact": f"Clean {len(low_conf)} weak entries",
+            })
+
+        if len(observations) > 0 and len(learnings) < len(observations) // 2:
+            actions.append({
+                "id": "learn_from_obs",
+                "title": "Extract learnings from observations",
+                "description": f"Only {len(learnings)} learnings from {len(observations)} observations. Atlas should synthesize more.",
+                "priority": 60,
+                "category": "kb",
+                "action_endpoint": "/api/atlas/summarize",
+                "action_method": "POST",
+                "impact": f"Grow learnings from {len(learnings)} to ~{len(learnings) + len(observations) // 4}",
+            })
+
+    # ── 2. Agent Feed Actions ──
+    bg_file = ATLAS_ROOT / "data" / "background_status.json"
+    bg_data = _read_json(bg_file)
+    if bg_data:
+        feed_log = bg_data.get("agent_feed_log", {})
+        for agent in _AGENTS_ALL:
+            last_feed = feed_log.get(agent, {})
+            last_ts = last_feed.get("last_fed", 0) if isinstance(last_feed, dict) else 0
+            hours_stale = (now - last_ts) / 3600 if last_ts > 0 else 999
+
+            if hours_stale > 6:
+                prio = min(95, 55 + int(hours_stale))
+                actions.append({
+                    "id": f"feed_{agent}",
+                    "title": f"Feed {agent.title()} (stale {int(hours_stale)}h)",
+                    "description": f"Last intel feed was {int(hours_stale)}h ago. {agent.title()} may be operating on outdated data.",
+                    "priority": prio,
+                    "category": "feeding",
+                    "action_endpoint": f"/api/atlas/{agent}",
+                    "action_method": "GET",
+                    "impact": f"Fresh intel for {agent.title()}",
+                })
+
+    # ── 3. Research Actions ──
+    rl_file = ATLAS_ROOT / "data" / "research_log.json"
+    rl_data = _read_json(rl_file)
+    if rl_data and isinstance(rl_data, list):
+        recent = [r for r in rl_data if (now - r.get("timestamp", 0)) < 86400]
+        if len(recent) < 5:
+            actions.append({
+                "id": "boost_research",
+                "title": "Research output low today",
+                "description": f"Only {len(recent)} research entries in 24h. Atlas should run a focused cycle.",
+                "priority": 65,
+                "category": "research",
+                "action_endpoint": "/api/atlas/background/start",
+                "action_method": "POST",
+                "impact": "Trigger fresh research cycle",
+            })
+
+        # Quality check
+        scored = [r for r in recent if r.get("quality_score")]
+        if scored:
+            avg_q = sum(r["quality_score"] for r in scored) / len(scored)
+            if avg_q < 6.0:
+                actions.append({
+                    "id": "improve_quality",
+                    "title": f"Research quality dropping ({avg_q:.1f}/10)",
+                    "description": "Recent research quality below 6/10. Consider changing topics or sources.",
+                    "priority": 60,
+                    "category": "research",
+                    "action_endpoint": "/api/atlas/deep-research",
+                    "action_method": "POST",
+                    "impact": "Higher quality intel",
+                })
+
+    # ── 4. Cost Budget Actions ──
+    cost_file = ATLAS_ROOT / "data" / "cost_tracker.json"
+    cost_data = _read_json(cost_file)
+    if cost_data:
+        daily = cost_data.get("daily", {})
+        et = ZoneInfo("America/New_York")
+        today = datetime.now(et).strftime("%Y-%m-%d")
+        today_data = daily.get(today, {})
+        tavily_today = today_data.get("tavily_calls", 0)
+        if tavily_today > 300:
+            actions.append({
+                "id": "budget_warning",
+                "title": f"High API usage today ({tavily_today} Tavily calls)",
+                "description": "Burning through Tavily credits fast. Consider pausing non-critical research.",
+                "priority": 75,
+                "category": "system",
+                "action_endpoint": "/api/atlas/background/stop",
+                "action_method": "POST",
+                "impact": "Save API budget",
+            })
+
+    # ── 5. Improvement Scan ──
+    imp_file = ATLAS_ROOT / "data" / "improvements.json"
+    imp_data = _read_json(imp_file)
+    total_suggestions = 0
+    if imp_data:
+        for key, val in imp_data.items():
+            if isinstance(val, list):
+                total_suggestions += len(val)
+    if total_suggestions == 0:
+        actions.append({
+            "id": "run_improvement_scan",
+            "title": "Generate improvement suggestions",
+            "description": "No current improvement suggestions. Atlas should scan all agents for optimization opportunities.",
+            "priority": 45,
+            "category": "system",
+            "action_endpoint": "/api/atlas/improvements",
+            "action_method": "POST",
+            "impact": "Find new optimizations",
+        })
+
+    # Sort by priority (highest first)
+    actions.sort(key=lambda a: a["priority"], reverse=True)
+
+    return jsonify({
+        "actions": actions[:8],
+        "total_actions": len(actions),
+        "generated_at": now,
+    })
+
+
+@atlas_bp.route("/api/atlas/dashboard-summary")
+def api_atlas_dashboard_summary():
+    """Unified summary for Atlas dashboard — KB health, feeds, research ROI."""
+    now = _time.time()
+
+    # ── KB Health ──
+    kb_file = ATLAS_ROOT / "data" / "knowledge_base.json"
+    kb_data = _read_json(kb_file)
+    obs_count = 0
+    learn_count = 0
+    avg_confidence = 0.0
+    stale_count = 0
+    kb_score = 0
+
+    if kb_data:
+        observations = kb_data.get("observations", [])
+        learnings = kb_data.get("learnings", [])
+        obs_count = len(observations)
+        learn_count = len(learnings)
+        if learnings:
+            confs = [l.get("confidence", 0.5) for l in learnings]
+            avg_confidence = sum(confs) / len(confs)
+        stale_count = sum(1 for o in observations
+                         if (now - o.get("timestamp", now)) > 7 * 86400)
+        # Health score: 0-100
+        freshness = max(0, 100 - stale_count * 2)
+        confidence_score = int(avg_confidence * 100)
+        ratio_score = min(100, int(learn_count / max(obs_count, 1) * 200))
+        kb_score = (freshness + confidence_score + ratio_score) // 3
+
+    # ── Agent Feed Status ──
+    bg_file = ATLAS_ROOT / "data" / "background_status.json"
+    bg_data = _read_json(bg_file)
+    feeds: list[dict] = []
+    fed_count = 0
+    starving_count = 0
+
+    if bg_data:
+        feed_log = bg_data.get("agent_feed_log", {})
+        for agent in _AGENTS_ALL:
+            last_feed = feed_log.get(agent, {})
+            last_ts = last_feed.get("last_fed", 0) if isinstance(last_feed, dict) else 0
+            hours_ago = (now - last_ts) / 3600 if last_ts > 0 else 999
+            status = "fresh" if hours_ago < 3 else "stale" if hours_ago < 12 else "starving"
+            if status == "fresh":
+                fed_count += 1
+            elif status == "starving":
+                starving_count += 1
+            feeds.append({
+                "agent": agent,
+                "hours_ago": round(hours_ago, 1) if hours_ago < 500 else None,
+                "status": status,
+            })
+        feeds.sort(key=lambda f: -(f["hours_ago"] or 999))
+
+    # ── Research ROI ──
+    rl_file = ATLAS_ROOT / "data" / "research_log.json"
+    rl_data = _read_json(rl_file) or []
+    cost_file = ATLAS_ROOT / "data" / "cost_tracker.json"
+    cost_data = _read_json(cost_file) or {}
+
+    total_researches = len(rl_data) if isinstance(rl_data, list) else 0
+    recent_24h = [r for r in (rl_data if isinstance(rl_data, list) else [])
+                  if (now - r.get("timestamp", 0)) < 86400]
+    scored = [r for r in recent_24h if r.get("quality_score")]
+    avg_quality = round(sum(r["quality_score"] for r in scored) / len(scored), 1) if scored else 0
+    high_quality = sum(1 for r in scored if r["quality_score"] >= 7)
+    hit_rate = round(high_quality / len(scored) * 100, 1) if scored else 0
+
+    # Cost
+    daily = cost_data.get("daily", {})
+    et = ZoneInfo("America/New_York")
+    today_key = datetime.now(et).strftime("%Y-%m-%d")
+    today_data = daily.get(today_key, {})
+    month_prefix = today_key[:7]
+    month_tavily = sum(d.get("tavily_calls", 0) for k, d in daily.items() if k.startswith(month_prefix))
+    month_openai = sum(d.get("openai_calls", 0) for k, d in daily.items() if k.startswith(month_prefix))
+
+    return jsonify({
+        "kb": {
+            "score": kb_score,
+            "observations": obs_count,
+            "learnings": learn_count,
+            "avg_confidence": round(avg_confidence, 2),
+            "stale": stale_count,
+        },
+        "feeds": {
+            "agents": feeds,
+            "fed": fed_count,
+            "starving": starving_count,
+            "total": len(_AGENTS_ALL),
+        },
+        "research": {
+            "total": total_researches,
+            "today": len(recent_24h),
+            "avg_quality": avg_quality,
+            "hit_rate": hit_rate,
+            "today_tavily": today_data.get("tavily_calls", 0),
+            "month_tavily": month_tavily,
+            "month_openai": month_openai,
+            "tavily_budget": 12000,
+        },
+    })

@@ -85,128 +85,72 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════════ -->
-  <!-- COMMAND CENTER — Categorized                                   -->
+  <!-- PRIORITY QUEUE — Atlas auto-ranks what needs doing               -->
   <!-- ═══════════════════════════════════════════════════════════════ -->
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="atlas">Command Center</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <h2 class="section-title" data-accent="atlas" style="margin-bottom:0;">Priority Queue</h2>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-primary" id="atlas-exec-top3-btn" onclick="atlasExecuteTop3()" style="font-size:0.72rem;font-weight:700;padding:4px 14px;">Execute Top 3</button>
+        <button class="btn" onclick="loadAtlasPriorityQueue()" style="font-size:0.72rem;padding:4px 10px;">Refresh</button>
+      </div>
+    </div>
 
-    <!-- Category: Trading Intel -->
-    <div style="margin-bottom:16px;">
-      <div class="atlas-cat-label" style="color:var(--agent-garves);">Trading Intelligence</div>
-      <div class="atlas-cmd-grid">
-        <div class="atlas-cmd-card" data-color="cyan" onclick="atlasAnalyze(&apos;garves&apos;)">
-          <span class="cmd-icon">&#x1F4CA;</span>
-          <div class="cmd-text"><span class="cmd-title">Garves Analysis</span><span class="cmd-sub">Signals, edge, regime</span></div>
+    <!-- 3 Summary Cards: KB Health | Agent Feeds | Research ROI -->
+    <div class="grid-3" style="margin-bottom:14px;">
+      <div class="stat-card" data-accent="atlas" style="position:relative;">
+        <div class="stat-value" id="atlas-kb-score" style="font-size:1.4rem;color:var(--agent-atlas);">--</div>
+        <div class="stat-label">KB Health</div>
+        <div style="font-size:0.62rem;font-family:var(--font-mono);color:var(--text-muted);margin-top:3px;">
+          <span id="atlas-kb-obs">--</span> obs &middot; <span id="atlas-kb-learn">--</span> learnings &middot; <span id="atlas-kb-stale" style="color:var(--warning);">--</span> stale
         </div>
-        <div class="atlas-cmd-card" data-color="gold" onclick="atlasAnalyze(&apos;hawk&apos;)">
-          <span class="cmd-icon">&#x1F985;</span>
-          <div class="cmd-text"><span class="cmd-title">Hawk Analysis</span><span class="cmd-sub">Market scanning, edge</span></div>
+      </div>
+      <div class="stat-card" data-accent="atlas" style="position:relative;">
+        <div style="display:flex;align-items:baseline;gap:4px;">
+          <div class="stat-value" id="atlas-feed-count" style="font-size:1.4rem;color:var(--success);">--</div>
+          <span style="font-size:0.8rem;color:var(--text-muted);">/ <span id="atlas-feed-total">11</span></span>
         </div>
-        <div class="atlas-cmd-card" data-color="cyan" onclick="atlasAnalyze(&apos;quant&apos;)">
-          <span class="cmd-icon">&#x1F9EA;</span>
-          <div class="cmd-text"><span class="cmd-title">Quant Analysis</span><span class="cmd-sub">Backtest, walk-forward</span></div>
+        <div class="stat-label">Agents Fed</div>
+        <div style="font-size:0.62rem;font-family:var(--font-mono);margin-top:3px;">
+          <span id="atlas-feed-starving" style="color:var(--error);">--</span> starving
         </div>
-        <div class="atlas-cmd-card" data-color="odin" onclick="atlasAnalyze(&apos;odin&apos;)">
-          <span class="cmd-icon">&#x1F441;</span>
-          <div class="cmd-text"><span class="cmd-title">Odin Analysis</span><span class="cmd-sub">Futures, regime, skills</span></div>
+      </div>
+      <div class="stat-card" data-accent="atlas" style="position:relative;">
+        <div class="stat-value" id="atlas-research-quality" style="font-size:1.4rem;color:var(--agent-atlas);">--</div>
+        <div class="stat-label">Research Quality</div>
+        <div style="font-size:0.62rem;font-family:var(--font-mono);color:var(--text-muted);margin-top:3px;">
+          <span id="atlas-research-today">--</span> today &middot; <span id="atlas-research-hit">--</span> hit rate &middot; <span id="atlas-research-tavily">--</span> API calls
         </div>
       </div>
     </div>
 
-    <!-- Category: Content Intel -->
-    <div style="margin-bottom:16px;">
-      <div class="atlas-cat-label" style="color:var(--agent-soren);">Content Intelligence</div>
-      <div class="atlas-cmd-grid">
-        <div class="atlas-cmd-card" data-color="purple" onclick="atlasAnalyze(&apos;soren&apos;)">
-          <span class="cmd-icon">&#x1F3A8;</span>
-          <div class="cmd-text"><span class="cmd-title">Soren Analysis</span><span class="cmd-sub">Content quality, trends</span></div>
-        </div>
-        <div class="atlas-cmd-card" data-color="orange" onclick="atlasAnalyze(&apos;lisa&apos;)">
-          <span class="cmd-icon">&#x1F4F1;</span>
-          <div class="cmd-text"><span class="cmd-title">Lisa Analysis</span><span class="cmd-sub">Posting, engagement</span></div>
-        </div>
-        <div class="atlas-cmd-card" data-color="purple" onclick="atlasAnalyze(&apos;viper&apos;)">
-          <span class="cmd-icon">&#x1F40D;</span>
-          <div class="cmd-text"><span class="cmd-title">Viper Analysis</span><span class="cmd-sub">Revenue, opportunities</span></div>
-        </div>
-      </div>
+    <!-- Priority Queue List -->
+    <div id="atlas-priority-queue" style="display:flex;flex-direction:column;gap:6px;">
+      <div class="glass-card" style="text-align:center;padding:20px;"><span class="text-muted" style="font-size:0.76rem;">Loading priority queue...</span></div>
     </div>
 
-    <!-- Category: System Intel -->
-    <div style="margin-bottom:16px;">
-      <div class="atlas-cat-label" style="color:var(--agent-atlas);">System Intelligence</div>
-      <div class="atlas-cmd-grid">
-        <div class="atlas-cmd-card atlas-cmd-card--wide" data-color="green" onclick="atlasFullReport()">
-          <span class="cmd-icon">&#x1F9E0;</span>
-          <div class="cmd-text"><span class="cmd-title">Full Intelligence Report</span><span class="cmd-sub">Cross-agent analysis & action items</span></div>
-        </div>
-        <div class="atlas-cmd-card" data-color="warning" onclick="atlasSuggestImprovements()">
-          <span class="cmd-icon">&#x26A1;</span>
-          <div class="cmd-text"><span class="cmd-title">Improvement Scan</span><span class="cmd-sub">Find optimizations</span></div>
-        </div>
-        <div class="atlas-cmd-card" data-color="green" onclick="atlasLiveResearch()">
-          <span class="cmd-icon">&#x1F50D;</span>
-          <div class="cmd-text"><span class="cmd-title">Live Research</span><span class="cmd-sub">Real-time intel gathering</span></div>
-        </div>
-        <div class="atlas-cmd-card" data-color="gold" onclick="atlasAnalyze(&apos;shelby&apos;)">
-          <span class="cmd-icon">&#x1F451;</span>
-          <div class="cmd-text"><span class="cmd-title">Shelby Analysis</span><span class="cmd-sub">Scheduler, tasks</span></div>
-        </div>
-        <div class="atlas-cmd-card" data-color="thor" onclick="atlasAnalyze(&apos;thor&apos;)">
-          <span class="cmd-icon">&#x1F528;</span>
-          <div class="cmd-text"><span class="cmd-title">Thor Analysis</span><span class="cmd-sub">Task queue, code quality</span></div>
-        </div>
-        <div class="atlas-cmd-card" data-color="sentinel" onclick="atlasAnalyze(&apos;robotox&apos;)">
-          <span class="cmd-icon">&#x1F6E1;</span>
-          <div class="cmd-text"><span class="cmd-title">Robotox Analysis</span><span class="cmd-sub">Monitoring, fixes</span></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Category: Tools -->
-    <div style="margin-bottom:16px;">
-      <div class="atlas-cat-label" style="color:var(--text-muted);">Tools</div>
-      <div class="atlas-cmd-grid">
-        <div class="atlas-cmd-card" data-color="green" onclick="atlasInfraEval()">
-          <span class="cmd-icon">&#x1F3D7;</span>
-          <div class="cmd-text"><span class="cmd-title">System / Infra</span><span class="cmd-sub">Infrastructure health</span></div>
-        </div>
-        <div class="atlas-cmd-card" data-color="green" onclick="atlasThoughts()">
-          <span class="cmd-icon">&#x1F4AD;</span>
-          <div class="cmd-text"><span class="cmd-title">Atlas Thoughts</span><span class="cmd-sub">Learnings & thinking</span></div>
-        </div>
-        <div class="atlas-cmd-card" data-color="warning" onclick="atlasHubEval()">
-          <span class="cmd-icon">&#x1F50E;</span>
-          <div class="cmd-text"><span class="cmd-title">Hub Evaluation</span><span class="cmd-sub">System vs best practices</span></div>
-        </div>
-        <div class="atlas-cmd-card" data-color="cyan" onclick="atlasEventBus()">
-          <span class="cmd-icon">&#x1F4E1;</span>
-          <div class="cmd-text"><span class="cmd-title">Event Bus</span><span class="cmd-sub">Cross-agent event feed</span></div>
-        </div>
-        <div class="atlas-cmd-card" data-color="muted" onclick="atlasCompressKB()">
-          <span class="cmd-icon">&#x1F5DC;</span>
-          <div class="cmd-text"><span class="cmd-title">Compress KB</span><span class="cmd-sub">Summarize knowledge base</span></div>
-        </div>
-        <div class="atlas-cmd-card" data-color="muted" onclick="atlasAcknowledgeImprovements()">
-          <span class="cmd-icon">&#x2716;</span>
-          <div class="cmd-text"><span class="cmd-title">Dismiss Suggestions</span><span class="cmd-sub">Clear improvement queue</span></div>
-        </div>
-      </div>
-    </div>
+    <!-- Inline execution results -->
+    <div id="atlas-exec-results" style="display:none;margin-top:10px;"></div>
   </div>
 
-  <div id="atlas-live-research" style="display:none;margin-bottom:12px;padding:12px 16px;background:var(--surface-secondary);border-radius:8px;max-height:400px;overflow-y:auto;"></div>
+  <!-- Quick Agent Analysis (compact row) -->
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="atlas" style="margin-bottom:8px;">Agent Analysis</h2>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="btn" onclick="atlasAnalyze('garves')" style="font-size:0.68rem;">Garves</button>
+      <button class="btn" onclick="atlasAnalyze('hawk')" style="font-size:0.68rem;">Hawk</button>
+      <button class="btn" onclick="atlasAnalyze('odin')" style="font-size:0.68rem;">Odin</button>
+      <button class="btn" onclick="atlasAnalyze('soren')" style="font-size:0.68rem;">Soren</button>
+      <button class="btn" onclick="atlasAnalyze('lisa')" style="font-size:0.68rem;">Lisa</button>
+      <button class="btn" onclick="atlasAnalyze('shelby')" style="font-size:0.68rem;">Shelby</button>
+      <button class="btn" onclick="atlasAnalyze('viper')" style="font-size:0.68rem;">Viper</button>
+      <button class="btn" onclick="atlasFullReport()" style="font-size:0.68rem;font-weight:700;border-color:var(--agent-atlas);">Full Report</button>
+    </div>
+  </div>
 
   <!-- Report Area -->
   <div class="section-spacer">
-    <h2 class="section-title" data-accent="atlas">Report / Analysis</h2>
-    <div class="atlas-report" id="atlas-report"><div class="text-muted" style="text-align:center;padding:var(--space-8);font-family:var(--font-mono);font-size:0.78rem;">Select a command above to generate a report.</div></div>
-  </div>
-
-  <!-- Suggested Actions -->
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="atlas">Suggested Actions</h2>
-    <div id="atlas-smart-actions" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"><span class="text-muted" style="font-size:0.76rem;">Loading...</span></div>
+    <div class="atlas-report" id="atlas-report" style="display:none;"></div>
   </div>
 
 </div>

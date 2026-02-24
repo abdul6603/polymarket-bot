@@ -1943,6 +1943,7 @@ function atlasSection(title, color, bodyHtml) {
 
 async function atlasFullReport() {
   var el = document.getElementById('atlas-report');
+  el.style.display = 'block';
   el.innerHTML = '<div class="atlas-report-loading"><div class="spinner"></div>Generating full intelligence report...</div>';
   try {
     var resp = await fetch('/api/atlas/report', {method:'POST'});
@@ -1990,6 +1991,7 @@ async function atlasFullReport() {
 
 async function atlasAnalyze(agent) {
   var el = document.getElementById('atlas-report');
+  el.style.display = 'block';
   var label = atlasAgentLabel(agent);
   var color = atlasAgentColor(agent);
   el.innerHTML = '<div class="atlas-report-loading"><div class="spinner"></div>Analyzing ' + esc(label) + '...</div>';
@@ -2143,6 +2145,135 @@ async function atlasCompressKB() {
     if (!body) body = '<div style="color:var(--text-secondary);">' + esc(JSON.stringify(data)) + '</div>';
     el.innerHTML = atlasSection('Knowledge Base Compressed', 'var(--agent-atlas)', body);
   } catch (e) { el.innerHTML = '<div class="atlas-report-section"><div class="section-body" style="color:var(--error);">Error: ' + esc(e.message) + '</div></div>'; }
+}
+
+// ═══ V8: Atlas Priority Queue + Dashboard Summary ═══
+
+async function loadAtlasPriorityQueue() {
+  var el = document.getElementById('atlas-priority-queue');
+  if (!el) return;
+  try {
+    var resp = await fetch('/api/atlas/priority-queue');
+    var d = await resp.json();
+    var actions = d.actions || [];
+    if (actions.length === 0) {
+      el.innerHTML = '<div class="glass-card" style="text-align:center;padding:20px;"><span style="color:var(--success);font-weight:600;">All clear — nothing urgent</span></div>';
+      return;
+    }
+    var html = '';
+    var catColors = {kb: '#22aa44', feeding: '#00bfff', research: '#a855f7', system: '#f59e0b'};
+    var catIcons = {kb: '&#x1F9E0;', feeding: '&#x1F4E1;', research: '&#x1F50D;', system: '&#x2699;'};
+    for (var i = 0; i < actions.length; i++) {
+      var a = actions[i];
+      var catColor = catColors[a.category] || '#888';
+      var catIcon = catIcons[a.category] || '&#x25CF;';
+      var prioBg = a.priority >= 80 ? 'rgba(255,68,68,0.15)' : a.priority >= 60 ? 'rgba(255,159,11,0.12)' : 'rgba(255,255,255,0.04)';
+      var prioBorder = a.priority >= 80 ? 'rgba(255,68,68,0.3)' : a.priority >= 60 ? 'rgba(255,159,11,0.25)' : 'rgba(255,255,255,0.08)';
+      html += '<div class="glass-card" style="padding:10px 14px;border-left:3px solid ' + catColor + ';background:' + prioBg + ';border:1px solid ' + prioBorder + ';">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">';
+      html += '<div style="flex:1;min-width:0;">';
+      html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">';
+      html += '<span style="font-size:0.82rem;">' + catIcon + '</span>';
+      html += '<span style="font-weight:600;font-size:0.78rem;color:var(--text-primary);">' + esc(a.title) + '</span>';
+      html += '<span style="font-size:0.6rem;padding:1px 6px;border-radius:3px;background:' + catColor + '22;color:' + catColor + ';font-weight:600;text-transform:uppercase;">' + esc(a.category) + '</span>';
+      html += '</div>';
+      html += '<div style="font-size:0.68rem;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(a.description) + '</div>';
+      html += '</div>';
+      html += '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">';
+      html += '<span style="font-size:0.64rem;color:var(--text-muted);">' + esc(a.impact || '') + '</span>';
+      html += '<button class="btn" onclick="atlasExecuteAction(' + i + ')" style="font-size:0.66rem;padding:3px 10px;white-space:nowrap;" id="atlas-pq-btn-' + i + '">Execute</button>';
+      html += '</div></div>';
+      html += '<div id="atlas-pq-result-' + i + '" style="display:none;margin-top:8px;padding:8px 10px;border-radius:4px;background:rgba(34,170,68,0.08);font-size:0.72rem;font-family:var(--font-mono);"></div>';
+      html += '</div>';
+    }
+    el.innerHTML = html;
+    window._atlasPQActions = actions;
+  } catch(e) {
+    el.innerHTML = '<div class="glass-card" style="text-align:center;padding:16px;"><span class="text-muted">Failed to load priority queue</span></div>';
+  }
+}
+
+async function atlasExecuteAction(idx) {
+  var actions = window._atlasPQActions || [];
+  if (!actions[idx]) return;
+  var a = actions[idx];
+  var btn = document.getElementById('atlas-pq-btn-' + idx);
+  var result = document.getElementById('atlas-pq-result-' + idx);
+  if (btn) { btn.disabled = true; btn.textContent = 'Running...'; btn.style.opacity = '0.5'; }
+  try {
+    var opts = a.action_method === 'POST' ? {method: 'POST'} : {};
+    var resp = await fetch(a.action_endpoint, opts);
+    var d = await resp.json();
+    if (result) {
+      result.style.display = 'block';
+      if (d.error) {
+        result.style.background = 'rgba(255,68,68,0.1)';
+        result.textContent = 'Error: ' + (d.error || 'Unknown');
+      } else {
+        result.style.background = 'rgba(34,170,68,0.08)';
+        var summary = d.message || d.summary || JSON.stringify(d).substring(0, 150);
+        result.innerHTML = '<span style="color:var(--success);font-weight:600;">Done</span> — ' + esc(String(summary));
+      }
+    }
+    if (btn) { btn.textContent = 'Done'; btn.style.color = 'var(--success)'; }
+  } catch(e) {
+    if (result) { result.style.display = 'block'; result.style.background = 'rgba(255,68,68,0.1)'; result.textContent = 'Failed: ' + e.message; }
+    if (btn) { btn.textContent = 'Failed'; btn.disabled = false; btn.style.opacity = '1'; }
+  }
+}
+
+async function atlasExecuteTop3() {
+  var btn = document.getElementById('atlas-exec-top3-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Executing...'; btn.style.opacity = '0.6'; }
+  var max = Math.min(3, (window._atlasPQActions || []).length);
+  for (var i = 0; i < max; i++) {
+    await atlasExecuteAction(i);
+  }
+  if (btn) { btn.textContent = 'Done'; btn.style.opacity = '1'; }
+  setTimeout(function() {
+    if (btn) { btn.textContent = 'Execute Top 3'; btn.disabled = false; }
+    loadAtlasPriorityQueue();
+    loadAtlasDashboardSummary();
+  }, 3000);
+}
+
+async function loadAtlasDashboardSummary() {
+  try {
+    var resp = await fetch('/api/atlas/dashboard-summary');
+    var d = await resp.json();
+
+    // KB Health
+    var kb = d.kb || {};
+    var scoreEl = document.getElementById('atlas-kb-score');
+    if (scoreEl) {
+      scoreEl.textContent = (kb.score || 0) + '/100';
+      scoreEl.style.color = kb.score >= 70 ? 'var(--success)' : kb.score >= 40 ? '#FFD700' : 'var(--error)';
+    }
+    setText('atlas-kb-obs', kb.observations || 0);
+    setText('atlas-kb-learn', kb.learnings || 0);
+    var staleEl = document.getElementById('atlas-kb-stale');
+    if (staleEl) { staleEl.textContent = (kb.stale || 0) + ' stale'; staleEl.style.color = kb.stale > 10 ? 'var(--error)' : 'var(--warning)'; }
+
+    // Agent Feeds
+    var feeds = d.feeds || {};
+    setText('atlas-feed-count', feeds.fed || 0);
+    setText('atlas-feed-total', feeds.total || 11);
+    var starvEl = document.getElementById('atlas-feed-starving');
+    if (starvEl) { starvEl.textContent = (feeds.starving || 0) + ' starving'; starvEl.style.color = feeds.starving > 0 ? 'var(--error)' : 'var(--success)'; }
+    var feedCountEl = document.getElementById('atlas-feed-count');
+    if (feedCountEl) feedCountEl.style.color = feeds.fed >= 8 ? 'var(--success)' : feeds.fed >= 4 ? '#FFD700' : 'var(--error)';
+
+    // Research ROI
+    var r = d.research || {};
+    var qEl = document.getElementById('atlas-research-quality');
+    if (qEl) {
+      qEl.textContent = (r.avg_quality || 0) + '/10';
+      qEl.style.color = r.avg_quality >= 7 ? 'var(--success)' : r.avg_quality >= 5 ? '#FFD700' : 'var(--error)';
+    }
+    setText('atlas-research-today', (r.today || 0) + ' entries');
+    setText('atlas-research-hit', (r.hit_rate || 0) + '%');
+    setText('atlas-research-tavily', (r.month_tavily || 0) + '/' + (r.tavily_budget || 12000));
+  } catch(e) {}
 }
 
 async function atlasInfraEval() {
@@ -4537,10 +4668,10 @@ async function refresh() {
       renderAtlas(atlasData);
       loadAtlasBgStatus();
       loadAgentLearning('atlas');
-      loadAgentSmartActions('atlas');
       loadAgentActivity('atlas');
       loadAtlasKBHealth();
-      loadAtlasContentPipeline();
+      loadAtlasPriorityQueue();
+      loadAtlasDashboardSummary();
     } else if (currentTab === 'lisa') {
       var resp = await fetch('/api/lisa');
       renderLisa(await resp.json());
