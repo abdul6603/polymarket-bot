@@ -7336,7 +7336,7 @@ async function loadSystemTab() {
     var sdisk = document.getElementById('sys-disk');
     if (sdisk) { sdisk.textContent = diskPct + '%'; sdisk.style.color = sysColor(diskPct); }
     var sup = document.getElementById('sys-uptime');
-    if (sup) sup.textContent = d.uptime || '--';
+    if (sup) sup.textContent = (d.uptime && typeof d.uptime === 'object') ? (d.uptime.text || '--') : (d.uptime || '--');
     var sproc = document.getElementById('sys-processes');
     if (sproc) sproc.textContent = (d.processes || []).length;
     var sports = document.getElementById('sys-ports');
@@ -7405,33 +7405,6 @@ async function loadSystemTab() {
         }
         plEl.innerHTML = plHtml;
       }
-    }
-
-    // Resource bars
-    var rbEl = document.getElementById('sys-resource-bars');
-    if (rbEl) {
-      var cpu = d.cpu || {};
-      var mem = d.memory || {};
-      var disk = d.disk || {};
-      var rbHtml = '';
-      var bars = [
-        {label: 'CPU', pct: cpu.percent || 0, detail: 'Load: ' + (cpu.load_1m || 0) + ' / ' + (cpu.cores || 1) + ' cores'},
-        {label: 'Memory', pct: mem.percent || 0, detail: (mem.used_gb || 0) + ' / ' + (mem.total_gb || 0) + ' GB'},
-        {label: 'Disk', pct: disk.percent || 0, detail: (disk.used_gb || 0) + ' / ' + (disk.total_gb || 0) + ' GB'}
-      ];
-      for (var b = 0; b < bars.length; b++) {
-        var bar = bars[b];
-        var barColor = bar.pct > 85 ? 'var(--error)' : bar.pct > 60 ? 'var(--warning)' : 'var(--success)';
-        rbHtml += '<div style="margin-bottom:10px;">';
-        rbHtml += '<div style="display:flex;justify-content:space-between;font-size:0.72rem;margin-bottom:3px;">';
-        rbHtml += '<span>' + bar.label + '</span>';
-        rbHtml += '<span class="text-muted">' + bar.detail + '</span>';
-        rbHtml += '</div>';
-        rbHtml += '<div style="width:100%;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;">';
-        rbHtml += '<div style="width:' + Math.min(bar.pct, 100) + '%;height:100%;background:' + barColor + ';border-radius:4px;transition:width 0.5s ease;"></div>';
-        rbHtml += '</div></div>';
-      }
-      rbEl.innerHTML = rbHtml;
     }
 
     // Recent errors
