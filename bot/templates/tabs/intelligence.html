@@ -1,596 +1,288 @@
 <div id="tab-intelligence" class="tab-content">
-  <!-- Agent Badge Row -->
-  <div class="d-flex align-center gap-3 mb-4">
-    <div class="agent-card-initial" style="background:#9B59B622;color:#9B59B6;font-size:1.1rem;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:10px;">AI</div>
-    <div>
-      <div style="font-weight:600;color:var(--text-primary);">Intelligence — Local AI & Agent Memory</div>
-      <div class="text-muted" style="font-size:0.72rem;">LLM Server: <span id="llm-server-status" style="color:var(--text-muted);">--</span> | Total Calls (24h): <span id="llm-total-calls">--</span> | Savings: <span id="llm-savings" style="color:var(--success);">--</span></div>
+
+  <!-- S1: Header + Quick Stats -->
+  <div class="intel-header">
+    <div class="intel-title-group">
+      <span class="intel-title">INTELLIGENCE CENTER</span>
+      <span class="intel-subtitle">Local AI &amp; Agent Memory</span>
     </div>
-    <div style="margin-left:auto;display:flex;gap:8px;">
-      <button class="btn btn-primary" onclick="refreshIntelligence()" style="font-size:0.72rem;padding:6px 14px;">Refresh</button>
+    <div class="intel-header-right">
+      <span class="intel-status-pill" id="intel-server-pill"><span class="intel-status-dot" id="intel-server-dot"></span> <span id="intel-server-badge">--</span></span>
+      <button class="btn" onclick="refreshIntelligence()" style="padding:4px 10px;font-size:0.7rem;">&#x27F3;</button>
+    </div>
+  </div>
+  <div class="grid-5 intel-stats">
+    <div class="intel-stat-card" style="border-top-color:#9B59B6;">
+      <div class="intel-stat-label">LLM Server</div>
+      <div class="intel-stat-value" id="intel-server-state" style="color:#9B59B6;">--</div>
+      <div class="intel-stat-sub" id="intel-model-name">Model: --</div>
+    </div>
+    <div class="intel-stat-card" style="border-top-color:#3498DB;">
+      <div class="intel-stat-label">Calls 24h</div>
+      <div class="intel-stat-value" id="intel-calls-24h" style="color:#3498DB;">--</div>
+      <div class="intel-stat-sub"><span id="intel-local-calls">--</span> local / <span id="intel-cloud-calls">--</span> cloud</div>
+    </div>
+    <div class="intel-stat-card" style="border-top-color:var(--error);">
+      <div class="intel-stat-label">Cost 24h</div>
+      <div class="intel-stat-value" id="intel-cost-24h" style="color:var(--error);">--</div>
+      <div class="intel-stat-sub">Cloud API spend</div>
+    </div>
+    <div class="intel-stat-card" style="border-top-color:var(--success);">
+      <div class="intel-stat-label">Savings 24h</div>
+      <div class="intel-stat-value" id="intel-savings-24h" style="color:var(--success);">--</div>
+      <div class="intel-stat-sub">Local vs cloud</div>
+    </div>
+    <div class="intel-stat-card" style="border-top-color:var(--warning);">
+      <div class="intel-stat-label">Active Brains</div>
+      <div class="intel-stat-value" id="intel-active-brains" style="color:var(--warning);">--</div>
+      <div class="intel-stat-sub">Agents w/ memory</div>
     </div>
   </div>
 
-  <!-- System Stats Bar -->
-  <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
-    <!-- LLM Server -->
-    <div style="flex:1;min-width:130px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
-      <div style="width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--text-muted);" id="llm-server-dot"></div>
+  <!-- S2: Agent Intelligence Grid (HERO) -->
+  <div class="glass-card intel-hero">
+    <div class="intel-hero-header">
       <div>
-        <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">LLM Server</div>
-        <div style="font-size:0.88rem;font-weight:800;font-family:var(--font-mono);" id="llm-server-badge">--</div>
-        <div style="font-size:0.54rem;color:var(--text-muted);" id="llm-model-name">Model: --</div>
+        <div class="intel-section-title">Agent Intelligence</div>
+        <div class="intel-section-sub">EXP + Knowledge + Accuracy + Maturity + Recency</div>
+      </div>
+      <div class="intel-avg-badge">
+        <span id="intel-avg-score" class="intel-avg-num">--</span>
+        <span class="intel-avg-label">AVG<br>SCORE</span>
       </div>
     </div>
-    <!-- Local Calls -->
-    <div style="flex:1;min-width:100px;background:rgba(155,89,182,0.06);border:1px solid rgba(155,89,182,0.15);border-radius:8px;padding:10px 14px;">
-      <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Local 24h</div>
-      <div style="font-size:1rem;font-weight:800;color:#9B59B6;font-family:var(--font-mono);" id="llm-local-calls">--</div>
-      <div style="font-size:0.54rem;color:var(--text-muted);">Free / M3 Pro</div>
-    </div>
-    <!-- Cloud Calls -->
-    <div style="flex:1;min-width:100px;background:rgba(230,126,34,0.06);border:1px solid rgba(230,126,34,0.15);border-radius:8px;padding:10px 14px;">
-      <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Cloud 24h</div>
-      <div style="font-size:1rem;font-weight:800;color:var(--warning);font-family:var(--font-mono);" id="llm-cloud-calls">--</div>
-      <div style="font-size:0.54rem;color:var(--text-muted);">OpenAI + Claude</div>
-    </div>
-    <!-- Cost -->
-    <div style="flex:1;min-width:100px;background:rgba(231,76,60,0.06);border:1px solid rgba(231,76,60,0.15);border-radius:8px;padding:10px 14px;">
-      <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Cost 24h</div>
-      <div style="font-size:1rem;font-weight:800;color:var(--error);font-family:var(--font-mono);" id="llm-cost-24h">--</div>
-      <div style="font-size:0.54rem;color:var(--text-muted);">Cloud API spend</div>
-    </div>
-    <!-- Savings -->
-    <div style="flex:1;min-width:100px;background:rgba(34,170,68,0.06);border:1px solid rgba(34,170,68,0.15);border-radius:8px;padding:10px 14px;">
-      <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Savings 24h</div>
-      <div style="font-size:1rem;font-weight:800;color:var(--success);font-family:var(--font-mono);" id="llm-savings-24h">--</div>
-      <div style="font-size:0.54rem;color:var(--text-muted);">Local vs cloud</div>
-    </div>
-    <!-- Decisions -->
-    <div style="flex:1;min-width:90px;background:rgba(155,89,182,0.04);border:1px solid rgba(155,89,182,0.1);border-radius:8px;padding:10px 14px;">
-      <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Decisions</div>
-      <div style="font-size:1rem;font-weight:800;color:#9B59B6;font-family:var(--font-mono);" id="llm-total-decisions">--</div>
-      <div style="font-size:0.54rem;color:var(--text-muted);">All agents</div>
-    </div>
-    <!-- Patterns -->
-    <div style="flex:1;min-width:90px;background:rgba(34,170,68,0.04);border:1px solid rgba(34,170,68,0.1);border-radius:8px;padding:10px 14px;">
-      <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Patterns</div>
-      <div style="font-size:1rem;font-weight:800;color:var(--success);font-family:var(--font-mono);" id="llm-total-patterns">--</div>
-      <div style="font-size:0.54rem;color:var(--text-muted);">Learned rules</div>
-    </div>
-    <!-- Knowledge -->
-    <div style="flex:1;min-width:90px;background:rgba(52,152,219,0.04);border:1px solid rgba(52,152,219,0.1);border-radius:8px;padding:10px 14px;">
-      <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Knowledge</div>
-      <div style="font-size:1rem;font-weight:800;color:#3498DB;font-family:var(--font-mono);" id="llm-total-knowledge">--</div>
-      <div style="font-size:0.54rem;color:var(--text-muted);">Facts stored</div>
-    </div>
-    <!-- Agents w/ Memory -->
-    <div style="flex:1;min-width:90px;background:rgba(243,156,18,0.04);border:1px solid rgba(243,156,18,0.1);border-radius:8px;padding:10px 14px;">
-      <div style="font-size:0.58rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Memory</div>
-      <div style="font-size:1rem;font-weight:800;color:var(--warning);font-family:var(--font-mono);" id="llm-agents-with-memory">--</div>
-      <div style="font-size:0.54rem;color:var(--text-muted);">Agents active</div>
+    <div class="intel-grid" id="intel-agent-grid">
+      <span class="text-muted" style="font-size:0.72rem;">Waiting for refresh...</span>
     </div>
   </div>
 
-  <!-- Smart Actions -->
-  <div class="stat-card" style="padding:14px;margin-bottom:12px;">
-    <div style="font-weight:600;color:var(--text-primary);margin-bottom:10px;font-size:0.78rem;">Smart Actions</div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-      <button class="btn" onclick="intelAction('health-check')" style="font-size:0.7rem;padding:5px 12px;background:#9B59B622;border:1px solid #9B59B6;color:#9B59B6;">Test LLM Connectivity</button>
-      <button class="btn" onclick="intelAction('prune-patterns')" style="font-size:0.7rem;padding:5px 12px;background:#E67E2222;border:1px solid #E67E22;color:#E67E22;">Prune Weak Patterns</button>
-      <button class="btn" onclick="intelAction('export-learnings')" style="font-size:0.7rem;padding:5px 12px;background:#22AA4422;border:1px solid #22AA44;color:#22AA44;">Export All Learnings</button>
-      <button class="btn" onclick="intelAction('compact-costs')" style="font-size:0.7rem;padding:5px 12px;background:#3498DB22;border:1px solid #3498DB;color:#3498DB;">Compact Cost Log</button>
-      <button class="btn" onclick="intelResetPrompt()" style="font-size:0.7rem;padding:5px 12px;background:#E74C3C22;border:1px solid #E74C3C;color:#E74C3C;">Reset Agent Memory</button>
+  <!-- S3: AI Recommendations -->
+  <div class="glass-card" style="margin-top:var(--space-4);">
+    <div class="intel-reco-header">
+      <div class="intel-section-title">AI Recommendations</div>
+      <span class="intel-reco-meta-badge" id="intel-reco-count">-- sources</span>
     </div>
-    <div id="intel-action-result" style="font-size:0.68rem;color:var(--text-muted);min-height:20px;"></div>
+    <div id="intel-smart-actions" style="margin-bottom:12px;">
+      <span class="text-muted" style="font-size:0.72rem;">Loading recommendations...</span>
+    </div>
+    <div class="intel-maintenance">
+      <span class="intel-maint-label">MAINTENANCE</span>
+      <button class="intel-maint-btn" style="color:#9B59B6;border-color:#9B59B633;" onclick="intelAction('health-check')">Test LLM</button>
+      <button class="intel-maint-btn" style="color:#E67E22;border-color:#E67E2233;" onclick="intelAction('prune-patterns')">Prune Patterns</button>
+      <button class="intel-maint-btn" style="color:#22AA44;border-color:#22AA4433;" onclick="intelAction('export-learnings')">Export</button>
+      <button class="intel-maint-btn" style="color:#3498DB;border-color:#3498DB33;" onclick="intelAction('compact-costs')">Compact</button>
+      <button class="intel-maint-btn" style="color:#E74C3C;border-color:#E74C3C33;" onclick="intelResetPrompt()">Reset</button>
+    </div>
+    <div id="intel-action-result" style="font-size:0.68rem;color:var(--text-muted);min-height:18px;margin-top:6px;"></div>
   </div>
 
-  <!-- Intelligence Overview: Meters + Per-Agent Memory -->
-  <div style="display:grid;grid-template-columns:3fr 2fr;gap:12px;margin-bottom:12px;">
-    <!-- Left: Intelligence Meters -->
-    <div class="stat-card" style="padding:16px 18px;border-top:2px solid #9B59B6;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <div>
-          <div style="font-weight:700;color:var(--text-primary);font-size:0.84rem;letter-spacing:0.02em;">Agent Intelligence</div>
-          <div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;">EXP + Knowledge + Accuracy + Maturity + Recency</div>
-        </div>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <span id="intel-avg-score" style="font-size:1.1rem;font-weight:800;color:#9B59B6;">--</span>
-          <span style="font-size:0.58rem;color:var(--text-muted);line-height:1.2;">AVG<br>SCORE</span>
-        </div>
-      </div>
-      <div id="intel-meters-container">
-        <span class="text-muted" style="font-size:0.72rem;">Waiting for refresh...</span>
-      </div>
+  <!-- S4: Neural Activity -->
+  <div class="intel-neural-row">
+    <div class="glass-card">
+      <div class="intel-section-title" style="margin-bottom:8px;">Brain Activity <span class="intel-section-sub">(Last 5 min)</span></div>
+      <div id="intel-brain-activity"><span class="text-muted" style="font-size:0.72rem;">Loading...</span></div>
     </div>
-    <!-- Right: Per-Agent Memory -->
-    <div class="stat-card" style="padding:16px 18px;border-top:2px solid #3498DB;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <div>
-          <div style="font-weight:700;color:var(--text-primary);font-size:0.84rem;letter-spacing:0.02em;">Per-Agent Memory</div>
-          <div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;">Decisions, patterns, win rates, DB sizes</div>
-        </div>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <span id="intel-total-patterns-badge" style="font-size:1.1rem;font-weight:800;color:#3498DB;">--</span>
-          <span style="font-size:0.58rem;color:var(--text-muted);line-height:1.2;">TOTAL<br>PATTERNS</span>
-        </div>
-      </div>
-      <table style="width:100%;border-collapse:collapse;font-size:0.7rem;">
-        <thead>
-          <tr style="border-bottom:2px solid var(--border-color);">
-            <th style="text-align:left;padding:6px;color:var(--text-muted);font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Agent</th>
-            <th style="text-align:center;padding:6px;color:var(--text-muted);font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Dec</th>
-            <th style="text-align:center;padding:6px;color:var(--text-muted);font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Pat</th>
-            <th style="text-align:center;padding:6px;color:var(--text-muted);font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">WR</th>
-            <th style="text-align:center;padding:6px;color:var(--text-muted);font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">DB</th>
-          </tr>
-        </thead>
-        <tbody id="llm-memory-table"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:12px;">Loading...</td></tr></tbody>
-      </table>
+    <div class="glass-card">
+      <div class="intel-section-title" style="margin-bottom:8px;">Pattern Learnings</div>
+      <div id="intel-pattern-feed" style="max-height:260px;overflow-y:auto;"><span class="text-muted" style="font-size:0.72rem;">Loading...</span></div>
     </div>
   </div>
 
+  <!-- S5: Analytics (collapsible, default closed) -->
+  <div class="collapse-section" style="margin-top:var(--space-4);">
+    <div class="collapse-trigger">
+      <h2 class="section-title" style="margin-bottom:0;font-size:0.84rem;">Analytics</h2>
+    </div>
+    <div class="collapse-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div class="stat-card" style="padding:14px;">
+          <div style="font-weight:600;color:var(--text);margin-bottom:8px;font-size:0.78rem;">Local vs Cloud Calls</div>
+          <div class="chart-container chart-sm"><canvas id="chart-cost-pie"></canvas></div>
+          <div style="text-align:center;margin-top:6px;font-size:0.68rem;">
+            <span style="color:var(--success);">Total Saved: </span><span id="intel-total-saved" style="color:var(--success);font-weight:600;">$0.00</span>
+          </div>
+        </div>
+        <div class="stat-card" style="padding:14px;">
+          <div style="font-weight:600;color:var(--text);margin-bottom:8px;font-size:0.78rem;">LLM Call Volume (by hour)</div>
+          <div class="chart-container chart-md"><canvas id="chart-call-timeline"></canvas></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div class="stat-card" style="padding:14px;">
+          <div style="font-weight:600;color:var(--text);margin-bottom:8px;font-size:0.78rem;">Agent Memory Growth</div>
+          <div class="chart-container chart-md"><canvas id="chart-memory-bars"></canvas></div>
+        </div>
+        <div class="stat-card" style="padding:14px;">
+          <div style="font-weight:600;color:var(--text);margin-bottom:8px;font-size:0.78rem;">Cost by Agent (24h)</div>
+          <div id="intel-cost-by-agent" style="font-size:0.7rem;"><span class="text-muted">Loading...</span></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:3fr 2fr;gap:12px;margin-bottom:12px;">
+        <div class="stat-card" style="padding:14px;">
+          <div style="font-weight:600;color:var(--text);margin-bottom:8px;font-size:0.78rem;">Per-Agent Memory</div>
+          <table style="width:100%;border-collapse:collapse;font-size:0.7rem;">
+            <thead>
+              <tr style="border-bottom:2px solid var(--border);">
+                <th style="text-align:left;padding:6px;color:var(--text-muted);font-size:0.64rem;text-transform:uppercase;">Agent</th>
+                <th style="text-align:center;padding:6px;color:var(--text-muted);font-size:0.64rem;text-transform:uppercase;">Dec</th>
+                <th style="text-align:center;padding:6px;color:var(--text-muted);font-size:0.64rem;text-transform:uppercase;">Pat</th>
+                <th style="text-align:center;padding:6px;color:var(--text-muted);font-size:0.64rem;text-transform:uppercase;">WR</th>
+                <th style="text-align:center;padding:6px;color:var(--text-muted);font-size:0.64rem;text-transform:uppercase;">DB</th>
+              </tr>
+            </thead>
+            <tbody id="intel-memory-table"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:12px;">Loading...</td></tr></tbody>
+          </table>
+        </div>
+        <div class="stat-card" style="padding:14px;">
+          <div style="font-weight:600;color:var(--text);margin-bottom:8px;font-size:0.78rem;">LLM Routing Table</div>
+          <table style="width:100%;border-collapse:collapse;font-size:0.7rem;">
+            <thead><tr style="border-bottom:1px solid var(--border);"><th style="text-align:left;padding:4px;color:var(--text-muted);">Task Type</th><th style="text-align:left;padding:4px;color:var(--text-muted);">Route</th></tr></thead>
+            <tbody id="intel-routing-table"><tr><td colspan="2" class="text-muted">Loading...</td></tr></tbody>
+          </table>
+          <div style="margin-top:10px;">
+            <div style="font-weight:600;color:var(--text);margin-bottom:4px;font-size:0.72rem;">Agent Overrides</div>
+            <div id="intel-agent-overrides" class="text-muted" style="font-size:0.68rem;">Loading...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <!-- LLM Routing -->
-  <div class="stat-card" style="padding:14px;margin-bottom:12px;">
-    <div style="display:flex;gap:24px;flex-wrap:wrap;">
-      <div style="flex:1;min-width:250px;">
-        <div style="font-weight:700;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">LLM Routing Table</div>
-        <table style="width:100%;border-collapse:collapse;font-size:0.7rem;">
-          <thead><tr style="border-bottom:1px solid var(--border-color);"><th style="text-align:left;padding:4px;color:var(--text-muted);">Task Type</th><th style="text-align:left;padding:4px;color:var(--text-muted);">Route</th></tr></thead>
-          <tbody id="llm-routing-table"><tr><td colspan="2" class="text-muted">Loading...</td></tr></tbody>
+  <!-- S6: Reference (collapsible, default closed) -->
+  <div class="collapse-section">
+    <div class="collapse-trigger">
+      <h2 class="section-title" style="margin-bottom:0;font-size:0.84rem;">Reference <span style="font-size:0.6rem;color:var(--text-muted);font-weight:400;margin-left:6px;">Infrastructure, Frameworks, Tools</span></h2>
+    </div>
+    <div class="collapse-body">
+
+      <!-- Recent LLM Calls -->
+      <div class="stat-card" style="padding:14px;margin-bottom:12px;">
+        <div style="font-weight:600;color:var(--text);margin-bottom:8px;font-size:0.78rem;">Recent LLM Calls</div>
+        <div id="intel-activity-feed" style="max-height:280px;overflow-y:auto;font-size:0.68rem;"><span class="text-muted">Loading...</span></div>
+      </div>
+
+      <!-- Agent Infrastructure Map -->
+      <div class="stat-card" style="padding:14px;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <div style="font-weight:700;color:var(--text);font-size:0.84rem;">Agent Infrastructure Map</div>
+          <div style="font-size:0.6rem;color:var(--text-muted);background:rgba(155,89,182,0.1);padding:2px 8px;border-radius:4px;">Who runs what</div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:0.68rem;">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border);">
+              <th style="text-align:left;padding:6px 8px;color:var(--text-muted);font-weight:600;">Agent</th>
+              <th style="text-align:center;padding:6px 8px;color:#9B59B6;font-weight:600;">Local LLM</th>
+              <th style="text-align:center;padding:6px 8px;color:var(--warning);font-weight:600;">External APIs</th>
+              <th style="text-align:left;padding:6px 8px;color:var(--text-muted);font-weight:600;">API Details</th>
+              <th style="text-align:center;padding:6px 8px;color:var(--error);font-weight:600;">Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:6px 8px;font-weight:600;color:var(--text);">Garves</td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen 14B + 3B</span></td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--warning);">Polymarket CLOB</span></td><td style="padding:6px 8px;color:var(--text-muted);">Polymarket CLOB API (needs NordVPN Qatar), Binance.US (prices)</td><td style="text-align:center;padding:6px 8px;color:var(--success);">Free APIs</td></tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:6px 8px;font-weight:600;color:var(--text);">Hawk</td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen 14B</span></td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--error);">GPT-4o + Claude</span></td><td style="padding:6px 8px;color:var(--text-muted);">GPT-4o (sports analysis), Claude fallback, Polymarket Gamma API</td><td style="text-align:center;padding:6px 8px;color:var(--error);">$$$</td></tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:6px 8px;font-weight:600;color:var(--text);">Atlas</td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen 14B</span></td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--warning);">Tavily + DDG</span></td><td style="padding:6px 8px;color:var(--text-muted);">Tavily (web search, 1K free/mo), DuckDuckGo, CoinGecko, Fear&amp;Greed</td><td style="text-align:center;padding:6px 8px;color:var(--warning);">$</td></tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:6px 8px;font-weight:600;color:var(--text);">Thor</td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen Coder 14B</span></td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">None</span></td><td style="padding:6px 8px;color:var(--text-muted);">100% local coding model</td><td style="text-align:center;padding:6px 8px;color:var(--success);">FREE</td></tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:6px 8px;font-weight:600;color:var(--text);">Shelby</td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen 14B</span></td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--warning);">Telegram</span></td><td style="padding:6px 8px;color:var(--text-muted);">Telegram Bot API (free), OpenAI fallback for tool-calling</td><td style="text-align:center;padding:6px 8px;color:var(--success);">Free</td></tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:6px 8px;font-weight:600;color:var(--text);">Viper</td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen 14B</span></td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">None</span></td><td style="padding:6px 8px;color:var(--text-muted);">100% local</td><td style="text-align:center;padding:6px 8px;color:var(--success);">FREE</td></tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:6px 8px;font-weight:600;color:var(--text);">Quant</td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">No LLM</span></td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">None</span></td><td style="padding:6px 8px;color:var(--text-muted);">Pure Python backtesting</td><td style="text-align:center;padding:6px 8px;color:var(--success);">FREE</td></tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:6px 8px;font-weight:600;color:var(--text);">Soren</td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen 14B</span></td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">None</span></td><td style="padding:6px 8px;color:var(--text-muted);">Local LLM for content generation</td><td style="text-align:center;padding:6px 8px;color:var(--success);">FREE</td></tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:6px 8px;font-weight:600;color:var(--text);">Lisa</td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen 14B</span></td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--error);">X (Twitter) API</span></td><td style="padding:6px 8px;color:var(--text-muted);">X API v2 (401 auth broken), ElevenLabs (voice)</td><td style="text-align:center;padding:6px 8px;color:var(--error);">BROKEN</td></tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:6px 8px;font-weight:600;color:var(--text);">Robotox</td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">No LLM</span></td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">None</span></td><td style="padding:6px 8px;color:var(--text-muted);">Pure Python monitoring</td><td style="text-align:center;padding:6px 8px;color:var(--success);">FREE</td></tr>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.04);"><td style="padding:6px 8px;font-weight:600;color:var(--text);">Odin</td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">No LLM</span></td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--warning);">CoinGlass + CoinGecko</span></td><td style="padding:6px 8px;color:var(--text-muted);">CoinGlass (regime), CoinGecko (prices), Bitunix futures</td><td style="text-align:center;padding:6px 8px;color:var(--success);">FREE</td></tr>
+            <tr><td style="padding:6px 8px;font-weight:600;color:var(--text);">Oracle</td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--error);font-weight:700;">Cloud Ensemble</span></td><td style="text-align:center;padding:6px 8px;"><span style="color:var(--error);">Claude + Grok + Gemini</span></td><td style="padding:6px 8px;color:var(--text-muted);">3-model LLM ensemble, CoinGecko, Polymarket CLOB</td><td style="text-align:center;padding:6px 8px;color:var(--error);">$$$</td></tr>
+          </tbody>
         </table>
+        <div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;font-size:0.62rem;">
+          <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--success);margin-right:4px;"></span><strong>7 agents</strong> on local LLM + <strong>Quant, Odin</strong> pure math + <strong>Oracle</strong> cloud ensemble</div>
+          <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warning);margin-right:4px;"></span><strong>Atlas</strong> needs Tavily (1K free calls/mo)</div>
+          <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--error);margin-right:4px;"></span><strong>Hawk</strong> uses GPT-4o for sports (cloud cost)</div>
+        </div>
       </div>
-      <div style="flex:1;min-width:200px;">
-        <div style="font-weight:700;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Agent Overrides</div>
-        <div id="llm-agent-overrides" class="text-muted" style="font-size:0.68rem;">Loading...</div>
+
+      <!-- Installed Frameworks -->
+      <div class="collapse-section">
+        <div class="collapse-trigger">
+          <h2 class="section-title" style="margin-bottom:0;font-size:0.82rem;">Installed Frameworks</h2>
+        </div>
+        <div class="collapse-body">
+          <div class="stat-card" style="padding:14px;margin-bottom:12px;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.68rem;">
+              <thead>
+                <tr style="border-bottom:1px solid var(--border);">
+                  <th style="text-align:left;padding:5px 6px;color:var(--text-muted);">Framework</th>
+                  <th style="text-align:left;padding:5px 6px;color:var(--text-muted);">What It Is</th>
+                  <th style="text-align:left;padding:5px 6px;color:var(--text-muted);">What Runs On It</th>
+                  <th style="text-align:center;padding:5px 6px;color:var(--text-muted);">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#3776AB;">Python 3.9</td><td style="padding:4px 6px;">Core programming language</td><td style="padding:4px 6px;">Shelby, Atlas, Soren, Lisa, Thor, Robotox, Quant, Dashboard</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#3776AB;">Python 3.12 venv</td><td style="padding:4px 6px;">Isolated env with trading libraries</td><td style="padding:4px 6px;">Garves, Hawk, Viper</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#eee;">Flask</td><td style="padding:4px 6px;">Web framework for dashboard</td><td style="padding:4px 6px;">Command Center (14 tabs, 140+ endpoints)</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#eee;">Socket.IO</td><td style="padding:4px 6px;">Real-time push updates</td><td style="padding:4px 6px;">Dashboard live updates, heartbeat</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#FF6384;">Chart.js</td><td style="padding:4px 6px;">Data visualization</td><td style="padding:4px 6px;">PnL curves, radar charts, cost pie</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#003B57;">SQLite</td><td style="padding:4px 6px;">Embedded database</td><td style="padding:4px 6px;">AgentMemory for all 9 agents</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#9B59B6;">MLX</td><td style="padding:4px 6px;">Apple Silicon AI inference</td><td style="padding:4px 6px;">Qwen 14B, Qwen 3B on M3 Pro</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#eee;">LaunchAgents</td><td style="padding:4px 6px;">macOS service manager</td><td style="padding:4px 6px;">All 12 agents auto-start</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#0DB7ED;">Tailscale</td><td style="padding:4px 6px;">Mesh VPN</td><td style="padding:4px 6px;">SSH Air &rarr; Pro</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#F05032;">Git + GitHub</td><td style="padding:4px 6px;">Version control</td><td style="padding:4px 6px;">All repos, deploy script</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#74AA9C;">OpenAI Platform</td><td style="padding:4px 6px;">Cloud AI (GPT-4o)</td><td style="padding:4px 6px;">Hawk, Soren, Atlas, Lisa</td><td style="padding:4px 6px;text-align:center;color:var(--warning);">Low quota</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#D97757;">Anthropic Platform</td><td style="padding:4px 6px;">Cloud AI (Claude)</td><td style="padding:4px 6px;">Thor, shared fallback</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#4285F4;">asyncio</td><td style="padding:4px 6px;">Python async framework</td><td style="padding:4px 6px;">Garves, Binance WS, Odin</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#217346;">openpyxl</td><td style="padding:4px 6px;">Excel read/write</td><td style="padding:4px 6px;">Brotherhood progress sheet</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr><td style="padding:4px 6px;font-weight:600;color:#4687C4;">NordVPN</td><td style="padding:4px 6px;">Geo-unblock VPN</td><td style="padding:4px 6px;">Garves live trading (CLOB)</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
 
-
-  <!-- API Dependency Map — Who Uses What (Collapsible) -->
-  <div class="collapse-section">
-    <div class="collapse-trigger">
-      <h2 class="section-title" style="margin-bottom:0;font-size:0.84rem;">Agent Infrastructure Map <span style="font-size:0.6rem;color:var(--text-muted);font-weight:400;margin-left:6px;">Who runs what</span></h2>
-    </div>
-    <div class="collapse-body">
-  <div class="stat-card" style="padding:14px;margin-bottom:12px;">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-      <div style="font-weight:700;color:var(--text-primary);font-size:0.84rem;">Agent Infrastructure Map</div>
-      <div style="font-size:0.6rem;color:var(--text-muted);background:rgba(155,89,182,0.1);padding:2px 8px;border-radius:4px;">Who runs what</div>
-    </div>
-    <table style="width:100%;border-collapse:collapse;font-size:0.68rem;">
-      <thead>
-        <tr style="border-bottom:2px solid var(--border-color);">
-          <th style="text-align:left;padding:6px 8px;color:var(--text-muted);font-weight:600;">Agent</th>
-          <th style="text-align:center;padding:6px 8px;color:#9B59B6;font-weight:600;">Local LLM</th>
-          <th style="text-align:center;padding:6px 8px;color:var(--warning);font-weight:600;">External APIs</th>
-          <th style="text-align:left;padding:6px 8px;color:var(--text-muted);font-weight:600;">API Details</th>
-          <th style="text-align:center;padding:6px 8px;color:var(--error);font-weight:600;">Cost</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Garves</td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen 14B + 3B</span></td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--warning);">Polymarket CLOB</span></td>
-          <td style="padding:6px 8px;color:var(--text-muted);">Polymarket CLOB API (needs NordVPN Qatar), Binance.US (prices)</td>
-          <td style="text-align:center;padding:6px 8px;color:var(--success);">Free APIs</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Hawk</td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen 14B</span></td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--error);">GPT-4o + Claude</span></td>
-          <td style="padding:6px 8px;color:var(--text-muted);">GPT-4o (sports analysis), Claude fallback, Polymarket Gamma API</td>
-          <td style="text-align:center;padding:6px 8px;color:var(--error);">6172</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Atlas</td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen 14B</span></td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--warning);">Tavily + DDG</span></td>
-          <td style="padding:6px 8px;color:var(--text-muted);">Tavily (web search, 1K free/mo), DuckDuckGo (scraping), CoinGecko, Fear&amp;Greed</td>
-          <td style="text-align:center;padding:6px 8px;color:var(--warning);">$</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Thor</td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen Coder 14B</span></td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">None</span></td>
-          <td style="padding:6px 8px;color:var(--text-muted);">100% local coding model (was Claude cloud, switched today)</td>
-          <td style="text-align:center;padding:6px 8px;color:var(--success);">FREE</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Shelby</td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen 14B</span></td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--warning);">Telegram</span></td>
-          <td style="padding:6px 8px;color:var(--text-muted);">Telegram Bot API (free), OpenAI fallback for tool-calling</td>
-          <td style="text-align:center;padding:6px 8px;color:var(--success);">Free</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Viper</td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen 14B</span></td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">None</span></td>
-          <td style="padding:6px 8px;color:var(--text-muted);">100% local — scans agent data, costs, opportunities</td>
-          <td style="text-align:center;padding:6px 8px;color:var(--success);">FREE</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Quant</td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">No LLM</span></td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">None</span></td>
-          <td style="padding:6px 8px;color:var(--text-muted);">Pure Python backtesting — no LLM or API needed</td>
-          <td style="text-align:center;padding:6px 8px;color:var(--success);">FREE</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Soren</td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen 14B</span></td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">None</span></td>
-          <td style="padding:6px 8px;color:var(--text-muted);">Local LLM for content generation (fed by Atlas trends)</td>
-          <td style="text-align:center;padding:6px 8px;color:var(--success);">FREE</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Lisa</td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--success);font-weight:700;">Qwen 14B</span></td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--error);">X (Twitter) API</span></td>
-          <td style="padding:6px 8px;color:var(--text-muted);">X API v2 (401 auth broken), ElevenLabs (voice, not active)</td>
-          <td style="text-align:center;padding:6px 8px;color:var(--error);">BROKEN</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Robotox</td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">No LLM</span></td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">None</span></td>
-          <td style="padding:6px 8px;color:var(--text-muted);">Pure Python monitoring — process checks, log watching</td>
-          <td style="text-align:center;padding:6px 8px;color:var(--success);">FREE</td>
-        </tr>
-        <tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
-          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Odin</td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--text-muted);">No LLM</span></td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--warning);">CoinGlass + CoinGecko</span></td>
-          <td style="padding:6px 8px;color:var(--text-muted);">CoinGlass (regime data), CoinGecko (prices), Bitunix futures. Pure quant — SMC engine + regime detection</td>
-          <td style="text-align:center;padding:6px 8px;color:var(--success);">FREE</td>
-        </tr>
-        <tr>
-          <td style="padding:6px 8px;font-weight:600;color:var(--text-primary);">Oracle</td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--error);font-weight:700;">Cloud Ensemble</span></td>
-          <td style="text-align:center;padding:6px 8px;"><span style="color:var(--error);">Claude + Grok + Gemini</span></td>
-          <td style="padding:6px 8px;color:var(--text-muted);">3-model LLM ensemble (Claude 0.45 + Grok 0.30 + Gemini 0.25), CoinGecko, Polymarket CLOB</td>
-          <td style="text-align:center;padding:6px 8px;color:var(--error);">$$$</td>
-        </tr>
-      </tbody>
-    </table>
-    <div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;font-size:0.62rem;">
-      <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--success);margin-right:4px;"></span><strong>7 agents</strong> on local LLM (Qwen3 32B / Coder 14B / 3B) + <strong>Quant, Odin</strong> pure math + <strong>Oracle</strong> cloud ensemble</div>
-      <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warning);margin-right:4px;"></span><strong>Atlas</strong> needs Tavily (1K free calls/mo)</div>
-      <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--error);margin-right:4px;"></span><strong>Hawk</strong> uses GPT-4o for sports (cloud cost)</div>
-      <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#3498DB;margin-right:4px;"></span><strong>3 models</strong> on Pro M3: Qwen3 32B, Qwen 3B, Qwen Coder 14B</div>
-    </div>
-  </div>
-    </div>
-  </div>
-
-  <!-- Brain Activity + Cost Donut -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-    <div class="stat-card" style="padding:14px;">
-      <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Brain Activity (Last 5 min)</div>
-      <div id="brain-activity-container"><span class="text-muted" style="font-size:0.72rem;">Loading...</span></div>
-    </div>
-    <div class="stat-card" style="padding:14px;">
-      <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Local vs Cloud Calls</div>
-      <div class="chart-container chart-sm"><canvas id="chart-cost-pie"></canvas></div>
-      <div style="text-align:center;margin-top:6px;font-size:0.68rem;">
-        <span style="color:var(--success);">Total Saved: </span><span id="llm-total-saved" style="color:var(--success);font-weight:600;">$0.00</span>
+      <!-- Installed Tools -->
+      <div class="collapse-section">
+        <div class="collapse-trigger">
+          <h2 class="section-title" style="margin-bottom:0;font-size:0.82rem;">Installed Tools</h2>
+        </div>
+        <div class="collapse-body">
+          <div class="stat-card" style="padding:14px;margin-bottom:12px;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.68rem;">
+              <thead>
+                <tr style="border-bottom:1px solid var(--border);">
+                  <th style="text-align:left;padding:5px 6px;color:var(--text-muted);">Tool</th>
+                  <th style="text-align:left;padding:5px 6px;color:var(--text-muted);">What It Does</th>
+                  <th style="text-align:left;padding:5px 6px;color:var(--text-muted);">Used By</th>
+                  <th style="text-align:center;padding:5px 6px;color:var(--text-muted);">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#9B59B6;">AgentBrain</td><td style="padding:4px 6px;">Memory + LLM reasoning</td><td style="padding:4px 6px;">All 10 agents</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#9B59B6;">LLM Router</td><td style="padding:4px 6px;">Routes AI calls local vs cloud</td><td style="padding:4px 6px;">All 10 agents</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#9B59B6;">Event Bus</td><td style="padding:4px 6px;">Cross-agent communication</td><td style="padding:4px 6px;">Atlas, Robotox, Thor, Viper, Garves</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#00D4FF;">Binance WebSocket</td><td style="padding:4px 6px;">Real-time crypto prices</td><td style="padding:4px 6px;">Garves</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#00D4FF;">Polymarket CLOB</td><td style="padding:4px 6px;">Order execution</td><td style="padding:4px 6px;">Garves, Hawk, Viper</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#00D4FF;">11-Indicator Ensemble</td><td style="padding:4px 6px;">RSI, MACD, EMA, Bollinger + more</td><td style="padding:4px 6px;">Garves</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#00D4FF;">Regime Detector</td><td style="padding:4px 6px;">Market mood detection</td><td style="padding:4px 6px;">Garves</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#FFD700;">GPT-4o Analyst</td><td style="padding:4px 6px;">AI probability analysis</td><td style="padding:4px 6px;">Hawk</td><td style="padding:4px 6px;text-align:center;color:var(--error);">Down</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#22AA44;">Tavily Search</td><td style="padding:4px 6px;">Web search API</td><td style="padding:4px 6px;">Atlas, Viper</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#CC66FF;">DALL-E 3</td><td style="padding:4px 6px;">AI image generation</td><td style="padding:4px 6px;">Soren</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#CC66FF;">ElevenLabs TTS</td><td style="padding:4px 6px;">Text-to-speech</td><td style="padding:4px 6px;">Soren</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#FF8800;">X/Twitter API</td><td style="padding:4px 6px;">Post and monitor tweets</td><td style="padding:4px 6px;">Lisa</td><td style="padding:4px 6px;text-align:center;color:var(--error);">401 Error</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#FFAA00;">Telegram Bot</td><td style="padding:4px 6px;">Alerts and notifications</td><td style="padding:4px 6px;">Shelby, Robotox</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#FF6600;">Claude Sonnet/Opus</td><td style="padding:4px 6px;">Code generation</td><td style="padding:4px 6px;">Thor</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#00FF44;">Process Monitor</td><td style="padding:4px 6px;">Watches agent processes</td><td style="padding:4px 6px;">Robotox</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#00FF44;">Log Watcher</td><td style="padding:4px 6px;">Scans logs for 12 error patterns</td><td style="padding:4px 6px;">Robotox</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#00FF88;">Reddit Scanner</td><td style="padding:4px 6px;">Monitors 5 subreddits</td><td style="padding:4px 6px;">Viper</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#00FF88;">Cost Auditor</td><td style="padding:4px 6px;">Tracks API spend</td><td style="padding:4px 6px;">Viper</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#F59E0B;">3-Model Ensemble</td><td style="padding:4px 6px;">Claude + Grok + Gemini consensus</td><td style="padding:4px 6px;">Oracle</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#F59E0B;">Weekly Cycle Engine</td><td style="padding:4px 6px;">Sunday 00:00 UTC pipeline</td><td style="padding:4px 6px;">Oracle</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;font-weight:600;color:#F59E0B;">52-Week Tracker</td><td style="padding:4px 6px;">Per-type accuracy tracking</td><td style="padding:4px 6px;">Oracle</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+                <tr><td style="padding:4px 6px;font-weight:600;color:#00BFFF;">Backtester</td><td style="padding:4px 6px;">Replays resolved trades</td><td style="padding:4px 6px;">Quant</td><td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <!-- Charts: Call Timeline + Memory Growth -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-    <div class="stat-card" style="padding:14px;">
-      <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">LLM Call Volume (by hour)</div>
-      <div class="chart-container chart-md"><canvas id="chart-call-timeline"></canvas></div>
     </div>
-    <div class="stat-card" style="padding:14px;">
-      <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Agent Memory Growth</div>
-      <div class="chart-container chart-md"><canvas id="chart-memory-bars"></canvas></div>
-    </div>
-  </div>
-
-  <!-- Pattern Learnings Feed -->
-  <div class="stat-card" style="padding:14px;margin-bottom:12px;">
-    <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Recent Pattern Learnings</div>
-    <div id="pattern-feed-container" style="max-height:250px;overflow-y:auto;"><span class="text-muted" style="font-size:0.72rem;">Loading...</span></div>
-  </div>
-
-  <!-- Installed Frameworks (Collapsible) -->
-  <div class="collapse-section">
-    <div class="collapse-trigger">
-      <h2 class="section-title" style="margin-bottom:0;font-size:0.82rem;">Installed Frameworks</h2>
-    </div>
-    <div class="collapse-body">
-  <div class="stat-card" style="padding:14px;margin-bottom:12px;">
-    <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.82rem;">Installed Frameworks</div>
-    <div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:10px;">Frameworks are the platforms and foundations that tools are built on. Like macOS is the framework, and the apps are the tools.</div>
-    <table style="width:100%;border-collapse:collapse;font-size:0.68rem;">
-      <thead>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <th style="text-align:left;padding:5px 6px;color:var(--text-muted);">Framework</th>
-          <th style="text-align:left;padding:5px 6px;color:var(--text-muted);">What It Is</th>
-          <th style="text-align:left;padding:5px 6px;color:var(--text-muted);">What Runs On It</th>
-          <th style="text-align:center;padding:5px 6px;color:var(--text-muted);">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#3776AB;">Python 3.9</td>
-          <td style="padding:4px 6px;">Core programming language — system Python on macOS</td>
-          <td style="padding:4px 6px;">Shelby, Atlas, Soren, Lisa, Thor, Robotox, Quant, Dashboard</td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#3776AB;">Python 3.12 venv</td>
-          <td style="padding:4px 6px;">Isolated Python environment with trading libraries (py_clob_client)</td>
-          <td style="padding:4px 6px;">Garves, Hawk, Viper</td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#000;"><span style="color:#eee;">Flask</span></td>
-          <td style="padding:4px 6px;">Web framework — serves the dashboard UI, API routes, WebSocket</td>
-          <td style="padding:4px 6px;">Command Center Dashboard (14 tabs, 140+ endpoints)</td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#eee;">Socket.IO</td>
-          <td style="padding:4px 6px;">Real-time communication framework — push updates without page refresh</td>
-          <td style="padding:4px 6px;">Dashboard live updates, heartbeat monitoring</td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#FF6384;">Chart.js</td>
-          <td style="padding:4px 6px;">Data visualization framework — renders charts, graphs, donuts</td>
-          <td style="padding:4px 6px;">PnL curves, win rate donuts, radar charts, cost pie, call timeline</td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#003B57;">SQLite</td>
-          <td style="padding:4px 6px;">Embedded database engine — stores agent memory without a server</td>
-          <td style="padding:4px 6px;">AgentMemory (decisions, patterns, knowledge) for all 9 agents</td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#9B59B6;">MLX</td>
-          <td style="padding:4px 6px;">Apple Silicon AI inference framework — runs LLMs locally on M3 Pro</td>
-          <td style="padding:4px 6px;">Qwen 14B (reasoning/writing), Qwen 3B (fast tasks)</td>
-          <td style="padding:4px 6px;text-align:center;color:var(--error);">Pro offline</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#eee;">LaunchAgents</td>
-          <td style="padding:4px 6px;">macOS service framework — auto-starts agents on boot, restarts on crash</td>
-          <td style="padding:4px 6px;">Garves, Dashboard, Shelby, Atlas, Robotox, Thor, Viper, Hawk, Odin</td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#0DB7ED;">Tailscale</td>
-          <td style="padding:4px 6px;">Mesh VPN framework — connects Air and Pro over secure network</td>
-          <td style="padding:4px 6px;">SSH Air &rarr; Pro, deploy script, remote monitoring</td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#F05032;">Git + GitHub</td>
-          <td style="padding:4px 6px;">Version control & deployment framework — code sync across machines</td>
-          <td style="padding:4px 6px;">All repos (polymarket-bot, soren, thor, sentinel), deploy script</td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#74AA9C;">OpenAI Platform</td>
-          <td style="padding:4px 6px;">Cloud AI framework — GPT-4o, GPT-4o-mini, DALL-E 3, TTS models</td>
-          <td style="padding:4px 6px;">Hawk analyst, Soren writer, Atlas research, Lisa content</td>
-          <td style="padding:4px 6px;text-align:center;color:var(--warning);">Low quota</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#D97757;">Anthropic Platform</td>
-          <td style="padding:4px 6px;">Cloud AI framework — Claude Sonnet 4, Claude Opus for code generation</td>
-          <td style="padding:4px 6px;">Thor code generation, shared LLM fallback chain</td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#4285F4;">asyncio</td>
-          <td style="padding:4px 6px;">Python async framework — handles concurrent WebSocket connections</td>
-          <td style="padding:4px 6px;">Garves trading loop, Binance WS feed, Odin (async regime scanner)</td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#217346;">openpyxl</td>
-          <td style="padding:4px 6px;">Excel framework — reads and writes .xlsx spreadsheets from Python</td>
-          <td style="padding:4px 6px;">Brotherhood progress sheet, git post-commit hook</td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr>
-          <td style="padding:4px 6px;font-weight:600;color:#4687C4;">NordVPN</td>
-          <td style="padding:4px 6px;">VPN framework — geo-unblocks Polymarket API from Qatar</td>
-          <td style="padding:4px 6px;">Garves live trading (CLOB API requires non-US/QA IP)</td>
-          <td style="padding:4px 6px;text-align:center;color:var(--error);">Pro offline</td>
-        </tr>
-      </tbody>
-    </table>
-    <div style="margin-top:8px;font-size:0.65rem;color:var(--text-muted);">
-      <span style="color:var(--success);">Installed</span> = running |
-      <span style="color:var(--warning);">Low quota</span> = needs top-up |
-      <span style="color:var(--error);">Pro offline</span> = needs M3 Pro reboot
-    </div>
-  </div>
-    </div>
-  </div>
-
-  <div class="collapse-section">
-    <div class="collapse-trigger">
-      <h2 class="section-title" style="margin-bottom:0;font-size:0.82rem;">Installed Tools</h2>
-    </div>
-    <div class="collapse-body">
-  <div class="stat-card" style="padding:14px;margin-bottom:12px;">
-    <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.82rem;">Installed Tools</div>
-    <div style="font-size:0.65rem;color:var(--text-muted);margin-bottom:10px;">Each tool is a capability installed in an agent. Tools can be shared across agents via the shared intelligence layer.</div>
-    <table style="width:100%;border-collapse:collapse;font-size:0.68rem;">
-      <thead>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <th style="text-align:left;padding:5px 6px;color:var(--text-muted);">Tool</th>
-          <th style="text-align:left;padding:5px 6px;color:var(--text-muted);">What It Does</th>
-          <th style="text-align:left;padding:5px 6px;color:var(--text-muted);">Used By</th>
-          <th style="text-align:center;padding:5px 6px;color:var(--text-muted);">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#9B59B6;">AgentBrain</td>
-          <td style="padding:4px 6px;">Memory + LLM reasoning — records decisions, learns patterns, thinks before acting</td>
-          <td style="padding:4px 6px;">All 10 agents</td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#9B59B6;">LLM Router</td>
-          <td style="padding:4px 6px;">Routes AI calls between local MLX (free) and cloud APIs (paid) based on task type</td>
-          <td style="padding:4px 6px;">All 10 agents</td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#9B59B6;">Event Bus</td>
-          <td style="padding:4px 6px;">Cross-agent communication — agents publish events, others subscribe and react</td>
-          <td style="padding:4px 6px;">Atlas, Robotox, Thor, Viper, Garves</td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#00D4FF;">Binance WebSocket</td>
-          <td style="padding:4px 6px;">Real-time crypto price feed — BTC, ETH, SOL, XRP candle data</td>
-          <td style="padding:4px 6px;"><span style="color:#00D4FF;">Garves</span></td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#00D4FF;">Polymarket CLOB</td>
-          <td style="padding:4px 6px;">Prediction market order execution — place, cancel, track bets</td>
-          <td style="padding:4px 6px;"><span style="color:#00D4FF;">Garves</span>, <span style="color:#FFD700;">Hawk</span>, <span style="color:#00FF88;">Viper</span></td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#00D4FF;">11-Indicator Ensemble</td>
-          <td style="padding:4px 6px;">RSI, MACD, EMA, Bollinger, Momentum, Order Flow, Volume Spike + more</td>
-          <td style="padding:4px 6px;"><span style="color:#00D4FF;">Garves</span></td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#00D4FF;">Regime Detector</td>
-          <td style="padding:4px 6px;">Detects market mood (Fear/Greed) and adjusts trading parameters dynamically</td>
-          <td style="padding:4px 6px;"><span style="color:#00D4FF;">Garves</span></td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#FFD700;">GPT-4o Analyst</td>
-          <td style="padding:4px 6px;">AI probability analysis for sports, politics, culture prediction markets</td>
-          <td style="padding:4px 6px;"><span style="color:#FFD700;">Hawk</span></td>
-          <td style="padding:4px 6px;text-align:center;color:var(--error);">Down (quota)</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#22AA44;">Tavily Search</td>
-          <td style="padding:4px 6px;">Web search API for real-time research, news gathering, intel scanning</td>
-          <td style="padding:4px 6px;"><span style="color:#22AA44;">Atlas</span>, <span style="color:#00FF88;">Viper</span></td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#CC66FF;">DALL-E 3</td>
-          <td style="padding:4px 6px;">AI image generation for social media content visuals</td>
-          <td style="padding:4px 6px;"><span style="color:#CC66FF;">Soren</span></td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#CC66FF;">ElevenLabs TTS</td>
-          <td style="padding:4px 6px;">Text-to-speech voice generation (Brian voice) for video content</td>
-          <td style="padding:4px 6px;"><span style="color:#CC66FF;">Soren</span></td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#FF8800;">X/Twitter API</td>
-          <td style="padding:4px 6px;">Post tweets, monitor replies, track engagement on @soren0era</td>
-          <td style="padding:4px 6px;"><span style="color:#FF8800;">Lisa</span></td>
-          <td style="padding:4px 6px;text-align:center;color:var(--error);">401 Error</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#FFAA00;">Telegram Bot</td>
-          <td style="padding:4px 6px;">Send alerts, trade notifications, error reports directly to Jordan</td>
-          <td style="padding:4px 6px;"><span style="color:#FFAA00;">Shelby</span>, <span style="color:#00FF44;">Robotox</span></td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#FF6600;">Claude Sonnet/Opus</td>
-          <td style="padding:4px 6px;">Code generation, review, and autonomous task execution</td>
-          <td style="padding:4px 6px;"><span style="color:#FF6600;">Thor</span></td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#00FF44;">Process Monitor</td>
-          <td style="padding:4px 6px;">Watches all agent processes, auto-restarts on crash, detects port conflicts</td>
-          <td style="padding:4px 6px;"><span style="color:#00FF44;">Robotox</span></td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#00FF44;">Log Watcher</td>
-          <td style="padding:4px 6px;">Scans agent logs for 12 error patterns, auto-fixes known issues, escalates unknowns</td>
-          <td style="padding:4px 6px;"><span style="color:#00FF44;">Robotox</span></td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#00FF88;">Reddit Scanner</td>
-          <td style="padding:4px 6px;">Monitors 5 subreddits for prediction market intel and freelance opportunities</td>
-          <td style="padding:4px 6px;"><span style="color:#00FF88;">Viper</span></td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#00FF88;">Cost Auditor</td>
-          <td style="padding:4px 6px;">Tracks API spend per agent, identifies waste, recommends cost optimizations</td>
-          <td style="padding:4px 6px;"><span style="color:#00FF88;">Viper</span></td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#F59E0B;">3-Model Ensemble</td>
-          <td style="padding:4px 6px;">Claude + Grok + Gemini weighted probability consensus for crypto weekly markets</td>
-          <td style="padding:4px 6px;"><span style="color:#F59E0B;">Oracle</span></td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#F59E0B;">Weekly Cycle Engine</td>
-          <td style="padding:4px 6px;">Sunday 00:00 UTC automated scan → analyze → trade → report → resolve pipeline</td>
-          <td style="padding:4px 6px;"><span style="color:#F59E0B;">Oracle</span></td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr style="border-bottom:1px solid var(--border-color);">
-          <td style="padding:4px 6px;font-weight:600;color:#F59E0B;">52-Week Tracker</td>
-          <td style="padding:4px 6px;">Tracks predictions across 52 weeks with per-type accuracy, win rate, P&amp;L breakdown</td>
-          <td style="padding:4px 6px;"><span style="color:#F59E0B;">Oracle</span></td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-        <tr>
-          <td style="padding:4px 6px;font-weight:600;color:#00BFFF;">Backtester</td>
-          <td style="padding:4px 6px;">Replays resolved trades against 500 weight/threshold combos to find optimal settings</td>
-          <td style="padding:4px 6px;"><span style="color:#00BFFF;">Quant</span></td>
-          <td style="padding:4px 6px;text-align:center;color:var(--success);">Installed</td>
-        </tr>
-      </tbody>
-    </table>
-    <div style="margin-top:8px;font-size:0.65rem;color:var(--text-muted);">
-      <span style="color:var(--success);">Installed</span> = active and working |
-      <span style="color:var(--error);">Down</span> = needs attention |
-      Shared Layer: <span style="color:#9B59B6;">~/shared/</span> (llm_client, agent_brain, agent_memory, events)
-    </div>
-  </div>
-    </div>
-  </div>
-
-  <!-- Recent LLM Calls -->
-  <div class="stat-card" style="padding:14px;margin-bottom:12px;">
-    <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Recent LLM Calls</div>
-    <div id="llm-activity-feed" style="max-height:280px;overflow-y:auto;font-size:0.68rem;"><span class="text-muted">Loading...</span></div>
-  </div>
-
-  <!-- Cost by Agent -->
-  <div class="stat-card" style="padding:14px;">
-    <div style="font-weight:600;color:var(--text-primary);margin-bottom:8px;font-size:0.78rem;">Cost by Agent (24h)</div>
-    <div id="llm-cost-by-agent" style="font-size:0.7rem;"><span class="text-muted">Loading...</span></div>
   </div>
 </div>
 
@@ -609,15 +301,10 @@ function calcIntelScore(s) {
   var wr = s.win_rate || 0;
   var resolved = s.resolved_decisions || 0;
   var recent7d = s.recent_patterns_7d || 0;
-  // Experience: more decisions = more experienced (max 30pts at 50+ decisions)
   var exp = Math.min(dec * 0.6, 30);
-  // Knowledge: more patterns = more learned rules (max 25pts at 15+ patterns)
   var know = Math.min(pat * 1.67, 25);
-  // Accuracy: win rate (max 20pts)
   var acc = (wr / 100) * 20;
-  // Maturity: resolved ratio — follows through on decisions (max 15pts)
   var mat = dec > 0 ? (resolved / dec) * 15 : 0;
-  // Recency: active learning in last 7 days (max 10pts)
   var rec = Math.min(recent7d * 2, 10);
   var score = Math.round(exp + know + acc + mat + rec);
   return {score: Math.min(score, 100), exp: Math.round(exp), know: Math.round(know), acc: Math.round(acc), mat: Math.round(mat), rec: Math.round(rec)};
@@ -626,192 +313,11 @@ function calcIntelScore(s) {
 function getIntelGrade(score) {
   if (score >= 80) return {label: 'GENIUS', color: '#FFD700'};
   if (score >= 60) return {label: 'SHARP', color: 'var(--success)'};
-  if (score >= 40) return {label: 'LEARNING', color: '#3498DB'};
-  if (score >= 20) return {label: 'ROOKIE', color: 'var(--warning)'};
+  if (score >= 40) return {label: 'SKILLED', color: '#3498DB'};
+  if (score >= 20) return {label: 'LEARNING', color: 'var(--warning)'};
   if (score > 0)   return {label: 'NEWBORN', color: 'var(--error)'};
   return {label: 'OFFLINE', color: 'var(--text-muted)'};
 }
-
-function renderIntelMeters(agents) {
-  var el = document.getElementById('intel-meters-container');
-  if (!el) return;
-  var html = '';
-  var totalScore = 0, scoreCount = 0, totalPat = 0;
-  _INTEL_AGENT_ORDER.forEach(function(ag) {
-    var s = (agents || {})[ag] || {};
-    var r = calcIntelScore(s);
-    var g = getIntelGrade(r.score);
-    var c = _INTEL_AGENT_COLORS[ag] || '#888';
-    totalScore += r.score; scoreCount++;
-    totalPat += (s.active_patterns || 0);
-
-    html += '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);" title="EXP:'+r.exp+' KNW:'+r.know+' ACC:'+r.acc+' MAT:'+r.mat+' REC:'+r.rec+'">';
-    // Agent dot + name
-    html += '<div style="width:6px;height:6px;border-radius:50%;background:'+c+';flex-shrink:0;"></div>';
-    html += '<div style="min-width:58px;color:'+c+';font-weight:600;font-size:0.72rem;text-transform:capitalize;">'+ag+'</div>';
-    // Score
-    html += '<div style="min-width:26px;text-align:right;font-weight:700;font-size:0.76rem;color:'+g.color+';font-family:var(--font-mono);">'+r.score+'</div>';
-    // Progress bar
-    html += '<div style="flex:1;background:rgba(255,255,255,0.04);border-radius:4px;height:14px;position:relative;overflow:hidden;">';
-    html += '<div style="width:'+r.score+'%;height:100%;border-radius:3px;background:linear-gradient(90deg,'+c+'88,'+c+');transition:width 0.6s ease;"></div>';
-    html += '</div>';
-    // Grade pill
-    html += '<div style="min-width:52px;text-align:center;font-size:0.56rem;font-weight:700;color:'+g.color+';letter-spacing:0.04em;background:'+g.color+'15;padding:2px 6px;border-radius:3px;">'+g.label+'</div>';
-    html += '</div>';
-  });
-  el.innerHTML = html || '<span class="text-muted">No data yet</span>';
-  // Update avg score badge
-  var avgEl = document.getElementById('intel-avg-score');
-  if (avgEl && scoreCount > 0) avgEl.textContent = Math.round(totalScore / scoreCount);
-  var patEl = document.getElementById('intel-total-patterns-badge');
-  if (patEl) patEl.textContent = totalPat;
-}
-
-function refreshIntelligence() {
-  Promise.all([
-    fetch('/api/llm/status').then(function(r){return r.json();}).catch(function(){return {};}),
-    fetch('/api/llm/costs').then(function(r){return r.json();}).catch(function(){return {};}),
-    fetch('/api/llm/memory-all').then(function(r){return r.json();}).catch(function(){return {};}),
-    fetch('/api/llm/routing').then(function(r){return r.json();}).catch(function(){return {};}),
-    fetch('/api/llm/recent-calls').then(function(r){return r.json();}).catch(function(){return {calls:[]};}),
-    fetch('/api/llm/brain-activity').then(function(r){return r.json();}).catch(function(){return {activity:{}};}),
-    fetch('/api/llm/pattern-feed').then(function(r){return r.json();}).catch(function(){return {patterns:[]};}),
-    fetch('/api/llm/cost-savings').then(function(r){return r.json();}).catch(function(){return {};}),
-  ]).then(function(results) {
-    try {
-    var status = results[0], costs = results[1], memoryAll = results[2],
-        routing = results[3], recentCalls = results[4], brainActivity = results[5],
-        patternFeed = results[6], costSavings = results[7];
-
-    // INTELLIGENCE METERS
-    renderIntelMeters(memoryAll.agents || {});
-
-    // Brain activity
-    if (typeof renderBrainActivity === 'function') renderBrainActivity('brain-activity-container', brainActivity.activity || {});
-    if (typeof renderPatternFeed === 'function') renderPatternFeed('pattern-feed-container', patternFeed.patterns || []);
-
-    // Charts
-    var csLocal = costSavings.local_calls || 0, csCloud = costSavings.cloud_calls || 0;
-    if (typeof renderCostPie === 'function' && (csLocal + csCloud) > 0) renderCostPie('chart-cost-pie', csLocal, csCloud);
-    setTextSafe('llm-total-saved', '$' + (costSavings.estimated_savings || 0).toFixed(2));
-    if (typeof renderCallTimeline === 'function' && recentCalls.calls) renderCallTimeline('chart-call-timeline', recentCalls.calls);
-    if (typeof renderMemoryBars === 'function' && memoryAll.agents) renderMemoryBars('chart-memory-bars', memoryAll.agents);
-
-    // Server status
-    var online = status.server_online;
-    var badge = document.getElementById('llm-server-badge');
-    var statusEl = document.getElementById('llm-server-status');
-    if (badge) { badge.textContent = online ? 'ONLINE' : 'OFFLINE'; badge.style.color = online ? 'var(--success)' : 'var(--error)'; }
-    if (statusEl) { statusEl.textContent = online ? 'Online' : 'Offline'; statusEl.style.color = online ? 'var(--success)' : 'var(--error)'; }
-    var dotEl = document.getElementById('llm-server-dot');
-    if (dotEl) { dotEl.style.background = online ? 'var(--success)' : 'var(--error)'; dotEl.style.boxShadow = online ? '0 0 6px rgba(34,170,68,0.6)' : '0 0 6px rgba(231,76,60,0.6)'; }
-    var modelEl = document.getElementById('llm-model-name');
-    if (modelEl && status.models) { var m = status.models.local_large || ''; modelEl.textContent = 'Model: ' + (m.split('/').pop() || '--'); }
-
-    // Cost data
-    var c24 = costs.last_24h || {};
-    var byProv = c24.by_provider || {};
-    var localCalls = (byProv.local || {}).calls || 0;
-    var cloudCalls = (c24.total_calls || 0) - localCalls;
-    setTextSafe('llm-total-calls', c24.total_calls || 0);
-    setTextSafe('llm-local-calls', localCalls);
-    setTextSafe('llm-cloud-calls', cloudCalls);
-    setTextSafe('llm-cost-24h', '$' + (c24.total_cost || 0).toFixed(4));
-    setTextSafe('llm-savings-24h', '$' + (costs.estimated_savings_24h || 0).toFixed(4));
-    setTextSafe('llm-savings', '$' + (costs.estimated_savings_24h || 0).toFixed(2));
-
-    // Memory totals
-    var totals = (memoryAll.totals || {});
-    setTextSafe('llm-total-decisions', totals.decisions || 0);
-    setTextSafe('llm-total-patterns', totals.patterns || 0);
-    setTextSafe('llm-total-knowledge', totals.knowledge || 0);
-    setTextSafe('llm-agents-with-memory', (totals.agents_with_memory || 0) + '/11');
-
-    // Per-agent memory table
-    var memTable = document.getElementById('llm-memory-table');
-    if (memTable && memoryAll.agents) {
-      var rows = '';
-      _INTEL_AGENT_ORDER.forEach(function(ag) {
-        var s = memoryAll.agents[ag] || {};
-        if (s.error) return;
-        var c = _INTEL_AGENT_COLORS[ag] || '#888';
-        var wr = s.total_decisions > 0 ? (s.win_rate || 0).toFixed(1) + '%' : '--';
-        var wrColor = (s.win_rate || 0) >= 50 ? 'var(--success)' : (s.win_rate || 0) > 0 ? 'var(--error)' : 'var(--text-muted)';
-        var dec = s.total_decisions || 0;
-        var pat = s.active_patterns || 0;
-        rows += '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">' +
-          '<td style="padding:5px 6px;font-size:0.7rem;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:'+c+';margin-right:5px;vertical-align:middle;"></span><span style="color:'+c+';font-weight:600;text-transform:capitalize;">'+ag+'</span></td>' +
-          '<td style="text-align:center;padding:5px 4px;font-family:var(--font-mono);font-size:0.7rem;">'+(dec > 0 ? dec : '<span style="color:var(--text-muted);">-</span>')+'</td>' +
-          '<td style="text-align:center;padding:5px 4px;font-family:var(--font-mono);font-size:0.7rem;">'+(pat > 0 ? '<span style="color:var(--success);">'+pat+'</span>' : '<span style="color:var(--text-muted);">-</span>')+'</td>' +
-          '<td style="text-align:center;padding:5px 4px;font-family:var(--font-mono);font-size:0.7rem;color:'+wrColor+';">'+wr+'</td>' +
-          '<td style="text-align:center;padding:5px 4px;font-family:var(--font-mono);font-size:0.68rem;color:var(--text-muted);">'+((s.db_size_kb||0)>0?(s.db_size_kb).toFixed(0)+'KB':'--')+'</td></tr>';
-      });
-      memTable.innerHTML = rows || '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:12px;">No memory data</td></tr>';
-    }
-
-    // Routing table
-    var routeTable = document.getElementById('llm-routing-table');
-    if (routeTable && routing.routing) {
-      var routeColors = {local_large:'#9B59B6',local_small:'#3498DB',cloud_openai:'#E67E22',cloud_claude:'#E74C3C',cloud_gpt4o:'#F39C12'};
-      var rRows = '';
-      Object.keys(routing.routing).forEach(function(tt) {
-        var route = routing.routing[tt]; var rc = routeColors[route] || '#888';
-        rRows += '<tr style="border-bottom:1px solid var(--border-color);"><td style="padding:4px 6px;">'+tt+'</td><td style="padding:4px 6px;color:'+rc+';font-weight:500;">'+route.replace(/_/g,' ')+'</td></tr>';
-      });
-      routeTable.innerHTML = rRows;
-    }
-    var overEl = document.getElementById('llm-agent-overrides');
-    if (overEl && routing.agent_overrides) {
-      var overHtml = '';
-      Object.keys(routing.agent_overrides).forEach(function(ag) {
-        var ov = routing.agent_overrides[ag];
-        overHtml += '<div style="margin-bottom:2px;"><span style="color:var(--text-primary);font-weight:500;text-transform:capitalize;">'+ag+':</span> ';
-        Object.keys(ov).forEach(function(k) { overHtml += k+' &rarr; <span style="color:#E67E22;">'+ov[k]+'</span> '; });
-        overHtml += '</div>';
-      });
-      overEl.innerHTML = overHtml || 'None configured';
-    }
-
-    // Recent calls feed
-    var feedEl = document.getElementById('llm-activity-feed');
-    if (feedEl && recentCalls.calls) {
-      var fHtml = '';
-      recentCalls.calls.slice(0, 30).forEach(function(call) {
-        var provColor = (call.provider||'').indexOf('local')>=0 ? '#9B59B6' : '#E67E22';
-        var ts = call.ts ? call.ts.split('T')[1].split('.')[0] : '--';
-        var fb = call.fallback ? ' <span style="color:var(--error);font-size:0.6rem;">[FALLBACK]</span>' : '';
-        fHtml += '<div style="padding:3px 0;border-bottom:1px solid var(--border-color);display:flex;gap:8px;align-items:center;">' +
-          '<span style="color:var(--text-muted);min-width:55px;">'+ts+'</span>' +
-          '<span style="color:'+provColor+';min-width:50px;font-weight:500;">'+(call.provider||'--')+'</span>' +
-          '<span style="min-width:50px;text-transform:capitalize;">'+(call.agent||'--')+'</span>' +
-          '<span style="color:var(--text-muted);">'+(call.task_type||'--')+'</span>' +
-          '<span style="margin-left:auto;color:var(--text-muted);">'+(call.latency_ms||0)+'ms</span>' +
-          '<span style="color:'+((call.cost_usd||0)>0?'var(--warning)':'var(--success)')+';">$'+(call.cost_usd||0).toFixed(4)+'</span>'+fb+'</div>';
-      });
-      feedEl.innerHTML = fHtml || '<span class="text-muted">No calls recorded yet</span>';
-    }
-
-    // Cost by agent
-    var costEl = document.getElementById('llm-cost-by-agent');
-    if (costEl && c24.by_agent) {
-      var cHtml = '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
-      Object.keys(c24.by_agent).sort(function(a,b){return (c24.by_agent[b].cost||0)-(c24.by_agent[a].cost||0);}).forEach(function(ag) {
-        var d = c24.by_agent[ag]; var agColor = _INTEL_AGENT_COLORS[ag] || '#888';
-        cHtml += '<div style="background:var(--card-bg);padding:6px 10px;border-radius:6px;border:1px solid var(--border-color);">' +
-          '<div style="color:'+agColor+';font-weight:600;text-transform:capitalize;font-size:0.72rem;">'+ag+'</div>' +
-          '<div style="font-size:0.68rem;">'+(d.calls||0)+' calls | $'+((d.cost||0)).toFixed(4)+'</div></div>';
-      });
-      costEl.innerHTML = cHtml + '</div>';
-    }
-  } catch(e) {
-    console.error('[Intelligence] render error:', e);
-  }
-  }).catch(function(err) {
-    console.error('[Intelligence] fetch error:', err);
-  });
-}
-
-function setTextSafe(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
 
 function intelAction(action) {
   var resultEl = document.getElementById('intel-action-result');
@@ -827,7 +333,7 @@ function intelAction(action) {
       if (data.pruned) Object.keys(data.pruned).forEach(function(ag){msg += ' | '+ag+': '+data.pruned[ag];});
       refreshIntelligence();
     } else if (action === 'export-learnings') {
-      msg = '<span style="color:var(--success);">Exported '+(data.total_patterns||0)+' patterns from '+(data.agents_exported||0)+' agents</span> &rarr; ~/shared/learnings_export.json';
+      msg = '<span style="color:var(--success);">Exported '+(data.total_patterns||0)+' patterns from '+(data.agents_exported||0)+' agents</span>';
     } else if (action === 'compact-costs') {
       msg = '<span style="color:var(--success);">Compacted:</span> kept '+(data.kept||0)+' | archived '+(data.archived||0)+' (was '+(data.original_lines||0)+')';
       refreshIntelligence();
@@ -840,9 +346,9 @@ function intelResetPrompt() {
   var resultEl = document.getElementById('intel-action-result');
   var select = '<span style="color:#E74C3C;">Reset memory for: </span>';
   _INTEL_AGENT_ORDER.forEach(function(ag) {
-    select += '<button onclick="intelResetConfirm(\''+ag+'\')" style="background:#E74C3C22;border:1px solid #E74C3C;color:#E74C3C;padding:2px 8px;margin:2px;border-radius:4px;font-size:0.66rem;cursor:pointer;">'+ag+'</button>';
+    select += '<button onclick="intelResetConfirm(\'' + ag + '\')" style="background:#E74C3C22;border:1px solid #E74C3C;color:#E74C3C;padding:2px 8px;margin:2px;border-radius:4px;font-size:0.66rem;cursor:pointer;">' + ag + '</button>';
   });
-  select += ' <button onclick="document.getElementById(\'intel-action-result\').innerHTML=\'\'" style="background:var(--card-bg);border:1px solid var(--border-color);color:var(--text-muted);padding:2px 8px;margin:2px;border-radius:4px;font-size:0.66rem;cursor:pointer;">Cancel</button>';
+  select += ' <button onclick="document.getElementById(\'intel-action-result\').innerHTML=\'\'" style="background:var(--card-bg);border:1px solid var(--border);color:var(--text-muted);padding:2px 8px;margin:2px;border-radius:4px;font-size:0.66rem;cursor:pointer;">Cancel</button>';
   if (resultEl) resultEl.innerHTML = select;
 }
 
@@ -857,7 +363,7 @@ function intelResetConfirm(agent) {
   }).catch(function(e){if (resultEl) resultEl.innerHTML = '<span style="color:var(--error);">Error: '+e.message+'</span>';});
 }
 
-// Auto-load when tab becomes visible via MutationObserver
+// Auto-load when tab becomes visible
 (function() {
   var tabEl = document.getElementById('tab-intelligence');
   if (!tabEl) return;

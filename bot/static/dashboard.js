@@ -5052,6 +5052,411 @@ async function submitAgentSmartAction(agent, index) {
   }
 }
 
+// ═══════════════════════════════════════════
+// Intelligence Tab — Render Functions
+// ═══════════════════════════════════════════
+
+function renderIntelGrid(agents) {
+  var el = document.getElementById('intel-agent-grid');
+  if (!el) return;
+  var html = '';
+  var totalScore = 0, scoreCount = 0;
+  _INTEL_AGENT_ORDER.forEach(function(ag) {
+    var s = (agents || {})[ag] || {};
+    var r = calcIntelScore(s);
+    var g = getIntelGrade(r.score);
+    var c = _INTEL_AGENT_COLORS[ag] || '#888';
+    totalScore += r.score; scoreCount++;
+    // Normalize dimensions to 0-100 for radar
+    var dims = [
+      Math.round((r.exp / 30) * 100),
+      Math.round((r.know / 25) * 100),
+      Math.round((r.acc / 20) * 100),
+      Math.round((r.mat / 15) * 100),
+      Math.round((r.rec / 10) * 100)
+    ];
+    var dimLabels = ['EXP','KNW','ACC','MAT','REC'];
+    var dimMaxes = [30, 25, 20, 15, 10];
+    var dimVals = [r.exp, r.know, r.acc, r.mat, r.rec];
+
+    html += '<div class="intel-card" style="border-top-color:' + c + ';">';
+    // Radar
+    html += '<div class="intel-card-radar">' + radarSVG(80, dims, null, c) + '</div>';
+    // Header: name + score + grade
+    html += '<div class="intel-card-header">';
+    html += '<span class="intel-card-name" style="color:' + c + ';">' + ag + '</span>';
+    html += '<span class="intel-card-score" style="color:' + g.color + ';">' + r.score + '</span>';
+    html += '<span class="intel-card-grade" style="color:' + g.color + ';background:' + g.color + '15;">' + g.label + '</span>';
+    html += '</div>';
+    // Dimension bars
+    html += '<div class="intel-card-dims">';
+    for (var i = 0; i < 5; i++) {
+      var pct = dimMaxes[i] > 0 ? Math.round((dimVals[i] / dimMaxes[i]) * 100) : 0;
+      html += '<div class="intel-dim-row">';
+      html += '<span class="intel-dim-label">' + dimLabels[i] + '</span>';
+      html += '<div class="intel-dim-bar"><div class="intel-dim-fill" style="width:' + pct + '%;background:' + c + ';"></div></div>';
+      html += '<span class="intel-dim-val">' + dimVals[i] + '</span>';
+      html += '</div>';
+    }
+    html += '</div>';
+    html += '</div>';
+  });
+  el.innerHTML = html || '<span class="text-muted">No data yet</span>';
+  var avgEl = document.getElementById('intel-avg-score');
+  if (avgEl && scoreCount > 0) avgEl.textContent = Math.round(totalScore / scoreCount);
+}
+
+function renderBrainActivity(containerId, activity) {
+  var el = document.getElementById(containerId);
+  if (!el) return;
+  var items = [];
+  _INTEL_AGENT_ORDER.forEach(function(ag) {
+    var a = activity[ag];
+    var c = _INTEL_AGENT_COLORS[ag] || '#888';
+    if (a && a.last_call_ts) {
+      var ago = Math.round((Date.now() - new Date(a.last_call_ts).getTime()) / 1000);
+      var isActive = ago < 300;
+      var timeStr = ago < 60 ? ago + 's ago' : ago < 3600 ? Math.floor(ago/60) + 'm ago' : Math.floor(ago/3600) + 'h ago';
+      items.push({ag: ag, c: c, active: isActive, task: a.task_type || 'idle', time: timeStr, ago: ago});
+    } else {
+      items.push({ag: ag, c: c, active: false, task: 'offline', time: '--', ago: 999999});
+    }
+  });
+  items.sort(function(a,b) { return a.ago - b.ago; });
+  var html = '';
+  items.forEach(function(it) {
+    html += '<div class="intel-brain-item">';
+    html += '<div class="intel-brain-dot' + (it.active ? ' intel-brain-dot-active' : '') + '" style="background:' + (it.active ? it.c : 'var(--text-muted)') + ';' + (it.active ? 'box-shadow:0 0 6px ' + it.c + ';' : '') + '"></div>';
+    html += '<span class="intel-brain-name" style="color:' + it.c + ';">' + it.ag + '</span>';
+    html += '<span class="intel-brain-task">' + esc(it.task) + '</span>';
+    html += '<span class="intel-brain-time">' + it.time + '</span>';
+    html += '</div>';
+  });
+  el.innerHTML = html || '<span class="text-muted" style="font-size:0.72rem;">No brain activity data</span>';
+}
+
+function renderPatternFeed(containerId, patterns) {
+  var el = document.getElementById(containerId);
+  if (!el) return;
+  if (!patterns || patterns.length === 0) {
+    el.innerHTML = '<span class="text-muted" style="font-size:0.72rem;">No patterns recorded yet</span>';
+    return;
+  }
+  var html = '';
+  var max = Math.min(patterns.length, 15);
+  for (var i = 0; i < max; i++) {
+    var p = patterns[i];
+    var c = _INTEL_AGENT_COLORS[p.agent] || '#888';
+    var conf = p.confidence ? (p.confidence * 100).toFixed(0) + '%' : '';
+    html += '<div class="intel-pattern-item">';
+    html += '<div class="intel-pattern-dot" style="background:' + c + ';"></div>';
+    html += '<span class="intel-pattern-agent" style="color:' + c + ';">' + esc(p.agent || '--') + '</span>';
+    html += '<span class="intel-pattern-text">' + esc(p.pattern || p.text || '--') + '</span>';
+    if (conf) html += '<span class="intel-pattern-conf">' + conf + '</span>';
+    html += '</div>';
+  }
+  el.innerHTML = html;
+}
+
+var _chartCostPieInst = null;
+function renderCostPie(chartId, localCalls, cloudCalls) {
+  var canvas = document.getElementById(chartId);
+  if (!canvas || typeof Chart === 'undefined') return;
+  if (_chartCostPieInst) { _chartCostPieInst.destroy(); _chartCostPieInst = null; }
+  var total = localCalls + cloudCalls;
+  if (total === 0) return;
+  var localPct = ((localCalls / total) * 100).toFixed(1);
+  _chartCostPieInst = new Chart(canvas.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Local (' + localPct + '%)', 'Cloud (' + (100 - localPct).toFixed(1) + '%)'],
+      datasets: [{
+        data: [localCalls, cloudCalls],
+        backgroundColor: ['#9B59B6', '#E67E22'],
+        borderColor: ['#9B59B688', '#E67E2288'],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '65%',
+      plugins: {
+        legend: { position: 'bottom', labels: { color: '#8888aa', font: { size: 10 }, padding: 8 } }
+      }
+    }
+  });
+}
+
+var _chartCallTimelineInst = null;
+function renderCallTimeline(chartId, calls) {
+  var canvas = document.getElementById(chartId);
+  if (!canvas || typeof Chart === 'undefined') return;
+  if (_chartCallTimelineInst) { _chartCallTimelineInst.destroy(); _chartCallTimelineInst = null; }
+  if (!calls || calls.length === 0) return;
+  var buckets = {};
+  for (var h = 0; h < 24; h++) buckets[h] = {local: 0, cloud: 0};
+  calls.forEach(function(call) {
+    if (!call.ts) return;
+    var hour = parseInt(call.ts.split('T')[1].split(':')[0], 10);
+    if (isNaN(hour)) return;
+    if ((call.provider || '').indexOf('local') >= 0) buckets[hour].local++;
+    else buckets[hour].cloud++;
+  });
+  var labels = [], localData = [], cloudData = [];
+  for (var h = 0; h < 24; h++) {
+    labels.push(h + ':00');
+    localData.push(buckets[h].local);
+    cloudData.push(buckets[h].cloud);
+  }
+  _chartCallTimelineInst = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'Local', data: localData, backgroundColor: '#9B59B688', borderColor: '#9B59B6', borderWidth: 1 },
+        { label: 'Cloud', data: cloudData, backgroundColor: '#E67E2288', borderColor: '#E67E22', borderWidth: 1 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { stacked: true, ticks: { color: '#505068', font: { size: 8 }, maxRotation: 0 }, grid: { display: false } },
+        y: { stacked: true, ticks: { color: '#505068', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.04)' } }
+      },
+      plugins: { legend: { labels: { color: '#8888aa', font: { size: 9 }, padding: 6 } } }
+    }
+  });
+}
+
+var _chartMemoryBarsInst = null;
+function renderMemoryBars(chartId, agents) {
+  var canvas = document.getElementById(chartId);
+  if (!canvas || typeof Chart === 'undefined') return;
+  if (_chartMemoryBarsInst) { _chartMemoryBarsInst.destroy(); _chartMemoryBarsInst = null; }
+  var labels = [], data = [], colors = [];
+  _INTEL_AGENT_ORDER.forEach(function(ag) {
+    var s = agents[ag];
+    if (!s || s.error) return;
+    var kb = s.db_size_kb || 0;
+    if (kb > 0) {
+      labels.push(ag);
+      data.push(kb);
+      colors.push(_INTEL_AGENT_COLORS[ag] || '#888');
+    }
+  });
+  if (data.length === 0) return;
+  _chartMemoryBarsInst = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'DB Size (KB)',
+        data: data,
+        backgroundColor: colors.map(function(c) { return c + '88'; }),
+        borderColor: colors,
+        borderWidth: 1
+      }]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      scales: {
+        x: { ticks: { color: '#505068', font: { size: 9 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#8888aa', font: { size: 10 } }, grid: { display: false } }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+function loadIntelSmartActions() {
+  var el = document.getElementById('intel-smart-actions');
+  if (!el) return;
+  fetch('/api/thor/smart-actions?agent=').then(function(r){return r.json();}).then(function(data) {
+    var actions = data.actions || [];
+    _agentSmartActionsCache['intelligence'] = actions;
+    if (actions.length === 0) {
+      el.innerHTML = '<span style="font-size:0.76rem;color:var(--success);font-family:var(--font-mono);">All clear — no recommendations.</span>';
+      return;
+    }
+    var countEl = document.getElementById('intel-reco-count');
+    if (countEl) countEl.textContent = (data.source_count || actions.length) + ' sources';
+    var html = '';
+    var max = Math.min(actions.length, 10);
+    for (var i = 0; i < max; i++) {
+      var a = actions[i];
+      var pClass = 'intel-reco-badge-medium';
+      var pLabel = 'MEDIUM';
+      if (a.priority === 'critical') { pClass = 'intel-reco-badge-critical'; pLabel = 'CRITICAL'; }
+      else if (a.priority === 'high') { pClass = 'intel-reco-badge-high'; pLabel = 'HIGH'; }
+      else if (a.priority === 'low') { pClass = 'intel-reco-badge-low'; pLabel = 'LOW'; }
+      var sourceLabel = a.source || '';
+      if (a.source === 'live_data') sourceLabel = 'Live Data';
+      else if (a.source) sourceLabel = a.source.charAt(0).toUpperCase() + a.source.slice(1);
+      var confStr = a.confidence ? 'conf ' + (a.confidence * 100).toFixed(0) + '%' : '';
+      html += '<div class="intel-reco-row">';
+      html += '<span class="intel-reco-badge ' + pClass + '">' + pLabel + '</span>';
+      html += '<div class="intel-reco-content">';
+      html += '<div class="intel-reco-title">' + esc(a.title) + '</div>';
+      html += '<div class="intel-reco-meta">';
+      if (sourceLabel) html += '<span>' + esc(sourceLabel) + '</span>';
+      if (confStr) html += '<span>' + confStr + '</span>';
+      html += '</div></div>';
+      html += '<button class="intel-reco-btn" onclick="submitAgentSmartAction(\'intelligence\',' + i + ')">Resolve</button>';
+      html += '</div>';
+    }
+    el.innerHTML = html;
+  }).catch(function() {
+    el.innerHTML = '<span class="text-muted" style="font-size:0.76rem;">Failed to load recommendations.</span>';
+  });
+}
+
+function refreshIntelligence() {
+  Promise.all([
+    fetch('/api/llm/status').then(function(r){return r.json();}).catch(function(){return {};}),
+    fetch('/api/llm/costs').then(function(r){return r.json();}).catch(function(){return {};}),
+    fetch('/api/llm/memory-all').then(function(r){return r.json();}).catch(function(){return {};}),
+    fetch('/api/llm/routing').then(function(r){return r.json();}).catch(function(){return {};}),
+    fetch('/api/llm/recent-calls').then(function(r){return r.json();}).catch(function(){return {calls:[]};}),
+    fetch('/api/llm/brain-activity').then(function(r){return r.json();}).catch(function(){return {activity:{}};}),
+    fetch('/api/llm/pattern-feed').then(function(r){return r.json();}).catch(function(){return {patterns:[]};}),
+    fetch('/api/llm/cost-savings').then(function(r){return r.json();}).catch(function(){return {};}),
+  ]).then(function(results) {
+    try {
+    var status = results[0], costs = results[1], memoryAll = results[2],
+        routing = results[3], recentCalls = results[4], brainActivity = results[5],
+        patternFeed = results[6], costSavings = results[7];
+
+    // S2: Agent Intelligence Grid
+    renderIntelGrid(memoryAll.agents || {});
+
+    // S4: Brain Activity + Patterns
+    renderBrainActivity('intel-brain-activity', brainActivity.activity || {});
+    renderPatternFeed('intel-pattern-feed', patternFeed.patterns || []);
+
+    // S5: Charts
+    var csLocal = costSavings.local_calls || 0, csCloud = costSavings.cloud_calls || 0;
+    if ((csLocal + csCloud) > 0) renderCostPie('chart-cost-pie', csLocal, csCloud);
+    setTextSafe('intel-total-saved', '$' + (costSavings.estimated_savings || 0).toFixed(2));
+    if (recentCalls.calls) renderCallTimeline('chart-call-timeline', recentCalls.calls);
+    if (memoryAll.agents) renderMemoryBars('chart-memory-bars', memoryAll.agents);
+
+    // S1: Server status
+    var online = status.server_online;
+    setTextSafe('intel-server-badge', online ? 'LLM Online' : 'LLM Offline');
+    setTextSafe('intel-server-state', online ? 'ONLINE' : 'OFFLINE');
+    var dotEl = document.getElementById('intel-server-dot');
+    if (dotEl) {
+      dotEl.style.background = online ? 'var(--success)' : 'var(--error)';
+      dotEl.style.boxShadow = online ? '0 0 6px rgba(34,170,68,0.6)' : '0 0 6px rgba(231,76,60,0.6)';
+    }
+    var stateEl = document.getElementById('intel-server-state');
+    if (stateEl) stateEl.style.color = online ? 'var(--success)' : 'var(--error)';
+    var modelEl = document.getElementById('intel-model-name');
+    if (modelEl && status.models) { var m = status.models.local_large || ''; modelEl.textContent = 'Model: ' + (m.split('/').pop() || '--'); }
+
+    // S1: Cost data
+    var c24 = costs.last_24h || {};
+    var byProv = c24.by_provider || {};
+    var localCalls = (byProv.local || {}).calls || 0;
+    var cloudCalls = (c24.total_calls || 0) - localCalls;
+    setTextSafe('intel-calls-24h', c24.total_calls || 0);
+    setTextSafe('intel-local-calls', localCalls);
+    setTextSafe('intel-cloud-calls', cloudCalls);
+    setTextSafe('intel-cost-24h', '$' + (c24.total_cost || 0).toFixed(4));
+    setTextSafe('intel-savings-24h', '$' + (costs.estimated_savings_24h || 0).toFixed(4));
+
+    // S1: Active brains
+    var totals = (memoryAll.totals || {});
+    setTextSafe('intel-active-brains', (totals.agents_with_memory || 0) + ' / 11');
+
+    // S5: Per-agent memory table
+    var memTable = document.getElementById('intel-memory-table');
+    if (memTable && memoryAll.agents) {
+      var rows = '';
+      _INTEL_AGENT_ORDER.forEach(function(ag) {
+        var s = memoryAll.agents[ag] || {};
+        if (s.error) return;
+        var c = _INTEL_AGENT_COLORS[ag] || '#888';
+        var wr = s.total_decisions > 0 ? (s.win_rate || 0).toFixed(1) + '%' : '--';
+        var wrColor = (s.win_rate || 0) >= 50 ? 'var(--success)' : (s.win_rate || 0) > 0 ? 'var(--error)' : 'var(--text-muted)';
+        var dec = s.total_decisions || 0;
+        var pat = s.active_patterns || 0;
+        rows += '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">' +
+          '<td style="padding:5px 6px;font-size:0.7rem;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:'+c+';margin-right:5px;vertical-align:middle;"></span><span style="color:'+c+';font-weight:600;text-transform:capitalize;">'+ag+'</span></td>' +
+          '<td style="text-align:center;padding:5px 4px;font-family:var(--font-mono);font-size:0.7rem;">'+(dec > 0 ? dec : '<span style="color:var(--text-muted);">-</span>')+'</td>' +
+          '<td style="text-align:center;padding:5px 4px;font-family:var(--font-mono);font-size:0.7rem;">'+(pat > 0 ? '<span style="color:var(--success);">'+pat+'</span>' : '<span style="color:var(--text-muted);">-</span>')+'</td>' +
+          '<td style="text-align:center;padding:5px 4px;font-family:var(--font-mono);font-size:0.7rem;color:'+wrColor+';">'+wr+'</td>' +
+          '<td style="text-align:center;padding:5px 4px;font-family:var(--font-mono);font-size:0.68rem;color:var(--text-muted);">'+((s.db_size_kb||0)>0?(s.db_size_kb).toFixed(0)+'KB':'--')+'</td></tr>';
+      });
+      memTable.innerHTML = rows || '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:12px;">No memory data</td></tr>';
+    }
+
+    // S5: Routing table
+    var routeTable = document.getElementById('intel-routing-table');
+    if (routeTable && routing.routing) {
+      var routeColors = {local_large:'#9B59B6',local_small:'#3498DB',cloud_openai:'#E67E22',cloud_claude:'#E74C3C',cloud_gpt4o:'#F39C12'};
+      var rRows = '';
+      Object.keys(routing.routing).forEach(function(tt) {
+        var route = routing.routing[tt]; var rc = routeColors[route] || '#888';
+        rRows += '<tr style="border-bottom:1px solid var(--border);"><td style="padding:4px 6px;">'+tt+'</td><td style="padding:4px 6px;color:'+rc+';font-weight:500;">'+route.replace(/_/g,' ')+'</td></tr>';
+      });
+      routeTable.innerHTML = rRows;
+    }
+    var overEl = document.getElementById('intel-agent-overrides');
+    if (overEl && routing.agent_overrides) {
+      var overHtml = '';
+      Object.keys(routing.agent_overrides).forEach(function(ag) {
+        var ov = routing.agent_overrides[ag];
+        overHtml += '<div style="margin-bottom:2px;"><span style="color:var(--text);font-weight:500;text-transform:capitalize;">'+ag+':</span> ';
+        Object.keys(ov).forEach(function(k) { overHtml += k+' &rarr; <span style="color:#E67E22;">'+ov[k]+'</span> '; });
+        overHtml += '</div>';
+      });
+      overEl.innerHTML = overHtml || 'None configured';
+    }
+
+    // S6: Recent calls feed
+    var feedEl = document.getElementById('intel-activity-feed');
+    if (feedEl && recentCalls.calls) {
+      var fHtml = '';
+      recentCalls.calls.slice(0, 30).forEach(function(call) {
+        var provColor = (call.provider||'').indexOf('local')>=0 ? '#9B59B6' : '#E67E22';
+        var ts = call.ts ? call.ts.split('T')[1].split('.')[0] : '--';
+        var fb = call.fallback ? ' <span style="color:var(--error);font-size:0.6rem;">[FALLBACK]</span>' : '';
+        fHtml += '<div style="padding:3px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;">' +
+          '<span style="color:var(--text-muted);min-width:55px;">'+ts+'</span>' +
+          '<span style="color:'+provColor+';min-width:50px;font-weight:500;">'+(call.provider||'--')+'</span>' +
+          '<span style="min-width:50px;text-transform:capitalize;">'+(call.agent||'--')+'</span>' +
+          '<span style="color:var(--text-muted);">'+(call.task_type||'--')+'</span>' +
+          '<span style="margin-left:auto;color:var(--text-muted);">'+(call.latency_ms||0)+'ms</span>' +
+          '<span style="color:'+((call.cost_usd||0)>0?'var(--warning)':'var(--success)')+';">$'+(call.cost_usd||0).toFixed(4)+'</span>'+fb+'</div>';
+      });
+      feedEl.innerHTML = fHtml || '<span class="text-muted">No calls recorded yet</span>';
+    }
+
+    // S5: Cost by agent
+    var costEl = document.getElementById('intel-cost-by-agent');
+    if (costEl && c24.by_agent) {
+      var cHtml = '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+      Object.keys(c24.by_agent).sort(function(a,b){return (c24.by_agent[b].cost||0)-(c24.by_agent[a].cost||0);}).forEach(function(ag) {
+        var d = c24.by_agent[ag]; var agColor = _INTEL_AGENT_COLORS[ag] || '#888';
+        cHtml += '<div style="background:var(--glass-bg);padding:6px 10px;border-radius:6px;border:1px solid var(--glass-border);">' +
+          '<div style="color:'+agColor+';font-weight:600;text-transform:capitalize;font-size:0.72rem;">'+ag+'</div>' +
+          '<div style="font-size:0.68rem;">'+(d.calls||0)+' calls | $'+((d.cost||0)).toFixed(4)+'</div></div>';
+      });
+      costEl.innerHTML = cHtml + '</div>';
+    }
+
+    // S3: Smart Actions / Recommendations
+    loadIntelSmartActions();
+
+  } catch(e) {
+    console.error('[Intelligence] render error:', e);
+  }
+  }).catch(function(err) {
+    console.error('[Intelligence] fetch error:', err);
+  });
+}
+
 // ── Thor Wake Control ──
 async function thorWakeNow() {
   var btn = document.getElementById('btn-thor-wake');
