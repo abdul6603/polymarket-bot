@@ -7297,6 +7297,20 @@ async function loadOverviewVitals() {
         errEl.innerHTML = eHtml;
       }
     }
+    // LLM Server status
+    try {
+      var llmResp = await fetch('/api/llm/status');
+      var llmData = await llmResp.json();
+      var online = llmData.server_online;
+      var llmBadge = document.getElementById('ov-llm-badge');
+      if (llmBadge) {
+        llmBadge.innerHTML = '<span class="' + (online ? 'dot-online' : 'dot-offline') + '"></span> LLM ' + (online ? 'Online' : 'Offline');
+        llmBadge.style.background = online ? 'rgba(0,255,136,0.08)' : 'rgba(231,76,60,0.08)';
+        llmBadge.style.borderColor = online ? 'rgba(0,255,136,0.15)' : 'rgba(231,76,60,0.15)';
+        llmBadge.style.color = online ? 'var(--success)' : 'var(--error)';
+      }
+    } catch(e) {}
+
   } catch(e) {
     console.warn('Overview vitals load error:', e);
   }
@@ -7309,6 +7323,24 @@ async function loadSystemTab() {
   try {
     var resp = await fetch('/api/system/metrics');
     var d = await resp.json();
+
+    // 6 stat cards at top
+    function sysColor(v) { return v > 85 ? 'var(--error)' : v > 60 ? 'var(--warning)' : 'var(--success)'; }
+    var cpuPct = (d.cpu || {}).percent || 0;
+    var memPct = (d.memory || {}).percent || 0;
+    var diskPct = (d.disk || {}).percent || 0;
+    var scpu = document.getElementById('sys-cpu');
+    if (scpu) { scpu.textContent = cpuPct + '%'; scpu.style.color = sysColor(cpuPct); }
+    var smem = document.getElementById('sys-memory');
+    if (smem) { smem.textContent = memPct + '%'; smem.style.color = sysColor(memPct); }
+    var sdisk = document.getElementById('sys-disk');
+    if (sdisk) { sdisk.textContent = diskPct + '%'; sdisk.style.color = sysColor(diskPct); }
+    var sup = document.getElementById('sys-uptime');
+    if (sup) sup.textContent = d.uptime || '--';
+    var sproc = document.getElementById('sys-processes');
+    if (sproc) sproc.textContent = (d.processes || []).length;
+    var sports = document.getElementById('sys-ports');
+    if (sports) sports.textContent = (d.ports || []).length;
 
     // Process table
     var ptbody = document.getElementById('sys-process-tbody');
