@@ -631,6 +631,18 @@ class HawkBot:
                     model_prob = opp.estimate.estimated_prob
                     category = opp.market.category or "unknown"
 
+                    # ── Category-specific config override ──
+                    try:
+                        from hawk.config import get_effective_config
+                        _cat_cfg = get_effective_config(self.cfg, category)
+                        if not _cat_cfg["enabled"]:
+                            log.info("[TUNER] Category '%s' DISABLED by override — skipping: %s",
+                                     category, opp.market.question[:60])
+                            continue
+                        effective_min_edge = _cat_cfg["min_edge"]
+                    except Exception:
+                        effective_min_edge = self.cfg.min_edge
+
                     # ── HARD BLOCK: Model-Market Divergence > 3x ──
                     divergence_ratio = 0.0
                     if market_price > 0.01:
@@ -836,10 +848,10 @@ class HawkBot:
                     combined_adj = learner_adj + brain_edge_adj
                     if combined_adj < 0:
                         effective_edge = opp.edge + combined_adj
-                        if effective_edge < self.cfg.min_edge:
+                        if effective_edge < effective_min_edge:
                             log.info("[BRAIN-V2] BLOCKED: edge %.1f%% + learner %.1f%% + brain %.1f%% = %.1f%% < min %.1f%% | %s",
                                      opp.edge * 100, learner_adj * 100, brain_edge_adj * 100,
-                                     effective_edge * 100, self.cfg.min_edge * 100, opp.market.question[:60])
+                                     effective_edge * 100, effective_min_edge * 100, opp.market.question[:60])
                             continue
 
                     # V7: Only bet with real data-backed edge

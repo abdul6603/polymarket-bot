@@ -321,9 +321,59 @@
 
       <!-- Q: Trade Reviews -->
       <div class="section-spacer" id="hawk-reviews-section">
-        <h3 class="section-title" data-accent="hawk" style="font-size:0.82rem;">Trade Reviews <span id="hawk-review-count" style="font-size:0.72rem;color:var(--text-muted);font-weight:400;margin-left:8px;"></span></h3>
+        <h3 class="section-title" data-accent="hawk" style="font-size:0.82rem;">Trade Reviews <span id="hawk-review-count" style="font-size:0.72rem;color:var(--text-muted);font-weight:400;margin-left:8px;"></span>
+          <button onclick="hawkRefreshReviews()" style="float:right;background:rgba(255,152,0,0.15);color:var(--agent-hawk);border:1px solid rgba(255,152,0,0.3);border-radius:6px;padding:4px 12px;font-size:0.68rem;cursor:pointer;">Refresh Analysis</button>
+        </h3>
         <div id="hawk-reviews-list">
           <div class="glass-card"><div class="text-muted" style="text-align:center;padding:24px;">No trade reviews yet</div></div>
+        </div>
+      </div>
+
+      <!-- R: Edge Source Effectiveness -->
+      <div class="section-spacer" id="hawk-edge-effectiveness-section">
+        <h3 class="section-title" data-accent="hawk" style="font-size:0.82rem;">Edge Source Effectiveness</h3>
+        <div id="hawk-edge-effectiveness">
+          <div class="glass-card"><div class="text-muted" style="text-align:center;padding:16px;">Run analysis to see edge source data</div></div>
+        </div>
+      </div>
+
+      <!-- S: Calibration Curve -->
+      <div class="section-spacer" id="hawk-calibration-section">
+        <h3 class="section-title" data-accent="hawk" style="font-size:0.82rem;">Calibration Curve</h3>
+        <div id="hawk-calibration-curve">
+          <div class="glass-card"><div class="text-muted" style="text-align:center;padding:16px;">Run analysis to see calibration data</div></div>
+        </div>
+      </div>
+
+      <!-- T: Failure Patterns -->
+      <div class="section-spacer" id="hawk-failure-patterns-section">
+        <h3 class="section-title" data-accent="hawk" style="font-size:0.82rem;">Failure Patterns</h3>
+        <div id="hawk-failure-patterns">
+          <div class="glass-card"><div class="text-muted" style="text-align:center;padding:16px;">No failure patterns detected</div></div>
+        </div>
+      </div>
+
+      <!-- U: Dynamic Recommendations -->
+      <div class="section-spacer" id="hawk-dynamic-recs-section">
+        <h3 class="section-title" data-accent="hawk" style="font-size:0.82rem;">Dynamic Recommendations</h3>
+        <div id="hawk-dynamic-recs">
+          <div class="glass-card"><div class="text-muted" style="text-align:center;padding:16px;">No recommendations yet</div></div>
+        </div>
+      </div>
+
+      <!-- V: CLV Analysis -->
+      <div class="section-spacer" id="hawk-clv-section">
+        <h3 class="section-title" data-accent="hawk" style="font-size:0.82rem;">Closing Line Value (CLV)</h3>
+        <div id="hawk-clv-content">
+          <div class="glass-card"><div class="text-muted" style="text-align:center;padding:16px;">Loading CLV data...</div></div>
+        </div>
+      </div>
+
+      <!-- W: Category Tuning -->
+      <div class="section-spacer" id="hawk-tuning-section">
+        <h3 class="section-title" data-accent="hawk" style="font-size:0.82rem;">Category Tuning</h3>
+        <div id="hawk-tuning-content">
+          <div class="glass-card"><div class="text-muted" style="text-align:center;padding:16px;">Loading tuning data...</div></div>
         </div>
       </div>
     </div>

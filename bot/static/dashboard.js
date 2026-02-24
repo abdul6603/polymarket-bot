@@ -7799,6 +7799,8 @@ async function loadHawkTab() {
   loadHawkGapHeatmap();
   loadHawkLearner();
   loadHawkArbStatus();
+  loadHawkCLV();
+  loadHawkTuning();
 
   // V8: Auto-refresh capital + positions every 30s
   if (window._hawkLiveRefresh) clearInterval(window._hawkLiveRefresh);
@@ -8189,6 +8191,263 @@ function renderHawkReviews(data) {
     html += '</div>';
   }
   listEl.innerHTML = html;
+
+  // Render enhanced analytics sections
+  renderHawkEdgeEffectiveness(data.edge_source_effectiveness || {});
+  renderHawkCalibrationCurve(data.calibration_curve || {});
+  renderHawkFailurePatterns(data.failure_patterns || []);
+  renderHawkDynamicRecs(data.dynamic_recommendations || []);
+}
+
+function hawkRefreshReviews() {
+  fetch('/api/hawk/reviews/refresh', {method:'POST'})
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.ok) {
+        fetch('/api/hawk/reviews').then(function(r){return r.json();}).then(function(rd){renderHawkReviews(rd);});
+      }
+    })
+    .catch(function(){});
+}
+
+function renderHawkEdgeEffectiveness(data) {
+  var el = document.getElementById('hawk-edge-effectiveness');
+  if (!el) return;
+  var sources = data.sources || {};
+  var keys = Object.keys(sources);
+  if (keys.length === 0) {
+    el.innerHTML = '<div class="glass-card"><div class="text-muted" style="text-align:center;padding:16px;">No edge source data yet</div></div>';
+    return;
+  }
+  var html = '<div class="glass-card" style="padding:12px;">';
+  if (data.best) html += '<div style="font-size:0.72rem;margin-bottom:8px;"><span style="color:#00ff88;font-weight:600;">Best:</span> ' + esc(data.best) + ' &nbsp; <span style="color:#ff6666;font-weight:600;">Worst:</span> ' + esc(data.worst || 'N/A') + '</div>';
+  html += '<table class="data-table"><thead><tr><th>Source</th><th>W/L</th><th>WR</th><th>Avg P&L</th><th>Trend</th></tr></thead><tbody>';
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i], s = sources[k];
+    var trendColor = s.trend === 'improving' ? '#00ff88' : s.trend === 'declining' ? '#ff6666' : 'var(--text-muted)';
+    html += '<tr><td style="font-weight:600;">' + esc(k) + '</td>';
+    html += '<td>' + s.wins + 'W/' + s.losses + 'L</td>';
+    html += '<td style="color:' + wrColor(s.win_rate) + ';font-weight:700;">' + s.win_rate.toFixed(1) + '%</td>';
+    html += '<td style="color:' + (s.avg_pnl >= 0 ? '#00ff88' : '#ff6666') + ';">$' + s.avg_pnl.toFixed(2) + '</td>';
+    html += '<td style="color:' + trendColor + ';text-transform:capitalize;">' + esc(s.trend) + '</td></tr>';
+  }
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+
+function renderHawkCalibrationCurve(data) {
+  var el = document.getElementById('hawk-calibration-curve');
+  if (!el) return;
+  var buckets = data.buckets || [];
+  if (buckets.length === 0) {
+    el.innerHTML = '<div class="glass-card"><div class="text-muted" style="text-align:center;padding:16px;">No calibration data yet</div></div>';
+    return;
+  }
+  var html = '<div class="glass-card" style="padding:12px;">';
+  html += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;">';
+  if (data.brier_score !== null) html += '<div class="widget-badge"><span class="wb-label">Brier Score:</span> <span style="color:' + (data.brier_score < 0.25 ? '#00ff88' : '#ff6600') + ';">' + data.brier_score.toFixed(4) + '</span></div>';
+  if (data.overconfidence_bias !== null) html += '<div class="widget-badge"><span class="wb-label">Bias:</span> <span style="color:' + (data.overconfidence_bias > 0 ? '#ff6600' : '#00ff88') + ';">' + (data.overconfidence_bias > 0 ? 'Over' : 'Under') + 'confident (' + Math.abs(data.overconfidence_bias).toFixed(4) + ')</span></div>';
+  html += '</div>';
+  html += '<table class="data-table"><thead><tr><th>Prob Bucket</th><th>Trades</th><th>Avg Estimated</th><th>Actual WR</th><th>Gap</th></tr></thead><tbody>';
+  for (var i = 0; i < buckets.length; i++) {
+    var b = buckets[i];
+    if (b.count === 0) continue;
+    var gap = b.avg_estimated !== null && b.actual_wr !== null ? (b.avg_estimated - b.actual_wr).toFixed(1) : '--';
+    var gapColor = gap !== '--' ? (parseFloat(gap) > 10 ? '#ff6600' : parseFloat(gap) < -10 ? '#4FC3F7' : '#00ff88') : 'var(--text-muted)';
+    html += '<tr><td>' + esc(b.label) + '</td><td>' + b.count + '</td>';
+    html += '<td>' + (b.avg_estimated !== null ? b.avg_estimated.toFixed(1) + '%' : '--') + '</td>';
+    html += '<td style="color:' + wrColor(b.actual_wr || 0) + ';font-weight:700;">' + (b.actual_wr !== null ? b.actual_wr.toFixed(1) + '%' : '--') + '</td>';
+    html += '<td style="color:' + gapColor + ';">' + (gap !== '--' ? gap + 'pp' : '--') + '</td></tr>';
+  }
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+
+function renderHawkFailurePatterns(patterns) {
+  var el = document.getElementById('hawk-failure-patterns');
+  if (!el) return;
+  if (!patterns || patterns.length === 0) {
+    el.innerHTML = '<div class="glass-card"><div style="text-align:center;padding:16px;color:#00ff88;font-size:0.76rem;">No toxic patterns detected</div></div>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < patterns.length; i++) {
+    var p = patterns[i];
+    var borderColor = p.severity === 'critical' ? '#ff4444' : '#ff9800';
+    html += '<div style="background:rgba(255,0,0,0.05);border:1px solid ' + borderColor + '44;border-left:3px solid ' + borderColor + ';border-radius:8px;padding:10px 14px;margin-bottom:8px;">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+    html += '<span style="font-size:0.76rem;font-weight:600;color:#fff;">' + esc(p.combo) + '</span>';
+    html += '<span style="font-size:0.68rem;font-weight:700;color:' + borderColor + ';text-transform:uppercase;">' + esc(p.severity) + '</span>';
+    html += '</div>';
+    html += '<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px;">' + p.wins + 'W/' + p.losses + 'L (' + p.win_rate.toFixed(1) + '% WR) &mdash; P&L: <span style="color:' + (p.total_pnl >= 0 ? '#00ff88' : '#ff6666') + ';">$' + p.total_pnl.toFixed(2) + '</span></div>';
+    html += '</div>';
+  }
+  el.innerHTML = html;
+}
+
+function renderHawkDynamicRecs(recs) {
+  var el = document.getElementById('hawk-dynamic-recs');
+  if (!el) return;
+  if (!recs || recs.length === 0) {
+    el.innerHTML = '<div class="glass-card"><div style="text-align:center;padding:16px;color:#00ff88;font-size:0.76rem;">No recommendations — all looking good</div></div>';
+    return;
+  }
+  var html = '';
+  var sevColors = {critical:'#ff4444', high:'#ff6600', medium:'#FFD700', low:'#4FC3F7'};
+  for (var i = 0; i < recs.length; i++) {
+    var r = recs[i];
+    var sc = sevColors[r.severity] || '#FFD700';
+    html += '<div style="background:rgba(255,255,255,0.03);border:1px solid ' + sc + '33;border-left:3px solid ' + sc + ';border-radius:8px;padding:10px 14px;margin-bottom:8px;">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+    html += '<span style="font-size:0.76rem;font-weight:600;color:#fff;">' + esc(r.message) + '</span>';
+    html += '<span style="font-size:0.64rem;font-weight:700;color:' + sc + ';text-transform:uppercase;background:' + sc + '18;padding:2px 8px;border-radius:4px;">' + esc(r.severity) + '</span>';
+    html += '</div>';
+    html += '<div style="font-size:0.70rem;color:var(--text-muted);margin-top:4px;">Evidence: ' + esc(r.evidence) + '</div>';
+    html += '<div style="font-size:0.70rem;color:' + sc + ';margin-top:2px;">Suggested: ' + esc(r.suggested_value) + '</div>';
+    html += '</div>';
+  }
+  el.innerHTML = html;
+}
+
+function loadHawkCLV() {
+  fetch('/api/hawk/clv')
+    .then(function(r){return r.json();})
+    .then(function(d){renderHawkCLV(d);})
+    .catch(function(){});
+}
+
+function renderHawkCLV(data) {
+  var el = document.getElementById('hawk-clv-content');
+  if (!el) return;
+  var html = '';
+
+  // Hero cards
+  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">';
+  html += '<div class="glass-card" style="text-align:center;padding:12px;"><div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;">Avg CLV</div><div style="font-size:1.3rem;font-weight:700;color:' + ((data.avg_clv||0) >= 0 ? '#00ff88' : '#ff6666') + ';">' + (data.avg_clv||0).toFixed(4) + '</div></div>';
+  html += '<div class="glass-card" style="text-align:center;padding:12px;"><div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;">Avg CLV%</div><div style="font-size:1.3rem;font-weight:700;color:' + ((data.avg_clv_pct||0) >= 0 ? '#00ff88' : '#ff6666') + ';">' + (data.avg_clv_pct||0).toFixed(2) + '%</div></div>';
+  html += '<div class="glass-card" style="text-align:center;padding:12px;"><div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;">Positive CLV Rate</div><div style="font-size:1.3rem;font-weight:700;color:' + ((data.positive_clv_rate||0) >= 50 ? '#00ff88' : '#ff6666') + ';">' + (data.positive_clv_rate||0).toFixed(1) + '%</div></div>';
+  html += '</div>';
+  html += '<div style="font-size:0.70rem;color:var(--text-muted);margin-bottom:10px;">' + (data.resolved||0) + ' resolved / ' + (data.total_trades||0) + ' total CLV records</div>';
+
+  // By Category table
+  var byCat = data.by_category || {};
+  var catKeys = Object.keys(byCat);
+  if (catKeys.length > 0) {
+    html += '<div class="glass-card" style="padding:12px;margin-bottom:10px;"><div style="font-size:0.72rem;font-weight:700;color:var(--agent-hawk);margin-bottom:6px;">CLV by Category</div>';
+    html += '<table class="data-table"><thead><tr><th>Category</th><th>Count</th><th>Avg CLV</th><th>+CLV Rate</th></tr></thead><tbody>';
+    for (var i = 0; i < catKeys.length; i++) {
+      var ck = catKeys[i], cv = byCat[ck];
+      html += '<tr><td style="font-weight:600;">' + esc(ck) + '</td><td>' + cv.count + '</td>';
+      html += '<td style="color:' + (cv.avg_clv >= 0 ? '#00ff88' : '#ff6666') + ';">' + cv.avg_clv.toFixed(4) + '</td>';
+      html += '<td style="color:' + (cv.positive_rate >= 50 ? '#00ff88' : '#ff6666') + ';">' + cv.positive_rate.toFixed(1) + '%</td></tr>';
+    }
+    html += '</tbody></table></div>';
+  }
+
+  // By Edge Source table
+  var bySrc = data.by_edge_source || {};
+  var srcKeys = Object.keys(bySrc);
+  if (srcKeys.length > 0) {
+    html += '<div class="glass-card" style="padding:12px;margin-bottom:10px;"><div style="font-size:0.72rem;font-weight:700;color:var(--agent-hawk);margin-bottom:6px;">CLV by Edge Source</div>';
+    html += '<table class="data-table"><thead><tr><th>Source</th><th>Count</th><th>Avg CLV</th><th>+CLV Rate</th></tr></thead><tbody>';
+    for (var j = 0; j < srcKeys.length; j++) {
+      var sk = srcKeys[j], sv = bySrc[sk];
+      html += '<tr><td style="font-weight:600;">' + esc(sk) + '</td><td>' + sv.count + '</td>';
+      html += '<td style="color:' + (sv.avg_clv >= 0 ? '#00ff88' : '#ff6666') + ';">' + sv.avg_clv.toFixed(4) + '</td>';
+      html += '<td style="color:' + (sv.positive_rate >= 50 ? '#00ff88' : '#ff6666') + ';">' + sv.positive_rate.toFixed(1) + '%</td></tr>';
+    }
+    html += '</tbody></table></div>';
+  }
+
+  // Trade history (last 10)
+  var trades = data.trades || [];
+  if (trades.length > 0) {
+    html += '<div class="glass-card" style="padding:12px;"><div style="font-size:0.72rem;font-weight:700;color:var(--agent-hawk);margin-bottom:6px;">CLV Trade History (last 10)</div>';
+    html += '<table class="data-table"><thead><tr><th>Market</th><th>Dir</th><th>Entry</th><th>CLV</th><th>CLV%</th><th>Status</th></tr></thead><tbody>';
+    var shown = trades.slice(-10).reverse();
+    for (var t = 0; t < shown.length; t++) {
+      var tr = shown[t];
+      var clvVal = tr.clv !== null && tr.clv !== undefined ? tr.clv.toFixed(4) : '--';
+      var clvPct = tr.clv_pct !== null && tr.clv_pct !== undefined ? tr.clv_pct.toFixed(2) + '%' : '--';
+      var clvColor = tr.clv !== null ? (tr.clv >= 0 ? '#00ff88' : '#ff6666') : 'var(--text-muted)';
+      html += '<tr><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc((tr.question||'').substring(0,60)) + '</td>';
+      html += '<td>' + esc(tr.direction||'?') + '</td>';
+      html += '<td>' + (tr.entry_price||0).toFixed(4) + '</td>';
+      html += '<td style="color:' + clvColor + ';">' + clvVal + '</td>';
+      html += '<td style="color:' + clvColor + ';">' + clvPct + '</td>';
+      html += '<td>' + (tr.resolved ? 'Resolved' : 'Open') + '</td></tr>';
+    }
+    html += '</tbody></table></div>';
+  }
+
+  if (!html) html = '<div class="glass-card"><div class="text-muted" style="text-align:center;padding:16px;">No CLV data available</div></div>';
+  el.innerHTML = html;
+}
+
+function loadHawkTuning() {
+  fetch('/api/hawk/tune')
+    .then(function(r){return r.json();})
+    .then(function(d){renderHawkTuning(d);})
+    .catch(function(){
+      var el = document.getElementById('hawk-tuning-content');
+      if(el) el.innerHTML = '<div class="glass-card"><div class="text-muted" style="text-align:center;padding:16px;">Tuning not available</div></div>';
+    });
+}
+
+function renderHawkTuning(data) {
+  var el = document.getElementById('hawk-tuning-content');
+  if (!el) return;
+  var overrides = data.overrides || {};
+  var recs = data.recommendations || [];
+  var html = '';
+
+  // Current overrides table
+  var oKeys = Object.keys(overrides);
+  if (oKeys.length > 0) {
+    html += '<div class="glass-card" style="padding:12px;margin-bottom:10px;"><div style="font-size:0.72rem;font-weight:700;color:var(--agent-hawk);margin-bottom:6px;">Active Category Overrides</div>';
+    html += '<table class="data-table"><thead><tr><th>Category</th><th>Enabled</th><th>Min Edge</th><th>Max Bet</th><th>Kelly</th></tr></thead><tbody>';
+    for (var i = 0; i < oKeys.length; i++) {
+      var cat = oKeys[i], ov = overrides[cat];
+      var enabledColor = ov.enabled === false ? '#ff6666' : '#00ff88';
+      html += '<tr><td style="font-weight:600;">' + esc(cat) + '</td>';
+      html += '<td style="color:' + enabledColor + ';">' + (ov.enabled === false ? 'DISABLED' : 'Active') + '</td>';
+      html += '<td>' + (ov.min_edge !== null && ov.min_edge !== undefined ? (ov.min_edge*100).toFixed(1) + '%' : 'global') + '</td>';
+      html += '<td>' + (ov.max_bet_usd !== null && ov.max_bet_usd !== undefined ? '$' + ov.max_bet_usd.toFixed(0) : 'global') + '</td>';
+      html += '<td>' + (ov.kelly_fraction !== null && ov.kelly_fraction !== undefined ? ov.kelly_fraction.toFixed(2) : 'global') + '</td></tr>';
+    }
+    html += '</tbody></table></div>';
+  }
+
+  // Recommendations
+  if (recs.length > 0) {
+    html += '<div style="font-size:0.72rem;font-weight:700;color:var(--agent-hawk);margin-bottom:6px;">Auto-Tune Recommendations</div>';
+    for (var j = 0; j < recs.length; j++) {
+      var r = recs[j];
+      var sevColors = {critical:'#ff4444', high:'#ff6600', medium:'#FFD700', low:'#4FC3F7'};
+      var sc = sevColors[r.severity] || '#FFD700';
+      html += '<div style="background:rgba(255,255,255,0.03);border:1px solid ' + sc + '33;border-left:3px solid ' + sc + ';border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">';
+      html += '<div><div style="font-size:0.76rem;font-weight:600;color:#fff;">' + esc(r.category) + ' — ' + esc(r.action) + '</div>';
+      html += '<div style="font-size:0.70rem;color:var(--text-muted);">WR: ' + (r.win_rate||0).toFixed(1) + '% | ' + (r.total||0) + ' trades | Significance: ' + (r.significant ? 'YES' : 'NO') + '</div></div>';
+      html += '<button onclick="applyHawkTuning(\'' + esc(r.category) + '\')" style="background:rgba(255,152,0,0.15);color:var(--agent-hawk);border:1px solid rgba(255,152,0,0.3);border-radius:6px;padding:4px 12px;font-size:0.68rem;cursor:pointer;white-space:nowrap;">Apply</button>';
+      html += '</div>';
+    }
+  }
+
+  if (!html) html = '<div class="glass-card"><div class="text-muted" style="text-align:center;padding:16px;">No category overrides or recommendations</div></div>';
+  el.innerHTML = html;
+}
+
+function applyHawkTuning(category) {
+  fetch('/api/hawk/tune/apply', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({category: category})
+  })
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.ok) loadHawkTuning();
+    })
+    .catch(function(){});
 }
 
 function renderHawkIntelSync(data) {

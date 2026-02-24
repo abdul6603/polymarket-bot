@@ -1,10 +1,15 @@
 """HawkConfig — frozen dataclass with risk params and CLOB credentials."""
 from __future__ import annotations
 
+import json
+import logging
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from pathlib import Path
 
 from dotenv import load_dotenv
+
+_log = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -83,4 +88,64 @@ class HawkConfig:
     sizing_consensus_penalty: float = float(_env("HAWK_SIZING_CONSENSUS_PENALTY", "0.7"))
     sizing_movement_boost: float = float(_env("HAWK_SIZING_MOVEMENT_BOOST", "1.2"))
     sizing_movement_penalty: float = float(_env("HAWK_SIZING_MOVEMENT_PENALTY", "0.7"))
+
+
+DATA_DIR = Path(__file__).parent.parent / "data"
+CATEGORY_OVERRIDES_FILE = DATA_DIR / "hawk_category_overrides.json"
+
+
+@dataclass
+class CategoryOverride:
+    """Per-category parameter overrides (non-frozen, mutable)."""
+    min_edge: float | None = None
+    max_bet_usd: float | None = None
+    kelly_fraction: float | None = None
+    enabled: bool = True
+
+
+def load_category_overrides() -> dict[str, CategoryOverride]:
+    """Load per-category overrides from JSON file."""
+    if not CATEGORY_OVERRIDES_FILE.exists():
+        return {}
+    try:
+        raw = json.loads(CATEGORY_OVERRIDES_FILE.read_text())
+        overrides = {}
+        for cat, vals in raw.items():
+            overrides[cat] = CategoryOverride(
+                min_edge=vals.get("min_edge"),
+                max_bet_usd=vals.get("max_bet_usd"),
+                kelly_fraction=vals.get("kelly_fraction"),
+                enabled=vals.get("enabled", True),
+            )
+        return overrides
+    except Exception:
+        _log.exception("Failed to load category overrides")
+        return {}
+
+
+def get_effective_config(base_config: HawkConfig, category: str) -> dict:
+    """Return merged params: category override > global config.
+
+    Returns dict with keys: min_edge, max_bet_usd, kelly_fraction, enabled.
+    """
+    overrides = load_category_overrides()
+    override = overrides.get(category)
+
+    result = {
+        "min_edge": base_config.min_edge,
+        "max_bet_usd": base_config.max_bet_usd,
+        "kelly_fraction": base_config.kelly_fraction,
+        "enabled": True,
+    }
+
+    if override:
+        if override.min_edge is not None:
+            result["min_edge"] = override.min_edge
+        if override.max_bet_usd is not None:
+            result["max_bet_usd"] = override.max_bet_usd
+        if override.kelly_fraction is not None:
+            result["kelly_fraction"] = override.kelly_fraction
+        result["enabled"] = override.enabled
+
+    return result
 

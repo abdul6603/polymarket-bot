@@ -4,6 +4,7 @@ Hawk tracks himself — this is the answer to "Who tracks Hawk?"
 """
 from __future__ import annotations
 
+import itertools
 import json
 import logging
 import time
@@ -157,6 +158,25 @@ def review_resolved_trades() -> dict:
         "trade_reviews": [generate_trade_report(t) for t in resolved[-20:]],
     }
 
+    # Enhanced analytics (Phase 1 — Win Rate Recovery)
+    try:
+        from hawk.learner import _load_accuracy
+        dim_accuracy = _load_accuracy()
+    except Exception:
+        dim_accuracy = {}
+    try:
+        from hawk.clv import get_clv_stats
+        clv_stats = get_clv_stats()
+    except Exception:
+        clv_stats = {}
+
+    review_data["edge_source_effectiveness"] = analyze_edge_source_effectiveness(trades)
+    review_data["calibration_curve"] = compute_calibration_curve(trades)
+    review_data["failure_patterns"] = identify_failure_patterns(trades)
+    review_data["dynamic_recommendations"] = generate_dynamic_recommendations(
+        trades, dim_accuracy, clv_stats
+    )
+
     # Save to file
     try:
         DATA_DIR.mkdir(exist_ok=True)
@@ -226,6 +246,265 @@ def _top_counts(items: list[str], top_n: int = 3) -> list[dict]:
         counts[item] = counts.get(item, 0) + 1
     sorted_items = sorted(counts.items(), key=lambda x: x[1], reverse=True)
     return [{"item": k, "count": v} for k, v in sorted_items[:top_n]]
+
+
+def generate_dynamic_recommendations(
+    trades: list[dict],
+    dim_accuracy: dict | None = None,
+    clv_stats: dict | None = None,
+) -> list[dict]:
+    """Actionable recs with type/severity/evidence/suggested_value."""
+    resolved = [t for t in trades if t.get("resolved") and t.get("outcome")]
+    if not resolved:
+        return []
+
+    recs = []
+    wins = sum(1 for t in resolved if t.get("won"))
+    overall_wr = wins / len(resolved) * 100 if resolved else 0
+
+    # 1. Overall win rate check
+    if overall_wr < 40:
+        recs.append({
+            "type": "min_edge", "severity": "high",
+            "message": f"Overall WR {overall_wr:.1f}% — raise min_edge threshold",
+            "evidence": f"{wins}W/{len(resolved)-wins}L from {len(resolved)} trades",
+            "suggested_value": "min_edge +0.03",
+        })
+
+    # 2. Per-category recommendations from dim_accuracy
+    if dim_accuracy:
+        cat_data = dim_accuracy.get("category", {})
+        for cat, stats in cat_data.items():
+            total = stats.get("total", 0)
+            acc = stats.get("accuracy", 0)
+            if total >= 5 and acc < 0.25:
+                recs.append({
+                    "type": "disable_category", "severity": "critical",
+                    "message": f"Category '{cat}' toxic: {acc*100:.0f}% accuracy over {total} trades",
+                    "evidence": f"{stats.get('wins',0)}W/{stats.get('losses',0)}L",
+                    "suggested_value": f"disable {cat}",
+                })
+            elif total >= 3 and acc < 0.35:
+                recs.append({
+                    "type": "raise_min_edge", "severity": "medium",
+                    "message": f"Category '{cat}' underperforming: {acc*100:.0f}% accuracy",
+                    "evidence": f"{stats.get('wins',0)}W/{stats.get('losses',0)}L over {total} trades",
+                    "suggested_value": f"min_edge +0.02 for {cat}",
+                })
+
+    # 3. Edge source recommendations
+    src_data = dim_accuracy.get("edge_source", {}) if dim_accuracy else {}
+    for src, stats in src_data.items():
+        total = stats.get("total", 0)
+        acc = stats.get("accuracy", 0)
+        if total >= 5 and acc > 0.60:
+            recs.append({
+                "type": "boost_source", "severity": "low",
+                "message": f"Edge source '{src}' strong: {acc*100:.0f}% accuracy — lower min_edge",
+                "evidence": f"{stats.get('wins',0)}W/{stats.get('losses',0)}L over {total} trades",
+                "suggested_value": f"min_edge -0.02 for {src}",
+            })
+
+    # 4. CLV-based recommendations
+    if clv_stats and clv_stats.get("resolved", 0) >= 3:
+        avg_clv = clv_stats.get("avg_clv", 0)
+        pos_rate = clv_stats.get("positive_clv_rate", 0)
+        if avg_clv < -0.05:
+            recs.append({
+                "type": "entry_timing", "severity": "high",
+                "message": f"Negative CLV ({avg_clv:+.4f}) — entries consistently worse than closing line",
+                "evidence": f"Positive CLV rate: {pos_rate:.0f}%",
+                "suggested_value": "use limit orders / improve entry timing",
+            })
+        elif avg_clv > 0.03:
+            recs.append({
+                "type": "sizing", "severity": "low",
+                "message": f"Positive CLV ({avg_clv:+.4f}) — good entries, can increase sizing",
+                "evidence": f"Positive CLV rate: {pos_rate:.0f}%",
+                "suggested_value": "kelly_fraction +0.02",
+            })
+
+    # 5. Calibration check
+    calibration_errors = []
+    for t in resolved:
+        ep = t.get("estimated_prob", 0.5)
+        actual = 1.0 if t.get("won") else 0.0
+        calibration_errors.append(ep - actual)
+    avg_bias = sum(calibration_errors) / len(calibration_errors) if calibration_errors else 0
+    if avg_bias > 0.15:
+        recs.append({
+            "type": "calibration", "severity": "medium",
+            "message": f"Overconfident bias ({avg_bias:+.3f}) — model estimates too high",
+            "evidence": f"Avg (est_prob - actual) = {avg_bias:+.3f} across {len(resolved)} trades",
+            "suggested_value": "increase news_enrichment weight or add contrarian discount",
+        })
+
+    # Sort by severity
+    severity_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+    recs.sort(key=lambda x: severity_order.get(x.get("severity", "low"), 4))
+    return recs
+
+
+def identify_failure_patterns(trades: list[dict]) -> list[dict]:
+    """Cross-correlate (category, direction, edge_source) combos, flag toxic ones."""
+    resolved = [t for t in trades if t.get("resolved") and t.get("outcome")]
+    if not resolved:
+        return []
+
+    # Build combos for each trade
+    trade_combos: list[tuple[dict, list[tuple[str, ...]]]] = []
+    for t in resolved:
+        cat = t.get("category", "unknown") or "unknown"
+        direction = t.get("direction", "unknown") or "unknown"
+        src = t.get("edge_source", "unknown") or "unknown"
+        dims = {"category": cat, "direction": direction, "edge_source": src}
+        # Generate all 2-dim and 3-dim combos
+        keys = list(dims.keys())
+        combos = []
+        for r in (2, 3):
+            for combo_keys in itertools.combinations(keys, r):
+                combo = tuple((k, dims[k]) for k in combo_keys)
+                combos.append(combo)
+        trade_combos.append((t, combos))
+
+    # Count wins/losses per combo
+    combo_stats: dict[tuple, dict] = {}
+    for t, combos in trade_combos:
+        for combo in combos:
+            if combo not in combo_stats:
+                combo_stats[combo] = {"wins": 0, "losses": 0, "total_pnl": 0.0}
+            if t.get("won"):
+                combo_stats[combo]["wins"] += 1
+            else:
+                combo_stats[combo]["losses"] += 1
+            combo_stats[combo]["total_pnl"] += t.get("pnl", 0)
+
+    # Flag toxic combos: <25% WR with 3+ trades
+    toxic = []
+    for combo, stats in combo_stats.items():
+        total = stats["wins"] + stats["losses"]
+        if total < 3:
+            continue
+        wr = stats["wins"] / total * 100
+        if wr < 25:
+            combo_desc = " + ".join(f"{k}={v}" for k, v in combo)
+            toxic.append({
+                "combo": combo_desc,
+                "wins": stats["wins"], "losses": stats["losses"],
+                "win_rate": round(wr, 1),
+                "total_pnl": round(stats["total_pnl"], 2),
+                "severity": "critical" if wr == 0 and total >= 3 else "warning",
+            })
+
+    # Sort by severity then by loss count
+    toxic.sort(key=lambda x: (0 if x["severity"] == "critical" else 1, -x["losses"]))
+    return toxic
+
+
+def compute_calibration_curve(trades: list[dict]) -> dict:
+    """Bin estimated_prob into 5 buckets, compare to actual WR, compute Brier score."""
+    resolved = [t for t in trades if t.get("resolved") and t.get("outcome")]
+    if not resolved:
+        return {"buckets": [], "brier_score": None, "overconfidence_bias": None}
+
+    # 5 probability buckets
+    bucket_edges = [(0.50, 0.60), (0.60, 0.70), (0.70, 0.80), (0.80, 0.90), (0.90, 1.01)]
+    bucket_labels = ["50-60%", "60-70%", "70-80%", "80-90%", "90-100%"]
+    buckets_data: list[list[dict]] = [[] for _ in range(5)]
+
+    for t in resolved:
+        ep = t.get("estimated_prob", 0.5)
+        for i, (lo, hi) in enumerate(bucket_edges):
+            if lo <= ep < hi:
+                buckets_data[i].append(t)
+                break
+        else:
+            # Below 50% — put in first bucket
+            buckets_data[0].append(t)
+
+    buckets = []
+    brier_sum = 0.0
+    brier_n = 0
+    confidence_bias_sum = 0.0
+    confidence_bias_n = 0
+
+    for i, label in enumerate(bucket_labels):
+        bt = buckets_data[i]
+        if not bt:
+            buckets.append({"label": label, "count": 0, "actual_wr": None, "avg_estimated": None})
+            continue
+        wins = sum(1 for t in bt if t.get("won"))
+        actual_wr = round(wins / len(bt) * 100, 1)
+        avg_est = round(sum(t.get("estimated_prob", 0.5) for t in bt) / len(bt) * 100, 1)
+        buckets.append({
+            "label": label, "count": len(bt),
+            "actual_wr": actual_wr, "avg_estimated": avg_est,
+        })
+        # Brier score components
+        for t in bt:
+            ep = t.get("estimated_prob", 0.5)
+            actual = 1.0 if t.get("won") else 0.0
+            brier_sum += (ep - actual) ** 2
+            brier_n += 1
+            confidence_bias_sum += (ep - actual)
+            confidence_bias_n += 1
+
+    brier = round(brier_sum / brier_n, 4) if brier_n else None
+    # Positive bias = overconfident, negative = underconfident
+    overconfidence = round(confidence_bias_sum / confidence_bias_n, 4) if confidence_bias_n else None
+
+    return {"buckets": buckets, "brier_score": brier, "overconfidence_bias": overconfidence}
+
+
+def analyze_edge_source_effectiveness(trades: list[dict]) -> dict:
+    """WR + avg PnL per edge_source, rolling 5-trade trend, best/worst source."""
+    resolved = [t for t in trades if t.get("resolved") and t.get("outcome")]
+    if not resolved:
+        return {"sources": {}, "best": None, "worst": None}
+
+    by_src: dict[str, list[dict]] = {}
+    for t in resolved:
+        src = t.get("edge_source", "unknown") or "unknown"
+        by_src.setdefault(src, []).append(t)
+
+    sources = {}
+    for src, src_trades in by_src.items():
+        wins = sum(1 for t in src_trades if t.get("won"))
+        total = len(src_trades)
+        wr = round(wins / total * 100, 1) if total else 0
+        avg_pnl = round(sum(t.get("pnl", 0) for t in src_trades) / total, 2) if total else 0
+
+        # Rolling 5-trade trend
+        recent = src_trades[-5:]
+        recent_wins = sum(1 for t in recent if t.get("won"))
+        recent_wr = round(recent_wins / len(recent) * 100, 1)
+        if len(src_trades) >= 5:
+            older = src_trades[-10:-5] if len(src_trades) >= 10 else src_trades[:-5]
+            if older:
+                older_wr = sum(1 for t in older if t.get("won")) / len(older) * 100
+                if recent_wr > older_wr + 10:
+                    trend = "improving"
+                elif recent_wr < older_wr - 10:
+                    trend = "declining"
+                else:
+                    trend = "stable"
+            else:
+                trend = "stable"
+        else:
+            trend = "insufficient_data"
+
+        sources[src] = {
+            "wins": wins, "losses": total - wins, "total": total,
+            "win_rate": wr, "avg_pnl": avg_pnl,
+            "recent_wr": recent_wr, "trend": trend,
+        }
+
+    # Best/worst by win rate (min 2 trades)
+    qualified = {k: v for k, v in sources.items() if v["total"] >= 2}
+    best = max(qualified, key=lambda k: qualified[k]["win_rate"]) if qualified else None
+    worst = min(qualified, key=lambda k: qualified[k]["win_rate"]) if qualified else None
+
+    return {"sources": sources, "best": best, "worst": worst}
 
 
 def _load_all_trades() -> list[dict]:

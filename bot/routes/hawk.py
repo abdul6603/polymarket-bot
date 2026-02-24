@@ -1003,6 +1003,17 @@ def api_hawk_reviews():
         return jsonify({"total_reviewed": 0, "trade_reviews": []})
 
 
+@hawk_bp.route("/api/hawk/reviews/refresh", methods=["POST"])
+def api_hawk_reviews_refresh():
+    """Trigger fresh review analysis on demand."""
+    try:
+        from hawk.reviewer import review_resolved_trades
+        data = review_resolved_trades()
+        return jsonify({"ok": True, "total_reviewed": data.get("total_reviewed", 0)})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @hawk_bp.route("/api/hawk/performance")
 def api_hawk_performance():
     """Win rate breakdowns by category, risk level, and edge range."""
@@ -1237,13 +1248,61 @@ def api_hawk_learner():
 
 @hawk_bp.route("/api/hawk/clv")
 def api_hawk_clv():
-    """V7: CLV (Closing Line Value) tracking stats."""
+    """V7: CLV (Closing Line Value) tracking stats with dimension breakdowns."""
     try:
-        from hawk.clv import get_clv_stats
-        return jsonify(get_clv_stats())
+        from hawk.clv import get_clv_stats, get_clv_by_dimension
+        stats = get_clv_stats()
+        dims = get_clv_by_dimension()
+        stats["by_category"] = dims.get("by_category", {})
+        stats["by_edge_source"] = dims.get("by_edge_source", {})
+        return jsonify(stats)
     except Exception:
         return jsonify({"total_trades": 0, "resolved": 0, "avg_clv": 0.0,
-                        "avg_clv_pct": 0.0, "positive_clv_rate": 0.0, "trades": []})
+                        "avg_clv_pct": 0.0, "positive_clv_rate": 0.0, "trades": [],
+                        "by_category": {}, "by_edge_source": {}})
+
+
+@hawk_bp.route("/api/hawk/tune")
+def api_hawk_tune():
+    """Category tuning: current overrides + auto-tune recommendations."""
+    try:
+        from hawk.config import load_category_overrides, CATEGORY_OVERRIDES_FILE
+        from hawk.tuner import compute_tuning_recommendations
+        from hawk.learner import _load_accuracy
+        from hawk.clv import get_clv_stats, get_clv_by_dimension
+
+        overrides = load_category_overrides()
+        overrides_raw = {}
+        for cat, ov in overrides.items():
+            overrides_raw[cat] = {
+                "min_edge": ov.min_edge, "max_bet_usd": ov.max_bet_usd,
+                "kelly_fraction": ov.kelly_fraction, "enabled": ov.enabled,
+            }
+
+        dim_accuracy = _load_accuracy()
+        clv_stats = get_clv_stats()
+        clv_dims = get_clv_by_dimension()
+        clv_stats["by_category"] = clv_dims.get("by_category", {})
+
+        recs = compute_tuning_recommendations(dim_accuracy, clv_stats=clv_stats)
+        return jsonify({"overrides": overrides_raw, "recommendations": recs})
+    except Exception:
+        return jsonify({"overrides": {}, "recommendations": []})
+
+
+@hawk_bp.route("/api/hawk/tune/apply", methods=["POST"])
+def api_hawk_tune_apply():
+    """Apply a specific category override (manual or auto)."""
+    try:
+        from hawk.tuner import apply_single_override
+        data = request.get_json(force=True) or {}
+        category = data.get("category", "")
+        if not category:
+            return jsonify({"ok": False, "error": "category required"}), 400
+        result = apply_single_override(category)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
 
 
 @hawk_bp.route("/api/hawk/regime")
