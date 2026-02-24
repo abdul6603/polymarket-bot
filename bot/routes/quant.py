@@ -456,3 +456,82 @@ def api_quant_smart_actions():
         pass
 
     return jsonify({"actions": actions, "count": len(actions)})
+
+
+@quant_bp.route("/api/quant/apply-params", methods=["POST"])
+def api_quant_apply_params():
+    """Manually apply best optimized params to Garves via live_push."""
+    try:
+        results = _load_json(RESULTS_FILE)
+        phase1 = _load_json(PHASE1_FILE)
+        baseline = results.get("baseline", {})
+        top = results.get("top_results", [])
+        best = top[0] if top else {}
+
+        if not best:
+            return jsonify({"success": False, "message": "No backtest results to apply"})
+
+        best_params = best.get("params", {})
+        if not best_params:
+            return jsonify({"success": False, "message": "No optimal params found in results"})
+
+        from quant.live_push import push_params, validate_push
+        from quant.analytics import MonteCarloResult, CUSUMResult
+        from quant.walk_forward import WalkForwardV2Result
+
+        wfv2_data = phase1.get("walk_forward_v2", {})
+        mc_data = phase1.get("monte_carlo", {})
+        cusum_data = phase1.get("cusum", {})
+
+        wfv2 = WalkForwardV2Result(
+            passed=wfv2_data.get("passed", False),
+            overfit_gap=wfv2_data.get("overfit_gap", 0),
+            stability_score=wfv2_data.get("stability_score", 0),
+            rejection_reason=wfv2_data.get("rejection_reason", ""),
+            estimated_daily_pnl=wfv2_data.get("daily_pnl", 0),
+            estimated_monthly_pnl=wfv2_data.get("monthly_pnl", 0),
+        )
+        mc = MonteCarloResult(
+            ruin_probability=mc_data.get("ruin_probability", 100),
+            avg_max_drawdown_pct=mc_data.get("avg_max_drawdown_pct", 0),
+        )
+        cusum = CUSUMResult(
+            severity=cusum_data.get("severity", "none"),
+            current_rolling_wr=cusum_data.get("current_rolling_wr", 0),
+            alert_message=cusum_data.get("alert_message", ""),
+        )
+
+        validation = validate_push(
+            wfv2, mc, cusum,
+            baseline_wr=baseline.get("win_rate", 0),
+            best_wr=best.get("win_rate", 0),
+        )
+
+        result = push_params(
+            params=best_params,
+            validation=validation,
+            baseline_wr=baseline.get("win_rate", 0),
+            best_wr=best.get("win_rate", 0),
+            target="garves",
+            dry_run=False,
+            require_approval=False,
+        )
+
+        return jsonify({"success": result.applied, "message": result.message})
+    except Exception as e:
+        log.exception("Apply params failed")
+        return jsonify({"success": False, "message": str(e)})
+
+
+@quant_bp.route("/api/quant/rollback-params", methods=["POST"])
+def api_quant_rollback_params():
+    """Rollback to previous parameter version."""
+    try:
+        from quant.live_push import rollback
+        success = rollback()
+        if success:
+            return jsonify({"success": True, "message": "Rolled back to previous params"})
+        return jsonify({"success": False, "message": "No version to rollback to"})
+    except Exception as e:
+        log.exception("Rollback failed")
+        return jsonify({"success": False, "message": str(e)})

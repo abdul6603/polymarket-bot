@@ -1,359 +1,521 @@
 <div id="tab-quant" class="tab-content">
-  <div id="intel-quant" class="intel-meter" style="margin-bottom:12px;"></div>
 
-  <!-- Agent Badge Row -->
-  <div class="d-flex align-center gap-3 mb-4">
-    <div class="agent-card-initial" style="background:#00BFFF22;color:#00BFFF;font-size:1.1rem;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:10px;">QT</div>
-    <div>
-      <div style="font-weight:600;color:var(--text-primary);">Quant — The Strategy Alchemist</div>
-      <div class="text-muted" style="font-size:0.72rem;">Strategy Lab | Mode: <span id="quant-mode">Historical Replay</span> | Cycle: <span id="quant-cycle">--</span> | Optimizer: <span id="quant-optimizer" style="color:#00BFFF;">--</span> | Trades: <span id="quant-trade-count" style="color:#00BFFF;font-weight:600;">--</span> <span id="quant-signal-summary" style="color:var(--text-muted);"></span></div>
+  <!-- S1: Header -->
+  <div class="qt-header">
+    <div class="qt-title-group">
+      <span class="qt-title">QUANT</span>
+      <span class="qt-subtitle">The Strategy Alchemist</span>
     </div>
-    <div style="margin-left:auto;display:flex;gap:8px;">
-      <button class="btn btn-primary" onclick="quantTriggerRun()" id="quant-run-btn" style="font-size:0.72rem;padding:6px 14px;">Trigger Backtest</button>
-      <button class="btn" onclick="quantHealthCheck()" style="font-size:0.72rem;padding:6px 14px;">Health Check</button>
-</div>
+    <div class="qt-header-right">
+      <span class="qt-status-pill" id="qt-status-pill">
+        <span class="qt-status-dot"></span>
+        <span id="quant-mode">Historical Replay</span>
+      </span>
+      <span class="qt-ts">Cycle: <span id="quant-cycle">--</span></span>
+      <span class="qt-ts" id="quant-last-update">--</span>
+      <button class="qt-action-btn qt-action-primary" onclick="quantTriggerRun()" id="quant-run-btn">Trigger Backtest</button>
+      <button class="qt-action-btn" onclick="quantHealthCheck()">Health Check</button>
+    </div>
   </div>
 
-  <!-- Progress bar (hidden by default) -->
-  <div id="quant-progress-bar" style="display:none;margin-bottom:16px;">
-    <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-      <span class="text-muted" style="font-size:0.7rem;" id="quant-progress-label">Running...</span>
-      <span class="text-muted" style="font-size:0.7rem;" id="quant-progress-pct">0%</span>
+  <!-- Progress bar -->
+  <div id="quant-progress-bar" class="qt-progress" style="display:none;">
+    <div class="qt-progress-top">
+      <span class="qt-progress-label" id="quant-progress-label">Running...</span>
+      <span class="qt-progress-pct" id="quant-progress-pct">0%</span>
     </div>
-    <div style="background:var(--card-bg);border-radius:4px;height:6px;overflow:hidden;">
-      <div id="quant-progress-fill" style="background:#00BFFF;height:100%;width:0%;transition:width 0.3s;border-radius:4px;"></div>
+    <div class="qt-progress-track">
+      <div class="qt-progress-fill" id="quant-progress-fill"></div>
     </div>
-    <div class="text-muted" style="font-size:0.65rem;margin-top:2px;" id="quant-progress-detail"></div>
+    <div class="qt-progress-detail" id="quant-progress-detail"></div>
   </div>
 
-  <!-- Strategy Verdict Banner -->
-  <div id="quant-verdict-banner" style="background:var(--card-bg);border:2px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:16px;display:none;">
-    <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
-      <div style="text-align:center;min-width:80px;">
-        <div class="text-muted" style="font-size:0.65rem;margin-bottom:2px;">Current WR</div>
-        <div id="quant-verdict-current" style="font-size:1.8rem;font-weight:700;">--</div>
+  <!-- S2: Strategy Verdict -->
+  <div id="quant-verdict-banner" class="glass-card qt-verdict" style="display:none;">
+    <div class="qt-verdict-row">
+      <div class="qt-verdict-wr-block">
+        <div class="qt-verdict-label">Current WR</div>
+        <div class="qt-verdict-wr" id="quant-verdict-current">--</div>
       </div>
-      <div style="font-size:1.6rem;color:var(--text-muted);">&rarr;</div>
-      <div style="text-align:center;min-width:80px;">
-        <div class="text-muted" style="font-size:0.65rem;margin-bottom:2px;">Best WR</div>
-        <div id="quant-verdict-best" style="font-size:1.8rem;font-weight:700;">--</div>
+      <div class="qt-verdict-arrow">&rarr;</div>
+      <div class="qt-verdict-wr-block">
+        <div class="qt-verdict-label">Best WR</div>
+        <div class="qt-verdict-wr" id="quant-verdict-best">--</div>
       </div>
-      <div id="quant-verdict-delta" style="font-size:1.2rem;font-weight:700;padding:6px 14px;border-radius:8px;">--</div>
-      <div style="flex:1;min-width:200px;margin-left:12px;">
-        <div id="quant-verdict-text" style="font-size:0.82rem;font-weight:500;line-height:1.4;color:var(--text-secondary);">Loading strategy assessment...</div>
-      </div>
+      <div class="qt-verdict-delta" id="quant-verdict-delta">--</div>
+      <div class="qt-verdict-text" id="quant-verdict-text">Loading strategy assessment...</div>
     </div>
   </div>
 
   <!-- Live Param Override Status -->
-  <div id="quant-live-params-card" style="display:none;background:var(--card-bg);border:1px solid #00BFFF44;border-radius:10px;padding:14px 18px;margin-bottom:16px;">
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-      <div id="quant-lp-badge" style="font-size:0.68rem;font-weight:600;padding:3px 10px;border-radius:6px;background:#00BFFF22;color:#00BFFF;">AUTO-PILOT</div>
-      <div style="flex:1;min-width:200px;">
-        <div id="quant-lp-summary" style="font-size:0.78rem;font-weight:500;color:var(--text-primary);">Loading...</div>
-        <div id="quant-lp-detail" style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;"></div>
+  <div id="quant-live-params-card" class="glass-card qt-live-params" style="display:none;">
+    <div class="qt-live-params-row">
+      <div class="qt-live-params-badge" id="quant-lp-badge">AUTO-PILOT</div>
+      <div class="qt-live-params-info">
+        <div class="qt-live-params-summary" id="quant-lp-summary">Loading...</div>
+        <div class="qt-live-params-detail" id="quant-lp-detail"></div>
       </div>
-      <div id="quant-lp-params" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+      <div class="qt-live-params-chips" id="quant-lp-params"></div>
     </div>
   </div>
 
-  <!-- Per-Trade Learning Card -->
-  <div id="quant-learning-card" style="display:none;background:var(--card-bg);border:1px solid rgba(0,191,255,0.2);border-radius:10px;padding:16px 20px;margin-bottom:16px;">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-      <div style="font-size:0.68rem;font-weight:600;padding:3px 10px;border-radius:6px;background:#00BFFF22;color:#00BFFF;">PER-TRADE LEARNING</div>
-      <div style="flex:1;"></div>
-      <span id="quant-learn-total" class="text-muted" style="font-size:0.65rem;">--</span>
-    </div>
-    <div class="grid-4" style="margin-bottom:12px;">
-      <div class="stat-card" style="padding:8px 10px;">
-        <div class="stat-label" style="font-size:0.6rem;">Trades Studied</div>
-        <div class="stat-value" id="quant-learn-studied" style="font-size:1.1rem;color:#00BFFF;">--</div>
+  <!-- S3: Intelligence Overview -->
+  <div class="qt-intel-row">
+    <div class="glass-card qt-radar-card">
+      <div class="qt-radar-wrap" id="qt-radar-container">
+        <div class="qt-radar-placeholder">Loading...</div>
       </div>
-      <div class="stat-card" style="padding:8px 10px;">
-        <div class="stat-label" style="font-size:0.6rem;">Filter Correctness</div>
-        <div class="stat-value" id="quant-learn-filter" style="font-size:1.1rem;">--</div>
+      <div class="qt-score-row">
+        <span class="qt-score-num" id="qt-score-value">--</span>
+        <span class="qt-score-grade" id="qt-score-grade">--</span>
       </div>
-      <div class="stat-card" style="padding:8px 10px;">
-        <div class="stat-label" style="font-size:0.6rem;">Avg Indicator Acc</div>
-        <div class="stat-value" id="quant-learn-ind-acc" style="font-size:1.1rem;">--</div>
-      </div>
-      <div class="stat-card" style="padding:8px 10px;">
-        <div class="stat-label" style="font-size:0.6rem;">Mini-Opts Run</div>
-        <div class="stat-value" id="quant-learn-mini-opts" style="font-size:1.1rem;color:#00BFFF;">--</div>
+      <div class="qt-meta-line">
+        Optimizer: <span id="quant-optimizer">--</span>
+        &nbsp; Trades: <span id="quant-trade-count">--</span>
+        <span id="quant-signal-summary"></span>
       </div>
     </div>
-    <div id="quant-learn-indicators" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;"></div>
-    <div id="quant-learn-mini-opt-summary" style="display:none;font-size:0.72rem;color:var(--text-secondary);padding:8px 10px;background:rgba(0,191,255,0.04);border-radius:6px;margin-bottom:10px;"></div>
-    <div id="quant-learn-recent" style="max-height:180px;overflow-y:auto;">
-      <div class="text-muted" style="font-size:0.7rem;text-align:center;">No studies yet</div>
+    <div class="qt-stats-col">
+      <div class="qt-stat-card" style="border-left-color:var(--agent-quant);">
+        <div class="qt-stat-value" id="quant-baseline-wr">--</div>
+        <div class="qt-stat-label">Current WR</div>
+      </div>
+      <div class="qt-stat-card" style="border-left-color:var(--success);">
+        <div class="qt-stat-value" id="quant-wf-oos">--</div>
+        <div class="qt-stat-label">OOS WR</div>
+      </div>
+      <div class="qt-stat-card" style="border-left-color:var(--warning);">
+        <div class="qt-stat-value" id="quant-kelly">--</div>
+        <div class="qt-stat-label">Kelly Size</div>
+      </div>
+      <div class="qt-stat-card" style="border-left-color:#3498DB;">
+        <div class="qt-stat-value" id="quant-decay-status">--</div>
+        <div class="qt-stat-label">Strategy Health</div>
+      </div>
+      <div class="qt-stat-card" style="border-left-color:var(--text-muted);">
+        <div class="qt-stat-value" id="quant-trades">--</div>
+        <div class="qt-stat-label">Trades</div>
+      </div>
     </div>
   </div>
 
-  <!-- Smart Actions (moved after verdict for visibility) -->
-  <div class="section-spacer" style="margin-top:0;margin-bottom:16px;">
-    <h2 class="section-title" style="color:#00BFFF;">Suggested Actions</h2>
-    <div id="quant-smart-actions" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"><span class="text-muted" style="font-size:0.76rem;">Loading...</span></div>
+  <!-- Health check result -->
+  <div class="health-inline" id="quant-health-result"></div>
+
+  <!-- S4: Quick Actions -->
+  <div class="glass-card qt-actions-card">
+    <div class="qt-actions-header">
+      <span class="qt-section-label">QUICK ACTIONS</span>
+      <span id="qt-action-status" class="qt-action-feedback"></span>
+    </div>
+    <div class="qt-actions-grid">
+      <button class="qt-action-btn" onclick="quantApplyParams()">
+        <span class="qt-action-icon" style="background:rgba(0,255,136,0.12);color:var(--success);">&#x2713;</span>
+        Apply Best Params
+      </button>
+      <button class="qt-action-btn" onclick="quantRollbackParams()">
+        <span class="qt-action-icon" style="background:rgba(255,68,68,0.12);color:var(--error);">&#x21B6;</span>
+        Rollback Params
+      </button>
+      <button class="qt-action-btn" onclick="loadQuantPhase2()">
+        <span class="qt-action-icon" style="background:rgba(255,170,0,0.12);color:var(--warning);">&#x2696;</span>
+        Regime Check
+      </button>
+      <button class="qt-action-btn" onclick="loadQuantPhase2()">
+        <span class="qt-action-icon" style="background:rgba(0,191,255,0.12);color:#00BFFF;">&#x2194;</span>
+        Correlation Scan
+      </button>
+      <button class="qt-action-btn" onclick="document.getElementById('qt-panel-pnl').classList.add('open');loadQuantPNLImpact();">
+        <span class="qt-action-icon" style="background:rgba(139,92,246,0.12);color:#8B5CF6;">&#x24;</span>
+        PNL Impact
+      </button>
+      <button class="qt-action-btn" onclick="quantExportReport()">
+        <span class="qt-action-icon" style="background:rgba(136,136,170,0.12);color:#8888aa;">&#x2913;</span>
+        Export Report
+      </button>
+    </div>
   </div>
 
-  <!-- Key Numbers Row 1: Performance -->
-  <div class="grid-4" style="margin-bottom:12px;">
-    <div class="stat-card">
-      <div class="stat-label">Current Live WR</div>
-      <div class="stat-value" id="quant-baseline-wr" style="color:var(--warning);">--</div>
+  <!-- S5: Smart Actions -->
+  <div class="glass-card qt-smart-section">
+    <div class="qt-section-header">
+      <span class="qt-section-label">SMART ACTIONS</span>
+      <button class="qt-refresh-btn" onclick="loadQuantSmartActions()">Refresh</button>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Best WR Found</div>
-      <div class="stat-value" id="quant-best-wr" style="color:var(--success);">--</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Out-of-Sample WR</div>
-      <div class="stat-value" id="quant-wf-oos" style="color:var(--warning);">--</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Overfit Gap</div>
-      <div class="stat-value" id="quant-overfit">--</div>
+    <div id="quant-smart-actions" class="qt-smart-actions-wrap">
+      <span class="qt-placeholder">Loading...</span>
     </div>
   </div>
 
-  <!-- Key Numbers Row 2: Sizing & Health -->
-  <div class="grid-4" style="margin-bottom:20px;">
-    <div class="stat-card">
-      <div class="stat-label">Kelly Size</div>
-      <div class="stat-value" id="quant-kelly" style="color:#00BFFF;">--</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Diversity</div>
-      <div class="stat-value" id="quant-diversity" style="color:var(--success);">--</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Strategy Health</div>
-      <div class="stat-value" id="quant-decay-status" style="font-size:0.85rem;">--</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Trades Analyzed</div>
-      <div class="stat-value" id="quant-trades" style="color:var(--text-muted);">--</div>
-    </div>
-  </div>
+  <!-- S6: Phase Panels (open by default) -->
 
   <!-- Phase 1: Triple Gate Validation -->
-  <div style="margin-bottom:16px;">
-    <h2 class="section-title" style="color:#00BFFF;">Phase 1 — Triple Gate Validation</h2>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-      <!-- WFV2 -->
-      <div class="card" style="padding:14px 16px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-          <span style="font-weight:600;font-size:0.78rem;color:#00BFFF;">Walk-Forward V2</span>
-          <span id="quant-wfv2-badge" style="font-size:0.62rem;font-weight:600;padding:2px 8px;border-radius:4px;background:rgba(255,170,0,0.13);color:var(--warning);">--</span>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.7rem;">
-          <div class="text-muted">Overfit Gap:</div><div id="quant-wfv2-gap">--</div>
-          <div class="text-muted">Stability:</div><div id="quant-wfv2-stability">--</div>
-          <div class="text-muted">PNL/day:</div><div id="quant-wfv2-pnl">--</div>
-          <div class="text-muted">Method:</div><div id="quant-wfv2-method">--</div>
-        </div>
+  <div class="collapse-section qt-panel open">
+    <div class="collapse-trigger">
+      <div class="qt-panel-hdr-row">
+        <span class="qt-panel-dot" style="background:#00BFFF;"></span>
+        <h2 class="qt-panel-title">Triple Gate Validation</h2>
+        <span class="qt-panel-sub">Phase 1</span>
+        <span class="qt-panel-badge" id="qt-phase1-badge"></span>
       </div>
-      <!-- Monte Carlo -->
-      <div class="card" style="padding:14px 16px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-          <span style="font-weight:600;font-size:0.78rem;color:#00BFFF;">Monte Carlo (10K sims)</span>
-          <span id="quant-mc-badge" style="font-size:0.62rem;font-weight:600;padding:2px 8px;border-radius:4px;background:rgba(255,170,0,0.13);color:var(--warning);">--</span>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.7rem;">
-          <div class="text-muted">Ruin Prob:</div><div id="quant-mc-ruin">--</div>
-          <div class="text-muted">Avg Drawdown:</div><div id="quant-mc-dd">--</div>
-          <div class="text-muted">Sharpe:</div><div id="quant-mc-sharpe">--</div>
-          <div class="text-muted">Profitable:</div><div id="quant-mc-profitable">--</div>
-        </div>
-      </div>
-      <!-- CUSUM -->
-      <div class="card" style="padding:14px 16px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-          <span style="font-weight:600;font-size:0.78rem;color:#00BFFF;">CUSUM Edge Decay</span>
-          <span id="quant-cusum-badge" style="font-size:0.62rem;font-weight:600;padding:2px 8px;border-radius:4px;background:rgba(255,170,0,0.13);color:var(--warning);">--</span>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.7rem;">
-          <div class="text-muted">Severity:</div><div id="quant-cusum-severity">--</div>
-          <div class="text-muted">Rolling WR:</div><div id="quant-cusum-wr">--</div>
-          <div class="text-muted">WR Drop:</div><div id="quant-cusum-drop">--</div>
-          <div class="text-muted">Since Change:</div><div id="quant-cusum-since">--</div>
+    </div>
+    <div class="collapse-body">
+      <div class="qt-panel-body">
+        <div class="qt-phase-grid">
+          <!-- WFV2 -->
+          <div class="qt-phase-card">
+            <div class="qt-phase-card-header">
+              <span class="qt-phase-card-title">Walk-Forward V2</span>
+              <span class="qt-phase-card-badge" id="quant-wfv2-badge">--</span>
+            </div>
+            <div class="qt-phase-card-grid">
+              <div class="qt-phase-lbl">Overfit Gap:</div><div id="quant-wfv2-gap">--</div>
+              <div class="qt-phase-lbl">Stability:</div><div id="quant-wfv2-stability">--</div>
+              <div class="qt-phase-lbl">PNL/day:</div><div id="quant-wfv2-pnl">--</div>
+              <div class="qt-phase-lbl">Method:</div><div id="quant-wfv2-method">--</div>
+            </div>
+          </div>
+          <!-- Monte Carlo -->
+          <div class="qt-phase-card">
+            <div class="qt-phase-card-header">
+              <span class="qt-phase-card-title">Monte Carlo (10K sims)</span>
+              <span class="qt-phase-card-badge" id="quant-mc-badge">--</span>
+            </div>
+            <div class="qt-phase-card-grid">
+              <div class="qt-phase-lbl">Ruin Prob:</div><div id="quant-mc-ruin">--</div>
+              <div class="qt-phase-lbl">Avg Drawdown:</div><div id="quant-mc-dd">--</div>
+              <div class="qt-phase-lbl">Sharpe:</div><div id="quant-mc-sharpe">--</div>
+              <div class="qt-phase-lbl">Profitable:</div><div id="quant-mc-profitable">--</div>
+            </div>
+          </div>
+          <!-- CUSUM -->
+          <div class="qt-phase-card">
+            <div class="qt-phase-card-header">
+              <span class="qt-phase-card-title">CUSUM Edge Decay</span>
+              <span class="qt-phase-card-badge" id="quant-cusum-badge">--</span>
+            </div>
+            <div class="qt-phase-card-grid">
+              <div class="qt-phase-lbl">Severity:</div><div id="quant-cusum-severity">--</div>
+              <div class="qt-phase-lbl">Rolling WR:</div><div id="quant-cusum-wr">--</div>
+              <div class="qt-phase-lbl">WR Drop:</div><div id="quant-cusum-drop">--</div>
+              <div class="qt-phase-lbl">Since Change:</div><div id="quant-cusum-since">--</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Phase 2: Intelligence -->
-  <div style="margin-bottom:16px;">
-    <h2 class="section-title" style="color:#00BFFF;">Phase 2 — Intelligence</h2>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-      <!-- Regime -->
-      <div class="card" style="padding:14px 16px;">
-        <div style="font-weight:600;font-size:0.78rem;color:#00BFFF;margin-bottom:10px;">Regime Detection</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.7rem;">
-          <div class="text-muted">Current:</div><div id="quant-regime-current">--</div>
-          <div class="text-muted">Best Regime:</div><div id="quant-regime-best" style="color:var(--success);">--</div>
-          <div class="text-muted">Worst Regime:</div><div id="quant-regime-worst" style="color:var(--error);">--</div>
-          <div class="text-muted">Regimes Found:</div><div id="quant-regime-count">--</div>
-        </div>
-        <div id="quant-regime-perf" style="margin-top:8px;"></div>
+  <div class="collapse-section qt-panel open">
+    <div class="collapse-trigger">
+      <div class="qt-panel-hdr-row">
+        <span class="qt-panel-dot" style="background:#22cc55;"></span>
+        <h2 class="qt-panel-title">Intelligence</h2>
+        <span class="qt-panel-sub">Phase 2</span>
+        <span class="qt-panel-badge" id="qt-phase2-badge"></span>
       </div>
-      <!-- Correlation -->
-      <div class="card" style="padding:14px 16px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-          <span style="font-weight:600;font-size:0.78rem;color:#00BFFF;">Correlation Guard</span>
-          <span id="quant-corr-badge" style="font-size:0.62rem;font-weight:600;padding:2px 8px;border-radius:4px;">--</span>
+    </div>
+    <div class="collapse-body">
+      <div class="qt-panel-body">
+        <div class="qt-phase-grid">
+          <!-- Regime -->
+          <div class="qt-phase-card">
+            <div class="qt-phase-card-header">
+              <span class="qt-phase-card-title">Regime Detection</span>
+            </div>
+            <div class="qt-phase-card-grid">
+              <div class="qt-phase-lbl">Current:</div><div id="quant-regime-current">--</div>
+              <div class="qt-phase-lbl">Best Regime:</div><div id="quant-regime-best">--</div>
+              <div class="qt-phase-lbl">Worst Regime:</div><div id="quant-regime-worst">--</div>
+              <div class="qt-phase-lbl">Regimes Found:</div><div id="quant-regime-count">--</div>
+            </div>
+            <div class="qt-phase-card-extra" id="quant-regime-perf"></div>
+          </div>
+          <!-- Correlation -->
+          <div class="qt-phase-card">
+            <div class="qt-phase-card-header">
+              <span class="qt-phase-card-title">Correlation Guard</span>
+              <span class="qt-phase-card-badge" id="quant-corr-badge">--</span>
+            </div>
+            <div class="qt-phase-card-grid">
+              <div class="qt-phase-lbl">Risk Level:</div><div id="quant-corr-risk">--</div>
+              <div class="qt-phase-lbl">Direct Overlaps:</div><div id="quant-corr-direct">--</div>
+              <div class="qt-phase-lbl">Correlated:</div><div id="quant-corr-correlated">--</div>
+              <div class="qt-phase-lbl">Combined $:</div><div id="quant-corr-exposure">--</div>
+            </div>
+            <div class="qt-phase-card-extra" id="quant-corr-alert"></div>
+          </div>
+          <!-- Self-Learning -->
+          <div class="qt-phase-card">
+            <div class="qt-phase-card-header">
+              <span class="qt-phase-card-title">Self-Learning</span>
+            </div>
+            <div class="qt-phase-card-grid">
+              <div class="qt-phase-lbl">Accuracy:</div><div id="quant-learn-accuracy">--</div>
+              <div class="qt-phase-lbl">Recs Tracked:</div><div id="quant-learn-recs">--</div>
+              <div class="qt-phase-lbl">Combined WR:</div><div id="quant-learn-combined-wr">--</div>
+              <div class="qt-phase-lbl">Odin Trades:</div><div id="quant-learn-odin">--</div>
+            </div>
+            <div class="qt-phase-card-extra" id="quant-learn-insights"></div>
+          </div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.7rem;">
-          <div class="text-muted">Risk Level:</div><div id="quant-corr-risk">--</div>
-          <div class="text-muted">Direct Overlaps:</div><div id="quant-corr-direct">--</div>
-          <div class="text-muted">Correlated:</div><div id="quant-corr-correlated">--</div>
-          <div class="text-muted">Combined $:</div><div id="quant-corr-exposure">--</div>
-        </div>
-        <div id="quant-corr-alert" style="margin-top:8px;font-size:0.68rem;color:var(--text-muted);"></div>
-      </div>
-      <!-- Self-Learning -->
-      <div class="card" style="padding:14px 16px;">
-        <div style="font-weight:600;font-size:0.78rem;color:#00BFFF;margin-bottom:10px;">Self-Learning</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.7rem;">
-          <div class="text-muted">Accuracy:</div><div id="quant-learn-accuracy">--</div>
-          <div class="text-muted">Recs Tracked:</div><div id="quant-learn-recs">--</div>
-          <div class="text-muted">Combined WR:</div><div id="quant-learn-combined-wr">--</div>
-          <div class="text-muted">Odin Trades:</div><div id="quant-learn-odin">--</div>
-        </div>
-        <div id="quant-learn-insights" style="margin-top:8px;"></div>
       </div>
     </div>
   </div>
 
   <!-- Phase 3: PNL Impact Estimator -->
-  <div id="quant-pnl-impact-card" style="display:none;background:var(--card-bg);border:1px solid #00BFFF44;border-radius:10px;padding:16px 20px;margin-bottom:16px;">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
-      <span style="font-weight:600;font-size:0.82rem;color:#00BFFF;">PNL Impact Estimator</span>
-      <span id="quant-pnl-badge" style="font-size:0.68rem;font-weight:600;padding:3px 10px;border-radius:6px;"></span>
-    </div>
-    <div class="grid-4" style="margin-bottom:12px;">
-      <div class="stat-card" style="padding:8px 10px;">
-        <div class="stat-label" style="font-size:0.6rem;">Daily PNL</div>
-        <div class="stat-value" id="quant-pnl-daily" style="font-size:1.1rem;color:#00BFFF;">--</div>
-      </div>
-      <div class="stat-card" style="padding:8px 10px;">
-        <div class="stat-label" style="font-size:0.6rem;">Monthly PNL</div>
-        <div class="stat-value" id="quant-pnl-monthly" style="font-size:1.1rem;">--</div>
-      </div>
-      <div class="stat-card" style="padding:8px 10px;">
-        <div class="stat-label" style="font-size:0.6rem;">WR Change</div>
-        <div class="stat-value" id="quant-pnl-wr-delta" style="font-size:1.1rem;">--</div>
-      </div>
-      <div class="stat-card" style="padding:8px 10px;">
-        <div class="stat-label" style="font-size:0.6rem;">Net Trades</div>
-        <div class="stat-value" id="quant-pnl-net-trades" style="font-size:1.1rem;">--</div>
+  <div class="collapse-section qt-panel open" id="qt-panel-pnl">
+    <div class="collapse-trigger">
+      <div class="qt-panel-hdr-row">
+        <span class="qt-panel-dot" style="background:#8B5CF6;"></span>
+        <h2 class="qt-panel-title">PNL Impact Estimator</h2>
+        <span class="qt-panel-sub">Phase 3</span>
+        <span class="qt-panel-badge" id="qt-phase3-badge"></span>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div id="quant-pnl-by-asset" style="font-size:0.7rem;"></div>
-      <div id="quant-pnl-attribution" style="font-size:0.7rem;"></div>
-    </div>
-  </div>
-
-  <!-- Version History -->
-  <div id="quant-version-history" style="display:none;margin-bottom:16px;">
-    <div class="card" style="padding:14px 16px;">
-      <div style="font-weight:600;font-size:0.78rem;color:#00BFFF;margin-bottom:10px;">Strategy Version History</div>
-      <div id="quant-versions-list" style="font-size:0.7rem;"></div>
-    </div>
-  </div>
-
-  <!-- What To Change (merged params + recommendations) -->
-  <div class="card" style="margin-bottom:20px;">
-    <div class="card-header">What To Change <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">Parameters: current vs backtest optimal</span></div>
-    <table class="table">
-      <thead><tr><th>Parameter</th><th>Now</th><th>Optimal</th><th>Status</th></tr></thead>
-      <tbody id="quant-params-tbody">
-        <tr><td colspan="4" class="text-muted" style="text-align:center;padding:20px;">Run a backtest to see comparison</td></tr>
-      </tbody>
-    </table>
-    <div id="quant-recommendations" style="padding:8px 12px;">
-      <div class="text-muted" style="text-align:center;padding:8px;font-size:0.72rem;">Recommendations appear after backtesting</div>
-    </div>
-  </div>
-
-  <!-- Walk-Forward Validation + Position Sizing & Strategy Health -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
-    <div class="card">
-      <div class="card-header">Walk-Forward Validation <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">Does the strategy work on unseen data?</span></div>
-      <table class="table">
-        <thead><tr><th>Fold</th><th>Train</th><th>Train WR</th><th>Test</th><th>Test WR</th><th>Status</th></tr></thead>
-        <tbody id="quant-wf-tbody">
-          <tr><td colspan="6" class="text-muted" style="text-align:center;padding:20px;">Run a backtest to see walk-forward results</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <div class="card">
-      <div class="card-header">Position Sizing &amp; Strategy Health <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">How much to bet and decay detection</span></div>
-      <div id="quant-analytics-detail" style="padding:12px;">
-        <div class="text-muted" style="text-align:center;padding:20px;">No analytics data yet</div>
+    <div class="collapse-body">
+      <div class="qt-panel-body" id="quant-pnl-impact-card">
+        <div class="qt-pnl-stats">
+          <div class="qt-stat-card" style="border-left-color:var(--agent-quant);">
+            <div class="qt-stat-value" id="quant-pnl-daily">--</div>
+            <div class="qt-stat-label">Daily PNL</div>
+          </div>
+          <div class="qt-stat-card" style="border-left-color:var(--success);">
+            <div class="qt-stat-value" id="quant-pnl-monthly">--</div>
+            <div class="qt-stat-label">Monthly PNL</div>
+          </div>
+          <div class="qt-stat-card" style="border-left-color:var(--warning);">
+            <div class="qt-stat-value" id="quant-pnl-wr-delta">--</div>
+            <div class="qt-stat-label">WR Change</div>
+          </div>
+          <div class="qt-stat-card" style="border-left-color:var(--text-muted);">
+            <div class="qt-stat-value" id="quant-pnl-net-trades">--</div>
+            <div class="qt-stat-label">Net Trades</div>
+          </div>
+        </div>
+        <div class="qt-pnl-breakdown">
+          <div id="quant-pnl-by-asset"></div>
+          <div id="quant-pnl-attribution"></div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Parameter Sensitivity -->
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;">
-    <div class="card">
-      <div class="card-header">Consensus Sensitivity <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">WR at different agreement thresholds</span></div>
-      <table class="table">
-        <thead><tr><th>Min Consensus</th><th>Avg WR</th><th>Avg Signals</th><th>Combos</th></tr></thead>
-        <tbody id="quant-consensus-tbody">
-          <tr><td colspan="4" class="text-muted" style="text-align:center;">--</td></tr>
-        </tbody>
-      </table>
+  <!-- Per-Trade Learning -->
+  <div class="collapse-section qt-panel" id="quant-learning-card">
+    <div class="collapse-trigger">
+      <div class="qt-panel-hdr-row">
+        <span class="qt-panel-dot" style="background:#FFD700;"></span>
+        <h2 class="qt-panel-title">Per-Trade Learning</h2>
+        <span class="qt-panel-sub">Continuous</span>
+        <span class="qt-panel-badge" id="quant-learn-total">--</span>
+      </div>
     </div>
-    <div class="card">
-      <div class="card-header">Edge Sensitivity <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">WR at different minimum edge levels</span></div>
-      <table class="table">
-        <thead><tr><th>Min Edge</th><th>Avg WR</th><th>Avg Signals</th><th>Combos</th></tr></thead>
-        <tbody id="quant-edge-tbody">
-          <tr><td colspan="4" class="text-muted" style="text-align:center;">--</td></tr>
-        </tbody>
-      </table>
+    <div class="collapse-body">
+      <div class="qt-panel-body">
+        <div class="qt-learn-grid">
+          <div class="qt-stat-card" style="border-left-color:var(--agent-quant);">
+            <div class="qt-stat-value" id="quant-learn-studied">--</div>
+            <div class="qt-stat-label">Trades Studied</div>
+          </div>
+          <div class="qt-stat-card" style="border-left-color:var(--success);">
+            <div class="qt-stat-value" id="quant-learn-filter">--</div>
+            <div class="qt-stat-label">Filter Correctness</div>
+          </div>
+          <div class="qt-stat-card" style="border-left-color:var(--warning);">
+            <div class="qt-stat-value" id="quant-learn-ind-acc">--</div>
+            <div class="qt-stat-label">Avg Indicator Acc</div>
+          </div>
+          <div class="qt-stat-card" style="border-left-color:#8B5CF6;">
+            <div class="qt-stat-value" id="quant-learn-mini-opts">--</div>
+            <div class="qt-stat-label">Mini-Opts Run</div>
+          </div>
+        </div>
+        <div class="qt-learn-chips" id="quant-learn-indicators"></div>
+        <div class="qt-learn-mini-opt" id="quant-learn-mini-opt-summary" style="display:none;"></div>
+        <div class="qt-learn-feed" id="quant-learn-recent">
+          <div class="qt-placeholder">No studies yet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- S7: Deep Dive Panels (closed by default) -->
+
+  <!-- What to Change -->
+  <div class="collapse-section qt-panel">
+    <div class="collapse-trigger">
+      <div class="qt-panel-hdr-row">
+        <span class="qt-panel-dot" style="background:#ff6600;"></span>
+        <h2 class="qt-panel-title">What to Change</h2>
+        <span class="qt-panel-sub">Parameters: current vs optimal</span>
+      </div>
+    </div>
+    <div class="collapse-body">
+      <div class="qt-panel-body">
+        <table class="data-table">
+          <thead><tr><th>Parameter</th><th>Now</th><th>Optimal</th><th>Status</th></tr></thead>
+          <tbody id="quant-params-tbody">
+            <tr><td colspan="4" class="qt-placeholder">Run a backtest to see comparison</td></tr>
+          </tbody>
+        </table>
+        <div id="quant-recommendations" class="qt-recs-area">
+          <div class="qt-placeholder">Recommendations appear after backtesting</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Walk-Forward Validation -->
+  <div class="collapse-section qt-panel">
+    <div class="collapse-trigger">
+      <div class="qt-panel-hdr-row">
+        <span class="qt-panel-dot" style="background:#3498DB;"></span>
+        <h2 class="qt-panel-title">Walk-Forward Validation</h2>
+        <span class="qt-panel-sub">Does the strategy work on unseen data?</span>
+      </div>
+    </div>
+    <div class="collapse-body">
+      <div class="qt-panel-body">
+        <table class="data-table">
+          <thead><tr><th>Fold</th><th>Train</th><th>Train WR</th><th>Test</th><th>Test WR</th><th>Status</th></tr></thead>
+          <tbody id="quant-wf-tbody">
+            <tr><td colspan="6" class="qt-placeholder">Run a backtest to see walk-forward results</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Position Sizing & Strategy Health -->
+  <div class="collapse-section qt-panel">
+    <div class="collapse-trigger">
+      <div class="qt-panel-hdr-row">
+        <span class="qt-panel-dot" style="background:var(--success);"></span>
+        <h2 class="qt-panel-title">Position Sizing &amp; Strategy Health</h2>
+        <span class="qt-panel-sub">How much to bet and decay detection</span>
+      </div>
+    </div>
+    <div class="collapse-body">
+      <div class="qt-panel-body" id="quant-analytics-detail">
+        <div class="qt-placeholder">No analytics data yet</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Parameter Sensitivity: Consensus -->
+  <div class="collapse-section qt-panel">
+    <div class="collapse-trigger">
+      <div class="qt-panel-hdr-row">
+        <span class="qt-panel-dot" style="background:var(--warning);"></span>
+        <h2 class="qt-panel-title">Parameter Sensitivity</h2>
+        <span class="qt-panel-sub">Consensus &amp; Edge thresholds</span>
+      </div>
+    </div>
+    <div class="collapse-body">
+      <div class="qt-panel-body">
+        <div class="qt-sensitivity-grid">
+          <div>
+            <div class="qt-phase-card-title" style="margin-bottom:8px;">Consensus Sensitivity</div>
+            <table class="data-table">
+              <thead><tr><th>Min Consensus</th><th>Avg WR</th><th>Avg Signals</th><th>Combos</th></tr></thead>
+              <tbody id="quant-consensus-tbody">
+                <tr><td colspan="4" class="qt-placeholder">--</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <div class="qt-phase-card-title" style="margin-bottom:8px;">Edge Sensitivity</div>
+            <table class="data-table">
+              <thead><tr><th>Min Edge</th><th>Avg WR</th><th>Avg Signals</th><th>Combos</th></tr></thead>
+              <tbody id="quant-edge-tbody">
+                <tr><td colspan="4" class="qt-placeholder">--</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Indicator Diversity -->
-  <div class="card" style="margin-bottom:20px;">
-    <div class="card-header">Indicator Diversity <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">Are indicators independent or echoing each other?</span></div>
-    <div id="quant-diversity-detail" style="padding:12px;">
-      <div class="text-muted" style="text-align:center;padding:20px;">No diversity data yet</div>
+  <div class="collapse-section qt-panel">
+    <div class="collapse-trigger">
+      <div class="qt-panel-hdr-row">
+        <span class="qt-panel-dot" style="background:#cc66ff;"></span>
+        <h2 class="qt-panel-title">Indicator Diversity</h2>
+        <span class="qt-panel-sub">Are indicators independent or echoing each other?</span>
+        <span class="qt-panel-badge" id="quant-diversity-badge"></span>
+      </div>
+    </div>
+    <div class="collapse-body">
+      <div class="qt-panel-body" id="quant-diversity-detail">
+        <div class="qt-placeholder">No diversity data yet</div>
+      </div>
     </div>
   </div>
 
   <!-- Top Backtest Results -->
-  <div class="card" style="margin-bottom:20px;">
-    <div class="card-header">Top Backtest Results <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">Best parameter combos ranked by score (top 10)</span></div>
-    <table class="table">
-      <thead><tr><th>#</th><th>Label</th><th>Score</th><th>Win Rate</th><th>PF</th><th>Signals</th><th>W/L</th><th>Avg Edge</th></tr></thead>
-      <tbody id="quant-results-tbody">
-        <tr><td colspan="8" class="text-muted" style="text-align:center;padding:20px;">No results yet — trigger a backtest</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Hawk Trade Review -->
-  <div class="card" style="margin-bottom:20px;">
-    <div class="card-header">Hawk Trade Review <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">Quant's analysis of Hawk's trading patterns</span></div>
-    <div id="quant-hawk-review" style="padding:12px;">
-      <div class="text-muted" style="text-align:center;padding:20px;">No Hawk data available</div>
+  <div class="collapse-section qt-panel">
+    <div class="collapse-trigger">
+      <div class="qt-panel-hdr-row">
+        <span class="qt-panel-dot" style="background:var(--agent-quant);"></span>
+        <h2 class="qt-panel-title">Top Backtest Results</h2>
+        <span class="qt-panel-sub">Best parameter combos ranked by score (top 10)</span>
+        <span class="qt-panel-badge" id="quant-best-wr"></span>
+      </div>
+    </div>
+    <div class="collapse-body">
+      <div class="qt-panel-body">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Label</th><th>Score</th><th>Win Rate</th><th>PF</th><th>Signals</th><th>W/L</th><th>Avg Edge</th></tr></thead>
+          <tbody id="quant-results-tbody">
+            <tr><td colspan="8" class="qt-placeholder">No results yet — trigger a backtest</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
-  <!-- Hidden elements for JS compatibility (removed from visible layout) -->
+  <!-- Hawk Trade Review -->
+  <div class="collapse-section qt-panel">
+    <div class="collapse-trigger">
+      <div class="qt-panel-hdr-row">
+        <span class="qt-panel-dot" style="background:var(--agent-hawk);"></span>
+        <h2 class="qt-panel-title">Hawk Trade Review</h2>
+        <span class="qt-panel-sub">Quant analysis of Hawk trading patterns</span>
+      </div>
+    </div>
+    <div class="collapse-body">
+      <div class="qt-panel-body" id="quant-hawk-review">
+        <div class="qt-placeholder">No Hawk data available</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Version History -->
+  <div class="collapse-section qt-panel" id="quant-version-history" style="display:none;">
+    <div class="collapse-trigger">
+      <div class="qt-panel-hdr-row">
+        <span class="qt-panel-dot" style="background:#00d4ff;"></span>
+        <h2 class="qt-panel-title">Strategy Version History</h2>
+      </div>
+    </div>
+    <div class="collapse-body">
+      <div class="qt-panel-body" id="quant-versions-list"></div>
+    </div>
+  </div>
+
+  <!-- Hidden compat elements -->
   <div style="display:none;">
     <span id="quant-total-combos">--</span>
     <span id="quant-ci">--</span>
     <span id="quant-avg-edge">--</span>
     <span id="quant-filtered">--</span>
+    <span id="quant-overfit">--</span>
+    <span id="quant-diversity">--</span>
+    <span id="quant-pnl-badge">--</span>
   </div>
 
-  <!-- Last updated -->
-  <div class="text-muted" style="font-size:0.65rem;margin-top:12px;text-align:right;">
-    Last update: <span id="quant-last-update">--</span>
-  </div>
 </div>

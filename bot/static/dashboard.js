@@ -10174,12 +10174,10 @@ async function loadQuantTradeLearning() {
   try {
     var resp = await fetch('/api/quant/trade-learning');
     var d = await resp.json();
-    if (!d.total_studied) {
-      card.style.display = 'none';
-      return;
-    }
-    card.style.display = 'block';
-    document.getElementById('quant-learn-total').textContent = d.total_studied + ' trades studied';
+    if (!d.total_studied) return;
+    // Open panel if data exists
+    if (!card.classList.contains('open')) card.classList.add('open');
+    document.getElementById('quant-learn-total').textContent = d.total_studied + ' studied';
     document.getElementById('quant-learn-studied').textContent = d.total_studied;
     var fc = d.filter_correctness || 0;
     var fcEl = document.getElementById('quant-learn-filter');
@@ -10475,6 +10473,24 @@ async function loadQuantPhase2() {
       iHtml += '</div>';
       document.getElementById('quant-learn-insights').innerHTML = iHtml;
     }
+
+    // Update Phase 2 panel badge
+    var p2Badge = document.getElementById('qt-phase2-badge');
+    if (p2Badge) {
+      var cur = regime.current || 'unknown';
+      var risk = corr.overall_risk || 'low';
+      p2Badge.textContent = cur.toUpperCase();
+      if (risk === 'high') {
+        p2Badge.style.background = 'rgba(255,85,85,0.13)';
+        p2Badge.style.color = 'var(--error)';
+      } else if (risk === 'medium' || cur === 'high_vol') {
+        p2Badge.style.background = 'rgba(255,170,0,0.13)';
+        p2Badge.style.color = 'var(--warning)';
+      } else {
+        p2Badge.style.background = 'rgba(34,170,68,0.13)';
+        p2Badge.style.color = 'var(--success)';
+      }
+    }
   } catch(e) { console.error('quant phase2:', e); }
 }
 
@@ -10561,6 +10577,113 @@ async function loadQuantPNLImpact() {
   } catch(e) {
     console.error('quant pnl-impact:', e);
   }
+}
+
+function renderQuantRadar(analyticsData) {
+  var container = document.getElementById('qt-radar-container');
+  if (!container) return;
+  var status = window._quantStatusData || {};
+  var kelly = analyticsData.kelly || {};
+  var diversity = analyticsData.diversity || {};
+  var decay = analyticsData.decay || {};
+
+  // Calculate 5 radar axes (0-100 scale)
+  var baseWR = status.baseline_win_rate || 0;
+  var wrAxis = Math.min(100, Math.max(0, (baseWR / 70) * 100));
+
+  // OOS from walk-forward (stored as text in stat card)
+  var oosEl = document.getElementById('quant-wf-oos');
+  var oosText = oosEl ? oosEl.textContent : '0';
+  var oosWR = parseFloat(oosText) || 0;
+  var oosAxis = Math.min(100, Math.max(0, (oosWR / 70) * 100));
+
+  // Diversity
+  var divScore = diversity.diversity_score || 0;
+  var divAxis = Math.min(100, divScore);
+
+  // Stability (inverted overfit gap)
+  var ofEl = document.getElementById('quant-overfit');
+  var ofText = ofEl ? ofEl.textContent : '0';
+  var ofGap = parseFloat(ofText) || 0;
+  var stbAxis = Math.min(100, Math.max(0, 100 - ofGap * 5));
+
+  // Edge
+  var avgEdge = status.baseline_avg_edge || 0;
+  var edgAxis = Math.min(100, Math.max(0, avgEdge * 5));
+
+  var values = [wrAxis, oosAxis, divAxis, stbAxis, edgAxis];
+  var labels = ['WR', 'OOS', 'DIV', 'STB', 'EDG'];
+  container.innerHTML = radarSVG(180, values, labels, '#00BFFF');
+
+  // Score = weighted average
+  var score = Math.round(wrAxis * 0.3 + oosAxis * 0.25 + divAxis * 0.15 + stbAxis * 0.2 + edgAxis * 0.1);
+  document.getElementById('qt-score-value').textContent = score;
+
+  var grade;
+  if (score >= 80) grade = 'SHARP';
+  else if (score >= 60) grade = 'SOLID';
+  else if (score >= 40) grade = 'FAIR';
+  else grade = 'WEAK';
+
+  var gradeEl = document.getElementById('qt-score-grade');
+  gradeEl.textContent = grade;
+  gradeEl.style.color = score >= 80 ? 'var(--success)' : score >= 60 ? 'var(--agent-quant)' : score >= 40 ? 'var(--warning)' : 'var(--error)';
+}
+
+async function quantApplyParams() {
+  var status = document.getElementById('qt-action-status');
+  if (status) status.textContent = 'Applying best params...';
+  try {
+    var resp = await fetch('/api/quant/apply-params', {method: 'POST'});
+    var d = await resp.json();
+    if (status) {
+      status.textContent = d.success ? d.message : ('Failed: ' + d.message);
+      status.style.color = d.success ? 'var(--success)' : 'var(--error)';
+    }
+    if (d.success) setTimeout(loadQuantTab, 1000);
+  } catch(e) {
+    if (status) { status.textContent = 'Error: ' + e.message; status.style.color = 'var(--error)'; }
+  }
+}
+
+async function quantRollbackParams() {
+  var status = document.getElementById('qt-action-status');
+  if (status) status.textContent = 'Rolling back params...';
+  try {
+    var resp = await fetch('/api/quant/rollback-params', {method: 'POST'});
+    var d = await resp.json();
+    if (status) {
+      status.textContent = d.success ? d.message : ('Failed: ' + d.message);
+      status.style.color = d.success ? 'var(--success)' : 'var(--error)';
+    }
+    if (d.success) setTimeout(loadQuantTab, 1000);
+  } catch(e) {
+    if (status) { status.textContent = 'Error: ' + e.message; status.style.color = 'var(--error)'; }
+  }
+}
+
+function quantExportReport() {
+  var status = document.getElementById('qt-action-status');
+  if (status) status.textContent = 'Generating report...';
+  var report = {
+    generated: new Date().toISOString(),
+    agent: 'quant',
+    status: window._quantStatusData || {},
+    verdict: {
+      current_wr: document.getElementById('quant-verdict-current') ? document.getElementById('quant-verdict-current').textContent : '--',
+      best_wr: document.getElementById('quant-verdict-best') ? document.getElementById('quant-verdict-best').textContent : '--',
+    },
+    score: document.getElementById('qt-score-value') ? document.getElementById('qt-score-value').textContent : '--',
+    grade: document.getElementById('qt-score-grade') ? document.getElementById('qt-score-grade').textContent : '--',
+  };
+  var blob = new Blob([JSON.stringify(report, null, 2)], {type: 'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'quant_report_' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  if (status) { status.textContent = 'Report downloaded'; status.style.color = 'var(--success)'; }
 }
 
 function quantHealthCheck() {
