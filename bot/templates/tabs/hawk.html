@@ -73,6 +73,24 @@
     <table class="data-table"><thead><tr><th>Exch</th><th>Market</th><th>Dir</th><th>Cost</th><th>Entry</th><th>Now</th><th>Status</th><th>P&amp;L</th><th>Payout</th><th>Return</th><th>Category</th><th>Risk</th></tr></thead><tbody id="hawk-pos-tbody"><tr><td colspan="12" class="text-muted" style="text-align:center;padding:24px;">Loading on-chain positions...</td></tr></tbody></table>
   </div>
 
+  <!-- V9: Live In-Play Monitor -->
+  <div class="glass-card" id="hawk-live-monitor" style="margin-bottom:12px;border-left:3px solid #ff4444;display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <h3 class="section-title" style="font-size:0.82rem;margin-bottom:0;color:#ff4444;">
+        <span style="animation:rxPulse 1s ease-in-out infinite;display:inline-block;width:8px;height:8px;border-radius:50%;background:#ff4444;margin-right:6px;"></span>
+        LIVE IN-PLAY MONITOR
+        <span id="hawk-live-count" style="font-size:0.68rem;color:var(--text-muted);font-weight:400;margin-left:6px;">0 games</span>
+      </h3>
+    </div>
+    <div id="hawk-live-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;">
+      <!-- Live position cards populated by JS -->
+    </div>
+    <div id="hawk-live-actions-log" style="margin-top:10px;display:none;">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:6px;">Recent Live Actions</div>
+      <div id="hawk-live-actions-list" style="font-family:var(--font-mono);font-size:0.72rem;max-height:120px;overflow-y:auto;"></div>
+    </div>
+  </div>
+
   <!-- D-: Market Scanner Stats -->
   <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-hawk);padding:10px 14px;">
     <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">

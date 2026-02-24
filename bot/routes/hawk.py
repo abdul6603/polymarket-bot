@@ -1334,3 +1334,117 @@ def api_hawk_odds_movement():
         return jsonify({"markets": 0, "data": {}})
     except Exception:
         return jsonify({"markets": 0, "data": {}})
+
+
+@hawk_bp.route("/api/hawk/live-positions")
+def api_hawk_live_positions():
+    """V9: Live in-play position status for dashboard."""
+    try:
+        import sys
+        sys.path.insert(0, str(Path.home() / "polymarket-bot"))
+        from hawk.tracker import HawkTracker
+        from hawk.espn import get_live_games
+
+        tracker = HawkTracker()
+        live_games = get_live_games()
+
+        positions = []
+        for pos in tracker.open_positions:
+            if pos.get("resolved"):
+                continue
+            cid = pos.get("condition_id", "")
+            question = pos.get("question", "").lower()
+
+            # Try to match to live game
+            game_match = None
+            for g in live_games:
+                home = g.get("home_team", "").lower()
+                away = g.get("away_team", "").lower()
+                home_name = home.split()[-1] if home.split() else ""
+                away_name = away.split()[-1] if away.split() else ""
+                if (home_name in question and len(home_name) > 3) or (away_name in question and len(away_name) > 3):
+                    game_match = g
+                    break
+
+            entry_price = pos.get("entry_price", 0.5)
+            size_usd = pos.get("size_usd", 0)
+            shares = size_usd / entry_price if entry_price > 0 else 0
+
+            p_data = {
+                "condition_id": cid[:12],
+                "question": pos.get("question", "")[:120],
+                "direction": pos.get("direction", ""),
+                "entry_price": round(entry_price, 3),
+                "size_usd": round(size_usd, 2),
+                "shares": round(shares, 1),
+                "category": pos.get("category", ""),
+                "edge": round(pos.get("edge", 0) * 100, 1),
+                "opened_at": pos.get("time_str", ""),
+                "is_live": game_match is not None,
+            }
+
+            if game_match:
+                p_data["game"] = {
+                    "home_team": game_match.get("home_team", ""),
+                    "away_team": game_match.get("away_team", ""),
+                    "home_score": game_match.get("home_score", 0),
+                    "away_score": game_match.get("away_score", 0),
+                    "period": game_match.get("period", 0),
+                    "clock": game_match.get("clock", ""),
+                    "sport": game_match.get("sport_key", ""),
+                }
+
+            positions.append(p_data)
+
+        # Live action history
+        actions = []
+        action_file = Path.home() / "polymarket-bot" / "data" / "hawk_live_actions.jsonl"
+        if action_file.exists():
+            try:
+                lines = action_file.read_text().strip().split("\n")
+                for line in lines[-20:]:  # Last 20 actions
+                    if line.strip():
+                        actions.append(json.loads(line))
+            except Exception:
+                pass
+
+        return jsonify({
+            "positions": positions,
+            "live_games_count": len(live_games),
+            "actions": actions,
+            "live_enabled": True,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e), "positions": [], "live_games_count": 0})
+
+
+@hawk_bp.route("/api/hawk/live-action", methods=["POST"])
+def api_hawk_live_action():
+    """V9: Manual override — pause/resume/exit a live position."""
+    try:
+        data = request.get_json(force=True)
+        action = data.get("action", "")
+        condition_id = data.get("condition_id", "")
+
+        if not action or not condition_id:
+            return jsonify({"error": "Missing action or condition_id"}), 400
+
+        # Write action request to a file that the live manager checks
+        action_file = Path.home() / "polymarket-bot" / "data" / "hawk_live_overrides.json"
+        import json as _json
+        overrides = {}
+        if action_file.exists():
+            try:
+                overrides = _json.loads(action_file.read_text())
+            except Exception:
+                pass
+
+        overrides[condition_id] = {
+            "action": action,  # "pause", "resume", "exit", "add"
+            "timestamp": time.time(),
+        }
+        action_file.write_text(_json.dumps(overrides, indent=2))
+
+        return jsonify({"ok": True, "action": action, "condition_id": condition_id[:12]})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500

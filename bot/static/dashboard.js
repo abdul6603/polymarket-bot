@@ -7803,6 +7803,9 @@ async function loadHawkTab() {
   loadHawkCLV();
   loadHawkTuning();
 
+  // V9: Live in-play monitor
+  loadHawkLiveMonitor();
+
   // V8: Auto-refresh capital + positions every 30s
   if (window._hawkLiveRefresh) clearInterval(window._hawkLiveRefresh);
   window._hawkLiveRefresh = setInterval(function() {
@@ -7815,8 +7818,132 @@ async function loadHawkTab() {
         if (cb) cb.textContent = (d.positions || []).length;
       })
       .catch(function(){});
+    loadHawkLiveMonitor();
   }, 30000);
 }
+
+// ═══ V9: Live In-Play Monitor ═══
+
+async function loadHawkLiveMonitor() {
+  try {
+    var resp = await fetch('/api/hawk/live-positions?t=' + Date.now());
+    var d = await resp.json();
+    var container = document.getElementById('hawk-live-monitor');
+    var cardsEl = document.getElementById('hawk-live-cards');
+    var countEl = document.getElementById('hawk-live-count');
+    var actionsLog = document.getElementById('hawk-live-actions-log');
+    var actionsList = document.getElementById('hawk-live-actions-list');
+    if (!container || !cardsEl) return;
+
+    var positions = d.positions || [];
+    var livePositions = positions.filter(function(p) { return p.is_live; });
+    var liveGames = d.live_games_count || 0;
+    var actions = d.actions || [];
+
+    // Show/hide the section
+    if (positions.length === 0) {
+      container.style.display = 'none';
+      return;
+    }
+    container.style.display = 'block';
+
+    // Update count
+    if (countEl) {
+      countEl.textContent = livePositions.length + ' live / ' + positions.length + ' total | ' + liveGames + ' games on';
+    }
+
+    // Render position cards
+    var html = '';
+    positions.forEach(function(p) {
+      var isLive = p.is_live;
+      var borderColor = isLive ? '#ff4444' : 'var(--border)';
+      var statusDot = isLive
+        ? '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#ff4444;animation:rxPulse 1s ease-in-out infinite;margin-right:4px;"></span>LIVE'
+        : '<span style="color:var(--text-muted);">PRE-GAME</span>';
+
+      var pnlColor = 'var(--text-muted)';
+      var pnlText = '--';
+      if (isLive && p.game) {
+        var g = p.game;
+        pnlText = g.home_team + ' ' + g.home_score + ' - ' + g.away_score + ' ' + g.away_team;
+        if (g.period) pnlText += ' | P' + g.period;
+        if (g.clock) pnlText += ' ' + g.clock;
+      }
+
+      var edgeColor = p.edge >= 20 ? 'var(--success)' : p.edge >= 10 ? 'var(--warning)' : 'var(--text-muted)';
+
+      html += '<div style="background:var(--card-bg);border:1px solid ' + borderColor + ';border-radius:8px;padding:10px;font-size:0.75rem;">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
+      html += '<span style="font-size:0.68rem;">' + statusDot + '</span>';
+      html += '<span style="font-size:0.65rem;color:var(--text-muted);">' + (p.category || '').toUpperCase() + '</span>';
+      html += '</div>';
+      html += '<div style="font-weight:600;margin-bottom:4px;line-height:1.3;">' + (p.question || '').substring(0, 80) + '</div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:6px;">';
+      html += '<div><span style="color:var(--text-muted);font-size:0.65rem;">Direction</span><br><span style="color:' + (p.direction === 'yes' ? 'var(--success)' : 'var(--error)') + ';font-weight:600;">' + (p.direction || '').toUpperCase() + '</span></div>';
+      html += '<div><span style="color:var(--text-muted);font-size:0.65rem;">Entry</span><br><span style="font-weight:600;">$' + (p.entry_price || 0).toFixed(2) + '</span></div>';
+      html += '<div><span style="color:var(--text-muted);font-size:0.65rem;">Size</span><br><span style="font-weight:600;">$' + (p.size_usd || 0).toFixed(2) + '</span></div>';
+      html += '<div><span style="color:var(--text-muted);font-size:0.65rem;">Edge</span><br><span style="font-weight:600;color:' + edgeColor + ';">' + (p.edge || 0).toFixed(1) + '%</span></div>';
+      html += '</div>';
+
+      if (isLive && p.game) {
+        html += '<div style="background:rgba(255,68,68,0.1);border-radius:6px;padding:6px;margin-bottom:4px;text-align:center;">';
+        html += '<div style="font-weight:700;font-size:0.82rem;">' + pnlText + '</div>';
+        html += '</div>';
+      }
+
+      html += '<div style="display:flex;gap:4px;margin-top:6px;">';
+      if (isLive) {
+        html += '<button data-cid="' + p.condition_id + '" data-act="pause" class="hawk-live-btn" style="flex:1;padding:3px 6px;font-size:0.65rem;background:var(--card-bg);border:1px solid var(--border);border-radius:4px;color:var(--text-muted);cursor:pointer;">Pause</button>';
+        html += '<button data-cid="' + p.condition_id + '" data-act="exit" class="hawk-live-btn" style="flex:1;padding:3px 6px;font-size:0.65rem;background:rgba(255,68,68,0.1);border:1px solid #ff4444;border-radius:4px;color:#ff4444;cursor:pointer;">Exit Now</button>';
+      }
+      html += '</div>';
+      html += '</div>';
+    });
+    cardsEl.innerHTML = html;
+
+    // Actions log
+    if (actions.length > 0 && actionsLog && actionsList) {
+      actionsLog.style.display = 'block';
+      var ahtml = '';
+      actions.slice(-10).reverse().forEach(function(a) {
+        var actionColor = a.action === 'EXIT' ? '#ff4444' : a.action === 'ADD' ? 'var(--success)' : 'var(--text-muted)';
+        var ts = a.timestamp ? new Date(a.timestamp * 1000).toLocaleTimeString() : '';
+        ahtml += '<div style="padding:3px 0;border-bottom:1px solid var(--border);">';
+        ahtml += '<span style="color:' + actionColor + ';font-weight:600;">' + (a.action || '') + '</span> ';
+        ahtml += '<span style="color:var(--text-muted);">' + ts + '</span> ';
+        ahtml += '<span>' + (a.reason || '').substring(0, 80) + '</span>';
+        ahtml += '</div>';
+      });
+      actionsList.innerHTML = ahtml;
+    }
+  } catch(e) {
+    console.log('hawk live monitor:', e);
+  }
+}
+
+// Event delegation for live action buttons
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.hawk-live-btn');
+  if (!btn) return;
+  var cid = btn.getAttribute('data-cid');
+  var action = btn.getAttribute('data-act');
+  if (!cid || !action) return;
+  if (!confirm('Confirm ' + action.toUpperCase() + ' for position ' + cid + '?')) return;
+  fetch('/api/hawk/live-action', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({condition_id: cid, action: action})
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.ok) {
+        loadHawkLiveMonitor();
+      } else {
+        alert('Action failed: ' + (d.error || 'unknown'));
+      }
+    })
+    .catch(function(e) { alert('Error: ' + e); });
+});
 
 // ═══ V8: Live Capital ═══
 
