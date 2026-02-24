@@ -154,6 +154,10 @@ class SnipeEngine:
         self._candle_store = CandleStore()
         self._scorer = SignalScorer(threshold=65)  # Legacy compat
 
+        # Dynamic snipe thresholds — lower during warmup, normal after
+        self._threshold_warmup = 58   # first 60 min while CandleStore matures
+        self._threshold_normal = 65   # after warmup completes
+
         # Thread pool for parallel per-asset ticking
         self._tick_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="snipe-tick")
         self._tick_pool_recreate_count = 0
@@ -502,6 +506,11 @@ class SnipeEngine:
                     continue
                 target_book = clob_book.get_orderbook(token_id)
                 opp_book = clob_book.get_orderbook(opp_token_id)
+
+            # Dynamic threshold — lower during warmup, normal after 60 min
+            elapsed_min = (time.time() - self._engine_start_ts) / 60.0
+            dynamic_thresh = self._threshold_normal if elapsed_min >= 60 else self._threshold_warmup
+            slot.scorer.threshold = dynamic_thresh
 
             # Score all 10 components (per-slot scorer for thread safety)
             score_result = slot.scorer.score(
@@ -1060,8 +1069,8 @@ class SnipeEngine:
             "target_min": 60,
             "progress_pct": warmup["progress_pct"],
             "max_realistic_score": max_realistic,
-            "threshold": 65,
-            "can_reach_threshold": max_realistic >= 65,
+            "threshold": self._threshold_normal if elapsed_min >= 60 else self._threshold_warmup,
+            "can_reach_threshold": max_realistic >= (self._threshold_normal if elapsed_min >= 60 else self._threshold_warmup),
             "base_components": [
                 {"name": n, "current": b, "max": m}
                 for n, b, m in base_components

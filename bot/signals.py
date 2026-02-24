@@ -220,8 +220,17 @@ MIN_EDGE_BY_TF = {
     "weekly": 0.03, # 3% — lowest edge floor for longest timeframe
 }
 
-# Hard floor — regime adjustments cannot lower edge below this
-MIN_EDGE_ABSOLUTE = 0.12  # 12% — Quant backtest: 8%→12% improves WR 61.5%→69.9%. Old 8% had 6-27% WR on low-edge trades.
+# Dynamic edge floor — regime-aware. Extreme regimes naturally compress edges; rigid 12% = paralysis.
+# Normal: 12% (Quant validated). Extreme: 8% (still selective). Hard floor: 7% (never below).
+MIN_EDGE_ABSOLUTE = 0.12  # default for normal regime
+MIN_EDGE_BY_REGIME = {
+    "extreme_fear": 0.08,
+    "fear": 0.10,
+    "neutral": 0.12,
+    "greed": 0.10,
+    "extreme_greed": 0.08,
+}
+MIN_EDGE_HARD_FLOOR = 0.07  # absolute minimum — never trade below 7% edge
 
 # Reward-to-Risk ratio filter
 # R:R = ((1-P) * 0.98) / P  where P = token price, 0.98 = payout after 2% winner fee
@@ -237,7 +246,7 @@ MIN_VOTE_CONFIDENCE = 0.15  # 15% — below this, vote doesn't count for consens
 # When 2+ disabled indicators disagree with majority, raise the bar
 REVERSAL_SENTINEL_INDICATORS = {"rsi", "bollinger", "heikin_ashi", "funding_rate", "lstm"}
 REVERSAL_SENTINEL_THRESHOLD = 2   # how many dissenters needed to trigger
-REVERSAL_SENTINEL_PENALTY = 0.10  # +10% confidence floor when triggered
+REVERSAL_SENTINEL_PENALTY = 0.15  # +15% confidence floor when triggered (penalty only, never hard blocks)
 
 # Asset-specific edge premium — weaker assets need higher edge to trade
 ASSET_EDGE_PREMIUM = {
@@ -859,13 +868,13 @@ class SignalEngine:
         score = weighted_sum / weight_total  # -1 to +1
 
         # ── Regime Directional Bias ──
-        # Extreme fear = oversold = bias toward UP (bounces likely)
-        # Extreme greed = overbought = bias toward DOWN (corrections likely)
-        # This treats regime as a first-class directional signal, not just a threshold modifier.
+        # Neutral in extreme regimes — let indicators decide direction naturally.
+        # Old +0.08 UP bias in extreme_fear forced bullish in crashes, preventing DOWN trades.
+        # Mild bias in fear/greed only (contrarian lean without overriding reality).
         if regime:
-            regime_bias = {"extreme_fear": 0.08, "fear": 0.03,
+            regime_bias = {"extreme_fear": 0.0, "fear": 0.02,
                            "neutral": 0.0,
-                           "greed": -0.03, "extreme_greed": -0.08}.get(regime.label, 0.0)
+                           "greed": -0.02, "extreme_greed": 0.0}.get(regime.label, 0.0)
             if regime_bias != 0.0:
                 score += regime_bias
                 score = max(-1.0, min(1.0, score))  # keep in bounds
@@ -931,14 +940,13 @@ class SignalEngine:
         # Clamp consensus_floor to MAX_VIABLE_CONSENSUS — prevents paralysis
         safe_floor = min(_consensus_floor, MAX_VIABLE_CONSENSUS)
 
-        # Regime-aware consensus adjustment
-        # Extreme regimes: fewer indicators are reliable, so lower the bar
-        # Normal regime: standard consensus requirement
+        # Regime-aware dynamic consensus — extreme regimes cap at 4 to prevent paralysis.
+        # Indicators herd in extreme regimes; requiring 60%+ of 8-10 is impossible.
+        EXTREME_MAX_CONSENSUS = 4  # hard cap in extreme regimes — never require more than 4
         if regime and regime.label in ("extreme_fear", "extreme_greed"):
-            # In extreme regimes, cap at 60% of active (indicators herd, fewer independent signals)
-            regime_consensus = max(safe_floor, math.ceil(active_count * 0.60))
+            regime_consensus = max(safe_floor, min(math.ceil(active_count * 0.50), EXTREME_MAX_CONSENSUS))
         elif regime and regime.label in ("fear", "greed"):
-            regime_consensus = max(safe_floor, math.ceil(active_count * 0.65))
+            regime_consensus = max(safe_floor, math.ceil(active_count * 0.55))
         else:
             # Normal: standard 70% ratio
             regime_consensus = max(safe_floor, int(active_count * _consensus_ratio))
@@ -948,9 +956,9 @@ class SignalEngine:
             effective_consensus += regime.consensus_offset
             effective_consensus = min(effective_consensus, active_count)
 
-        # Extreme fear + DOWN: further lower to 55% (bearish momentum is natural in fear)
+        # Extreme fear + DOWN: further lower to 45% (bearish momentum is natural in fear)
         if regime and regime.label == "extreme_fear" and majority_dir == "down":
-            fear_consensus = max(safe_floor, math.ceil(active_count * 0.55))
+            fear_consensus = max(safe_floor, min(math.ceil(active_count * 0.45), EXTREME_MAX_CONSENSUS))
             fear_consensus = min(fear_consensus, active_count)
             if fear_consensus < effective_consensus:
                 effective_consensus = fear_consensus
@@ -975,24 +983,14 @@ class SignalEngine:
                 sentinel_dissenters.append(ind_name)
 
         if len(sentinel_dissenters) >= REVERSAL_SENTINEL_THRESHOLD:
-            # Raise consensus requirement by +1
-            sentinel_consensus = effective_consensus + 1
-            if agree_count < sentinel_consensus:
-                log.info(
-                    "[%s/%s] REVERSAL SENTINEL: %d disabled indicators (%s) disagree with %s, "
-                    "raised consensus to %d but only %d agree — BLOCKED",
-                    asset.upper(), timeframe, len(sentinel_dissenters),
-                    "+".join(sentinel_dissenters), majority_dir.upper(),
-                    sentinel_consensus, agree_count,
-                )
-                return None
+            # Penalty only — never hard block. Raises confidence floor to make trade harder, not impossible.
             reversal_penalty = REVERSAL_SENTINEL_PENALTY
             log.info(
                 "[%s/%s] REVERSAL SENTINEL: %d disabled indicators (%s) disagree with %s — "
-                "confidence penalty +%.0f%% applied (passed consensus %d/%d)",
+                "confidence penalty +%.0f%% applied (agree %d/%d)",
                 asset.upper(), timeframe, len(sentinel_dissenters),
                 "+".join(sentinel_dissenters), majority_dir.upper(),
-                reversal_penalty * 100, agree_count, sentinel_consensus,
+                reversal_penalty * 100, agree_count, effective_consensus,
             )
 
         # ── Trend Filter — anti-trend signals need stronger consensus ──
@@ -1119,8 +1117,10 @@ class SignalEngine:
         # ── Timeframe-Specific Minimum Edge (regime-adjusted + asset premium) ──
         asset_premium = ASSET_EDGE_PREMIUM.get(asset, 1.0)
         min_edge = MIN_EDGE_BY_TF.get(timeframe, 0.05) * (regime.edge_multiplier if regime else 1.0) * asset_premium
-        # Hard floor — regime cannot lower edge below absolute minimum
-        min_edge = max(min_edge, _min_edge_absolute)
+        # Dynamic edge floor — regime-aware instead of rigid 12%
+        regime_edge_floor = MIN_EDGE_BY_REGIME.get(regime.label, MIN_EDGE_ABSOLUTE) if regime else _min_edge_absolute
+        regime_edge_floor = max(regime_edge_floor, MIN_EDGE_HARD_FLOOR)
+        min_edge = max(min_edge, regime_edge_floor)
         # Pattern gate edge adjustment: raise bar for losing combos, lower for winning ones
         if _gate_decision.edge_adjustment > 0:
             min_edge = max(min_edge, _gate_decision.edge_adjustment)
