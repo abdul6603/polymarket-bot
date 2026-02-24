@@ -3850,6 +3850,79 @@ async function rxLoadIntelligence(sentinelData) {
   }
 }
 
+/* ── Load Trade Guard ── */
+async function rxLoadTradeGuard() {
+  try {
+    const resp = await fetch('/api/robotox/trade-guard');
+    const data = await resp.json();
+    const el = document.getElementById('rx-trade-guard-content');
+    const badge = document.getElementById('rx-tg-badge');
+    if (!el) return;
+
+    const agents = ['garves', 'hawk', 'odin'];
+    let allReady = true;
+    let cards = '';
+
+    for (const agentId of agents) {
+      const r = data[agentId];
+      if (!r) continue;
+
+      const ready = r.ready;
+      const score = r.score || 0;
+      const stale = r.stale;
+      const blocked = r.blocked_reason;
+      const checks = r.checks || {};
+      const age = r.age_s || 0;
+
+      if (!ready) allReady = false;
+
+      const color = ready ? 'var(--success)' : 'var(--danger)';
+      const statusText = stale ? 'STALE' : (ready ? 'READY' : 'BLOCKED');
+      const statusColor = stale ? 'var(--warning)' : color;
+
+      let checkItems = '';
+      for (const [k, v] of Object.entries(checks)) {
+        if (typeof v === 'boolean') {
+          const icon = v ? '&#10003;' : '&#10007;';
+          const c = v ? 'var(--success)' : 'var(--danger)';
+          checkItems += '<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:0.72rem;">'
+            + '<span style="color:var(--text-secondary);">' + k.replace(/_/g, ' ') + '</span>'
+            + '<span style="color:' + c + ';font-weight:600;">' + icon + '</span></div>';
+        } else if (typeof v === 'number') {
+          checkItems += '<div style="display:flex;justify-content:space-between;padding:2px 0;font-size:0.72rem;">'
+            + '<span style="color:var(--text-secondary);">' + k.replace(/_/g, ' ') + '</span>'
+            + '<span style="color:var(--text-primary);font-family:var(--font-mono);">' + v + '</span></div>';
+        }
+      }
+
+      cards += '<div style="flex:1;min-width:220px;background:rgba(255,255,255,0.03);border-radius:10px;padding:14px;border-left:3px solid ' + color + ';">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
+        + '<span style="font-weight:700;text-transform:uppercase;font-size:0.82rem;">' + agentId + '</span>'
+        + '<span style="font-size:0.7rem;padding:2px 8px;border-radius:10px;font-weight:600;background:' + statusColor + '20;color:' + statusColor + ';">' + statusText + '</span>'
+        + '</div>'
+        + '<div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px;">'
+        + '<span style="font-size:1.6rem;font-weight:800;color:' + color + ';">' + score + '</span>'
+        + '<span style="font-size:0.72rem;color:var(--text-muted);">/100</span>'
+        + '</div>'
+        + (blocked ? '<div style="font-size:0.7rem;color:var(--danger);margin-bottom:6px;padding:4px 6px;background:rgba(255,0,0,0.08);border-radius:4px;">' + blocked + '</div>' : '')
+        + checkItems
+        + '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:6px;">Updated ' + Math.round(age) + 's ago</div>'
+        + '</div>';
+    }
+
+    el.innerHTML = '<div style="display:flex;gap:12px;flex-wrap:wrap;">' + cards + '</div>';
+
+    if (badge) {
+      badge.textContent = allReady ? 'ALL CLEAR' : 'BLOCKED';
+      badge.style.color = allReady ? 'var(--success)' : 'var(--danger)';
+    }
+
+  } catch (e) {
+    const el = document.getElementById('rx-trade-guard-content');
+    if (el) el.innerHTML = '<div class="text-muted" style="text-align:center;padding:var(--space-4);">Trade Guard data unavailable</div>';
+  }
+}
+
 /* ── Load Predictive Monitors ── */
 async function rxLoadPredictive() {
   var el = document.getElementById('rx-predictive-content');
@@ -4435,6 +4508,7 @@ async function refresh() {
       var sentinelData = await resp.json();
       renderSentinel(sentinelData);
       rxLoadIntelligence(sentinelData);
+      rxLoadTradeGuard();
       rxLoadPredictive();
       rxLoadQuietHours();
       rxLoadLivePills();

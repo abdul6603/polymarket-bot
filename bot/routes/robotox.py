@@ -258,3 +258,13 @@ def api_robotox_quiet_hours():
         return jsonify(s.get_quiet_hours_status())
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500
+
+
+@robotox_bp.route("/api/robotox/trade-guard")
+def api_robotox_trade_guard():
+    """Phase 1: Trade Guard — readiness status for all trading agents."""
+    try:
+        s = _get_sentinel()
+        return jsonify(s.get_trade_guard_status())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
