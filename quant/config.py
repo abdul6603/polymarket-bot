@@ -14,3 +14,31 @@ class QuantConfig:
     hawk_review: bool = True
     event_poll_interval: int = 30       # seconds between event bus polls
     mini_opt_threshold: int = 10        # trades studied before auto mini-optimization
+
+    # ── Phase 1: Intelligence Engine ──
+    # Walk-Forward V2
+    wfv2_max_overfit_gap: float = 10.0  # max IS-OOS gap (pp) to accept params
+    wfv2_method: str = "anchored"       # "anchored" or "rolling"
+    wfv2_folds: int = 5
+
+    # Monte Carlo
+    monte_carlo_sims: int = 10_000
+    monte_carlo_ruin_threshold: float = 50.0  # % drawdown = ruin
+    max_ruin_pct: float = 5.0                 # max acceptable ruin probability
+
+    # CUSUM Edge Decay
+    cusum_threshold: float = 5.0
+    cusum_drift: float = 0.5
+    cusum_rolling_window: int = 30
+
+    # Kelly
+    kelly_bankroll: float = 250.0
+    kelly_fraction: str = "half"        # "full", "half", "quarter"
+
+    # Live Push
+    push_target: str = "garves"         # "garves", "odin", "both"
+    push_dry_run: bool = True           # default to dry-run (safe)
+    push_require_approval: bool = True  # needs human OK before applying
+
+    # Odin integration
+    odin_enabled: bool = True           # analyze Odin trades too

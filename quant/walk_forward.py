@@ -54,6 +54,35 @@ class WalkForwardResult:
 
 
 @dataclass
+class WalkForwardV2Result:
+    """Enhanced walk-forward validation with strict quality gates."""
+    # Aggregated performance
+    avg_train_wr: float = 0.0
+    avg_test_wr: float = 0.0
+    overfit_gap: float = 0.0          # train_wr - test_wr in pp
+    # Quality gate verdict
+    passed: bool = False
+    max_gap: float = 10.0             # configurable threshold (pp)
+    rejection_reason: str = ""
+    # Stability metrics across folds
+    test_wr_std: float = 0.0          # standard deviation of test WRs
+    stability_score: float = 0.0      # 0-100, higher = more stable
+    min_test_wr: float = 0.0
+    max_test_wr: float = 0.0
+    # PNL estimation
+    estimated_pnl_per_trade: float = 0.0
+    estimated_daily_pnl: float = 0.0
+    estimated_monthly_pnl: float = 0.0
+    # Fold details
+    n_folds: int = 0
+    fold_results: list[dict] = field(default_factory=list)
+    best_params_label: str = ""
+    # Method used
+    method: str = "anchored"          # "anchored" or "rolling"
+    elapsed_seconds: float = 0.0
+
+
+@dataclass
 class BootstrapCI:
     """Bootstrap confidence interval for a win rate."""
     point_estimate: float = 0.0
@@ -214,6 +243,191 @@ def walk_forward_validation(
 
     log.info("Walk-forward complete: train avg WR=%.1f%%, test avg WR=%.1f%%, overfit=%.1fpp",
              result.train_win_rate, result.test_win_rate, result.overfit_drop)
+
+    return result
+
+
+def walk_forward_v2(
+    trades: list[dict],
+    n_folds: int = 5,
+    max_optuna_trials: int = 100,
+    min_trades_per_fold: int = 10,
+    max_overfit_gap: float = 10.0,
+    method: str = "anchored",
+    avg_trades_per_day: float = 3.0,
+    avg_bet_size: float = 15.0,
+    progress_callback=None,
+) -> WalkForwardV2Result:
+    """Walk-Forward V2 with strict OOS gates and PNL estimation.
+
+    Two modes:
+      anchored: Expanding window — fold k trains on ALL data up to fold k.
+      rolling:  Fixed-size sliding window of 2 folds before test fold.
+
+    Quality gates (ALL must pass):
+      1. Overfit gap < max_overfit_gap (default 10pp)
+      2. Every fold test WR > 45% (above random chance)
+      3. Stability: test WR std < 15pp across folds
+      4. At least 3 valid folds completed
+
+    PNL estimation:
+      Uses OOS test WR and average edge to estimate expected PNL per trade,
+      then scales to daily/monthly using avg_trades_per_day.
+    """
+    t0 = time.time()
+    result = WalkForwardV2Result(n_folds=n_folds, max_gap=max_overfit_gap, method=method)
+
+    sorted_trades = sorted(trades, key=lambda t: t.get("timestamp", 0))
+
+    # Adaptive fold count
+    fold_size = len(sorted_trades) // n_folds
+    if fold_size < min_trades_per_fold:
+        n_folds = max(3, len(sorted_trades) // min_trades_per_fold)
+        fold_size = len(sorted_trades) // n_folds
+        result.n_folds = n_folds
+
+    if n_folds < 3:
+        result.rejection_reason = f"Insufficient data: need {min_trades_per_fold * 3}+ trades, have {len(sorted_trades)}"
+        result.elapsed_seconds = time.time() - t0
+        return result
+
+    folds = []
+    for i in range(n_folds):
+        start = i * fold_size
+        end = start + fold_size if i < n_folds - 1 else len(sorted_trades)
+        folds.append(sorted_trades[start:end])
+
+    log.info("WFV2 [%s]: %d folds, ~%d trades each, gap threshold=%.0fpp",
+             method, n_folds, fold_size, max_overfit_gap)
+
+    train_wrs: list[float] = []
+    test_wrs: list[float] = []
+    test_edges: list[float] = []
+    all_fold_results: list[dict] = []
+    best_score = -1.0
+    best_label = ""
+
+    for k in range(1, n_folds):
+        # Build training set based on method
+        if method == "rolling":
+            # Rolling: use only the 2 folds immediately before test fold
+            start_fold = max(0, k - 2)
+            train_data = []
+            for j in range(start_fold, k):
+                train_data.extend(folds[j])
+        else:
+            # Anchored: use ALL folds before test fold (expanding window)
+            train_data = []
+            for j in range(k):
+                train_data.extend(folds[j])
+
+        test_data = folds[k]
+
+        if len(train_data) < min_trades_per_fold or len(test_data) < min_trades_per_fold:
+            continue
+
+        if progress_callback:
+            pct = int(10 + 80 * (k / (n_folds - 1)))
+            progress_callback("WFV2", f"Fold {k}/{n_folds-1} ({method})", pct)
+
+        # Optimize on training data
+        best_params = _optimize_fold(train_data, max_trials=max_optuna_trials)
+
+        # In-sample evaluation
+        train_result = replay_historical_trades(train_data, best_params)
+        train_wr = train_result.win_rate if train_result.total_signals > 0 else 0.0
+
+        # Out-of-sample evaluation
+        test_result = replay_historical_trades(test_data, best_params)
+        test_wr = test_result.win_rate if test_result.total_signals > 0 else 0.0
+        test_edge = test_result.avg_edge if test_result.total_signals > 0 else 0.0
+
+        train_score = score_result(train_result, min_trades=5)
+        test_score = score_result(test_result, min_trades=5)
+
+        if test_score > best_score:
+            best_score = test_score
+            best_label = best_params.label
+
+        train_wrs.append(train_wr)
+        test_wrs.append(test_wr)
+        test_edges.append(test_edge)
+
+        fold_info = {
+            "fold": k,
+            "method": method,
+            "train_size": len(train_data),
+            "test_size": len(test_data),
+            "train_wr": round(train_wr, 1),
+            "test_wr": round(test_wr, 1),
+            "gap_pp": round(train_wr - test_wr, 1),
+            "test_edge": round(test_edge * 100, 2),
+            "train_signals": train_result.total_signals,
+            "test_signals": test_result.total_signals,
+            "train_score": round(train_score, 1),
+            "test_score": round(test_score, 1),
+            "params_label": best_params.label,
+        }
+        all_fold_results.append(fold_info)
+        log.info("WFV2 fold %d: train=%.1f%% test=%.1f%% gap=%.1fpp edge=%.2f%%",
+                 k, train_wr, test_wr, train_wr - test_wr, test_edge * 100)
+
+    # Aggregate results
+    result.fold_results = all_fold_results
+    result.best_params_label = best_label
+    result.elapsed_seconds = time.time() - t0
+
+    if not test_wrs:
+        result.rejection_reason = "No valid folds completed"
+        return result
+
+    result.avg_train_wr = round(sum(train_wrs) / len(train_wrs), 1)
+    result.avg_test_wr = round(sum(test_wrs) / len(test_wrs), 1)
+    result.overfit_gap = round(result.avg_train_wr - result.avg_test_wr, 1)
+    result.min_test_wr = round(min(test_wrs), 1)
+    result.max_test_wr = round(max(test_wrs), 1)
+
+    # Stability metrics
+    if len(test_wrs) >= 2:
+        result.test_wr_std = round(float(np.std(test_wrs)), 1)
+        # Stability score: 100 when std=0, 0 when std>=15
+        result.stability_score = round(max(0, min(100, 100 - result.test_wr_std * (100 / 15))), 1)
+    else:
+        result.stability_score = 50.0  # uncertain with 1 fold
+
+    # PNL estimation from OOS performance
+    avg_test_edge = sum(test_edges) / len(test_edges) if test_edges else 0.0
+    test_wr_frac = result.avg_test_wr / 100.0
+    # Expected value per trade: P(win) * avg_edge * bet_size - P(loss) * avg_loss
+    # For binary markets: win = edge * bet_size, loss ≈ bet_size * (1 - implied_price)
+    # Simplified: EV = (WR * edge - (1-WR) * loss_rate) * bet_size
+    if test_wr_frac > 0:
+        result.estimated_pnl_per_trade = round(
+            (test_wr_frac * avg_test_edge - (1 - test_wr_frac) * avg_test_edge) * avg_bet_size, 4
+        )
+        result.estimated_daily_pnl = round(result.estimated_pnl_per_trade * avg_trades_per_day, 2)
+        result.estimated_monthly_pnl = round(result.estimated_daily_pnl * 30, 2)
+
+    # Quality gates
+    valid_folds = len(test_wrs)
+    if valid_folds < 3:
+        result.rejection_reason = f"Only {valid_folds} valid folds (need 3+)"
+    elif result.overfit_gap > max_overfit_gap:
+        result.rejection_reason = f"Overfit gap {result.overfit_gap:.1f}pp > {max_overfit_gap:.0f}pp threshold"
+    elif result.min_test_wr < 45.0:
+        result.rejection_reason = f"Min fold test WR {result.min_test_wr:.1f}% < 45% floor"
+    elif result.test_wr_std > 15.0:
+        result.rejection_reason = f"Test WR std {result.test_wr_std:.1f}pp > 15pp (unstable)"
+    else:
+        result.passed = True
+
+    status = "PASSED" if result.passed else f"REJECTED ({result.rejection_reason})"
+    log.info("WFV2 %s: train=%.1f%% test=%.1f%% gap=%.1fpp std=%.1f stability=%d | %s",
+             method, result.avg_train_wr, result.avg_test_wr,
+             result.overfit_gap, result.test_wr_std, result.stability_score, status)
+    if result.estimated_daily_pnl != 0:
+        log.info("WFV2 PNL estimate: $%.2f/trade, $%.2f/day, $%.2f/month",
+                 result.estimated_pnl_per_trade, result.estimated_daily_pnl, result.estimated_monthly_pnl)
 
     return result
 

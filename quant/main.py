@@ -12,14 +12,18 @@ from quant.data_loader import load_all_candles, load_all_trades, load_indicator_
 from quant.backtester import replay_historical_trades, backtest_candle_indicators
 from quant.optimizer import run_optimization, get_live_params
 from quant.walk_forward import (
-    walk_forward_validation, bootstrap_confidence_interval,
+    walk_forward_validation, walk_forward_v2, bootstrap_confidence_interval,
     optuna_full_optimization, HAS_OPTUNA,
 )
 from quant.reporter import (
     write_status, write_results, write_recommendations,
     write_hawk_review, publish_events, write_live_params,
 )
-from quant.analytics import compute_kelly, analyze_indicator_diversity, detect_strategy_decay
+from quant.analytics import (
+    compute_kelly, analyze_indicator_diversity, detect_strategy_decay,
+    monte_carlo_simulate, cusum_edge_decay,
+)
+from quant.live_push import validate_push, push_params, get_version_history
 from quant.scorer import score_result
 from quant.ml_predictor import retrain_model
 
@@ -80,7 +84,7 @@ class QuantBot:
                 await asyncio.sleep(self.cfg.event_poll_interval)
 
     async def _run_cycle(self):
-        """Single backtest cycle."""
+        """Single backtest cycle with Phase 1 intelligence engine."""
         log.info("=== Cycle %d starting ===", self.cycle)
 
         # 1. Load data
@@ -116,8 +120,8 @@ class QuantBot:
                  baseline_ci.point_estimate, baseline_ci.ci_lower,
                  baseline_ci.ci_upper, baseline_ci.margin_of_error)
 
-        # 4. Walk-forward validation (3 folds for small datasets, 5 for large)
-        n_folds = 5 if len(trades) >= 100 else 3
+        # 4a. Walk-forward V1 (legacy compatibility)
+        n_folds = self.cfg.wfv2_folds if len(trades) >= 100 else 3
         wf_result = walk_forward_validation(
             trades=trades,
             n_folds=n_folds,
@@ -125,31 +129,105 @@ class QuantBot:
             min_trades_per_fold=10,
         )
 
-        # 5. Load Hawk trades for calibration review
+        # 4b. Walk-Forward V2 with strict OOS gates
+        wfv2_result = walk_forward_v2(
+            trades=trades,
+            n_folds=n_folds,
+            max_optuna_trials=50,
+            min_trades_per_fold=10,
+            max_overfit_gap=self.cfg.wfv2_max_overfit_gap,
+            method=self.cfg.wfv2_method,
+        )
+        log.info("WFV2: %s (gap=%.1fpp, stability=%d, PNL=$%.2f/day)",
+                 "PASSED" if wfv2_result.passed else f"REJECTED ({wfv2_result.rejection_reason})",
+                 wfv2_result.overfit_gap, wfv2_result.stability_score,
+                 wfv2_result.estimated_daily_pnl)
+
+        # 5. Monte Carlo Risk Engine (10K simulations)
+        mc_result = monte_carlo_simulate(
+            trades=trades,
+            n_simulations=self.cfg.monte_carlo_sims,
+            bankroll=self.cfg.kelly_bankroll,
+            ruin_threshold_pct=self.cfg.monte_carlo_ruin_threshold,
+        )
+        log.info("Monte Carlo: ruin=%.2f%%, avg DD=%.1f%%, Sharpe=%.2f, profitable=%.1f%%",
+                 mc_result.ruin_probability, mc_result.avg_max_drawdown_pct,
+                 mc_result.avg_sharpe, mc_result.profitable_pct)
+
+        # 6. CUSUM Edge Decay Detection
+        cusum_result = cusum_edge_decay(
+            trades=trades,
+            threshold=self.cfg.cusum_threshold,
+            drift=self.cfg.cusum_drift,
+            rolling_window=self.cfg.cusum_rolling_window,
+        )
+        if cusum_result.change_detected:
+            log.warning("CUSUM ALERT [%s]: %s", cusum_result.severity, cusum_result.alert_message)
+
+        # 7. Load Hawk trades for calibration review
         hawk_trades = self._load_hawk_trades()
 
-        # 6. Write all reports
+        # 8. Write all reports
         write_status(self.cycle, baseline, len(scored), len(trades), candle_counts)
         write_results(baseline, scored)
         write_recommendations(baseline, scored)
         _write_walk_forward(wf_result, baseline_ci)
         _write_analytics(trades, baseline)
+        _write_phase1_reports(wfv2_result, mc_result, cusum_result)
         if self.cfg.hawk_review:
             write_hawk_review(hawk_trades)
 
-        # 6b. Auto-apply validated params to Garves's live config
+        # 9. Live Parameter Push with triple-gate validation
+        best_wr = scored[0][1].win_rate if scored and scored[0][1].total_signals >= 20 else 0
         if scored and scored[0][1].total_signals >= 20:
             best_result = scored[0][1]
-            applied = write_live_params(
+
+            # Validate through all three gates
+            push_validation = validate_push(
+                wfv2=wfv2_result,
+                monte_carlo=mc_result,
+                cusum=cusum_result,
+                baseline_wr=baseline.win_rate,
+                best_wr=best_result.win_rate,
+                max_ruin_pct=self.cfg.max_ruin_pct,
+            )
+
+            if push_validation.passed:
+                # Build param dict from best result
+                bp = best_result.params
+                base_p = baseline.params
+                push_p = {}
+                if bp.get("min_confidence") != base_p.get("min_confidence"):
+                    push_p["min_confidence"] = bp["min_confidence"]
+                if bp.get("up_confidence_premium") != base_p.get("up_confidence_premium"):
+                    push_p["up_confidence_premium"] = bp["up_confidence_premium"]
+                if bp.get("min_edge_absolute") and bp.get("min_edge_absolute") != base_p.get("min_edge_absolute"):
+                    push_p["min_edge_absolute"] = bp["min_edge_absolute"]
+                if bp.get("min_consensus") and bp.get("min_consensus") != base_p.get("min_consensus"):
+                    push_p["consensus_floor"] = bp["min_consensus"]
+
+                if push_p:
+                    result = push_params(
+                        params=push_p,
+                        validation=push_validation,
+                        baseline_wr=baseline.win_rate,
+                        best_wr=best_result.win_rate,
+                        target=self.cfg.push_target,
+                        dry_run=self.cfg.push_dry_run,
+                    )
+                    log.info("Push result: %s", result.message)
+            else:
+                log.info("Push blocked: %s", "; ".join(push_validation.rejection_reasons))
+
+            # Legacy push (for backward compat with param_loader.py)
+            write_live_params(
                 baseline=baseline,
                 best=best_result,
                 wf_test_wr=wf_result.test_win_rate,
                 wf_overfit_drop=wf_result.overfit_drop,
             )
-            if applied:
-                log.info("AUTO-APPLIED: Quant params pushed to Garves live config")
 
-        # 7. ML Model retrain (XGBoost on resolved trades)
+        # 10. ML Model retrain (XGBoost on resolved trades)
         try:
             ml_metrics = retrain_model()
             if ml_metrics.get("status") == "trained":
@@ -162,38 +240,51 @@ class QuantBot:
         except Exception:
             log.exception("ML model retrain failed (non-fatal)")
 
-        # 8. Publish to event bus
+        # 11. Publish to event bus
         publish_events(baseline, scored)
 
-        # 8. Log summary
-        best_wr = scored[0][1].win_rate if scored and scored[0][1].total_signals >= 20 else 0
+        # 12. Log summary
         log.info("=== Cycle %d complete ===", self.cycle)
         log.info("Baseline: WR=%.1f%% (%d signals) CI=[%.1f%%, %.1f%%]",
                  baseline.win_rate, baseline.total_signals,
                  baseline_ci.ci_lower, baseline_ci.ci_upper)
-        log.info("Best found: WR=%.1f%% | Walk-forward OOS: %.1f%% (overfit=%.1fpp)",
-                 best_wr, wf_result.test_win_rate, wf_result.overfit_drop)
+        log.info("Best found: WR=%.1f%% | WFV2: %s (gap=%.1fpp) | MC ruin=%.2f%% | CUSUM=%s",
+                 best_wr,
+                 "PASS" if wfv2_result.passed else "FAIL",
+                 wfv2_result.overfit_gap,
+                 mc_result.ruin_probability,
+                 cusum_result.severity)
 
         # Brain: record backtest findings + outcome
         if _quant_brain:
             try:
                 _did = _quant_brain.remember_decision(
-                    context=f"Backtest cycle {self.cycle}: tested {len(scored)} parameter combinations on {len(trades)} trades",
-                    decision=f"Baseline WR={baseline.win_rate:.1f}%, best WR={best_wr:.1f}%, walk-forward OOS={wf_result.test_win_rate:.1f}%",
+                    context=(
+                        f"Backtest cycle {self.cycle}: {len(scored)} combos on {len(trades)} trades. "
+                        f"WFV2={'PASS' if wfv2_result.passed else 'FAIL'}, "
+                        f"MC ruin={mc_result.ruin_probability:.1f}%, CUSUM={cusum_result.severity}"
+                    ),
+                    decision=(
+                        f"Baseline WR={baseline.win_rate:.1f}%, best WR={best_wr:.1f}%, "
+                        f"WFV2 OOS={wfv2_result.avg_test_wr:.1f}%, stability={wfv2_result.stability_score:.0f}"
+                    ),
                     confidence=0.5,
-                    tags=["backtest"],
+                    tags=["backtest", "phase1"],
                 )
-                # Record outcome — did we find improvement over baseline?
                 _improvement = best_wr - baseline.win_rate
                 _score = min(1.0, _improvement / 10.0) if _improvement > 0 else -0.5
                 _quant_brain.remember_outcome(
-                    _did, f"Improvement={_improvement:+.1f}pp, OOS={wf_result.test_win_rate:.1f}%, overfit={wf_result.overfit_drop:.1f}pp",
+                    _did,
+                    f"Improvement={_improvement:+.1f}pp, WFV2={'PASS' if wfv2_result.passed else 'FAIL'}, "
+                    f"ruin={mc_result.ruin_probability:.1f}%, CUSUM={cusum_result.severity}",
                     score=_score,
                 )
-                if _improvement > 2.0 and wf_result.overfit_drop < 5.0:
+                if _improvement > 2.0 and wfv2_result.passed and mc_result.ruin_probability < 5:
                     _quant_brain.learn_pattern(
-                        "strong_backtest", f"Found +{_improvement:.1f}pp improvement with low overfit ({wf_result.overfit_drop:.1f}pp)",
-                        evidence_count=1, confidence=0.65,
+                        "strong_validated_backtest",
+                        f"+{_improvement:.1f}pp improvement passed all 3 gates "
+                        f"(WFV2 gap={wfv2_result.overfit_gap:.1f}pp, ruin={mc_result.ruin_probability:.1f}%)",
+                        evidence_count=1, confidence=0.75,
                     )
             except Exception:
                 pass
@@ -389,11 +480,77 @@ class QuantBot:
         return trades
 
 
+def _write_phase1_reports(wfv2, mc, cusum):
+    """Write Phase 1 intelligence reports to JSON."""
+    from quant.reporter import _now_et
+    from quant.live_push import get_version_history
+
+    output = {
+        "walk_forward_v2": {
+            "passed": wfv2.passed,
+            "avg_train_wr": wfv2.avg_train_wr,
+            "avg_test_wr": wfv2.avg_test_wr,
+            "overfit_gap": wfv2.overfit_gap,
+            "max_gap_threshold": wfv2.max_gap,
+            "stability_score": wfv2.stability_score,
+            "test_wr_std": wfv2.test_wr_std,
+            "min_test_wr": wfv2.min_test_wr,
+            "max_test_wr": wfv2.max_test_wr,
+            "method": wfv2.method,
+            "n_folds": wfv2.n_folds,
+            "fold_results": wfv2.fold_results,
+            "rejection_reason": wfv2.rejection_reason,
+            "pnl_per_trade": wfv2.estimated_pnl_per_trade,
+            "daily_pnl": wfv2.estimated_daily_pnl,
+            "monthly_pnl": wfv2.estimated_monthly_pnl,
+            "elapsed_seconds": wfv2.elapsed_seconds,
+        },
+        "monte_carlo": {
+            "n_simulations": mc.n_simulations,
+            "n_trades_per_sim": mc.n_trades_per_sim,
+            "avg_max_drawdown_pct": mc.avg_max_drawdown_pct,
+            "worst_max_drawdown_pct": mc.worst_max_drawdown_pct,
+            "drawdown_95th_pct": mc.drawdown_95th_pct,
+            "ruin_probability": mc.ruin_probability,
+            "ruin_threshold_pct": mc.ruin_threshold_pct,
+            "avg_final_pnl": mc.avg_final_pnl,
+            "median_final_pnl": mc.median_final_pnl,
+            "pnl_95th_lower": mc.pnl_95th_lower,
+            "pnl_95th_upper": mc.pnl_95th_upper,
+            "avg_sharpe": mc.avg_sharpe,
+            "profitable_pct": mc.profitable_pct,
+            "pnl_percentiles": mc.pnl_percentiles,
+            "elapsed_seconds": mc.elapsed_seconds,
+        },
+        "cusum": {
+            "change_detected": cusum.change_detected,
+            "severity": cusum.severity,
+            "alert_message": cusum.alert_message,
+            "cusum_pos": cusum.cusum_pos,
+            "cusum_neg": cusum.cusum_neg,
+            "threshold": cusum.threshold,
+            "target_wr": cusum.target_wr,
+            "current_rolling_wr": cusum.current_rolling_wr,
+            "change_point_index": cusum.change_point_index,
+            "pre_change_wr": cusum.pre_change_wr,
+            "post_change_wr": cusum.post_change_wr,
+            "wr_drop_pp": cusum.wr_drop_pp,
+            "trades_since_change": cusum.trades_since_change,
+        },
+        "version_history": get_version_history(5),
+        "updated": _now_et(),
+    }
+    DATA_DIR.mkdir(exist_ok=True)
+    (DATA_DIR / "quant_phase1.json").write_text(json.dumps(output, indent=2))
+    log.info("Wrote quant_phase1.json (WFV2=%s, MC ruin=%.2f%%, CUSUM=%s)",
+             "PASS" if wfv2.passed else "FAIL", mc.ruin_probability, cusum.severity)
+
+
 def _write_analytics(trades: list[dict], baseline: BacktestResult):
     """Write Kelly, diversity, and decay analysis to JSON."""
     from quant.reporter import _now_et
 
-    kelly = compute_kelly(baseline.wins, baseline.losses, baseline.avg_edge)
+    kelly = compute_kelly(baseline.wins, baseline.losses, baseline.avg_edge, trades=trades)
     diversity = analyze_indicator_diversity(trades)
     decay = detect_strategy_decay(trades)
 
@@ -407,6 +564,9 @@ def _write_analytics(trades: list[dict], baseline: BacktestResult):
             "recommended_usd": kelly.recommended_usd,
             "current_size_usd": kelly.current_size_usd,
             "bankroll": kelly.bankroll,
+            "expected_pnl_per_trade": kelly.expected_pnl_per_trade,
+            "per_asset": kelly.per_asset,
+            "per_timeframe": kelly.per_timeframe,
         },
         "diversity": {
             "n_indicators": diversity.n_indicators,
@@ -465,7 +625,7 @@ def _write_walk_forward(wf: walk_forward_validation.__class__, ci: bootstrap_con
 def run_single_backtest(progress_callback=None) -> dict:
     """Run a single backtest cycle (called from dashboard API).
 
-    Returns summary dict for the API response.
+    Returns summary dict for the API response, now including Phase 1 intelligence.
     """
     trades = load_all_trades()
     candles = load_all_candles()
@@ -489,7 +649,7 @@ def run_single_backtest(progress_callback=None) -> dict:
     # Bootstrap CI
     baseline_ci = bootstrap_confidence_interval(baseline.wins, baseline.losses)
 
-    # Walk-forward (quick: 3 folds, 50 trials)
+    # Walk-forward V1
     n_folds = 5 if len(trades) >= 100 else 3
     wf_result = walk_forward_validation(
         trades=trades,
@@ -498,6 +658,20 @@ def run_single_backtest(progress_callback=None) -> dict:
         min_trades_per_fold=10,
     )
 
+    # Walk-Forward V2 (Phase 1)
+    wfv2_result = walk_forward_v2(
+        trades=trades,
+        n_folds=n_folds,
+        max_optuna_trials=50,
+        min_trades_per_fold=10,
+    )
+
+    # Monte Carlo (Phase 1)
+    mc_result = monte_carlo_simulate(trades=trades)
+
+    # CUSUM (Phase 1)
+    cusum_result = cusum_edge_decay(trades=trades)
+
     # Write reports
     candle_counts = {asset: len(c) for asset, c in candles.items()}
     write_status(0, baseline, len(scored), len(trades), candle_counts)
@@ -505,6 +679,7 @@ def run_single_backtest(progress_callback=None) -> dict:
     write_recommendations(baseline, scored)
     _write_walk_forward(wf_result, baseline_ci)
     _write_analytics(trades, baseline)
+    _write_phase1_reports(wfv2_result, mc_result, cusum_result)
 
     # Hawk review
     hawk_file = DATA_DIR / "hawk_trades.jsonl"
@@ -522,10 +697,24 @@ def run_single_backtest(progress_callback=None) -> dict:
 
     publish_events(baseline, scored)
 
-    # Auto-apply validated params
+    # Live push with triple-gate validation (Phase 1)
     params_applied = False
+    push_status = "no_improvement"
     best = scored[0][1] if scored and scored[0][1].total_signals >= 20 else baseline
     if best is not baseline:
+        push_validation = validate_push(
+            wfv2=wfv2_result,
+            monte_carlo=mc_result,
+            cusum=cusum_result,
+            baseline_wr=baseline.win_rate,
+            best_wr=best.win_rate,
+        )
+        if push_validation.passed:
+            push_status = "validated"
+        else:
+            push_status = f"blocked: {'; '.join(push_validation.rejection_reasons)}"
+
+        # Legacy push (backward compat)
         params_applied = write_live_params(
             baseline=baseline,
             best=best,
@@ -548,6 +737,26 @@ def run_single_backtest(progress_callback=None) -> dict:
             "test_wr": wf_result.test_win_rate,
             "overfit_drop": wf_result.overfit_drop,
         },
+        "walk_forward_v2": {
+            "passed": wfv2_result.passed,
+            "train_wr": wfv2_result.avg_train_wr,
+            "test_wr": wfv2_result.avg_test_wr,
+            "overfit_gap": wfv2_result.overfit_gap,
+            "stability": wfv2_result.stability_score,
+            "daily_pnl": wfv2_result.estimated_daily_pnl,
+        },
+        "monte_carlo": {
+            "ruin_pct": mc_result.ruin_probability,
+            "avg_drawdown": mc_result.avg_max_drawdown_pct,
+            "sharpe": mc_result.avg_sharpe,
+            "profitable_pct": mc_result.profitable_pct,
+        },
+        "cusum": {
+            "change_detected": cusum_result.change_detected,
+            "severity": cusum_result.severity,
+            "current_wr": cusum_result.current_rolling_wr,
+        },
         "optimizer": "optuna" if HAS_OPTUNA else "grid",
         "params_auto_applied": params_applied,
+        "push_status": push_status,
     }
