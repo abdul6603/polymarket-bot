@@ -397,8 +397,17 @@ def api_system_action(action: str):
     """Execute a system action (restart agent, check ports, etc.)."""
     allowed = {
         "restart-dashboard": ["launchctl", "stop", "com.commandcenter.dashboard"],
+        "restart-garves": ["launchctl", "stop", "com.garves.agent"],
+        "restart-hawk": ["launchctl", "stop", "com.hawk.agent"],
         "restart-shelby": ["launchctl", "stop", "com.shelby.assistant"],
+        "restart-atlas": ["launchctl", "stop", "com.atlas.agent"],
         "restart-thor": ["launchctl", "stop", "com.thor.agent"],
+        "restart-soren": ["launchctl", "stop", "com.soren.agent"],
+        "restart-robotox": ["launchctl", "stop", "com.robotox.agent"],
+        "restart-viper": ["launchctl", "stop", "com.viper.agent"],
+        "restart-quant": ["launchctl", "stop", "com.quant.agent"],
+        "restart-odin": ["launchctl", "stop", "com.odin.agent"],
+        "restart-oracle": ["launchctl", "stop", "com.oracle.agent"],
         "flush-events": None,  # handled separately
         "force-atlas-cycle": None,
     }

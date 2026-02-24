@@ -43,6 +43,22 @@ async function safeFetch(url, opts) {
   return resp.json();
 }
 
+async function restartAgent(agentId) {
+  if (!confirm('Restart ' + (AGENT_NAMES[agentId] || agentId) + '?')) return;
+  try {
+    var resp = await fetch('/api/system/action/restart-' + agentId, {method:'POST'});
+    var data = await resp.json();
+    if (data.success) {
+      showToast((AGENT_NAMES[agentId]||agentId) + ' restarting...', 'success');
+      setTimeout(refresh, 3000);
+    } else {
+      showToast('Restart failed: ' + (data.error || 'unknown'), 'error');
+    }
+  } catch(e) {
+    showToast('Restart error: ' + e.message, 'error');
+  }
+}
+
 var _brainCountsCache = {};
 function fetchBrainCounts() {
   fetch('/api/brain/all').then(function(r){return r.json();}).then(function(d){
@@ -83,7 +99,10 @@ function renderAgentGrid(overview) {
     if (brainCount > 0) {
       html += '<span class="brain-badge" title="' + brainCount + ' brain note' + (brainCount > 1 ? 's' : '') + '" style="font-size:0.58rem;min-width:14px;height:14px;padding:0 3px;">' + brainCount + '</span>';
     }
-    html += '</div></div>';
+    html += '</div>';
+    var restartId = c.id === 'sentinel' ? 'robotox' : c.id;
+    html += '<button class="ov-action-btn" onclick="event.stopPropagation();restartAgent(\'' + restartId + '\')" title="Restart ' + (AGENT_NAMES[c.id]||c.id) + '" style="padding:1px 6px;font-size:0.56rem;">&#x27F3;</button>';
+    html += '</div>';
     html += '<div class="agent-card-role" style="font-size:0.62rem;margin-bottom:4px;">' + (AGENT_ROLES[c.id] || '') + '</div>';
     html += '<div class="agent-card-stats" style="gap:1px;">';
     for (var j = 0; j < c.stats.length; j++) {
@@ -4464,18 +4483,14 @@ function healthBadge(h) {
 }
 
 async function loadInfrastructure() {
-  // Active Agents from system-health
+  // Active Agents from /api/health (launchctl-based, reliable)
   try {
-    var resp = await fetch('/api/system-health');
+    var resp = await fetch('/api/health');
     var data = await resp.json();
-    var hbs = data.heartbeats || {};
-    var reg = data.registry || {};
-    var allAgents = {};
-    for (var k in reg) { if (k !== 'dashboard') allAgents[k] = {registered: true, healthy: false}; }
-    for (var k in hbs) { if (k !== 'dashboard') { if (!allAgents[k]) allAgents[k] = {registered: false, healthy: false}; allAgents[k].healthy = hbs[k].health === 'healthy'; } }
-    var total = Object.keys(allAgents).length;
+    var agents = data.agents || {};
+    var total = Object.keys(agents).length;
     var alive = 0;
-    for (var k in allAgents) { if (allAgents[k].healthy) alive++; }
+    for (var k in agents) { if (agents[k].status === 'healthy' || agents[k].status === 'degraded') alive++; }
 
     var aaEl = document.getElementById('ov-agents');
     if (aaEl) {
@@ -4484,6 +4499,7 @@ async function loadInfrastructure() {
     }
     var badgeEl = document.getElementById('ov-agent-count-badge');
     if (badgeEl) badgeEl.innerHTML = '<span class="dot-online"></span> ' + alive + ' Online';
+    window._healthData = agents;
   } catch(e) {}
 
   // PNL + Trades from system-summary
@@ -4503,11 +4519,20 @@ async function loadInfrastructure() {
     if (tradesEl) {
       var gt = d.garves ? d.garves.trades : 0;
       var ht = d.hawk ? d.hawk.trades : 0;
+      var gReal = d.garves ? (d.garves.real_trades || 0) : 0;
+      var hReal = d.hawk ? (d.hawk.real_trades || 0) : 0;
       var totalT = gt + ht;
-      var gWr = d.garves ? (d.garves.win_rate || 0) : 0;
-      var hWr = d.hawk ? (d.hawk.win_rate || 0) : 0;
-      var avgWr = (gt + ht) > 0 ? ((gWr * gt + hWr * ht) / (gt + ht)) : 0;
-      tradesEl.innerHTML = totalT + ' <span style="font-size:0.8rem;color:' + wrColor(avgWr) + ';">(' + avgWr.toFixed(0) + '%)</span>';
+      var totalReal = gReal + hReal;
+      var totalPaper = totalT - totalReal;
+      var label = '';
+      if (totalReal > 0 && totalPaper > 0) {
+        label = '<span style="font-size:0.68rem;color:var(--text-muted);display:block;margin-top:1px;">' + totalReal + ' real, ' + totalPaper + ' paper</span>';
+      } else if (totalPaper > 0) {
+        label = '<span style="font-size:0.68rem;color:var(--warning);display:block;margin-top:1px;">all paper</span>';
+      } else if (totalReal > 0) {
+        label = '<span style="font-size:0.68rem;color:var(--success);display:block;margin-top:1px;">all real</span>';
+      }
+      tradesEl.innerHTML = totalT + label;
     }
   } catch(e) {}
 
@@ -4923,24 +4948,31 @@ async function loadAgentSmartActions(agent) {
     var data = await resp.json();
     var actions = data.actions || [];
     _agentSmartActionsCache[agent] = actions;
-    if (actions.length === 0) {
-      el.innerHTML = '<span class="text-muted" style="font-size:0.76rem;">No suggestions right now — all good.</span>';
-      return;
-    }
-    // Overview tab: render as clean action rows
+    // Overview tab: only show real operational issues, not Atlas feature suggestions
     if (agent === 'overview') {
+      var realActions = [];
+      for (var k = 0; k < actions.length; k++) {
+        var src = actions[k].source || '';
+        // Skip Atlas suggestions — those belong in Atlas tab
+        if (src === 'atlas') continue;
+        realActions.push(actions[k]);
+      }
+      if (realActions.length === 0) {
+        el.innerHTML = '<span style="font-size:0.76rem;color:var(--success);font-family:var(--font-mono);">All clear — no operational issues.</span>';
+        return;
+      }
+      _agentSmartActionsCache[agent] = realActions;
       var html = '';
-      var max = Math.min(actions.length, 6);
+      var max = Math.min(realActions.length, 6);
       for (var i = 0; i < max; i++) {
-        var a = actions[i];
+        var a = realActions[i];
         var pClass = 'ov-action-badge-medium';
         var pLabel = 'MEDIUM';
         if (a.priority === 'critical') { pClass = 'ov-action-badge-critical'; pLabel = 'CRITICAL'; }
         else if (a.priority === 'high') { pClass = 'ov-action-badge-high'; pLabel = 'HIGH'; }
         else if (a.priority === 'low') { pClass = 'ov-action-badge-low'; pLabel = 'LOW'; }
         var sourceLabel = '';
-        if (a.source === 'atlas') sourceLabel = 'Atlas';
-        else if (a.source === 'robotox') sourceLabel = 'Robotox';
+        if (a.source === 'robotox') sourceLabel = 'Robotox';
         else if (a.source === 'shelby') sourceLabel = 'Shelby';
         else if (a.source === 'live_data') sourceLabel = 'Live';
         else if (a.source === 'thor') sourceLabel = 'Thor';

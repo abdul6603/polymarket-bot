@@ -90,6 +90,8 @@ def api_health():
         "thor":    {"plist": "com.thor.agent",     "log": "/tmp/thor.log",    "status": Path.home() / "thor" / "data" / "status.json"},
         "viper":   {"plist": "com.viper.agent",    "log": "/tmp/viper.log",   "status": Path.home() / "polymarket-bot" / "data" / "viper_status.json"},
         "lisa":    {"plist": "com.lisa.agent",      "log": "/tmp/lisa.log",    "status": Path.home() / "mercury" / "data" / "health.json"},
+        "odin":    {"plist": "com.odin.agent",      "log": "/tmp/odin.log",    "status": Path.home() / "odin" / "data" / "status.json"},
+        "oracle":  {"plist": "com.oracle.agent",    "log": "/tmp/oracle.log",  "status": Path.home() / "polymarket-bot" / "data" / "oracle_status.json"},
     }
 
     try:
@@ -273,30 +275,39 @@ def api_system_summary():
 
     summary = {}
 
-    # Garves trades today
-    trades_file = Path.home() / "polymarket-bot" / "data" / "trades.jsonl"
-    garves_today = {"trades": 0, "wins": 0, "pnl": 0.0}
-    if trades_file.exists():
-        try:
-            with open(trades_file) as f:
-                for line in f:
-                    if not line.strip():
-                        continue
-                    t = json.loads(line)
-                    ts = t.get("timestamp", 0)
-                    if ts > day_start:
-                        garves_today["trades"] += 1
-                        pnl = t.get("pnl", 0)
-                        if pnl and pnl > 0:
-                            garves_today["wins"] += 1
-                        garves_today["pnl"] += pnl or 0
-        except Exception:
-            pass
+    # Garves trades today (check main file + today's archive)
+    garves_today = {"trades": 0, "wins": 0, "pnl": 0.0, "real_trades": 0, "paper_trades": 0}
+    garves_files = [
+        Path.home() / "polymarket-bot" / "data" / "trades.jsonl",
+        Path.home() / "polymarket-bot" / "data" / "archives" / f"trades_{today}.jsonl",
+    ]
+    for trades_file in garves_files:
+        if trades_file.exists():
+            try:
+                with open(trades_file) as f:
+                    for line in f:
+                        if not line.strip():
+                            continue
+                        t = json.loads(line)
+                        ts = t.get("timestamp", 0)
+                        if ts > day_start:
+                            garves_today["trades"] += 1
+                            is_dry = t.get("dry_run", True)
+                            if is_dry:
+                                garves_today["paper_trades"] += 1
+                            else:
+                                garves_today["real_trades"] += 1
+                            pnl = t.get("pnl", 0)
+                            if pnl and pnl > 0:
+                                garves_today["wins"] += 1
+                            garves_today["pnl"] += pnl or 0
+            except Exception:
+                pass
     summary["garves"] = garves_today
 
     # Hawk trades today
     hawk_file = Path.home() / "polymarket-bot" / "data" / "hawk_trades.jsonl"
-    hawk_today = {"trades": 0, "wins": 0, "pnl": 0.0}
+    hawk_today = {"trades": 0, "wins": 0, "pnl": 0.0, "real_trades": 0, "paper_trades": 0}
     if hawk_file.exists():
         try:
             with open(hawk_file) as f:
@@ -307,6 +318,12 @@ def api_system_summary():
                     ts = t.get("timestamp", 0)
                     if ts > day_start:
                         hawk_today["trades"] += 1
+                        oid = t.get("order_id", "")
+                        is_dry = t.get("dry_run", "dry" in oid.lower())
+                        if is_dry:
+                            hawk_today["paper_trades"] += 1
+                        else:
+                            hawk_today["real_trades"] += 1
                         pnl = t.get("pnl", 0)
                         if pnl and pnl > 0:
                             hawk_today["wins"] += 1
