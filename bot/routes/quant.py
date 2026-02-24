@@ -23,6 +23,9 @@ LIVE_PARAMS_FILE = DATA_DIR / "quant_live_params.json"
 TRADE_STUDIES_FILE = DATA_DIR / "quant_trade_studies.jsonl"
 MINI_OPT_FILE = DATA_DIR / "quant_mini_opt.json"
 PHASE1_FILE = DATA_DIR / "quant_phase1.json"
+PHASE2_FILE = DATA_DIR / "quant_phase2.json"
+CORRELATION_FILE = DATA_DIR / "quant_correlation.json"
+LEARNING_FILE = DATA_DIR / "quant_learning.json"
 
 _run_lock = threading.Lock()
 _run_running = False
@@ -168,6 +171,41 @@ def api_quant_phase1():
             "cusum": {"change_detected": False, "severity": "none"},
             "version_history": [],
             "updated": "",
+        })
+    return jsonify(data)
+
+
+@quant_bp.route("/api/quant/phase2")
+def api_quant_phase2():
+    """Phase 2 intelligence: regime, correlation, self-learning."""
+    data = _load_json(PHASE2_FILE)
+    if not data:
+        return jsonify({
+            "regime": {"current": "unknown", "regime_count": 0},
+            "correlation": {"overall_risk": "low", "alert_message": "No data yet"},
+            "learning": {"recommendation_accuracy": 0},
+            "updated": "",
+        })
+    return jsonify(data)
+
+
+@quant_bp.route("/api/quant/correlation")
+def api_quant_correlation():
+    """Cross-trader correlation between Garves and Odin."""
+    data = _load_json(CORRELATION_FILE)
+    if not data:
+        return jsonify({"overall_risk": "low", "alert_message": "No data yet"})
+    return jsonify(data)
+
+
+@quant_bp.route("/api/quant/learning")
+def api_quant_learning():
+    """Self-learning state: recommendation accuracy, param confidence."""
+    data = _load_json(LEARNING_FILE)
+    if not data:
+        return jsonify({
+            "accuracy": 0, "total_recommendations": 0,
+            "param_confidence": {}, "odin_trades_analyzed": 0,
         })
     return jsonify(data)
 

@@ -24,6 +24,9 @@ from quant.analytics import (
     monte_carlo_simulate, cusum_edge_decay,
 )
 from quant.live_push import validate_push, push_params, get_version_history
+from quant.regime import tag_trades_with_regime, analyze_regime_performance
+from quant.correlation_guard import check_correlation, write_correlation_report
+from quant.self_learner import run_learning_cycle, load_odin_trades
 from quant.scorer import score_result
 from quant.ml_predictor import retrain_model
 
@@ -164,20 +167,54 @@ class QuantBot:
         if cusum_result.change_detected:
             log.warning("CUSUM ALERT [%s]: %s", cusum_result.severity, cusum_result.alert_message)
 
-        # 7. Load Hawk trades for calibration review
+        # ── Phase 2: Regime, Correlation, Self-Learning ──
+
+        # 7. Regime-Tagged Backtesting
+        tagged_trades = tag_trades_with_regime(trades, candles)
+        regime_analysis = analyze_regime_performance(tagged_trades)
+        log.info("Regime analysis: %d regimes, best=%s, worst=%s",
+                 regime_analysis.regime_count, regime_analysis.best_regime,
+                 regime_analysis.worst_regime)
+
+        # 8. Cross-Trader Correlation Guard
+        odin_trades = load_odin_trades() if self.cfg.odin_enabled else []
+        corr_report = check_correlation(
+            garves_trades=trades,
+            odin_trades=odin_trades,
+        )
+        write_correlation_report(corr_report)
+        if corr_report.overall_risk in ("high", "critical"):
+            log.warning("CORRELATION ALERT [%s]: %s", corr_report.overall_risk,
+                        corr_report.alert_message)
+
+        # 9. Self-Learning from Live Performance
+        learning_summary = run_learning_cycle(
+            garves_trades=trades,
+            odin_trades=odin_trades,
+        )
+        log.info("Self-learning: accuracy=%.0f%%, combined WR=%.1f%% (%d trades), "
+                 "%d outcomes measured, %d Odin insights",
+                 learning_summary.get("recommendation_accuracy", 0),
+                 learning_summary.get("combined_wr", 0),
+                 learning_summary.get("combined_trades", 0),
+                 learning_summary.get("outcomes_measured", 0),
+                 len(learning_summary.get("odin_insights", [])))
+
+        # 10. Load Hawk trades for calibration review
         hawk_trades = self._load_hawk_trades()
 
-        # 8. Write all reports
+        # 11. Write all reports
         write_status(self.cycle, baseline, len(scored), len(trades), candle_counts)
         write_results(baseline, scored)
         write_recommendations(baseline, scored)
         _write_walk_forward(wf_result, baseline_ci)
         _write_analytics(trades, baseline)
         _write_phase1_reports(wfv2_result, mc_result, cusum_result)
+        _write_phase2_reports(regime_analysis, corr_report, learning_summary)
         if self.cfg.hawk_review:
             write_hawk_review(hawk_trades)
 
-        # 9. Live Parameter Push with triple-gate validation
+        # 12. Live Parameter Push with triple-gate validation
         best_wr = scored[0][1].win_rate if scored and scored[0][1].total_signals >= 20 else 0
         if scored and scored[0][1].total_signals >= 20:
             best_result = scored[0][1]
@@ -227,7 +264,7 @@ class QuantBot:
                 wf_overfit_drop=wf_result.overfit_drop,
             )
 
-        # 10. ML Model retrain (XGBoost on resolved trades)
+        # 13. ML Model retrain (XGBoost on resolved trades)
         try:
             ml_metrics = retrain_model()
             if ml_metrics.get("status") == "trained":
@@ -240,10 +277,10 @@ class QuantBot:
         except Exception:
             log.exception("ML model retrain failed (non-fatal)")
 
-        # 11. Publish to event bus
+        # 14. Publish to event bus
         publish_events(baseline, scored)
 
-        # 12. Log summary
+        # 15. Log summary
         log.info("=== Cycle %d complete ===", self.cycle)
         log.info("Baseline: WR=%.1f%% (%d signals) CI=[%.1f%%, %.1f%%]",
                  baseline.win_rate, baseline.total_signals,
@@ -254,6 +291,11 @@ class QuantBot:
                  wfv2_result.overfit_gap,
                  mc_result.ruin_probability,
                  cusum_result.severity)
+        log.info("Phase 2: regime=%s, correlation=%s, learning=%.0f%% accuracy, Odin=%d trades",
+                 regime_analysis.current_regime.combined,
+                 corr_report.overall_risk,
+                 learning_summary.get("recommendation_accuracy", 0),
+                 learning_summary.get("odin_trades", 0))
 
         # Brain: record backtest findings + outcome
         if _quant_brain:
@@ -544,6 +586,43 @@ def _write_phase1_reports(wfv2, mc, cusum):
     (DATA_DIR / "quant_phase1.json").write_text(json.dumps(output, indent=2))
     log.info("Wrote quant_phase1.json (WFV2=%s, MC ruin=%.2f%%, CUSUM=%s)",
              "PASS" if wfv2.passed else "FAIL", mc.ruin_probability, cusum.severity)
+
+
+def _write_phase2_reports(regime_analysis, corr_report, learning_summary):
+    """Write Phase 2 intelligence reports to JSON."""
+    from quant.reporter import _now_et
+
+    output = {
+        "regime": {
+            "current": regime_analysis.current_regime.combined if regime_analysis.current_regime else "unknown",
+            "current_vol": regime_analysis.current_regime.volatility if regime_analysis.current_regime else "unknown",
+            "current_trend": regime_analysis.current_regime.trend if regime_analysis.current_regime else "unknown",
+            "best_regime": regime_analysis.best_regime,
+            "worst_regime": regime_analysis.worst_regime,
+            "regime_count": regime_analysis.regime_count,
+            "distribution": regime_analysis.regime_distribution,
+            "performance": regime_analysis.regime_performance,
+        },
+        "correlation": {
+            "overall_risk": corr_report.overall_risk,
+            "alert_message": corr_report.alert_message,
+            "direct_overlaps": corr_report.direct_overlaps,
+            "correlated_overlaps": corr_report.correlated_overlaps,
+            "garves_exposure": round(corr_report.garves_total_exposure, 2),
+            "odin_exposure": round(corr_report.odin_total_exposure, 2),
+            "combined_exposure": round(corr_report.combined_exposure, 2),
+            "trade_correlation": corr_report.trade_correlation,
+            "recommendations": corr_report.recommendations,
+        },
+        "learning": learning_summary,
+        "updated": _now_et(),
+    }
+    DATA_DIR.mkdir(exist_ok=True)
+    (DATA_DIR / "quant_phase2.json").write_text(json.dumps(output, indent=2))
+    log.info("Wrote quant_phase2.json (regime=%s, corr=%s, learning=%.0f%%)",
+             regime_analysis.current_regime.combined if regime_analysis.current_regime else "?",
+             corr_report.overall_risk,
+             learning_summary.get("recommendation_accuracy", 0))
 
 
 def _write_analytics(trades: list[dict], baseline: BacktestResult):
