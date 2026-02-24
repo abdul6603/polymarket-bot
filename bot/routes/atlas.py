@@ -1524,8 +1524,9 @@ def api_atlas_priority_queue():
                     "description": f"Last intel feed was {int(hours_stale)}h ago. {agent.title()} may be operating on outdated data.",
                     "priority": prio,
                     "category": "feeding",
-                    "action_endpoint": f"/api/atlas/{agent}",
-                    "action_method": "GET",
+                    "action_endpoint": "/api/atlas/deep-research",
+                    "action_method": "POST",
+                    "action_body": {"agent": agent, "query": f"latest market intelligence and updates for {agent}"},
                     "impact": f"Fresh intel for {agent.title()}",
                 })
 

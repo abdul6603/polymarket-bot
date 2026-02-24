@@ -2201,7 +2201,12 @@ async function atlasExecuteAction(idx) {
   var result = document.getElementById('atlas-pq-result-' + idx);
   if (btn) { btn.disabled = true; btn.textContent = 'Running...'; btn.style.opacity = '0.5'; }
   try {
-    var opts = a.action_method === 'POST' ? {method: 'POST'} : {};
+    var opts = {};
+    if (a.action_method === 'POST') {
+      opts.method = 'POST';
+      opts.headers = {'Content-Type': 'application/json'};
+      if (a.action_body) opts.body = JSON.stringify(a.action_body);
+    }
     var resp = await fetch(a.action_endpoint, opts);
     var d = await resp.json();
     if (result) {
@@ -2211,7 +2216,7 @@ async function atlasExecuteAction(idx) {
         result.textContent = 'Error: ' + (d.error || 'Unknown');
       } else {
         result.style.background = 'rgba(34,170,68,0.08)';
-        var summary = d.message || d.summary || JSON.stringify(d).substring(0, 150);
+        var summary = d.message || d.summary || (d.count !== undefined ? d.count + ' results found' : '') || JSON.stringify(d).substring(0, 150);
         result.innerHTML = '<span style="color:var(--success);font-weight:600;">Done</span> — ' + esc(String(summary));
       }
     }
