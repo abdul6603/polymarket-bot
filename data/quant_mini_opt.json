@@ -1,23 +1,17 @@
 {
-  "recommendations": [
-    {
-      "param": "MIN_CONSENSUS",
-      "current": 2,
-      "suggested": 7,
-      "impact": "WR 62.4% -> 69.9%",
-      "reasoning": "Consensus of 7 filters noise better (143 signals vs 319)",
-      "confidence": "high"
-    }
-  ],
-  "best_win_rate": 69.9,
-  "baseline_win_rate": 62.4,
-  "improvement": 7.5,
+  "mini_opt_number": 1,
+  "timestamp": 1771772762.097146,
+  "trades_used": 50,
+  "baseline_wr": 57.6,
+  "best_wr": 61.3,
+  "improvement_pp": 3.7,
+  "combos_tested": 50,
   "best_params": {
-    "label": "thresh_c7_e0.12_conf0.20_up0.00",
-    "min_consensus": 7,
+    "label": "weight_v0",
+    "min_consensus": 2,
     "min_confidence": 0.2,
     "up_confidence_premium": 0.0,
-    "min_edge_absolute": 0.12,
+    "min_edge_absolute": 0.08,
     "asset_edge_premiums": {
       "bitcoin": 1.0,
       "ethereum": 1.0,
@@ -29,15 +23,12 @@
     "weights": {
       "volume_spike": 4.5,
       "liquidation": 2.0,
-      "liq_heatmap": 1.2,
       "temporal_arb": 1.8,
       "price_div": 1.4,
       "macd": 1.1,
-      "order_flow": 2.0,
       "news": 0.5,
       "momentum": 2.0,
       "ema": 0.6,
-      "heikin_ashi": 0.5,
       "spot_depth": 0.5,
       "orderbook": 0.5,
       "liquidity": 0.4,
@@ -49,10 +40,7 @@
       "tvl_momentum": 0.4,
       "mempool": 0.5,
       "whale_flow": 0.7,
-      "poly_flow": 1.0,
-      "tavily_news": 0.7,
-      "atlas_market_intel": 1.0
+      "poly_flow": 1.0
     }
-  },
-  "updated": "2026-02-24 08:46 AM ET"
+  }
 }

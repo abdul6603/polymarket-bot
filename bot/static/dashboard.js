@@ -4604,6 +4604,7 @@ async function refresh() {
       renderAgentGrid(data);
       loadInfrastructure();
       loadOverviewVitals();
+      loadOverviewHealthBanner();
       if (_intelData) renderTeamIntelligence(_intelData);
       loadBrainNotes('claude');
       loadCommandTable('claude');
@@ -9928,6 +9929,32 @@ async function loadGarvesHealthWarnings() {
       banner.style.border = '1px solid rgba(80,200,120,0.3)';
       banner.style.color = '#50c878';
       banner.innerHTML = infos.map(function(w) { return w.message; }).join('<br>');
+    } else {
+      banner.style.display = 'none';
+    }
+  } catch(e) {}
+}
+
+async function loadOverviewHealthBanner() {
+  try {
+    var resp = await fetch('/api/garves/health-warnings');
+    var d = await resp.json();
+    var banner = document.getElementById('ov-garves-health-banner');
+    if (!banner) return;
+    var criticals = (d.warnings || []).filter(function(w) { return w.level === 'critical'; });
+    var warnings = (d.warnings || []).filter(function(w) { return w.level === 'warning'; });
+    if (criticals.length > 0) {
+      banner.style.display = 'block';
+      banner.style.background = 'rgba(255,60,60,0.15)';
+      banner.style.border = '1px solid rgba(255,60,60,0.4)';
+      banner.style.color = '#ff6b6b';
+      banner.innerHTML = criticals.map(function(w) { return w.message; }).join('<br>');
+    } else if (warnings.length > 0) {
+      banner.style.display = 'block';
+      banner.style.background = 'rgba(255,180,60,0.12)';
+      banner.style.border = '1px solid rgba(255,180,60,0.3)';
+      banner.style.color = '#ffb43c';
+      banner.innerHTML = warnings.map(function(w) { return w.message; }).join('<br>');
     } else {
       banner.style.display = 'none';
     }

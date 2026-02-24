@@ -1,0 +1,14 @@
+{
+  "warnings": [
+    {
+      "ts": 1771912037.637116,
+      "question": "Will the highest temperature in London be 14\u00b0C on February 24?",
+      "divergence": 2.6,
+      "model_prob": 0.0,
+      "market_price": 0.615,
+      "edge": 0.615,
+      "action": "PENALTY -11.0%",
+      "category": "weather"
+    }
+  ]
+}

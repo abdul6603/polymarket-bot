@@ -34,7 +34,7 @@ from bot.snipe.window_tracker import WindowTracker
 from bot.snipe.delta_signal import DeltaSignal
 from bot.snipe.pyramid_executor import PyramidExecutor
 from bot.snipe.orderbook_signal import OrderBookSignal
-from bot.snipe.candle_store import CandleStore
+from bot.snipe.candle_store import CandleStore, PERIODS as CANDLE_PERIODS
 from bot.snipe.signal_scorer import SignalScorer
 from bot.snipe import clob_book
 from bot.snipe.fill_simulator import estimate_fill
@@ -236,8 +236,48 @@ class SnipeEngine:
             "connected" if self._orderbook.is_connected else "disconnected",
         )
 
+        self._preload_candles()
+
         loop = asyncio.get_event_loop()
         await loop.run_in_executor(None, self._thread_loop, shutdown_event)
+
+    def _preload_candles(self) -> None:
+        """Pre-load 50 historical candles per asset/timeframe from Binance REST.
+
+        Eliminates the cold-start blind spot where volume_spike and BOS/CHoCH
+        indicators have no data for 25-300 minutes after a restart.
+        """
+        tf_to_interval = {"5m": "5m", "15m": "15m", "1h": "1h"}
+        for asset in ASSETS:
+            symbol = BINANCE_SYMBOLS.get(asset)
+            if not symbol:
+                continue
+            for tf, interval in tf_to_interval.items():
+                try:
+                    resp = requests.get(
+                        "https://api.binance.us/api/v3/klines",
+                        params={"symbol": symbol, "interval": interval, "limit": 51},
+                        timeout=10,
+                    )
+                    if resp.status_code != 200:
+                        log.warning("[PRELOAD] %s/%s: HTTP %d", asset.upper(), tf, resp.status_code)
+                        continue
+                    raw = resp.json()
+                    # Exclude last candle (still open)
+                    klines = [
+                        {
+                            "timestamp": k[0] / 1000.0,
+                            "open": k[1],
+                            "high": k[2],
+                            "low": k[3],
+                            "close": k[4],
+                        }
+                        for k in raw[:-1]
+                    ]
+                    count = self._candle_store.seed_from_klines(asset, tf, klines)
+                    log.info("[PRELOAD] %s/%s: seeded %d candles", asset.upper(), tf, count)
+                except Exception as e:
+                    log.warning("[PRELOAD] %s/%s: %s", asset.upper(), tf, str(e)[:120])
 
     def _thread_loop(self, shutdown_event: asyncio.Event) -> None:
         """Blocking loop running in a background thread."""

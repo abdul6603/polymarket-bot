@@ -78,13 +78,13 @@
   },
   "hawk": {
     "dimensions": {
-      "Market Scanning": 99,
-      "Edge Detection": 100,
-      "Accuracy": 39,
-      "Experience": 75,
-      "Category Breadth": 95
+      "Market Scanning": 36,
+      "Edge Detection": 20,
+      "Accuracy": 15,
+      "Experience": 5,
+      "Category Breadth": 20
     },
-    "overall": 81,
+    "overall": 19,
     "title": "The Market Predator"
   },
   "viper": {
@@ -111,13 +111,13 @@
   },
   "odin": {
     "dimensions": {
-      "Regime Detection": 72,
+      "Regime Detection": 65,
       "Risk Management": 100,
       "Accuracy": 100,
-      "Capital Efficiency": 77,
-      "Market Scanning": 50
+      "Capital Efficiency": 79,
+      "Market Scanning": 42
     },
-    "overall": 79,
+    "overall": 77,
     "title": "The Regime Trader"
   },
   "oracle": {
@@ -133,13 +133,13 @@
   },
   "team": {
     "dimensions": {
-      "Collective Knowledge": 79,
+      "Collective Knowledge": 73,
       "Coordination": 62,
-      "Performance": 56,
+      "Performance": 53,
       "Autonomy": 84,
-      "Adaptability": 55
+      "Adaptability": 47
     },
-    "overall": 67,
+    "overall": 63,
     "title": "Brotherhood",
     "agent_scores": {
       "garves": 91,
@@ -149,10 +149,10 @@
       "lisa": 28,
       "robotox": 74,
       "thor": 47,
-      "hawk": 81,
+      "hawk": 19,
       "viper": 100,
       "quant": 48,
-      "odin": 79,
+      "odin": 77,
       "oracle": 20
     }
   }

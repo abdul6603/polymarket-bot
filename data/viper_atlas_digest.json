@@ -6,59 +6,59 @@
       "detail": "Total: $299.54/mo across 10 agents",
       "source": "cost_audit",
       "score": 50,
-      "ts": 1771938464.687404,
+      "ts": 1771940431.7843862,
       "category": "cost_trend"
     },
     {
-      "headline": "Active intel category: crypto",
+      "headline": "Active intel category: economy",
       "detail": "Latest: Bitcoin falls below $65,000 as Trump tariff moves raise uncertainty",
       "source": "intel_categories",
       "score": 30,
-      "ts": 1771938464.687595,
+      "ts": 1771940431.7845252,
+      "category": "research_topic"
+    },
+    {
+      "headline": "Active intel category: crypto",
+      "detail": "Latest: All of the sudden this sub is real quiet with people going all in Bitcoin with their life savings",
+      "source": "intel_categories",
+      "score": 30,
+      "ts": 1771940431.784526,
       "category": "research_topic"
     },
     {
       "headline": "Active intel category: politics",
-      "detail": "Latest: Why prediction markets are thriving \u2013 and facing scrutiny | PBS News",
+      "detail": "Latest: Prediction-Market Battle Heats Up - Front Office Sports",
       "source": "intel_categories",
       "score": 30,
-      "ts": 1771938464.687596,
+      "ts": 1771940431.784527,
       "category": "research_topic"
     },
     {
       "headline": "Active intel category: sports",
-      "detail": "Latest: Prediction-Market Battle Heats Up - Front Office Sports",
+      "detail": "Latest: Novo Nordisk sinks 15% after weight loss drug fails to match Eli Lilly's in trial",
       "source": "intel_categories",
       "score": 30,
-      "ts": 1771938464.687598,
+      "ts": 1771940431.784529,
       "category": "research_topic"
     },
     {
       "headline": "Active intel category: culture",
-      "detail": "Latest: Data centres seek credit ratings to unlock billions in funding for AI push",
+      "detail": "Latest: Former ICE instructor testifies agents were trained to discard constitutional rights",
       "source": "intel_categories",
       "score": 30,
-      "ts": 1771938464.6875992,
-      "category": "research_topic"
-    },
-    {
-      "headline": "Active intel category: economy",
-      "detail": "Latest: Market Trends Predictions & Real-Time Odds - Polymarket",
-      "source": "intel_categories",
-      "score": 30,
-      "ts": 1771938464.6876009,
+      "ts": 1771940431.78453,
       "category": "research_topic"
     },
     {
       "headline": "Monitoring 10 agents",
-      "detail": "Baselines updated: 2026-02-24T08:07:44.683771",
+      "detail": "Baselines updated: 2026-02-24T08:40:31.781996",
       "source": "anomaly_detector",
       "score": 20,
-      "ts": 1771938464.6876428,
+      "ts": 1771940431.784561,
       "category": "system_health"
     }
   ],
-  "generated_at": 1771938464.687645,
+  "generated_at": 1771940431.7845619,
   "item_count": 7,
   "fresh": true
 }

@@ -44,8 +44,8 @@
     "direct_overlaps": 0,
     "correlated_overlaps": 0,
     "garves_exposure": 0,
-    "odin_exposure": 1705.14,
-    "combined_exposure": 1705.14,
+    "odin_exposure": 1637.5,
+    "combined_exposure": 1637.5,
     "trade_correlation": 0.0,
     "recommendations": []
   },
@@ -55,17 +55,17 @@
     "param_confidence": {},
     "garves_wr": 49.8,
     "garves_trades": 416,
-    "odin_wr": 83.3,
-    "odin_trades": 60,
-    "combined_wr": 54.0,
-    "combined_trades": 476,
+    "odin_wr": 83.9,
+    "odin_trades": 62,
+    "combined_wr": 54.2,
+    "combined_trades": 478,
     "odin_insights": [
-      "Odin strong on fartcoin: 96% WR (46 trades) \u2014 Garves could increase fartcoin conviction",
+      "Odin strong on fartcoin: 96% WR (48 trades) \u2014 Garves could increase fartcoin conviction",
       "Odin performs well in 'bear' regime (88% WR) \u2014 Garves can be more aggressive in this regime",
       "Both traders should reduce size in 'neutral' regime (Odin WR=33%)"
     ],
     "successful_outcomes": [],
     "failed_outcomes": []
   },
-  "updated": "2026-02-24 08:00 AM ET"
+  "updated": "2026-02-24 08:46 AM ET"
 }

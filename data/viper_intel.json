@@ -1488,8 +1488,186 @@
       "matched_markets": [],
       "category": "sports",
       "raw_data": {}
+    },
+    {
+      "id": "054d0748ddee93a4",
+      "source": "reddit/r/sportsbook",
+      "headline": "NBA Betting and Picks - 2/24/26 (Tuesday)",
+      "summary": "NBA Betting Picks and NBA Sports Betting Odds for Tuesday, February 24, 2026\n\n\n|Time (ET)| Teams | ML | Spread | Total |\n|:-:|:-:|:-:|:-:|:-:|\n|2/24|Philadelphia 76ers|[-476](https://sportsbook.link/)|[-9.5 -115](https://sportsbook.link/)|[o233.5 -110](https://sportsbook.link/)|\n|7:10 PM|Indiana Pacers|[+350](https://sportsbook.link/)|[+9.5 -105](https://sportsbook.link/)| [u233.5 -110](https://sp",
+      "url": "https://reddit.com/r/sportsbook/comments/1rd4rn5/nba_betting_and_picks_22426_tuesday/",
+      "relevance_tags": [
+        "nba"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.502,
+      "timestamp": 1771939715.488731,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {
+        "score": 2,
+        "comments": 20,
+        "sub": "sportsbook"
+      }
+    },
+    {
+      "id": "ddc635c99e8408ef",
+      "source": "tavily",
+      "headline": "Today \ud83d\ude80 Predictions & Real-Time Odds",
+      "summary": "Polymarket currently hosts 9 active markets for Today that lets you track or trade on predictions like \"Bitcoin Up or Down on February 23?\". Whether you are",
+      "url": "https://polymarket.com/predictions/today",
+      "relevance_tags": [
+        "bitcoin",
+        "eth",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771940383.441943,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "fcb90c49d7f0cf82",
+      "source": "tavily",
+      "headline": "Trending Markets Predictions & Real-Time Odds",
+      "summary": "Explore the latest Trending Markets predictions on Polymarket as of February 23, 2026. Track real-time odds and trade on The World's Largest Prediction",
+      "url": "https://polymarket.com/predictions/trending-markets",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771940383.442362,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {}
+    },
+    {
+      "id": "9e29e03a08e01f5f",
+      "source": "tavily",
+      "headline": "Market Trends Predictions & Real-Time Odds",
+      "summary": "Explore the latest Market Trends predictions on Polymarket as of February 23, 2026. Track real-time odds and trade on The World's Largest Prediction Market\u2122",
+      "url": "https://polymarket.com/predictions/market-trends",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771940383.442789,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {}
+    },
+    {
+      "id": "9490d12d6091ecd0",
+      "source": "tavily",
+      "headline": "All Predictions & Real-Time Odds",
+      "summary": "Explore the latest All predictions on Polymarket as of February 23, 2026. Track real-time odds and trade on The World's Largest Prediction Market\u2122",
+      "url": "https://polymarket.com/predictions/all",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771940383.4435751,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {}
+    },
+    {
+      "id": "8301b1273a56bfda",
+      "source": "tavily",
+      "headline": "Crypto Predictions & Real-Time Odds",
+      "summary": "Explore the latest Crypto predictions on Polymarket as of February 24, 2026. Track real-time odds and trade on The World's Largest Prediction Market\u2122",
+      "url": "https://polymarket.com/predictions/crypto",
+      "relevance_tags": [
+        "crypto",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1771940383.443972,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "059180e10f570e1a",
+      "source": "tavily",
+      "headline": "Polymarket",
+      "summary": "Over $700,000,000,000 eliminated from the U.S. stock market today. The S&P 500 is now projected to fall below $6.75k this month: polymarket.com/event/what-wil\u2026",
+      "url": "https://x.com/Polymarket",
+      "relevance_tags": [
+        "market",
+        "stock"
+      ],
+      "sentiment": -1.0,
+      "confidence": 0.7,
+      "timestamp": 1771940383.4444292,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {}
+    },
+    {
+      "id": "5f115935777cfb5a",
+      "source": "tavily",
+      "headline": "Senators tell CFTC prediction market contracts need clear guidance",
+      "summary": "Six Democratic senators told the Commodity Futures Trading Commission in a previously unreported letter that they have strong concerns about",
+      "url": "https://www.cnbc.com/2026/02/24/senators-polymarket-prediction-markets-cftc-death-war-terror.html",
+      "relevance_tags": [
+        "democrat",
+        "market"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1771940385.30532,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "887c0bab0cb802d9",
+      "source": "reddit/r/politics",
+      "headline": "America is realising that Trump is failing \u2013 just look at the polls",
+      "summary": "Score: 426, Comments: 98",
+      "url": "https://reddit.com/r/politics/comments/1rdd426/america_is_realising_that_trump_is_failing_just/",
+      "relevance_tags": [
+        "trump",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771940394.445597,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 426,
+        "comments": 98,
+        "sub": "politics"
+      }
+    },
+    {
+      "id": "e229be6428777c78",
+      "source": "reddit/r/politics",
+      "headline": "Republican Lawmakers' Bid to Execute Tennessee Abortion Patients Slammed as 'Christofascism'",
+      "summary": "Score: 312, Comments: 46",
+      "url": "https://reddit.com/r/politics/comments/1rdev6k/republican_lawmakers_bid_to_execute_tennessee/",
+      "relevance_tags": [
+        "republican"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1771941076.926077,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 312,
+        "comments": 46,
+        "sub": "politics"
+      }
     }
   ],
-  "count": 80,
-  "updated": 1771939344.216917
+  "count": 90,
+  "updated": 1771941082.6550431
 }

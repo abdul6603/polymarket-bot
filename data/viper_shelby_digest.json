@@ -6,55 +6,39 @@
       "detail": "&gt;tldr:\n\n&gt;Bitcoin fell more than 5% to below $65,000 on Monday after U.S. President Donald Trump announced plans to raise global tariffs to 15%.\n\n&gt;The drop came as Asian equities rose in early trade, underscoring crypto\u2019s divergence from regional stock markets amid renewed tariff uncertainty.",
       "source": "reddit/r/wallstreetbets",
       "score": 85,
-      "ts": 1771938464.687003,
-      "category": "action_item"
-    },
-    {
-      "headline": "[ACTION] Why prediction markets are thriving \u2013 and facing scrutiny | PBS News",
-      "detail": "The day before the election, Polymarket gave candidate Trump a 58 percent chance of winning. Now, part of the prediction market boom has been",
-      "source": "tavily",
-      "score": 83,
-      "ts": 1771938464.6870039,
-      "category": "action_item"
-    },
-    {
-      "headline": "[ACTION] FedEx sues for refund of Trump tariffs, days after Supreme Court ruling",
-      "detail": "Score: 576, Comments: 76",
-      "source": "reddit/r/wallstreetbets",
-      "score": 80,
-      "ts": 1771938464.687005,
-      "category": "action_item"
-    },
-    {
-      "headline": "[ACTION] Michael Saylor\u2019s Strategy Acquires Another 592 Bitcoin For $40 Million",
-      "detail": "Score: 305, Comments: 61",
-      "source": "reddit/r/cryptocurrency",
-      "score": 77,
-      "ts": 1771938464.687006,
-      "category": "action_item"
-    },
-    {
-      "headline": "[ACTION] Strategy Acquires 592 BTC, Total Holdings Now 717,722 Bitcoin",
-      "detail": "Score: 259, Comments: 87",
-      "source": "reddit/r/cryptocurrency",
-      "score": 76,
-      "ts": 1771938464.687007,
-      "category": "action_item"
-    },
-    {
-      "headline": "[ACTION] FedEx sues U.S. seeking full refund of Trump tariffs days after Supreme Court ruling",
-      "detail": "Score: 8786, Comments: 297",
-      "source": "reddit/r/politics",
-      "score": 75,
-      "ts": 1771938464.687008,
+      "ts": 1771940431.784102,
       "category": "action_item"
     },
     {
       "headline": "[ACTION] All of the sudden this sub is real quiet with people going all in Bitcoin with their life savings",
       "detail": "All the people that hated Bitcoin on the previous bear market piled in at the top and this sub was littered with\n\n\u201cI sold my stocks and went all in Bitcoin\u201d\n\n\u201cI\u2019m about to go all in is it a good idea?\u201d\n\n\u201cSold my house for Bitcoin\u201d\n\n\u201cIs it a good price to buy here at 120k?\u201d\n\n\u201cDeploying my retirement money\u201d\n\nEvery.single.one.\n\nAnd if you dared to have a different opinion you were attacked. I know I ",
       "source": "reddit/r/cryptocurrency",
+      "score": 81,
+      "ts": 1771940431.784103,
+      "category": "action_item"
+    },
+    {
+      "headline": "[ACTION] Prediction-Market Battle Heats Up - Front Office Sports",
+      "detail": "With the CFTC chairman's announcement, the stage is set for an eventual Supreme Court battle over sports event contracts.",
+      "source": "tavily",
+      "score": 78,
+      "ts": 1771940431.7841039,
+      "category": "action_item"
+    },
+    {
+      "headline": "[ACTION] Polymarket",
+      "detail": "Over $700,000,000,000 eliminated from the U.S. stock market today. The S&P 500 is now projected to fall below $6.75k this month: polymarket.com/event/what-wil\u2026",
+      "source": "tavily",
       "score": 75,
-      "ts": 1771938464.687008,
+      "ts": 1771940431.784105,
+      "category": "action_item"
+    },
+    {
+      "headline": "[ACTION] Why prediction markets are thriving \u2013 and facing scrutiny | PBS News",
+      "detail": "The day before the election, Polymarket gave candidate Trump a 58 percent chance of winning. Now, part of the prediction market boom has been",
+      "source": "tavily",
+      "score": 75,
+      "ts": 1771940431.784105,
       "category": "action_item"
     },
     {
@@ -62,7 +46,7 @@
       "detail": "High monthly spend \u2014 review if all calls are necessary",
       "source": "cost_audit",
       "score": 60,
-      "ts": 1771938464.6870852,
+      "ts": 1771940431.784161,
       "category": "cost_waste"
     },
     {
@@ -70,19 +54,19 @@
       "detail": "High monthly spend \u2014 review if all calls are necessary",
       "source": "cost_audit",
       "score": 60,
-      "ts": 1771938464.687087,
+      "ts": 1771940431.784162,
       "category": "cost_waste"
     },
     {
-      "headline": "Pipeline stats: 167 total pushes to Shelby",
+      "headline": "Pipeline stats: 170 total pushes to Shelby",
       "detail": "System cost: $299.54/mo",
       "source": "pipeline",
       "score": 20,
-      "ts": 1771938464.687135,
+      "ts": 1771940431.7841978,
       "category": "stats"
     }
   ],
-  "generated_at": 1771938464.6871371,
-  "item_count": 10,
+  "generated_at": 1771940431.784199,
+  "item_count": 8,
   "fresh": true
 }

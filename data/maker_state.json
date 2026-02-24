@@ -1,0 +1,50 @@
+{
+  "enabled": true,
+  "timestamp": 1771622009.600744,
+  "active_quotes": [
+    {
+      "order_id": "dry-maker-buy-1771622009",
+      "token_id": "token123",
+      "side": "BUY",
+      "price": 0.49,
+      "size_usd": 8.0,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-sell-1771622009",
+      "token_id": "token123",
+      "side": "SELL",
+      "price": 0.51,
+      "size_usd": 8.0,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-buy-1771622009",
+      "token_id": "tok1",
+      "side": "BUY",
+      "price": 0.51,
+      "size_usd": 8.0,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-sell-1771622009",
+      "token_id": "tok1",
+      "side": "SELL",
+      "price": 0.53,
+      "size_usd": 8.0,
+      "age_s": 0
+    }
+  ],
+  "inventory": {},
+  "config": {
+    "quote_size_usd": 8.0,
+    "max_inventory_usd": 30.0,
+    "max_total_exposure": 60.0,
+    "tick_interval_s": 5.0
+  },
+  "stats": {
+    "fills_today": 0,
+    "estimated_rebate_today": 0.0,
+    "active_quote_count": 4
+  }
+}

@@ -443,6 +443,15 @@
       "result_pnl": 7.7
     },
     {
+      "market": "Solana Up or Down - February 24, 7:45AM-8:00AM ET",
+      "asset": "SOL",
+      "outcome": "Down",
+      "size": 0,
+      "cost": 19.1,
+      "won": true,
+      "result_pnl": 7.62
+    },
+    {
       "market": "Ethereum Up or Down - February 24, 3:30AM-3:45AM ET",
       "asset": "ETH",
       "outcome": "Up",
@@ -1618,11 +1627,11 @@
     "open_margin": 0.0,
     "open_value": 0.0,
     "open_pnl": 0.0,
-    "record_wins": 64,
+    "record_wins": 65,
     "record_losses": 115,
-    "realized_pnl": -1485.68
+    "realized_pnl": -1478.07
   },
   "live": true,
-  "fetched_at": 1771937371.061225,
+  "fetched_at": 1771939643.146883,
   "error": null
 }

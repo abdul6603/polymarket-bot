@@ -77,7 +77,7 @@
     "pnl_per_trade": 1.051,
     "daily_pnl": 3.15,
     "monthly_pnl": 94.5,
-    "elapsed_seconds": 0.1189110279083252
+    "elapsed_seconds": 0.12367701530456543
   },
   "monte_carlo": {
     "n_simulations": 10000,
@@ -100,7 +100,7 @@
       "p75": -9.53,
       "p95": 145.29
     },
-    "elapsed_seconds": 0.2
+    "elapsed_seconds": 0.219
   },
   "cusum": {
     "change_detected": true,
@@ -118,5 +118,5 @@
     "trades_since_change": 327
   },
   "version_history": [],
-  "updated": "2026-02-24 08:00 AM ET"
+  "updated": "2026-02-24 08:46 AM ET"
 }

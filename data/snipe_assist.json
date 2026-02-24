@@ -1,30 +1,30 @@
 {
-  "timing_score": 54.3,
+  "timing_score": 40.0,
   "action": "auto_skip",
-  "direction": "down",
+  "direction": "up",
   "recommended_size_pct": 0.0,
   "optimal_entry_window_s": 0,
   "confidence_factors": {
     "snipe_signal_strength": {
-      "raw": 0.644,
-      "weighted": 25.8
+      "raw": 0.438,
+      "weighted": 17.5
     },
     "liquidity_quality": {
       "raw": 0.0,
       "weighted": 0.0
     },
     "time_positioning": {
-      "raw": 1.0,
-      "weighted": 15.0
+      "raw": 0.5,
+      "weighted": 7.5
     },
     "regime_alignment": {
       "raw": 0.5,
       "weighted": 5.0
     },
     "historical_accuracy": {
-      "raw": 0.571,
-      "weighted": 8.6,
-      "total_samples": 7
+      "raw": 0.667,
+      "weighted": 10.0,
+      "total_samples": 9
     }
   },
   "agent_overrides": {
@@ -39,7 +39,7 @@
     "odin": {
       "action": "auto_skip",
       "size_pct": 0.0,
-      "direction_hint": "SHORT",
+      "direction_hint": "LONG",
       "confirmation": false
     },
     "hawk": {
@@ -48,8 +48,8 @@
       "crypto_only": true
     }
   },
-  "expires_at": 1771939573.619139,
-  "timestamp": 1771939453.6191401,
+  "expires_at": 1771941292.274453,
+  "timestamp": 1771941172.274454,
   "thresholds": {
     "auto": 80,
     "conservative": 65

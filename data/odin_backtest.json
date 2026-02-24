@@ -1,0 +1,240 @@
+{
+  "overview": {
+    "total_trades": 15,
+    "win_count": 1,
+    "loss_count": 14,
+    "win_rate": 6.666666666666667,
+    "total_pnl": -164.02,
+    "profit_factor": 0.0,
+    "sharpe_ratio": -12.76,
+    "calmar_ratio": -3.09,
+    "max_drawdown_pct": 16.4,
+    "max_drawdown_usd": 164.02
+  },
+  "pnl": {
+    "avg_per_trade": -10.93,
+    "avg_win": 0.41,
+    "avg_loss": -11.74,
+    "largest_win": 0.41,
+    "largest_loss": -15.0
+  },
+  "r_multiples": {
+    "avg_r": -0.83,
+    "avg_win_r": 0.04,
+    "avg_loss_r": -0.89,
+    "distribution": [
+      -0.4,
+      -1.0,
+      -1.0,
+      -1.0,
+      -0.08,
+      -1.0,
+      -1.0,
+      -1.0,
+      -1.0,
+      0.04,
+      -1.0,
+      -1.0,
+      -1.0,
+      -1.0,
+      -1.0
+    ]
+  },
+  "streaks": {
+    "max_consecutive_wins": 1,
+    "max_consecutive_losses": 9
+  },
+  "timing": {
+    "avg_hold_hours": 0,
+    "avg_win_hold_hours": 0,
+    "avg_loss_hold_hours": 0
+  },
+  "exit_analysis": {
+    "sl": {
+      "count": 15,
+      "wins": 1,
+      "pnl": -164.02
+    }
+  },
+  "by_regime": {
+    "bear": {
+      "trades": 5,
+      "wins": 0,
+      "losses": 5,
+      "win_rate": 0.0,
+      "pnl": -58.47,
+      "avg_r": -0.88
+    },
+    "strong_bull": {
+      "trades": 1,
+      "wins": 0,
+      "losses": 1,
+      "win_rate": 0.0,
+      "pnl": -15.0,
+      "avg_r": -1.0
+    },
+    "neutral": {
+      "trades": 5,
+      "wins": 0,
+      "losses": 5,
+      "win_rate": 0.0,
+      "pnl": -45.96,
+      "avg_r": -0.82
+    },
+    "strong_bear": {
+      "trades": 3,
+      "wins": 0,
+      "losses": 3,
+      "win_rate": 0.0,
+      "pnl": -45.0,
+      "avg_r": -1.0
+    },
+    "bull": {
+      "trades": 1,
+      "wins": 1,
+      "losses": 0,
+      "win_rate": 100.0,
+      "pnl": 0.41,
+      "avg_r": 0.04
+    }
+  },
+  "by_symbol": {
+    "BTCUSDT": {
+      "trades": 10,
+      "wins": 1,
+      "losses": 9,
+      "win_rate": 10.0,
+      "pnl": -104.02,
+      "avg_r": -0.74
+    },
+    "ETHUSDT": {
+      "trades": 4,
+      "wins": 0,
+      "losses": 4,
+      "win_rate": 0.0,
+      "pnl": -48.75,
+      "avg_r": -1.0
+    },
+    "SOLUSDT": {
+      "trades": 1,
+      "wins": 0,
+      "losses": 1,
+      "win_rate": 0.0,
+      "pnl": -11.25,
+      "avg_r": -1.0
+    }
+  },
+  "by_direction": {
+    "SHORT": {
+      "trades": 13,
+      "wins": 0,
+      "losses": 13,
+      "win_rate": 0.0,
+      "pnl": -149.43,
+      "avg_r": -0.88
+    },
+    "LONG": {
+      "trades": 2,
+      "wins": 1,
+      "losses": 1,
+      "win_rate": 50.0,
+      "pnl": -14.59,
+      "avg_r": -0.48
+    }
+  },
+  "equity_curve": [
+    {
+      "balance": 1000.0,
+      "time": 1756108800.0
+    },
+    {
+      "balance": 994.03,
+      "time": 1129.0,
+      "pnl": -5.97
+    },
+    {
+      "balance": 979.03,
+      "time": 1109.0,
+      "pnl": -15.0
+    },
+    {
+      "balance": 964.03,
+      "time": 1161.0,
+      "pnl": -15.0
+    },
+    {
+      "balance": 952.78,
+      "time": 1129.0,
+      "pnl": -11.25
+    },
+    {
+      "balance": 951.82,
+      "time": 1127.0,
+      "pnl": -0.96
+    },
+    {
+      "balance": 936.82,
+      "time": 1271.0,
+      "pnl": -15.0
+    },
+    {
+      "balance": 921.82,
+      "time": 1271.0,
+      "pnl": -15.0
+    },
+    {
+      "balance": 910.57,
+      "time": 1271.0,
+      "pnl": -11.25
+    },
+    {
+      "balance": 899.32,
+      "time": 1294.0,
+      "pnl": -11.25
+    },
+    {
+      "balance": 899.73,
+      "time": 1341.0,
+      "pnl": 0.41
+    },
+    {
+      "balance": 884.73,
+      "time": 1398.0,
+      "pnl": -15.0
+    },
+    {
+      "balance": 869.73,
+      "time": 1398.0,
+      "pnl": -15.0
+    },
+    {
+      "balance": 858.48,
+      "time": 1659.0,
+      "pnl": -11.25
+    },
+    {
+      "balance": 847.23,
+      "time": 1860.0,
+      "pnl": -11.25
+    },
+    {
+      "balance": 835.98,
+      "time": 1860.0,
+      "pnl": -11.25
+    }
+  ],
+  "meta": {
+    "symbols_tested": [
+      "BTCUSDT",
+      "ETHUSDT",
+      "SOLUSDT",
+      "XRPUSDT"
+    ],
+    "total_candles": 8088,
+    "signals_generated": 1184,
+    "signals_filtered": 1169,
+    "elapsed_seconds": 10.4,
+    "first_trade": 1756108800.0,
+    "last_trade": 1766304000.0
+  }
+}

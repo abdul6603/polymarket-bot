@@ -976,6 +976,24 @@ class SignalEngine:
             if fear_consensus < effective_consensus:
                 effective_consensus = fear_consensus
 
+        # ── High-Volume Override — strong volume/liquidation signals relax consensus by 1 ──
+        vol_vote = votes.get("volume_spike")
+        liq_vote = votes.get("liquidation")
+        oi_vote = votes.get("open_interest")
+
+        volume_override = False
+        if vol_vote is not None and vol_vote.confidence >= 0.70:
+            volume_override = True
+        elif (liq_vote is not None and oi_vote is not None
+              and liq_vote.direction == oi_vote.direction
+              and liq_vote.confidence >= 0.50):
+            volume_override = True
+
+        if volume_override and effective_consensus > safe_floor:
+            effective_consensus -= 1
+            log.info("[%s/%s] HIGH-VOLUME OVERRIDE: consensus lowered by 1 to %d",
+                     asset.upper(), timeframe, effective_consensus)
+
         if agree_count < effective_consensus:
             log.info(
                 "[%s/%s] Consensus filter: %d/%d agree on %s (need %d of %d active%s), skipping",
