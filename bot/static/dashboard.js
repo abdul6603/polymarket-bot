@@ -7995,7 +7995,7 @@ async function loadHawkNextCycle() {
     var numEl = document.getElementById('hawk-cycle-num');
     if (numEl) numEl.textContent = d.cycle_count || 0;
     if (_hawkCycleInterval) clearInterval(_hawkCycleInterval);
-    _hawkCycleInterval = setInterval(function() {
+    function hawkCycleTick() {
       var el = document.getElementById('hawk-cycle-countdown');
       var pill = document.getElementById('hawk-cycle-timer');
       if (!el) return;
@@ -8017,7 +8017,9 @@ async function loadHawkNextCycle() {
           if (pill) pill.style.boxShadow = '';
         }
       }
-    }, 1000);
+    }
+    hawkCycleTick();
+    _hawkCycleInterval = setInterval(hawkCycleTick, 1000);
     // Flash pill on load
     var pill = document.getElementById('hawk-cycle-timer');
     if (pill) {

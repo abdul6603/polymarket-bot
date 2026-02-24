@@ -49,12 +49,30 @@ def api_oracle():
     accuracy = status.get("accuracy", {})
     predictions = status.get("predictions", [])
 
+    # Cycle timer: compute next_scan_at from last_run + interval
+    scan_interval_h = 4
+    next_scan_at = 0
+    last_run_iso = status.get("last_run", "")
+    if last_run_iso:
+        try:
+            last_dt = datetime.fromisoformat(last_run_iso)
+            if last_dt.tzinfo is None:
+                last_dt = last_dt.replace(tzinfo=timezone.utc)
+            next_scan_at = last_dt.timestamp() + scan_interval_h * 3600
+        except (ValueError, TypeError):
+            pass
+
+    # Cycle count: number of distinct runs recorded in DB
+    cycle_count = len(_query_db(
+        "SELECT DISTINCT week_start FROM predictions"
+    ))
+
     return jsonify({
         "running": bool(status),
         "dry_run": status.get("dry_run", True),
-        "last_run": status.get("last_run", ""),
+        "last_run": last_run_iso,
         "week_start": status.get("week_start", ""),
-        "cycle_type": status.get("cycle_type", "WEEKLY"),
+        "cycle_type": status.get("cycle_type", "SCAN"),
         "regime": status.get("regime", "unknown"),
         "confidence": status.get("confidence", 0),
         "markets_scanned": status.get("markets_scanned", 0),
@@ -66,6 +84,9 @@ def api_oracle():
         "emergency_triggered": status.get("emergency_triggered", False),
         "accuracy": accuracy,
         "predictions": predictions[:20],
+        "next_scan_at": next_scan_at,
+        "scan_interval_h": scan_interval_h,
+        "cycle_count": cycle_count,
     })
 
 

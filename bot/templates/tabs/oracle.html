@@ -6,8 +6,15 @@
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
     <span id="oracle-mode-badge" class="trading-mode-badge trading-mode-paper">Trading: Paper Money</span>
     <button class="trading-mode-toggle" id="oracle-mode-toggle" onclick="toggleOracleMode()">Switch</button>
-    <span class="text-muted" style="font-size:0.76rem;">The Weekly Crypto Oracle — Born Feb 22, 2026</span>
-    <span class="text-muted" style="font-size:0.68rem;font-style:italic;margin-left:auto;">"The market is a living entity. I read its breath, heartbeat, and hidden intentions."</span>
+    <span id="oracle-cycle-timer" style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:0.82rem;font-weight:700;padding:6px 16px;border-radius:999px;border:1px solid rgba(245,158,11,0.35);background:rgba(245,158,11,0.12);color:var(--agent-oracle);margin-left:auto;transition:box-shadow .3s;cursor:default;"
+       title="Oracle scans every 4 hours (6x/day)">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--agent-oracle);animation:rxPulse 2s ease-in-out infinite;"></span>
+      Next: <span id="oracle-cycle-countdown" style="min-width:48px;text-align:center;">--</span>
+      <span style="color:rgba(255,255,255,0.2);">|</span>
+      <span style="font-size:0.7rem;color:var(--text-muted);">#<span id="oracle-cycle-num">0</span></span>
+      <span style="color:rgba(255,255,255,0.2);">|</span>
+      <span id="oracle-sc-markets" style="font-size:0.7rem;color:var(--text-muted);">-- mkts</span>
+    </span>
   </div>
 
   <!-- B: Action Bar -->
@@ -267,6 +274,15 @@ function oracleRefresh() {
       lastRunEl.textContent = 'Last run: ' + d.last_run;
     }
 
+    // Cycle timer badge
+    var numEl = document.getElementById('oracle-cycle-num');
+    if (numEl) numEl.textContent = d.cycle_count || 0;
+    var mktsEl = document.getElementById('oracle-sc-markets');
+    if (mktsEl) mktsEl.textContent = (d.markets_scanned || 0) + ' mkts';
+    if (d.next_scan_at > 0) {
+      oracleStartCountdown(d.next_scan_at);
+    }
+
     // Hero cards
     oracleSetVal('oracle-bankroll', '$150');
     oracleSetVal('oracle-wagered', '$' + (d.total_wagered || 0).toFixed(0));
@@ -378,8 +394,8 @@ function oracleRefresh() {
     if (cfgEl) {
       cfgEl.innerHTML = 'Mode: ' + (d.dry_run ? 'DRY RUN' : 'LIVE')
         + ' | Bankroll: $150 | Flat $25/trade (8% min edge)'
-        + ' | Max Trades: 8/week | Max Exposure: $100 | Weekly Loss Limit: $75'
-        + ' | Cycle: Sunday 00:00 UTC | Emergency: 8% BTC move'
+        + ' | Max Trades: 8/week, 3/day | Max Exposure: $100 | Weekly Loss Limit: $75'
+        + ' | Cycle: Every 4h (6x/day) | Emergency: 8% BTC move'
         + ' | Ensemble: Claude (0.45) + Grok (0.30) + Gemini (0.25)';
     }
 
@@ -475,6 +491,42 @@ function oraclePnl(id, val) {
   var prefix = val >= 0 ? '+$' : '-$';
   el.textContent = prefix + Math.abs(val).toFixed(2);
   el.style.color = val >= 0 ? 'var(--success)' : 'var(--error)';
+}
+
+// Cycle countdown timer
+var _oracleCycleInterval = null;
+function oracleStartCountdown(nextAt) {
+  if (_oracleCycleInterval) clearInterval(_oracleCycleInterval);
+  function tick() {
+    var el = document.getElementById('oracle-cycle-countdown');
+    var pill = document.getElementById('oracle-cycle-timer');
+    if (!el) return;
+    var now = Date.now() / 1000;
+    var diff = Math.max(0, Math.round(nextAt - now));
+    if (diff <= 0) {
+      el.textContent = 'NOW';
+      el.style.color = 'var(--success)';
+      if (pill) pill.style.boxShadow = '0 0 12px rgba(34,197,94,0.4)';
+    } else {
+      var h = Math.floor(diff / 3600);
+      var m = Math.floor((diff % 3600) / 60);
+      var s = diff % 60;
+      if (h > 0) {
+        el.textContent = h + 'h ' + (m < 10 ? '0' : '') + m + 'm';
+      } else {
+        el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+      }
+      if (diff < 300) {
+        el.style.color = 'var(--warning)';
+        if (pill) pill.style.boxShadow = '0 0 10px rgba(243,156,18,0.3)';
+      } else {
+        el.style.color = '';
+        if (pill) pill.style.boxShadow = '';
+      }
+    }
+  }
+  tick();
+  _oracleCycleInterval = setInterval(tick, 1000);
 }
 
 // Auto-refresh when tab is active
