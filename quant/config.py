@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 
 @dataclass(frozen=True)
 class QuantConfig:
-    cycle_minutes: int = 60
+    cycle_minutes: int = 30
     max_combinations: int = 500
     min_trades_for_significance: int = 20
     assets: list[str] = field(default_factory=lambda: ["bitcoin", "ethereum", "solana"])

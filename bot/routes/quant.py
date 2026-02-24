@@ -26,6 +26,7 @@ PHASE1_FILE = DATA_DIR / "quant_phase1.json"
 PHASE2_FILE = DATA_DIR / "quant_phase2.json"
 CORRELATION_FILE = DATA_DIR / "quant_correlation.json"
 LEARNING_FILE = DATA_DIR / "quant_learning.json"
+PNL_IMPACT_FILE = DATA_DIR / "quant_pnl_impact.json"
 
 _run_lock = threading.Lock()
 _run_running = False
@@ -206,6 +207,20 @@ def api_quant_learning():
         return jsonify({
             "accuracy": 0, "total_recommendations": 0,
             "param_confidence": {}, "odin_trades_analyzed": 0,
+        })
+    return jsonify(data)
+
+
+@quant_bp.route("/api/quant/pnl-impact")
+def api_quant_pnl_impact():
+    """PNL impact estimator: dollar impact of proposed parameter changes."""
+    data = _load_json(PNL_IMPACT_FILE)
+    if not data:
+        return jsonify({
+            "daily_pnl": 0, "monthly_pnl": 0, "wr_delta": 0,
+            "trades_gained": 0, "trades_lost": 0, "net_trade_change": 0,
+            "by_asset": {}, "by_timeframe": {}, "param_attribution": [],
+            "updated": "",
         })
     return jsonify(data)
 

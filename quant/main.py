@@ -27,6 +27,7 @@ from quant.live_push import validate_push, push_params, get_version_history
 from quant.regime import tag_trades_with_regime, analyze_regime_performance
 from quant.correlation_guard import check_correlation, write_correlation_report
 from quant.self_learner import run_learning_cycle, load_odin_trades
+from quant.pnl_estimator import estimate_pnl_impact, write_pnl_impact
 from quant.scorer import score_result
 from quant.ml_predictor import retrain_model
 
@@ -200,10 +201,23 @@ class QuantBot:
                  learning_summary.get("outcomes_measured", 0),
                  len(learning_summary.get("odin_insights", [])))
 
-        # 10. Load Hawk trades for calibration review
+        # 10. PNL Impact Estimator
+        pnl_impact = None
+        if scored and scored[0][1].total_signals >= 20:
+            best_p = scored[0][1].params
+            pnl_impact = estimate_pnl_impact(
+                trades=trades,
+                proposed_params=best_p,
+            )
+            write_pnl_impact(pnl_impact)
+            log.info("PNL Impact: $%.2f/day ($%.2f/mo), %+d trades, WR %+.1fpp",
+                     pnl_impact.daily_pnl, pnl_impact.monthly_pnl,
+                     pnl_impact.net_trade_change, pnl_impact.wr_delta)
+
+        # 11. Load Hawk trades for calibration review
         hawk_trades = self._load_hawk_trades()
 
-        # 11. Write all reports
+        # 12. Write all reports
         write_status(self.cycle, baseline, len(scored), len(trades), candle_counts)
         write_results(baseline, scored)
         write_recommendations(baseline, scored)
@@ -214,7 +228,7 @@ class QuantBot:
         if self.cfg.hawk_review:
             write_hawk_review(hawk_trades)
 
-        # 12. Live Parameter Push with triple-gate validation
+        # 13. Live Parameter Push with triple-gate validation
         best_wr = scored[0][1].win_rate if scored and scored[0][1].total_signals >= 20 else 0
         if scored and scored[0][1].total_signals >= 20:
             best_result = scored[0][1]
@@ -264,7 +278,7 @@ class QuantBot:
                 wf_overfit_drop=wf_result.overfit_drop,
             )
 
-        # 13. ML Model retrain (XGBoost on resolved trades)
+        # 14. ML Model retrain (XGBoost on resolved trades)
         try:
             ml_metrics = retrain_model()
             if ml_metrics.get("status") == "trained":
@@ -277,10 +291,10 @@ class QuantBot:
         except Exception:
             log.exception("ML model retrain failed (non-fatal)")
 
-        # 14. Publish to event bus
+        # 15. Publish to event bus
         publish_events(baseline, scored)
 
-        # 15. Log summary
+        # 16. Log summary
         log.info("=== Cycle %d complete ===", self.cycle)
         log.info("Baseline: WR=%.1f%% (%d signals) CI=[%.1f%%, %.1f%%]",
                  baseline.win_rate, baseline.total_signals,
@@ -751,6 +765,29 @@ def run_single_backtest(progress_callback=None) -> dict:
     # CUSUM (Phase 1)
     cusum_result = cusum_edge_decay(trades=trades)
 
+    # Phase 2: Regime + Correlation + Self-Learning
+    tagged_trades = tag_trades_with_regime(trades, candles)
+    regime_analysis = analyze_regime_performance(tagged_trades)
+    odin_trades = load_odin_trades()
+    corr_report = check_correlation(garves_trades=trades, odin_trades=odin_trades)
+    write_correlation_report(corr_report)
+    learning_summary = run_learning_cycle(garves_trades=trades, odin_trades=odin_trades)
+
+    # Phase 3: PNL Impact Estimator
+    pnl_impact_data = {}
+    if scored and scored[0][1].total_signals >= 20:
+        pnl_impact = estimate_pnl_impact(
+            trades=trades,
+            proposed_params=scored[0][1].params,
+        )
+        write_pnl_impact(pnl_impact)
+        pnl_impact_data = {
+            "daily_pnl": pnl_impact.daily_pnl,
+            "monthly_pnl": pnl_impact.monthly_pnl,
+            "wr_delta": pnl_impact.wr_delta,
+            "net_trades": pnl_impact.net_trade_change,
+        }
+
     # Write reports
     candle_counts = {asset: len(c) for asset, c in candles.items()}
     write_status(0, baseline, len(scored), len(trades), candle_counts)
@@ -759,6 +796,7 @@ def run_single_backtest(progress_callback=None) -> dict:
     _write_walk_forward(wf_result, baseline_ci)
     _write_analytics(trades, baseline)
     _write_phase1_reports(wfv2_result, mc_result, cusum_result)
+    _write_phase2_reports(regime_analysis, corr_report, learning_summary)
 
     # Hawk review
     hawk_file = DATA_DIR / "hawk_trades.jsonl"
@@ -838,4 +876,7 @@ def run_single_backtest(progress_callback=None) -> dict:
         "optimizer": "optuna" if HAS_OPTUNA else "grid",
         "params_auto_applied": params_applied,
         "push_status": push_status,
+        "pnl_impact": pnl_impact_data,
+        "regime": regime_analysis.current_regime.combined if regime_analysis.current_regime else "unknown",
+        "correlation_risk": corr_report.overall_risk,
     }

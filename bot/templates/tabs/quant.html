@@ -135,6 +135,133 @@
     </div>
   </div>
 
+  <!-- Phase 1: Triple Gate Validation -->
+  <div style="margin-bottom:16px;">
+    <h2 class="section-title" style="color:#00BFFF;">Phase 1 — Triple Gate Validation</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+      <!-- WFV2 -->
+      <div class="card" style="padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-weight:600;font-size:0.78rem;color:#00BFFF;">Walk-Forward V2</span>
+          <span id="quant-wfv2-badge" style="font-size:0.62rem;font-weight:600;padding:2px 8px;border-radius:4px;background:rgba(255,170,0,0.13);color:var(--warning);">--</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.7rem;">
+          <div class="text-muted">Overfit Gap:</div><div id="quant-wfv2-gap">--</div>
+          <div class="text-muted">Stability:</div><div id="quant-wfv2-stability">--</div>
+          <div class="text-muted">PNL/day:</div><div id="quant-wfv2-pnl">--</div>
+          <div class="text-muted">Method:</div><div id="quant-wfv2-method">--</div>
+        </div>
+      </div>
+      <!-- Monte Carlo -->
+      <div class="card" style="padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-weight:600;font-size:0.78rem;color:#00BFFF;">Monte Carlo (10K sims)</span>
+          <span id="quant-mc-badge" style="font-size:0.62rem;font-weight:600;padding:2px 8px;border-radius:4px;background:rgba(255,170,0,0.13);color:var(--warning);">--</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.7rem;">
+          <div class="text-muted">Ruin Prob:</div><div id="quant-mc-ruin">--</div>
+          <div class="text-muted">Avg Drawdown:</div><div id="quant-mc-dd">--</div>
+          <div class="text-muted">Sharpe:</div><div id="quant-mc-sharpe">--</div>
+          <div class="text-muted">Profitable:</div><div id="quant-mc-profitable">--</div>
+        </div>
+      </div>
+      <!-- CUSUM -->
+      <div class="card" style="padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-weight:600;font-size:0.78rem;color:#00BFFF;">CUSUM Edge Decay</span>
+          <span id="quant-cusum-badge" style="font-size:0.62rem;font-weight:600;padding:2px 8px;border-radius:4px;background:rgba(255,170,0,0.13);color:var(--warning);">--</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.7rem;">
+          <div class="text-muted">Severity:</div><div id="quant-cusum-severity">--</div>
+          <div class="text-muted">Rolling WR:</div><div id="quant-cusum-wr">--</div>
+          <div class="text-muted">WR Drop:</div><div id="quant-cusum-drop">--</div>
+          <div class="text-muted">Since Change:</div><div id="quant-cusum-since">--</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase 2: Intelligence -->
+  <div style="margin-bottom:16px;">
+    <h2 class="section-title" style="color:#00BFFF;">Phase 2 — Intelligence</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+      <!-- Regime -->
+      <div class="card" style="padding:14px 16px;">
+        <div style="font-weight:600;font-size:0.78rem;color:#00BFFF;margin-bottom:10px;">Regime Detection</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.7rem;">
+          <div class="text-muted">Current:</div><div id="quant-regime-current">--</div>
+          <div class="text-muted">Best Regime:</div><div id="quant-regime-best" style="color:var(--success);">--</div>
+          <div class="text-muted">Worst Regime:</div><div id="quant-regime-worst" style="color:var(--error);">--</div>
+          <div class="text-muted">Regimes Found:</div><div id="quant-regime-count">--</div>
+        </div>
+        <div id="quant-regime-perf" style="margin-top:8px;"></div>
+      </div>
+      <!-- Correlation -->
+      <div class="card" style="padding:14px 16px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <span style="font-weight:600;font-size:0.78rem;color:#00BFFF;">Correlation Guard</span>
+          <span id="quant-corr-badge" style="font-size:0.62rem;font-weight:600;padding:2px 8px;border-radius:4px;">--</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.7rem;">
+          <div class="text-muted">Risk Level:</div><div id="quant-corr-risk">--</div>
+          <div class="text-muted">Direct Overlaps:</div><div id="quant-corr-direct">--</div>
+          <div class="text-muted">Correlated:</div><div id="quant-corr-correlated">--</div>
+          <div class="text-muted">Combined $:</div><div id="quant-corr-exposure">--</div>
+        </div>
+        <div id="quant-corr-alert" style="margin-top:8px;font-size:0.68rem;color:var(--text-muted);"></div>
+      </div>
+      <!-- Self-Learning -->
+      <div class="card" style="padding:14px 16px;">
+        <div style="font-weight:600;font-size:0.78rem;color:#00BFFF;margin-bottom:10px;">Self-Learning</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.7rem;">
+          <div class="text-muted">Accuracy:</div><div id="quant-learn-accuracy">--</div>
+          <div class="text-muted">Recs Tracked:</div><div id="quant-learn-recs">--</div>
+          <div class="text-muted">Combined WR:</div><div id="quant-learn-combined-wr">--</div>
+          <div class="text-muted">Odin Trades:</div><div id="quant-learn-odin">--</div>
+        </div>
+        <div id="quant-learn-insights" style="margin-top:8px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Phase 3: PNL Impact Estimator -->
+  <div id="quant-pnl-impact-card" style="display:none;background:var(--card-bg);border:1px solid #00BFFF44;border-radius:10px;padding:16px 20px;margin-bottom:16px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+      <span style="font-weight:600;font-size:0.82rem;color:#00BFFF;">PNL Impact Estimator</span>
+      <span id="quant-pnl-badge" style="font-size:0.68rem;font-weight:600;padding:3px 10px;border-radius:6px;"></span>
+    </div>
+    <div class="grid-4" style="margin-bottom:12px;">
+      <div class="stat-card" style="padding:8px 10px;">
+        <div class="stat-label" style="font-size:0.6rem;">Daily PNL</div>
+        <div class="stat-value" id="quant-pnl-daily" style="font-size:1.1rem;color:#00BFFF;">--</div>
+      </div>
+      <div class="stat-card" style="padding:8px 10px;">
+        <div class="stat-label" style="font-size:0.6rem;">Monthly PNL</div>
+        <div class="stat-value" id="quant-pnl-monthly" style="font-size:1.1rem;">--</div>
+      </div>
+      <div class="stat-card" style="padding:8px 10px;">
+        <div class="stat-label" style="font-size:0.6rem;">WR Change</div>
+        <div class="stat-value" id="quant-pnl-wr-delta" style="font-size:1.1rem;">--</div>
+      </div>
+      <div class="stat-card" style="padding:8px 10px;">
+        <div class="stat-label" style="font-size:0.6rem;">Net Trades</div>
+        <div class="stat-value" id="quant-pnl-net-trades" style="font-size:1.1rem;">--</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div id="quant-pnl-by-asset" style="font-size:0.7rem;"></div>
+      <div id="quant-pnl-attribution" style="font-size:0.7rem;"></div>
+    </div>
+  </div>
+
+  <!-- Version History -->
+  <div id="quant-version-history" style="display:none;margin-bottom:16px;">
+    <div class="card" style="padding:14px 16px;">
+      <div style="font-weight:600;font-size:0.78rem;color:#00BFFF;margin-bottom:10px;">Strategy Version History</div>
+      <div id="quant-versions-list" style="font-size:0.7rem;"></div>
+    </div>
+  </div>
+
   <!-- What To Change (merged params + recommendations) -->
   <div class="card" style="margin-bottom:20px;">
     <div class="card-header">What To Change <span class="text-muted" style="font-size:0.65rem;font-weight:400;margin-left:6px;">Parameters: current vs backtest optimal</span></div>

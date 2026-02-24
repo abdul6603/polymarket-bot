@@ -9713,6 +9713,9 @@ async function loadQuantTab() {
   loadQuantAnalytics();
   loadQuantLiveParams();
   loadQuantTradeLearning();
+  loadQuantPhase1();
+  loadQuantPhase2();
+  loadQuantPNLImpact();
 }
 
 async function loadQuantResults() {
@@ -10205,6 +10208,286 @@ async function loadQuantSmartActions() {
     el.innerHTML = html;
   } catch(e) {
     el.innerHTML = '<span class="text-muted">Failed to load</span>';
+  }
+}
+
+async function loadQuantPhase1() {
+  try {
+    var resp = await fetch('/api/quant/phase1');
+    var d = await resp.json();
+    var wfv2 = d.walk_forward_v2 || {};
+    var mc = d.monte_carlo || {};
+    var cusum = d.cusum || {};
+
+    // WFV2
+    var wfBadge = document.getElementById('quant-wfv2-badge');
+    if (wfv2.passed) {
+      wfBadge.textContent = 'PASS';
+      wfBadge.style.background = 'rgba(34,170,68,0.13)';
+      wfBadge.style.color = 'var(--success)';
+    } else if (wfv2.rejection_reason && wfv2.rejection_reason !== 'No data yet') {
+      wfBadge.textContent = 'FAIL';
+      wfBadge.style.background = 'rgba(255,85,85,0.13)';
+      wfBadge.style.color = 'var(--error)';
+    }
+    var gap = wfv2.overfit_gap;
+    if (gap !== undefined) {
+      var gapEl = document.getElementById('quant-wfv2-gap');
+      gapEl.textContent = gap.toFixed(1) + 'pp';
+      gapEl.style.color = gap > 10 ? 'var(--error)' : gap > 5 ? 'var(--warning)' : 'var(--success)';
+    }
+    if (wfv2.stability_score !== undefined) document.getElementById('quant-wfv2-stability').textContent = wfv2.stability_score.toFixed(0);
+    if (wfv2.daily_pnl !== undefined) {
+      var pnlEl = document.getElementById('quant-wfv2-pnl');
+      pnlEl.textContent = '$' + wfv2.daily_pnl.toFixed(2);
+      pnlEl.style.color = wfv2.daily_pnl > 0 ? 'var(--success)' : 'var(--error)';
+    }
+    if (wfv2.method) document.getElementById('quant-wfv2-method').textContent = wfv2.method;
+
+    // Monte Carlo
+    var mcBadge = document.getElementById('quant-mc-badge');
+    if (mc.ruin_probability !== undefined) {
+      var ruin = mc.ruin_probability;
+      if (ruin <= 5) {
+        mcBadge.textContent = 'SAFE';
+        mcBadge.style.background = 'rgba(34,170,68,0.13)';
+        mcBadge.style.color = 'var(--success)';
+      } else if (ruin <= 20) {
+        mcBadge.textContent = 'CAUTION';
+        mcBadge.style.background = 'rgba(255,170,0,0.13)';
+        mcBadge.style.color = 'var(--warning)';
+      } else {
+        mcBadge.textContent = 'DANGER';
+        mcBadge.style.background = 'rgba(255,85,85,0.13)';
+        mcBadge.style.color = 'var(--error)';
+      }
+      var ruinEl = document.getElementById('quant-mc-ruin');
+      ruinEl.textContent = ruin.toFixed(1) + '%';
+      ruinEl.style.color = ruin <= 5 ? 'var(--success)' : ruin <= 20 ? 'var(--warning)' : 'var(--error)';
+    }
+    if (mc.avg_max_drawdown_pct !== undefined) document.getElementById('quant-mc-dd').textContent = mc.avg_max_drawdown_pct.toFixed(1) + '%';
+    if (mc.avg_sharpe !== undefined) {
+      var sharpeEl = document.getElementById('quant-mc-sharpe');
+      sharpeEl.textContent = mc.avg_sharpe.toFixed(2);
+      sharpeEl.style.color = mc.avg_sharpe > 0.5 ? 'var(--success)' : mc.avg_sharpe > 0 ? 'var(--warning)' : 'var(--error)';
+    }
+    if (mc.profitable_pct !== undefined) document.getElementById('quant-mc-profitable').textContent = mc.profitable_pct.toFixed(0) + '%';
+
+    // CUSUM
+    var cusumBadge = document.getElementById('quant-cusum-badge');
+    var sev = cusum.severity || 'none';
+    if (sev === 'none') {
+      cusumBadge.textContent = 'HEALTHY';
+      cusumBadge.style.background = 'rgba(34,170,68,0.13)';
+      cusumBadge.style.color = 'var(--success)';
+    } else if (sev === 'warning') {
+      cusumBadge.textContent = 'WARNING';
+      cusumBadge.style.background = 'rgba(255,170,0,0.13)';
+      cusumBadge.style.color = 'var(--warning)';
+    } else {
+      cusumBadge.textContent = 'CRITICAL';
+      cusumBadge.style.background = 'rgba(255,85,85,0.13)';
+      cusumBadge.style.color = 'var(--error)';
+    }
+    document.getElementById('quant-cusum-severity').textContent = sev;
+    if (cusum.current_rolling_wr !== undefined) {
+      var cwrEl = document.getElementById('quant-cusum-wr');
+      cwrEl.textContent = cusum.current_rolling_wr.toFixed(0) + '%';
+      cwrEl.style.color = wrColor(cusum.current_rolling_wr);
+    }
+    if (cusum.wr_drop_pp !== undefined) {
+      var dropEl = document.getElementById('quant-cusum-drop');
+      dropEl.textContent = cusum.wr_drop_pp.toFixed(1) + 'pp';
+      dropEl.style.color = cusum.wr_drop_pp > 5 ? 'var(--error)' : 'var(--success)';
+    }
+    if (cusum.trades_since_change !== undefined) document.getElementById('quant-cusum-since').textContent = cusum.trades_since_change + ' trades';
+
+    // Version History
+    var versions = d.version_history || [];
+    var vCard = document.getElementById('quant-version-history');
+    if (versions.length > 0) {
+      vCard.style.display = 'block';
+      var vhtml = '';
+      versions.forEach(function(v) {
+        vhtml += '<div style="display:flex;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);">';
+        vhtml += '<span style="color:#00BFFF;font-weight:600;min-width:32px;">v' + v.version + '</span>';
+        vhtml += '<span class="text-muted" style="min-width:100px;">' + (v.timestamp || '').substring(0, 16) + '</span>';
+        vhtml += '<span style="min-width:60px;">' + (v.target || '') + '</span>';
+        vhtml += '<span style="color:var(--success);">' + (v.baseline_wr || 0) + '% &rarr; ' + (v.best_wr || 0) + '%</span>';
+        vhtml += '</div>';
+      });
+      document.getElementById('quant-versions-list').innerHTML = vhtml;
+    } else {
+      vCard.style.display = 'none';
+    }
+  } catch(e) { console.error('quant phase1:', e); }
+}
+
+async function loadQuantPhase2() {
+  try {
+    var resp = await fetch('/api/quant/phase2');
+    var d = await resp.json();
+    var regime = d.regime || {};
+    var corr = d.correlation || {};
+    var learn = d.learning || {};
+
+    // Regime
+    var cur = regime.current || 'unknown';
+    document.getElementById('quant-regime-current').textContent = cur;
+    document.getElementById('quant-regime-best').textContent = regime.best_regime || '--';
+    document.getElementById('quant-regime-worst').textContent = regime.worst_regime || '--';
+    document.getElementById('quant-regime-count').textContent = regime.regime_count || '0';
+
+    // Regime performance mini table
+    var perf = regime.performance || {};
+    var pKeys = Object.keys(perf);
+    if (pKeys.length > 0) {
+      var rpHtml = '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;">';
+      pKeys.forEach(function(k) {
+        var p = perf[k];
+        var wr = p.win_rate || 0;
+        var color = wrColor(wr);
+        rpHtml += '<span style="font-size:0.6rem;padding:2px 6px;border-radius:3px;background:' + color + '18;color:' + color + ';border:1px solid ' + color + '33;">';
+        rpHtml += k + ' ' + wr + '% (' + (p.total || 0) + ')</span>';
+      });
+      rpHtml += '</div>';
+      document.getElementById('quant-regime-perf').innerHTML = rpHtml;
+    }
+
+    // Correlation
+    var risk = corr.overall_risk || 'low';
+    var corrBadge = document.getElementById('quant-corr-badge');
+    if (risk === 'low') {
+      corrBadge.textContent = 'LOW';
+      corrBadge.style.background = 'rgba(34,170,68,0.13)';
+      corrBadge.style.color = 'var(--success)';
+    } else if (risk === 'medium') {
+      corrBadge.textContent = 'MEDIUM';
+      corrBadge.style.background = 'rgba(255,170,0,0.13)';
+      corrBadge.style.color = 'var(--warning)';
+    } else {
+      corrBadge.textContent = risk.toUpperCase();
+      corrBadge.style.background = 'rgba(255,85,85,0.13)';
+      corrBadge.style.color = 'var(--error)';
+    }
+    document.getElementById('quant-corr-risk').textContent = risk;
+    document.getElementById('quant-corr-direct').textContent = corr.direct_overlaps || '0';
+    document.getElementById('quant-corr-correlated').textContent = corr.correlated_overlaps || '0';
+    document.getElementById('quant-corr-exposure').textContent = '$' + (corr.combined_exposure || 0).toFixed(0);
+    if (corr.alert_message && corr.alert_message !== 'No data yet') {
+      document.getElementById('quant-corr-alert').textContent = corr.alert_message;
+    }
+
+    // Self-Learning
+    var acc = learn.recommendation_accuracy || 0;
+    var accEl = document.getElementById('quant-learn-accuracy');
+    accEl.textContent = acc + '%';
+    accEl.style.color = acc >= 60 ? 'var(--success)' : acc >= 40 ? 'var(--warning)' : 'var(--text-muted)';
+    document.getElementById('quant-learn-recs').textContent = learn.total_recommendations || '0';
+    var cwr = learn.combined_wr || 0;
+    if (cwr > 0) {
+      var cwrEl = document.getElementById('quant-learn-combined-wr');
+      cwrEl.textContent = cwr.toFixed(1) + '%';
+      cwrEl.style.color = wrColor(cwr);
+    }
+    document.getElementById('quant-learn-odin').textContent = learn.odin_trades || '0';
+
+    // Odin insights
+    var insights = learn.odin_insights || [];
+    if (insights.length > 0) {
+      var iHtml = '<div style="display:flex;flex-direction:column;gap:2px;">';
+      insights.slice(0, 3).forEach(function(ins) {
+        iHtml += '<div style="font-size:0.62rem;color:var(--text-secondary);">' + esc(ins) + '</div>';
+      });
+      iHtml += '</div>';
+      document.getElementById('quant-learn-insights').innerHTML = iHtml;
+    }
+  } catch(e) { console.error('quant phase2:', e); }
+}
+
+async function loadQuantPNLImpact() {
+  var card = document.getElementById('quant-pnl-impact-card');
+  if (!card) return;
+  try {
+    var resp = await fetch('/api/quant/pnl-impact');
+    var d = await resp.json();
+    if (!d.updated) {
+      card.style.display = 'none';
+      return;
+    }
+    card.style.display = 'block';
+
+    // Badge
+    var badge = document.getElementById('quant-pnl-badge');
+    var daily = d.daily_pnl || 0;
+    if (daily > 0) {
+      badge.textContent = '+$' + daily.toFixed(2) + '/day';
+      badge.style.background = 'rgba(34,170,68,0.13)';
+      badge.style.color = 'var(--success)';
+    } else if (daily < 0) {
+      badge.textContent = '-$' + Math.abs(daily).toFixed(2) + '/day';
+      badge.style.background = 'rgba(255,85,85,0.13)';
+      badge.style.color = 'var(--error)';
+    } else {
+      badge.textContent = '$0/day';
+      badge.style.background = 'rgba(0,191,255,0.13)';
+      badge.style.color = '#00BFFF';
+    }
+
+    // Stats
+    var dailyEl = document.getElementById('quant-pnl-daily');
+    dailyEl.textContent = (daily >= 0 ? '+' : '') + '$' + daily.toFixed(2);
+    dailyEl.style.color = daily >= 0 ? 'var(--success)' : 'var(--error)';
+
+    var monthly = d.monthly_pnl || 0;
+    var moEl = document.getElementById('quant-pnl-monthly');
+    moEl.textContent = (monthly >= 0 ? '+' : '') + '$' + monthly.toFixed(2);
+    moEl.style.color = monthly >= 0 ? 'var(--success)' : 'var(--error)';
+
+    var wrDelta = d.wr_delta || 0;
+    var wrEl = document.getElementById('quant-pnl-wr-delta');
+    wrEl.textContent = (wrDelta >= 0 ? '+' : '') + wrDelta.toFixed(1) + 'pp';
+    wrEl.style.color = wrDelta >= 0 ? 'var(--success)' : 'var(--error)';
+
+    var net = d.net_trade_change || 0;
+    var netEl = document.getElementById('quant-pnl-net-trades');
+    netEl.textContent = (net >= 0 ? '+' : '') + net;
+    netEl.style.color = net >= 0 ? 'var(--success)' : 'var(--error)';
+
+    // By asset
+    var byAsset = d.by_asset || {};
+    var aKeys = Object.keys(byAsset);
+    if (aKeys.length > 0) {
+      var aHtml = '<div style="font-weight:600;color:#00BFFF;margin-bottom:6px;">By Asset</div>';
+      aKeys.forEach(function(a) {
+        var s = byAsset[a];
+        var delta = s.pnl_delta || 0;
+        var color = delta >= 0 ? 'var(--success)' : 'var(--error)';
+        aHtml += '<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid var(--border);">';
+        aHtml += '<span>' + a.charAt(0).toUpperCase() + a.slice(1) + '</span>';
+        aHtml += '<span style="color:' + color + ';">' + (delta >= 0 ? '+' : '') + '$' + delta.toFixed(2) + ' (' + (s.prop_wr || 0) + '%)</span>';
+        aHtml += '</div>';
+      });
+      document.getElementById('quant-pnl-by-asset').innerHTML = aHtml;
+    }
+
+    // Param attribution
+    var attrs = d.param_attribution || [];
+    if (attrs.length > 0) {
+      var atHtml = '<div style="font-weight:600;color:#00BFFF;margin-bottom:6px;">Param Impact</div>';
+      attrs.forEach(function(a) {
+        var delta = a.pnl_impact || 0;
+        var color = delta >= 0 ? 'var(--success)' : 'var(--error)';
+        atHtml += '<div style="display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid var(--border);">';
+        atHtml += '<span>' + esc(a.param) + ' <span class="text-muted">' + a.old_value + ' &rarr; ' + a.new_value + '</span></span>';
+        atHtml += '<span style="color:' + color + ';">' + (delta >= 0 ? '+' : '') + '$' + delta.toFixed(2) + ' (' + (a.net_trades >= 0 ? '+' : '') + a.net_trades + ' trades)</span>';
+        atHtml += '</div>';
+      });
+      document.getElementById('quant-pnl-attribution').innerHTML = atHtml;
+    }
+  } catch(e) {
+    console.error('quant pnl-impact:', e);
+    card.style.display = 'none';
   }
 }
 
