@@ -35,7 +35,10 @@ TRADES_FILE = DATA_DIR / "hawk_trades.jsonl"
 
 
 def resolve_paper_trades() -> dict:
-    """Check all unresolved trades against Gamma API for outcomes.
+    """Check all unresolved trades against CLOB API for outcomes.
+
+    V8: Deduplicates trades on load to prevent phantom double-resolution.
+    Only resolves on official close/winner — removed premature effectively_resolved.
 
     Returns summary: {checked, resolved, wins, losses, skipped, total_pnl}.
     """
@@ -52,6 +55,24 @@ def resolve_paper_trades() -> dict:
     except Exception:
         log.exception("Failed to load trades for resolution")
         return {"checked": 0, "resolved": 0, "wins": 0, "losses": 0, "skipped": 0, "total_pnl": 0.0, "resolved_trades": []}
+
+    # V8: Dedup on load — keep first occurrence of each condition_id
+    deduped_count = 0
+    seen_cids: set[str] = set()
+    clean_trades: list[dict] = []
+    for t in trades:
+        cid = t.get("condition_id") or t.get("market_id", "")
+        if cid in seen_cids:
+            deduped_count += 1
+            log.warning("[DEDUP] Removed duplicate trade: %s | %s", cid[:12], t.get("question", "")[:50])
+            continue
+        seen_cids.add(cid)
+        clean_trades.append(t)
+
+    if deduped_count > 0:
+        log.warning("[DEDUP] Removed %d duplicate trades from JSONL", deduped_count)
+        trades = clean_trades
+        _rewrite_trades(trades)  # Persist dedup immediately
 
     unresolved = [t for t in trades if not t.get("resolved")]
     if not unresolved:
@@ -100,10 +121,10 @@ def resolve_paper_trades() -> dict:
                     official_winner_tid = tk.get("token_id", "")
                     break
 
-            # Effective resolution: if any token price < 0.05, market is decided
-            effectively_resolved = any(p < 0.05 for p in token_prices.values())
-
-            if not is_closed and not official_winner_tid and not effectively_resolved:
+            # V8: Only resolve on official close or official winner.
+            # Removed "effectively_resolved" (price < 0.05) — caused premature
+            # phantom resolutions that inflated loss count and sent fake TG alerts.
+            if not is_closed and not official_winner_tid:
                 stats["skipped"] += len(cid_trades)
                 continue
 

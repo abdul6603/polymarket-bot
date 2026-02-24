@@ -86,10 +86,18 @@ class HawkTracker:
         """Append trade to JSONL and track in memory.
 
         V8: Accepts order_placed_at and market_price_at_entry for fill tracking.
+        V8: Checks BOTH in-memory positions AND full JSONL history for duplicates.
         """
         if self.has_position_for_market(opp.market.condition_id, opp.market.question):
             log.warning("Duplicate trade blocked: already have position for %s", opp.market.condition_id[:12])
             return
+
+        # V8: Also check full JSONL history — prevents dupes even after restarts
+        all_trades = self._load_all_trades()
+        for t in all_trades:
+            if t.get("condition_id") == opp.market.condition_id:
+                log.warning("Duplicate trade blocked (JSONL history): %s already exists", opp.market.condition_id[:12])
+                return
         rec = {
             "trade_id": f"hawk_{opp.market.condition_id[:8]}_{int(time.time())}",
             "order_id": order_id,
