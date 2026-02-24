@@ -181,14 +181,18 @@ def resolve_paper_trades() -> dict:
                 except Exception:
                     pass  # CLV failure must never crash resolver
 
-                # Telegram notification
-                emoji = "\U0001f7e2" if won else "\U0001f534"
-                pnl_str = f"+${pnl:.2f}" if pnl >= 0 else f"-${abs(pnl):.2f}"
-                _notify_tg(
-                    f"{emoji} <b>Hawk {'WON' if won else 'LOST'}</b>\n"
-                    f"{t.get('question', '')[:100]}\n"
-                    f"P&L: <b>{pnl_str}</b> | {t.get('direction', '').upper()} @ ${entry_price:.2f}"
-                )
+                # Telegram notification — skip stale trades (>48h old)
+                trade_age_h = (time.time() - t.get("timestamp", 0)) / 3600
+                if trade_age_h < 48:
+                    emoji = "\U0001f7e2" if won else "\U0001f534"
+                    pnl_str = f"+${pnl:.2f}" if pnl >= 0 else f"-${abs(pnl):.2f}"
+                    _notify_tg(
+                        f"{emoji} <b>Hawk {'WON' if won else 'LOST'}</b>\n"
+                        f"{t.get('question', '')[:100]}\n"
+                        f"P&L: <b>{pnl_str}</b> | {t.get('direction', '').upper()} @ ${entry_price:.2f}"
+                    )
+                else:
+                    log.info("Skipped TG for stale trade (%.0fh old): %s", trade_age_h, t.get("question", "")[:50])
 
                 # Publish to shared event bus
                 try:
