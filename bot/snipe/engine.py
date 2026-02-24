@@ -78,19 +78,19 @@ BINANCE_SYMBOLS = {
     "xrp": "XRPUSDT",
 }
 ASSET_CONFIG = {
-    "bitcoin":  {"base_threshold": 70, "budget": 25.0},
-    "ethereum": {"base_threshold": 70, "budget": 25.0},
-    "solana":   {"base_threshold": 70, "budget": 20.0},
-    "xrp":      {"base_threshold": 70, "budget": 20.0},
+    "bitcoin":  {"base_threshold": 62, "budget": 25.0},
+    "ethereum": {"base_threshold": 58, "budget": 25.0},
+    "solana":   {"base_threshold": 58, "budget": 20.0},
+    "xrp":      {"base_threshold": 60, "budget": 20.0},
 }
 
 # CLOB data-quality thresholds (good data = lower bar, dead data = higher bar)
 CLOB_QUALITY_GOOD_SPREAD_COMPRESSION = 0.50
 CLOB_QUALITY_GOOD_DEPTH_MIN = 20
 CLOB_QUALITY_GOOD_BUY_PRESSURE_MIN = 0.5
-CLOB_QUALITY_THRESHOLD_BONUS = -4         # lower by 4 when CLOB good
-CLOB_QUALITY_THRESHOLD_PENALTY_DEAD = 10  # raise by 10 when CLOB dead
-CLOB_QUALITY_THRESHOLD_PENALTY_STALE = 7  # raise by 7 when CLOB stale
+CLOB_QUALITY_THRESHOLD_BONUS = -3         # lower by 3 when CLOB good (good liq → easier trigger)
+CLOB_QUALITY_THRESHOLD_PENALTY_DEAD = 8   # raise by 8 when CLOB dead (BTC:70, ETH/SOL:66)
+CLOB_QUALITY_THRESHOLD_PENALTY_STALE = 5  # raise by 5 when CLOB stale (BTC:67, ETH/SOL:63)
 THRESHOLD_OVERRIDE_FILE = Path(__file__).parent.parent.parent / "data" / "snipe_threshold_override.json"
 MAX_CONCURRENT_POSITIONS = 3
 
@@ -1014,7 +1014,7 @@ class SnipeEngine:
         else:  # stale
             adjustment = CLOB_QUALITY_THRESHOLD_PENALTY_STALE
 
-        threshold = max(65, min(85, base + adjustment))
+        threshold = max(55, min(70, base + adjustment))
         self._log_threshold_change(asset, threshold, quality, book, slot)
         return threshold
 
