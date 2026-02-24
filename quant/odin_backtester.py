@@ -38,9 +38,10 @@ def _ensure_odin():
     if _odin_loaded:
         return
     import sys
-    odin_dir = str(Path.home() / "odin")
-    if odin_dir not in sys.path:
-        sys.path.insert(0, odin_dir)
+    # ~/odin/ is the 'odin' package, so add ~ to sys.path
+    odin_parent = str(Path.home())
+    if odin_parent not in sys.path:
+        sys.path.insert(0, odin_parent)
     from odin.strategy.smc_engine import SMCEngine, Direction
     from odin.strategy.multi_tf import MultiTimeframeAnalyzer
     _SMCEngine = SMCEngine
