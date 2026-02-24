@@ -178,6 +178,145 @@ def get_clv_stats() -> dict:
     }
 
 
+def get_realtime_clv(condition_id: str, token_id: str) -> dict | None:
+    """Fetch current price and compute realtime CLV vs entry price.
+
+    Returns dict with realtime_clv, realtime_clv_pct, current_price, entry_price, age_hours
+    or None if no unresolved entry found.
+    """
+    if not CLV_FILE.exists():
+        return None
+
+    entry_rec = None
+    try:
+        with open(CLV_FILE) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                r = json.loads(line)
+                if (r.get("condition_id") == condition_id and
+                        r.get("token_id", "") == token_id and
+                        not r.get("resolved")):
+                    entry_rec = r
+                    break
+    except Exception:
+        return None
+
+    if not entry_rec:
+        return None
+
+    current_price = _get_current_price(condition_id, token_id)
+    entry_price = entry_rec.get("entry_price", 0.5)
+    entry_time = entry_rec.get("entry_time", time.time())
+    age_hours = (time.time() - entry_time) / 3600
+
+    rt_clv = current_price - entry_price
+    rt_clv_pct = (rt_clv / max(entry_price, 0.01)) * 100
+
+    return {
+        "condition_id": condition_id,
+        "token_id": token_id,
+        "entry_price": entry_price,
+        "current_price": current_price,
+        "realtime_clv": round(rt_clv, 4),
+        "realtime_clv_pct": round(rt_clv_pct, 2),
+        "age_hours": round(age_hours, 2),
+        "question": entry_rec.get("question", ""),
+    }
+
+
+CLV_EXIT_THRESHOLD = -0.10  # Exit if 10+ cents underwater
+CLV_EXIT_MIN_AGE_HOURS = 0.5  # Must be open >30min before CLV exit
+
+
+def should_exit_on_clv(condition_id: str, token_id: str) -> tuple[bool, str]:
+    """Check if a position should be exited based on realtime CLV.
+
+    Returns (should_exit, reason_string).
+    Only triggers if CLV < -0.10 AND position age > 30 minutes.
+    """
+    rt = get_realtime_clv(condition_id, token_id)
+    if not rt:
+        return False, ""
+
+    if rt["realtime_clv"] < CLV_EXIT_THRESHOLD and rt["age_hours"] > CLV_EXIT_MIN_AGE_HOURS:
+        reason = (f"CLV exit: {rt['realtime_clv_pct']:+.1f}% "
+                  f"(${rt['entry_price']:.2f}→${rt['current_price']:.2f}, "
+                  f"age={rt['age_hours']:.1f}h)")
+        return True, reason
+
+    return False, ""
+
+
+def get_clv_by_dimension() -> dict:
+    """Get CLV stats broken down by category and edge_source.
+
+    Returns {
+        "by_category": {"sports": {"avg_clv": ..., "count": ...}, ...},
+        "by_edge_source": {"sportsbook_divergence": {...}, ...},
+    }
+    """
+    if not CLV_FILE.exists():
+        return {"by_category": {}, "by_edge_source": {}}
+
+    # Load trade file for category/edge_source mapping
+    trades_file = DATA_DIR / "hawk_trades.jsonl"
+    trade_map: dict[str, dict] = {}
+    if trades_file.exists():
+        try:
+            with open(trades_file) as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        t = json.loads(line)
+                        cid = t.get("condition_id", "")
+                        if cid:
+                            trade_map[cid] = t
+        except Exception:
+            pass
+
+    records = []
+    try:
+        with open(CLV_FILE) as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    records.append(json.loads(line))
+    except Exception:
+        return {"by_category": {}, "by_edge_source": {}}
+
+    resolved = [r for r in records if r.get("resolved") and r.get("clv") is not None]
+
+    by_cat: dict[str, list[float]] = {}
+    by_src: dict[str, list[float]] = {}
+
+    for r in resolved:
+        cid = r.get("condition_id", "")
+        trade = trade_map.get(cid, {})
+        cat = trade.get("category", "unknown")
+        src = trade.get("edge_source", "unknown")
+        clv = r["clv"]
+
+        by_cat.setdefault(cat, []).append(clv)
+        by_src.setdefault(src, []).append(clv)
+
+    def _summarize(groups: dict[str, list[float]]) -> dict:
+        result = {}
+        for key, values in groups.items():
+            result[key] = {
+                "avg_clv": round(sum(values) / len(values), 4) if values else 0,
+                "count": len(values),
+                "positive_rate": round(sum(1 for v in values if v > 0) / len(values) * 100, 1) if values else 0,
+            }
+        return result
+
+    return {
+        "by_category": _summarize(by_cat),
+        "by_edge_source": _summarize(by_src),
+    }
+
+
 def _get_current_price(condition_id: str, token_id: str) -> float:
     """Fetch current market price from CLOB for a specific token."""
     try:

@@ -1,9 +1,11 @@
-"""Trade Executor — place orders via CLOB API (reuses bot/execution.py pattern)."""
+"""Trade Executor V8 — limit orders + fill monitoring + stale cancellation."""
 from __future__ import annotations
 
+import json
 import logging
 import os
 import time
+from pathlib import Path
 
 from py_clob_client.client import ClobClient
 from py_clob_client.clob_types import OrderArgs, OrderType
@@ -14,6 +16,9 @@ from hawk.edge import TradeOpportunity
 from hawk.tracker import HawkTracker
 
 log = logging.getLogger(__name__)
+
+DATA_DIR = Path(__file__).parent.parent / "data"
+FILL_METRICS_FILE = DATA_DIR / "hawk_fill_metrics.jsonl"
 
 _TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 _TG_CHAT = os.getenv("TELEGRAM_CHAT_ID", "")
@@ -42,28 +47,32 @@ class HawkExecutor:
         self.tracker = tracker
 
     def place_order(self, opp: TradeOpportunity) -> str | None:
-        """Place a GTC limit buy via py_clob_client, dry-run mode support."""
-        price = _get_entry_price(opp)
+        """Place a GTC limit buy via py_clob_client, dry-run mode support.
+
+        V8: Uses limit discount (rests in book) instead of taker premium.
+        Stores order_placed_at and market_price_at_entry for fill tracking.
+        """
+        raw_price = _get_raw_price(opp)
+        price = _get_entry_price(opp, self.cfg)
         size = opp.position_size_usd / price if price > 0 else 0
         if size <= 0:
             return None
 
+        mode_tag = "LIMIT" if not self.cfg.aggressive_fallback else "TAKER"
         log.info(
-            "Order: %s %s | size=%.2f tokens @ $%.2f | edge=%.1f%% | market=%s",
-            opp.direction.upper(),
-            opp.token_id[:16],
-            size,
-            price,
-            opp.edge * 100,
-            opp.market.condition_id[:12],
+            "Order [%s]: %s %s | size=%.2f tokens @ $%.2f (raw=$%.2f) | edge=%.1f%% | market=%s",
+            mode_tag, opp.direction.upper(), opp.token_id[:16],
+            size, price, raw_price, opp.edge * 100, opp.market.condition_id[:12],
         )
 
         if self.cfg.dry_run:
             order_id = f"hawk-dry-{opp.market.condition_id[:8]}-{int(time.time())}"
             log.info("[DRY RUN] Simulated order: %s", order_id)
-            self.tracker.record_trade(opp, order_id)
+            self.tracker.record_trade(opp, order_id,
+                                      order_placed_at=time.time(),
+                                      market_price_at_entry=raw_price)
             _bus_trade_placed(opp, order_id)
-            _notify_trade_placed(opp)
+            _notify_trade_placed(opp, self.cfg)
             return order_id
 
         if not self.client:
@@ -81,20 +90,21 @@ class HawkExecutor:
             resp = self.client.post_order(signed_order, OrderType.GTC)
             order_id = resp.get("orderID") or resp.get("id", "unknown")
             log.info("Order placed: %s", order_id)
-            self.tracker.record_trade(opp, order_id)
+            self.tracker.record_trade(opp, order_id,
+                                      order_placed_at=time.time(),
+                                      market_price_at_entry=raw_price)
             _bus_trade_placed(opp, order_id)
-            _notify_trade_placed(opp)
+            _notify_trade_placed(opp, self.cfg)
             return order_id
         except Exception:
             log.exception("Failed to place order")
             return None
 
     def check_fills(self) -> None:
-        """Poll order status — only remove unfilled/dead orders.
+        """Poll order status — cancel stale unfilled limit orders, remove dead orders.
 
-        On Polymarket CLOB, "matched" means filled and active (we own tokens).
-        These stay open until the MARKET resolves (handled by resolver.py).
-        Only remove canceled/expired orders that never filled.
+        V8: If a limit order has been "live" (unfilled) longer than fill_timeout_minutes,
+        cancel it and record a timeout metric. Matched/filled orders stay until resolution.
         """
         if self.cfg.dry_run:
             return
@@ -102,14 +112,35 @@ class HawkExecutor:
         if not self.client:
             return
 
+        now = time.time()
+        timeout_secs = self.cfg.fill_timeout_minutes * 60
+
         for pos in list(self.tracker.open_positions):
             try:
                 order = self.client.get_order(pos["order_id"])
                 status = order.get("status", "").lower()
                 log.info("Order %s status: %s", pos["order_id"], status)
+
                 if status in ("canceled", "expired"):
                     log.info("Removing dead order %s (status=%s)", pos["order_id"], status)
+                    _record_fill_metric(pos, "dead_" + status)
                     self.tracker.remove_position(pos["order_id"])
+                elif status == "live":
+                    # V8: Stale limit order cancellation
+                    placed_at = pos.get("order_placed_at", 0)
+                    if placed_at and (now - placed_at) >= timeout_secs:
+                        age_min = (now - placed_at) / 60
+                        log.info("[FILL] Cancelling stale order %s (age=%.0fm > %dm) | %s",
+                                 pos["order_id"], age_min, self.cfg.fill_timeout_minutes,
+                                 pos.get("question", "")[:60])
+                        try:
+                            self.client.cancel(pos["order_id"])
+                        except Exception:
+                            log.debug("Cancel failed for %s", pos["order_id"])
+                        _record_fill_metric(pos, "timeout_cancel")
+                        self.tracker.remove_position(pos["order_id"])
+                elif status == "matched":
+                    _record_fill_metric(pos, "filled")
             except Exception:
                 log.debug("Could not check order %s", pos.get("order_id", "?"))
 
@@ -137,44 +168,72 @@ _YES_OUTCOMES = {"yes", "up", "over"}
 _NO_OUTCOMES = {"no", "down", "under"}
 
 
-def _get_entry_price(opp: TradeOpportunity) -> float:
-    """Get the entry price for the trade direction.
-
-    Adds a 2-cent taker premium so the limit order crosses the spread
-    and fills immediately instead of sitting unfilled in the order book.
-    """
-    TAKER_PREMIUM = 0.02  # 2 cents above mid-price to ensure fill
-
-    raw_price = 0.5
+def _get_raw_price(opp: TradeOpportunity) -> float:
+    """Get the raw market mid-price for the trade direction (no premium/discount)."""
     target = _YES_OUTCOMES if opp.direction == "yes" else _NO_OUTCOMES
     for t in opp.market.tokens:
         tok_outcome = (t.get("outcome") or "").lower()
         if tok_outcome in target:
             try:
-                raw_price = float(t.get("price", 0.5))
-                break
+                return float(t.get("price", 0.5))
             except (ValueError, TypeError):
                 pass
+    tokens = opp.market.tokens
+    if len(tokens) == 2:
+        idx = 0 if opp.direction == "yes" else 1
+        try:
+            return float(tokens[idx].get("price", 0.5))
+        except (ValueError, TypeError):
+            pass
+    return 0.5
+
+
+def _get_entry_price(opp: TradeOpportunity, cfg: HawkConfig | None = None) -> float:
+    """Get the entry price for the trade direction.
+
+    V8: Two modes controlled by cfg.aggressive_fallback:
+      - Limit mode (default): raw_price - discount → rests in book for better fill
+      - Aggressive mode: raw_price + 0.02 taker premium → crosses spread immediately
+    """
+    raw_price = _get_raw_price(opp)
+
+    if cfg and not cfg.aggressive_fallback and cfg.limit_discount > 0:
+        # V8 Limit mode: subtract discount to rest in book
+        price = raw_price - cfg.limit_discount
     else:
-        # Fallback: first token for yes, second for no
-        tokens = opp.market.tokens
-        if len(tokens) == 2:
-            idx = 0 if opp.direction == "yes" else 1
-            try:
-                raw_price = float(tokens[idx].get("price", 0.5))
-            except (ValueError, TypeError):
-                pass
+        # Legacy aggressive mode: add taker premium to cross spread
+        price = raw_price + 0.02
 
-    # Add taker premium to cross the spread
-    aggressive_price = raw_price + TAKER_PREMIUM
-    return max(0.01, min(0.99, round(aggressive_price, 2)))
+    return max(0.01, min(0.99, round(price, 2)))
 
 
-def _notify_trade_placed(opp: TradeOpportunity) -> None:
+def _record_fill_metric(pos: dict, outcome: str) -> None:
+    """Record fill outcome to hawk_fill_metrics.jsonl for monitoring."""
+    try:
+        DATA_DIR.mkdir(exist_ok=True)
+        metric = {
+            "order_id": pos.get("order_id", ""),
+            "condition_id": pos.get("condition_id", ""),
+            "question": pos.get("question", "")[:100],
+            "outcome": outcome,
+            "entry_price": pos.get("entry_price", 0),
+            "market_price_at_entry": pos.get("market_price_at_entry", 0),
+            "order_placed_at": pos.get("order_placed_at", 0),
+            "recorded_at": time.time(),
+            "age_minutes": round((time.time() - pos.get("order_placed_at", time.time())) / 60, 1),
+        }
+        with open(FILL_METRICS_FILE, "a") as f:
+            f.write(json.dumps(metric) + "\n")
+    except Exception:
+        log.debug("[FILL] Failed to record fill metric")
+
+
+def _notify_trade_placed(opp: TradeOpportunity, cfg: HawkConfig | None = None) -> None:
     """Send Telegram notification when Hawk places a trade."""
-    price = _get_entry_price(opp)
+    price = _get_entry_price(opp, cfg)
+    mode = "LIMIT" if (cfg and not cfg.aggressive_fallback) else "TAKER"
     _notify_tg(
-        f"\U0001f985 <b>Hawk Trade Placed</b>\n"
+        f"\U0001f985 <b>Hawk Trade Placed [{mode}]</b>\n"
         f"{opp.market.question[:100]}\n"
         f"<b>{opp.direction.upper()}</b> ${opp.position_size_usd:.2f} @ ${price:.2f} | "
         f"Edge: {opp.edge*100:.1f}% | Risk: {opp.risk_score}/10"

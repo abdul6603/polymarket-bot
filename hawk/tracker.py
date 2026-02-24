@@ -80,8 +80,13 @@ class HawkTracker:
                     return True
         return False
 
-    def record_trade(self, opp: TradeOpportunity, order_id: str) -> None:
-        """Append trade to JSONL and track in memory."""
+    def record_trade(self, opp: TradeOpportunity, order_id: str,
+                     order_placed_at: float = 0.0,
+                     market_price_at_entry: float = 0.0) -> None:
+        """Append trade to JSONL and track in memory.
+
+        V8: Accepts order_placed_at and market_price_at_entry for fill tracking.
+        """
         if self.has_position_for_market(opp.market.condition_id, opp.market.question):
             log.warning("Duplicate trade blocked: already have position for %s", opp.market.condition_id[:12])
             return
@@ -111,6 +116,10 @@ class HawkTracker:
             # Market end date (ISO 8601)
             "end_date": opp.market.end_date,
             "event_slug": getattr(opp.market, 'event_slug', ''),
+            # V8: Fill tracking fields
+            "order_placed_at": order_placed_at or time.time(),
+            "market_price_at_entry": market_price_at_entry,
+            "game_id": self._compute_game_id(opp),
             # Timestamps
             "timestamp": time.time(),
             "opened_at": time.time(),
@@ -144,6 +153,15 @@ class HawkTracker:
     def get_decision_id(self, condition_id: str) -> str:
         """Get brain decision_id for a condition_id, or empty string."""
         return self._decision_ids.get(condition_id, "")
+
+    @staticmethod
+    def _compute_game_id(opp: TradeOpportunity) -> str:
+        """V8: Compute game_id for correlation tracking."""
+        try:
+            from hawk.risk import extract_game_id
+            return extract_game_id(opp.market.question, getattr(opp.market, 'event_slug', '')) or ""
+        except Exception:
+            return ""
 
     def remove_position(self, order_id: str) -> None:
         """Remove a position by order ID."""

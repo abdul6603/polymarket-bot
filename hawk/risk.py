@@ -1,4 +1,4 @@
-"""Risk Manager V2 for Hawk — compound bankroll, risk gate, losing streak detection."""
+"""Risk Manager V8 for Hawk — compound bankroll, risk gate, game-level correlation guard."""
 from __future__ import annotations
 
 import logging
@@ -14,15 +14,11 @@ log = logging.getLogger(__name__)
 
 # Fix 3: Extract underlying asset from market questions to detect correlated positions
 _ASSET_PATTERNS = [
-    # "price of Bitcoin" / "Will Bitcoin"
     re.compile(r"(?:price\s+of\s+|will\s+)(bitcoin|ethereum|solana|xrp|bnb|cardano|dogecoin|avalanche|polkadot|polygon|chainlink|litecoin)", re.IGNORECASE),
-    # Ticker symbols: "BTC", "ETH", "SOL"
     re.compile(r"\b(btc|eth|sol|xrp|bnb|ada|doge|avax|dot|matic|link|ltc)\b", re.IGNORECASE),
-    # Team names for sports
     re.compile(r"(?:will\s+the\s+|will\s+)([\w\s]+?)\s+(?:win|beat|defeat|cover|score)", re.IGNORECASE),
 ]
 
-# Normalize ticker aliases to canonical asset names
 _ASSET_ALIASES = {
     "btc": "bitcoin", "eth": "ethereum", "sol": "solana",
     "ada": "cardano", "doge": "dogecoin", "avax": "avalanche",
@@ -32,16 +28,49 @@ _ASSET_ALIASES = {
 
 
 def extract_underlying(question: str) -> str | None:
-    """Extract the underlying asset/entity from a market question.
-
-    Returns normalized lowercase string or None if no recognizable underlying.
-    """
+    """Extract the underlying asset/entity from a market question."""
     for pattern in _ASSET_PATTERNS:
         m = pattern.search(question)
         if m:
             raw = m.group(1).strip().lower()
             return _ASSET_ALIASES.get(raw, raw)
     return None
+
+
+# V8: Game-level correlation patterns — "Team A vs Team B", "Team A/Team B"
+_GAME_PATTERNS = [
+    re.compile(r"([\w\s]+?)\s+vs\.?\s+([\w\s]+?)(?:\s|$|\?|:)", re.IGNORECASE),
+    re.compile(r"([\w\s]+?)/([\w\s]+?)(?:\s|$|\?|:)", re.IGNORECASE),
+]
+
+
+def extract_game_id(question: str, event_slug: str = "") -> str | None:
+    """Extract a canonical game identifier to group correlated markets.
+
+    V8: Uses event_slug (best signal — Polymarket groups all game markets
+    under one slug) with regex team-pair fallback.
+
+    Returns canonical string like "grizzlies_vs_kings" or the event_slug,
+    or falls back to extract_underlying() for non-game markets.
+    """
+    # Best signal: Polymarket event_slug groups ML + spread + O/U together
+    if event_slug:
+        return event_slug
+
+    # Fallback: regex "Team A vs Team B" → canonical sorted pair
+    for pattern in _GAME_PATTERNS:
+        m = pattern.search(question)
+        if m:
+            team_a = m.group(1).strip().lower()
+            team_b = m.group(2).strip().lower()
+            # Skip very short matches (likely false positives like "o/u")
+            if len(team_a) < 3 or len(team_b) < 3:
+                continue
+            teams = sorted([team_a, team_b])
+            return f"{teams[0]}_vs_{teams[1]}"
+
+    # Final fallback: asset-level correlation (existing logic)
+    return extract_underlying(question)
 
 from zoneinfo import ZoneInfo
 ET = ZoneInfo("America/New_York")
@@ -136,30 +165,23 @@ class HawkRiskManager:
         if self.tracker.has_position_for_market(opp.market.condition_id, opp.market.question):
             return False, f"Already have position in market {opp.market.condition_id[:12]}"
 
-        # Fix 6: Per-event exposure cap — don't pile $60+ into one match across O/U lines
+        # V8: Unified game-level correlation guard
+        # Replaces separate event_slug cap + extract_underlying check
         event_slug = getattr(opp.market, 'event_slug', '') or ''
-        if event_slug:
-            event_exposure = sum(
-                p.get("size_usd", 0)
-                for p in self.tracker.open_positions
-                if p.get("event_slug", "") == event_slug
-            )
-            if event_exposure + opp.position_size_usd > self.cfg.max_per_event_usd:
+        new_game_id = extract_game_id(opp.market.question, event_slug)
+        if new_game_id:
+            game_exposure = 0.0
+            for pos in self.tracker.open_positions:
+                pos_slug = pos.get("event_slug", "")
+                pos_game_id = pos.get("game_id") or extract_game_id(pos.get("question", ""), pos_slug)
+                if pos_game_id and pos_game_id == new_game_id:
+                    game_exposure += pos.get("size_usd", 0)
+
+            if game_exposure + opp.position_size_usd > self.cfg.max_per_event_usd:
                 return False, (
-                    f"Per-event cap: already ${event_exposure:.2f} on '{event_slug}', "
+                    f"Game correlation cap: already ${game_exposure:.2f} on '{new_game_id}', "
                     f"adding ${opp.position_size_usd:.2f} would exceed ${self.cfg.max_per_event_usd:.2f} max"
                 )
-
-        # Fix 3: Position correlation — block trades on same underlying asset
-        new_underlying = extract_underlying(opp.market.question)
-        if new_underlying:
-            for pos in self.tracker.open_positions:
-                existing_underlying = extract_underlying(pos.get("question", ""))
-                if existing_underlying and existing_underlying == new_underlying:
-                    return False, (
-                        f"Correlated position blocked: already holding '{new_underlying}' "
-                        f"via {pos.get('condition_id', '???')[:12]}"
-                    )
 
         if opp.position_size_usd > self.cfg.max_bet_usd:
             return False, f"Position size ${opp.position_size_usd:.2f} exceeds max bet ${self.cfg.max_bet_usd:.2f}"

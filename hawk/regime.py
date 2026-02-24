@@ -39,6 +39,7 @@ def check_regime(
     market_prices: list[float] | None = None,
     prev_prices: list[float] | None = None,
     consecutive_losses: int = 0,
+    category: str = "",
 ) -> RegimeState:
     """Evaluate market regime from multiple signals.
 
@@ -94,6 +95,18 @@ def check_regime(
         multiplier *= 0.5
         log.info("[REGIME] Poor 6h win rate: %.0f%% — reducing size", recent_wr * 100)
 
+    # ── Check 5: V8 Category-specific regime ──
+    if category:
+        cat_mult, cat_reason = _category_regime(category)
+        if cat_mult < 1.0:
+            reasons.append(cat_reason)
+            multiplier *= cat_mult
+            if cat_mult == 0.0:
+                skip = True
+                log.warning("[REGIME] Category '%s' BLOCKED: %s", category, cat_reason)
+            else:
+                log.info("[REGIME] Category '%s' cold (%.0fx): %s", category, cat_mult, cat_reason)
+
     # Determine regime
     if skip or multiplier <= 0.0:
         regime = "paused"
@@ -146,3 +159,48 @@ def _recent_win_rate(hours: int = 6) -> float | None:
         return None  # Not enough data
 
     return wins / total
+
+
+def _category_regime(category: str, hours: int = 12) -> tuple[float, str]:
+    """V8: Per-category regime filter based on recent resolved trades.
+
+    Returns (multiplier, reason):
+      1.0 = normal, 0.5 = cold (reduce 50%), 0.0 = dead (block entirely)
+    """
+    if not TRADES_FILE.exists():
+        return 1.0, ""
+
+    cutoff = time.time() - hours * 3600
+    wins = 0
+    total = 0
+
+    try:
+        with open(TRADES_FILE) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                t = json.loads(line)
+                if not t.get("resolved"):
+                    continue
+                if t.get("category", "") != category:
+                    continue
+                resolve_time = t.get("resolve_time", 0)
+                if resolve_time < cutoff:
+                    continue
+                total += 1
+                if t.get("won"):
+                    wins += 1
+    except Exception:
+        return 1.0, ""
+
+    if total < 3:
+        return 1.0, ""  # Not enough data to judge
+
+    wr = wins / total
+    if wr < 0.20 and total >= 5:
+        return 0.0, f"category_{category}_dead_{wr:.0%}_wr_{total}trades"
+    if wr < 0.35:
+        return 0.5, f"category_{category}_cold_{wr:.0%}_wr_{total}trades"
+
+    return 1.0, ""

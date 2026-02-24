@@ -33,7 +33,7 @@ class HawkConfig:
     max_concurrent: int = int(_env("HAWK_MAX_CONCURRENT", "8"))
     daily_loss_cap: float = float(_env("HAWK_DAILY_LOSS_CAP", "30"))
     cycle_minutes: int = int(_env("HAWK_CYCLE_MINUTES", "30"))
-    min_edge: float = float(_env("HAWK_MIN_EDGE", "0.12"))
+    min_edge: float = float(_env("HAWK_MIN_EDGE", "0.15"))
     min_volume: int = int(_env("HAWK_MIN_VOLUME", "5000"))
     min_liquidity: int = int(_env("HAWK_MIN_LIQUIDITY", "1000"))
     max_days: int = int(_env("HAWK_MAX_DAYS", "7"))
@@ -60,9 +60,19 @@ class HawkConfig:
     # V6: Weather intelligence — Open-Meteo ensemble + NWS, $0 cost
     weather_min_volume: int = int(_env("HAWK_WEATHER_MIN_VOLUME", "1000"))  # Lower threshold for weather markets
 
+    # V8: Limit order mode — rest in book instead of crossing spread
+    limit_discount: float = float(_env("HAWK_LIMIT_DISCOUNT", "0.02"))
+    fill_timeout_minutes: int = int(_env("HAWK_FILL_TIMEOUT_MINUTES", "15"))
+    aggressive_fallback: bool = _env("HAWK_AGGRESSIVE_FALLBACK", "false").lower() in ("true", "1", "yes")
+
     # V6: Dynamic cycle timing
     cycle_minutes_fast: int = int(_env("HAWK_CYCLE_MINUTES_FAST", "5"))
     cycle_minutes_normal: int = int(_env("HAWK_CYCLE_MINUTES_NORMAL", "30"))
+
+    # V8: In-play live mispricing engine (stretch — disabled by default)
+    inplay_enabled: bool = _env("HAWK_INPLAY_ENABLED", "false").lower() in ("true", "1", "yes")
+    inplay_min_edge: float = float(_env("HAWK_INPLAY_MIN_EDGE", "0.10"))
+    inplay_max_bet: float = float(_env("HAWK_INPLAY_MAX_BET", "8"))
 
     # V6: Smart sizing multipliers
     sizing_domain_wr_boost: float = float(_env("HAWK_SIZING_DOMAIN_WR_BOOST", "1.3"))

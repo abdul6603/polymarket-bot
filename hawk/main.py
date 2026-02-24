@@ -1,4 +1,4 @@
-"""Hawk V7 Main Bot Loop — The Smart Degen."""
+"""Hawk V8 Main Bot Loop — The Smart Degen."""
 from __future__ import annotations
 
 import asyncio
@@ -389,7 +389,7 @@ class HawkBot:
             format="%(asctime)s %(levelname)-7s [HAWK] %(message)s",
             datefmt="%H:%M:%S",
         )
-        log.info("Hawk V7 starting — Data-First Intelligence + Regime Filters + Odds Movement")
+        log.info("Hawk V8 starting — Limit Orders + CLV Exit + Regime Filters + Correlation Guard")
         log.info("Config: bankroll=$%.0f, max_bet=$%.0f, kelly=%.0f%%, min_edge=%.0f%%",
                  self.cfg.bankroll_usd, self.cfg.max_bet_usd,
                  self.cfg.kelly_fraction * 100, self.cfg.min_edge * 100)
@@ -403,7 +403,7 @@ class HawkBot:
 
         while True:
             self.cycle += 1
-            log.info("=== Hawk V7 Cycle %d ===", self.cycle)
+            log.info("=== Hawk V8 Cycle %d ===", self.cycle)
 
             try:
                 self._check_mode_toggle()
@@ -474,7 +474,7 @@ class HawkBot:
                 weather_markets = [m for m in ranked_markets if m.category == "weather"]
                 non_sports_markets = [m for m in ranked_markets if m.category not in ("sports", "weather")]
                 target_markets = sports_markets + weather_markets + non_sports_markets[:30]
-                log.info("V7 Analyzing %d markets: %d sports + %d weather + %d/%d non-sports (all $0)",
+                log.info("V8 Analyzing %d markets: %d sports + %d weather + %d/%d non-sports (all $0)",
                          len(target_markets), len(sports_markets), len(weather_markets),
                          min(len(non_sports_markets), 30), len(non_sports_markets))
 
@@ -888,7 +888,25 @@ class HawkBot:
                     except Exception:
                         log.debug("[ODDS-MOVE] Check failed (non-fatal)")
 
-                    # V7 Phase 2: Apply regime multiplier to sizing
+                    # V8: Per-category regime check — block/reduce cold categories
+                    try:
+                        _cat_regime = check_regime(category=opp.market.category)
+                        _cat_mult = _cat_regime.size_multiplier
+                        if _cat_regime.should_skip_cycle:
+                            log.info("[REGIME-CAT] BLOCKED category '%s': %s | %s",
+                                     opp.market.category, ", ".join(_cat_regime.reasons),
+                                     opp.market.question[:60])
+                            continue
+                        if _cat_mult < 1.0:
+                            old_sz = opp.position_size_usd
+                            opp.position_size_usd = round(opp.position_size_usd * _cat_mult, 2)
+                            log.info("[REGIME-CAT] '%s' cold: $%.2f→$%.2f (%.2fx) | %s",
+                                     opp.market.category, old_sz, opp.position_size_usd,
+                                     _cat_mult, opp.market.question[:60])
+                    except Exception:
+                        log.debug("[REGIME-CAT] Check failed (non-fatal)")
+
+                    # V8 Phase 2: Apply global regime multiplier to sizing
                     if _regime_mult < 1.0:
                         old_sz = opp.position_size_usd
                         opp.position_size_usd = round(opp.position_size_usd * _regime_mult, 2)
@@ -956,7 +974,44 @@ class HawkBot:
                 if self.executor and not self.cfg.dry_run:
                     self.executor.check_fills()
 
-                # V7 Phase 2: Enhanced early exit — graduated levels + time-based urgency
+                # V8: In-play live mispricing scan (disabled by default)
+                if self.cfg.inplay_enabled:
+                    try:
+                        from hawk.inplay import scan_live_mispricing
+                        _inplay_signals = scan_live_mispricing(
+                            self.tracker.open_positions,
+                            target_markets,
+                            odds_api_key=self.cfg.odds_api_key,
+                        )
+                        for _sig in _inplay_signals:
+                            if _sig.edge >= self.cfg.inplay_min_edge:
+                                log.info("[INPLAY] Signal: %s %s | edge=%.1f%% | poly=$%.2f fair=$%.2f | %s | %s",
+                                         _sig.direction.upper(), _sig.question[:60],
+                                         _sig.edge * 100, _sig.polymarket_price,
+                                         _sig.implied_fair, _sig.live_score, _sig.reason)
+                            else:
+                                log.debug("[INPLAY] Sub-threshold: %s edge=%.1f%%",
+                                          _sig.question[:40], _sig.edge * 100)
+                    except Exception:
+                        log.debug("[INPLAY] Scan failed (non-fatal)")
+
+                # V8: CLV-based early exit check (runs before price-drop checks)
+                try:
+                    from hawk.clv import should_exit_on_clv
+                    for _pos in self.tracker.open_positions:
+                        _cid = _pos.get("condition_id") or _pos.get("market_id", "")
+                        _tid = _pos.get("token_id", "")
+                        if not _cid or not _tid or _pos.get("_early_exit"):
+                            continue
+                        _clv_exit, _clv_reason = should_exit_on_clv(_cid, _tid)
+                        if _clv_exit:
+                            log.warning("[CLV-EXIT] %s | %s", _clv_reason, _pos.get("question", "")[:60])
+                            _pos["_early_exit"] = True
+                            _pos["_exit_reason"] = _clv_reason
+                except Exception:
+                    log.debug("[CLV-EXIT] Check failed (non-fatal)")
+
+                # V8 Phase 2: Enhanced early exit — graduated levels + time-based urgency
                 try:
                     from hawk.vpin import compute_vpin
                     from bot.http_session import get_session
@@ -1179,14 +1234,14 @@ class HawkBot:
                              scan_stats=_scan_stats, regime=_regime_info)
 
             except Exception:
-                log.exception("Hawk V7 cycle %d failed", self.cycle)
+                log.exception("Hawk V8 cycle %d failed", self.cycle)
                 _save_status(self.tracker, self.risk, running=True, cycle=self.cycle)
 
             # V6: Dynamic cycle timing
             _cycle_markets = target_markets if 'target_markets' in locals() else []
             next_min = self._calculate_next_cycle(_cycle_markets)
             _save_next_cycle(next_min)
-            log.info("Hawk V7 cycle %d complete. Next cycle in %d minutes (%s mode)...",
+            log.info("Hawk V8 cycle %d complete. Next cycle in %d minutes (%s mode)...",
                      self.cycle, next_min, "fast" if next_min <= self.cfg.cycle_minutes_fast else "normal")
             await asyncio.sleep(next_min * 60)
 

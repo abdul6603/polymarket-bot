@@ -65,6 +65,9 @@ _ESPORTS_RE = re.compile(
 )
 
 # Category keywords
+# V8: Confirmed -EV categories — 0% WR "other", 20% WR "crypto_event"
+_EXCLUDED_CATEGORIES = {"other", "crypto_event"}
+
 _CATEGORY_KEYWORDS = {
     "politics": ["election", "president", "congress", "senate", "vote", "democrat", "republican",
                   "trump", "biden", "governor", "political", "party", "cabinet", "impeach",
@@ -203,9 +206,12 @@ def scan_all_markets(cfg: HawkConfig) -> list[HawkMarket]:
                         log.debug("Blocked esports market: %s", question[:80])
                         continue
 
-                    # V7: Categorize market — allow all categories with data sources
-                    # Sports: sportsbook data, Weather: NOAA ensemble, Non-sports: cross-platform (Kalshi, etc.)
                     _market_cat = _categorize_market(question)
+
+                    # V8: Exclude confirmed -EV categories (0% WR "other", 20% WR "crypto_event")
+                    if _market_cat in _EXCLUDED_CATEGORIES:
+                        log.debug("Blocked -EV category '%s': %s", _market_cat, question[:80])
+                        continue
 
                     # Skip closed/inactive
                     if m.get("closed") or not m.get("active", True):

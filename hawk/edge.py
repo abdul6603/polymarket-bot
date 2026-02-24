@@ -1,4 +1,4 @@
-"""Edge Calculator + Kelly Sizing + Risk Meter for Hawk V7."""
+"""Edge Calculator + Kelly Sizing + Risk Meter for Hawk V8."""
 from __future__ import annotations
 
 import logging
@@ -27,8 +27,8 @@ class TradeOpportunity:
 
 
 # Fix 2: R:R ratio filter — only bet when potential win > 1.2x potential loss
-MIN_RR_RATIO = 1.5
-MAX_TOKEN_PRICE = 0.40  # Never buy tokens above $0.40 (need 2.5:1 minimum)
+MIN_RR_RATIO = 1.0
+MAX_TOKEN_PRICE = 0.50  # Never buy tokens above $0.50 (Kelly sizing caps downside)
 
 # Fix 5: Confidence floor — reject GPT guesses (sportsbook-backed exempt)
 MIN_CONFIDENCE = 0.60
