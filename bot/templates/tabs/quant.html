@@ -341,6 +341,113 @@
     </div>
   </div>
 
+  <!-- Odin Strategy Backtest -->
+  <div class="collapse-section qt-panel open">
+    <div class="collapse-trigger">
+      <div class="qt-panel-hdr-row">
+        <span class="qt-panel-dot" style="background:#8B5CF6;"></span>
+        <h2 class="qt-panel-title">Odin Strategy Backtest</h2>
+        <span class="qt-panel-sub">SMC + Regime on Historical Candles</span>
+        <span class="qt-panel-badge" id="qt-odin-bt-badge"></span>
+      </div>
+    </div>
+    <div class="collapse-body">
+      <div class="qt-panel-body">
+        <!-- Overview stats -->
+        <div class="qt-phase-grid">
+          <div class="qt-stat-card" style="border-left-color:#8B5CF6;">
+            <div class="qt-stat-value" id="qt-odin-bt-trades">--</div>
+            <div class="qt-stat-label">Trades</div>
+          </div>
+          <div class="qt-stat-card" style="border-left-color:var(--success);">
+            <div class="qt-stat-value" id="qt-odin-bt-wr">--</div>
+            <div class="qt-stat-label">Win Rate</div>
+          </div>
+          <div class="qt-stat-card" style="border-left-color:var(--warning);">
+            <div class="qt-stat-value" id="qt-odin-bt-pnl">--</div>
+            <div class="qt-stat-label">Total PnL</div>
+          </div>
+          <div class="qt-stat-card" style="border-left-color:#00BFFF;">
+            <div class="qt-stat-value" id="qt-odin-bt-sharpe">--</div>
+            <div class="qt-stat-label">Sharpe</div>
+          </div>
+          <div class="qt-stat-card" style="border-left-color:var(--error);">
+            <div class="qt-stat-value" id="qt-odin-bt-dd">--</div>
+            <div class="qt-stat-label">Max DD</div>
+          </div>
+          <div class="qt-stat-card" style="border-left-color:#22cc55;">
+            <div class="qt-stat-value" id="qt-odin-bt-pf">--</div>
+            <div class="qt-stat-label">Profit Factor</div>
+          </div>
+        </div>
+        <!-- R-multiple + PnL detail -->
+        <div class="qt-phase-grid" style="margin-top:12px;">
+          <div class="qt-phase-card">
+            <div class="qt-phase-card-header">
+              <span class="qt-phase-card-title">R-Multiples</span>
+            </div>
+            <div class="qt-phase-card-grid">
+              <div class="qt-phase-lbl">Avg R:</div><div id="qt-odin-bt-avgr">--</div>
+              <div class="qt-phase-lbl">Avg Win R:</div><div id="qt-odin-bt-avgwinr">--</div>
+              <div class="qt-phase-lbl">Avg Loss R:</div><div id="qt-odin-bt-avglossr">--</div>
+              <div class="qt-phase-lbl">Max Win Streak:</div><div id="qt-odin-bt-maxw">--</div>
+              <div class="qt-phase-lbl">Max Loss Streak:</div><div id="qt-odin-bt-maxl">--</div>
+            </div>
+          </div>
+          <div class="qt-phase-card">
+            <div class="qt-phase-card-header">
+              <span class="qt-phase-card-title">PnL Detail</span>
+            </div>
+            <div class="qt-phase-card-grid">
+              <div class="qt-phase-lbl">Avg Win:</div><div id="qt-odin-bt-avgwin">--</div>
+              <div class="qt-phase-lbl">Avg Loss:</div><div id="qt-odin-bt-avgloss">--</div>
+              <div class="qt-phase-lbl">Largest Win:</div><div id="qt-odin-bt-bigwin">--</div>
+              <div class="qt-phase-lbl">Largest Loss:</div><div id="qt-odin-bt-bigloss">--</div>
+              <div class="qt-phase-lbl">Avg Hold:</div><div id="qt-odin-bt-hold">--</div>
+            </div>
+          </div>
+          <div class="qt-phase-card">
+            <div class="qt-phase-card-header">
+              <span class="qt-phase-card-title">Exit Analysis</span>
+            </div>
+            <div id="qt-odin-bt-exits" class="qt-phase-card-grid">
+              <div class="qt-placeholder">--</div>
+            </div>
+          </div>
+        </div>
+        <!-- Breakdown by direction/regime/symbol -->
+        <div class="qt-phase-grid" style="margin-top:12px;">
+          <div class="qt-phase-card">
+            <div class="qt-phase-card-header">
+              <span class="qt-phase-card-title">By Direction</span>
+            </div>
+            <div id="qt-odin-bt-dir" class="qt-phase-card-grid">
+              <div class="qt-placeholder">--</div>
+            </div>
+          </div>
+          <div class="qt-phase-card">
+            <div class="qt-phase-card-header">
+              <span class="qt-phase-card-title">By Regime</span>
+            </div>
+            <div id="qt-odin-bt-regime" class="qt-phase-card-grid">
+              <div class="qt-placeholder">--</div>
+            </div>
+          </div>
+          <div class="qt-phase-card">
+            <div class="qt-phase-card-header">
+              <span class="qt-phase-card-title">By Symbol</span>
+            </div>
+            <div id="qt-odin-bt-symbol" class="qt-phase-card-grid">
+              <div class="qt-placeholder">--</div>
+            </div>
+          </div>
+        </div>
+        <!-- Meta -->
+        <div class="qt-meta-line" id="qt-odin-bt-meta" style="margin-top:8px;"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- S7: Deep Dive Panels (closed by default) -->
 
   <!-- What to Change -->

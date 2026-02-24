@@ -30,6 +30,8 @@ from quant.self_learner import run_learning_cycle, load_odin_trades
 from quant.pnl_estimator import estimate_pnl_impact, write_pnl_impact
 from quant.scorer import score_result
 from quant.ml_predictor import retrain_model
+from quant.odin_backtester import run_multi_asset_backtest
+from quant.odin_scorer import score_odin_backtest, write_odin_backtest_report
 
 log = logging.getLogger(__name__)
 
@@ -278,7 +280,73 @@ class QuantBot:
                 wf_overfit_drop=wf_result.overfit_drop,
             )
 
-        # 14. ML Model retrain (XGBoost on resolved trades)
+        # 14. Odin Strategy Backtest (SMC + regime + conviction on historical candles)
+        if self.cfg.odin_backtest_enabled:
+            try:
+                candle_dir = DATA_DIR / "candles_4h"
+                if candle_dir.exists() and list(candle_dir.glob("*.jsonl")):
+                    log.info("Running Odin strategy backtest...")
+                    odin_bt_results = run_multi_asset_backtest(
+                        candle_dir=candle_dir,
+                        symbols=self.cfg.odin_backtest_symbols,
+                        risk_per_trade_usd=self.cfg.odin_backtest_risk_per_trade,
+                        min_trade_score=self.cfg.odin_backtest_min_score,
+                        min_confidence=self.cfg.odin_backtest_min_confidence,
+                        min_rr=self.cfg.odin_backtest_min_rr,
+                        balance=self.cfg.odin_backtest_balance,
+                        step_size=self.cfg.odin_backtest_step,
+                        window_size=self.cfg.odin_backtest_window,
+                    )
+                    if odin_bt_results:
+                        odin_score = score_odin_backtest(
+                            odin_bt_results,
+                            starting_balance=self.cfg.odin_backtest_balance,
+                        )
+                        write_odin_backtest_report(odin_score, DATA_DIR)
+                        log.info(
+                            "Odin backtest: %d trades, WR=%.1f%%, PnL=$%.2f, "
+                            "Sharpe=%.2f, maxDD=%.1f%%",
+                            odin_score.total_trades, odin_score.win_rate,
+                            odin_score.total_pnl, odin_score.sharpe_ratio,
+                            odin_score.max_drawdown_pct,
+                        )
+
+                        # Publish to event bus
+                        try:
+                            import sys as _sys
+                            _shared = str(Path.home() / "shared")
+                            if _shared not in _sys.path:
+                                _sys.path.insert(0, _shared)
+                            from events import publish
+                            publish(
+                                agent="quant",
+                                event_type="odin_backtest_complete",
+                                severity="info",
+                                summary=(
+                                    f"Odin BT: {odin_score.total_trades} trades, "
+                                    f"WR={odin_score.win_rate:.1f}%, "
+                                    f"PnL=${odin_score.total_pnl:.2f}, "
+                                    f"Sharpe={odin_score.sharpe_ratio:.2f}"
+                                ),
+                                data={
+                                    "trades": odin_score.total_trades,
+                                    "win_rate": odin_score.win_rate,
+                                    "total_pnl": odin_score.total_pnl,
+                                    "sharpe": odin_score.sharpe_ratio,
+                                    "max_dd": odin_score.max_drawdown_pct,
+                                },
+                            )
+                        except Exception:
+                            pass
+                    else:
+                        log.info("Odin backtest: no candle data matched symbols")
+                else:
+                    log.info("Odin backtest: no 4H candle data in %s (run: .venv/bin/python -m quant.bulk_download --all-assets --interval 4h --months 12)", candle_dir)
+            except Exception:
+                log.exception("Odin strategy backtest failed (non-fatal)")
+
+        # 15. ML Model retrain (XGBoost on resolved trades)
+        # (was step 14 before Odin backtest added)
         try:
             ml_metrics = retrain_model()
             if ml_metrics.get("status") == "trained":
@@ -814,6 +882,29 @@ def run_single_backtest(progress_callback=None) -> dict:
 
     publish_events(baseline, scored)
 
+    # Odin strategy backtest
+    odin_bt_summary = {}
+    try:
+        candle_dir = DATA_DIR / "candles_4h"
+        if candle_dir.exists() and list(candle_dir.glob("*.jsonl")):
+            odin_bt_results = run_multi_asset_backtest(
+                candle_dir=candle_dir,
+                symbols=["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT"],
+            )
+            if odin_bt_results:
+                odin_score = score_odin_backtest(odin_bt_results)
+                write_odin_backtest_report(odin_score, DATA_DIR)
+                odin_bt_summary = {
+                    "trades": odin_score.total_trades,
+                    "win_rate": odin_score.win_rate,
+                    "total_pnl": odin_score.total_pnl,
+                    "sharpe": odin_score.sharpe_ratio,
+                    "max_dd": odin_score.max_drawdown_pct,
+                    "profit_factor": odin_score.profit_factor,
+                }
+    except Exception:
+        log.exception("Odin backtest in single run failed (non-fatal)")
+
     # Live push with triple-gate validation (Phase 1)
     params_applied = False
     push_status = "no_improvement"
@@ -879,4 +970,5 @@ def run_single_backtest(progress_callback=None) -> dict:
         "pnl_impact": pnl_impact_data,
         "regime": regime_analysis.current_regime.combined if regime_analysis.current_regime else "unknown",
         "correlation_risk": corr_report.overall_risk,
+        "odin_backtest": odin_bt_summary,
     }

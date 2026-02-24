@@ -101,14 +101,17 @@ def download_asset(
     """Download historical candles for one asset.
 
     Returns total candle count written.
+    Non-5m intervals write to candles_{interval}/ (e.g. candles_4h/).
     """
     symbol = ASSET_SYMBOLS.get(asset)
     if not symbol:
         log.error("Unknown asset: %s", asset)
         return 0
 
-    CANDLE_DIR.mkdir(parents=True, exist_ok=True)
-    output_file = CANDLE_DIR / f"{asset}.jsonl"
+    # Use interval-specific directory for non-default intervals
+    out_dir = CANDLE_DIR if interval == "5m" else DATA_DIR / f"candles_{interval}"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    output_file = out_dir / f"{asset}.jsonl"
 
     # Backup existing file
     if output_file.exists():

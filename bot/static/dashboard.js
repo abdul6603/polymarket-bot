@@ -4508,6 +4508,7 @@ async function refresh() {
       refreshBinancePill();
       refreshSnipeV7();
       refreshSnipeAssist();
+      loadSignalCycle();
     } else if (currentTab === 'soren') {
       var resp = await fetch('/api/soren');
       renderSoren(await resp.json());
@@ -9489,6 +9490,72 @@ async function loadGarvesHealthWarnings() {
   } catch(e) {}
 }
 
+var _signalCycleInterval = null;
+var _signalCycleData = null;
+
+async function loadSignalCycle() {
+  try {
+    var resp = await fetch('/api/garves/signal-cycle');
+    _signalCycleData = await resp.json();
+    renderSignalCycle();
+    if (!_signalCycleInterval) {
+      _signalCycleInterval = setInterval(renderSignalCycle, 1000);
+    }
+  } catch(e) {}
+}
+
+function renderSignalCycle() {
+  var d = _signalCycleData;
+  if (!d || !d.last_eval_at) return;
+  var elapsed = (Date.now() / 1000) - d.last_eval_at;
+  var timerEl = document.getElementById('signal-cycle-timer');
+  var mktsEl = document.getElementById('signal-cycle-markets');
+  var dotEl = document.getElementById('signal-cycle-dot');
+  var pillEl = document.getElementById('signal-cycle-pill');
+  var detailEl = document.getElementById('signal-cycle-detail');
+  var agoText = elapsed < 60 ? Math.floor(elapsed) + 's' : Math.floor(elapsed/60) + 'm';
+  if (timerEl) timerEl.textContent = agoText;
+  if (mktsEl) mktsEl.textContent = d.markets_evaluated + ' mkts';
+  if (dotEl) {
+    if (elapsed < 90) {
+      dotEl.style.color = '#22c55e';
+    } else if (elapsed < 300) {
+      dotEl.style.color = '#f59e0b';
+    } else {
+      dotEl.style.color = '#ef4444';
+    }
+  }
+  if (pillEl) {
+    if (elapsed > 300) {
+      pillEl.style.borderColor = 'rgba(239,68,68,0.3)';
+      pillEl.style.background = 'rgba(239,68,68,0.08)';
+    } else {
+      pillEl.style.borderColor = 'rgba(139,92,246,0.25)';
+      pillEl.style.background = 'rgba(139,92,246,0.1)';
+    }
+  }
+  if (detailEl) {
+    detailEl.innerHTML = 'Last scan: ' + agoText + ' ago | ' + d.markets_evaluated + ' markets | Regime: ' + (d.regime || '--');
+    if (d.trades_this_tick > 0) {
+      detailEl.innerHTML += ' | <span style="color:#22c55e;">' + d.trades_this_tick + ' trade(s)</span>';
+    }
+  }
+}
+
+(function() {
+  var pill = document.getElementById('signal-cycle-pill');
+  if (pill) {
+    pill.addEventListener('mouseenter', function() {
+      var tt = document.getElementById('signal-cycle-tooltip');
+      if (tt) tt.style.display = 'block';
+    });
+    pill.addEventListener('mouseleave', function() {
+      var tt = document.getElementById('signal-cycle-tooltip');
+      if (tt) tt.style.display = 'none';
+    });
+  }
+})();
+
 async function loadHawkMode() {
   try {
     var resp = await fetch('/api/hawk/mode');
@@ -9812,6 +9879,7 @@ async function loadQuantTab() {
   loadQuantPhase2();
   loadQuantPNLImpact();
   loadQuantSmartActions();
+  loadQuantOdinBacktest();
 }
 
 async function loadQuantResults() {
@@ -10315,6 +10383,96 @@ async function loadQuantSmartActions() {
   } catch(e) {
     el.innerHTML = '<span class="text-muted">Failed to load</span>';
   }
+}
+
+async function loadQuantOdinBacktest() {
+  try {
+    var resp = await fetch('/api/quant/odin-backtest');
+    var d = await resp.json();
+    var ov = d.overview || {};
+    var pnl = d.pnl || {};
+    var rm = d.r_multiples || {};
+    var st = d.streaks || {};
+    var tm = d.timing || {};
+
+    if (!ov.total_trades) {
+      var badge = document.getElementById('qt-odin-bt-badge');
+      if (badge) badge.textContent = 'No Data';
+      return;
+    }
+
+    function s(id, val) { var e = document.getElementById(id); if (e) e.textContent = val; }
+    function pnlColor(v) { return v >= 0 ? 'var(--success)' : 'var(--error)'; }
+
+    s('qt-odin-bt-trades', ov.total_trades);
+    var wrEl = document.getElementById('qt-odin-bt-wr');
+    if (wrEl) { wrEl.textContent = ov.win_rate.toFixed(1) + '%'; wrEl.style.color = ov.win_rate >= 50 ? 'var(--success)' : 'var(--error)'; }
+    var pnlEl = document.getElementById('qt-odin-bt-pnl');
+    if (pnlEl) { pnlEl.textContent = '$' + ov.total_pnl.toFixed(2); pnlEl.style.color = pnlColor(ov.total_pnl); }
+    s('qt-odin-bt-sharpe', ov.sharpe_ratio.toFixed(2));
+    var ddEl = document.getElementById('qt-odin-bt-dd');
+    if (ddEl) { ddEl.textContent = ov.max_drawdown_pct.toFixed(1) + '%'; ddEl.style.color = ov.max_drawdown_pct > 15 ? 'var(--error)' : 'var(--warning)'; }
+    s('qt-odin-bt-pf', ov.profit_factor.toFixed(2));
+
+    s('qt-odin-bt-avgr', (rm.avg_r || 0).toFixed(2) + 'R');
+    s('qt-odin-bt-avgwinr', '+' + (rm.avg_win_r || 0).toFixed(2) + 'R');
+    s('qt-odin-bt-avglossr', (rm.avg_loss_r || 0).toFixed(2) + 'R');
+    s('qt-odin-bt-maxw', st.max_consecutive_wins || 0);
+    s('qt-odin-bt-maxl', st.max_consecutive_losses || 0);
+
+    s('qt-odin-bt-avgwin', '$' + (pnl.avg_win || 0).toFixed(2));
+    s('qt-odin-bt-avgloss', '$' + (pnl.avg_loss || 0).toFixed(2));
+    s('qt-odin-bt-bigwin', '$' + (pnl.largest_win || 0).toFixed(2));
+    s('qt-odin-bt-bigloss', '$' + (pnl.largest_loss || 0).toFixed(2));
+    s('qt-odin-bt-hold', (tm.avg_hold_hours || 0).toFixed(1) + 'h');
+
+    // Exit analysis
+    var exitEl = document.getElementById('qt-odin-bt-exits');
+    if (exitEl && d.exit_analysis) {
+      var eh = '';
+      Object.keys(d.exit_analysis).forEach(function(reason) {
+        var ex = d.exit_analysis[reason];
+        var wr = ex.count > 0 ? (ex.wins / ex.count * 100).toFixed(0) : '0';
+        eh += '<div class="qt-phase-lbl">' + reason + ':</div>';
+        eh += '<div>' + ex.count + ' (' + wr + '% W, $' + ex.pnl.toFixed(2) + ')</div>';
+      });
+      exitEl.innerHTML = eh || '<div class="qt-placeholder">--</div>';
+    }
+
+    // Breakdowns
+    function renderBreakdown(elId, data) {
+      var el = document.getElementById(elId);
+      if (!el || !data) return;
+      var h = '';
+      Object.keys(data).forEach(function(k) {
+        var b = data[k];
+        h += '<div class="qt-phase-lbl">' + k + ':</div>';
+        h += '<div>' + b.trades + 'T, ' + b.win_rate + '% WR, $' + b.pnl.toFixed(2) + '</div>';
+      });
+      el.innerHTML = h || '<div class="qt-placeholder">--</div>';
+    }
+    renderBreakdown('qt-odin-bt-dir', d.by_direction);
+    renderBreakdown('qt-odin-bt-regime', d.by_regime);
+    renderBreakdown('qt-odin-bt-symbol', d.by_symbol);
+
+    // Badge
+    var badge = document.getElementById('qt-odin-bt-badge');
+    if (badge) {
+      badge.textContent = ov.win_rate.toFixed(0) + '% WR | $' + ov.total_pnl.toFixed(0);
+      badge.style.color = ov.total_pnl >= 0 ? 'var(--success)' : 'var(--error)';
+    }
+
+    // Meta
+    var meta = d.meta || {};
+    var metaEl = document.getElementById('qt-odin-bt-meta');
+    if (metaEl) {
+      metaEl.textContent = 'Symbols: ' + (meta.symbols_tested || []).join(', ') +
+        ' | Candles: ' + (meta.total_candles || 0).toLocaleString() +
+        ' | Signals: ' + (meta.signals_generated || 0) +
+        ' (filtered: ' + (meta.signals_filtered || 0) + ')' +
+        ' | Time: ' + (meta.elapsed_seconds || 0).toFixed(1) + 's';
+    }
+  } catch(e) { console.error('odin backtest:', e); }
 }
 
 async function loadQuantPhase1() {

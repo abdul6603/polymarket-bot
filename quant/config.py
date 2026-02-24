@@ -42,3 +42,16 @@ class QuantConfig:
 
     # Odin integration
     odin_enabled: bool = True           # analyze Odin trades too
+
+    # ── Odin Strategy Backtest ──
+    odin_backtest_enabled: bool = True
+    odin_backtest_symbols: list[str] = field(default_factory=lambda: [
+        "BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT",
+    ])
+    odin_backtest_risk_per_trade: float = 15.0   # $ risk per simulated trade
+    odin_backtest_min_score: int = 40             # min conviction score
+    odin_backtest_min_confidence: float = 0.50
+    odin_backtest_min_rr: float = 1.5
+    odin_backtest_balance: float = 1000.0
+    odin_backtest_step: int = 6      # 4H bars between analysis (6 = 1 day)
+    odin_backtest_window: int = 200  # lookback bars for SMC

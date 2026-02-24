@@ -27,6 +27,7 @@ PHASE2_FILE = DATA_DIR / "quant_phase2.json"
 CORRELATION_FILE = DATA_DIR / "quant_correlation.json"
 LEARNING_FILE = DATA_DIR / "quant_learning.json"
 PNL_IMPACT_FILE = DATA_DIR / "quant_pnl_impact.json"
+ODIN_BT_FILE = DATA_DIR / "odin_backtest.json"
 
 _run_lock = threading.Lock()
 _run_running = False
@@ -292,6 +293,23 @@ def api_quant_trade_learning():
         "mini_opt": mini_opt,
         "mini_opt_active": bool(mini_opt),
     })
+
+
+@quant_bp.route("/api/quant/odin-backtest")
+def api_quant_odin_backtest():
+    """Odin strategy backtest results (SMC + regime + conviction on historical candles)."""
+    data = _load_json(ODIN_BT_FILE)
+    if not data:
+        return jsonify({
+            "overview": {
+                "total_trades": 0, "win_rate": 0, "total_pnl": 0,
+                "sharpe_ratio": 0, "max_drawdown_pct": 0, "profit_factor": 0,
+            },
+            "pnl": {}, "r_multiples": {}, "exit_analysis": {},
+            "by_regime": {}, "by_symbol": {}, "by_direction": {},
+            "equity_curve": [], "meta": {"symbols_tested": [], "elapsed_seconds": 0},
+        })
+    return jsonify(data)
 
 
 @quant_bp.route("/api/quant/run", methods=["POST"])
