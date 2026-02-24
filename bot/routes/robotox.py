@@ -1,7 +1,11 @@
 """Robotox (health monitor) routes: /api/sentinel/*, /api/robotox/*"""
 from __future__ import annotations
 
+import sys
 from pathlib import Path
+
+# Sentinel package lives at ~/sentinel — ensure it's importable
+sys.path.insert(0, str(Path.home()))
 
 from flask import Blueprint, jsonify
 
