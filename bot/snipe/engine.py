@@ -144,7 +144,7 @@ class SnipeEngine:
                 cfg, clob_client, dry_run=dry_run,
                 budget_per_window=ac["budget"],
             )
-            slot.scorer = SignalScorer(threshold=65)
+            slot.scorer = SignalScorer(threshold=70)
             self._slots[asset] = slot
 
         self._orderbook = OrderBookSignal()
@@ -152,11 +152,11 @@ class SnipeEngine:
 
         # Candle structure (shared, but feed_tick per-asset is safe)
         self._candle_store = CandleStore()
-        self._scorer = SignalScorer(threshold=65)  # Legacy compat
+        self._scorer = SignalScorer(threshold=70)  # Legacy compat
 
         # Dynamic snipe thresholds — lower during warmup, normal after
         self._threshold_warmup = 58   # first 60 min while CandleStore matures
-        self._threshold_normal = 65   # after warmup completes
+        self._threshold_normal = 70   # after warmup completes
 
         # Thread pool for parallel per-asset ticking
         self._tick_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="snipe-tick")
