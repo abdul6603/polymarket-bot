@@ -1068,12 +1068,19 @@ class TradingBot:
         try:
             import json as _json
             _cycle_file = Path(__file__).parent.parent / "data" / "signal_cycle_status.json"
+            _prev_count = 0
+            if _cycle_file.exists():
+                try:
+                    _prev_count = _json.loads(_cycle_file.read_text()).get("cycle_count", 0)
+                except Exception:
+                    pass
             _cycle_file.write_text(_json.dumps({
                 "last_eval_at": time.time(),
                 "tick_interval_s": self.cfg.tick_interval_s,
                 "markets_evaluated": len(ranked),
                 "trades_this_tick": trades_this_tick,
                 "regime": regime.label if regime else "unknown",
+                "cycle_count": _prev_count + 1,
             }))
         except Exception:
             pass
