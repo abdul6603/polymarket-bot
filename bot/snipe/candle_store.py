@@ -91,6 +91,37 @@ class CandleStore:
                 current.close = price
                 current.tick_count += 1
 
+    def seed_from_klines(self, asset: str, tf: str,
+                         klines: list[dict]) -> int:
+        """Pre-load closed candles from Binance klines REST data.
+
+        Args:
+            asset: e.g. "bitcoin"
+            tf: e.g. "5m", "15m", "1h"
+            klines: list of dicts with keys: timestamp, open, high, low, close
+
+        Returns:
+            Number of candles seeded.
+        """
+        if asset not in self._candles or tf not in PERIODS:
+            return 0
+        count = 0
+        for k in klines:
+            candle = Candle(
+                timestamp=float(k["timestamp"]),
+                open=float(k["open"]),
+                high=float(k["high"]),
+                low=float(k["low"]),
+                close=float(k["close"]),
+                tick_count=0,
+                closed=True,
+            )
+            self._candles[asset][tf].append(candle)
+            count += 1
+            if count >= 3:
+                self._detect_swings(asset, tf)
+        return count
+
     def _detect_swings(self, asset: str, tf: str) -> None:
         """Detect swing highs/lows from completed candles (3-bar pattern)."""
         candles = self._candles[asset][tf]
