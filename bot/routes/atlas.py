@@ -1438,6 +1438,18 @@ def _read_json(path: Path) -> dict | list | None:
     return None
 
 
+def _safe_ts(val, default: float = 0.0) -> float:
+    """Convert timestamp value (float, int, or ISO string) to epoch float."""
+    if isinstance(val, (int, float)):
+        return float(val)
+    if isinstance(val, str) and val:
+        try:
+            return datetime.fromisoformat(val.replace("Z", "+00:00")).timestamp()
+        except Exception:
+            pass
+    return default
+
+
 @atlas_bp.route("/api/atlas/priority-queue")
 def api_atlas_priority_queue():
     """Smart priority queue — ranked actions based on real system state.
@@ -1455,7 +1467,7 @@ def api_atlas_priority_queue():
         observations = kb_data.get("observations", [])
         learnings = kb_data.get("learnings", [])
         old_obs = [o for o in observations
-                   if (now - o.get("timestamp", now)) > 7 * 86400]
+                   if (now - _safe_ts(o.get("timestamp"), now)) > 7 * 86400]
         low_conf = [l for l in learnings if l.get("confidence", 1.0) < 0.4]
 
         if len(old_obs) > 10:
@@ -1501,7 +1513,7 @@ def api_atlas_priority_queue():
         feed_log = bg_data.get("agent_feed_log", {})
         for agent in _AGENTS_ALL:
             last_feed = feed_log.get(agent, {})
-            last_ts = last_feed.get("last_fed", 0) if isinstance(last_feed, dict) else 0
+            last_ts = _safe_ts(last_feed.get("last_fed", 0)) if isinstance(last_feed, dict) else 0.0
             hours_stale = (now - last_ts) / 3600 if last_ts > 0 else 999
 
             if hours_stale > 6:
@@ -1521,7 +1533,7 @@ def api_atlas_priority_queue():
     rl_file = ATLAS_ROOT / "data" / "research_log.json"
     rl_data = _read_json(rl_file)
     if rl_data and isinstance(rl_data, list):
-        recent = [r for r in rl_data if (now - r.get("timestamp", 0)) < 86400]
+        recent = [r for r in rl_data if (now - _safe_ts(r.get("timestamp"), 0)) < 86400]
         if len(recent) < 5:
             actions.append({
                 "id": "boost_research",
@@ -1624,7 +1636,7 @@ def api_atlas_dashboard_summary():
             confs = [l.get("confidence", 0.5) for l in learnings]
             avg_confidence = sum(confs) / len(confs)
         stale_count = sum(1 for o in observations
-                         if (now - o.get("timestamp", now)) > 7 * 86400)
+                         if (now - _safe_ts(o.get("timestamp"), now)) > 7 * 86400)
         # Health score: 0-100
         freshness = max(0, 100 - stale_count * 2)
         confidence_score = int(avg_confidence * 100)
@@ -1642,7 +1654,7 @@ def api_atlas_dashboard_summary():
         feed_log = bg_data.get("agent_feed_log", {})
         for agent in _AGENTS_ALL:
             last_feed = feed_log.get(agent, {})
-            last_ts = last_feed.get("last_fed", 0) if isinstance(last_feed, dict) else 0
+            last_ts = _safe_ts(last_feed.get("last_fed", 0)) if isinstance(last_feed, dict) else 0.0
             hours_ago = (now - last_ts) / 3600 if last_ts > 0 else 999
             status = "fresh" if hours_ago < 3 else "stale" if hours_ago < 12 else "starving"
             if status == "fresh":
@@ -1664,7 +1676,7 @@ def api_atlas_dashboard_summary():
 
     total_researches = len(rl_data) if isinstance(rl_data, list) else 0
     recent_24h = [r for r in (rl_data if isinstance(rl_data, list) else [])
-                  if (now - r.get("timestamp", 0)) < 86400]
+                  if (now - _safe_ts(r.get("timestamp"), 0)) < 86400]
     scored = [r for r in recent_24h if r.get("quality_score")]
     avg_quality = round(sum(r["quality_score"] for r in scored) / len(scored), 1) if scored else 0
     high_quality = sum(1 for r in scored if r["quality_score"] >= 7)
