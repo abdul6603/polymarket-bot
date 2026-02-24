@@ -6,11 +6,10 @@
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
     <span id="odin-mode-badge" class="trading-mode-badge trading-mode-paper">Trading: Paper Money</span>
     <button class="trading-mode-toggle" id="odin-mode-toggle" onclick="toggleOdinMode()">Switch</button>
-    <span id="odin-cycle-timer" style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:0.68rem;font-weight:600;padding:4px 12px;border-radius:999px;border:1px solid rgba(139,92,246,0.25);background:rgba(139,92,246,0.08);color:var(--agent-odin);">
-      <span style="width:6px;height:6px;border-radius:50%;background:var(--agent-odin);animation:rxPulse 2s ease-in-out infinite;"></span>
-      Next: <span id="odin-cycle-countdown">--</span>
+    <span id="odin-cycle-timer" style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:0.82rem;font-weight:700;padding:6px 16px;border-radius:999px;border:1px solid rgba(139,92,246,0.35);background:rgba(139,92,246,0.12);color:var(--agent-odin);transition:box-shadow .3s;">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--agent-odin);animation:rxPulse 2s ease-in-out infinite;"></span>
+      Next Cycle: <span id="odin-cycle-countdown" style="min-width:38px;text-align:center;">--</span>
     </span>
-    <span class="text-muted" style="font-size:0.76rem;">13-Skill All-Seeing Trader</span>
     <span class="text-muted" style="font-size:0.68rem;font-style:italic;margin-left:auto;">"I see everything. I forget nothing."</span>
   </div>
 
@@ -456,6 +455,13 @@ function odinRefresh() {
     if (lastTs > 0) {
       window._odinNextCycle = lastTs + cycleSec;
       odinTickCountdown();
+      // Flash the timer pill so it's easy to spot
+      var pill = document.getElementById('odin-cycle-timer');
+      if (pill) {
+        pill.scrollIntoView({behavior:'smooth', block:'nearest'});
+        pill.style.boxShadow = '0 0 16px rgba(139,92,246,0.6)';
+        setTimeout(function(){ pill.style.boxShadow = ''; }, 1500);
+      }
     }
 
     // Intel meter
@@ -589,17 +595,25 @@ function odinPnl(id, val) {
 
 function odinTickCountdown() {
   var el = document.getElementById('odin-cycle-countdown');
+  var pill = document.getElementById('odin-cycle-timer');
   if (!el || !window._odinNextCycle) return;
   var now = Date.now() / 1000;
   var diff = Math.max(0, Math.round(window._odinNextCycle - now));
   if (diff <= 0) {
     el.textContent = 'NOW';
     el.style.color = 'var(--success)';
+    if (pill) pill.style.boxShadow = '0 0 12px rgba(34,197,94,0.4)';
   } else {
     var m = Math.floor(diff / 60);
     var s = diff % 60;
     el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
-    el.style.color = diff < 30 ? 'var(--warning)' : '';
+    if (diff < 30) {
+      el.style.color = 'var(--warning)';
+      if (pill) pill.style.boxShadow = '0 0 10px rgba(243,156,18,0.3)';
+    } else {
+      el.style.color = '';
+      if (pill) pill.style.boxShadow = '';
+    }
   }
 }
 var _odinCountdownTick = setInterval(odinTickCountdown, 1000);
