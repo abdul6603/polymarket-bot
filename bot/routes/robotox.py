@@ -224,3 +224,33 @@ def api_robotox_agent_health():
         })
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500
+
+
+@robotox_bp.route("/api/robotox/scorecards")
+def api_robotox_scorecards():
+    """V2 Phase 3: Performance scorecards for all agents."""
+    try:
+        s = _get_sentinel()
+        return jsonify(s.get_scorecards())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@robotox_bp.route("/api/robotox/predictive")
+def api_robotox_predictive():
+    """V2 Phase 3: Predictive monitors — memory leaks, error acceleration."""
+    try:
+        s = _get_sentinel()
+        return jsonify(s.get_predictive())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@robotox_bp.route("/api/robotox/quiet-hours")
+def api_robotox_quiet_hours():
+    """V2 Phase 3: Quiet hours status and pending digest."""
+    try:
+        s = _get_sentinel()
+        return jsonify(s.get_quiet_hours_status())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500

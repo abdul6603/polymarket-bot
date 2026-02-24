@@ -131,6 +131,8 @@ def run_ensemble(
         if result:
             model_outputs["gemini"] = result
             log.info("Gemini returned %d predictions", len(result.get("predictions", {})))
+        else:
+            log.warning("Gemini returned no parseable predictions")
 
     if cfg.grok_api_key:
         result = _query_grok(cfg, system_prompt, user_prompt)
