@@ -168,6 +168,119 @@ class HawkExecutor:
                 log.exception("Failed to cancel order %s", pos.get("order_id", "?"))
 
 
+class KalshiExecutor:
+    """Order placement on Kalshi via authenticated API."""
+
+    def __init__(self, cfg: HawkConfig, kalshi_client, tracker: HawkTracker):
+        self.cfg = cfg
+        self.client = kalshi_client
+        self.tracker = tracker
+
+    def place_order(self, opp: TradeOpportunity) -> str | None:
+        """Place order on Kalshi.
+
+        Converts HawkMarket price (0.00-1.00) back to cents (0-100) for Kalshi API.
+        Uses ticker from condition_id (strip 'kalshi_' prefix).
+        """
+        # Extract Kalshi ticker from condition_id
+        cid = opp.market.condition_id
+        if not cid.startswith("kalshi_"):
+            log.error("[KALSHI] Not a Kalshi market: %s", cid)
+            return None
+
+        ticker = cid.replace("kalshi_", "", 1)
+        # Remove _yes/_no suffix if present in token_id
+        if ticker.endswith("_yes") or ticker.endswith("_no"):
+            ticker = ticker.rsplit("_", 1)[0]
+
+        side = opp.direction.lower()  # "yes" or "no"
+
+        # Price conversion: 0.00-1.00 → cents (1-99)
+        if side == "yes":
+            price_decimal = float(opp.market.tokens[0].get("price", 0.5))
+        else:
+            price_decimal = float(opp.market.tokens[1].get("price", 0.5))
+        price_cents = max(1, min(99, int(round(price_decimal * 100))))
+
+        # Calculate contract count: position_size_usd / (price_cents / 100)
+        price_dollars = price_cents / 100.0
+        count = max(1, int(opp.position_size_usd / price_dollars))
+
+        log.info("[KALSHI] Order: %s %s x%d @ %d¢ ($%.2f) | edge=%.1f%% | %s",
+                 side.upper(), ticker, count, price_cents, opp.position_size_usd,
+                 opp.edge * 100, opp.market.question[:60])
+
+        if self.cfg.dry_run:
+            order_id = f"kalshi-dry-{ticker[:12]}-{int(time.time())}"
+            log.info("[KALSHI DRY RUN] Simulated order: %s", order_id)
+            self.tracker.record_trade(opp, order_id,
+                                      order_placed_at=time.time(),
+                                      market_price_at_entry=price_decimal)
+            _bus_trade_placed(opp, order_id)
+            _notify_trade_placed(opp, self.cfg)
+            return order_id
+
+        if not self.client:
+            log.error("[KALSHI] No authenticated client available")
+            return None
+
+        try:
+            order_data = self.client.place_order(
+                ticker=ticker,
+                side=side,
+                action="buy",
+                count=count,
+                type="limit",
+                yes_price=price_cents if side == "yes" else None,
+                no_price=price_cents if side == "no" else None,
+            )
+            order_id = order_data.get("order_id", "unknown")
+            log.info("[KALSHI] Order placed: %s", order_id)
+            self.tracker.record_trade(opp, order_id,
+                                      order_placed_at=time.time(),
+                                      market_price_at_entry=price_decimal)
+            _bus_trade_placed(opp, order_id)
+            _notify_trade_placed(opp, self.cfg)
+            return order_id
+        except Exception:
+            log.exception("[KALSHI] Failed to place order on %s", ticker)
+            return None
+
+    def check_fills(self) -> None:
+        """Poll Kalshi order status, cancel stale orders."""
+        if self.cfg.dry_run or not self.client:
+            return
+
+        now = time.time()
+        timeout_secs = self.cfg.fill_timeout_minutes * 60
+
+        for pos in list(self.tracker.open_positions):
+            oid = pos.get("order_id", "")
+            if not oid.startswith("kalshi-"):
+                continue
+            # Strip dry run prefix for real order lookup
+            real_oid = oid
+            try:
+                order = self.client.get_order(real_oid)
+                status = order.get("status", "").lower()
+
+                if status in ("canceled", "expired"):
+                    log.info("[KALSHI] Removing dead order %s (status=%s)", oid, status)
+                    self.tracker.remove_position(oid)
+                elif status in ("pending", "resting"):
+                    placed_at = pos.get("order_placed_at", 0)
+                    if placed_at and (now - placed_at) >= timeout_secs:
+                        log.info("[KALSHI] Cancelling stale order %s (age > %dm)",
+                                 oid, self.cfg.fill_timeout_minutes)
+                        self.client.cancel_order(real_oid)
+                        cid = pos.get("condition_id", "")
+                        if cid:
+                            self.tracker.add_cooldown(cid)
+                        self.tracker.remove_position(oid)
+            except Exception:
+                log.debug("[KALSHI] Could not check order %s", oid)
+
+
 _YES_OUTCOMES = {"yes", "up", "over"}
 _NO_OUTCOMES = {"no", "down", "under"}
 

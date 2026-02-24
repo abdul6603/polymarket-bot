@@ -182,12 +182,34 @@ class OracleBot:
                 })
                 log.info("Published resolution to event bus")
 
-        # Step 2: Scan weekly markets
+        # Step 2: Scan weekly markets (Polymarket + Kalshi)
         log.info("Step 2: Scanning weekly markets...")
-        all_markets = scan_weekly_markets(self.cfg)
+        poly_markets = scan_weekly_markets(self.cfg)
+
+        # V9: Merge Kalshi crypto markets if enabled
+        kalshi_markets = []
+        cross_platform_pairs = None
+        if self.cfg.kalshi_enabled:
+            try:
+                from oracle.scanner import scan_kalshi_crypto_markets
+                kalshi_markets = scan_kalshi_crypto_markets(self.cfg)
+                log.info("Kalshi scan: %d crypto markets", len(kalshi_markets))
+            except Exception:
+                log.warning("[KALSHI] Crypto scan failed (non-fatal)")
+
+        all_markets = poly_markets + kalshi_markets
+
+        # Find cross-platform arbitrage pairs
+        if kalshi_markets:
+            try:
+                from oracle.edge_calculator import find_cross_platform_pairs
+                cross_platform_pairs = find_cross_platform_pairs(poly_markets, kalshi_markets)
+            except Exception:
+                log.debug("[CROSS-PLATFORM] Pair detection failed (non-fatal)")
+
         tradeable = filter_tradeable(all_markets)
-        log.info("Found %d total markets, %d tradeable (not >95%% or <5%%)",
-                 len(all_markets), len(tradeable))
+        log.info("Found %d total markets (%d Poly + %d Kalshi), %d tradeable",
+                 len(all_markets), len(poly_markets), len(kalshi_markets), len(tradeable))
 
         if not tradeable:
             log.warning("No tradeable markets found, skipping cycle")
@@ -210,9 +232,12 @@ class OracleBot:
             self._write_status({"last_run": week_start, "error": "no predictions"})
             return
 
-        # Step 5: Calculate edges
+        # Step 5: Calculate edges (with cross-platform boost if available)
         log.info("Step 5: Calculating edges...")
-        signals = calculate_edges(self.cfg, tradeable, ensemble.predictions)
+        signals = calculate_edges(
+            self.cfg, tradeable, ensemble.predictions,
+            cross_platform_pairs=cross_platform_pairs,
+        )
         selected = select_trades(self.cfg, signals)
 
         # Step 6: Execute trades

@@ -84,6 +84,11 @@ class HawkConfig:
     inplay_min_edge: float = float(_env("HAWK_INPLAY_MIN_EDGE", "0.10"))
     inplay_max_bet: float = float(_env("HAWK_INPLAY_MAX_BET", "8"))
 
+    # V9: Kalshi trading integration
+    kalshi_api_key: str = _env("KALSHI_API_KEY", "")
+    kalshi_private_key_path: str = _env("KALSHI_PRIVATE_KEY_PATH", "")
+    kalshi_trading_enabled: bool = _env("HAWK_KALSHI_TRADING", "false").lower() in ("true", "1", "yes")
+
     # V6: Smart sizing multipliers
     sizing_domain_wr_boost: float = float(_env("HAWK_SIZING_DOMAIN_WR_BOOST", "1.3"))
     sizing_domain_wr_penalty: float = float(_env("HAWK_SIZING_DOMAIN_WR_PENALTY", "0.5"))

@@ -253,6 +253,143 @@ def _fetch_event_markets(
         ))
 
 
+# ── Kalshi Crypto Market Scanner (V9) ──
+
+# Kalshi crypto event ticker prefixes
+_KALSHI_CRYPTO_PREFIXES = {"KXBTC", "KXETH", "KXSOL", "KXDOGE", "KXADA", "KXBNB", "KXLINK"}
+
+# Map Kalshi crypto asset names to Oracle asset names
+_KALSHI_ASSET_MAP = {
+    "KXBTC": "bitcoin",
+    "KXETH": "ethereum",
+    "KXSOL": "solana",
+    "KXDOGE": "dogecoin",
+    "KXADA": "cardano",
+    "KXBNB": "bnb",
+    "KXLINK": "chainlink",
+}
+
+
+def scan_kalshi_crypto_markets(cfg: OracleConfig) -> list[WeeklyMarket]:
+    """Scan Kalshi for crypto weekly markets alongside Polymarket.
+
+    Kalshi crypto patterns:
+    - "Will Bitcoin be above $X on [date]?"
+    - "BTC price range [date]"
+    - Event tickers like: KXBTC-*, KXETH-*
+
+    Uses unauthenticated read-only endpoint (same as hawk/kalshi.py).
+    """
+    if not cfg.kalshi_enabled:
+        return []
+
+    try:
+        from hawk.kalshi import _fetch_all_markets, _get_kalshi_price
+    except ImportError:
+        log.warning("[KALSHI] hawk.kalshi not available for Oracle scanning")
+        return []
+
+    all_markets = _fetch_all_markets()
+    if not all_markets:
+        return []
+
+    results: list[WeeklyMarket] = []
+    seen_tickers: set[str] = set()
+    now = datetime.now(timezone.utc)
+
+    for m in all_markets:
+        ticker = m.get("ticker", "")
+        status = m.get("status", "")
+
+        if status != "open":
+            continue
+        if ticker in seen_tickers:
+            continue
+
+        # Only crypto markets — check ticker prefix
+        ticker_prefix = ticker.split("-")[0] if "-" in ticker else ticker
+        if ticker_prefix not in _KALSHI_CRYPTO_PREFIXES:
+            continue
+
+        # Only assets Oracle tracks
+        asset = _KALSHI_ASSET_MAP.get(ticker_prefix)
+        if not asset or asset not in cfg.assets:
+            continue
+
+        seen_tickers.add(ticker)
+
+        title = m.get("title", "")
+        subtitle = m.get("subtitle", "")
+        question = f"{title} {subtitle}".strip() if subtitle else title
+
+        # Time filter: must resolve within 14 days
+        end_date_str = m.get("close_time") or m.get("expiration_time", "")
+        if not end_date_str:
+            continue
+        try:
+            end_dt = datetime.fromisoformat(end_date_str.replace("Z", "+00:00"))
+            if end_dt < now:
+                continue
+            if end_dt > now + timedelta(days=14):
+                continue
+        except (ValueError, TypeError):
+            continue
+
+        # Price normalization: cents → 0.00-1.00
+        yes_price = _get_kalshi_price(m)
+        if yes_price is None:
+            continue
+        no_price = round(1.0 - yes_price, 4)
+
+        # Determine market type from question text
+        q_lower = question.lower()
+        if "above" in q_lower or "below" in q_lower:
+            market_type = TYPE_ABOVE
+        elif "between" in q_lower or "range" in q_lower:
+            market_type = TYPE_RANGE
+        elif "hit" in q_lower or "reach" in q_lower:
+            market_type = TYPE_HIT
+        else:
+            market_type = TYPE_ABOVE  # default
+
+        # Parse thresholds
+        threshold = _parse_threshold(question)
+        range_low, range_high = None, None
+        if market_type == TYPE_RANGE:
+            range_low, range_high = _parse_range(question)
+
+        volume = float(m.get("volume", 0) or 0)
+
+        # Build synthetic tokens for execution routing
+        tokens = [
+            {"outcome": "Yes", "price": str(yes_price), "token_id": f"kalshi_{ticker}_yes"},
+            {"outcome": "No", "price": str(no_price), "token_id": f"kalshi_{ticker}_no"},
+        ]
+
+        results.append(WeeklyMarket(
+            condition_id=f"kalshi_{ticker}",
+            question=question,
+            asset=asset,
+            market_type=market_type,
+            event_slug=m.get("event_ticker", ""),
+            event_title=m.get("event_ticker", ""),
+            threshold=threshold,
+            range_low=range_low,
+            range_high=range_high,
+            yes_price=yes_price,
+            no_price=no_price,
+            volume=volume,
+            end_date=end_date_str,
+            active=True,
+            tokens=tokens,
+            raw=m,
+        ))
+
+    log.info("[KALSHI] Found %d crypto markets for Oracle (%d raw Kalshi markets)",
+             len(results), len(all_markets))
+    return results
+
+
 def filter_tradeable(markets: list[WeeklyMarket], min_edge: float = 0.08) -> list[WeeklyMarket]:
     """Filter out markets that are too obvious (>95% or <5%) to trade."""
     tradeable = []

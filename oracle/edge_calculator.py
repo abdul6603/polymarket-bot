@@ -26,12 +26,86 @@ class TradeSignal:
     expected_value: float       # size * edge
 
 
+def find_cross_platform_pairs(
+    poly_markets: list[WeeklyMarket],
+    kalshi_markets: list[WeeklyMarket],
+    min_divergence: float = 0.03,
+) -> dict[str, dict]:
+    """Find same markets on both Polymarket and Kalshi with price divergence.
+
+    Returns dict keyed by poly condition_id with kalshi counterpart info:
+    {
+        "poly_cid": {
+            "kalshi_cid": "kalshi_KXBTC-...",
+            "kalshi_price": 0.55,
+            "poly_price": 0.50,
+            "divergence": 0.05,
+            "cross_platform": True,
+        }
+    }
+    """
+    from difflib import SequenceMatcher
+    pairs: dict[str, dict] = {}
+
+    for poly in poly_markets:
+        if poly.condition_id.startswith("kalshi_"):
+            continue  # Skip Kalshi markets in poly list
+
+        best_match = None
+        best_score = 0.0
+
+        for kalshi in kalshi_markets:
+            # Must be same asset
+            if kalshi.asset != poly.asset:
+                continue
+
+            # Question similarity
+            score = SequenceMatcher(
+                None,
+                poly.question.lower().replace("?", "").strip(),
+                kalshi.question.lower().replace("?", "").strip(),
+            ).ratio()
+
+            # Boost for matching threshold prices
+            if poly.threshold and kalshi.threshold:
+                if abs(poly.threshold - kalshi.threshold) < 100:  # Within $100
+                    score += 0.2
+
+            if score > best_score:
+                best_score = score
+                best_match = kalshi
+
+        if best_match and best_score >= 0.4:
+            divergence = abs(best_match.yes_price - poly.yes_price)
+            if divergence >= min_divergence:
+                pairs[poly.condition_id] = {
+                    "kalshi_cid": best_match.condition_id,
+                    "kalshi_price": best_match.yes_price,
+                    "poly_price": poly.yes_price,
+                    "divergence": divergence,
+                    "match_score": best_score,
+                    "cross_platform": True,
+                }
+                log.info(
+                    "[CROSS-PLATFORM] %s ↔ %s | Poly=%.0f%% Kalshi=%.0f%% | Div=%.1f%% | Match=%.0f%%",
+                    poly.question[:40], best_match.question[:40],
+                    poly.yes_price * 100, best_match.yes_price * 100,
+                    divergence * 100, best_score * 100,
+                )
+
+    if pairs:
+        log.info("[CROSS-PLATFORM] Found %d cross-platform pairs with divergence >= %.0f%%",
+                 len(pairs), min_divergence * 100)
+    return pairs
+
+
 def calculate_edges(
     cfg: OracleConfig,
     markets: list[WeeklyMarket],
     predictions: dict[str, float],
     current_exposure: float = 0.0,
     weekly_pnl: float = 0.0,
+    cross_platform_pairs: dict[str, dict] | None = None,
 ) -> list[TradeSignal]:
     """Calculate edge for each market and generate trade signals."""
     signals: list[TradeSignal] = []
@@ -52,8 +126,22 @@ def calculate_edges(
             side = "NO"
             effective_edge = abs(edge)
 
+        # Cross-platform edge boost: two platforms disagree = stronger signal
+        xp_boost = False
+        if cross_platform_pairs and m.condition_id in cross_platform_pairs:
+            xp_info = cross_platform_pairs[m.condition_id]
+            xp_divergence = xp_info.get("divergence", 0)
+            if xp_divergence > 0.03:
+                xp_boost = True
+                log.info("[CROSS-PLATFORM] Edge boost for %s: divergence=%.1f%%",
+                         m.asset.upper(), xp_divergence * 100)
+
         conviction = cfg.conviction_label(effective_edge)
         size = cfg.conviction_size(effective_edge)
+
+        # Boost sizing by 20% when cross-platform divergence confirms our edge
+        if xp_boost and size > 0:
+            size = min(size * 1.2, cfg.risk_per_trade * 1.5)
 
         # Check exposure limit
         if current_exposure + size > cfg.max_exposure:

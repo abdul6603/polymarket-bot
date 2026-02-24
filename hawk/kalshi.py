@@ -277,6 +277,125 @@ def get_kalshi_divergence(
     return result
 
 
+# ── Kalshi-Native Market Scanning (V9) ──
+
+# Kalshi category → Hawk category mapping
+_KALSHI_CATEGORY_MAP = {
+    "Politics": "politics",
+    "Climate": "weather",
+    "Weather": "weather",
+    "Sports": "sports",
+    "Financial": "culture",
+    "Economics": "culture",
+    "Tech": "culture",
+    "Culture": "culture",
+    "Entertainment": "culture",
+    "Science": "culture",
+}
+
+# Crypto-related categories/tickers — Garves territory, Hawk must skip
+_CRYPTO_TICKERS = {"KXBTC", "KXETH", "KXSOL", "KXDOGE", "KXADA", "KXLINK"}
+_CRYPTO_KEYWORDS = {"bitcoin", "ethereum", "crypto", "btc", "eth", "solana", "blockchain"}
+
+
+def scan_kalshi_markets(cfg) -> list:
+    """Scan Kalshi markets directly — returns HawkMarket objects for Hawk's pipeline.
+
+    Filters: open, has volume, not crypto (Garves territory), not esports.
+    Converts Kalshi cents (0-100) to Polymarket-compatible prices (0.00-1.00).
+    Prefixes condition_id with 'kalshi_' for exchange routing.
+    """
+    from hawk.scanner import HawkMarket
+    from datetime import datetime, timezone, timedelta
+
+    markets = _fetch_all_markets()
+    if not markets:
+        return []
+
+    results: list[HawkMarket] = []
+    min_volume = getattr(cfg, 'min_volume', 5000)
+    max_days = getattr(cfg, 'max_days', 7)
+    min_hours = getattr(cfg, 'min_hours', 2.0)
+    now = datetime.now(timezone.utc)
+
+    for m in markets:
+        ticker = m.get("ticker", "")
+        title = m.get("title", "")
+        subtitle = m.get("subtitle", "")
+        question = f"{title} {subtitle}".strip() if subtitle else title
+        status = m.get("status", "")
+        volume = int(m.get("volume", 0) or 0)
+
+        # Skip inactive
+        if status != "open":
+            continue
+
+        # Skip low volume
+        if volume < min_volume:
+            continue
+
+        # Skip crypto — Garves territory
+        ticker_prefix = ticker.split("-")[0] if "-" in ticker else ticker
+        if ticker_prefix in _CRYPTO_TICKERS:
+            continue
+        if any(kw in question.lower() for kw in _CRYPTO_KEYWORDS):
+            continue
+
+        # Skip esports
+        from hawk.scanner import _ESPORTS_RE
+        if _ESPORTS_RE.search(question):
+            continue
+
+        # Time filter
+        end_date_str = m.get("close_time") or m.get("expiration_time", "")
+        if not end_date_str:
+            continue
+        try:
+            end_dt = datetime.fromisoformat(end_date_str.replace("Z", "+00:00"))
+            time_left_h = (end_dt - now).total_seconds() / 3600
+            if time_left_h < min_hours:
+                continue
+            if max_days > 0 and end_dt > now + timedelta(days=max_days):
+                continue
+        except (ValueError, TypeError):
+            continue
+
+        # Category mapping
+        kalshi_cat = m.get("category", "")
+        hawk_cat = _KALSHI_CATEGORY_MAP.get(kalshi_cat, "culture")
+
+        # Price normalization: Kalshi cents (0-100) → 0.00-1.00
+        yes_price = _get_kalshi_price(m)
+        if yes_price is None:
+            continue
+        no_price = round(1.0 - yes_price, 4)
+
+        # Build tokens list (synthetic — Kalshi uses ticker+side, not token_ids)
+        tokens = [
+            {"outcome": "Yes", "price": str(yes_price), "token_id": f"kalshi_{ticker}_yes"},
+            {"outcome": "No", "price": str(no_price), "token_id": f"kalshi_{ticker}_no"},
+        ]
+
+        results.append(HawkMarket(
+            condition_id=f"kalshi_{ticker}",
+            question=question,
+            category=hawk_cat,
+            volume=float(volume),
+            liquidity=float(m.get("open_interest", 0) or 0),
+            tokens=tokens,
+            end_date=end_date_str,
+            accepting_orders=True,
+            event_title=m.get("event_ticker", ""),
+            market_slug=ticker,
+            event_slug=m.get("event_ticker", ""),
+            time_left_hours=time_left_h,
+        ))
+
+    log.info("[KALSHI] Scanned %d Kalshi markets for Hawk (%d raw)",
+             len(results), len(markets))
+    return results
+
+
 def get_kalshi_price_for_market(question: str, category: str = "") -> tuple[float | None, float]:
     """Simplified interface — returns (kalshi_probability, match_confidence) or (None, 0).
 

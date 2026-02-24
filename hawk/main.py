@@ -12,7 +12,7 @@ from hawk.config import HawkConfig
 from hawk.scanner import scan_all_markets
 from hawk.analyst import batch_analyze
 from hawk.edge import calculate_edge, calculate_confidence_tier, rank_opportunities, urgency_label
-from hawk.executor import HawkExecutor
+from hawk.executor import HawkExecutor, KalshiExecutor
 from hawk.tracker import HawkTracker
 from hawk.risk import HawkRiskManager
 from hawk.resolver import resolve_paper_trades
@@ -279,6 +279,7 @@ class HawkBot:
         self.tracker = HawkTracker()
         self.risk = HawkRiskManager(self.cfg, self.tracker)
         self.executor: HawkExecutor | None = None
+        self.kalshi_executor: KalshiExecutor | None = None
         self.cycle = 0
 
         # Agent Brain — learning memory
@@ -321,6 +322,22 @@ class HawkBot:
             except Exception:
                 log.warning("Could not initialize CLOB client, running in dry-run mode")
         self.executor = HawkExecutor(self.cfg, client, self.tracker)
+
+        # Kalshi executor — only if trading enabled and credentials present
+        if self.cfg.kalshi_trading_enabled and self.cfg.kalshi_api_key and self.cfg.kalshi_private_key_path:
+            try:
+                from bot.kalshi_client import KalshiClient
+                kalshi_client = KalshiClient(
+                    api_key=self.cfg.kalshi_api_key,
+                    private_key_path=self.cfg.kalshi_private_key_path,
+                )
+                self.kalshi_executor = KalshiExecutor(self.cfg, kalshi_client, self.tracker)
+                log.info("[KALSHI] Executor initialized (trading enabled)")
+            except Exception:
+                log.warning("[KALSHI] Could not initialize Kalshi executor")
+                self.kalshi_executor = None
+        else:
+            self.kalshi_executor = None
 
     def _check_atlas_alignment(self, opp) -> tuple[float, str]:
         """V6: Atlas pre-bet gate. Returns (size_multiplier, reason).
@@ -455,9 +472,23 @@ class HawkBot:
                     _regime_mult = 1.0
                     log.debug("[REGIME] Check failed (non-fatal)")
 
-                # 1. Scan all markets
+                # 1. Scan all markets (Polymarket + Kalshi)
                 log.info("Scanning Polymarket markets...")
                 markets = scan_all_markets(self.cfg)
+                log.info("Found %d Polymarket markets", len(markets))
+
+                # V9: Merge Kalshi markets if trading enabled
+                kalshi_count = 0
+                if self.cfg.kalshi_trading_enabled:
+                    try:
+                        from hawk.kalshi import scan_kalshi_markets
+                        kalshi_markets = scan_kalshi_markets(self.cfg)
+                        kalshi_count = len(kalshi_markets)
+                        markets = markets + kalshi_markets
+                        log.info("Merged %d Kalshi markets (total: %d)", kalshi_count, len(markets))
+                    except Exception:
+                        log.warning("[KALSHI] Scan failed (non-fatal)")
+
                 log.info("Found %d eligible markets", len(markets))
 
                 if not markets:
@@ -496,6 +527,7 @@ class HawkBot:
                     "non_sports_analyzed": min(len(non_sports_markets), 30),
                     "total_analyzed": len(target_markets),
                     "non_sports_total": len(non_sports_markets),
+                    "kalshi_markets": kalshi_count,
                 }
 
                 # 4. Analyze with LLM (local Qwen2.5-14B for non-sports, sportsbook for sports)
@@ -962,8 +994,11 @@ class HawkBot:
                                  atlas_reason, opp.market.question[:60])
 
                     # Auto-execute immediately after risk approval
-                    if self.executor:
-                        order_id = self.executor.place_order(opp)
+                    # V9: Route to correct exchange based on condition_id prefix
+                    _is_kalshi = opp.market.condition_id.startswith("kalshi_")
+                    _active_executor = self.kalshi_executor if _is_kalshi else self.executor
+                    if _active_executor:
+                        order_id = _active_executor.place_order(opp)
                         if order_id:
                             placed_cids.add(cid)
                             trades_placed += 1
@@ -1009,6 +1044,8 @@ class HawkBot:
                 # Check fills (live mode only)
                 if self.executor and not self.cfg.dry_run:
                     self.executor.check_fills()
+                if self.kalshi_executor and not self.cfg.dry_run:
+                    self.kalshi_executor.check_fills()
 
                 # V8: In-play live mispricing scan (disabled by default)
                 if self.cfg.inplay_enabled:

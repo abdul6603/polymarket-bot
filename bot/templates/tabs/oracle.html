@@ -55,8 +55,8 @@
     </div>
     <div class="collapse-body">
       <table class="data-table">
-        <thead><tr><th>Question</th><th>Asset</th><th>Type</th><th>Market</th><th>Oracle</th><th>Edge</th><th>Side</th><th>Conv.</th><th>Size</th></tr></thead>
-        <tbody id="oracle-predictions-tbody"><tr><td colspan="9" class="text-muted" style="text-align:center;">No predictions yet — first cycle runs Sunday 00:00 UTC</td></tr></tbody>
+        <thead><tr><th>Exch</th><th>Question</th><th>Asset</th><th>Type</th><th>Market</th><th>Oracle</th><th>Edge</th><th>Side</th><th>Conv.</th><th>Size</th></tr></thead>
+        <tbody id="oracle-predictions-tbody"><tr><td colspan="10" class="text-muted" style="text-align:center;">No predictions yet — first cycle runs Sunday 00:00 UTC</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -68,8 +68,8 @@
     </div>
     <div class="collapse-body">
       <table class="data-table">
-        <thead><tr><th>Market</th><th>Asset</th><th>Side</th><th>Cost</th><th>Entry</th><th>Now</th><th>P&amp;L</th><th>Payout</th><th>Conv.</th><th>Week</th></tr></thead>
-        <tbody id="oracle-positions-tbody"><tr><td colspan="10" class="text-muted" style="text-align:center;">No open positions</td></tr></tbody>
+        <thead><tr><th>Exch</th><th>Market</th><th>Asset</th><th>Side</th><th>Cost</th><th>Entry</th><th>Now</th><th>P&amp;L</th><th>Payout</th><th>Conv.</th><th>Week</th></tr></thead>
+        <tbody id="oracle-positions-tbody"><tr><td colspan="11" class="text-muted" style="text-align:center;">No open positions</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -291,14 +291,19 @@ function oracleRefresh() {
     var tbody = document.getElementById('oracle-predictions-tbody');
     if (tbody) {
       if (preds.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="text-muted" style="text-align:center;">No predictions yet</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="text-muted" style="text-align:center;">No predictions yet</td></tr>';
       } else {
         var html = '';
         preds.forEach(function(p) {
           var edgeColor = p.edge > 0 ? 'var(--success)' : p.edge < 0 ? 'var(--error)' : 'var(--text-muted)';
           var sideColor = p.side === 'YES' ? 'var(--success)' : 'var(--error)';
           var convColors = {HIGH: 'var(--success)', MEDIUM: 'var(--warning)', LOW: 'var(--text-secondary)', SKIP: 'var(--text-muted)'};
+          var isKalshi = (p.condition_id || '').indexOf('kalshi_') === 0;
+          var exchBadge = isKalshi
+            ? '<span style="padding:2px 6px;border-radius:3px;font-size:0.58rem;font-weight:700;background:rgba(138,43,226,0.15);color:#b388ff;">K</span>'
+            : '<span style="padding:2px 6px;border-radius:3px;font-size:0.58rem;font-weight:700;background:rgba(0,200,100,0.15);color:#00c864;">P</span>';
           html += '<tr>';
+          html += '<td style="text-align:center;">' + exchBadge + '</td>';
           html += '<td style="font-size:0.68rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (p.question || '') + '</td>';
           html += '<td style="font-weight:600;">' + (p.asset || '').toUpperCase() + '</td>';
           html += '<td style="font-size:0.68rem;">' + (p.type || '') + '</td>';
@@ -407,7 +412,7 @@ function oracleRefresh() {
     if (!tbody) return;
 
     if (!positions.length) {
-      tbody.innerHTML = '<tr><td colspan="10" class="text-muted" style="text-align:center;">No open positions</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="11" class="text-muted" style="text-align:center;">No open positions</td></tr>';
       return;
     }
 
@@ -418,7 +423,12 @@ function oracleRefresh() {
       var pnlColor = p.pnl >= 0 ? 'var(--success)' : 'var(--error)';
       var pnlPrefix = p.pnl >= 0 ? '+$' : '-$';
       var convColors = {HIGH:'var(--success)', MEDIUM:'var(--warning)', LOW:'var(--text-secondary)', SKIP:'var(--text-muted)'};
+      var isKalshi = (p.condition_id || '').indexOf('kalshi_') === 0;
+      var exchBadge = isKalshi
+        ? '<span style="padding:2px 6px;border-radius:3px;font-size:0.58rem;font-weight:700;background:rgba(138,43,226,0.15);color:#b388ff;">K</span>'
+        : '<span style="padding:2px 6px;border-radius:3px;font-size:0.58rem;font-weight:700;background:rgba(0,200,100,0.15);color:#00c864;">P</span>';
       html += '<tr>';
+      html += '<td style="text-align:center;">' + exchBadge + '</td>';
       html += '<td style="font-size:0.68rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (p.question || '') + '</td>';
       html += '<td style="font-weight:600;">' + (p.asset || '') + '</td>';
       html += '<td><span style="padding:2px 8px;border-radius:3px;font-weight:700;font-size:0.68rem;background:' + sideBg + ';color:' + sideColor + ';">' + p.side + '</span></td>';

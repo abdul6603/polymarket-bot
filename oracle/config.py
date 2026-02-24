@@ -61,6 +61,11 @@ class OracleConfig:
     clob_host: str = _env("CLOB_HOST", "https://clob.polymarket.com")
     gamma_host: str = "https://gamma-api.polymarket.com"
 
+    # --- Kalshi ---
+    kalshi_enabled: bool = _env("ORACLE_KALSHI_ENABLED", "false").lower() == "true"
+    kalshi_api_key: str = _env("KALSHI_API_KEY", "")
+    kalshi_private_key_path: str = _env("KALSHI_PRIVATE_KEY_PATH", "")
+
     # --- Paths ---
     data_dir: Path = field(default_factory=lambda: _ROOT / "data")
     status_file: str = "oracle_status.json"
