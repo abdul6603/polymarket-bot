@@ -78,8 +78,10 @@
        onmouseenter="document.getElementById('signal-cycle-tooltip').style.display='block'"
        onmouseleave="document.getElementById('signal-cycle-tooltip').style.display='none'">
       <span style="width:8px;height:8px;border-radius:50%;background:#8b5cf6;animation:rxPulse 2s ease-in-out infinite;"></span>
-      Next Cycle: <span id="signal-cycle-countdown" style="min-width:38px;text-align:center;">--</span>
-      <span style="color:rgba(255,255,255,0.25);">|</span>
+      Next: <span id="signal-cycle-countdown" style="min-width:38px;text-align:center;">--</span>
+      <span style="color:rgba(255,255,255,0.2);">|</span>
+      <span style="font-size:0.7rem;color:var(--text-muted);">#<span id="signal-cycle-num">0</span></span>
+      <span style="color:rgba(255,255,255,0.2);">|</span>
       <span id="signal-cycle-markets" style="font-size:0.7rem;color:var(--text-muted);">-- mkts</span>
       <div id="signal-cycle-tooltip" style="
         display:none;position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);

@@ -8,36 +8,16 @@
     <button class="trading-mode-toggle" id="odin-mode-toggle" onclick="toggleOdinMode()">Switch</button>
     <span id="odin-cycle-timer" style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:0.82rem;font-weight:700;padding:6px 16px;border-radius:999px;border:1px solid rgba(139,92,246,0.35);background:rgba(139,92,246,0.12);color:var(--agent-odin);transition:box-shadow .3s;">
       <span style="width:8px;height:8px;border-radius:50%;background:var(--agent-odin);animation:rxPulse 2s ease-in-out infinite;"></span>
-      Next Cycle: <span id="odin-cycle-countdown" style="min-width:38px;text-align:center;">--</span>
+      Next: <span id="odin-cycle-countdown" style="min-width:38px;text-align:center;">--</span>
+      <span style="color:rgba(255,255,255,0.2);">|</span>
+      <span style="font-size:0.7rem;color:var(--text-muted);">#<span id="odin-cycle-num">0</span></span>
     </span>
-    <!-- Signal Cycle Badge -->
-    <div id="odin-signal-cycle-pill" style="
-      display:inline-flex;align-items:center;gap:5px;
-      padding:4px 12px;border-radius:20px;
-      font-size:0.72rem;font-weight:600;font-family:var(--font-mono);
-      background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.25);
-      cursor:default;position:relative;
-    " onmouseenter="document.getElementById('odin-sc-tooltip').style.display='block'"
-       onmouseleave="document.getElementById('odin-sc-tooltip').style.display='none'">
-      <span id="odin-sc-dot" style="font-size:0.5rem;color:var(--agent-odin);">&#x25CF;</span>
-      <span id="odin-sc-timer" style="color:var(--agent-odin);">--</span>
-      <span style="color:rgba(255,255,255,0.35);">|</span>
-      <span id="odin-sc-syms" style="color:var(--text-muted);">-- syms</span>
-      <div id="odin-sc-tooltip" style="
-        display:none;position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);
-        z-index:100;background:var(--bg-secondary);border:1px solid rgba(139,92,246,0.3);
-        border-radius:8px;padding:10px 14px;min-width:220px;
-        box-shadow:0 8px 32px rgba(0,0,0,0.4);font-size:0.68rem;text-align:left;
-        font-weight:400;white-space:normal;
-      ">
-        <div style="font-weight:700;margin-bottom:6px;color:var(--agent-odin);">Trade Cycle</div>
-        <div style="color:var(--text-muted);line-height:1.5;">
-          13 skills: SMC structure, macro regime, CoinGlass OI/funding, liquidations, volume profile, multi-timeframe analysis &amp; conviction scoring.
-        </div>
-        <div id="odin-sc-detail" style="margin-top:6px;color:var(--text-muted);"></div>
-      </div>
-    </div>
     <span class="text-muted" style="font-size:0.68rem;font-style:italic;margin-left:auto;">"I see everything. I forget nothing."</span>
+    <!-- Hidden compat -->
+    <span id="odin-sc-dot" style="display:none;"></span>
+    <span id="odin-sc-timer" style="display:none;"></span>
+    <span id="odin-sc-syms" style="display:none;"></span>
+    <span id="odin-sc-detail" style="display:none;"></span>
   </div>
 
   <!-- B: Action Bar -->
@@ -319,6 +299,7 @@ function odinRefresh() {
     odinSetVal('odin-drawdown', (d.drawdown_pct || 0).toFixed(1) + '%');
     odinSetVal('odin-consec-losses', d.consecutive_losses || 0);
     odinSetVal('odin-cycle-count', d.cycle_count || 0);
+    odinSetVal('odin-cycle-num', d.cycle_count || 0);
 
     // Circuit breaker
     var cbEl = document.getElementById('odin-cb-status');

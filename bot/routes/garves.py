@@ -161,11 +161,12 @@ def api_garves_signal_cycle():
         try:
             data = json.loads(status_file.read_text())
             data["age_s"] = round(time.time() - data.get("last_eval_at", 0), 1)
+            data.setdefault("cycle_count", 0)
             return jsonify(data)
         except Exception:
             pass
     return jsonify({"last_eval_at": 0, "tick_interval_s": 5, "markets_evaluated": 0,
-                    "trades_this_tick": 0, "age_s": 999})
+                    "trades_this_tick": 0, "age_s": 999, "cycle_count": 0})
 
 
 @garves_bp.route("/api/garves/mode")

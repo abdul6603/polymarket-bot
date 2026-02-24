@@ -4597,6 +4597,7 @@ async function refresh() {
       _overviewCache = data;
       renderAgentGrid(data);
       loadInfrastructure();
+      loadOverviewVitals();
       if (_intelData) renderTeamIntelligence(_intelData);
       loadBrainNotes('claude');
       loadCommandTable('claude');
@@ -7239,48 +7240,69 @@ async function loadAgentActivity(tabName) {
 }
 
 // ═══════════════════════════════════════════════════════
+// OVERVIEW — Resource vitals + errors strip
+// ═══════════════════════════════════════════════════════
+async function loadOverviewVitals() {
+  try {
+    var resp = await fetch('/api/system/metrics');
+    var d = await resp.json();
+    var cpu = (d.cpu || {}).percent || 0;
+    var mem = (d.memory || {}).percent || 0;
+    var disk = (d.disk || {}).percent || 0;
+    function vColor(v) { return v > 85 ? 'var(--error)' : v > 60 ? 'var(--warning)' : 'var(--success)'; }
+    var cpuVal = document.getElementById('ov-cpu-val');
+    var cpuFill = document.getElementById('ov-cpu-fill');
+    if (cpuVal) cpuVal.textContent = cpu + '%';
+    if (cpuVal) cpuVal.style.color = vColor(cpu);
+    if (cpuFill) { cpuFill.style.width = cpu + '%'; cpuFill.style.background = vColor(cpu); }
+    var memVal = document.getElementById('ov-mem-val');
+    var memFill = document.getElementById('ov-mem-fill');
+    if (memVal) memVal.textContent = mem + '%';
+    if (memVal) memVal.style.color = vColor(mem);
+    if (memFill) { memFill.style.width = mem + '%'; memFill.style.background = vColor(mem); }
+    var diskVal = document.getElementById('ov-disk-val');
+    var diskFill = document.getElementById('ov-disk-fill');
+    if (diskVal) diskVal.textContent = disk + '%';
+    if (diskVal) diskVal.style.color = vColor(disk);
+    if (diskFill) { diskFill.style.width = disk + '%'; diskFill.style.background = vColor(disk); }
+    // Recent errors
+    var errs = d.errors || [];
+    var countEl = document.getElementById('ov-error-count');
+    if (countEl) {
+      countEl.textContent = errs.length;
+      countEl.style.background = errs.length > 0 ? 'var(--error)' : 'var(--success)';
+    }
+    var errEl = document.getElementById('ov-errors');
+    if (errEl) {
+      if (!errs.length) {
+        errEl.innerHTML = '<span style="color:var(--success);">No recent errors detected.</span>';
+      } else {
+        var eHtml = '';
+        for (var i = 0; i < errs.length; i++) {
+          var err = errs[i];
+          eHtml += '<div style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);">';
+          eHtml += '<div style="display:flex;justify-content:space-between;">';
+          eHtml += '<span style="color:var(--error);font-size:0.72rem;">' + esc(err.pattern || err.type || 'error') + '</span>';
+          eHtml += '<span class="text-muted" style="font-size:0.64rem;">' + esc(err.agent || '') + ' | ' + eventTimeAgo(err.timestamp || err.ts) + '</span>';
+          eHtml += '</div>';
+          eHtml += '<div class="text-muted" style="font-size:0.68rem;margin-top:1px;">' + esc((err.message || err.line || '').substring(0, 120)) + '</div>';
+          eHtml += '</div>';
+        }
+        errEl.innerHTML = eHtml;
+      }
+    }
+  } catch(e) {
+    console.warn('Overview vitals load error:', e);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
 // SYSTEM TAB — Real-time infrastructure monitoring
 // ═══════════════════════════════════════════════════════
 async function loadSystemTab() {
   try {
     var resp = await fetch('/api/system/metrics');
     var d = await resp.json();
-
-    // CPU stat card
-    var cpuEl = document.getElementById('sys-cpu');
-    if (cpuEl) {
-      var cpuPct = (d.cpu || {}).percent || 0;
-      var cpuColor = cpuPct > 80 ? 'var(--error)' : cpuPct > 50 ? 'var(--warning)' : 'var(--success)';
-      cpuEl.innerHTML = '<span style="color:' + cpuColor + ';">' + cpuPct + '%</span>';
-    }
-
-    // Memory stat card
-    var memEl = document.getElementById('sys-memory');
-    if (memEl) {
-      var mem = d.memory || {};
-      var memColor = mem.percent > 85 ? 'var(--error)' : mem.percent > 70 ? 'var(--warning)' : 'var(--success)';
-      memEl.innerHTML = '<span style="color:' + memColor + ';">' + mem.percent + '%</span>';
-    }
-
-    // Disk stat card
-    var diskEl = document.getElementById('sys-disk');
-    if (diskEl) {
-      var disk = d.disk || {};
-      var diskColor = disk.percent > 90 ? 'var(--error)' : disk.percent > 75 ? 'var(--warning)' : 'var(--success)';
-      diskEl.innerHTML = '<span style="color:' + diskColor + ';">' + disk.percent + '%</span>';
-    }
-
-    // Uptime stat card
-    var upEl = document.getElementById('sys-uptime');
-    if (upEl) upEl.textContent = (d.uptime || {}).text || '--';
-
-    // Processes stat card
-    var procEl = document.getElementById('sys-processes');
-    if (procEl) procEl.textContent = (d.processes || []).length;
-
-    // Ports stat card
-    var portEl = document.getElementById('sys-ports');
-    if (portEl) portEl.textContent = (d.ports || []).length;
 
     // Process table
     var ptbody = document.getElementById('sys-process-tbody');
@@ -7829,6 +7851,8 @@ async function loadHawkNextCycle() {
     var resp = await fetch('/api/hawk/next-cycle');
     var d = await resp.json();
     var nextAt = d.next_at || 0;
+    var numEl = document.getElementById('hawk-cycle-num');
+    if (numEl) numEl.textContent = d.cycle_count || 0;
     if (_hawkCycleInterval) clearInterval(_hawkCycleInterval);
     _hawkCycleInterval = setInterval(function() {
       var el = document.getElementById('hawk-cycle-countdown');
@@ -9647,6 +9671,8 @@ async function loadSignalCycle() {
   try {
     var resp = await fetch('/api/garves/signal-cycle');
     _signalCycleData = await resp.json();
+    var numEl = document.getElementById('signal-cycle-num');
+    if (numEl) numEl.textContent = _signalCycleData.cycle_count || 0;
     renderSignalCycle();
     if (!_signalCycleInterval) {
       _signalCycleInterval = setInterval(renderSignalCycle, 1000);

@@ -10,8 +10,10 @@
        onmouseenter="document.getElementById('hawk-sc-tooltip').style.display='block'"
        onmouseleave="document.getElementById('hawk-sc-tooltip').style.display='none'">
       <span style="width:8px;height:8px;border-radius:50%;background:var(--agent-hawk);animation:rxPulse 2s ease-in-out infinite;"></span>
-      Next Cycle: <span id="hawk-cycle-countdown" style="min-width:38px;text-align:center;">--</span>
-      <span style="color:rgba(255,255,255,0.25);">|</span>
+      Next: <span id="hawk-cycle-countdown" style="min-width:38px;text-align:center;">--</span>
+      <span style="color:rgba(255,255,255,0.2);">|</span>
+      <span style="font-size:0.7rem;color:var(--text-muted);">#<span id="hawk-cycle-num">0</span></span>
+      <span style="color:rgba(255,255,255,0.2);">|</span>
       <span id="hawk-sc-markets" style="font-size:0.7rem;color:var(--text-muted);">-- mkts</span>
       <div id="hawk-sc-tooltip" style="
         display:none;position:absolute;right:0;bottom:calc(100% + 8px);

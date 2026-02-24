@@ -1137,6 +1137,8 @@ def api_hawk_next_cycle():
     data = read_fresh(NEXT_CYCLE_FILE, "~/polymarket-bot/data/hawk_next_cycle.json")
     if not data:
         data = {"cycle_minutes": 30, "next_at": 0, "mode": "normal"}
+    status = _load_status()
+    data["cycle_count"] = status.get("cycle", 0)
     return jsonify(data)
 
 
