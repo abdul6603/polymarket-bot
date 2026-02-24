@@ -22,6 +22,7 @@ ANALYTICS_FILE = DATA_DIR / "quant_analytics.json"
 LIVE_PARAMS_FILE = DATA_DIR / "quant_live_params.json"
 TRADE_STUDIES_FILE = DATA_DIR / "quant_trade_studies.jsonl"
 MINI_OPT_FILE = DATA_DIR / "quant_mini_opt.json"
+PHASE1_FILE = DATA_DIR / "quant_phase1.json"
 
 _run_lock = threading.Lock()
 _run_running = False
@@ -154,6 +155,21 @@ def api_quant_walk_forward():
     """Walk-forward validation results + bootstrap confidence intervals."""
     data = _load_json(WF_FILE)
     return jsonify(data or {"walk_forward": {}, "confidence_interval": {}, "updated": ""})
+
+
+@quant_bp.route("/api/quant/phase1")
+def api_quant_phase1():
+    """Phase 1 intelligence: WFV2, Monte Carlo, CUSUM, version history."""
+    data = _load_json(PHASE1_FILE)
+    if not data:
+        return jsonify({
+            "walk_forward_v2": {"passed": False, "rejection_reason": "No data yet"},
+            "monte_carlo": {"ruin_probability": 0, "n_simulations": 0},
+            "cusum": {"change_detected": False, "severity": "none"},
+            "version_history": [],
+            "updated": "",
+        })
+    return jsonify(data)
 
 
 @quant_bp.route("/api/quant/trade-learning")
