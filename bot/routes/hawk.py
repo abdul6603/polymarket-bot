@@ -1117,6 +1117,20 @@ ARB_STATUS_FILE = DATA_DIR / "hawk_arb_status.json"
 LEARNER_FILE = DATA_DIR / "hawk_learner_dimensions.json"
 
 
+@hawk_bp.route("/api/hawk/signal-cycle")
+def api_hawk_signal_cycle():
+    """Signal cycle status for dashboard badge."""
+    sc_file = DATA_DIR / "hawk_signal_cycle.json"
+    if sc_file.exists():
+        try:
+            data = json.loads(sc_file.read_text())
+            data["age_s"] = round(time.time() - data.get("last_eval_at", 0), 1)
+            return jsonify(data)
+        except Exception:
+            pass
+    return jsonify({"last_eval_at": 0, "markets_scanned": 0, "trades_placed": 0, "age_s": 999})
+
+
 @hawk_bp.route("/api/hawk/next-cycle")
 def api_hawk_next_cycle():
     """V6: Next cycle countdown info."""

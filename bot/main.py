@@ -1064,6 +1064,20 @@ class TradingBot:
             except Exception:
                 pass
 
+        # Signal cycle status for dashboard badge timer
+        try:
+            import json as _json
+            _cycle_file = Path(__file__).parent.parent / "data" / "signal_cycle_status.json"
+            _cycle_file.write_text(_json.dumps({
+                "last_eval_at": time.time(),
+                "tick_interval_s": self.cfg.tick_interval_s,
+                "markets_evaluated": len(ranked),
+                "trades_this_tick": trades_this_tick,
+                "regime": regime.label if regime else "unknown",
+            }))
+        except Exception:
+            pass
+
     def _save_derivatives_state(self, deriv_data: dict | None) -> None:
         """Persist derivatives + depth state to disk for dashboard access."""
         import json as _json

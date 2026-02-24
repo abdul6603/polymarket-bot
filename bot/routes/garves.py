@@ -153,6 +153,21 @@ def api_garves_health_warnings():
     })
 
 
+@garves_bp.route("/api/garves/signal-cycle")
+def api_garves_signal_cycle():
+    """Signal evaluation cycle status for dashboard countdown badge."""
+    status_file = DATA_DIR / "signal_cycle_status.json"
+    if status_file.exists():
+        try:
+            data = json.loads(status_file.read_text())
+            data["age_s"] = round(time.time() - data.get("last_eval_at", 0), 1)
+            return jsonify(data)
+        except Exception:
+            pass
+    return jsonify({"last_eval_at": 0, "tick_interval_s": 5, "markets_evaluated": 0,
+                    "trades_this_tick": 0, "age_s": 999})
+
+
 @garves_bp.route("/api/garves/mode")
 def api_garves_mode():
     """Current Garves trading mode."""

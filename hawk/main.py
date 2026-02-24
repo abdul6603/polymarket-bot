@@ -1233,6 +1233,20 @@ class HawkBot:
                 _save_status(self.tracker, self.risk, running=True, cycle=self.cycle,
                              scan_stats=_scan_stats, regime=_regime_info)
 
+                # Signal cycle status for dashboard badge
+                try:
+                    _sc_file = Path(__file__).parent.parent / "data" / "hawk_signal_cycle.json"
+                    _sc_file.write_text(json.dumps({
+                        "last_eval_at": time.time(),
+                        "cycle": self.cycle,
+                        "markets_scanned": _scan_stats.get("total_analyzed", 0),
+                        "markets_eligible": _scan_stats.get("total_eligible", 0),
+                        "trades_placed": trades_placed,
+                        "regime": _regime.regime if _regime else "unknown",
+                    }))
+                except Exception:
+                    pass
+
             except Exception:
                 log.exception("Hawk V8 cycle %d failed", self.cycle)
                 _save_status(self.tracker, self.risk, running=True, cycle=self.cycle)

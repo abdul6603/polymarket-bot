@@ -7,6 +7,33 @@
     <span id="hawk-mode-badge" class="trading-mode-badge trading-mode-paper">Trading: Paper Money</span>
     <button class="trading-mode-toggle" id="hawk-mode-toggle" onclick="toggleHawkMode()">Switch</button>
     <span class="text-muted" style="font-size:0.76rem;">Non-crypto prediction markets — Smart Degen</span>
+    <!-- Signal Cycle Badge -->
+    <div id="hawk-signal-cycle-pill" style="
+      display:inline-flex;align-items:center;gap:5px;margin-left:auto;
+      padding:4px 12px;border-radius:20px;
+      font-size:0.72rem;font-weight:600;font-family:var(--font-mono);
+      background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);
+      cursor:default;position:relative;
+    " onmouseenter="document.getElementById('hawk-sc-tooltip').style.display='block'"
+       onmouseleave="document.getElementById('hawk-sc-tooltip').style.display='none'">
+      <span id="hawk-sc-dot" style="font-size:0.5rem;color:#f59e0b;">&#x25CF;</span>
+      <span id="hawk-sc-timer" style="color:#fbbf24;">--</span>
+      <span style="color:rgba(255,255,255,0.35);">|</span>
+      <span id="hawk-sc-markets" style="color:var(--text-muted);">-- mkts</span>
+      <div id="hawk-sc-tooltip" style="
+        display:none;position:absolute;right:0;bottom:calc(100% + 8px);
+        z-index:100;background:var(--bg-secondary);border:1px solid rgba(245,158,11,0.3);
+        border-radius:8px;padding:10px 14px;min-width:220px;
+        box-shadow:0 8px 32px rgba(0,0,0,0.4);font-size:0.68rem;text-align:left;
+        font-weight:400;white-space:normal;
+      ">
+        <div style="font-weight:700;margin-bottom:6px;color:#fbbf24;">Scan Pipeline</div>
+        <div style="color:var(--text-muted);line-height:1.5;">
+          Filters 1000s of markets, analyzes edge via LLM + sportsbook odds, scores confidence tiers &amp; risk checks.
+        </div>
+        <div id="hawk-sc-detail" style="margin-top:6px;color:var(--text-muted);"></div>
+      </div>
+    </div>
 </div>
 
   <!-- B: Action Bar -->

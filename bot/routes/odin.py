@@ -39,6 +39,20 @@ def _load_signals() -> list[dict]:
     return read_fresh_jsonl(SIGNALS_FILE, "~/odin/data/odin_signals.jsonl")
 
 
+@odin_bp.route("/api/odin/signal-cycle")
+def api_odin_signal_cycle():
+    """Signal cycle status for dashboard badge."""
+    sc_file = DATA_DIR / "odin_signal_cycle.json"
+    if sc_file.exists():
+        try:
+            data = json.loads(sc_file.read_text())
+            data["age_s"] = round(time.time() - data.get("last_eval_at", 0), 1)
+            return jsonify(data)
+        except Exception:
+            pass
+    return jsonify({"last_eval_at": 0, "symbols_scanned": 0, "cycle_seconds": 300, "age_s": 999})
+
+
 @odin_bp.route("/api/odin")
 def api_odin():
     """Odin overview — status + stats."""
@@ -64,6 +78,10 @@ def api_odin():
 def api_odin_trades():
     """Recent trade history."""
     trades = _load_trades()
+    # Backfill mode for trades logged before the mode field was added
+    for t in trades:
+        if "mode" not in t:
+            t["mode"] = "paper" if t.get("trade_id", "").startswith("paper_") else "live"
     return jsonify(trades[-50:] if len(trades) > 50 else trades)
 
 

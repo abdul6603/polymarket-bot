@@ -10,6 +10,33 @@
       <span style="width:8px;height:8px;border-radius:50%;background:var(--agent-odin);animation:rxPulse 2s ease-in-out infinite;"></span>
       Next Cycle: <span id="odin-cycle-countdown" style="min-width:38px;text-align:center;">--</span>
     </span>
+    <!-- Signal Cycle Badge -->
+    <div id="odin-signal-cycle-pill" style="
+      display:inline-flex;align-items:center;gap:5px;
+      padding:4px 12px;border-radius:20px;
+      font-size:0.72rem;font-weight:600;font-family:var(--font-mono);
+      background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.25);
+      cursor:default;position:relative;
+    " onmouseenter="document.getElementById('odin-sc-tooltip').style.display='block'"
+       onmouseleave="document.getElementById('odin-sc-tooltip').style.display='none'">
+      <span id="odin-sc-dot" style="font-size:0.5rem;color:var(--agent-odin);">&#x25CF;</span>
+      <span id="odin-sc-timer" style="color:var(--agent-odin);">--</span>
+      <span style="color:rgba(255,255,255,0.35);">|</span>
+      <span id="odin-sc-syms" style="color:var(--text-muted);">-- syms</span>
+      <div id="odin-sc-tooltip" style="
+        display:none;position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);
+        z-index:100;background:var(--bg-secondary);border:1px solid rgba(139,92,246,0.3);
+        border-radius:8px;padding:10px 14px;min-width:220px;
+        box-shadow:0 8px 32px rgba(0,0,0,0.4);font-size:0.68rem;text-align:left;
+        font-weight:400;white-space:normal;
+      ">
+        <div style="font-weight:700;margin-bottom:6px;color:var(--agent-odin);">Trade Cycle</div>
+        <div style="color:var(--text-muted);line-height:1.5;">
+          13 skills: SMC structure, macro regime, CoinGlass OI/funding, liquidations, volume profile, multi-timeframe analysis &amp; conviction scoring.
+        </div>
+        <div id="odin-sc-detail" style="margin-top:6px;color:var(--text-muted);"></div>
+      </div>
+    </div>
     <span class="text-muted" style="font-size:0.68rem;font-style:italic;margin-left:auto;">"I see everything. I forget nothing."</span>
   </div>
 
@@ -98,12 +125,21 @@
   <!-- I: Trade History (moved above stats) -->
   <div class="collapse-section default-open">
     <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="odin" style="margin-bottom:0;">Trade History</h2>
+      <h2 class="section-title" data-accent="odin" style="margin-bottom:0;">Trade History <span id="odin-trades-count-badge" style="font-size:0.56rem;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:8px;background:rgba(139,92,246,0.15);border:1px solid var(--agent-odin);color:var(--agent-odin);vertical-align:middle;">0</span></h2>
     </div>
     <div class="collapse-body">
+      <!-- Summary Stats Bar -->
+      <div id="odin-trades-summary" style="display:none;margin-bottom:10px;">
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <div class="stat-card" data-accent="odin" style="flex:1;min-width:100px;"><div class="stat-value" id="odin-th-total" style="font-size:0.9rem;">0</div><div class="stat-label">Total Trades</div></div>
+          <div class="stat-card" data-accent="odin" style="flex:1;min-width:100px;"><div class="stat-value" id="odin-th-wr" style="font-size:0.9rem;">--</div><div class="stat-label">Win Rate</div></div>
+          <div class="stat-card" data-accent="odin" style="flex:1;min-width:100px;"><div class="stat-value" id="odin-th-pnl" style="font-size:0.9rem;">$0</div><div class="stat-label">Net P&amp;L</div></div>
+          <div class="stat-card" data-accent="odin" style="flex:1;min-width:100px;"><div class="stat-value" id="odin-th-avghold" style="font-size:0.9rem;">--</div><div class="stat-label">Avg Hold</div></div>
+        </div>
+      </div>
       <table class="data-table">
-        <thead><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Entry</th><th>Exit</th><th>P&amp;L</th><th>Reason</th><th>Hold</th></tr></thead>
-        <tbody id="odin-trades-tbody"><tr><td colspan="8" class="text-muted">No trades yet</td></tr></tbody>
+        <thead><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Mode</th><th>Entry</th><th>Exit</th><th>P&amp;L</th><th>Lev</th><th>Reason</th><th>Hold</th></tr></thead>
+        <tbody id="odin-trades-tbody"><tr><td colspan="10" class="text-muted" style="text-align:center;padding:20px;font-style:italic;">Odin is scanning markets &mdash; closed trades will appear here</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -474,24 +510,98 @@ function odinRefresh() {
     console.log('[Odin] Refresh error:', e);
   });
 
-  // Trade history
+  // Trade history — professional rendering
   fetch('/api/odin/trades').then(r => r.json()).then(function(trades) {
     var tbody = document.getElementById('odin-trades-tbody');
-    if (!tbody || !trades.length) return;
+    var countBadge = document.getElementById('odin-trades-count-badge');
+    var summaryDiv = document.getElementById('odin-trades-summary');
+    if (!tbody) return;
+    if (countBadge) countBadge.textContent = trades.length;
+    if (!trades.length) return;
+
+    // Summary stats
+    if (summaryDiv) {
+      summaryDiv.style.display = 'block';
+      var wins = trades.filter(function(t){ return t.is_win; });
+      var totalPnl = trades.reduce(function(s,t){ return s + (t.pnl_usd||0); }, 0);
+      var holdSum = trades.reduce(function(s,t){ return s + (t.hold_hours||0); }, 0);
+      odinSetVal('odin-th-total', trades.length);
+      var wr = trades.length > 0 ? (wins.length / trades.length * 100) : 0;
+      var wrEl = document.getElementById('odin-th-wr');
+      if (wrEl) {
+        wrEl.textContent = wr.toFixed(1) + '%';
+        wrEl.style.color = wr >= 50 ? 'var(--success)' : wr >= 30 ? 'var(--warning)' : 'var(--error)';
+      }
+      var pnlEl = document.getElementById('odin-th-pnl');
+      if (pnlEl) {
+        var prefix = totalPnl >= 0 ? '+$' : '-$';
+        pnlEl.textContent = prefix + Math.abs(totalPnl).toFixed(2);
+        pnlEl.style.color = totalPnl >= 0 ? 'var(--success)' : 'var(--error)';
+      }
+      var avgHold = trades.length > 0 ? holdSum / trades.length : 0;
+      odinSetVal('odin-th-avghold', avgHold < 1 ? Math.round(avgHold * 60) + 'm' : avgHold.toFixed(1) + 'h');
+    }
+
+    // Render rows
     var html = '';
+    var nowMs = Date.now();
     trades.slice(-20).reverse().forEach(function(t) {
       var pnlColor = t.pnl_usd >= 0 ? 'var(--success)' : 'var(--error)';
       var dirColor = t.side === 'LONG' ? 'var(--success)' : 'var(--error)';
-      var exitTime = t.exit_time ? new Date(t.exit_time * 1000).toLocaleString() : '--';
-      html += '<tr>';
-      html += '<td style="font-size:0.68rem;">' + exitTime + '</td>';
-      html += '<td>' + (t.symbol || '') + '</td>';
-      html += '<td style="color:' + dirColor + ';">' + (t.side || '') + '</td>';
-      html += '<td>$' + (t.entry_price || 0).toFixed(2) + '</td>';
-      html += '<td>$' + (t.exit_price || 0).toFixed(2) + '</td>';
-      html += '<td style="color:' + pnlColor + ';font-weight:600;">$' + (t.pnl_usd || 0).toFixed(2) + '</td>';
-      html += '<td>' + (t.exit_reason || '') + '</td>';
-      html += '<td>' + (t.hold_hours || 0).toFixed(1) + 'h</td>';
+      var borderColor = t.is_win ? 'rgba(46,204,113,0.5)' : 'rgba(231,76,60,0.5)';
+
+      // Time — relative for <24h, date for older
+      var timeStr = '--';
+      if (t.exit_time) {
+        var diffMs = nowMs - t.exit_time * 1000;
+        if (diffMs < 86400000) {
+          var diffMin = Math.floor(diffMs / 60000);
+          if (diffMin < 60) timeStr = diffMin + 'm ago';
+          else timeStr = Math.floor(diffMin / 60) + 'h ago';
+        } else {
+          timeStr = new Date(t.exit_time * 1000).toLocaleDateString('en-US', {month:'short', day:'numeric'});
+        }
+      }
+
+      // Mode badge
+      var mode = t.mode || 'paper';
+      var modeBadge = mode === 'live'
+        ? '<span class="trading-mode-badge trading-mode-live" style="font-size:0.52rem;padding:1px 6px;border-radius:3px;">LIVE</span>'
+        : '<span class="trading-mode-badge trading-mode-paper" style="font-size:0.52rem;padding:1px 6px;border-radius:3px;">PAPER</span>';
+
+      // Side badge
+      var sideBadge = '<span style="color:' + dirColor + ';font-weight:700;">' + (t.side || '') + '</span>';
+
+      // Asset
+      var asset = (t.symbol || '').replace('USDT', '');
+
+      // PnL with pct
+      var pnlPrefix = t.pnl_usd >= 0 ? '+$' : '-$';
+      var pnlHtml = '<span style="font-weight:700;color:' + pnlColor + ';">' + pnlPrefix + Math.abs(t.pnl_usd || 0).toFixed(2) + '</span>';
+      if (t.pnl_pct != null) {
+        pnlHtml += '<div style="font-size:0.56rem;color:' + pnlColor + ';">' + (t.pnl_pct >= 0 ? '+' : '') + t.pnl_pct.toFixed(2) + '%</div>';
+      }
+
+      // Exit reason tag
+      var reason = t.exit_reason || '';
+      var reasonColor = reason === 'SL' ? 'var(--error)' : reason.indexOf('TP') >= 0 ? 'var(--success)' : 'var(--warning)';
+      var reasonHtml = '<span style="color:' + reasonColor + ';font-weight:600;font-size:0.7rem;">' + reason + '</span>';
+
+      // Hold time
+      var holdHours = t.hold_hours || 0;
+      var holdStr = holdHours < 1 ? Math.round(holdHours * 60) + 'm' : holdHours.toFixed(1) + 'h';
+
+      html += '<tr style="border-left:2px solid ' + borderColor + ';">';
+      html += '<td style="font-size:0.68rem;color:var(--text-muted);">' + timeStr + '</td>';
+      html += '<td style="font-weight:700;">' + asset + '</td>';
+      html += '<td>' + sideBadge + '</td>';
+      html += '<td>' + modeBadge + '</td>';
+      html += '<td>$' + (t.entry_price || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + '</td>';
+      html += '<td>$' + (t.exit_price || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + '</td>';
+      html += '<td>' + pnlHtml + '</td>';
+      html += '<td>' + (t.leverage || 3) + 'x</td>';
+      html += '<td>' + reasonHtml + '</td>';
+      html += '<td>' + holdStr + '</td>';
       html += '</tr>';
     });
     tbody.innerHTML = html;
@@ -785,6 +895,41 @@ function odinLoadLastOmni() {
   }).catch(function(){});
 }
 
+// Odin signal cycle badge
+var _odinScInterval = null;
+var _odinScData = null;
+
+async function loadOdinSignalCycle() {
+  try {
+    var resp = await fetch('/api/odin/signal-cycle');
+    _odinScData = await resp.json();
+    renderOdinSignalCycle();
+    if (!_odinScInterval) {
+      _odinScInterval = setInterval(renderOdinSignalCycle, 1000);
+    }
+  } catch(e) {}
+}
+
+function renderOdinSignalCycle() {
+  var d = _odinScData;
+  if (!d || !d.last_eval_at) return;
+  var elapsed = (Date.now() / 1000) - d.last_eval_at;
+  var agoText = elapsed < 60 ? Math.floor(elapsed) + 's' : elapsed < 3600 ? Math.floor(elapsed/60) + 'm' : Math.floor(elapsed/3600) + 'h';
+  var timerEl = document.getElementById('odin-sc-timer');
+  var symsEl = document.getElementById('odin-sc-syms');
+  var dotEl = document.getElementById('odin-sc-dot');
+  var detailEl = document.getElementById('odin-sc-detail');
+  if (timerEl) timerEl.textContent = agoText;
+  if (symsEl) symsEl.textContent = (d.symbols_scanned || 0) + ' syms';
+  if (dotEl) {
+    var interval = d.cycle_seconds || 300;
+    dotEl.style.color = elapsed < interval * 1.5 ? '#22c55e' : elapsed < interval * 5 ? '#f59e0b' : '#ef4444';
+  }
+  if (detailEl) {
+    detailEl.innerHTML = 'Last cycle: ' + agoText + ' ago | ' + (d.symbols_scanned || 0) + ' symbols | Regime: ' + (d.regime || '--') + ' | Positions: ' + (d.open_positions || 0);
+  }
+}
+
 // Auto-refresh when tab is active (30s interval)
 var _odinInterval = null;
 (function() {
@@ -792,6 +937,7 @@ var _odinInterval = null;
   window.loadOdinTab = function() {
     odinRefresh();
     odinLoadLastOmni();
+    loadOdinSignalCycle();
     if (_odinInterval) clearInterval(_odinInterval);
     _odinInterval = setInterval(odinRefresh, 30000);
   };

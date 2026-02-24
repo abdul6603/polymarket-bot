@@ -7613,6 +7613,7 @@ async function loadHawkTab() {
 
   // Mode badge
   loadHawkMode();
+  loadHawkSignalCycle();
 
   // Trade suggestions
   loadHawkSuggestions();
@@ -9562,6 +9563,42 @@ async function loadHawkMode() {
     var d = await resp.json();
     updateHawkModeBadge(d.dry_run);
   } catch(e) {}
+}
+
+var _hawkScInterval = null;
+var _hawkScData = null;
+
+async function loadHawkSignalCycle() {
+  try {
+    var resp = await fetch('/api/hawk/signal-cycle');
+    _hawkScData = await resp.json();
+    renderHawkSignalCycle();
+    if (!_hawkScInterval) {
+      _hawkScInterval = setInterval(renderHawkSignalCycle, 1000);
+    }
+  } catch(e) {}
+}
+
+function renderHawkSignalCycle() {
+  var d = _hawkScData;
+  if (!d || !d.last_eval_at) return;
+  var elapsed = (Date.now() / 1000) - d.last_eval_at;
+  var agoText = elapsed < 60 ? Math.floor(elapsed) + 's' : elapsed < 3600 ? Math.floor(elapsed/60) + 'm' : Math.floor(elapsed/3600) + 'h';
+  var timerEl = document.getElementById('hawk-sc-timer');
+  var mktsEl = document.getElementById('hawk-sc-markets');
+  var dotEl = document.getElementById('hawk-sc-dot');
+  var detailEl = document.getElementById('hawk-sc-detail');
+  if (timerEl) timerEl.textContent = agoText;
+  if (mktsEl) mktsEl.textContent = (d.markets_scanned || 0) + ' mkts';
+  if (dotEl) {
+    dotEl.style.color = elapsed < 2400 ? '#22c55e' : elapsed < 7200 ? '#f59e0b' : '#ef4444';
+  }
+  if (detailEl) {
+    detailEl.innerHTML = 'Last scan: ' + agoText + ' ago | ' + (d.markets_scanned || 0) + '/' + (d.markets_eligible || 0) + ' markets | Regime: ' + (d.regime || '--');
+    if (d.trades_placed > 0) {
+      detailEl.innerHTML += ' | <span style="color:#22c55e;">' + d.trades_placed + ' trade(s)</span>';
+    }
+  }
 }
 
 async function toggleOdinMode() {
