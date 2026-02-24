@@ -120,56 +120,37 @@ def get_data(asset: str) -> CoinglassData | None:
     result = CoinglassData()
     any_success = False
 
-    # 1. Open Interest — aggregated across exchanges
+    # 1. Open Interest — exchange-list includes OI + change percentages (free tier)
+    # The "All" row has aggregated data with 1h/4h/24h change percents built in,
+    # eliminating the need for the premium aggregated-history endpoint.
     try:
         oi_data = _api_get("futures/open-interest/exchange-list", {"symbol": symbol})
         if oi_data and isinstance(oi_data, list) and len(oi_data) > 0:
-            total_oi = sum(float(ex.get("openInterest", 0)) for ex in oi_data)
-            result.oi_usd = total_oi
+            # Find the "All" aggregate row, or sum individual exchanges
+            all_row = None
+            for ex in oi_data:
+                if ex.get("exchange") == "All":
+                    all_row = ex
+                    break
+            if all_row:
+                result.oi_usd = float(all_row.get("open_interest_usd", 0) or all_row.get("openInterest", 0))
+                result.oi_change_1h_pct = float(all_row.get("open_interest_change_percent_1h", 0))
+                result.oi_change_4h_pct = float(all_row.get("open_interest_change_percent_4h", 0))
+                result.oi_change_24h_pct = float(all_row.get("open_interest_change_percent_24h", 0))
+            else:
+                result.oi_usd = sum(float(ex.get("openInterest", 0) or ex.get("open_interest_usd", 0)) for ex in oi_data)
             any_success = True
-            log.debug("[CG] %s OI: $%.0fM from %d exchanges", symbol, total_oi / 1e6, len(oi_data))
+            log.debug("[CG] %s OI: $%.0fM chg1h=%.1f%% chg4h=%.1f%% chg24h=%.1f%%",
+                      symbol, result.oi_usd / 1e6, result.oi_change_1h_pct,
+                      result.oi_change_4h_pct, result.oi_change_24h_pct)
         else:
             log.debug("[CG] %s OI: no data returned (data=%s)", symbol, type(oi_data).__name__)
     except Exception as e:
         log.warning("[CG] %s OI fetch failed: %s", symbol, str(e)[:80])
 
-    # 2. OI aggregated history — compute 1h/4h/24h changes
-    try:
-        oi_hist = _api_get("futures/open-interest/aggregated-history", {
-            "symbol": symbol,
-            "interval": "1h",
-            "limit": 25,  # 25 hours of data
-        })
-        if oi_hist and isinstance(oi_hist, list) and len(oi_hist) >= 2:
-            # Each entry: {"t": timestamp, "o": open, "h": high, "l": low, "c": close}
-            # Use close values for comparison
-            current = float(oi_hist[-1].get("c", 0))
-            if current > 0:
-                # 1h ago
-                if len(oi_hist) >= 2:
-                    h1_ago = float(oi_hist[-2].get("c", current))
-                    if h1_ago > 0:
-                        result.oi_change_1h_pct = (current - h1_ago) / h1_ago * 100
-                # 4h ago
-                if len(oi_hist) >= 5:
-                    h4_ago = float(oi_hist[-5].get("c", current))
-                    if h4_ago > 0:
-                        result.oi_change_4h_pct = (current - h4_ago) / h4_ago * 100
-                # 24h ago
-                if len(oi_hist) >= 25:
-                    h24_ago = float(oi_hist[-25].get("c", current))
-                    if h24_ago > 0:
-                        result.oi_change_24h_pct = (current - h24_ago) / h24_ago * 100
-                any_success = True
-                log.debug("[CG] %s OI history: chg1h=%.1f%% chg4h=%.1f%% chg24h=%.1f%%",
-                          symbol, result.oi_change_1h_pct, result.oi_change_4h_pct, result.oi_change_24h_pct)
-        else:
-            log.debug("[CG] %s OI history: no data (got %s, len=%s)",
-                      symbol, type(oi_hist).__name__, len(oi_hist) if isinstance(oi_hist, list) else "N/A")
-    except Exception as e:
-        log.warning("[CG] %s OI history failed: %s", symbol, str(e)[:80])
-
-    # 3. Long/Short ratio (global accounts)
+    # 3. Long/Short ratio — premium endpoint, skip gracefully if unavailable
+    # The /history endpoint requires Hobbyist plan. If it returns 400/Upgrade,
+    # we silently skip (L/S is a secondary indicator, not critical).
     try:
         pair = PAIR_SUFFIX.get(symbol, f"{symbol}USDT")
         ls_data = _api_get("futures/global-long-short-account-ratio/history", {
@@ -180,20 +161,16 @@ def get_data(asset: str) -> CoinglassData | None:
         })
         if ls_data and isinstance(ls_data, list) and len(ls_data) > 0:
             latest = ls_data[-1] if isinstance(ls_data[-1], dict) else {}
-            # V4 returns: {"longAccount": 0.55, "shortAccount": 0.45, "longShortRatio": 1.22, ...}
             ratio = float(latest.get("longShortRatio", 0))
             if ratio == 0:
-                # Fallback: compute from account percentages
                 long_pct = float(latest.get("longAccount", 50))
                 short_pct = float(latest.get("shortAccount", 50))
                 ratio = long_pct / max(short_pct, 0.01)
             result.long_short_ratio = ratio
             any_success = True
             log.debug("[CG] %s L/S ratio: %.2f", symbol, ratio)
-        else:
-            log.debug("[CG] %s L/S ratio: no data returned", symbol)
     except Exception as e:
-        log.warning("[CG] %s L/S ratio failed: %s", symbol, str(e)[:80])
+        log.debug("[CG] %s L/S ratio unavailable: %s", symbol, str(e)[:60])
 
     # 4. Funding rate — aggregated across exchanges
     try:
@@ -241,12 +218,13 @@ def get_data(asset: str) -> CoinglassData | None:
         except Exception as e:
             log.warning("[CG] BTC ETF flow failed: %s", str(e)[:80])
 
-    # 6. Liquidation data — aggregated across exchanges
+    # 6. Liquidation data — aggregated across exchanges (exchange_list required by V4)
     try:
         liq_data = _api_get("futures/liquidation/aggregated-history", {
             "symbol": symbol,
             "interval": "1d",
             "limit": 1,
+            "exchange_list": "Binance,OKX,Bybit",
         })
         if liq_data and isinstance(liq_data, list) and len(liq_data) > 0:
             latest = liq_data[-1] if isinstance(liq_data[-1], dict) else {}

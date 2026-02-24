@@ -35,6 +35,122 @@ def _broadcast(event_type, data=None):
         pass
 
 MODE_FILE = DATA_DIR / "garves_mode.json"
+QUANT_PARAMS_FILE = DATA_DIR / "quant_live_params.json"
+TRADES_FILE = DATA_DIR / "trades.jsonl"
+ARCHIVE_DIR = DATA_DIR / "archives"
+
+# Self-healing state (in-memory, resets on restart)
+_self_heal_applied = False
+
+
+@garves_bp.route("/api/garves/health-warnings")
+def api_garves_health_warnings():
+    """Return critical warnings: paralysis detection, consensus floor issues, trade drought."""
+    from datetime import datetime as _dt
+    warnings = []
+
+    # 1. Check consensus_floor from Quant params
+    consensus_floor = 2  # default
+    if QUANT_PARAMS_FILE.exists():
+        try:
+            qp = json.loads(QUANT_PARAMS_FILE.read_text())
+            consensus_floor = qp.get("params", {}).get("consensus_floor", 2)
+        except Exception:
+            pass
+
+    if consensus_floor > 4:
+        warnings.append({
+            "level": "critical",
+            "message": f"Consensus floor is {consensus_floor} — requires near-unanimous agreement. "
+                       f"Garves is likely paralyzed. Max safe value is 4.",
+            "action": "Lower consensus_floor in quant_live_params.json",
+        })
+    elif consensus_floor > 3:
+        warnings.append({
+            "level": "warning",
+            "message": f"Consensus floor is {consensus_floor} — may limit trading in extreme regimes.",
+        })
+
+    # 2. Check for trade drought (0 trades in last 24h)
+    last_trade_ts = 0
+    trades_24h = 0
+    # Check current trades file
+    if TRADES_FILE.exists():
+        try:
+            for line in TRADES_FILE.read_text().strip().split("\n"):
+                if not line:
+                    continue
+                t = json.loads(line)
+                ts = t.get("timestamp", 0)
+                if ts > last_trade_ts:
+                    last_trade_ts = ts
+                if time.time() - ts < 86400:
+                    trades_24h += 1
+        except Exception:
+            pass
+    # Check today's archive
+    today_str = _dt.now().strftime("%Y-%m-%d")
+    today_archive = ARCHIVE_DIR / f"trades_{today_str}.jsonl"
+    if today_archive.exists():
+        try:
+            for line in today_archive.read_text().strip().split("\n"):
+                if not line:
+                    continue
+                t = json.loads(line)
+                ts = t.get("timestamp", 0)
+                if ts > last_trade_ts:
+                    last_trade_ts = ts
+                if time.time() - ts < 86400:
+                    trades_24h += 1
+        except Exception:
+            pass
+
+    hours_since_trade = (time.time() - last_trade_ts) / 3600 if last_trade_ts > 0 else 999
+    if trades_24h == 0 and hours_since_trade > 4:
+        warnings.append({
+            "level": "critical",
+            "message": f"0 trades in 24h. Last trade was {hours_since_trade:.0f}h ago. "
+                       f"Garves may be paralyzed or market conditions are extreme.",
+            "hours_since_trade": round(hours_since_trade, 1),
+        })
+
+    # 3. Self-healing: if 0 trades for >12h, auto-lower consensus_floor
+    global _self_heal_applied
+    if hours_since_trade > 12 and consensus_floor > 2 and not _self_heal_applied:
+        try:
+            if QUANT_PARAMS_FILE.exists():
+                qp = json.loads(QUANT_PARAMS_FILE.read_text())
+            else:
+                qp = {"params": {}, "validation": {"walk_forward_passed": True}}
+            qp["params"]["consensus_floor"] = 2
+            qp["self_healed"] = {
+                "timestamp": _dt.now().isoformat(),
+                "reason": f"0 trades for {hours_since_trade:.0f}h, lowered consensus_floor {consensus_floor}->2",
+                "previous_value": consensus_floor,
+            }
+            QUANT_PARAMS_FILE.write_text(json.dumps(qp, indent=2))
+            _self_heal_applied = True
+            # Invalidate param cache so Garves picks up new value immediately
+            try:
+                from bot.param_loader import invalidate_cache
+                invalidate_cache()
+            except Exception:
+                pass
+            warnings.append({
+                "level": "info",
+                "message": f"SELF-HEALED: consensus_floor lowered {consensus_floor}->2 "
+                           f"(0 trades for {hours_since_trade:.0f}h). Trading should resume.",
+            })
+        except Exception:
+            pass
+
+    return jsonify({
+        "warnings": warnings,
+        "consensus_floor": consensus_floor,
+        "trades_24h": trades_24h,
+        "hours_since_trade": round(hours_since_trade, 1),
+        "self_healed": _self_heal_applied,
+    })
 
 
 @garves_bp.route("/api/garves/mode")

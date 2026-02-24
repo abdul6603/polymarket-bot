@@ -4502,6 +4502,7 @@ async function refresh() {
       loadNewsSentiment();
       loadMLWinPredictor();
       loadMLStatus();
+      loadGarvesHealthWarnings();
       loadJournal();
       refreshClobPill();
       refreshBinancePill();
@@ -9409,6 +9410,32 @@ async function loadGarvesMode() {
   } catch(e) {}
 }
 
+async function loadGarvesHealthWarnings() {
+  try {
+    var resp = await fetch('/api/garves/health-warnings');
+    var d = await resp.json();
+    var banner = document.getElementById('garves-health-banner');
+    if (!banner) return;
+    var criticals = (d.warnings || []).filter(function(w) { return w.level === 'critical'; });
+    var infos = (d.warnings || []).filter(function(w) { return w.level === 'info'; });
+    if (criticals.length > 0) {
+      banner.style.display = 'block';
+      banner.style.background = 'rgba(255,60,60,0.15)';
+      banner.style.border = '1px solid rgba(255,60,60,0.4)';
+      banner.style.color = '#ff6b6b';
+      banner.innerHTML = criticals.map(function(w) { return w.message; }).join('<br>');
+    } else if (infos.length > 0) {
+      banner.style.display = 'block';
+      banner.style.background = 'rgba(80,200,120,0.12)';
+      banner.style.border = '1px solid rgba(80,200,120,0.3)';
+      banner.style.color = '#50c878';
+      banner.innerHTML = infos.map(function(w) { return w.message; }).join('<br>');
+    } else {
+      banner.style.display = 'none';
+    }
+  } catch(e) {}
+}
+
 async function loadHawkMode() {
   try {
     var resp = await fetch('/api/hawk/mode');
@@ -9659,17 +9686,23 @@ async function loadQuantTab() {
     document.getElementById('quant-mode').textContent = data.mode || 'Historical Replay';
     document.getElementById('quant-cycle').textContent = data.cycle || '--';
     document.getElementById('quant-total-combos').textContent = data.total_combos_tested || '--';
-    document.getElementById('quant-best-wr').textContent = data.best_win_rate ? data.best_win_rate + '%' : '--';
-    document.getElementById('quant-best-wr').style.color = wrColor(data.best_win_rate || 0);
+    var bestWrEl = document.getElementById('quant-best-wr');
+    if (bestWrEl) {
+      bestWrEl.textContent = data.best_win_rate ? data.best_win_rate + '%' : '--';
+      bestWrEl.style.color = wrColor(data.best_win_rate || 0);
+      bestWrEl.style.background = wrColor(data.best_win_rate || 0) + '18';
+      bestWrEl.style.padding = '2px 8px';
+      bestWrEl.style.borderRadius = '999px';
+    }
     document.getElementById('quant-baseline-wr').textContent = data.baseline_win_rate ? data.baseline_win_rate + '%' : '--';
     document.getElementById('quant-baseline-wr').style.color = wrColor(data.baseline_win_rate || 0);
     document.getElementById('quant-trades').textContent = data.trade_count || '--';
     document.getElementById('quant-trade-count').textContent = data.trade_count || '--';
     var sigSum = '';
     if (data.baseline_signals && data.best_signals) {
-      sigSum = '(' + data.baseline_signals + ' signals, best ' + data.best_signals + ')';
+      sigSum = '(' + data.baseline_signals + ' sig, best ' + data.best_signals + ')';
     } else if (data.baseline_signals) {
-      sigSum = '(' + data.baseline_signals + ' signals)';
+      sigSum = '(' + data.baseline_signals + ' sig)';
     }
     document.getElementById('quant-signal-summary').textContent = sigSum;
     document.getElementById('quant-avg-edge').textContent = data.baseline_avg_edge ? data.baseline_avg_edge + '%' : '--';
@@ -9678,6 +9711,12 @@ async function loadQuantTab() {
     var totalFiltered = 0;
     for (var k in fr) totalFiltered += fr[k];
     document.getElementById('quant-filtered').textContent = totalFiltered || '--';
+
+    // Update status pill
+    var dot = document.querySelector('.qt-status-dot');
+    if (dot) {
+      dot.style.background = data.running ? 'var(--agent-quant)' : (data.total_combos_tested > 0 ? 'var(--success)' : 'var(--text-muted)');
+    }
 
     // Strategy Verdict Banner
     var banner = document.getElementById('quant-verdict-banner');
@@ -9703,6 +9742,9 @@ async function loadQuantTab() {
       if (delta > 5) verdictText += ' Backtest found +' + delta.toFixed(1) + 'pp improvement available.';
       document.getElementById('quant-verdict-text').textContent = verdictText;
     }
+
+    // Store data for radar (will be rendered after analytics loads)
+    window._quantStatusData = data;
   } catch(e) { console.error('quant status:', e); }
 
   loadQuantResults();
@@ -9716,6 +9758,7 @@ async function loadQuantTab() {
   loadQuantPhase1();
   loadQuantPhase2();
   loadQuantPNLImpact();
+  loadQuantSmartActions();
 }
 
 async function loadQuantResults() {
@@ -10029,6 +10072,18 @@ async function loadQuantAnalytics() {
     dhtml += '</div>';
     divEl.innerHTML = dhtml;
 
+    // Update diversity badge in panel
+    var divBadge = document.getElementById('quant-diversity-badge');
+    if (divBadge && diversity.diversity_score !== undefined) {
+      divBadge.textContent = diversity.diversity_score + '/100';
+      var dc = diversity.diversity_score >= 70 ? 'var(--success)' : diversity.diversity_score >= 40 ? 'var(--warning)' : 'var(--error)';
+      divBadge.style.background = dc + '18';
+      divBadge.style.color = dc;
+    }
+
+    // Render radar chart
+    renderQuantRadar(data);
+
   } catch(e) { console.error('quant analytics:', e); }
 }
 
@@ -10320,6 +10375,24 @@ async function loadQuantPhase1() {
     } else {
       vCard.style.display = 'none';
     }
+
+    // Update Phase 1 panel badge
+    var p1Badge = document.getElementById('qt-phase1-badge');
+    if (p1Badge) {
+      var wfOk = wfv2.passed;
+      var mcOk = mc.ruin_probability !== undefined && mc.ruin_probability <= 5;
+      var cusumOk = (cusum.severity || 'none') === 'none';
+      var passed = (wfOk ? 1 : 0) + (mcOk ? 1 : 0) + (cusumOk ? 1 : 0);
+      if (passed === 3) {
+        p1Badge.textContent = 'ALL PASSED';
+        p1Badge.style.background = 'rgba(34,170,68,0.13)';
+        p1Badge.style.color = 'var(--success)';
+      } else {
+        p1Badge.textContent = (3 - passed) + ' FAILED';
+        p1Badge.style.background = 'rgba(255,85,85,0.13)';
+        p1Badge.style.color = 'var(--error)';
+      }
+    }
   } catch(e) { console.error('quant phase1:', e); }
 }
 
@@ -10406,33 +10479,33 @@ async function loadQuantPhase2() {
 }
 
 async function loadQuantPNLImpact() {
-  var card = document.getElementById('quant-pnl-impact-card');
-  if (!card) return;
   try {
     var resp = await fetch('/api/quant/pnl-impact');
     var d = await resp.json();
-    if (!d.updated) {
-      card.style.display = 'none';
-      return;
-    }
-    card.style.display = 'block';
+    if (!d.updated) return;
 
-    // Badge
-    var badge = document.getElementById('quant-pnl-badge');
+    // Update panel badge
     var daily = d.daily_pnl || 0;
-    if (daily > 0) {
-      badge.textContent = '+$' + daily.toFixed(2) + '/day';
-      badge.style.background = 'rgba(34,170,68,0.13)';
-      badge.style.color = 'var(--success)';
-    } else if (daily < 0) {
-      badge.textContent = '-$' + Math.abs(daily).toFixed(2) + '/day';
-      badge.style.background = 'rgba(255,85,85,0.13)';
-      badge.style.color = 'var(--error)';
-    } else {
-      badge.textContent = '$0/day';
-      badge.style.background = 'rgba(0,191,255,0.13)';
-      badge.style.color = '#00BFFF';
+    var pBadge = document.getElementById('qt-phase3-badge');
+    if (pBadge) {
+      if (daily > 0) {
+        pBadge.textContent = '+$' + daily.toFixed(2) + '/day';
+        pBadge.style.background = 'rgba(34,170,68,0.13)';
+        pBadge.style.color = 'var(--success)';
+      } else if (daily < 0) {
+        pBadge.textContent = '-$' + Math.abs(daily).toFixed(2) + '/day';
+        pBadge.style.background = 'rgba(255,85,85,0.13)';
+        pBadge.style.color = 'var(--error)';
+      } else {
+        pBadge.textContent = '$0/day';
+        pBadge.style.background = 'rgba(0,191,255,0.13)';
+        pBadge.style.color = '#00BFFF';
+      }
     }
+
+    // Hidden compat badge
+    var badge = document.getElementById('quant-pnl-badge');
+    if (badge) badge.textContent = (daily >= 0 ? '+' : '-') + '$' + Math.abs(daily).toFixed(2) + '/day';
 
     // Stats
     var dailyEl = document.getElementById('quant-pnl-daily');
@@ -10458,7 +10531,7 @@ async function loadQuantPNLImpact() {
     var byAsset = d.by_asset || {};
     var aKeys = Object.keys(byAsset);
     if (aKeys.length > 0) {
-      var aHtml = '<div style="font-weight:600;color:#00BFFF;margin-bottom:6px;">By Asset</div>';
+      var aHtml = '<div class="qt-phase-card-title" style="margin-bottom:6px;">By Asset</div>';
       aKeys.forEach(function(a) {
         var s = byAsset[a];
         var delta = s.pnl_delta || 0;
@@ -10474,7 +10547,7 @@ async function loadQuantPNLImpact() {
     // Param attribution
     var attrs = d.param_attribution || [];
     if (attrs.length > 0) {
-      var atHtml = '<div style="font-weight:600;color:#00BFFF;margin-bottom:6px;">Param Impact</div>';
+      var atHtml = '<div class="qt-phase-card-title" style="margin-bottom:6px;">Param Impact</div>';
       attrs.forEach(function(a) {
         var delta = a.pnl_impact || 0;
         var color = delta >= 0 ? 'var(--success)' : 'var(--error)';
@@ -10487,7 +10560,6 @@ async function loadQuantPNLImpact() {
     }
   } catch(e) {
     console.error('quant pnl-impact:', e);
-    card.style.display = 'none';
   }
 }
 

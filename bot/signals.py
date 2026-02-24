@@ -917,22 +917,40 @@ class SignalEngine:
             except Exception:
                 pass  # LLM failure never blocks trading
 
-        # ── Consensus Filter (proportional) ──
+        # ── Adaptive Consensus Engine ──
+        # Dynamic consensus that adapts to regime + active indicator count.
+        # Hard cap: consensus_floor can NEVER exceed MAX_VIABLE_CONSENSUS in live mode.
+        # This prevents optimizer-induced paralysis (e.g., Quant sets floor=7 with only 5 active).
+        MAX_VIABLE_CONSENSUS = 4  # Hard ceiling — even Quant can't exceed this
+
         majority_dir = "up" if up_count >= down_count else "down"
         agree_count = max(up_count, down_count)
         active_count = up_count + down_count  # non-disabled indicators only
         total_indicators = len(active)
 
-        # Proportional consensus: 70% of active indicators must agree, floor of 3
-        effective_consensus = max(_consensus_floor, int(active_count * _consensus_ratio))
-        effective_consensus = min(effective_consensus, active_count)  # can't require more than available
+        # Clamp consensus_floor to MAX_VIABLE_CONSENSUS — prevents paralysis
+        safe_floor = min(_consensus_floor, MAX_VIABLE_CONSENSUS)
+
+        # Regime-aware consensus adjustment
+        # Extreme regimes: fewer indicators are reliable, so lower the bar
+        # Normal regime: standard consensus requirement
+        if regime and regime.label in ("extreme_fear", "extreme_greed"):
+            # In extreme regimes, cap at 60% of active (indicators herd, fewer independent signals)
+            regime_consensus = max(safe_floor, math.ceil(active_count * 0.60))
+        elif regime and regime.label in ("fear", "greed"):
+            regime_consensus = max(safe_floor, math.ceil(active_count * 0.65))
+        else:
+            # Normal: standard 70% ratio
+            regime_consensus = max(safe_floor, int(active_count * _consensus_ratio))
+
+        effective_consensus = min(regime_consensus, active_count)  # can't require more than available
         if regime and regime.consensus_offset:
             effective_consensus += regime.consensus_offset
+            effective_consensus = min(effective_consensus, active_count)
 
-        # Extreme fear + DOWN: lower to 75% consensus (bearish momentum is natural in fear)
-        # UP signals keep full consensus requirement (contrarian plays need full conviction)
+        # Extreme fear + DOWN: further lower to 55% (bearish momentum is natural in fear)
         if regime and regime.label == "extreme_fear" and majority_dir == "down":
-            fear_consensus = max(_consensus_floor, math.ceil(active_count * 0.75))
+            fear_consensus = max(safe_floor, math.ceil(active_count * 0.55))
             fear_consensus = min(fear_consensus, active_count)
             if fear_consensus < effective_consensus:
                 effective_consensus = fear_consensus

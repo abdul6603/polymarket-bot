@@ -75,6 +75,21 @@ def _load_live_params() -> dict:
             log.warning("Quant live params overfit too high (%.1fpp) — ignoring", overfit)
             return {}
 
+        # ── Optimizer Guardrails ──
+        # Quant can suggest params but critical ones have hard limits.
+        # consensus_floor > MAX_SAFE_CONSENSUS_FLOOR gets clamped and logged as warning.
+        MAX_SAFE_CONSENSUS_FLOOR = 4
+        if "consensus_floor" in params:
+            raw_cf = params["consensus_floor"]
+            if raw_cf > MAX_SAFE_CONSENSUS_FLOOR:
+                log.warning(
+                    "GUARDRAIL: Quant suggested consensus_floor=%d — clamped to %d "
+                    "(values > %d can paralyze trading when active indicators < %d)",
+                    raw_cf, MAX_SAFE_CONSENSUS_FLOOR,
+                    MAX_SAFE_CONSENSUS_FLOOR, raw_cf,
+                )
+                params["consensus_floor"] = MAX_SAFE_CONSENSUS_FLOOR
+
         log.info(
             "Loaded Quant live params: %s (validated: WR %.1f%% → %.1f%%, overfit %.1fpp)",
             list(params.keys()),
