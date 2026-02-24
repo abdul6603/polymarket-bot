@@ -11442,32 +11442,26 @@ function refreshSnipeV7() {
       return;
     }
 
-    // ── Multi-Asset Scanner Cards (v8) ──
+    // ── BTC Scanner Card (v9 flow sniper) ──
     var slots = d.slots || {};
-    var assetColors = {bitcoin:'#f7931a', ethereum:'#627eea', solana:'#00ffa3', xrp:'#00aae4'};
-    var assetNames = ['bitcoin','ethereum','solana','xrp'];
-    for (var ai = 0; ai < assetNames.length; ai++) {
-      var aName = assetNames[ai];
-      var slot = slots[aName] || {};
-      var scoreEl_a = document.getElementById('snipe-score-' + aName);
-      var stateEl_a = document.getElementById('snipe-state-' + aName);
-      var cardEl = document.getElementById('snipe-card-' + aName);
-      if (!scoreEl_a) continue;
-      var slotScore = slot.last_score || 0;
-      var slotDir = (slot.last_direction || '').toUpperCase();
-      var slotState = (slot.state || 'idle').toUpperCase();
+    var btcSlot = slots['bitcoin'] || {};
+    var scoreEl_a = document.getElementById('snipe-score-bitcoin');
+    var stateEl_a = document.getElementById('snipe-state-bitcoin');
+    var cardEl = document.getElementById('snipe-card-bitcoin');
+    if (scoreEl_a) {
+      var slotScore = btcSlot.last_score || 0;
+      var slotDir = (btcSlot.last_direction || '').toUpperCase();
+      var slotState = (btcSlot.state || 'idle').toUpperCase();
       if (slotScore > 0) {
         scoreEl_a.textContent = slotScore.toFixed(0);
-        scoreEl_a.style.color = slotScore >= 75 ? '#22c55e' : slotScore >= 50 ? '#eab308' : assetColors[aName];
+        scoreEl_a.style.color = slotScore >= 72 ? '#22c55e' : slotScore >= 50 ? '#eab308' : '#f7931a';
       } else {
         scoreEl_a.textContent = '--';
-        scoreEl_a.style.color = assetColors[aName];
+        scoreEl_a.style.color = '#f7931a';
       }
       var stateLabel = slotState;
       if (slotDir && slotState === 'TRACKING') stateLabel = slotState + ' ' + slotDir;
-      if (slot.exec_timeframe) stateLabel += ' [' + slot.exec_timeframe + ']';
       stateEl_a.textContent = stateLabel;
-      // Highlight active states
       if (cardEl) {
         if (slotState === 'EXECUTING' || slotState === 'ARMED') {
           cardEl.style.background = 'rgba(34,197,94,0.08)';
@@ -11479,9 +11473,49 @@ function refreshSnipeV7() {
       }
     }
 
-    // Exec venue badge
-    var venueEl = document.getElementById('snipe-exec-venue');
-    if (venueEl) venueEl.textContent = d.exec_preference || '15m';
+    // Flow detector status
+    var flow = d.flow_detector || {};
+    var flowDirEl = document.getElementById('flow-direction-badge');
+    var flowActiveBadge = document.getElementById('flow-active-badge');
+    var flowStrBar = document.getElementById('flow-strength-bar');
+    var flowStrPct = document.getElementById('flow-strength-pct');
+    var flowSusLabel = document.getElementById('flow-sustained-label');
+    if (flowDirEl) {
+      var fDir = (flow.direction || 'none').toUpperCase();
+      flowDirEl.textContent = fDir;
+      flowDirEl.style.color = fDir === 'UP' ? '#22c55e' : fDir === 'DOWN' ? '#ef4444' : 'var(--text-muted)';
+    }
+    if (flowActiveBadge) {
+      if (flow.is_strong) {
+        flowActiveBadge.style.display = '';
+        flowActiveBadge.style.background = 'rgba(34,197,94,0.15)';
+        flowActiveBadge.style.color = '#22c55e';
+      } else {
+        flowActiveBadge.style.display = 'none';
+      }
+    }
+    if (flowStrBar) {
+      var strPct = Math.round((flow.strength || 0) * 100);
+      flowStrBar.style.width = strPct + '%';
+      flowStrBar.style.background = strPct >= 60 ? '#22c55e' : strPct >= 30 ? '#eab308' : '#8b5cf6';
+    }
+    if (flowStrPct) flowStrPct.textContent = Math.round((flow.strength || 0) * 100) + '%';
+    if (flowSusLabel) flowSusLabel.textContent = (flow.sustained_ticks || 0) + ' sustained ticks | ' + (flow.snapshots || 0) + ' snapshots';
+
+    // Flow status card highlight
+    var flowCard = document.getElementById('flow-status-card');
+    if (flowCard) {
+      if (flow.is_strong) {
+        flowCard.style.background = 'rgba(34,197,94,0.08)';
+        flowCard.style.borderLeftColor = '#22c55e';
+      } else if (flow.direction && flow.direction !== 'none') {
+        flowCard.style.background = 'rgba(234,179,8,0.06)';
+        flowCard.style.borderLeftColor = '#eab308';
+      } else {
+        flowCard.style.background = '';
+        flowCard.style.borderLeftColor = '#8b5cf6';
+      }
+    }
 
     // Positions badge
     var posBadge = document.getElementById('snipe-positions-badge');
@@ -11490,19 +11524,6 @@ function refreshSnipeV7() {
       var mp = d.max_positions || 3;
       posBadge.textContent = ap + '/' + mp;
       posBadge.style.color = ap >= mp ? '#ef4444' : ap > 0 ? '#eab308' : '#22c55e';
-    }
-
-    // Correlation badge
-    var corrBadge = document.getElementById('snipe-correlation-badge');
-    var corr = d.correlation;
-    if (corrBadge && corr && corr.score_bonus > 0) {
-      corrBadge.style.display = '';
-      corrBadge.textContent = corr.aligned_count + '/' + corr.total_scored + ' ' +
-        (corr.dominant_direction || '').toUpperCase() + ' +' + corr.score_bonus.toFixed(0);
-      corrBadge.style.background = 'rgba(34,197,94,0.15)';
-      corrBadge.style.color = '#22c55e';
-    } else if (corrBadge) {
-      corrBadge.style.display = 'none';
     }
 
     // Hot windows table
@@ -11574,8 +11595,8 @@ function refreshSnipeV7() {
     var threshInfo = d.threshold_info;
     if (threshCard && threshInfo) {
       var perAsset = threshInfo.per_asset || {};
-      var assetNames = {bitcoin: 'BTC', ethereum: 'ETH', solana: 'SOL', xrp: 'XRP'};
-      var assetColors = {bitcoin: '#f7931a', ethereum: '#627eea', solana: '#00ffa3', xrp: '#00aae4'};
+      var assetNames = {bitcoin: 'BTC'};
+      var assetColors = {bitcoin: '#f7931a'};
       var badges = '';
       var hasAny = false;
       for (var ta in perAsset) {
@@ -11612,7 +11633,7 @@ function refreshSnipeV7() {
 
     // Per-asset threshold labels on scanner cards
     if (d.slots) {
-      var threshAssets = ['bitcoin', 'ethereum', 'solana', 'xrp'];
+      var threshAssets = ['bitcoin'];
       for (var ti = 0; ti < threshAssets.length; ti++) {
         var tAsset = threshAssets[ti];
         var tEl = document.getElementById('snipe-thresh-' + tAsset);
@@ -11671,14 +11692,14 @@ function refreshSnipeV7() {
       var barsEl = document.getElementById('snipe-score-bars');
       var comps = scorer.components || {};
       var html = '';
-      var compNames = ['delta_magnitude','delta_sustained','binance_imbalance',
-        'clob_spread_compression','clob_yes_no_pressure','volume_delta',
-        'bos_choch_5m','bos_choch_15m','time_positioning','implied_price_edge'];
+      var compNames = ['flow_strength','delta_magnitude','binance_imbalance',
+        'clob_spread_compression','flow_sustained','delta_sustained',
+        'bos_choch_5m','time_positioning','implied_price_edge'];
       var compLabels = {
-        delta_magnitude: 'Delta Mag', delta_sustained: 'Sustained',
+        flow_strength: 'Flow Str', delta_magnitude: 'Delta Mag',
         binance_imbalance: 'Binance OB', clob_spread_compression: 'Spread Comp',
-        clob_yes_no_pressure: 'YES/NO Pres', volume_delta: 'Vol Delta',
-        bos_choch_5m: 'BOS 5m', bos_choch_15m: 'BOS 15m',
+        flow_sustained: 'Flow Sus', delta_sustained: 'Delta Sus',
+        bos_choch_5m: 'BOS 5m',
         time_positioning: 'Timing', implied_price_edge: 'Price Edge'
       };
       for (var i = 0; i < compNames.length; i++) {
@@ -11730,7 +11751,7 @@ function refreshSnipeV7() {
     var stateEl = document.getElementById('snipe-state-label');
     stateEl.textContent = (d.threshold_mode || '') +
       ' | pos=' + (d.active_positions || 0) + '/' + (d.max_positions || 3) +
-      ' | exec=' + (d.exec_preference || '15m');
+      ' | ' + (d.strategy || 'flow_sniper');
 
     // Try to get spread from scorer CLOB data
     if (scorer.active && scorer.components && scorer.components.clob_spread_compression) {

@@ -7,7 +7,7 @@
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
     <span id="garves-mode-badge" class="trading-mode-badge trading-mode-live">Trading: Real Money</span>
     <button class="trading-mode-toggle" id="garves-mode-toggle" onclick="toggleGarvesMode()">Switch</button>
-    <span class="text-muted" style="font-size:0.76rem;">BTC/ETH/SOL/XRP — <span id="garves-bankroll-label">-- bankroll</span></span>
+    <span class="text-muted" style="font-size:0.76rem;">BTC Flow Sniper — <span id="garves-bankroll-label">-- bankroll</span></span>
 </div>
   <div class="agent-widget-row" id="garves-widgets" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
     <div class="widget-badge" id="garves-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
@@ -103,39 +103,37 @@
   </div>
   <div class="health-inline" id="garves-health-result"></div>
 
-  <!-- ═══ Snipe Engine v8 — Multi-Asset Scanner ═══ -->
+  <!-- ═══ Snipe Engine v9 — BTC Flow Anticipation Sniper ═══ -->
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-    <div style="font-weight:700;font-size:0.76rem;">Snipe v8 Multi-Asset Scanner</div>
-    <div id="snipe-exec-venue" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;font-weight:600;cursor:pointer;" onclick="toggleExecVenue()">15m</div>
+    <div style="font-weight:700;font-size:0.76rem;">Snipe v9 Flow Sniper</div>
+    <div id="snipe-exec-venue" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;font-weight:600;">5m</div>
     <div id="snipe-positions-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,0.15);color:#22c55e;font-weight:600;">0/3</div>
-    <div id="snipe-correlation-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;display:none;"></div>
   </div>
 
-  <!-- 4-Asset Scanner Cards -->
-  <div id="snipe-v8-cards" class="grid-4" style="margin-bottom:12px;">
+  <!-- BTC Scanner Card + Flow Detection Status -->
+  <div id="snipe-v8-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
     <div class="stat-card" id="snipe-card-bitcoin" style="border-left:3px solid #f7931a;">
-      <div class="stat-value" id="snipe-score-bitcoin" style="font-size:1.2rem;color:#f7931a;">--</div>
-      <div class="stat-label">BTC</div>
-      <div id="snipe-state-bitcoin" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;">idle</div>
-      <div id="snipe-thresh-bitcoin" style="font-size:0.58rem;color:var(--text-muted);margin-top:1px;"></div>
+      <div class="stat-value" id="snipe-score-bitcoin" style="font-size:1.6rem;color:#f7931a;">--</div>
+      <div class="stat-label">BTC Score</div>
+      <div id="snipe-state-bitcoin" style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;">idle</div>
+      <div id="snipe-thresh-bitcoin" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div>
     </div>
-    <div class="stat-card" id="snipe-card-ethereum" style="border-left:3px solid #627eea;">
-      <div class="stat-value" id="snipe-score-ethereum" style="font-size:1.2rem;color:#627eea;">--</div>
-      <div class="stat-label">ETH</div>
-      <div id="snipe-state-ethereum" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;">idle</div>
-      <div id="snipe-thresh-ethereum" style="font-size:0.58rem;color:var(--text-muted);margin-top:1px;"></div>
-    </div>
-    <div class="stat-card" id="snipe-card-solana" style="border-left:3px solid #00ffa3;">
-      <div class="stat-value" id="snipe-score-solana" style="font-size:1.2rem;color:#00ffa3;">--</div>
-      <div class="stat-label">SOL</div>
-      <div id="snipe-state-solana" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;">idle</div>
-      <div id="snipe-thresh-solana" style="font-size:0.58rem;color:var(--text-muted);margin-top:1px;"></div>
-    </div>
-    <div class="stat-card" id="snipe-card-xrp" style="border-left:3px solid #00aae4;">
-      <div class="stat-value" id="snipe-score-xrp" style="font-size:1.2rem;color:#00aae4;">--</div>
-      <div class="stat-label">XRP</div>
-      <div id="snipe-state-xrp" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;">idle</div>
-      <div id="snipe-thresh-xrp" style="font-size:0.58rem;color:var(--text-muted);margin-top:1px;"></div>
+    <div class="stat-card" id="flow-status-card" style="border-left:3px solid #8b5cf6;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+        <span id="flow-direction-badge" style="font-size:1.1rem;font-weight:700;color:var(--text-muted);">--</span>
+        <span id="flow-active-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;display:none;font-weight:600;">FLOW ACTIVE</span>
+      </div>
+      <div class="stat-label">Flow Detection</div>
+      <div style="margin-top:6px;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:0.68rem;">
+          <span style="color:var(--text-muted);width:55px;">Strength</span>
+          <div style="flex:1;height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">
+            <div id="flow-strength-bar" style="width:0%;height:100%;background:#8b5cf6;border-radius:3px;transition:width 0.5s;"></div>
+          </div>
+          <span id="flow-strength-pct" style="width:32px;font-family:var(--font-mono);font-size:0.68rem;">0%</span>
+        </div>
+        <div id="flow-sustained-label" style="font-size:0.62rem;color:var(--text-muted);margin-top:3px;">0 sustained ticks</div>
+      </div>
     </div>
   </div>
 

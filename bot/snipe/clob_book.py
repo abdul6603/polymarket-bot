@@ -24,7 +24,7 @@ log = logging.getLogger("garves.snipe")
 
 _clob_host: str = ""
 _cache: dict[str, tuple[float, dict]] = {}  # token_id -> (timestamp, result)
-CACHE_TTL = 5  # 5 seconds — fresh enough for 2s ticks
+CACHE_TTL = 2  # 2 seconds — fast enough for flow detection at 2s tick rate
 
 
 def init(clob_host: str) -> None:

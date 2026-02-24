@@ -1,15 +1,13 @@
-"""Multi-component signal scoring engine for 5m BTC binary snipe.
+"""Flow-confirmation signal scoring engine for BTC 5m CLOB flow sniper.
 
-Combines Binance L2 orderflow + Polymarket CLOB orderbook data + SMC
-structure analysis into a single 0-100 score.
+9 components, each scored 0.0-1.0, multiplied by weight:
+  flow_strength(25) + delta_magnitude(15) + binance_imbalance(15) +
+  clob_spread_compression(12) + flow_sustained(10) + delta_sustained(8) +
+  bos_choch_5m(5) + time_positioning(5) + implied_price_edge(5) = 100
 
-Only fires when score >= threshold (default 75).
-
-10 components, each scored 0.0-1.0, multiplied by weight:
-  delta_magnitude(15) + delta_sustained(12) + binance_imbalance(15) +
-  clob_spread_compression(10) + clob_yes_no_pressure(10) + volume_delta(8) +
-  bos_choch_5m(12) + bos_choch_15m(8) + time_positioning(5) +
-  implied_price_edge(5) = 100
+Primary signal is flow_strength from FlowDetector. Score confirms flow
+with Binance L2, price delta, and CLOB spread compression. Only fires
+when score >= threshold (default 72).
 """
 from __future__ import annotations
 
@@ -19,19 +17,18 @@ from dataclasses import dataclass
 
 log = logging.getLogger("garves.snipe")
 
-DEFAULT_THRESHOLD = 75
+DEFAULT_THRESHOLD = 72
 
 COMPONENT_WEIGHTS = {
-    "delta_magnitude":         15,
-    "delta_sustained":         12,
-    "binance_imbalance":       15,
-    "clob_spread_compression": 10,
-    "clob_yes_no_pressure":    10,
-    "volume_delta":             8,
-    "bos_choch_5m":            12,
-    "bos_choch_15m":            8,
-    "time_positioning":         5,
-    "implied_price_edge":       5,
+    "flow_strength":           25,  # Primary signal from FlowDetector
+    "delta_magnitude":         15,  # BTC price move confirms flow
+    "binance_imbalance":       15,  # Binance L2 confirms direction
+    "clob_spread_compression": 12,  # Spread tightening = conviction
+    "flow_sustained":          10,  # Consecutive flow ticks
+    "delta_sustained":          8,  # Price direction persistence
+    "bos_choch_5m":             5,  # Background structure (bonus)
+    "time_positioning":         5,  # Sweet spot T-270 to T-240
+    "implied_price_edge":       5,  # Risk/reward at <= $0.52
 }  # Sum = 100
 
 
@@ -46,7 +43,7 @@ class ScoreResult:
 
 
 class SignalScorer:
-    """10-component signal scoring engine for 5m BTC binary snipe."""
+    """9-component flow-confirmation scoring engine for BTC 5m snipe."""
 
     def __init__(self, threshold: int = DEFAULT_THRESHOLD):
         self.threshold = threshold
@@ -66,28 +63,39 @@ class SignalScorer:
         structure_15m: dict | None,
         remaining_s: float,
         implied_price: float | None,
+        flow_strength: float = 0.0,
+        flow_sustained_ticks: int = 0,
     ) -> ScoreResult:
-        """Score the signal across all 10 components.
+        """Score the signal across all 9 components.
 
         Args:
-            direction: "up" or "down" (from delta analysis)
+            direction: "up" or "down" (from flow detection)
             delta_pct: absolute delta % (e.g. 0.12 for 0.12%)
-            sustained_ticks: consecutive ticks in same direction
+            sustained_ticks: consecutive price ticks in same direction
             ob_imbalance: Binance L2 imbalance (-1 to +1), None if disconnected
             ob_strength: Binance imbalance strength (0-1), None if no signal
-            clob_book: CLOB orderbook for target token (YES for up, NO for down)
+            clob_book: CLOB orderbook for target token
             clob_book_opposite: CLOB orderbook for opposite token
             structure_5m: {bos, choch, trend} from CandleStore 5m
-            structure_15m: {bos, choch, trend} from CandleStore 15m
+            structure_15m: unused (kept for API compat)
             remaining_s: seconds until window closes
             implied_price: current CLOB token price (0-1)
+            flow_strength: FlowDetector strength (0.0-1.0)
+            flow_sustained_ticks: FlowDetector sustained tick count
 
         Returns:
             ScoreResult with total 0-100, per-component breakdown, should_trade
         """
         components = {}
 
-        # 1. Delta Magnitude (15) — how far BTC moved from window open
+        # 1. Flow Strength (25) — primary signal from FlowDetector
+        raw = min(1.0, flow_strength)
+        components["flow_strength"] = {
+            "score": round(raw, 3),
+            "detail": f"flow={flow_strength:.2f}",
+        }
+
+        # 2. Delta Magnitude (15) — how far BTC moved from window open
         abs_delta = abs(delta_pct)
         if abs_delta >= 0.15:
             raw = 1.0
@@ -99,19 +107,6 @@ class SignalScorer:
             raw = abs_delta / 0.05 * 0.2
         components["delta_magnitude"] = {
             "score": round(raw, 3), "detail": f"{abs_delta:.4f}%",
-        }
-
-        # 2. Delta Sustained (12) — consecutive ticks confirming direction
-        if sustained_ticks >= 5:
-            raw = 1.0
-        elif sustained_ticks >= 3:
-            raw = 0.6 + (sustained_ticks - 3) / 2 * 0.4
-        elif sustained_ticks >= 2:
-            raw = 0.4
-        else:
-            raw = 0.0
-        components["delta_sustained"] = {
-            "score": round(raw, 3), "detail": f"{sustained_ticks} ticks",
         }
 
         # 3. Binance L2 Imbalance (15) — orderflow direction from Binance
@@ -135,13 +130,12 @@ class SignalScorer:
             "detail": f"imb={ob_imbalance:.3f}" if ob_imbalance is not None else "no data",
         }
 
-        # 4. CLOB Spread Compression (10) — spread tightening = conviction
+        # 4. CLOB Spread Compression (12) — spread tightening = conviction
         raw = 0.3
         if clob_book:
             spread = clob_book.get("spread", 0)
             now = time.time()
             self._spread_history.append((now, spread))
-            # Keep last 30s of spread readings
             cutoff = now - 30
             self._spread_history = [
                 (t, s) for t, s in self._spread_history if t > cutoff
@@ -163,49 +157,34 @@ class SignalScorer:
             "detail": f"spread={clob_book.get('spread', 0):.4f}" if clob_book else "N/A",
         }
 
-        # 5. CLOB YES/NO Pressure (10) — directional buying pressure
-        raw = 0.3
-        if clob_book and clob_book_opposite:
-            target_buy = clob_book.get("buy_pressure", 0)
-            opp_buy = clob_book_opposite.get("buy_pressure", 0)
-            total = target_buy + opp_buy
-            if total > 0:
-                ratio = target_buy / total
-                if ratio > 0.65:
-                    raw = 1.0
-                elif ratio > 0.55:
-                    raw = 0.5 + (ratio - 0.55) / 0.10 * 0.5
-                elif ratio > 0.45:
-                    raw = 0.3 + (ratio - 0.45) / 0.10 * 0.2
-                else:
-                    raw = ratio / 0.45 * 0.3
-        components["clob_yes_no_pressure"] = {
+        # 5. Flow Sustained (10) — consecutive flow ticks from FlowDetector
+        if flow_sustained_ticks >= 5:
+            raw = 1.0
+        elif flow_sustained_ticks >= 3:
+            raw = 0.6
+        elif flow_sustained_ticks >= 2:
+            raw = 0.3
+        else:
+            raw = 0.0
+        components["flow_sustained"] = {
             "score": round(raw, 3),
-            "detail": f"ratio={raw:.2f}",
+            "detail": f"{flow_sustained_ticks} ticks",
         }
 
-        # 6. Volume Delta (8) — buy/sell volume imbalance on target token
-        raw = 0.3
-        if clob_book:
-            buy_p = clob_book.get("buy_pressure", 0)
-            sell_p = clob_book.get("sell_pressure", 0)
-            total = buy_p + sell_p
-            if total > 0:
-                vol_imb = (buy_p - sell_p) / total
-                # Positive imbalance = more buyers on target token = confirms direction
-                if vol_imb > 0.30:
-                    raw = 1.0
-                elif vol_imb > 0.15:
-                    raw = 0.5 + (vol_imb - 0.15) / 0.15 * 0.5
-                elif vol_imb > 0:
-                    raw = 0.3 + vol_imb / 0.15 * 0.2
-                else:
-                    raw = max(0.0, 0.3 + vol_imb)
-        components["volume_delta"] = {
-            "score": round(raw, 3), "detail": "",
+        # 6. Delta Sustained (8) — consecutive price ticks confirming direction
+        if sustained_ticks >= 5:
+            raw = 1.0
+        elif sustained_ticks >= 3:
+            raw = 0.6 + (sustained_ticks - 3) / 2 * 0.4
+        elif sustained_ticks >= 2:
+            raw = 0.4
+        else:
+            raw = 0.0
+        components["delta_sustained"] = {
+            "score": round(raw, 3), "detail": f"{sustained_ticks} ticks",
         }
 
-        # 7. BOS/CHoCH 5m (12) — structure break on 5-minute chart
+        # 7. BOS/CHoCH 5m (5) — background structure (bonus)
         raw = self._score_structure(structure_5m, direction)
         components["bos_choch_5m"] = {
             "score": round(raw, 3),
@@ -215,48 +194,34 @@ class SignalScorer:
             ),
         }
 
-        # 8. BOS/CHoCH 15m (8) — structure alignment on 15-minute chart
-        raw = self._score_structure(structure_15m, direction)
-        components["bos_choch_15m"] = {
-            "score": round(raw, 3),
-            "detail": (
-                f"trend={structure_15m.get('trend')}"
-                if structure_15m else "no data"
-            ),
-        }
-
-        # 9. Time Positioning (5) — sweet spot T-60s to T-30s
-        if 30 <= remaining_s <= 60:
-            raw = 1.0
-        elif 60 < remaining_s <= 90:
-            raw = 0.7
-        elif 20 <= remaining_s < 30:
-            raw = 0.6
-        elif 90 < remaining_s <= 120:
-            raw = 0.5
-        elif remaining_s < 20:
-            raw = 0.2
+        # 8. Time Positioning (5) — sweet spot T-270 to T-240 (30-60s into window)
+        if 240 <= remaining_s <= 270:
+            raw = 1.0    # 30-60s into window — peak
+        elif 210 <= remaining_s < 240:
+            raw = 0.7    # 60-90s — still good
+        elif 270 < remaining_s <= 290:
+            raw = 0.6    # first 10-30s — building
+        elif 180 <= remaining_s < 210:
+            raw = 0.4    # 90-120s — late flow
         else:
-            raw = 0.3
+            raw = 0.2    # outside flow window
         components["time_positioning"] = {
             "score": round(raw, 3), "detail": f"T-{remaining_s:.0f}s",
         }
 
-        # 10. Implied Price Edge (5) — cheaper token = better risk/reward
-        raw = 0.3
+        # 9. Implied Price Edge (5) — tighter gate at <= $0.52
+        raw = 0.0
         if implied_price is not None:
             if implied_price < 0.45:
                 raw = 1.0
-            elif implied_price < 0.50:
+            elif implied_price < 0.48:
                 raw = 0.8
-            elif implied_price < 0.55:
+            elif implied_price < 0.50:
                 raw = 0.6
-            elif implied_price < 0.60:
+            elif implied_price <= 0.52:
                 raw = 0.4
-            elif implied_price < 0.65:
-                raw = 0.2
             else:
-                raw = 0.0
+                raw = 0.0  # Above 0.52 = no edge
         components["implied_price_edge"] = {
             "score": round(raw, 3),
             "detail": f"${implied_price:.3f}" if implied_price else "N/A",
@@ -284,18 +249,17 @@ class SignalScorer:
 
         log.info(
             "[SCORE] %s %.1f/100 (threshold=%d) %s | "
-            "delta=%.1f sus=%.1f ob=%.1f clob_sp=%.1f clob_p=%.1f "
-            "vol=%.1f bos5=%.1f bos15=%.1f time=%.1f edge=%.1f",
+            "flow=%.1f delta=%.1f ob=%.1f spread=%.1f "
+            "fsus=%.1f dsus=%.1f bos5=%.1f time=%.1f edge=%.1f",
             direction.upper(), total, self.threshold,
             "FIRE" if should_trade else "SKIP",
+            components["flow_strength"]["weighted"],
             components["delta_magnitude"]["weighted"],
-            components["delta_sustained"]["weighted"],
             components["binance_imbalance"]["weighted"],
             components["clob_spread_compression"]["weighted"],
-            components["clob_yes_no_pressure"]["weighted"],
-            components["volume_delta"]["weighted"],
+            components["flow_sustained"]["weighted"],
+            components["delta_sustained"]["weighted"],
             components["bos_choch_5m"]["weighted"],
-            components["bos_choch_15m"]["weighted"],
             components["time_positioning"]["weighted"],
             components["implied_price_edge"]["weighted"],
         )
@@ -312,24 +276,20 @@ class SignalScorer:
         choch = structure.get("choch")
         trend = structure.get("trend", "neutral")
 
-        # BOS confirms direction = strong
         if bos == "bullish" and direction == "up":
             return 1.0
         if bos == "bearish" and direction == "down":
             return 1.0
 
-        # CHoCH opposes direction = very bad
         if choch == "bearish" and direction == "up":
             return 0.0
         if choch == "bullish" and direction == "down":
             return 0.0
 
-        # Trend alignment without BOS
         if trend == direction or (trend == "bullish" and direction == "up") \
                 or (trend == "bearish" and direction == "down"):
             return 0.6
 
-        # Opposing trend
         if trend == "bullish" and direction == "down":
             return 0.1
         if trend == "bearish" and direction == "up":
