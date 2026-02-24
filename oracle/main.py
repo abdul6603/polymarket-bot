@@ -90,6 +90,12 @@ class OracleBot:
                     log.warning("Emergency volatility detected — running mid-week update")
                     await self._weekly_cycle(emergency=True)
 
+                # Heartbeat so health monitors know Oracle is alive
+                days_until_sunday = (6 - now.weekday()) % 7
+                next_run = "TODAY" if days_until_sunday == 0 else f"in {days_until_sunday}d"
+                log.info("[HEARTBEAT] alive | next cycle %s | %s",
+                         next_run, now.strftime("%a %H:%M UTC"))
+
                 # Sleep until next check (every 30 minutes)
                 await asyncio.sleep(1800)
 
