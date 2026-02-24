@@ -90,16 +90,40 @@ INSTRUCTIONS:
 - Be calibrated: if you say 0.70, it should happen ~70% of the time.
 - Do NOT just copy the current market price — apply your analysis.
 
+CRITICAL — DISTRIBUTION CONSTRAINT:
+- Price range questions for the SAME asset are MUTUALLY EXCLUSIVE.
+  The asset can only end in ONE range. Your probabilities for all ranges
+  of the same asset MUST sum to approximately 1.0 (100%).
+  Example: if BTC has ranges $60k-62k, $62k-64k, $64k-66k, $66k-68k,
+  your probabilities might be 0.15, 0.35, 0.30, 0.20 (sum = 1.0).
+- Similarly, "above $X" questions are related — if P(above $60k) = 0.90,
+  then P(above $65k) must be LOWER, not higher.
+
 RESPOND WITH STRICT JSON ONLY. No text before or after. Format:
 {{"predictions": {{"question_id": probability, ...}}, "overall_regime": "regime_name", "model_confidence": 0.0_to_1.0}}"""
 
 
 def _build_user_prompt(questions: list[dict]) -> str:
-    """Build the user prompt with questions."""
-    lines = ["Estimate YES probability for each question:\n"]
+    """Build the user prompt with questions, grouped by asset for distribution awareness."""
+    from collections import defaultdict
+
+    # Group by asset for clarity
+    by_asset: dict[str, list[dict]] = defaultdict(list)
     for q in questions:
-        lines.append(f"- {q['id']}: {q['question']} (current market: {q['current_market_price']:.1%})")
-    lines.append(f"\nRespond with strict JSON. Keys in predictions must match: {[q['id'] for q in questions]}")
+        by_asset[q["asset"]].append(q)
+
+    lines = ["Estimate YES probability for each question:\n"]
+
+    for asset, qs in sorted(by_asset.items()):
+        lines.append(f"--- {asset.upper()} ---")
+        range_count = sum(1 for q in qs if q["market_type"] == "price_range")
+        if range_count > 1:
+            lines.append(f"  (NOTE: {range_count} price ranges below are MUTUALLY EXCLUSIVE — probabilities must sum to ~1.0)")
+        for q in qs:
+            lines.append(f"- {q['id']}: {q['question']} (current market: {q['current_market_price']:.1%})")
+        lines.append("")
+
+    lines.append(f"Respond with strict JSON. Keys in predictions must match: {[q['id'] for q in questions]}")
     return "\n".join(lines)
 
 
@@ -154,6 +178,9 @@ def run_ensemble(
     # Weighted averaging
     averaged = _weighted_average(model_outputs, question_ids, cfg.ensemble_weights)
 
+    # Normalize mutually exclusive ranges per asset
+    averaged = _normalize_distributions(averaged, questions)
+
     # Map back to condition_ids
     id_to_cid = {q["id"]: q["condition_id"] for q in questions}
     predictions = {id_to_cid[qid]: prob for qid, prob in averaged.items() if qid in id_to_cid}
@@ -205,6 +232,75 @@ def _weighted_average(
             result[qid] = weighted_sum / total_weight
         else:
             result[qid] = 0.5  # no data → neutral
+
+    return result
+
+
+def _normalize_distributions(
+    averaged: dict[str, float],
+    questions: list[dict[str, str]],
+) -> dict[str, float]:
+    """Normalize mutually exclusive range predictions so they sum to ~1.0 per asset.
+
+    Price range questions for the same asset are mutually exclusive — the asset
+    can only end in one range. If the ensemble assigns 47% to every range,
+    we normalize so all ranges for that asset sum to 1.0.
+    """
+    from collections import defaultdict
+
+    # Group question IDs by (asset, market_type)
+    groups: dict[tuple[str, str], list[str]] = defaultdict(list)
+    q_lookup = {q["id"]: q for q in questions}
+    for q in questions:
+        groups[(q["asset"], q["market_type"])].append(q["id"])
+
+    result = dict(averaged)
+
+    for (asset, mtype), qids in groups.items():
+        if len(qids) < 2:
+            continue
+        # Only normalize price_range and above_below groups
+        if mtype not in ("price_range", "above_below"):
+            continue
+
+        probs = [result.get(qid, 0.0) for qid in qids]
+        total = sum(probs)
+
+        if total <= 0:
+            continue
+
+        if mtype == "price_range" and total > 1.05:
+            # Normalize ranges to sum to 1.0
+            for qid, p in zip(qids, probs):
+                result[qid] = p / total
+            log.info(
+                "[NORMALIZE] %s ranges: sum %.2f → 1.00 (%d markets)",
+                asset.upper(), total, len(qids),
+            )
+
+        elif mtype == "above_below":
+            # Sort by threshold (highest first) and ensure monotonic decreasing
+            # P(above $70k) <= P(above $65k) <= P(above $60k)
+            threshold_qids = []
+            for qid in qids:
+                q = q_lookup[qid]
+                # Extract threshold from question text
+                import re
+                m = re.search(r"\$([0-9,]+)", q["question"])
+                thresh = float(m.group(1).replace(",", "")) if m else 0
+                threshold_qids.append((thresh, qid))
+            threshold_qids.sort(reverse=True)  # highest threshold first
+
+            # Enforce monotonic: P(above higher) <= P(above lower)
+            prev_prob = 0.0
+            for i, (thresh, qid) in enumerate(threshold_qids):
+                if i > 0 and result[qid] < prev_prob:
+                    # Already monotonic, good
+                    pass
+                elif i > 0 and result[qid] >= prev_prob:
+                    # Fix: cap at previous level
+                    result[qid] = min(result[qid], prev_prob + 0.02)
+                prev_prob = result[qid]
 
     return result
 

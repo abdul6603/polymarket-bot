@@ -184,21 +184,39 @@ def calculate_edges(
     return signals
 
 
+MAX_TRADES_PER_ASSET = 2  # Never put more than 2 bets on one asset
+
+
 def select_trades(
     cfg: OracleConfig,
     signals: list[TradeSignal],
 ) -> list[TradeSignal]:
-    """Select the best trades within max_trades_per_week limit."""
+    """Select the best trades within max_trades_per_week limit.
+
+    Enforces per-asset concentration limit to prevent all-in on one asset.
+    """
     tradeable = [s for s in signals if s.conviction != "SKIP" and s.size > 0]
 
-    # Take top N by edge, respecting max trades
-    selected = tradeable[:cfg.max_trades_per_week]
+    # Select top trades while enforcing per-asset cap
+    selected: list[TradeSignal] = []
+    asset_counts: dict[str, int] = {}
+
+    for s in tradeable:
+        if len(selected) >= cfg.max_trades_per_week:
+            break
+        asset = s.market.asset
+        count = asset_counts.get(asset, 0)
+        if count >= MAX_TRADES_PER_ASSET:
+            continue
+        selected.append(s)
+        asset_counts[asset] = count + 1
 
     total_size = sum(s.size for s in selected)
     total_ev = sum(s.expected_value for s in selected)
+    asset_summary = ", ".join(f"{a}={c}" for a, c in sorted(asset_counts.items()))
     log.info(
-        "Selected %d trades: total_size=$%.2f, total_EV=$%.2f",
-        len(selected), total_size, total_ev,
+        "Selected %d trades: total_size=$%.2f, total_EV=$%.2f | per-asset: %s",
+        len(selected), total_size, total_ev, asset_summary,
     )
 
     return selected
