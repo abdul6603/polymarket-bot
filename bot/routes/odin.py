@@ -220,6 +220,27 @@ def api_odin_portfolio():
     })
 
 
+@odin_bp.route("/api/odin/pending-orders")
+def api_odin_pending_orders():
+    """Pending limit orders awaiting fill."""
+    status = _load_status()
+    return jsonify(status.get("pending_orders", []))
+
+
+@odin_bp.route("/api/odin/ws-status")
+def api_odin_ws_status():
+    """WebSocket connection status."""
+    status = _load_status()
+    ws = status.get("ws_status", {})
+    config = status.get("config", {})
+    return jsonify({
+        **ws,
+        "ws_enabled": config.get("ws_enabled", False),
+        "scaled_tranches": config.get("scaled_tranches", 1),
+        "limit_ttl_s": config.get("limit_ttl_s", 7200),
+    })
+
+
 @odin_bp.route("/api/odin/toggle-mode", methods=["POST"])
 def api_odin_toggle_mode():
     """Toggle Odin between live and paper trading."""

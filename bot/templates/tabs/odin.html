@@ -129,6 +129,35 @@
     <div id="odin-pg-blacklist" style="margin-top:4px;font-size:0.7rem;"></div>
   </div>
 
+  <!-- F1.7: WebSocket Status + Pending Orders (Phase 3) -->
+  <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #10b981;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <h3 class="section-title" style="font-size:0.72rem;margin:0;text-transform:uppercase;letter-spacing:0.06em;color:#10b981;">Real-Time Feed</h3>
+      <span id="odin-ws-dot" style="width:8px;height:8px;border-radius:50%;background:#ef4444;"></span>
+      <span id="odin-ws-label" style="font-size:0.68rem;color:var(--text-muted);">Disconnected</span>
+      <span id="odin-ws-stats" style="font-size:0.64rem;color:var(--text-secondary);margin-left:auto;"></span>
+    </div>
+    <div id="odin-ws-metrics" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+      <div class="stat-card" data-accent="odin" style="flex:1;min-width:100px;">
+        <div class="stat-value" id="odin-ws-tick-age" style="font-size:0.9rem;">--</div>
+        <div class="stat-label">Last Tick</div>
+      </div>
+      <div class="stat-card" data-accent="odin" style="flex:1;min-width:100px;">
+        <div class="stat-value" id="odin-ws-events" style="font-size:0.9rem;">0</div>
+        <div class="stat-label">Events</div>
+      </div>
+      <div class="stat-card" data-accent="odin" style="flex:1;min-width:100px;">
+        <div class="stat-value" id="odin-ws-pending" style="font-size:0.9rem;">0</div>
+        <div class="stat-label">Pending Orders</div>
+      </div>
+      <div class="stat-card" data-accent="odin" style="flex:1;min-width:100px;">
+        <div class="stat-value" id="odin-ws-coins" style="font-size:0.9rem;">0</div>
+        <div class="stat-label">Tracked Coins</div>
+      </div>
+    </div>
+    <div id="odin-pending-orders-table" style="font-size:0.7rem;"></div>
+  </div>
+
   <!-- F2: Conviction Engine -->
   <div class="collapse-section default-open">
     <div class="collapse-trigger">
@@ -293,6 +322,52 @@ function odinRefresh() {
         blEl.innerHTML = '<span style="color:var(--error);font-weight:600;">Blacklisted: ' + blKeys.join(', ') + '</span>';
       } else {
         blEl.innerHTML = '<span style="color:var(--success);">No blacklisted coins</span>';
+      }
+    }
+
+    // WebSocket Status + Pending Orders (Phase 3)
+    var ws = d.ws_status || {};
+    var wsConnected = ws.connected || false;
+    var wsDot = document.getElementById('odin-ws-dot');
+    var wsLabel = document.getElementById('odin-ws-label');
+    if (wsDot) wsDot.style.background = wsConnected ? '#10b981' : '#ef4444';
+    if (wsLabel) wsLabel.textContent = wsConnected ? 'Connected' : 'Disconnected';
+    var wsStats = document.getElementById('odin-ws-stats');
+    if (wsStats && wsConnected) {
+      wsStats.textContent = 'Reconnects: ' + (ws.reconnect_count || 0) + ' | Queue: ' + (ws.queue_size || 0) + ' | Uptime: ' + Math.round((ws.uptime_s || 0) / 60) + 'm';
+    }
+    var tickAge = ws.last_tick_age_s;
+    odinSetVal('odin-ws-tick-age', tickAge >= 0 ? (tickAge < 5 ? 'LIVE' : tickAge.toFixed(0) + 's ago') : '--');
+    var tickEl = document.getElementById('odin-ws-tick-age');
+    if (tickEl) tickEl.style.color = tickAge >= 0 && tickAge < 5 ? '#10b981' : tickAge > 15 ? 'var(--error)' : 'var(--warning)';
+    odinSetVal('odin-ws-events', (ws.events_received || 0).toLocaleString());
+    odinSetVal('odin-ws-pending', (d.pending_order_count || 0));
+    odinSetVal('odin-ws-coins', ws.cached_coins || 0);
+
+    var pendingOrders = d.pending_orders || [];
+    var poDiv = document.getElementById('odin-pending-orders-table');
+    if (poDiv) {
+      if (pendingOrders.length === 0) {
+        poDiv.innerHTML = '<span style="color:var(--text-muted);font-style:italic;">No pending limit orders</span>';
+      } else {
+        var poHtml = '<table style="width:100%;border-collapse:collapse;"><thead><tr style="border-bottom:1px solid var(--border);color:var(--text-muted);">';
+        poHtml += '<th style="text-align:left;padding:3px 6px;">Symbol</th><th>Side</th><th>Price</th><th>Qty</th><th>Age</th><th>TTL</th></tr></thead><tbody>';
+        var nowSec = Date.now() / 1000;
+        pendingOrders.forEach(function(po) {
+          var dirColor = po.direction === 'SHORT' ? 'var(--error)' : 'var(--success)';
+          var ageMins = Math.round((nowSec - (po.placed_time || nowSec)) / 60);
+          var ttlMins = Math.max(0, Math.round(((po.expires_at || nowSec) - nowSec) / 60));
+          poHtml += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
+          poHtml += '<td style="padding:3px 6px;font-weight:600;">' + (po.symbol || '').replace('USDT', '') + '</td>';
+          poHtml += '<td style="text-align:center;color:' + dirColor + ';font-weight:600;">' + (po.direction || '') + '</td>';
+          poHtml += '<td style="text-align:center;">$' + (po.limit_price || 0).toFixed(2) + '</td>';
+          poHtml += '<td style="text-align:center;">' + (po.qty || 0).toFixed(4) + '</td>';
+          poHtml += '<td style="text-align:center;">' + ageMins + 'm</td>';
+          poHtml += '<td style="text-align:center;color:' + (ttlMins < 30 ? 'var(--warning)' : 'var(--text-muted)') + ';">' + ttlMins + 'm</td>';
+          poHtml += '</tr>';
+        });
+        poHtml += '</tbody></table>';
+        poDiv.innerHTML = poHtml;
       }
     }
 
