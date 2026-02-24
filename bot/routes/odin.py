@@ -206,6 +206,20 @@ def api_odin_omnicoin_run():
         return jsonify({"error": str(e)[:200], "symbol": symbol}), 500
 
 
+@odin_bp.route("/api/odin/portfolio")
+def api_odin_portfolio():
+    """Portfolio Guard status — heat, direction balance, exposure, blacklist."""
+    status = _load_status()
+    pg = status.get("portfolio_guard", {})
+    config = status.get("config", {})
+    return jsonify({
+        **pg,
+        "coin_universe": config.get("coin_universe", 0),
+        "detail_slots": config.get("detail_slots", 0),
+        "symbols_per_cycle": config.get("symbols_per_cycle", 0),
+    })
+
+
 @odin_bp.route("/api/odin/toggle-mode", methods=["POST"])
 def api_odin_toggle_mode():
     """Toggle Odin between live and paper trading."""

@@ -104,6 +104,31 @@
     </div>
   </div>
 
+  <!-- F1.5: Portfolio Risk Guard (Phase 2) -->
+  <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #00d4ff;">
+    <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:#00d4ff;">Portfolio Guard</h3>
+    <div id="odin-portfolio-guard" style="display:flex;flex-wrap:wrap;gap:8px;">
+      <div class="stat-card" data-accent="odin" style="flex:1;min-width:120px;">
+        <div class="stat-value" id="odin-pg-heat">0%</div>
+        <div class="stat-label">Portfolio Heat</div>
+      </div>
+      <div class="stat-card" data-accent="odin" style="flex:1;min-width:120px;">
+        <div class="stat-value" id="odin-pg-direction">0L / 0S</div>
+        <div class="stat-label">Direction Balance</div>
+      </div>
+      <div class="stat-card" data-accent="odin" style="flex:1;min-width:120px;">
+        <div class="stat-value" id="odin-pg-positions">0 / 5</div>
+        <div class="stat-label">Open / Max</div>
+      </div>
+      <div class="stat-card" data-accent="odin" style="flex:1;min-width:120px;">
+        <div class="stat-value" id="odin-pg-universe">0</div>
+        <div class="stat-label">Coin Universe</div>
+      </div>
+    </div>
+    <div id="odin-pg-exposure" style="margin-top:8px;font-size:0.7rem;color:var(--text-secondary);"></div>
+    <div id="odin-pg-blacklist" style="margin-top:4px;font-size:0.7rem;"></div>
+  </div>
+
   <!-- F2: Conviction Engine -->
   <div class="collapse-section default-open">
     <div class="collapse-trigger">
@@ -243,6 +268,33 @@ function odinRefresh() {
     odinPnl('odin-daily-pnl', d.daily_pnl || 0);
     odinPnl('odin-weekly-pnl', d.weekly_pnl || 0);
     odinSetVal('odin-peak-balance', '$' + (d.peak_balance || 1000).toFixed(2));
+
+    // Portfolio Guard (Phase 2)
+    var pg = d.portfolio_guard || {};
+    var pgHeat = pg.total_heat_pct || 0;
+    var pgMax = pg.max_heat_pct || 10;
+    odinSetVal('odin-pg-heat', pgHeat.toFixed(1) + '% / ' + pgMax + '%');
+    var heatEl = document.getElementById('odin-pg-heat');
+    if (heatEl) heatEl.style.color = pgHeat > pgMax * 0.8 ? 'var(--error)' : pgHeat > pgMax * 0.5 ? 'var(--warning)' : 'var(--success)';
+    odinSetVal('odin-pg-direction', (pg.long_count || 0) + 'L / ' + (pg.short_count || 0) + 'S');
+    odinSetVal('odin-pg-positions', (pg.open_positions || 0) + ' / ' + (pg.max_positions || 5));
+    var pgCfg = d.config || {};
+    odinSetVal('odin-pg-universe', pgCfg.coin_universe || pgCfg.priority_coins || 0);
+    var expEl = document.getElementById('odin-pg-exposure');
+    if (expEl) {
+      var longN = pg.long_notional || 0; var shortN = pg.short_notional || 0;
+      expEl.textContent = 'Long: $' + longN.toFixed(0) + ' | Short: $' + shortN.toFixed(0) + ' | Detail slots: ' + (pgCfg.detail_slots || 4) + ' | Per cycle: ' + (pgCfg.symbols_per_cycle || 8);
+    }
+    var blEl = document.getElementById('odin-pg-blacklist');
+    if (blEl) {
+      var bl = pg.blacklisted || {};
+      var blKeys = Object.keys(bl).filter(function(k) { return bl[k].active; });
+      if (blKeys.length > 0) {
+        blEl.innerHTML = '<span style="color:var(--error);font-weight:600;">Blacklisted: ' + blKeys.join(', ') + '</span>';
+      } else {
+        blEl.innerHTML = '<span style="color:var(--success);">No blacklisted coins</span>';
+      }
+    }
 
     // CoinGlass Regime
     var regime = d.regime || {};
