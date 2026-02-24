@@ -1,163 +1,299 @@
 <!-- THOR -->
 <div class="tab-content" id="tab-thor">
-  <div id="intel-thor" class="intel-meter" style="margin-bottom:12px;"></div>
-  <div class="agent-widget-row" id="thor-widgets">
-    <div class="widget-badge" id="thor-state"><span class="wb-label">State:</span> <span>--</span></div>
-    <div class="widget-badge" id="thor-model"><span class="wb-label">Model:</span> <span>--</span></div>
-    <button class="btn" onclick="healthCheckAgent('thor')" style="font-size:0.72rem;">Health Check</button>
-</div>
 
-  <!-- Wake Control Panel -->
-  <div class="glass-card" style="margin:12px 0;border-left:3px solid #ff6600;padding:12px 16px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
-      <div>
-        <h3 style="font-size:0.82rem;margin:0 0 4px;color:#ff6600;font-weight:700;">Wake Control</h3>
-        <span class="text-muted" style="font-size:0.7rem;">Thor sleeps and wakes every 12h to review issues. Budget: $2/day max.</span>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <button class="btn" id="btn-thor-wake" onclick="thorWakeNow()" style="font-size:0.78rem;background:#ff6600;color:#000;font-weight:700;padding:6px 16px;">Wake Now</button>
-        <span id="thor-wake-status" style="font-size:0.72rem;color:var(--text-muted);"></span>
-      </div>
+  <!-- S1: Header -->
+  <div class="thor-header">
+    <div class="thor-title-group">
+      <span class="thor-title">THOR</span>
+      <span class="thor-subtitle">Senior Lead Engineer &amp; Chief Architect</span>
     </div>
-    <div style="display:flex;gap:16px;align-items:center;margin-top:8px;flex-wrap:wrap;">
-      <label style="font-size:0.74rem;display:flex;align-items:center;gap:6px;cursor:pointer;">
-        <input type="checkbox" id="thor-auto-wake" onchange="thorToggleAutoWake()" checked />
-        <span>Auto-wake every</span>
-      </label>
-      <select id="thor-wake-interval" onchange="thorUpdateInterval()" style="font-size:0.74rem;padding:2px 6px;background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border-color);border-radius:4px;">
-        <option value="6">6h</option>
-        <option value="12" selected>12h</option>
-        <option value="24">24h</option>
-      </select>
-      <span id="thor-next-wake" class="text-muted" style="font-size:0.72rem;"></span>
-      <span id="thor-last-wake" class="text-muted" style="font-size:0.72rem;"></span>
+    <div class="thor-header-right">
+      <span class="thor-status-pill" id="thor-overall-pill">
+        <span class="thor-status-dot" id="thor-overall-dot"></span>
+        <span id="thor-overall-label">--</span>
+      </span>
+      <span class="thor-ts" id="thor-updated">--</span>
+      <button class="thor-action-btn thor-action-primary" id="btn-thor-wake" onclick="thorWakeNow()">Wake Now</button>
+      <button class="thor-action-btn" onclick="healthCheckAgent('thor')">Health Check</button>
     </div>
   </div>
+
+  <!-- S2: Intelligence Overview -->
+  <div class="thor-intel-row">
+    <!-- Left: Radar -->
+    <div class="glass-card thor-radar-card">
+      <div class="thor-radar-wrap" id="thor-radar-container">
+        <div class="thor-radar-placeholder">Loading...</div>
+      </div>
+      <div class="thor-score-row">
+        <span class="thor-score-num" id="thor-score-value">--</span>
+        <span class="thor-score-grade" id="thor-score-grade">--</span>
+      </div>
+      <div class="thor-model-line">
+        <span class="text-muted">Model:</span> <span id="thor-model-name">--</span>
+        <span class="text-muted" style="margin-left:8px;">State:</span> <span id="thor-state-label">--</span>
+      </div>
+    </div>
+    <!-- Right: 5 Stat Cards -->
+    <div class="thor-stats-col">
+      <div class="thor-stat-card" style="border-left-color:var(--agent-thor);">
+        <div class="thor-stat-value" id="thor-queue-pending">0</div>
+        <div class="thor-stat-label">Pending Tasks</div>
+      </div>
+      <div class="thor-stat-card" style="border-left-color:var(--success);">
+        <div class="thor-stat-value" id="thor-completed" style="color:var(--success);">0</div>
+        <div class="thor-stat-label">Completed</div>
+      </div>
+      <div class="thor-stat-card" style="border-left-color:var(--error);">
+        <div class="thor-stat-value" id="thor-failed" style="color:var(--error);">0</div>
+        <div class="thor-stat-label">Failed</div>
+      </div>
+      <div class="thor-stat-card" style="border-left-color:#3498DB;">
+        <div class="thor-stat-value" id="thor-tokens">0</div>
+        <div class="thor-stat-label">Tokens Used</div>
+      </div>
+      <div class="thor-stat-card" style="border-left-color:var(--success);">
+        <div class="thor-stat-value" id="thor-success-rate">--</div>
+        <div class="thor-stat-label">Success Rate</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Health check result (inline, hidden until used) -->
   <div class="health-inline" id="thor-health-result"></div>
-  <div class="grid-6">
-    <div class="stat-card" data-accent="thor"><div class="stat-value" id="thor-queue-pending">0</div><div class="stat-label">Pending Tasks</div></div>
-    <div class="stat-card" data-accent="success"><div class="stat-value" id="thor-completed">0</div><div class="stat-label">Completed</div></div>
-    <div class="stat-card" data-accent="warning"><div class="stat-value" id="thor-failed">0</div><div class="stat-label">Failed</div></div>
-    <div class="stat-card" data-accent="thor"><div class="stat-value" id="thor-knowledge">0</div><div class="stat-label">Knowledge Entries</div></div>
-    <div class="stat-card" data-accent="thor"><div class="stat-value" id="thor-tokens">0</div><div class="stat-label">Tokens Used</div></div>
-    <div class="stat-card" data-accent="success"><div class="stat-value" id="thor-success-rate">--</div><div class="stat-label">Success Rate</div></div>
+
+  <!-- S3: Quick Actions -->
+  <div class="glass-card thor-actions-card">
+    <div class="thor-actions-header">
+      <span class="thor-section-label">QUICK ACTIONS</span>
+      <span id="thor-action-status" class="thor-action-feedback"></span>
+    </div>
+    <div class="thor-actions-grid">
+      <button class="thor-action-btn" onclick="thorRunSystemCheck()">
+        <span class="thor-action-icon" style="background:rgba(0,255,136,0.12);color:var(--success);">&#x2713;</span>
+        Full Health Scan
+      </button>
+      <button class="thor-action-btn" onclick="thorRunBugScan()">
+        <span class="thor-action-icon" style="background:rgba(255,68,68,0.12);color:var(--error);">&#x26A0;</span>
+        Bug Scan
+      </button>
+      <button class="thor-action-btn" onclick="thorUpdateSheet()" id="btn-update-sheet">
+        <span class="thor-action-icon" style="background:rgba(52,152,219,0.12);color:#3498DB;">&#x2630;</span>
+        Update Progress
+      </button>
+      <button class="thor-action-btn" onclick="thorUpdateBrotherhood()" id="btn-update-brotherhood">
+        <span class="thor-action-icon" style="background:rgba(155,89,182,0.12);color:#9B59B6;">&#x2692;</span>
+        Brotherhood Sheet
+      </button>
+      <button class="thor-action-btn" onclick="thorUpdateDashboard()" id="btn-update-dash">
+        <span class="thor-action-icon" style="background:rgba(255,170,0,0.12);color:var(--warning);">&#x2B1A;</span>
+        Update Dashboard
+      </button>
+      <button class="thor-action-btn" onclick="loadThorCodebaseIndex()">
+        <span class="thor-action-icon" style="background:rgba(255,102,0,0.12);color:var(--agent-thor);">&#x2261;</span>
+        Rebuild Index
+      </button>
+    </div>
   </div>
 
-  <!-- Action Buttons -->
-  <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;">
-    <button class="btn" id="btn-update-sheet" onclick="thorUpdateSheet()" style="font-size:0.76rem;background:#ff6600;color:#000;font-weight:600;">Update Progress Sheet</button>
-    <button class="btn" id="btn-update-brotherhood" onclick="thorUpdateBrotherhood()" style="font-size:0.76rem;background:#ff6600;color:#000;font-weight:600;">Update Brotherhood Sheet</button>
-    <button class="btn" id="btn-update-dash" onclick="thorUpdateDashboard()" style="font-size:0.76rem;background:#ff6600;color:#000;font-weight:600;">Update Dashboard</button>
-    <span id="thor-action-status" class="text-muted" style="font-size:0.72rem;align-self:center;"></span>
-  </div>
-
-  <!-- Smart Actions — ABOVE activity -->
-  <div class="section-spacer" style="margin-top:0;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
-      <h2 class="section-title" data-accent="thor" style="margin-bottom:0;">Smart Actions</h2>
-      <button class="btn" onclick="loadSmartActions()" style="font-size:0.72rem;">Refresh</button>
+  <!-- S4: Smart Actions -->
+  <div class="glass-card" style="margin-bottom:var(--space-4);">
+    <div class="thor-section-header">
+      <span class="thor-section-label">SMART ACTIONS</span>
+      <button class="thor-refresh-btn" onclick="loadSmartActions()">Refresh</button>
     </div>
     <div id="thor-smart-actions" style="display:flex;flex-wrap:wrap;gap:8px;">
-      <span class="text-muted">Loading live suggestions...</span>
+      <span class="text-muted" style="font-size:0.72rem;">Loading live suggestions...</span>
     </div>
   </div>
 
-  <!-- API Cost Tracker -->
-  <div class="glass-card" style="margin:12px 0;border-left:3px solid var(--agent-thor);">
-    <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">API Cost Tracker</h3>
-    <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
-      <div style="font-family:var(--font-mono);font-size:0.82rem;">
-        <span class="text-muted">Today:</span> <span id="thor-cost-daily" style="color:var(--success);font-weight:600;">$0.00</span>
-        <span class="text-muted"> / </span><span id="thor-cost-budget">$2.00</span>
+  <!-- S5: API Cost Tracker -->
+  <div class="glass-card" style="margin-bottom:var(--space-4);">
+    <div class="thor-section-header">
+      <span class="thor-section-label">API COST TRACKER</span>
+      <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-muted);">
+        Budget: <span id="thor-cost-budget" style="color:var(--text-secondary);">$2.00</span>/day
+      </span>
+    </div>
+    <div class="thor-cost-row">
+      <div class="thor-cost-metric">
+        <span class="thor-cost-num" id="thor-cost-daily">$0.00</span>
+        <span class="thor-cost-sub">Today</span>
       </div>
-      <div style="flex:1;min-width:120px;max-width:300px;">
-        <div style="background:var(--bg-card);border-radius:4px;height:8px;overflow:hidden;">
-          <div id="thor-cost-bar" style="height:100%;background:var(--success);width:0%;transition:width 0.3s;border-radius:4px;"></div>
+      <div class="thor-cost-bar-wrap">
+        <div class="thor-cost-bar-track">
+          <div class="thor-cost-bar-fill" id="thor-cost-bar"></div>
         </div>
       </div>
-      <div style="font-family:var(--font-mono);font-size:0.74rem;">
-        <span class="text-muted">Total:</span> <span id="thor-cost-total">$0.00</span>
-        <span class="text-muted"> | Calls:</span> <span id="thor-cost-calls">0</span>
-        <span class="text-muted"> | Models:</span> <span id="thor-cost-models">--</span>
+      <div class="thor-cost-metric">
+        <span class="thor-cost-num" id="thor-cost-total">$0.00</span>
+        <span class="thor-cost-sub">Total</span>
+      </div>
+      <div class="thor-cost-metric">
+        <span class="thor-cost-num" id="thor-cost-calls">0</span>
+        <span class="thor-cost-sub">Calls</span>
+      </div>
+      <div class="thor-cost-metric">
+        <span class="thor-cost-num" id="thor-cost-models" style="font-size:0.72rem;">--</span>
+        <span class="thor-cost-sub">Models</span>
       </div>
     </div>
   </div>
 
-  <!-- Activity Feed — merged activity + log -->
-  <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-thor);">
-    <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Activity Feed</h3>
-    <div id="thor-activity-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:200px;overflow-y:auto;"><span class="text-muted">Waiting for activity...</span></div>
-  </div>
+  <!-- S6: Detailed Panels (collapsible) -->
 
-  <!-- Submit Custom Task -->
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="thor">Submit Custom Task</h2>
-    <div class="glass-card">
-      <div style="display:flex;flex-direction:column;gap:var(--space-3);">
-        <input type="text" class="input" id="thor-custom-title" placeholder="Task title..." style="font-family:var(--font-mono);font-size:0.78rem;" />
-        <textarea class="input" id="thor-custom-desc" rows="3" placeholder="Describe what Thor should do..." style="width:100%;resize:vertical;font-family:var(--font-mono);font-size:0.78rem;"></textarea>
-        <div style="display:flex;gap:var(--space-3);align-items:center;">
-          <input type="text" class="input" id="thor-custom-files" placeholder="Target files (comma-separated)" style="flex:1;font-size:0.76rem;" />
-          <select class="input" id="thor-custom-priority" style="font-size:0.76rem;padding:4px 8px;">
-            <option value="normal">Normal</option>
-            <option value="high">High</option>
-            <option value="critical">Critical</option>
-          </select>
-          <button class="btn btn-primary" onclick="thorSubmitCustomTask()">Submit Task</button>
+  <!-- Activity Feed -->
+  <div class="collapse-section thor-panel open">
+    <div class="collapse-trigger">
+      <h2 class="thor-panel-title">Activity Feed</h2>
+    </div>
+    <div class="collapse-body">
+      <div class="thor-panel-body">
+        <div id="thor-activity-log" style="font-family:var(--font-mono);font-size:0.72rem;max-height:220px;overflow-y:auto;">
+          <span class="text-muted">Waiting for activity...</span>
         </div>
       </div>
     </div>
   </div>
 
   <!-- Task Queue -->
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="thor">Task Queue</h2>
-    <div class="glass-card"><table class="data-table"><thead><tr><th>ID</th><th>Title</th><th>Agent</th><th>Priority</th><th>Status</th></tr></thead><tbody id="thor-queue-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No tasks</td></tr></tbody></table></div>
+  <div class="collapse-section thor-panel">
+    <div class="collapse-trigger">
+      <h2 class="thor-panel-title">Task Queue</h2>
+    </div>
+    <div class="collapse-body">
+      <div class="thor-panel-body">
+        <table class="data-table">
+          <thead><tr><th>ID</th><th>Title</th><th>Agent</th><th>Priority</th><th>Status</th></tr></thead>
+          <tbody id="thor-queue-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:20px;">No tasks</td></tr></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
   <!-- Recent Results -->
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="thor">Recent Results</h2>
-    <div class="glass-card"><table class="data-table"><thead><tr><th>Task</th><th>Model</th><th>Files</th><th>Test</th><th>Phrase</th></tr></thead><tbody id="thor-results-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No results yet</td></tr></tbody></table></div>
+  <div class="collapse-section thor-panel">
+    <div class="collapse-trigger">
+      <h2 class="thor-panel-title">Recent Results</h2>
+    </div>
+    <div class="collapse-body">
+      <div class="thor-panel-body">
+        <table class="data-table">
+          <thead><tr><th>Task</th><th>Model</th><th>Files</th><th>Test</th><th>Phrase</th></tr></thead>
+          <tbody id="thor-results-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:20px;">No results yet</td></tr></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 
-  <!-- Reflexion + Cache + Code Review + Progress -->
-  <div class="section-spacer">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-      <div class="glass-card" style="border-left:3px solid var(--agent-thor);">
-        <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Reflexion Memory <span class="text-muted" style="font-weight:400;font-size:0.6rem;">Remembers past debugging failures</span></h3>
-        <div id="thor-reflexion-stats" style="font-family:var(--font-mono);font-size:0.76rem;"><span class="text-muted">Loading...</span></div>
+  <!-- Submit Custom Task -->
+  <div class="collapse-section thor-panel">
+    <div class="collapse-trigger">
+      <h2 class="thor-panel-title">Submit Custom Task</h2>
+    </div>
+    <div class="collapse-body">
+      <div class="thor-panel-body">
+        <div style="display:flex;flex-direction:column;gap:var(--space-3);">
+          <input type="text" class="input" id="thor-custom-title" placeholder="Task title..." style="font-family:var(--font-mono);font-size:0.78rem;" />
+          <textarea class="input" id="thor-custom-desc" rows="3" placeholder="Describe what Thor should do..." style="width:100%;resize:vertical;font-family:var(--font-mono);font-size:0.78rem;"></textarea>
+          <div style="display:flex;gap:var(--space-3);align-items:center;">
+            <input type="text" class="input" id="thor-custom-files" placeholder="Target files (comma-separated)" style="flex:1;font-size:0.76rem;" />
+            <select class="input" id="thor-custom-priority" style="font-size:0.76rem;padding:4px 8px;">
+              <option value="normal">Normal</option>
+              <option value="high">High</option>
+              <option value="critical">Critical</option>
+            </select>
+            <button class="btn btn-primary" onclick="thorSubmitCustomTask()">Submit Task</button>
+          </div>
+        </div>
       </div>
-      <div class="glass-card" style="border-left:3px solid var(--agent-thor);">
-        <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Response Cache <span class="text-muted" style="font-weight:400;font-size:0.6rem;">Caches similar API calls to save $</span></h3>
-        <div id="thor-cache-stats" style="font-family:var(--font-mono);font-size:0.76rem;"><span class="text-muted">Loading...</span></div>
-      </div>
-      <div class="glass-card" style="border-left:3px solid var(--agent-thor);">
-        <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Code Review <span class="text-muted" style="font-weight:400;font-size:0.6rem;">Automated quality checks on output</span></h3>
-        <div id="thor-review-stats" style="font-family:var(--font-mono);font-size:0.76rem;"><span class="text-muted">Loading...</span></div>
-      </div>
-      <div class="glass-card" style="border-left:3px solid var(--agent-thor);">
-        <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Progress Tracker</h3>
-        <div id="thor-progress-stats" style="font-family:var(--font-mono);font-size:0.76rem;"><span class="text-muted">Loading...</span></div>
+    </div>
+  </div>
+
+  <!-- Engine Stats: Reflexion + Cache + Review + Progress -->
+  <div class="collapse-section thor-panel">
+    <div class="collapse-trigger">
+      <h2 class="thor-panel-title">Engine Stats</h2>
+    </div>
+    <div class="collapse-body">
+      <div class="thor-panel-body">
+        <div class="thor-engine-grid">
+          <div class="thor-engine-card">
+            <div class="thor-engine-title">Reflexion Memory</div>
+            <div class="thor-engine-sub">Past debugging failures</div>
+            <div id="thor-reflexion-stats" style="font-family:var(--font-mono);font-size:0.76rem;margin-top:6px;"><span class="text-muted">Loading...</span></div>
+          </div>
+          <div class="thor-engine-card">
+            <div class="thor-engine-title">Response Cache</div>
+            <div class="thor-engine-sub">Saves $ on repeated calls</div>
+            <div id="thor-cache-stats" style="font-family:var(--font-mono);font-size:0.76rem;margin-top:6px;"><span class="text-muted">Loading...</span></div>
+          </div>
+          <div class="thor-engine-card">
+            <div class="thor-engine-title">Code Review</div>
+            <div class="thor-engine-sub">Automated quality checks</div>
+            <div id="thor-review-stats" style="font-family:var(--font-mono);font-size:0.76rem;margin-top:6px;"><span class="text-muted">Loading...</span></div>
+          </div>
+          <div class="thor-engine-card">
+            <div class="thor-engine-title">Progress Tracker</div>
+            <div class="thor-engine-sub">Task completion tracking</div>
+            <div id="thor-progress-stats" style="font-family:var(--font-mono);font-size:0.76rem;margin-top:6px;"><span class="text-muted">Loading...</span></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
   <!-- Codebase Index -->
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="thor">Codebase Index</h2>
-    <div class="glass-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
-        <span class="text-muted" style="font-size:0.76rem;">AST-parsed function/class index across all Brotherhood agents</span>
-        <button class="btn" onclick="loadThorCodebaseIndex()" style="font-size:0.72rem;">Refresh</button>
+  <div class="collapse-section thor-panel">
+    <div class="collapse-trigger">
+      <h2 class="thor-panel-title">Codebase Index</h2>
+    </div>
+    <div class="collapse-body">
+      <div class="thor-panel-body">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
+          <span class="text-muted" style="font-size:0.72rem;">AST-parsed index across all Brotherhood agents</span>
+          <button class="thor-refresh-btn" onclick="loadThorCodebaseIndex()">Refresh</button>
+        </div>
+        <div id="thor-codebase-index"><div class="text-muted" style="text-align:center;padding:var(--space-4);">Loading...</div></div>
       </div>
-      <div id="thor-codebase-index"><div class="text-muted" style="text-align:center;padding:var(--space-4);">Loading...</div></div>
+    </div>
+  </div>
+
+  <!-- Wake Control -->
+  <div class="collapse-section thor-panel">
+    <div class="collapse-trigger">
+      <h2 class="thor-panel-title">Wake Control</h2>
+    </div>
+    <div class="collapse-body">
+      <div class="thor-panel-body">
+        <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+          <label style="font-size:0.74rem;display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="checkbox" id="thor-auto-wake" onchange="thorToggleAutoWake()" checked />
+            <span>Auto-wake every</span>
+          </label>
+          <select id="thor-wake-interval" onchange="thorUpdateInterval()" style="font-size:0.74rem;padding:2px 6px;background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:4px;">
+            <option value="6">6h</option>
+            <option value="12" selected>12h</option>
+            <option value="24">24h</option>
+          </select>
+          <span id="thor-next-wake" class="text-muted" style="font-size:0.72rem;"></span>
+          <span id="thor-last-wake" class="text-muted" style="font-size:0.72rem;"></span>
+          <span id="thor-wake-status" class="text-muted" style="font-size:0.72rem;"></span>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Commands -->
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="thor">Commands &amp; Capabilities</h2>
-    <div class="glass-card"><div id="thor-commands" style="max-height:250px;overflow-y:auto;"><span class="text-muted">Loading commands...</span></div></div>
+  <div class="collapse-section thor-panel">
+    <div class="collapse-trigger">
+      <h2 class="thor-panel-title">Commands &amp; Capabilities</h2>
+    </div>
+    <div class="collapse-body">
+      <div class="thor-panel-body">
+        <div id="thor-commands" style="max-height:250px;overflow-y:auto;"><span class="text-muted">Loading commands...</span></div>
+      </div>
+    </div>
   </div>
+
 </div>

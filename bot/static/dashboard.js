@@ -4942,52 +4942,106 @@ async function loadThor() {
     var resp = await fetch('/api/thor');
     var data = await resp.json();
 
-    // Status widgets
-    var stateEl = document.querySelector('#thor-state span:last-child');
-    var modelEl = document.querySelector('#thor-model span:last-child');
-    if (stateEl) {
-      var state = data.state || 'offline';
-      var stateColor = state === 'coding' ? 'var(--agent-thor)' : state === 'idle' ? 'var(--success)' : 'var(--text-muted)';
-      stateEl.textContent = state.charAt(0).toUpperCase() + state.slice(1);
-      stateEl.style.color = stateColor;
+    // State + Model
+    var state = data.state || 'offline';
+    var stateColor = state === 'coding' ? 'var(--agent-thor)' : state === 'idle' ? 'var(--success)' : 'var(--text-muted)';
+    var stateLabel = document.getElementById('thor-state-label');
+    if (stateLabel) {
+      stateLabel.textContent = state.charAt(0).toUpperCase() + state.slice(1);
+      stateLabel.style.color = stateColor;
     }
-    if (modelEl) modelEl.textContent = data.model || '--';
+    setText('thor-model-name', data.model || '--');
+
+    // Overall status pill
+    var q = data.queue || {};
+    var totalDone = (q.completed || 0) + (q.failed || 0);
+    var successRate = totalDone > 0 ? Math.round((q.completed || 0) / totalDone * 100) : 0;
+    var successRateStr = totalDone > 0 ? successRate + '%' : '--';
+    var overallLabel = 'Healthy';
+    var overallColor = 'var(--success)';
+    if (state === 'coding') { overallLabel = 'Working'; overallColor = 'var(--agent-thor)'; }
+    else if ((q.failed || 0) > (q.completed || 0) && totalDone > 0) { overallLabel = 'Degraded'; overallColor = 'var(--error)'; }
+    else if (state === 'offline') { overallLabel = 'Offline'; overallColor = 'var(--text-muted)'; }
+    var pillEl = document.getElementById('thor-overall-label');
+    var dotEl = document.getElementById('thor-overall-dot');
+    if (pillEl) { pillEl.textContent = overallLabel; pillEl.style.color = overallColor; }
+    if (dotEl) { dotEl.style.background = overallColor; dotEl.style.boxShadow = '0 0 6px ' + overallColor; }
+
+    // Updated time
+    setText('thor-updated', new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
 
     // Stat cards
-    var q = data.queue || {};
     setText('thor-queue-pending', q.pending || 0);
     setText('thor-completed', q.completed || 0);
     setText('thor-failed', q.failed || 0);
-    setText('thor-knowledge', data.knowledge_entries || 0);
+    setText('thor-success-rate', successRateStr);
 
     // Tokens used
     var tokens = data.total_tokens || 0;
     var tokensDisplay = tokens >= 1000000 ? (tokens / 1000000).toFixed(1) + 'M' : tokens >= 1000 ? (tokens / 1000).toFixed(1) + 'K' : tokens;
     setText('thor-tokens', tokensDisplay);
 
-    // Success rate
-    var totalDone = (q.completed || 0) + (q.failed || 0);
-    var successRate = totalDone > 0 ? Math.round((q.completed || 0) / totalDone * 100) + '%' : '--';
-    setText('thor-success-rate', successRate);
-
-    // Current task
+    // Current task indicator
     if (data.current_task && data.state === 'coding') {
-      setText('thor-queue-pending', (q.pending || 0) + ' (active: ' + data.current_task.substring(0, 30) + ')');
+      setText('thor-queue-pending', (q.pending || 0) + ' +1');
+    }
+
+    // Radar chart — derive 5 dimensions from real data
+    var radarEl = document.getElementById('thor-radar-container');
+    if (radarEl) {
+      var codeQuality = Math.min(100, totalDone > 0 ? successRate + 10 : 50);
+      var efficiency = Math.min(100, tokens > 0 ? Math.round(80 - Math.min(40, tokens / 100000)) : 50);
+      var knowledge = Math.min(100, (data.knowledge_entries || 0) * 5);
+      var coverage = Math.min(100, totalDone * 4);
+      var taskExec = Math.min(100, totalDone > 0 ? Math.round(((q.completed || 0) / Math.max(1, totalDone)) * 100) : 0);
+      var dims = [codeQuality, efficiency, knowledge, coverage, taskExec];
+      var dimLabels = ['Quality', 'Efficiency', 'Knowledge', 'Coverage', 'Execution'];
+      var overall = Math.round((codeQuality + efficiency + knowledge + coverage + taskExec) / 5);
+      var gradeLabel = overall >= 90 ? 'GENIUS' : overall >= 75 ? 'EXPERT' : overall >= 60 ? 'SKILLED' : overall >= 40 ? 'LEARNING' : 'NOVICE';
+      var gradeColor = overall >= 80 ? '#FFD700' : overall >= 60 ? 'var(--success)' : overall >= 40 ? 'var(--warning)' : 'var(--error)';
+      radarEl.innerHTML = radarSVG(180, dims, dimLabels, '#ff6600');
+      setText('thor-score-value', overall);
+      var gradeEl = document.getElementById('thor-score-grade');
+      if (gradeEl) { gradeEl.textContent = gradeLabel; gradeEl.style.color = gradeColor; }
+      var scoreEl = document.getElementById('thor-score-value');
+      if (scoreEl) scoreEl.style.color = gradeColor;
     }
   } catch(e) {
     setText('thor-queue-pending', '--');
   }
 
-  // Load cost tracker
+  // Load sub-sections
   loadThorCosts();
-  // Load queue
   loadThorQueue();
-  // Load results
   loadThorResults();
-  // Load activity
   loadThorActivity();
-  // Load wake status
   thorLoadWakeStatus();
+}
+
+function thorRunSystemCheck() {
+  var statusEl = document.getElementById('thor-action-status');
+  if (statusEl) { statusEl.textContent = 'Running health scan...'; statusEl.style.color = 'var(--agent-thor)'; }
+  fetch('/api/thor/quick-action', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({title: 'Full system health check', description: 'Run comprehensive health scan across all agents, check processes, verify endpoints, report status.', priority: 'high', source: 'dashboard'})
+  }).then(function(r){return r.json();}).then(function(data) {
+    if (data.error) { if (statusEl) { statusEl.textContent = 'Error: ' + data.error; statusEl.style.color = 'var(--error)'; } }
+    else { if (statusEl) { statusEl.textContent = 'Health scan submitted'; statusEl.style.color = 'var(--success)'; } showToast('Health scan task submitted', 'success'); loadThorQueue(); }
+  }).catch(function(e) { if (statusEl) { statusEl.textContent = 'Failed'; statusEl.style.color = 'var(--error)'; } });
+}
+
+function thorRunBugScan() {
+  var statusEl = document.getElementById('thor-action-status');
+  if (statusEl) { statusEl.textContent = 'Running bug scan...'; statusEl.style.color = 'var(--agent-thor)'; }
+  fetch('/api/thor/quick-action', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({title: 'Bug scan across codebase', description: 'Scan all agent codebases for bugs, type errors, uncaught exceptions, deprecated patterns. Report findings.', priority: 'normal', source: 'dashboard'})
+  }).then(function(r){return r.json();}).then(function(data) {
+    if (data.error) { if (statusEl) { statusEl.textContent = 'Error: ' + data.error; statusEl.style.color = 'var(--error)'; } }
+    else { if (statusEl) { statusEl.textContent = 'Bug scan submitted'; statusEl.style.color = 'var(--success)'; } showToast('Bug scan task submitted', 'success'); loadThorQueue(); }
+  }).catch(function(e) { if (statusEl) { statusEl.textContent = 'Failed'; statusEl.style.color = 'var(--error)'; } });
 }
 
 async function loadThorCosts() {

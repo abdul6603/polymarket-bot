@@ -1595,9 +1595,183 @@
     flex-shrink:0;
   }
 
-  @media (max-width:1200px) { .grid-4,.grid-6 { grid-template-columns:repeat(3,1fr); } .team-agents-row { grid-template-columns:repeat(3,1fr); } .ov-agent-grid { grid-template-columns:repeat(3,1fr); } .intel-grid { grid-template-columns:repeat(3,1fr); } }
-  @media (max-width:900px) { .grid-3,.grid-4,.grid-6 { grid-template-columns:repeat(2,1fr); } .main { padding:0 var(--space-4); } .intel-meter { flex-direction:column; align-items:stretch; } .team-agents-row { grid-template-columns:repeat(3,1fr); } .ov-main-row { flex-direction:column; } .ov-intel-panel { width:100%; } .ov-agent-grid { grid-template-columns:repeat(3,1fr); } .intel-neural-row { grid-template-columns:1fr; } }
-  @media (max-width:640px) { .grid-2,.grid-3,.grid-4,.grid-6 { grid-template-columns:1fr; } .sidebar { display:none; } .main { margin-left:0; } .kpi-grid { grid-template-columns:1fr; } .team-agents-row { grid-template-columns:repeat(2,1fr); } .atlas-cmd-grid { grid-template-columns:1fr; } .atlas-cmd-card--wide { grid-column:span 1; } .ov-agent-grid { grid-template-columns:repeat(2,1fr); } .intel-grid { grid-template-columns:repeat(2,1fr); } .grid-5 { grid-template-columns:repeat(2,1fr); } }
+  /* ═══════════════════════════════════════════
+     Thor Tab Styles
+     ═══════════════════════════════════════════ */
+  .thor-header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:var(--space-5) 0; margin-bottom:var(--space-5);
+    border-bottom:1px solid var(--border); flex-wrap:wrap; gap:var(--space-3);
+  }
+  .thor-title-group { display:flex; flex-direction:column; gap:2px; }
+  .thor-title {
+    font-family:var(--font-heading); font-size:1.2rem; font-weight:700;
+    letter-spacing:0.12em; text-transform:uppercase; color:var(--agent-thor);
+  }
+  .thor-subtitle {
+    font-family:var(--font-mono); font-size:0.7rem; color:var(--text-secondary); letter-spacing:0.03em;
+  }
+  .thor-header-right { display:flex; align-items:center; gap:var(--space-3); flex-wrap:wrap; }
+  .thor-status-pill {
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:var(--font-mono); font-size:0.74rem; font-weight:600;
+    padding:5px 14px; border-radius:var(--radius-pill);
+    border:1px solid rgba(255,102,0,0.2); background:rgba(255,102,0,0.06);
+  }
+  .thor-status-dot {
+    width:8px; height:8px; border-radius:50%; background:var(--text-muted); flex-shrink:0;
+  }
+  .thor-ts {
+    font-family:var(--font-mono); font-size:0.66rem; color:var(--text-muted);
+  }
+  .thor-action-btn {
+    font-family:var(--font-mono); font-size:0.72rem; font-weight:600;
+    padding:6px 14px; border-radius:var(--radius-sm);
+    border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04);
+    color:var(--text-secondary); cursor:pointer; transition:all var(--transition-base);
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .thor-action-btn:hover {
+    background:rgba(255,255,255,0.08); color:var(--text);
+    border-color:rgba(255,255,255,0.2); transform:translateY(-1px);
+  }
+  .thor-action-primary {
+    background:var(--agent-thor); color:#000; border-color:var(--agent-thor);
+    font-weight:700;
+  }
+  .thor-action-primary:hover {
+    background:#ff8833; border-color:#ff8833; color:#000;
+  }
+  .thor-action-icon {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:22px; height:22px; border-radius:5px; font-size:0.7rem; flex-shrink:0;
+  }
+
+  .thor-intel-row {
+    display:flex; gap:var(--space-5); margin-bottom:var(--space-5); align-items:stretch;
+  }
+  .thor-radar-card {
+    flex:0 0 220px; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; padding:var(--space-5);
+  }
+  .thor-radar-wrap { margin-bottom:8px; }
+  .thor-radar-placeholder {
+    width:180px; height:180px; display:flex; align-items:center; justify-content:center;
+    color:var(--text-muted); font-size:0.72rem;
+  }
+  .thor-score-row {
+    display:flex; align-items:baseline; gap:8px; justify-content:center; margin-bottom:4px;
+  }
+  .thor-score-num {
+    font-family:var(--font-mono); font-size:1.6rem; font-weight:800; color:var(--agent-thor);
+  }
+  .thor-score-grade {
+    font-family:var(--font-mono); font-size:0.82rem; font-weight:700; letter-spacing:0.06em;
+  }
+  .thor-model-line {
+    font-family:var(--font-mono); font-size:0.66rem; text-align:center;
+  }
+  .thor-stats-col {
+    flex:1; display:grid; grid-template-columns:repeat(5,1fr); gap:var(--space-3);
+    align-content:center;
+  }
+  .thor-stat-card {
+    background:rgba(255,255,255,0.02); border:1px solid var(--glass-border);
+    border-left:3px solid var(--text-muted); border-radius:var(--radius-sm);
+    padding:14px 16px; text-align:center; transition:all var(--transition-base);
+  }
+  .thor-stat-card:hover { background:rgba(255,255,255,0.04); transform:translateY(-1px); }
+  .thor-stat-value {
+    font-family:var(--font-mono); font-size:1.2rem; font-weight:700; color:var(--agent-thor);
+    line-height:1.3;
+  }
+  .thor-stat-label {
+    font-size:0.6rem; color:var(--text-muted); text-transform:uppercase;
+    letter-spacing:0.05em; font-weight:600; margin-top:2px;
+  }
+
+  .thor-actions-card { margin-bottom:var(--space-4); }
+  .thor-actions-header {
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:var(--space-3); flex-wrap:wrap; gap:var(--space-2);
+  }
+  .thor-section-label {
+    font-family:var(--font-mono); font-size:0.68rem; font-weight:700;
+    color:var(--text-muted); letter-spacing:0.08em; text-transform:uppercase;
+  }
+  .thor-section-header {
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:var(--space-3); flex-wrap:wrap; gap:var(--space-2);
+  }
+  .thor-refresh-btn {
+    font-family:var(--font-mono); font-size:0.66rem; padding:3px 10px;
+    border-radius:4px; border:1px solid rgba(255,255,255,0.1);
+    background:rgba(255,255,255,0.04); color:var(--text-secondary);
+    cursor:pointer; transition:all var(--transition-fast);
+  }
+  .thor-refresh-btn:hover { background:rgba(255,255,255,0.1); color:var(--text); }
+  .thor-action-feedback {
+    font-family:var(--font-mono); font-size:0.72rem; color:var(--text-muted);
+  }
+  .thor-actions-grid {
+    display:grid; grid-template-columns:repeat(6,1fr); gap:var(--space-3);
+  }
+  .thor-actions-grid .thor-action-btn {
+    flex-direction:column; padding:12px 8px; text-align:center;
+    font-size:0.68rem; gap:6px; justify-content:center;
+  }
+
+  .thor-cost-row {
+    display:flex; gap:16px; align-items:center; flex-wrap:wrap;
+  }
+  .thor-cost-metric { text-align:center; }
+  .thor-cost-num {
+    font-family:var(--font-mono); font-size:0.88rem; font-weight:700; color:var(--text);
+    display:block;
+  }
+  .thor-cost-sub {
+    font-size:0.56rem; color:var(--text-muted); text-transform:uppercase;
+    letter-spacing:0.05em; font-weight:600;
+  }
+  .thor-cost-bar-wrap { flex:1; min-width:120px; max-width:300px; }
+  .thor-cost-bar-track {
+    background:rgba(255,255,255,0.06); border-radius:4px; height:8px; overflow:hidden;
+  }
+  .thor-cost-bar-fill {
+    height:100%; background:var(--success); width:0%; transition:width 0.4s ease;
+    border-radius:4px;
+  }
+
+  .thor-panel { margin-bottom:var(--space-3); }
+  .thor-panel .collapse-trigger { padding:var(--space-3) 0; }
+  .thor-panel-title {
+    font-family:var(--font-mono); font-size:0.76rem; font-weight:700;
+    color:var(--text-secondary); letter-spacing:0.04em; margin:0;
+  }
+  .thor-panel-body {
+    background:var(--glass-bg); backdrop-filter:var(--glass-blur);
+    -webkit-backdrop-filter:var(--glass-blur);
+    border:1px solid var(--glass-border); border-radius:var(--radius);
+    padding:var(--space-5);
+  }
+  .thor-engine-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:12px;
+  }
+  .thor-engine-card {
+    background:rgba(255,255,255,0.02); border:1px solid var(--glass-border);
+    border-left:3px solid var(--agent-thor); border-radius:var(--radius-sm);
+    padding:12px 14px;
+  }
+  .thor-engine-title {
+    font-size:0.76rem; font-weight:700; color:var(--text); margin-bottom:1px;
+  }
+  .thor-engine-sub {
+    font-size:0.6rem; color:var(--text-muted); margin-bottom:4px;
+  }
+
+  @media (max-width:1200px) { .grid-4,.grid-6 { grid-template-columns:repeat(3,1fr); } .team-agents-row { grid-template-columns:repeat(3,1fr); } .ov-agent-grid { grid-template-columns:repeat(3,1fr); } .intel-grid { grid-template-columns:repeat(3,1fr); } .thor-actions-grid { grid-template-columns:repeat(3,1fr); } .thor-stats-col { grid-template-columns:repeat(3,1fr); } }
+  @media (max-width:900px) { .grid-3,.grid-4,.grid-6 { grid-template-columns:repeat(2,1fr); } .main { padding:0 var(--space-4); } .intel-meter { flex-direction:column; align-items:stretch; } .team-agents-row { grid-template-columns:repeat(3,1fr); } .ov-main-row { flex-direction:column; } .ov-intel-panel { width:100%; } .ov-agent-grid { grid-template-columns:repeat(3,1fr); } .intel-neural-row { grid-template-columns:1fr; } .thor-intel-row { flex-direction:column; } .thor-radar-card { flex:none; } .thor-actions-grid { grid-template-columns:repeat(3,1fr); } .thor-stats-col { grid-template-columns:repeat(3,1fr); } .thor-engine-grid { grid-template-columns:1fr; } }
+  @media (max-width:640px) { .grid-2,.grid-3,.grid-4,.grid-6 { grid-template-columns:1fr; } .sidebar { display:none; } .main { margin-left:0; } .kpi-grid { grid-template-columns:1fr; } .team-agents-row { grid-template-columns:repeat(2,1fr); } .atlas-cmd-grid { grid-template-columns:1fr; } .atlas-cmd-card--wide { grid-column:span 1; } .ov-agent-grid { grid-template-columns:repeat(2,1fr); } .intel-grid { grid-template-columns:repeat(2,1fr); } .grid-5 { grid-template-columns:repeat(2,1fr); } .thor-actions-grid { grid-template-columns:repeat(2,1fr); } .thor-stats-col { grid-template-columns:repeat(2,1fr); } }
 
   /* ═══════════════════════════════════════════
      ROBOTOX TAB — System Health Guardian
