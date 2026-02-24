@@ -2,243 +2,250 @@
 <div class="tab-content" id="tab-sentinel">
 
   <!-- ═══ HEADER ═══ -->
-  <div class="rx-header">
-    <div class="rx-header-left">
-      <span class="rx-title">ROBOTOX</span>
-      <span class="rx-subtitle">SYSTEM HEALTH GUARDIAN</span>
-    </div>
-    <div class="rx-header-right">
+  <div class="rx-hdr">
+    <div class="rx-hdr-left">
+      <div class="rx-hdr-brand">
+        <span class="rx-hdr-icon">&#9737;</span>
+        <div>
+          <div class="rx-hdr-name">Robotox</div>
+          <div class="rx-hdr-role">System Health Guardian</div>
+        </div>
+      </div>
       <div class="rx-status-badge rx-status-loading" id="rx-overall-status">
         <span class="rx-status-dot"></span>
         <span class="rx-status-text">Loading</span>
       </div>
       <span class="rx-quiet-tag" id="rx-quiet-tag" style="display:none;">QUIET HOURS</span>
-      <span class="rx-meta" id="rx-last-scan">Last scan: --</span>
-      <button class="rx-btn rx-btn-primary" onclick="sentinelScan()">Run Full Scan</button>
+    </div>
+    <div class="rx-hdr-right">
+      <span class="rx-hdr-meta" id="rx-last-scan">Last scan: --</span>
+      <button class="rx-act-btn rx-act-green" onclick="sentinelScan()">Run Full Scan</button>
+    </div>
+  </div>
+
+  <!-- ═══ STAT CARDS ═══ -->
+  <div class="rx-kpi-row">
+    <div class="rx-kpi">
+      <div class="rx-kpi-icon" style="background:rgba(0,255,136,0.1);color:#00ff88;">&#9679;</div>
+      <div class="rx-kpi-data">
+        <div class="rx-kpi-val" id="rx-stat-online">--</div>
+        <div class="rx-kpi-lbl">Agents Online</div>
+      </div>
+    </div>
+    <div class="rx-kpi">
+      <div class="rx-kpi-icon" style="background:rgba(255,170,0,0.1);color:#ffaa00;">&#9888;</div>
+      <div class="rx-kpi-data">
+        <div class="rx-kpi-val" id="rx-stat-issues">0</div>
+        <div class="rx-kpi-lbl">Active Issues</div>
+      </div>
+    </div>
+    <div class="rx-kpi">
+      <div class="rx-kpi-icon" style="background:rgba(0,212,255,0.1);color:#00d4ff;">&#9881;</div>
+      <div class="rx-kpi-data">
+        <div class="rx-kpi-val" id="rx-stat-fixes">0</div>
+        <div class="rx-kpi-lbl">Fixes Applied</div>
+      </div>
+    </div>
+    <div class="rx-kpi">
+      <div class="rx-kpi-icon" style="background:rgba(255,68,68,0.1);color:#ff5555;">$</div>
+      <div class="rx-kpi-data">
+        <div class="rx-kpi-val" id="rx-stat-lost-opp">$0.00</div>
+        <div class="rx-kpi-lbl">Est. Lost Today</div>
+      </div>
     </div>
   </div>
 
   <!-- ═══ INTELLIGENCE OVERVIEW ═══ -->
-  <div class="rx-intel-row">
-    <!-- Radar Chart -->
-    <div class="glass-card rx-radar-panel">
-      <div class="rx-panel-hdr">System Intelligence</div>
+  <div class="rx-intel">
+    <div class="rx-intel-radar glass-card">
+      <div class="rx-sec-label">System Intelligence</div>
       <svg id="rx-radar-svg" viewBox="0 0 280 260" class="rx-radar-svg"></svg>
     </div>
-
-    <!-- Score Ring -->
-    <div class="glass-card rx-score-panel">
-      <div class="rx-score-wrap">
-        <svg viewBox="0 0 120 120" class="rx-score-svg">
-          <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
-          <circle id="rx-score-arc" cx="60" cy="60" r="52" fill="none" stroke="var(--agent-sentinel)" stroke-width="8" stroke-linecap="round" stroke-dasharray="0 327" transform="rotate(-90 60 60)"/>
+    <div class="rx-intel-score glass-card">
+      <div class="rx-ring-wrap">
+        <svg viewBox="0 0 120 120" class="rx-ring-svg">
+          <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="7"/>
+          <circle id="rx-score-arc" cx="60" cy="60" r="52" fill="none" stroke="var(--agent-sentinel)" stroke-width="7" stroke-linecap="round" stroke-dasharray="0 327" transform="rotate(-90 60 60)"/>
         </svg>
-        <div class="rx-score-center">
-          <span class="rx-score-num" id="rx-score-num">--</span>
-          <span class="rx-score-lbl" id="rx-score-lbl">Loading</span>
+        <div class="rx-ring-center">
+          <span class="rx-ring-num" id="rx-score-num">--</span>
+          <span class="rx-ring-lbl" id="rx-score-lbl">Loading</span>
         </div>
       </div>
-      <div class="rx-score-summary" id="rx-summary">Watching -- agents</div>
+      <div class="rx-ring-sub" id="rx-summary">Watching -- agents</div>
     </div>
-
-    <!-- Quick Stats -->
-    <div class="rx-stats-grid">
-      <div class="rx-stat-box">
-        <div class="rx-stat-val" id="rx-stat-online" style="color:var(--success);">--</div>
-        <div class="rx-stat-lbl">Agents Online</div>
+    <div class="rx-intel-stats">
+      <div class="rx-mini-stat">
+        <div class="rx-mini-val" id="rx-stat-uptime">--%</div>
+        <div class="rx-mini-lbl">Avg Uptime</div>
       </div>
-      <div class="rx-stat-box">
-        <div class="rx-stat-val" id="rx-stat-issues">0</div>
-        <div class="rx-stat-lbl">Active Issues</div>
-      </div>
-      <div class="rx-stat-box">
-        <div class="rx-stat-val" id="rx-stat-fixes" style="color:var(--agent-sentinel);">0</div>
-        <div class="rx-stat-lbl">Total Fixes</div>
-      </div>
-      <div class="rx-stat-box">
-        <div class="rx-stat-val" id="rx-stat-uptime" style="color:var(--agent-garves);">--%</div>
-        <div class="rx-stat-lbl">Avg Uptime</div>
+      <div class="rx-mini-stat" id="rx-error-trend">
+        <div class="rx-mini-val" style="color:var(--success);">&#9644;</div>
+        <div class="rx-mini-lbl">Error Trend</div>
       </div>
     </div>
   </div>
 
-  <!-- Error Trend -->
-  <div class="rx-trend" id="rx-error-trend"></div>
-
-  <!-- ═══ QUICK ACTIONS + LIVE STATUS ═══ -->
-  <div class="rx-actions">
-    <div class="rx-btn-row">
-      <button class="rx-btn rx-btn-green" onclick="sentinelScan()">Health Scan</button>
-      <button class="rx-btn rx-btn-amber" onclick="sentinelBugs()">Bug Scan</button>
-      <button class="rx-btn rx-btn-blue" onclick="loadRobotoxPerf()">Perf Baselines</button>
-      <button class="rx-btn rx-btn-purple" onclick="loadRobotoxDepHealth()">Check Dependencies</button>
-      <button class="rx-btn rx-btn-slate" onclick="rxExportReport()">Export Report</button>
-    </div>
-    <div class="rx-pills" id="rx-live-pills"></div>
+  <!-- ═══ SMART ACTIONS ═══ -->
+  <div class="rx-actions-bar">
+    <button class="rx-act-btn rx-act-green" onclick="sentinelScan()">Health Scan</button>
+    <button class="rx-act-btn rx-act-amber" onclick="sentinelBugs()">Bug Scan</button>
+    <button class="rx-act-btn rx-act-blue" onclick="loadRobotoxPerf()">Perf Baselines</button>
+    <button class="rx-act-btn rx-act-purple" onclick="loadRobotoxDepHealth()">Check Dependencies</button>
+    <button class="rx-act-btn rx-act-red" onclick="rxForceHealAll()">Force Self-Heal All</button>
+    <button class="rx-act-btn rx-act-slate" onclick="rxExportReport()">Export Report</button>
   </div>
+
+  <!-- Live Pills -->
+  <div class="rx-pills" id="rx-live-pills"></div>
 
   <!-- Report Output -->
-  <div class="glass-card rx-report" id="sentinel-report" style="display:none;"></div>
+  <div class="glass-card rx-report-out" id="sentinel-report" style="display:none;"></div>
 
-  <!-- ═══ DETAILED PANELS ═══ -->
+  <!-- ═══ PANELS ═══ -->
 
   <!-- Trade Guard -->
-  <div class="collapse-section rx-panel open">
-    <div class="collapse-trigger rx-panel-trigger">
-      <div class="rx-panel-title-row">
-        <span class="rx-panel-dot" style="background:#00e676;"></span>
-        <h2 class="rx-panel-title">Trade Guard</h2>
-        <span class="rx-panel-sub">Continuous Readiness Scoring</span>
-        <span class="rx-panel-badge" id="rx-tg-badge"></span>
+  <div class="collapse-section rx-card open">
+    <div class="collapse-trigger rx-card-hdr">
+      <div class="rx-card-hdr-row">
+        <span class="rx-card-dot" style="background:#00e676;"></span>
+        <h2 class="rx-card-title">Trade Guard</h2>
+        <span class="rx-card-sub">Continuous Readiness</span>
+        <span class="rx-card-badge" id="rx-tg-badge"></span>
       </div>
     </div>
     <div class="collapse-body">
-      <div class="glass-card rx-panel-body">
-        <div id="rx-trade-guard-content"><div class="text-muted" style="text-align:center;padding:var(--space-4);">Loading readiness data...</div></div>
+      <div class="glass-card rx-card-body" id="rx-trade-guard-content">
+        <div class="rx-placeholder">Loading readiness data...</div>
       </div>
     </div>
   </div>
 
   <!-- Predictive Monitors -->
-  <div class="collapse-section rx-panel open">
-    <div class="collapse-trigger rx-panel-trigger">
-      <div class="rx-panel-title-row">
-        <span class="rx-panel-dot" style="background:var(--agent-sentinel);"></span>
-        <h2 class="rx-panel-title">Predictive Monitors</h2>
-        <span class="rx-panel-badge" id="rx-pred-badge"></span>
+  <div class="collapse-section rx-card open">
+    <div class="collapse-trigger rx-card-hdr">
+      <div class="rx-card-hdr-row">
+        <span class="rx-card-dot" style="background:var(--agent-sentinel);"></span>
+        <h2 class="rx-card-title">Predictive Monitors</h2>
+        <span class="rx-card-badge" id="rx-pred-badge"></span>
       </div>
     </div>
     <div class="collapse-body">
-      <div class="glass-card rx-panel-body">
-        <div id="rx-predictive-content"><div class="text-muted" style="text-align:center;padding:var(--space-4);">Running predictive analysis...</div></div>
+      <div class="glass-card rx-card-body" id="rx-predictive-content">
+        <div class="rx-placeholder">Running predictive analysis...</div>
       </div>
     </div>
   </div>
 
   <!-- Log Watcher -->
-  <div class="collapse-section rx-panel open">
-    <div class="collapse-trigger rx-panel-trigger">
-      <div class="rx-panel-title-row">
-        <span class="rx-panel-dot" style="background:#ff8c00;"></span>
-        <h2 class="rx-panel-title">Log Watcher</h2>
-        <span class="rx-panel-sub">Smart Pattern Detection</span>
-        <span class="rx-panel-badge" id="rx-log-badge"></span>
+  <div class="collapse-section rx-card">
+    <div class="collapse-trigger rx-card-hdr">
+      <div class="rx-card-hdr-row">
+        <span class="rx-card-dot" style="background:#ff8c00;"></span>
+        <h2 class="rx-card-title">Log Watcher</h2>
+        <span class="rx-card-sub">Pattern Detection</span>
+        <span class="rx-card-badge" id="rx-log-badge"></span>
       </div>
     </div>
     <div class="collapse-body">
-      <div class="glass-card rx-panel-body">
-        <div id="robotox-log-patterns" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:var(--space-3);"></div>
-        <div id="robotox-log-alerts"><div class="text-muted" style="text-align:center;padding:var(--space-4);">No log alerts — all clear.</div></div>
+      <div class="glass-card rx-card-body">
+        <div id="robotox-log-patterns" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"></div>
+        <div id="robotox-log-alerts"><div class="rx-placeholder">No log alerts — all clear.</div></div>
       </div>
     </div>
   </div>
 
   <!-- Performance Baselines -->
-  <div class="collapse-section rx-panel">
-    <div class="collapse-trigger rx-panel-trigger">
-      <div class="rx-panel-title-row">
-        <span class="rx-panel-dot" style="background:var(--agent-garves);"></span>
-        <h2 class="rx-panel-title">Performance Baselines</h2>
-        <span class="rx-panel-sub">CPU / Memory / Threads</span>
+  <div class="collapse-section rx-card">
+    <div class="collapse-trigger rx-card-hdr">
+      <div class="rx-card-hdr-row">
+        <span class="rx-card-dot" style="background:var(--agent-garves);"></span>
+        <h2 class="rx-card-title">Performance Baselines</h2>
+        <span class="rx-card-sub">CPU / Memory / Threads</span>
       </div>
     </div>
     <div class="collapse-body">
-      <div class="glass-card rx-panel-body">
-        <div id="robotox-perf-content"><div class="text-muted" style="text-align:center;padding:var(--space-4);">Loading performance data...</div></div>
+      <div class="glass-card rx-card-body" id="robotox-perf-content">
+        <div class="rx-placeholder">Loading performance data...</div>
       </div>
     </div>
   </div>
 
   <!-- External Dependencies -->
-  <div class="collapse-section rx-panel">
-    <div class="collapse-trigger rx-panel-trigger">
-      <div class="rx-panel-title-row">
-        <span class="rx-panel-dot" style="background:var(--agent-quant);"></span>
-        <h2 class="rx-panel-title">External Dependencies</h2>
-        <span class="rx-panel-sub">Polymarket, Binance, Bitunix, OpenAI, Telegram</span>
+  <div class="collapse-section rx-card">
+    <div class="collapse-trigger rx-card-hdr">
+      <div class="rx-card-hdr-row">
+        <span class="rx-card-dot" style="background:var(--agent-quant);"></span>
+        <h2 class="rx-card-title">External Dependencies</h2>
+        <span class="rx-card-sub">Polymarket, Binance, Bitunix, OpenAI</span>
       </div>
     </div>
     <div class="collapse-body">
-      <div class="glass-card rx-panel-body">
-        <div id="robotox-dep-health-content"><div class="text-muted" style="text-align:center;padding:var(--space-4);">No dependency health data yet.</div></div>
+      <div class="glass-card rx-card-body" id="robotox-dep-health-content">
+        <div class="rx-placeholder">No dependency health data yet.</div>
       </div>
     </div>
   </div>
 
   <!-- Alert Correlation -->
-  <div class="collapse-section rx-panel">
-    <div class="collapse-trigger rx-panel-trigger">
-      <div class="rx-panel-title-row">
-        <span class="rx-panel-dot" style="background:var(--agent-soren);"></span>
-        <h2 class="rx-panel-title">Alert Correlation</h2>
-        <span class="rx-panel-sub">Noise reduction + root cause identification</span>
+  <div class="collapse-section rx-card">
+    <div class="collapse-trigger rx-card-hdr">
+      <div class="rx-card-hdr-row">
+        <span class="rx-card-dot" style="background:var(--agent-soren);"></span>
+        <h2 class="rx-card-title">Alert Correlation</h2>
+        <span class="rx-card-sub">Noise Reduction</span>
       </div>
     </div>
     <div class="collapse-body">
-      <div class="glass-card rx-panel-body">
-        <div id="robotox-correlator-content"><div class="text-muted" style="text-align:center;padding:var(--space-4);">No correlation stats yet.</div></div>
+      <div class="glass-card rx-card-body" id="robotox-correlator-content">
+        <div class="rx-placeholder">No correlation stats yet.</div>
       </div>
     </div>
   </div>
 
   <!-- Deploy Watches -->
-  <div class="collapse-section rx-panel">
-    <div class="collapse-trigger rx-panel-trigger">
-      <div class="rx-panel-title-row">
-        <span class="rx-panel-dot" style="background:var(--agent-thor);"></span>
-        <h2 class="rx-panel-title">Deploy Watches</h2>
-        <span class="rx-panel-sub">Auto-Rollback on regression</span>
+  <div class="collapse-section rx-card">
+    <div class="collapse-trigger rx-card-hdr">
+      <div class="rx-card-hdr-row">
+        <span class="rx-card-dot" style="background:var(--agent-thor);"></span>
+        <h2 class="rx-card-title">Deploy Watches</h2>
+        <span class="rx-card-sub">Auto-Rollback</span>
       </div>
     </div>
     <div class="collapse-body">
-      <div class="glass-card rx-panel-body">
-        <div id="robotox-deploy-content"><div class="text-muted" style="text-align:center;padding:var(--space-4);">No active watches.</div></div>
+      <div class="glass-card rx-card-body" id="robotox-deploy-content">
+        <div class="rx-placeholder">No active watches.</div>
       </div>
     </div>
   </div>
 
   <!-- Fix History -->
-  <div class="collapse-section rx-panel">
-    <div class="collapse-trigger rx-panel-trigger">
-      <div class="rx-panel-title-row">
-        <span class="rx-panel-dot" style="background:var(--success);"></span>
-        <h2 class="rx-panel-title">Fix History</h2>
-        <span class="rx-panel-badge" id="rx-fixes-badge"></span>
+  <div class="collapse-section rx-card">
+    <div class="collapse-trigger rx-card-hdr">
+      <div class="rx-card-hdr-row">
+        <span class="rx-card-dot" style="background:var(--success);"></span>
+        <h2 class="rx-card-title">Fix History</h2>
+        <span class="rx-card-badge" id="rx-fixes-badge"></span>
       </div>
     </div>
     <div class="collapse-body">
-      <div class="glass-card rx-panel-body">
-        <table class="data-table"><thead><tr><th>Time</th><th>Agent</th><th>Action</th><th>Status</th></tr></thead><tbody id="sentinel-fixes-tbody"><tr><td colspan="4" class="text-muted" style="text-align:center;padding:24px;">No fixes yet</td></tr></tbody></table>
+      <div class="glass-card rx-card-body">
+        <table class="data-table"><thead><tr><th>Time</th><th>Agent</th><th>Action</th><th>Status</th></tr></thead><tbody id="sentinel-fixes-tbody"><tr><td colspan="4" class="rx-placeholder" style="padding:20px;">No fixes yet</td></tr></tbody></table>
       </div>
     </div>
   </div>
 
   <!-- Recent Alerts -->
-  <div class="collapse-section rx-panel">
-    <div class="collapse-trigger rx-panel-trigger">
-      <div class="rx-panel-title-row">
-        <span class="rx-panel-dot" style="background:var(--warning);"></span>
-        <h2 class="rx-panel-title">Recent Alerts</h2>
+  <div class="collapse-section rx-card">
+    <div class="collapse-trigger rx-card-hdr">
+      <div class="rx-card-hdr-row">
+        <span class="rx-card-dot" style="background:var(--warning);"></span>
+        <h2 class="rx-card-title">Recent Alerts</h2>
       </div>
     </div>
     <div class="collapse-body">
-      <div class="glass-card rx-panel-body">
-        <div class="feed-scroll" id="sentinel-alerts"><div class="feed-item"><span class="badge badge-success">OK</span> <span style="font-family:var(--font-mono);font-size:0.76rem;color:var(--text-secondary);margin-left:8px;">All systems nominal</span></div></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Activity Feed -->
-  <div class="collapse-section rx-panel">
-    <div class="collapse-trigger rx-panel-trigger">
-      <div class="rx-panel-title-row">
-        <span class="rx-panel-dot" style="background:var(--text-muted);"></span>
-        <h2 class="rx-panel-title">Activity Feed</h2>
-      </div>
-    </div>
-    <div class="collapse-body">
-      <div class="glass-card rx-panel-body">
-        <div id="robotox-activity-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:200px;overflow-y:auto;"><span class="text-muted">Waiting for activity...</span></div>
+      <div class="glass-card rx-card-body">
+        <div class="feed-scroll" id="sentinel-alerts"><div class="feed-item"><span class="badge badge-success">OK</span> <span style="font-family:var(--font-mono);font-size:0.74rem;color:var(--text-secondary);margin-left:8px;">All systems nominal</span></div></div>
       </div>
     </div>
   </div>

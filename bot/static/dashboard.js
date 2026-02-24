@@ -3657,20 +3657,19 @@ function renderSentinel(data) {
   el = document.getElementById('rx-summary');
   if (el) el.textContent = 'Watching ' + total + ' agents' + (issues === 0 ? ' \u2022 No critical issues' : ' \u2022 ' + issues + ' issue' + (issues > 1 ? 's' : '') + ' detected');
 
-  // Error trend
+  // Error trend (mini-stat card format)
   var trendEl = document.getElementById('rx-error-trend');
-  if (trendEl && data.error_trend) {
-    var et = data.error_trend;
-    var arrow = et.direction === 'up' ? '\u25B2' : et.direction === 'down' ? '\u25BC' : '\u25AC';
-    var arrowColor = et.spike ? 'var(--error)' : et.direction === 'up' ? 'var(--warning)' : et.direction === 'down' ? 'var(--success)' : 'var(--text-secondary)';
-    var spikeTag = et.spike ? ' <span class="badge badge-error" style="margin-left:8px;">SPIKE</span>' : '';
-    trendEl.innerHTML = '<span style="color:var(--text-muted);">Error Trend </span>' +
-      '<span style="font-size:1.1rem;color:' + arrowColor + ';margin:0 6px;">' + arrow + '</span>' +
-      '<span style="font-weight:700;">' + (et.latest !== undefined ? et.latest : '--') + '</span>' +
-      '<span style="color:var(--text-muted);margin-left:4px;">errors</span>' +
-      '<span style="color:var(--text-muted);margin-left:12px;">(5-scan avg: ' + (et.avg_last_5||0).toFixed(1) + ')</span>' + spikeTag;
-  } else if (trendEl) {
-    trendEl.innerHTML = '<span style="color:var(--text-muted);">Error Trend</span> <span style="color:var(--success);margin-left:8px;">\u25AC</span> <span style="color:var(--text-muted);margin-left:4px;">No data yet</span>';
+  if (trendEl) {
+    var valEl = trendEl.querySelector('.rx-mini-val');
+    if (valEl && data.error_trend) {
+      var et = data.error_trend;
+      var arrow = et.direction === 'up' ? '\u25B2' : et.direction === 'down' ? '\u25BC' : '\u25AC';
+      var color = et.spike ? 'var(--error)' : et.direction === 'up' ? 'var(--warning)' : et.direction === 'down' ? 'var(--success)' : 'var(--text-secondary)';
+      valEl.innerHTML = '<span style="color:' + color + ';">' + arrow + '</span>';
+      if (et.spike) valEl.innerHTML += ' <span style="font-size:0.6rem;color:var(--error);">SPIKE</span>';
+    } else if (valEl) {
+      valEl.innerHTML = '<span style="color:var(--success);">\u25AC</span>';
+    }
   }
 
   // Alerts
@@ -4057,6 +4056,8 @@ function rxExportReport() {
   parts.push('Issues: ' + (issues ? issues.textContent : '--'));
   parts.push('Fixes: ' + (fixes ? fixes.textContent : '--'));
   parts.push('Uptime: ' + (uptime ? uptime.textContent : '--'));
+  var lost = document.getElementById('rx-stat-lost-opp');
+  parts.push('Est. Lost: ' + (lost ? lost.textContent : '--'));
   parts.push('');
 
   var trend = document.getElementById('rx-error-trend');
@@ -4072,6 +4073,56 @@ function rxExportReport() {
     var el = document.getElementById('sentinel-report');
     if (el) { el.style.display = 'block'; el.textContent = text; }
   }
+}
+
+/* ── Force Self-Heal All ── */
+async function rxForceHealAll() {
+  var el = document.getElementById('sentinel-report');
+  if (el) { el.style.display = 'block'; el.textContent = 'Forcing self-heal on all agents...'; }
+  try {
+    var resp = await fetch('/api/sentinel/scan', {method:'POST'});
+    var data = await resp.json();
+    if (data.error) { if (el) el.textContent = 'Error: ' + data.error; return; }
+    var fixes = data.fixes_applied || [];
+    var txt = 'FORCE SELF-HEAL RESULTS\n' + '='.repeat(30) + '\n';
+    txt += 'Time: ' + new Date().toLocaleString() + '\n\n';
+    if (fixes.length === 0) {
+      txt += 'No issues found — all agents healthy.\n';
+    } else {
+      for (var i = 0; i < fixes.length; i++) {
+        var f = fixes[i];
+        txt += (f.agent||'?').toUpperCase() + ': ' + (f.action||'?') + ' -> ' + (f.success ? 'FIXED' : 'FAILED') + '\n';
+      }
+    }
+    var agents = data.agents || {};
+    var down = [];
+    for (var k in agents) { if (agents[k] && !agents[k].alive) down.push(k); }
+    if (down.length > 0) txt += '\nStill down: ' + down.join(', ').toUpperCase() + '\n';
+    else txt += '\nAll agents online.\n';
+    if (el) el.textContent = txt;
+    refresh();
+  } catch(e) { if (el) el.textContent = 'Error: ' + (e.message || e); }
+}
+
+/* ── Load PnL Impact (Est. Lost Today) ── */
+async function rxLoadPnlImpact() {
+  try {
+    var resp = await fetch('/api/robotox/pnl');
+    var data = await resp.json();
+    if (data.error) return;
+    var rev = data.revenue || {};
+    var totalLost = 0;
+    for (var agent in rev) {
+      var a = rev[agent];
+      if (a && typeof a.estimated_lost_opportunity === 'number') totalLost += a.estimated_lost_opportunity;
+      else if (a && typeof a.lost_opportunity === 'number') totalLost += a.lost_opportunity;
+    }
+    var el = document.getElementById('rx-stat-lost-opp');
+    if (el) {
+      el.textContent = '$' + totalLost.toFixed(2);
+      el.style.color = totalLost > 10 ? 'var(--error)' : totalLost > 0 ? 'var(--warning)' : 'var(--success)';
+    }
+  } catch(e) { console.debug('rxLoadPnlImpact:', e); }
 }
 
 async function sentinelScan() {
@@ -4512,6 +4563,7 @@ async function refresh() {
       rxLoadPredictive();
       rxLoadQuietHours();
       rxLoadLivePills();
+      rxLoadPnlImpact();
       loadLogWatcherAlerts();
       loadRobotoxPerf();
       loadRobotoxDepHealth();
