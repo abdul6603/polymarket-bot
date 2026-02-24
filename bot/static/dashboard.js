@@ -56,41 +56,38 @@ function renderAgentGrid(overview) {
   var sh = overview.shelby || {};
   var brainAgentMap = {garves:'garves',soren:'soren',shelby:'shelby',atlas:'atlas',lisa:'lisa',sentinel:'robotox',thor:'thor',hawk:'hawk',viper:'viper',quant:'quant',odin:'odin',oracle:'oracle'};
   var cards = [
-    {id:'garves', stats:[['Win Rate',(g.win_rate||0)+'%'],['Trades',g.total_trades||0],['Pending',g.pending||0]], online:g.running},
+    {id:'garves', stats:[['WR',(g.win_rate||0)+'%'],['Trades',g.total_trades||0],['Pending',g.pending||0]], online:g.running},
+    {id:'hawk', stats:[['WR',((overview.hawk||{}).win_rate||0)+'%'],['Open',(overview.hawk||{}).open_bets||0]], online:(overview.hawk||{}).running},
+    {id:'odin', stats:[['Mode',((overview.odin||{}).mode||'paper').toUpperCase()],['Open',(overview.odin||{}).open_positions||0],['P&L','$'+((overview.odin||{}).total_pnl||0).toFixed(2)]], online:(overview.odin||{}).running},
+    {id:'oracle', stats:[['Regime',((overview.oracle||{}).regime||'--').replace(/_/g,' ')],['WR',((overview.oracle||{}).win_rate||0)+'%']], online:(overview.oracle||{}).running},
     {id:'soren', stats:[['Queue',s.queue_pending||0],['Posted',s.total_posted||0]], online:true},
+    {id:'lisa', stats:[['Posts',(overview.lisa||{}).total_posts||0]], online:true},
     {id:'shelby', stats:[['Status',sh.running?'Online':'Offline']], online:sh.running},
     {id:'atlas', stats:[['Status','Active']], online:true},
-    {id:'lisa', stats:[['Posts',(overview.lisa||{}).total_posts||0],['Review Avg',(overview.lisa||{}).review_avg ? (overview.lisa.review_avg+'/10') : '--']], online:true},
+    {id:'thor', stats:[['Done',(overview.thor||{}).completed||0],['Queue',(overview.thor||{}).pending||0]], online:(overview.thor||{}).state !== 'offline'},
     {id:'sentinel', stats:[['Role','Monitor']], online:true},
-    {id:'thor', stats:[['Tasks',(overview.thor||{}).completed||0],['Queue',(overview.thor||{}).pending||0]], online:(overview.thor||{}).state !== 'offline'},
-    {id:'hawk', stats:[['Win Rate',((overview.hawk||{}).win_rate||0)+'%'],['Open',(overview.hawk||{}).open_bets||0]], online:(overview.hawk||{}).running},
-    {id:'viper', stats:[['Found',(overview.viper||{}).opportunities||0],['Pushed',(overview.viper||{}).pushed||0]], online:(overview.viper||{}).running},
-    {id:'quant', stats:[['Best WR',((overview.quant||{}).best_win_rate||0)+'%'],['Combos',(overview.quant||{}).total_combos_tested||0]], online:(overview.quant||{}).running},
-    {id:'odin', stats:[['Mode',((overview.odin||{}).mode||'paper').toUpperCase()],['Open',(overview.odin||{}).open_positions||0],['P&L','$'+((overview.odin||{}).total_pnl||0).toFixed(2)]], online:(overview.odin||{}).running},
-    {id:'oracle', stats:[['Regime',((overview.oracle||{}).regime||'--').replace(/_/g,' ')],['Trades',(overview.oracle||{}).trades_placed||0],['WR',((overview.oracle||{}).win_rate||0)+'%']], online:(overview.oracle||{}).running}
+    {id:'viper', stats:[['Found',(overview.viper||{}).opportunities||0]], online:(overview.viper||{}).running},
+    {id:'quant', stats:[['Best WR',((overview.quant||{}).best_win_rate||0)+'%']], online:(overview.quant||{}).running}
   ];
   var html = '';
   for (var i = 0; i < cards.length; i++) {
     var c = cards[i];
+    var agentColor = AGENT_COLORS[c.id] || '#888';
     var brainKey = brainAgentMap[c.id] || c.id;
     var brainCount = _brainCountsCache[brainKey] || 0;
-    html += '<div class="agent-card" data-agent="' + c.id + '" onclick="switchTab(&apos;' + c.id + '&apos;)">';
-    html += '<div class="agent-card-header">';
-    if (AGENT_AVATARS[c.id]) {
-      html += '<img class="agent-card-avatar" src="' + AGENT_AVATARS[c.id] + '" alt="' + (AGENT_NAMES[c.id]||c.id) + '">';
-    } else {
-      var agentColor = AGENT_COLORS[c.id] || '#888';
-      html += '<div class="agent-card-initial" style="background:' + agentColor + '22;color:' + agentColor + ';">' + (AGENT_INITIALS[c.id]||'??') + '</div>';
-    }
-    html += '<span class="agent-card-name">' + (AGENT_NAMES[c.id] || c.id.charAt(0).toUpperCase() + c.id.slice(1)) + '</span>';
+    html += '<div class="agent-card" data-agent="' + c.id + '" onclick="switchTab(\'' + c.id + '\')" style="border-top:2px solid ' + agentColor + ';padding:var(--space-3) var(--space-4);">';
+    html += '<div class="agent-card-header" style="margin-bottom:2px;">';
+    html += '<div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0;">';
+    html += '<span class="status-dot ' + (c.online !== false ? 'online' : 'offline') + '" style="width:6px;height:6px;"></span>';
+    html += '<span class="agent-card-name" style="font-size:0.78rem;">' + (AGENT_NAMES[c.id] || c.id) + '</span>';
     if (brainCount > 0) {
-      html += '<span class="brain-badge" title="' + brainCount + ' brain note' + (brainCount > 1 ? 's' : '') + '">' + brainCount + '</span>';
+      html += '<span class="brain-badge" title="' + brainCount + ' brain note' + (brainCount > 1 ? 's' : '') + '" style="font-size:0.58rem;min-width:14px;height:14px;padding:0 3px;">' + brainCount + '</span>';
     }
-    html += '<span class="status-dot ' + (c.online !== false ? 'online' : 'offline') + '"></span></div>';
-    html += '<div class="agent-card-role">' + (AGENT_ROLES[c.id] || '') + '</div>';
-    html += '<div class="agent-card-stats">';
+    html += '</div></div>';
+    html += '<div class="agent-card-role" style="font-size:0.62rem;margin-bottom:4px;">' + (AGENT_ROLES[c.id] || '') + '</div>';
+    html += '<div class="agent-card-stats" style="gap:1px;">';
     for (var j = 0; j < c.stats.length; j++) {
-      html += '<div class="agent-card-stat"><span class="label">' + c.stats[j][0] + '</span><span>' + c.stats[j][1] + '</span></div>';
+      html += '<div class="agent-card-stat" style="font-size:0.68rem;"><span class="label" style="font-size:0.62rem;">' + c.stats[j][0] + '</span><span>' + c.stats[j][1] + '</span></div>';
     }
     html += '</div></div>';
   }
@@ -4010,15 +4007,6 @@ async function refresh() {
       _overviewCache = data;
       renderAgentGrid(data);
       loadInfrastructure();
-      loadAgentComms();
-      // Fetch atlas bg status for countdown on overview
-      try {
-        var bgResp = await fetch('/api/atlas/background/status');
-        var bgData = await bgResp.json();
-        _atlasBgCache = bgData;
-        updateOverviewCountdown();
-      } catch(e) {}
-      // Re-render intel cards with fresh overview data
       if (_intelData) renderTeamIntelligence(_intelData);
       loadBrainNotes('claude');
       loadCommandTable('claude');
@@ -4233,7 +4221,6 @@ function renderTeamIntelligence(data) {
   var team = data.team;
   var dims = team.dimensions || {};
   var overall = team.overall || 0;
-  var agentScores = team.agent_scores || {};
 
   var iqLabel = overall >= 90 ? 'GENIUS' : overall >= 75 ? 'EXPERT' : overall >= 60 ? 'SKILLED' : overall >= 40 ? 'LEARNING' : 'NOVICE';
   var teamColor = overall >= 80 ? '#00ff88' : overall >= 60 ? '#22aa44' : overall >= 40 ? '#ffaa00' : '#ff4444';
@@ -4241,59 +4228,22 @@ function renderTeamIntelligence(data) {
   var dimKeys = Object.keys(dims);
   var dimValues = dimKeys.map(function(k) { return dims[k]; });
 
-  var html = '<div style="display:flex;align-items:center;gap:20px;margin-bottom:14px;">';
-  html += '<div style="flex-shrink:0;">' + radarSVG(160, dimValues, dimKeys, teamColor) + '</div>';
-  html += '<div style="flex:1;">';
-  html += '<div class="radar-title">Team Intelligence</div>';
-  html += '<div style="display:flex;align-items:baseline;gap:8px;">';
+  var html = '<div class="radar-title" style="margin-bottom:8px;">Team Intelligence</div>';
+  html += '<div style="text-align:center;margin-bottom:8px;">' + radarSVG(180, dimValues, dimKeys, teamColor) + '</div>';
+  html += '<div style="display:flex;align-items:baseline;gap:8px;justify-content:center;margin-bottom:12px;">';
   html += '<span class="radar-score" style="color:' + teamColor + ';">' + overall + '</span>';
   html += '<span class="radar-level" style="color:' + teamColor + ';">' + iqLabel + '</span>';
   html += '</div>';
-  html += '<div class="radar-dims">';
+
   for (var i = 0; i < dimKeys.length; i++) {
     var val = dims[dimKeys[i]];
     var vc = val >= 75 ? 'var(--success)' : val >= 50 ? teamColor : val >= 30 ? 'var(--warning)' : 'var(--error)';
-    html += '<div class="radar-dim"><span class="radar-dim-label">' + dimKeys[i] + '</span><span class="radar-dim-val" style="color:' + vc + ';">' + val + '</span></div>';
-  }
-  html += '</div></div></div>';
-
-  var agentMeta = [
-    {key:'atlas',  name:'Atlas',   color:'#22aa44'},
-    {key:'garves', name:'Garves',  color:'#00d4ff'},
-    {key:'soren',  name:'Soren',   color:'#cc66ff'},
-    {key:'shelby', name:'Shelby',  color:'#ffaa00'},
-    {key:'lisa',   name:'Lisa',    color:'#ff8800'},
-    {key:'robotox',name:'Robotox', color:'#00ff44'},
-    {key:'thor',   name:'Thor',    color:'#ff6600'},
-    {key:'hawk',   name:'Hawk',    color:'#FFD700'},
-    {key:'viper',  name:'Viper',   color:'#00ff88'},
-    {key:'odin',   name:'Odin',    color:'#8B5CF6'},
-    {key:'oracle', name:'Oracle',  color:'#F59E0B'},
-  ];
-
-  html += '<div class="team-agents-row">';
-  for (var j = 0; j < agentMeta.length; j++) {
-    var ag = agentMeta[j];
-    var score = agentScores[ag.key] || 0;
-    var agData = data[ag.key] || {};
-    var agDims = agData.dimensions || {};
-    var agDimKeys = Object.keys(agDims);
-    var agDimValues = agDimKeys.map(function(k) { return agDims[k]; });
-    var level = score >= 90 ? 'GENIUS' : score >= 75 ? 'EXPERT' : score >= 60 ? 'SKILLED' : score >= 40 ? 'LEARNING' : 'NOVICE';
-    var levelColor = score >= 75 ? 'var(--success)' : score >= 50 ? ag.color : score >= 30 ? 'var(--warning)' : 'var(--error)';
-
-    var tabKey = ag.key === 'lisa' ? 'lisa' : ag.key === 'robotox' ? 'sentinel' : ag.key;
-    html += '<div class="team-agent-card" onclick="switchTab(\'' + tabKey + '\')" style="cursor:pointer;">';
-    if (agDimValues.length > 0) {
-      html += '<div style="margin:0 auto 2px;">' + radarSVG(68, agDimValues, null, ag.color) + '</div>';
-    }
-    html += '<div class="team-agent-name" style="color:' + ag.color + ';">' + ag.name + '</div>';
-    html += '<div style="font-family:var(--font-mono);font-size:0.85rem;font-weight:700;color:' + ag.color + ';">' + score + '</div>';
-    html += '<div class="team-agent-level" style="color:' + levelColor + ';">' + level + '</div>';
-    html += agentQuickStatus(ag.key);
+    html += '<div class="ov-dim-row">';
+    html += '<span class="ov-dim-label">' + dimKeys[i] + '</span>';
+    html += '<div class="ov-dim-bar"><div class="ov-dim-fill" style="width:' + Math.min(100, val) + '%;background:' + vc + ';"></div></div>';
+    html += '<span class="ov-dim-val" style="color:' + vc + ';">' + val + '</span>';
     html += '</div>';
   }
-  html += '</div>';
 
   el.innerHTML = html;
 }
@@ -4514,14 +4464,12 @@ function healthBadge(h) {
 }
 
 async function loadInfrastructure() {
-  // Use system-health for both health status and agent counts
+  // Active Agents from system-health
   try {
     var resp = await fetch('/api/system-health');
     var data = await resp.json();
     var hbs = data.heartbeats || {};
     var reg = data.registry || {};
-
-    // Build combined agent list (heartbeats + registry, exclude dashboard)
     var allAgents = {};
     for (var k in reg) { if (k !== 'dashboard') allAgents[k] = {registered: true, healthy: false}; }
     for (var k in hbs) { if (k !== 'dashboard') { if (!allAgents[k]) allAgents[k] = {registered: false, healthy: false}; allAgents[k].healthy = hbs[k].health === 'healthy'; } }
@@ -4529,31 +4477,41 @@ async function loadInfrastructure() {
     var alive = 0;
     for (var k in allAgents) { if (allAgents[k].healthy) alive++; }
 
-    // System Health
-    var el2 = document.getElementById('infra-health');
-    if (el2) {
-      var healthLabel = alive === total ? 'HEALTHY' : alive >= Math.ceil(total/2) ? 'DEGRADED' : 'CRITICAL';
-      var color = healthLabel === 'HEALTHY' ? 'var(--success)' : healthLabel === 'DEGRADED' ? 'var(--warning)' : 'var(--error)';
-      el2.innerHTML = '<span style="color:' + color + ';">' + healthLabel + '</span>';
-    }
-
-    // Active Agents (exclude dashboard from count)
-    var aaEl = document.getElementById('infra-active-agents');
+    var aaEl = document.getElementById('ov-agents');
     if (aaEl) {
       var aaColor = alive === total ? 'var(--success)' : alive > 0 ? 'var(--warning)' : 'var(--error)';
-      aaEl.innerHTML = '<span style="color:' + aaColor + ';">' + alive + '/' + total + '</span>';
+      aaEl.innerHTML = '<span style="color:' + aaColor + ';">' + alive + ' / ' + total + '</span>';
+    }
+    var badgeEl = document.getElementById('ov-agent-count-badge');
+    if (badgeEl) badgeEl.innerHTML = '<span class="dot-online"></span> ' + alive + ' Online';
+  } catch(e) {}
+
+  // PNL + Trades from system-summary
+  try {
+    var resp = await fetch('/api/system-summary');
+    var d = await resp.json();
+    var pnlEl = document.getElementById('ov-pnl');
+    if (pnlEl) {
+      var gPnl = d.garves ? d.garves.pnl : 0;
+      var hPnl = d.hawk ? d.hawk.pnl : 0;
+      var oPnl = d.odin ? (d.odin.pnl || 0) : 0;
+      var totalPnl = gPnl + hPnl + oPnl;
+      var pnlColor = totalPnl >= 0 ? 'var(--success)' : 'var(--error)';
+      pnlEl.innerHTML = '<span style="color:' + pnlColor + ';">' + (totalPnl >= 0 ? '+' : '') + '$' + totalPnl.toFixed(2) + '</span>';
+    }
+    var tradesEl = document.getElementById('ov-trades');
+    if (tradesEl) {
+      var gt = d.garves ? d.garves.trades : 0;
+      var ht = d.hawk ? d.hawk.trades : 0;
+      var totalT = gt + ht;
+      var gWr = d.garves ? (d.garves.win_rate || 0) : 0;
+      var hWr = d.hawk ? (d.hawk.win_rate || 0) : 0;
+      var avgWr = (gt + ht) > 0 ? ((gWr * gt + hWr * ht) / (gt + ht)) : 0;
+      tradesEl.innerHTML = totalT + ' <span style="font-size:0.8rem;color:' + wrColor(avgWr) + ';">(' + avgWr.toFixed(0) + '%)</span>';
     }
   } catch(e) {}
 
-  // Events (24h) from event bus stats
-  try {
-    var stResp = await fetch('/api/events/stats');
-    var stData = await stResp.json();
-    var etEl = document.getElementById('infra-events-today');
-    if (etEl) etEl.textContent = stData.total || 0;
-  } catch(e) {}
-
-  // Errors (24h) from Robotox log alerts
+  // Critical alerts from Robotox
   try {
     var errResp = await fetch('/api/robotox/log-alerts');
     var errData = await errResp.json();
@@ -4564,21 +4522,25 @@ async function loadInfrastructure() {
       var ts = new Date(alerts[i].timestamp || 0).getTime();
       if (now - ts < 86400000) errCount++;
     }
-    var errEl = document.getElementById('infra-errors-today');
+    var errEl = document.getElementById('ov-alerts');
     if (errEl) {
       var errColor = errCount === 0 ? 'var(--success)' : 'var(--error)';
       errEl.innerHTML = '<span style="color:' + errColor + ';">' + errCount + '</span>';
     }
   } catch(e) {
-    var errEl = document.getElementById('infra-errors-today');
+    var errEl = document.getElementById('ov-alerts');
     if (errEl) errEl.innerHTML = '<span style="color:var(--success);">0</span>';
   }
 
-  // Agent Comms — event bus events in chat-like format
-  loadAgentComms();
+  // Update timestamp
+  var tsEl = document.getElementById('ov-updated');
+  if (tsEl) {
+    var now = new Date();
+    tsEl.textContent = now.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', hour12:false});
+  }
 
-  // Today's Activity summary
-  loadTodayActivity();
+  // Agent Comms
+  loadAgentComms();
 }
 
 async function loadTodayActivity() {
@@ -4965,26 +4927,55 @@ async function loadAgentSmartActions(agent) {
       el.innerHTML = '<span class="text-muted" style="font-size:0.76rem;">No suggestions right now — all good.</span>';
       return;
     }
-    var html = '';
-    for (var i = 0; i < actions.length; i++) {
-      var a = actions[i];
-      var color = a.color || '#888';
-      var priorityBadge = '';
-      if (a.priority === 'critical') priorityBadge = '<span style="background:#ff0000;color:#fff;font-size:0.6rem;padding:1px 5px;border-radius:3px;margin-right:4px;">CRITICAL</span>';
-      else if (a.priority === 'high') priorityBadge = '<span style="background:rgba(255,100,0,0.3);color:#ff6644;font-size:0.6rem;padding:1px 5px;border-radius:3px;margin-right:4px;">HIGH</span>';
-      var sourceIcon = '';
-      if (a.source === 'atlas') sourceIcon = 'Atlas';
-      else if (a.source === 'robotox') sourceIcon = 'Robotox';
-      else if (a.source === 'shelby') sourceIcon = 'Shelby';
-      else if (a.source === 'live_data') sourceIcon = 'Live';
-      else if (a.source === 'thor') sourceIcon = 'Thor';
-      html += '<button class="btn" onclick="submitAgentSmartAction(\'' + agent + '\',' + i + ')" style="color:' + color + ';border-color:' + color + '33;font-size:0.74rem;padding:6px 12px;position:relative;">';
-      html += priorityBadge;
-      html += esc(a.title.substring(0, 50));
-      if (sourceIcon) html += ' <span style="font-size:0.6rem;opacity:0.6;margin-left:4px;">(' + sourceIcon + ')</span>';
-      html += '</button>';
+    // Overview tab: render as clean action rows
+    if (agent === 'overview') {
+      var html = '';
+      var max = Math.min(actions.length, 6);
+      for (var i = 0; i < max; i++) {
+        var a = actions[i];
+        var pClass = 'ov-action-badge-medium';
+        var pLabel = 'MEDIUM';
+        if (a.priority === 'critical') { pClass = 'ov-action-badge-critical'; pLabel = 'CRITICAL'; }
+        else if (a.priority === 'high') { pClass = 'ov-action-badge-high'; pLabel = 'HIGH'; }
+        else if (a.priority === 'low') { pClass = 'ov-action-badge-low'; pLabel = 'LOW'; }
+        var sourceLabel = '';
+        if (a.source === 'atlas') sourceLabel = 'Atlas';
+        else if (a.source === 'robotox') sourceLabel = 'Robotox';
+        else if (a.source === 'shelby') sourceLabel = 'Shelby';
+        else if (a.source === 'live_data') sourceLabel = 'Live';
+        else if (a.source === 'thor') sourceLabel = 'Thor';
+        else sourceLabel = a.source || '';
+        html += '<div class="ov-action-row">';
+        html += '<span class="ov-action-badge ' + pClass + '">' + pLabel + '</span>';
+        html += '<span class="ov-action-title">' + esc(a.title) + '</span>';
+        html += '<span class="ov-action-source">' + esc(sourceLabel) + '</span>';
+        html += '<button class="ov-action-btn" onclick="submitAgentSmartAction(\'overview\',' + i + ')">Resolve</button>';
+        html += '</div>';
+      }
+      el.innerHTML = html;
+    } else {
+      // Non-overview tabs: keep button style
+      var html = '';
+      for (var i = 0; i < actions.length; i++) {
+        var a = actions[i];
+        var color = a.color || '#888';
+        var priorityBadge = '';
+        if (a.priority === 'critical') priorityBadge = '<span style="background:#ff0000;color:#fff;font-size:0.6rem;padding:1px 5px;border-radius:3px;margin-right:4px;">CRITICAL</span>';
+        else if (a.priority === 'high') priorityBadge = '<span style="background:rgba(255,100,0,0.3);color:#ff6644;font-size:0.6rem;padding:1px 5px;border-radius:3px;margin-right:4px;">HIGH</span>';
+        var sourceIcon = '';
+        if (a.source === 'atlas') sourceIcon = 'Atlas';
+        else if (a.source === 'robotox') sourceIcon = 'Robotox';
+        else if (a.source === 'shelby') sourceIcon = 'Shelby';
+        else if (a.source === 'live_data') sourceIcon = 'Live';
+        else if (a.source === 'thor') sourceIcon = 'Thor';
+        html += '<button class="btn" onclick="submitAgentSmartAction(\'' + agent + '\',' + i + ')" style="color:' + color + ';border-color:' + color + '33;font-size:0.74rem;padding:6px 12px;position:relative;">';
+        html += priorityBadge;
+        html += esc(a.title.substring(0, 50));
+        if (sourceIcon) html += ' <span style="font-size:0.6rem;opacity:0.6;margin-left:4px;">(' + sourceIcon + ')</span>';
+        html += '</button>';
+      }
+      el.innerHTML = html;
     }
-    el.innerHTML = html;
   } catch(e) {
     el.innerHTML = '<span class="text-muted" style="font-size:0.76rem;">Failed to load suggestions.</span>';
   }
