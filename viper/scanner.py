@@ -11,6 +11,8 @@ import re
 import sys
 import time
 from pathlib import Path
+from urllib.request import urlopen, Request
+from urllib.parse import quote_plus
 
 from bot.http_session import get_session
 from viper.intel import IntelItem, make_intel_id
@@ -66,12 +68,51 @@ def _load_hawk_queries() -> list[dict]:
         return []
 
 
+# ─── DuckDuckGo Fallback (free, unlimited) ────────────────────────────
+
+_DDG_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+
+
+def _ddg_search(query: str, max_results: int = 8) -> list[dict]:
+    """Fetch search result snippets using DuckDuckGo HTML."""
+    try:
+        url = f"https://html.duckduckgo.com/html/?q={quote_plus(query)}"
+        req = Request(url, headers={"User-Agent": _DDG_UA})
+        with urlopen(req, timeout=12) as resp:
+            html = resp.read().decode("utf-8", errors="replace")
+
+        results = []
+        blocks = re.split(r'result__body', html)
+        for block in blocks[1:max_results + 1]:
+            title_match = re.search(r'class="result__a"[^>]*>([^<]+)', block)
+            snippet_match = re.search(
+                r'class="result__snippet"[^>]*>(.*?)</a', block, re.DOTALL
+            )
+            url_match = re.search(r'href="([^"]+)"', block)
+
+            title = title_match.group(1).strip() if title_match else ""
+            snippet = snippet_match.group(1).strip() if snippet_match else ""
+            snippet = re.sub(r'<[^>]+>', '', snippet).strip()
+            link = url_match.group(1) if url_match else ""
+
+            if title and snippet:
+                results.append({"title": title, "snippet": snippet, "url": link})
+
+        return results
+    except Exception as e:
+        log.warning("DDG search failed for '%s': %s", query, str(e)[:100])
+        return []
+
+
 # ─── Tavily (real-time web search) ────────────────────────────────────
 
 _FALLBACK_QUERIES = [
     "Polymarket trending prediction markets today",
     "prediction market news politics sports events today",
 ]
+
+# Cooldown: skip Tavily for 30 min after a 432 (usage limit)
+_tavily_cooldown_until = 0.0
 
 
 def scan_tavily(api_key: str, queries: list[str] | None = None, use_briefing: bool = True) -> list[IntelItem]:
@@ -80,12 +121,17 @@ def scan_tavily(api_key: str, queries: list[str] | None = None, use_briefing: bo
     Priority: Hawk briefing queries first (pre-linked to markets),
     then fallback to generic queries only if briefing is empty/stale.
     Budget: max 4 queries per cycle to stay within 12k/month Tavily limit.
+    Falls back to DuckDuckGo when Tavily is unavailable (432 / no key).
     """
-    if not api_key:
-        log.warning("No Tavily API key — skipping Tavily scan")
-        return []
+    global _tavily_cooldown_until
+    tavily_available = bool(api_key) and time.time() >= _tavily_cooldown_until
 
-    session = get_session()
+    if not tavily_available and not api_key:
+        log.info("No Tavily API key — using DDG fallback")
+    elif not tavily_available:
+        log.info("Tavily on cooldown (usage limit) — using DDG fallback")
+
+    session = get_session() if tavily_available else None
     items: list[IntelItem] = []
     max_queries = 4  # Budget: 4 queries/cycle
 
@@ -123,59 +169,77 @@ def scan_tavily(api_key: str, queries: list[str] | None = None, use_briefing: bo
     for qp in query_plan:
         query = qp["query"]
         linked_cid = qp["condition_id"]
+        source = "tavily"
+        results = []
 
-        try:
-            resp = session.post(
-                "https://api.tavily.com/search",
-                json={
-                    "api_key": api_key,
-                    "query": query,
-                    "search_depth": "basic",
-                    "max_results": 8,
-                    "include_answer": True,
-                },
-                timeout=15,
-            )
-            if resp.status_code != 200:
-                log.warning("Tavily returned %d for query: %s", resp.status_code, query[:40])
+        # Try Tavily first if available
+        if tavily_available and session is not None:
+            try:
+                resp = session.post(
+                    "https://api.tavily.com/search",
+                    json={
+                        "api_key": api_key,
+                        "query": query,
+                        "search_depth": "basic",
+                        "max_results": 8,
+                        "include_answer": True,
+                    },
+                    timeout=15,
+                )
+                if resp.status_code == 432 or resp.status_code == 429:
+                    log.warning("Tavily %d (usage limit) — cooling down 30 min, switching to DDG",
+                                resp.status_code)
+                    _tavily_cooldown_until = time.time() + 1800
+                    tavily_available = False
+                elif resp.status_code != 200:
+                    log.warning("Tavily returned %d for query: %s", resp.status_code, query[:40])
+                else:
+                    data = resp.json()
+                    results = [
+                        {"title": r.get("title", ""), "snippet": r.get("content", "")[:600],
+                         "url": r.get("url", "")}
+                        for r in data.get("results", [])
+                    ]
+            except Exception:
+                log.exception("Tavily search failed for: %s", query[:40])
+
+        # DDG fallback if Tavily unavailable or returned nothing
+        if not results:
+            ddg_results = _ddg_search(query, max_results=8)
+            if ddg_results:
+                results = ddg_results
+                source = "ddg"
+
+        for r in results:
+            title = r.get("title", "")
+            content = r.get("snippet", r.get("content", ""))[:600]
+            url = r.get("url", "")
+
+            if not title:
                 continue
 
-            data = resp.json()
-            results = data.get("results", [])
+            tags = _extract_tags(title + " " + content)
+            category = _categorize_intel(title + " " + content)
+            sentiment = _estimate_sentiment(title + " " + content)
 
-            for r in results:
-                title = r.get("title", "")
-                content = r.get("content", "")[:600]
-                url = r.get("url", "")
+            # Pre-link to market if this was a targeted query
+            matched = [linked_cid] if linked_cid else []
 
-                if not title:
-                    continue
+            items.append(IntelItem(
+                id=make_intel_id(source, title),
+                source=source,
+                headline=title[:300],
+                summary=content[:600],
+                url=url,
+                relevance_tags=tags,
+                sentiment=sentiment,
+                confidence=0.8 if linked_cid else (0.7 if source == "tavily" else 0.55),
+                timestamp=time.time(),
+                category=category,
+                matched_markets=matched,
+            ))
 
-                tags = _extract_tags(title + " " + content)
-                category = _categorize_intel(title + " " + content)
-                sentiment = _estimate_sentiment(title + " " + content)
-
-                # Pre-link to market if this was a targeted query
-                matched = [linked_cid] if linked_cid else []
-
-                items.append(IntelItem(
-                    id=make_intel_id("tavily", title),
-                    source="tavily",
-                    headline=title[:300],
-                    summary=content[:600],
-                    url=url,
-                    relevance_tags=tags,
-                    sentiment=sentiment,
-                    confidence=0.8 if linked_cid else 0.7,
-                    timestamp=time.time(),
-                    category=category,
-                    matched_markets=matched,
-                ))
-
-        except Exception:
-            log.exception("Tavily search failed for: %s", query[:40])
-
-    log.info("Tavily scan: %d intel items from %d queries (%d targeted)",
+    log.info("Tavily/DDG scan: %d intel items from %d queries (%d targeted)",
              len(items), len(query_plan), targeted_count)
     return items
 
