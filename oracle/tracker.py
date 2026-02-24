@@ -211,6 +211,13 @@ class OracleTracker:
         log.info("Resolved %d predictions, total P&L: $%.2f", resolved, total_pnl)
         return {"resolved": resolved, "pnl": total_pnl}
 
+    def get_open_condition_ids(self) -> set[str]:
+        """Return condition_ids of predictions that are still pending (open positions)."""
+        rows = self.db.execute(
+            "SELECT condition_id FROM predictions WHERE outcome = 'pending' AND size > 0"
+        ).fetchall()
+        return {r[0] for r in rows}
+
     def get_accuracy_stats(self, weeks: int = 52) -> dict[str, Any]:
         """Get accuracy statistics over the last N weeks."""
         rows = self.db.execute("""

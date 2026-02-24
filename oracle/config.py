@@ -72,9 +72,10 @@ class OracleConfig:
     db_file: str = "oracle_predictions.db"
 
     # --- Scheduling ---
-    cycle_day: str = "sunday"  # day of week to run
+    cycle_day: str = "daily"   # "daily" = scan every day, "sunday" = weekly only
     cycle_hour_utc: int = 0    # 00:00 UTC
-    emergency_volatility_pct: float = 0.08  # 8% BTC move triggers mid-week update
+    daily_max_new_trades: int = 3  # max new trades per daily scan (Sunday gets full max_trades_per_week)
+    emergency_volatility_pct: float = 0.08  # 8% BTC move triggers emergency re-scan
 
     def status_path(self) -> Path:
         return self.data_dir / self.status_file
