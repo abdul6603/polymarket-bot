@@ -218,6 +218,14 @@ class OracleTracker:
         ).fetchall()
         return {r[0] for r in rows}
 
+    def count_trades_today(self, today_str: str) -> int:
+        """Count trades already placed today (across all scans)."""
+        row = self.db.execute(
+            "SELECT COUNT(*) FROM predictions WHERE week_start = ? AND size > 0",
+            (today_str,),
+        ).fetchone()
+        return row[0] if row else 0
+
     def get_accuracy_stats(self, weeks: int = 52) -> dict[str, Any]:
         """Get accuracy statistics over the last N weeks."""
         rows = self.db.execute("""

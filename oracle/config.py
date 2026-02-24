@@ -72,9 +72,8 @@ class OracleConfig:
     db_file: str = "oracle_predictions.db"
 
     # --- Scheduling ---
-    cycle_day: str = "daily"   # "daily" = scan every day, "sunday" = weekly only
-    cycle_hour_utc: int = 0    # 00:00 UTC
-    daily_max_new_trades: int = 3  # max new trades per daily scan (Sunday gets full max_trades_per_week)
+    cycle_interval_hours: int = 4   # scan every 4 hours (6x/day)
+    daily_max_new_trades: int = 3   # max NEW trades per day (across all scans)
     emergency_volatility_pct: float = 0.08  # 8% BTC move triggers emergency re-scan
 
     def status_path(self) -> Path:

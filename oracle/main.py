@@ -1,15 +1,14 @@
-"""OracleBot — main orchestrator for the weekly cycle.
+"""OracleBot — main orchestrator for crypto market cycles.
 
-Sunday 00:00 UTC cycle:
-  1. Resolve last week's predictions
-  2. Scan weekly markets (Above/Below, Price Range, Hit Price)
+Scans every 4 hours (6x/day):
+  1. Resolve pending predictions
+  2. Scan crypto markets (Above/Below, Price Range, Hit Price)
   3. Gather data context (prices, derivatives, macro, atlas, agents)
   4. Run ensemble (Claude + Gemini + Grok + local Qwen)
-  5. Calculate edges and select trades
+  5. Calculate edges and select trades (max 3 new/day)
   6. Execute trades (or dry run)
   7. Generate report and update dashboard
-  8. Send report to TG via Shelby
-  9. Update Excel sheets
+  8. Update Excel sheets
 """
 
 from __future__ import annotations
@@ -18,7 +17,6 @@ import asyncio
 import json
 import logging
 import sys
-import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -91,14 +89,23 @@ class OracleBot:
                     await self._weekly_cycle(emergency=True)
 
                 # Heartbeat so health monitors know Oracle is alive
-                if self.cfg.cycle_day == "daily":
-                    already_ran = self._read_status().get("last_run", "")[:10] == now.strftime("%Y-%m-%d")
-                    next_run = "DONE today" if already_ran else "TODAY"
+                status = self._read_status()
+                last_run = status.get("last_run", "")
+                if last_run:
+                    try:
+                        last_dt = datetime.fromisoformat(last_run)
+                        if last_dt.tzinfo is None:
+                            last_dt = last_dt.replace(tzinfo=timezone.utc)
+                        elapsed_h = (now - last_dt).total_seconds() / 3600
+                        remaining_h = max(0, self.cfg.cycle_interval_hours - elapsed_h)
+                        next_run = f"in {remaining_h:.1f}h" if remaining_h > 0.1 else "NOW"
+                    except (ValueError, TypeError):
+                        next_run = "SOON"
                 else:
-                    days_until_sunday = (6 - now.weekday()) % 7
-                    next_run = "TODAY" if days_until_sunday == 0 else f"in {days_until_sunday}d"
-                log.info("[HEARTBEAT] alive | next cycle %s | %s",
-                         next_run, now.strftime("%a %H:%M UTC"))
+                    next_run = "SOON"
+                log.info("[HEARTBEAT] alive | next scan %s | scans every %dh | %s",
+                         next_run, self.cfg.cycle_interval_hours,
+                         now.strftime("%a %H:%M UTC"))
 
                 # Sleep until next check (every 30 minutes)
                 await asyncio.sleep(1800)
@@ -118,27 +125,20 @@ class OracleBot:
         log.info("Oracle shut down")
 
     def _should_run(self, now: datetime) -> bool:
-        """Check if it's time to run a cycle.
-
-        Daily mode: runs every day at cycle_hour_utc (once per day).
-        Weekly mode: runs only on Sunday at cycle_hour_utc.
-        """
-        if now.hour != self.cfg.cycle_hour_utc:
-            return False
-        if now.minute > 30:
-            return False
-
-        # Weekly mode: Sunday only
-        if self.cfg.cycle_day == "sunday" and now.weekday() != 6:
-            return False
-
-        # Don't run twice on the same day
+        """Check if cycle_interval_hours have passed since last run."""
         status = self._read_status()
         last_run = status.get("last_run", "")
-        if last_run and last_run[:10] == now.strftime("%Y-%m-%d"):
-            return False
+        if not last_run:
+            return True  # Never ran — run now
 
-        return True
+        try:
+            last_dt = datetime.fromisoformat(last_run)
+            if last_dt.tzinfo is None:
+                last_dt = last_dt.replace(tzinfo=timezone.utc)
+            elapsed_h = (now - last_dt).total_seconds() / 3600
+            return elapsed_h >= self.cfg.cycle_interval_hours
+        except (ValueError, TypeError):
+            return True
 
     def _check_emergency(self) -> bool:
         """Check if BTC moved enough for an emergency mid-week update."""
@@ -171,14 +171,12 @@ class OracleBot:
         return datetime.now(timezone.utc).weekday() == 6
 
     async def _weekly_cycle(self, emergency: bool = False) -> None:
-        """Execute analysis and trading cycle (daily or weekly)."""
+        """Execute analysis and trading cycle (every 4 hours)."""
         is_sunday = self._is_sunday()
         if emergency:
             cycle_type = "EMERGENCY"
-        elif is_sunday:
-            cycle_type = "WEEKLY"
         else:
-            cycle_type = "DAILY"
+            cycle_type = "SCAN"
         log.info("=" * 60)
         log.info("Starting %s cycle", cycle_type)
         log.info("=" * 60)
@@ -231,7 +229,7 @@ class OracleBot:
 
         if not tradeable:
             log.warning("No tradeable markets found, skipping cycle")
-            self._write_status({"last_run": week_start, "error": "no tradeable markets"})
+            self._write_status({"last_run": now.isoformat(), "error": "no tradeable markets"})
             return
 
         # Step 3: Gather data context
@@ -247,31 +245,41 @@ class OracleBot:
 
         if not ensemble.predictions:
             log.warning("Ensemble returned no predictions, skipping cycle")
-            self._write_status({"last_run": week_start, "error": "no predictions"})
+            self._write_status({"last_run": now.isoformat(), "error": "no predictions"})
             return
 
         # Step 5: Calculate edges (with cross-platform boost if available)
         log.info("Step 5: Calculating edges...")
 
-        # Daily scans: exclude markets we already have positions on
-        existing_cids: set[str] = set()
-        if cycle_type == "DAILY":
-            existing_cids = self.tracker.get_open_condition_ids()
-            if existing_cids:
-                log.info("Daily scan: skipping %d markets with existing positions", len(existing_cids))
-                tradeable = [m for m in tradeable if m.condition_id not in existing_cids]
+        # Skip markets we already have positions on
+        existing_cids = self.tracker.get_open_condition_ids()
+        if existing_cids:
+            log.info("Skipping %d markets with existing positions", len(existing_cids))
+            tradeable = [m for m in tradeable if m.condition_id not in existing_cids]
 
         signals = calculate_edges(
             self.cfg, tradeable, ensemble.predictions,
             cross_platform_pairs=cross_platform_pairs,
         )
 
-        # Daily scans get fewer new trades than Sunday
-        max_trades = self.cfg.max_trades_per_week if is_sunday else self.cfg.daily_max_new_trades
-        orig_max = self.cfg.max_trades_per_week
-        self.cfg.max_trades_per_week = max_trades
-        selected = select_trades(self.cfg, signals)
-        self.cfg.max_trades_per_week = orig_max
+        # Enforce daily trade cap: count trades already placed today
+        today_str = now.strftime("%Y-%m-%d")
+        trades_today = self.tracker.count_trades_today(today_str)
+        remaining_slots = max(0, self.cfg.daily_max_new_trades - trades_today)
+        if remaining_slots == 0:
+            log.info("Daily cap reached (%d trades today), skipping trade selection",
+                     trades_today)
+            selected = []
+        else:
+            # Sunday gets full weekly allowance, other scans get remaining daily slots
+            max_trades = min(
+                self.cfg.max_trades_per_week if is_sunday else remaining_slots,
+                remaining_slots,
+            )
+            orig_max = self.cfg.max_trades_per_week
+            self.cfg.max_trades_per_week = max_trades
+            selected = select_trades(self.cfg, signals)
+            self.cfg.max_trades_per_week = orig_max
 
         # Step 6: Execute trades
         log.info("Step 6: Executing %d trades...", len(selected))
