@@ -172,3 +172,55 @@ def api_robotox_dep_check():
         return jsonify(checker.full_check())
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500
+
+
+@robotox_bp.route("/api/robotox/portfolio")
+def api_robotox_portfolio():
+    """V2: Portfolio correlation guard — check for conflicting positions."""
+    try:
+        from sentinel.core.portfolio_guard import get_portfolio_summary
+        return jsonify(get_portfolio_summary())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@robotox_bp.route("/api/robotox/pnl")
+def api_robotox_pnl():
+    """V2: PnL impact data — revenue stats per trading agent."""
+    try:
+        from sentinel.core.pnl_estimator import get_agent_revenue_stats, get_llm_cost_summary
+        return jsonify({
+            "revenue": get_agent_revenue_stats(),
+            "llm_costs_24h": get_llm_cost_summary(hours=24),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@robotox_bp.route("/api/robotox/breakers")
+def api_robotox_breakers():
+    """V2: Circuit breaker states for all agents."""
+    try:
+        s = _get_sentinel()
+        return jsonify(s.self_healer.get_breaker_states())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@robotox_bp.route("/api/robotox/agent-health")
+def api_robotox_agent_health():
+    """V2: Agent-specific health checks."""
+    try:
+        from sentinel.core.agent_health import run_all_agent_checks
+        issues = run_all_agent_checks()
+        return jsonify({
+            "issues": [
+                {"agent": i.agent, "check": i.check, "severity": i.severity,
+                 "message": i.message, "fix_hint": i.fix_hint}
+                for i in issues
+            ],
+            "total": len(issues),
+            "critical": sum(1 for i in issues if i.severity == "critical"),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
