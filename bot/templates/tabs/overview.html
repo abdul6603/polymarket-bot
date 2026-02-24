@@ -14,6 +14,37 @@
     </div>
   </div>
 
+  <!-- Resource Vitals Strip -->
+  <div id="ov-resource-strip" style="display:flex;gap:16px;margin-bottom:var(--space-4);padding:8px 14px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);">
+    <div style="flex:1;">
+      <div style="display:flex;justify-content:space-between;font-size:0.64rem;font-family:var(--font-mono);margin-bottom:3px;">
+        <span style="color:var(--text-muted);">CPU</span>
+        <span id="ov-cpu-val" style="font-weight:600;">--%</span>
+      </div>
+      <div style="height:5px;border-radius:3px;background:rgba(255,255,255,0.06);overflow:hidden;">
+        <div id="ov-cpu-fill" style="height:100%;border-radius:3px;width:0%;transition:width 0.5s,background 0.5s;"></div>
+      </div>
+    </div>
+    <div style="flex:1;">
+      <div style="display:flex;justify-content:space-between;font-size:0.64rem;font-family:var(--font-mono);margin-bottom:3px;">
+        <span style="color:var(--text-muted);">MEM</span>
+        <span id="ov-mem-val" style="font-weight:600;">--%</span>
+      </div>
+      <div style="height:5px;border-radius:3px;background:rgba(255,255,255,0.06);overflow:hidden;">
+        <div id="ov-mem-fill" style="height:100%;border-radius:3px;width:0%;transition:width 0.5s,background 0.5s;"></div>
+      </div>
+    </div>
+    <div style="flex:1;">
+      <div style="display:flex;justify-content:space-between;font-size:0.64rem;font-family:var(--font-mono);margin-bottom:3px;">
+        <span style="color:var(--text-muted);">DISK</span>
+        <span id="ov-disk-val" style="font-weight:600;">--%</span>
+      </div>
+      <div style="height:5px;border-radius:3px;background:rgba(255,255,255,0.06);overflow:hidden;">
+        <div id="ov-disk-fill" style="height:100%;border-radius:3px;width:0%;transition:width 0.5s,background 0.5s;"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Section 1b: Metric Cards -->
   <div class="grid-4" style="margin-bottom:var(--space-6);">
     <div class="stat-card" data-accent="success"><div class="stat-value" id="ov-pnl">--</div><div class="stat-label">Total PNL</div></div>
@@ -40,6 +71,20 @@
     </div>
     <div id="overview-smart-actions" style="max-height:280px;overflow-y:auto;">
       <span class="text-muted" style="font-size:0.76rem;">Loading smart actions...</span>
+    </div>
+  </div>
+
+  <!-- Section 3b: Collapsible — Recent Errors (default CLOSED) -->
+  <div class="collapse-section" style="margin-top:var(--space-6);">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="error" style="margin-bottom:0;">Recent Errors <span id="ov-error-count" style="font-size:0.62rem;background:var(--error);color:#fff;padding:1px 6px;border-radius:8px;margin-left:6px;display:inline-block;min-width:16px;text-align:center;">0</span></h2>
+    </div>
+    <div class="collapse-body">
+      <div class="glass-card" style="max-height:200px;overflow-y:auto;">
+        <div id="ov-errors" style="font-family:var(--font-mono);font-size:0.74rem;">
+          <span class="text-muted">No errors detected.</span>
+        </div>
+      </div>
     </div>
   </div>
 

@@ -1,15 +1,5 @@
 <!-- SYSTEM / INFRASTRUCTURE -->
 <div class="tab-content" id="tab-system">
-  <div class="grid-6">
-    <div class="stat-card" data-accent="success"><div class="stat-value" id="sys-cpu">--</div><div class="stat-label">CPU Load</div></div>
-    <div class="stat-card" data-accent="shelby"><div class="stat-value" id="sys-memory">--</div><div class="stat-label">Memory</div></div>
-    <div class="stat-card" data-accent="atlas"><div class="stat-value" id="sys-disk">--</div><div class="stat-label">Disk</div></div>
-    <div class="stat-card" data-accent="garves"><div class="stat-value" id="sys-uptime">--</div><div class="stat-label">Uptime</div></div>
-    <div class="stat-card" data-accent="thor"><div class="stat-value" id="sys-processes">--</div><div class="stat-label">Python Procs</div></div>
-    <div class="stat-card" data-accent="soren"><div class="stat-value" id="sys-ports">--</div><div class="stat-label">Open Ports</div></div>
-  </div>
-
-
   <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;" id="sys-action-buttons">
     <button class="btn" onclick="sysAction('restart-dashboard')" style="font-size:0.74rem;">Restart Dashboard</button>
     <button class="btn" onclick="sysAction('restart-shelby')" style="font-size:0.74rem;" title="Stops and restarts the Shelby LaunchAgent (scheduler + task manager)">Restart Shelby</button>
