@@ -274,3 +274,23 @@ def api_viper_scan():
         thread.start()
 
     return jsonify({"success": True, "message": "Scan started"})
+
+
+# ── LLM Cost Governor ────────────────────────────────────────────────
+
+GOVERNOR_FILE = DATA_DIR / "viper_llm_governor.json"
+
+
+@viper_bp.route("/api/viper/llm-governor")
+def api_viper_llm_governor():
+    """LLM Cost Governor — budget enforcement state."""
+    if GOVERNOR_FILE.exists():
+        try:
+            return jsonify(json.loads(GOVERNOR_FILE.read_text()))
+        except Exception:
+            pass
+    return jsonify({
+        "governor_active": False,
+        "budgets": {},
+        "system_budget": {"daily_limit": 12, "spent_today": 0, "pct": 0},
+    })

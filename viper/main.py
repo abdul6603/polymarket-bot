@@ -281,6 +281,22 @@ class ViperBot:
                          result["matched"], tavily_note, briefing_note)
                 log.info("Sources: %s", result.get("sources", {}))
 
+                # LLM Cost Governor (every cycle — lightweight)
+                gov_applied = []
+                try:
+                    from viper.llm_governor import run_governor
+                    gov_state = run_governor()
+                    gov_applied = gov_state.get("overrides_applied", [])
+                    if gov_applied:
+                        log.info("Governor: throttled %s", gov_applied)
+                    sys_spend = gov_state.get("system_budget", {})
+                    log.info("Governor: $%.4f/day (%.1f%% of $%.2f)",
+                             sys_spend.get("spent_today", 0),
+                             sys_spend.get("pct", 0),
+                             sys_spend.get("daily_limit", 12))
+                except Exception:
+                    log.exception("LLM Governor failed")
+
                 # Cost audit (every 12 cycles = every hour)
                 if self.cycle % 12 == 0:
                     log.info("Running hourly cost audit...")
@@ -356,6 +372,7 @@ class ViperBot:
                     "digests_generated": digests_generated,
                     "pushes": result.get("shelby_pushes", 0),
                     "pushed_to_shelby": (self._total_pushes if hasattr(self, '_total_pushes') else 0),
+                    "governor_throttled": gov_applied,
                 })
 
                 # Publish cycle_completed to the shared event bus
