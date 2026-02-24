@@ -34,6 +34,54 @@ except ImportError:
 
 log = logging.getLogger(__name__)
 
+# ── Atlas Intelligence File ──
+_HAWK_ATLAS_INTEL_FILE = Path.home() / "polymarket-bot" / "data" / "hawk_atlas_intel.json"
+_ATLAS_INTEL_STALENESS = 21600  # 6 hours
+
+
+def _get_atlas_research_context(market_question: str, category: str) -> str:
+    """Load Atlas research intel and extract entries relevant to this market."""
+    if not _HAWK_ATLAS_INTEL_FILE.exists():
+        return ""
+    try:
+        import json as _json
+        import time as _time
+        data = _json.loads(_HAWK_ATLAS_INTEL_FILE.read_text())
+
+        # Check staleness
+        ts_str = data.get("scanned_at", "")
+        if ts_str:
+            from datetime import datetime as _dt
+            from zoneinfo import ZoneInfo
+            ts_dt = _dt.fromisoformat(ts_str)
+            if ts_dt.tzinfo is None:
+                ts_dt = ts_dt.replace(tzinfo=ZoneInfo("America/New_York"))
+            if _time.time() - ts_dt.timestamp() > _ATLAS_INTEL_STALENESS:
+                return ""
+
+        # Collect relevant entries
+        q_lower = market_question.lower()
+        cat_lower = category.lower()
+        relevant = []
+
+        for item in data.get("news_sentiment", []) + data.get("strategies", []):
+            title = item.get("title", "").lower()
+            snippet = item.get("snippet", "").lower()
+            # Match if any keyword from the question appears
+            q_words = set(q_lower.split()) - {"will", "the", "be", "to", "in", "a", "of", "on", "at"}
+            if any(w in title or w in snippet for w in q_words if len(w) > 3):
+                relevant.append(f"- {item.get('title', '')}: {item.get('snippet', '')[:150]}")
+
+        if not relevant:
+            return ""
+
+        context = "\n\nATLAS RESEARCH CONTEXT:\n" + "\n".join(relevant[:5])
+        log.debug("[HAWK] Atlas intel loaded: %d relevant entries for %s", len(relevant[:5]), market_question[:40])
+        return context
+
+    except Exception:
+        return ""
+
 # Sport-specific live score thresholds (replaces hard score_diff >= 10)
 _LIVE_THRESHOLDS: dict[str, dict] = {
     "basketball_nba": {"significant": 15, "late_period": 3, "late_threshold": 10, "blowout": 25},
@@ -356,6 +404,8 @@ def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate |
         return None
 
     # ── Non-sports: cross-platform data (Kalshi, Metaculus, PredictIt) ──
+    # Load Atlas research context for non-sports markets
+    atlas_context = _get_atlas_research_context(market.question, market.category)
     yes_price = _get_yes_price(market)
     _, cross_data = _get_cross_platform_data(market, yes_price)
 
@@ -374,12 +424,15 @@ def analyze_market(cfg: HawkConfig, market: HawkMarket) -> ProbabilityEstimate |
         log.info("[V7] Cross-platform: prob=%.2f (%d sources) | %s",
                  cross_prob, cross_data["count"], market.question[:60])
 
+        reasoning = f"Cross-platform consensus from {cross_data['count']} prediction market(s)"
+        if atlas_context:
+            reasoning += " + Atlas research intel"
         return ProbabilityEstimate(
             market_id=market.condition_id,
             question=market.question,
             estimated_prob=max(0.01, min(0.99, cross_prob)),
             confidence=conf,
-            reasoning=f"Cross-platform consensus from {cross_data['count']} prediction market(s)",
+            reasoning=reasoning,
             category=market.category,
             risk_level=4,
             edge_source="cross_platform",

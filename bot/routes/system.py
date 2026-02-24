@@ -392,6 +392,30 @@ def api_system_launchagents():
     return jsonify({"launchagents": _get_launchagents()})
 
 
+@system_bp.route("/api/system/costs")
+def api_system_costs():
+    """LLM cost summary for the last 24 hours."""
+    try:
+        import sys as _sys
+        _sys.path.insert(0, str(Path.home() / "shared"))
+        from llm_client import get_cost_summary
+        return jsonify(get_cost_summary(hours=24))
+    except Exception as e:
+        return jsonify({"error": str(e)[:200], "total_calls": 0, "total_cost": 0})
+
+
+@system_bp.route("/api/system/health")
+def api_system_health():
+    """Unified agent health status."""
+    try:
+        import sys as _sys
+        _sys.path.insert(0, str(Path.home() / "shared"))
+        from health import get_system_health
+        return jsonify(get_system_health())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]})
+
+
 @system_bp.route("/api/system/action/<action>", methods=["POST"])
 def api_system_action(action: str):
     """Execute a system action (restart agent, check ports, etc.)."""

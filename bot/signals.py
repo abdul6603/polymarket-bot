@@ -78,7 +78,7 @@ INDICATOR_GROUPS = {
     "flow": {"order_flow", "spot_depth", "orderbook", "liquidity", "poly_flow"},
     "external": {"open_interest", "long_short_ratio", "etf_flow", "whale_flow"},
     "price_action": {"temporal_arb", "price_div", "volume_spike"},
-    "macro": {"news", "dxy_trend", "stablecoin_flow", "tvl_momentum", "mempool", "tavily_news"},
+    "macro": {"news", "dxy_trend", "stablecoin_flow", "tvl_momentum", "mempool", "tavily_news", "atlas_market_intel"},
     "derivatives": {"funding_rate", "liquidation"},
     "neural": {"lstm"},
 }
@@ -156,6 +156,8 @@ WEIGHTS = {
     "lstm": 0.0,              # DISABLED — 52.5% accuracy = coin flip noise. Used as reversal sentinel instead.
     # TAVILY NEWS — Atlas Tavily crypto news sentiment (90-min cycles)
     "tavily_news": 0.7,       # Atlas-sourced Tavily sentiment. Macro-level, slow-moving signal.
+    # ATLAS MARKET INTEL — Atlas market_intel.json keyword sentiment (90-min cycles)
+    "atlas_market_intel": 1.0,  # Atlas DDG/Tavily news keyword analysis. Complementary to tavily_news.
 }
 
 # Timeframe-dependent weight scaling
@@ -167,31 +169,31 @@ TF_WEIGHT_SCALE = {
             # External: slow data gets low weight on fast timeframes
             "open_interest": 0.4, "long_short_ratio": 0.3, "etf_flow": 0.3,
             "dxy_trend": 0.2, "stablecoin_flow": 0.2, "tvl_momentum": 0.2,
-            "mempool": 0.5, "whale_flow": 0.5, "tavily_news": 0.3},
+            "mempool": 0.5, "whale_flow": 0.5, "tavily_news": 0.3, "atlas_market_intel": 0.3},
     "15m": {"order_flow": 1.5, "orderbook": 1.8, "temporal_arb": 2.0, "price_div": 1.5,
             "rsi": 0.8, "macd": 0.9,
             "spot_depth": 1.3, "liquidation": 1.5, "funding_rate": 0.8,
             "open_interest": 0.6, "long_short_ratio": 0.5, "etf_flow": 0.5,
             "dxy_trend": 0.3, "stablecoin_flow": 0.3, "tvl_momentum": 0.3,
-            "mempool": 0.6, "whale_flow": 0.6, "tavily_news": 0.5},
+            "mempool": 0.6, "whale_flow": 0.6, "tavily_news": 0.5, "atlas_market_intel": 0.5},
     "1h":  {"order_flow": 1.0, "orderbook": 1.2, "rsi": 1.0, "macd": 1.1,
             "funding_rate": 1.2, "liquidation": 1.0,
             "open_interest": 1.0, "long_short_ratio": 0.8, "etf_flow": 0.8,
             "dxy_trend": 0.6, "stablecoin_flow": 0.6, "tvl_momentum": 0.6,
-            "mempool": 0.8, "whale_flow": 1.0, "tavily_news": 0.9},
+            "mempool": 0.8, "whale_flow": 1.0, "tavily_news": 0.9, "atlas_market_intel": 0.9},
     "4h":  {"order_flow": 0.8, "orderbook": 0.8, "price_div": 0.7,
             "rsi": 1.2, "macd": 1.3, "heikin_ashi": 1.3,
             "funding_rate": 1.5, "liquidation": 0.8,
             "open_interest": 1.3, "long_short_ratio": 1.2, "etf_flow": 1.2,
             "dxy_trend": 1.0, "stablecoin_flow": 1.0, "tvl_momentum": 1.0,
-            "mempool": 0.6, "whale_flow": 1.2, "tavily_news": 1.0},
+            "mempool": 0.6, "whale_flow": 1.2, "tavily_news": 1.0, "atlas_market_intel": 1.0},
     "weekly": {"rsi": 1.5, "macd": 1.5, "heikin_ashi": 1.5, "ema": 1.5,
                "momentum": 1.3, "bollinger": 1.2, "order_flow": 0.5,
                "orderbook": 0.5, "temporal_arb": 0.5, "price_div": 0.5,
                "funding_rate": 1.5, "liquidation": 0.5,
                "open_interest": 1.5, "long_short_ratio": 1.5, "etf_flow": 1.5,
                "dxy_trend": 1.3, "stablecoin_flow": 1.3, "tvl_momentum": 1.3,
-               "mempool": 0.4, "whale_flow": 1.3, "tavily_news": 1.0},
+               "mempool": 0.4, "whale_flow": 1.3, "tavily_news": 1.0, "atlas_market_intel": 1.0},
 }
 
 MIN_CANDLES = 30
@@ -289,6 +291,12 @@ _TAVILY_ASSET_MAP = {
 }
 _TAVILY_STALENESS = 7200  # 2 hours — ignore data older than this
 
+# ── Atlas Market Intel (market_intel.json from Atlas data feed) ──
+_ATLAS_INTEL_FILE = Path.home() / "polymarket-bot" / "data" / "market_intel.json"
+_atlas_intel_cache: dict = {"data": None, "loaded_at": 0.0}
+_ATLAS_INTEL_CACHE_TTL = 120  # 2 minutes
+_ATLAS_INTEL_STALENESS = 10800  # 3 hours
+
 
 def _get_tavily_sentiment_vote(asset: str) -> IndicatorVote | None:
     """Read Atlas Tavily news sentiment and return a vote for the given asset.
@@ -357,6 +365,80 @@ def _get_tavily_sentiment_vote(asset: str) -> IndicatorVote | None:
         confidence=confidence,
         raw_value=sentiment * 100,
     )
+
+
+def _get_atlas_market_intel_vote(asset: str) -> IndicatorVote | None:
+    """Read Atlas market_intel.json and return a vote based on news sentiment.
+
+    Counts bullish vs bearish keywords in news titles/snippets.
+    Returns IndicatorVote if >= 3 mentions lean the same direction.
+    """
+    now = time.time()
+
+    # In-memory cache (2 min TTL)
+    if _atlas_intel_cache["data"] is not None and (now - _atlas_intel_cache["loaded_at"]) < _ATLAS_INTEL_CACHE_TTL:
+        data = _atlas_intel_cache["data"]
+    else:
+        if not _ATLAS_INTEL_FILE.exists():
+            return None
+        try:
+            import json as _json
+            data = _json.loads(_ATLAS_INTEL_FILE.read_text())
+            _atlas_intel_cache["data"] = data
+            _atlas_intel_cache["loaded_at"] = now
+        except Exception:
+            return None
+
+    # Check staleness
+    ts_str = data.get("scanned_at", "")
+    if ts_str:
+        try:
+            from datetime import datetime as _dt
+            ts_dt = _dt.fromisoformat(ts_str)
+            if ts_dt.tzinfo is None:
+                from zoneinfo import ZoneInfo
+                ts_dt = ts_dt.replace(tzinfo=ZoneInfo("America/New_York"))
+            age_s = now - ts_dt.timestamp()
+            if age_s > _ATLAS_INTEL_STALENESS:
+                return None
+        except Exception:
+            pass
+
+    # Count bullish vs bearish keywords across all news items
+    bullish_kw = {"bullish", "surge", "rally", "breakout", "soar", "pump", "gain", "rise", "upgrade", "accumulate"}
+    bearish_kw = {"bearish", "crash", "dump", "plunge", "drop", "sell-off", "selloff", "decline", "downgrade", "liquidat"}
+
+    asset_kw = {"bitcoin": {"bitcoin", "btc"}, "ethereum": {"ethereum", "eth"},
+                "solana": {"solana", "sol"}, "xrp": {"xrp", "ripple"}}.get(asset, set())
+
+    bullish = 0
+    bearish = 0
+    for item in data.get("news", []) + data.get("sentiment", []):
+        text = (item.get("title", "") + " " + item.get("snippet", "")).lower()
+        # Only count if relevant to this asset (or general crypto)
+        if asset_kw and not any(kw in text for kw in asset_kw) and "crypto" not in text:
+            continue
+        if any(kw in text for kw in bullish_kw):
+            bullish += 1
+        if any(kw in text for kw in bearish_kw):
+            bearish += 1
+
+    # Need >= 3 mentions in one direction with clear lean
+    total = bullish + bearish
+    if total < 3:
+        return None
+    if bullish == bearish:
+        return None
+
+    direction = "up" if bullish > bearish else "down"
+    strength = abs(bullish - bearish) / max(total, 1)
+    confidence = min(strength, 0.7)
+
+    log.debug("[%s] Atlas market intel: %s (bull=%d, bear=%d, conf=%.2f)",
+              asset.upper(), direction.upper(), bullish, bearish, confidence)
+
+    return IndicatorVote(direction=direction, confidence=confidence,
+                         raw_value=(bullish - bearish) * 10)
 
 
 class SignalEngine:
@@ -658,6 +740,9 @@ class SignalEngine:
 
         # ── Tavily News Sentiment (Atlas-sourced, 90-min cycle) ──
         votes["tavily_news"] = _get_tavily_sentiment_vote(asset)
+
+        # ── Atlas Market Intel (DDG/Tavily keyword sentiment, 90-min cycle) ──
+        votes["atlas_market_intel"] = _get_atlas_market_intel_vote(asset)
 
         # Filter to non-None votes
         active: dict[str, IndicatorVote] = {
