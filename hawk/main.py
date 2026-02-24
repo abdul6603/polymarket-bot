@@ -1240,6 +1240,13 @@ class HawkBot:
             # V6: Dynamic cycle timing
             _cycle_markets = target_markets if 'target_markets' in locals() else []
             next_min = self._calculate_next_cycle(_cycle_markets)
+
+            # V8: Smart cache — 5min during live games, 25min otherwise
+            try:
+                from hawk.odds import set_cache_mode
+                set_cache_mode(fast=(next_min <= self.cfg.cycle_minutes_fast))
+            except Exception:
+                pass
             _save_next_cycle(next_min)
             log.info("Hawk V8 cycle %d complete. Next cycle in %d minutes (%s mode)...",
                      self.cycle, next_min, "fast" if next_min <= self.cfg.cycle_minutes_fast else "normal")

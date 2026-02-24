@@ -79,7 +79,15 @@ _ALL_SOCCER_KEYS = [
 
 # Cache: {sport_key: (timestamp, events_list)}
 _cache: dict[str, tuple[float, list[dict]]] = {}
-_CACHE_TTL = 300  # 5 minutes — matches Hawk cycle
+_CACHE_TTL_FAST = 300   # 5 min — live games, lines moving fast
+_CACHE_TTL_NORMAL = 1500  # 25 min — no live games, conserve credits
+_CACHE_TTL = _CACHE_TTL_FAST  # Default, updated per cycle by set_cache_mode()
+
+
+def set_cache_mode(fast: bool) -> None:
+    """V8: Smart cache — aggressive during live games, relaxed otherwise."""
+    global _CACHE_TTL
+    _CACHE_TTL = _CACHE_TTL_FAST if fast else _CACHE_TTL_NORMAL
 
 # Sharp book weights — Pinnacle/Circa are the sharpest, promo books are softest
 _SHARP_WEIGHTS: dict[str, float] = {
