@@ -9653,34 +9653,34 @@ function renderSignalCycle() {
   var d = _signalCycleData;
   if (!d || !d.last_eval_at) return;
   var elapsed = (Date.now() / 1000) - d.last_eval_at;
-  var timerEl = document.getElementById('signal-cycle-timer');
+  var interval = d.tick_interval_s || 5;
+  var remaining = Math.max(0, interval - elapsed);
+  var el = document.getElementById('signal-cycle-countdown');
+  var pill = document.getElementById('signal-cycle-pill');
   var mktsEl = document.getElementById('signal-cycle-markets');
-  var dotEl = document.getElementById('signal-cycle-dot');
-  var pillEl = document.getElementById('signal-cycle-pill');
   var detailEl = document.getElementById('signal-cycle-detail');
-  var agoText = elapsed < 60 ? Math.floor(elapsed) + 's' : Math.floor(elapsed/60) + 'm';
-  if (timerEl) timerEl.textContent = agoText;
-  if (mktsEl) mktsEl.textContent = d.markets_evaluated + ' mkts';
-  if (dotEl) {
-    if (elapsed < 90) {
-      dotEl.style.color = '#22c55e';
-    } else if (elapsed < 300) {
-      dotEl.style.color = '#f59e0b';
+  if (el) {
+    if (remaining <= 0) {
+      el.textContent = 'NOW';
+      el.style.color = 'var(--success)';
+      if (pill) pill.style.boxShadow = '0 0 12px rgba(34,197,94,0.4)';
     } else {
-      dotEl.style.color = '#ef4444';
+      var m = Math.floor(remaining / 60);
+      var s = Math.floor(remaining % 60);
+      el.textContent = m > 0 ? m + ':' + (s < 10 ? '0' : '') + s : s + 's';
+      if (remaining < 2) {
+        el.style.color = 'var(--warning)';
+        if (pill) pill.style.boxShadow = '0 0 10px rgba(243,156,18,0.3)';
+      } else {
+        el.style.color = '';
+        if (pill) pill.style.boxShadow = '';
+      }
     }
   }
-  if (pillEl) {
-    if (elapsed > 300) {
-      pillEl.style.borderColor = 'rgba(239,68,68,0.3)';
-      pillEl.style.background = 'rgba(239,68,68,0.08)';
-    } else {
-      pillEl.style.borderColor = 'rgba(139,92,246,0.25)';
-      pillEl.style.background = 'rgba(139,92,246,0.1)';
-    }
-  }
+  if (mktsEl) mktsEl.textContent = (d.markets_evaluated || 0) + ' mkts';
   if (detailEl) {
-    detailEl.innerHTML = 'Last scan: ' + agoText + ' ago | ' + d.markets_evaluated + ' markets | Regime: ' + (d.regime || '--');
+    var agoText = elapsed < 60 ? Math.floor(elapsed) + 's' : Math.floor(elapsed/60) + 'm';
+    detailEl.innerHTML = 'Last scan: ' + agoText + ' ago | ' + (d.markets_evaluated || 0) + ' markets | Regime: ' + (d.regime || '--');
     if (d.trades_this_tick > 0) {
       detailEl.innerHTML += ' | <span style="color:#22c55e;">' + d.trades_this_tick + ' trade(s)</span>';
     }

@@ -73,18 +73,14 @@
         " onmouseover="this.style.background='rgba(239,68,68,0.3)'" onmouseout="this.style.background='rgba(239,68,68,0.15)'">Force Reconnect</button>
       </div>
     </div>
-    <!-- Signal Cycle Badge -->
-    <div id="signal-cycle-pill" style="
-      display:inline-flex;align-items:center;gap:5px;
-      padding:4px 12px;border-radius:20px;
-      font-size:0.72rem;font-weight:600;font-family:var(--font-mono);
-      background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.25);
-      transition:all 0.3s ease;cursor:default;position:relative;
-    ">
-      <span id="signal-cycle-dot" style="font-size:0.5rem;color:#8b5cf6;">&#x25CF;</span>
-      <span id="signal-cycle-timer" style="color:#c4b5fd;">--</span>
-      <span style="color:rgba(255,255,255,0.35);">|</span>
-      <span id="signal-cycle-markets" style="color:var(--text-muted);">-- mkts</span>
+    <!-- Signal Cycle Badge (Odin-style) -->
+    <span id="signal-cycle-pill" style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:0.82rem;font-weight:700;padding:6px 16px;border-radius:999px;border:1px solid rgba(139,92,246,0.35);background:rgba(139,92,246,0.12);color:#8b5cf6;transition:box-shadow .3s;cursor:default;position:relative;"
+       onmouseenter="document.getElementById('signal-cycle-tooltip').style.display='block'"
+       onmouseleave="document.getElementById('signal-cycle-tooltip').style.display='none'">
+      <span style="width:8px;height:8px;border-radius:50%;background:#8b5cf6;animation:rxPulse 2s ease-in-out infinite;"></span>
+      Next Cycle: <span id="signal-cycle-countdown" style="min-width:38px;text-align:center;">--</span>
+      <span style="color:rgba(255,255,255,0.25);">|</span>
+      <span id="signal-cycle-markets" style="font-size:0.7rem;color:var(--text-muted);">-- mkts</span>
       <div id="signal-cycle-tooltip" style="
         display:none;position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);
         z-index:100;background:var(--bg-secondary);border:1px solid rgba(139,92,246,0.3);
@@ -98,7 +94,10 @@
         </div>
         <div id="signal-cycle-detail" style="margin-top:6px;color:var(--text-muted);"></div>
       </div>
-    </div>
+    </span>
+    <!-- Hidden compat elements -->
+    <span id="signal-cycle-dot" style="display:none;"></span>
+    <span id="signal-cycle-timer" style="display:none;"></span>
   </div>
   <div class="health-inline" id="garves-health-result"></div>
 
