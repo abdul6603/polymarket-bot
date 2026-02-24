@@ -960,6 +960,7 @@ class TradingBot:
                     size_usd=conviction.position_size_usd,
                     entry_price=round(sig.probability, 4),
                     ml_win_prob=conviction.ml_win_prob or 0.0,
+                    fill_price_estimate=ob_analysis.best_ask if ob_analysis else 0.0,
                 )
 
         # ── Straddle Engine: if no directional trades and regime is fear ──

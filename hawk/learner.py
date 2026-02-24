@@ -189,6 +189,62 @@ def get_dimension_adjustments(trade_context: dict) -> tuple[float, list[str]]:
     return total_adj, blocked
 
 
+def generate_audit_report() -> dict:
+    """Per-dimension audit: accuracy, sample count, bootstrap 95% CI.
+
+    Similar to Garves weight_learner.generate_audit_report() but for
+    Hawk's 6 categorical dimensions instead of 17 indicators.
+    """
+    import random
+
+    data = _load_accuracy()
+    if not data:
+        return {"dimensions": {}, "summary": "No Hawk dimension data yet"}
+
+    result = {}
+    for dim_name, values in data.items():
+        dim_report = []
+        for val_name, entry in values.items():
+            total = entry.get("total", 0)
+            wins = entry.get("wins", 0)
+            if total < 1:
+                continue
+
+            accuracy = wins / total
+
+            # Bootstrap 95% CI
+            ci_low, ci_high = accuracy, accuracy
+            if total >= 5:
+                outcomes = [1] * wins + [0] * (total - wins)
+                boot_accs = []
+                for _ in range(1000):
+                    sample = random.choices(outcomes, k=total)
+                    boot_accs.append(sum(sample) / total)
+                boot_accs.sort()
+                ci_low = boot_accs[int(0.025 * len(boot_accs))]
+                ci_high = boot_accs[int(0.975 * len(boot_accs))]
+
+            includes_coinflip = ci_low <= 0.50 <= ci_high
+
+            dim_report.append({
+                "value": val_name,
+                "total": total,
+                "wins": wins,
+                "losses": total - wins,
+                "accuracy": round(accuracy, 4),
+                "ci_95_low": round(ci_low, 4),
+                "ci_95_high": round(ci_high, 4),
+                "includes_coinflip": includes_coinflip,
+                "verdict": "EDGE" if not includes_coinflip and accuracy > 0.50 else
+                           "TOXIC" if not includes_coinflip and accuracy < 0.50 else
+                           "NOISE",
+            })
+        dim_report.sort(key=lambda x: -x["total"])
+        result[dim_name] = dim_report
+
+    return {"dimensions": result}
+
+
 def get_accuracy_report() -> dict:
     """Return full accuracy data for dashboard/debugging."""
     return _load_accuracy()

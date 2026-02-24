@@ -152,6 +152,78 @@ def record_indicator_votes(trade_record, indicator_votes: dict) -> None:
     )
 
 
+def generate_audit_report() -> dict:
+    """Per-indicator audit: accuracy, sample count, bootstrap 95% CI, breakdowns.
+
+    Flags indicators where the confidence interval includes 50% (coin-flip).
+    """
+    import random
+
+    data = _load_accuracy()
+    if not data:
+        return {"indicators": [], "summary": "No indicator data yet"}
+
+    report = []
+    for name, entry in data.items():
+        total = entry.get("total_votes", 0)
+        correct = entry.get("correct_votes", 0)
+        if total < 1:
+            continue
+
+        accuracy = correct / total
+
+        # Bootstrap 95% CI (1000 resamples)
+        ci_low, ci_high = accuracy, accuracy
+        if total >= 5:
+            boot_accs = []
+            outcomes = [1] * correct + [0] * (total - correct)
+            for _ in range(1000):
+                sample = random.choices(outcomes, k=total)
+                boot_accs.append(sum(sample) / total)
+            boot_accs.sort()
+            ci_low = boot_accs[int(0.025 * len(boot_accs))]
+            ci_high = boot_accs[int(0.975 * len(boot_accs))]
+
+        includes_coinflip = ci_low <= 0.50 <= ci_high
+        cw_acc = entry.get("confidence_weighted_accuracy", accuracy)
+
+        indicator = {
+            "name": name,
+            "total_votes": total,
+            "correct_votes": correct,
+            "accuracy": round(accuracy, 4),
+            "cw_accuracy": round(cw_acc, 4),
+            "ci_95_low": round(ci_low, 4),
+            "ci_95_high": round(ci_high, 4),
+            "includes_coinflip": includes_coinflip,
+            "verdict": "EDGE" if not includes_coinflip and accuracy > 0.50 else
+                       "ANTI" if not includes_coinflip and accuracy < 0.50 else
+                       "NOISE",
+            "by_asset": entry.get("by_asset", {}),
+            "by_regime": entry.get("by_regime", {}),
+            "by_confidence_band": entry.get("by_confidence_band", {}),
+        }
+        report.append(indicator)
+
+    # Sort by verdict priority (EDGE first, then NOISE, then ANTI)
+    verdict_order = {"EDGE": 0, "NOISE": 1, "ANTI": 2}
+    report.sort(key=lambda x: (verdict_order.get(x["verdict"], 1), -x["total_votes"]))
+
+    edge_count = sum(1 for i in report if i["verdict"] == "EDGE")
+    anti_count = sum(1 for i in report if i["verdict"] == "ANTI")
+    noise_count = sum(1 for i in report if i["verdict"] == "NOISE")
+
+    return {
+        "indicators": report,
+        "summary": {
+            "total_indicators": len(report),
+            "edge": edge_count,
+            "anti_signal": anti_count,
+            "noise": noise_count,
+        },
+    }
+
+
 def get_dynamic_weights(base_weights: dict) -> dict:
     """Return adjusted weights based on historical indicator accuracy.
 

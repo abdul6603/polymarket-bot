@@ -22,6 +22,11 @@
     <span class="sidebar-icon" style="background:#aaaaaa;">SY</span><span class="sidebar-label">System</span>
   </button>
   <div class="sidebar-divider"></div>
+  <div class="sidebar-section-label">EDGE</div>
+  <button class="sidebar-btn" data-tab="pnl" onclick="switchTab('pnl')" title="P&L">
+    <span class="sidebar-icon" style="background:#10B981;">PL</span><span class="sidebar-label">P&L</span>
+  </button>
+  <div class="sidebar-divider"></div>
   <div class="sidebar-section-label">TRADING</div>
   <button class="sidebar-btn" data-tab="garves-live" onclick="switchTab('garves-live')" title="Garves">
     <span class="sidebar-icon" style="background:var(--agent-garves);">GA</span><span class="sidebar-label">Garves $</span>
@@ -83,6 +88,7 @@
     <div class="header-right">Last update: <span id="last-update">--:--:--</span></div>
   </header>
 
+  {% include 'tabs/pnl.html' %}
   {% include 'tabs/overview.html' %}
   {% include 'tabs/garves_live.html' %}
   {% include 'tabs/soren.html' %}

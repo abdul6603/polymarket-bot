@@ -1,0 +1,219 @@
+<!-- P&L — Unified Trading Performance -->
+<div class="tab-content" id="tab-pnl" style="display:none;">
+
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+    <h2 style="margin:0;font-size:1.1rem;font-weight:700;">Prove the Edge — P&L Dashboard</h2>
+    <button class="btn" onclick="pnlRefresh()" style="font-size:0.72rem;font-weight:700;border-color:#10B981;color:#10B981;">Refresh</button>
+    <span class="text-muted" style="font-size:0.68rem;margin-left:auto;">Updated: <span id="pnl-updated">--</span></span>
+  </div>
+
+  <!-- Combined Summary Cards -->
+  <div class="pnl-summary-row" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px;">
+    <div class="glass-card" style="text-align:center;padding:12px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Total P&L</div>
+      <div id="pnl-total" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">$0.00</div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:12px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Net (After Costs)</div>
+      <div id="pnl-net" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">$0.00</div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:12px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Total Trades</div>
+      <div id="pnl-trades" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">0</div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:12px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Win Rate</div>
+      <div id="pnl-wr" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">0%</div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:12px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">LLM Cost</div>
+      <div id="pnl-cost" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);color:var(--error);">$0.00</div>
+    </div>
+  </div>
+
+  <!-- Per-Agent Cards -->
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
+    <div class="glass-card" style="border-left:3px solid var(--agent-garves);padding:14px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span style="background:var(--agent-garves);color:#fff;padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;">GARVES</span>
+        <span id="pnl-garves-pnl" style="font-weight:800;font-family:var(--font-mono);margin-left:auto;">$0</span>
+      </div>
+      <div style="display:flex;gap:16px;font-size:0.72rem;">
+        <span>Trades: <strong id="pnl-garves-trades">0</strong></span>
+        <span>WR: <strong id="pnl-garves-wr">0%</strong></span>
+        <span>W/L: <span id="pnl-garves-wl">0/0</span></span>
+      </div>
+      <div id="pnl-garves-slippage" style="margin-top:6px;font-size:0.66rem;color:var(--text-muted);"></div>
+    </div>
+
+    <div class="glass-card" style="border-left:3px solid var(--agent-hawk);padding:14px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span style="background:var(--agent-hawk);color:#fff;padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;">HAWK</span>
+        <span id="pnl-hawk-pnl" style="font-weight:800;font-family:var(--font-mono);margin-left:auto;">$0</span>
+      </div>
+      <div style="display:flex;gap:16px;font-size:0.72rem;">
+        <span>Trades: <strong id="pnl-hawk-trades">0</strong></span>
+        <span>WR: <strong id="pnl-hawk-wr">0%</strong></span>
+        <span>W/L: <span id="pnl-hawk-wl">0/0</span></span>
+      </div>
+    </div>
+
+    <div class="glass-card" style="border-left:3px solid var(--agent-odin);padding:14px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span style="background:var(--agent-odin);color:#fff;padding:2px 8px;border-radius:4px;font-size:0.68rem;font-weight:700;">ODIN</span>
+        <span id="pnl-odin-pnl" style="font-weight:800;font-family:var(--font-mono);margin-left:auto;">$0</span>
+      </div>
+      <div style="display:flex;gap:16px;font-size:0.72rem;">
+        <span>Trades: <strong id="pnl-odin-trades">0</strong></span>
+        <span>WR: <strong id="pnl-odin-wr">0%</strong></span>
+        <span>W/L: <span id="pnl-odin-wl">0/0</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Daily P&L Table -->
+  <div class="glass-card" style="padding:14px;margin-bottom:16px;">
+    <h3 class="section-title" style="font-size:0.76rem;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Daily P&L</h3>
+    <div style="max-height:300px;overflow-y:auto;">
+      <table class="pnl-daily-table" style="width:100%;font-size:0.72rem;border-collapse:collapse;">
+        <thead>
+          <tr style="text-align:left;border-bottom:1px solid rgba(255,255,255,0.1);">
+            <th style="padding:4px 8px;">Date</th>
+            <th style="padding:4px 8px;text-align:right;">Garves</th>
+            <th style="padding:4px 8px;text-align:right;">Hawk</th>
+            <th style="padding:4px 8px;text-align:right;">Odin</th>
+            <th style="padding:4px 8px;text-align:right;font-weight:800;">Total</th>
+          </tr>
+        </thead>
+        <tbody id="pnl-daily-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- WR by Source -->
+  <div class="glass-card" style="padding:14px;">
+    <h3 class="section-title" style="font-size:0.76rem;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px;">Win Rate by Source</h3>
+    <div id="pnl-by-source" style="font-size:0.72rem;"></div>
+  </div>
+
+</div>
+
+<script>
+function pnlRefresh() {
+  fetch('/api/pnl').then(r => r.json()).then(function(d) {
+    var c = d.combined || {};
+    var g = (d.agents || {}).garves || {};
+    var h = (d.agents || {}).hawk || {};
+    var o = (d.agents || {}).odin || {};
+    var slip = d.slippage || {};
+    var costs = d.llm_costs || {};
+
+    function pnlColor(v) { return v >= 0 ? 'var(--success)' : 'var(--error)'; }
+    function fmtPnl(v) { return (v >= 0 ? '+$' : '-$') + Math.abs(v).toFixed(2); }
+
+    // Summary cards
+    var totalEl = document.getElementById('pnl-total');
+    totalEl.textContent = fmtPnl(c.total_pnl || 0);
+    totalEl.style.color = pnlColor(c.total_pnl || 0);
+
+    var netEl = document.getElementById('pnl-net');
+    netEl.textContent = fmtPnl(c.net_after_costs || 0);
+    netEl.style.color = pnlColor(c.net_after_costs || 0);
+
+    document.getElementById('pnl-trades').textContent = c.total_trades || 0;
+    document.getElementById('pnl-wr').textContent = (c.win_rate || 0).toFixed(1) + '%';
+    document.getElementById('pnl-cost').textContent = '$' + (costs.total || 0).toFixed(2);
+
+    // Per-agent
+    function setAgent(prefix, data) {
+      var pEl = document.getElementById('pnl-' + prefix + '-pnl');
+      pEl.textContent = fmtPnl(data.total_pnl || 0);
+      pEl.style.color = pnlColor(data.total_pnl || 0);
+      document.getElementById('pnl-' + prefix + '-trades').textContent = data.total_trades || 0;
+      document.getElementById('pnl-' + prefix + '-wr').textContent = (data.win_rate || 0).toFixed(1) + '%';
+      document.getElementById('pnl-' + prefix + '-wl').textContent = (data.wins || 0) + '/' + (data.losses || 0);
+    }
+    setAgent('garves', g);
+    setAgent('hawk', h);
+    setAgent('odin', o);
+
+    // Slippage note
+    var slipEl = document.getElementById('pnl-garves-slippage');
+    if (slip.slippage_cost) {
+      slipEl.innerHTML = 'Slippage cost: <strong style="color:var(--error);">-$' + Math.abs(slip.slippage_cost).toFixed(2) + '</strong> (adj P&L: ' + fmtPnl(slip.adjusted_pnl) + ')';
+    }
+
+    // Daily P&L table
+    var allDays = new Set();
+    Object.keys(g.daily_pnl || {}).forEach(function(d) { allDays.add(d); });
+    Object.keys(h.daily_pnl || {}).forEach(function(d) { allDays.add(d); });
+    Object.keys(o.daily_pnl || {}).forEach(function(d) { allDays.add(d); });
+    var days = Array.from(allDays).sort().reverse();
+
+    var tbody = document.getElementById('pnl-daily-tbody');
+    tbody.innerHTML = '';
+    days.forEach(function(day) {
+      var gv = (g.daily_pnl || {})[day] || 0;
+      var hv = (h.daily_pnl || {})[day] || 0;
+      var ov = (o.daily_pnl || {})[day] || 0;
+      var tv = gv + hv + ov;
+      var tr = document.createElement('tr');
+      tr.style.borderBottom = '1px solid rgba(255,255,255,0.05)';
+      function tdCell(val, bold) {
+        var td = document.createElement('td');
+        td.style.padding = '4px 8px';
+        td.style.textAlign = 'right';
+        td.style.color = pnlColor(val);
+        td.style.fontFamily = 'var(--font-mono)';
+        if (bold) td.style.fontWeight = '800';
+        td.textContent = val === 0 ? '-' : fmtPnl(val);
+        return td;
+      }
+      var dateTd = document.createElement('td');
+      dateTd.style.padding = '4px 8px';
+      dateTd.textContent = day;
+      tr.appendChild(dateTd);
+      tr.appendChild(tdCell(gv));
+      tr.appendChild(tdCell(hv));
+      tr.appendChild(tdCell(ov));
+      tr.appendChild(tdCell(tv, true));
+      tbody.appendChild(tr);
+    });
+
+    // By source
+    var srcDiv = document.getElementById('pnl-by-source');
+    var srcHtml = '';
+    function renderSources(agentName, color, sources) {
+      if (!sources || !Object.keys(sources).length) return '';
+      var h = '<div style="margin-bottom:8px;"><strong style="color:' + color + ';">' + agentName + '</strong><br>';
+      Object.keys(sources).forEach(function(src) {
+        var s = sources[src];
+        h += '<span style="display:inline-block;margin:2px 8px 2px 0;padding:2px 6px;border-radius:3px;background:rgba(255,255,255,0.05);">';
+        h += src + ': <strong>' + s.win_rate + '%</strong> (' + s.wins + 'W/' + s.losses + 'L) $' + s.pnl;
+        h += '</span>';
+      });
+      h += '</div>';
+      return h;
+    }
+    srcHtml += renderSources('Garves', 'var(--agent-garves)', g.by_source);
+    srcHtml += renderSources('Hawk', 'var(--agent-hawk)', h.by_source);
+    srcHtml += renderSources('Odin', 'var(--agent-odin)', o.by_source);
+    srcDiv.innerHTML = srcHtml || '<span class="text-muted">No source data yet</span>';
+
+    document.getElementById('pnl-updated').textContent = new Date().toLocaleTimeString();
+  }).catch(function(e) {
+    console.error('[P&L] Fetch error:', e);
+  });
+}
+
+// Auto-refresh when tab is active
+(function() {
+  var origSwitch = window.switchTab;
+  if (origSwitch) {
+    window.switchTab = function(tab) {
+      origSwitch(tab);
+      if (tab === 'pnl') pnlRefresh();
+    };
+  }
+})();
+</script>

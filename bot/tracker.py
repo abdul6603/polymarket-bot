@@ -65,6 +65,10 @@ class TradeRecord:
     entry_price: float = 0.0
     pnl: float = 0.0
 
+    # Slippage simulation (P1-1: prove the edge)
+    fill_price_estimate: float = 0.0   # best_ask at execution time
+    slippage_adjusted_pnl: float = 0.0 # P&L after deducting spread
+
     # ML prediction at trade time
     ml_win_prob: float = 0.0
 
@@ -154,6 +158,7 @@ class PerformanceTracker:
         size_usd: float = 0.0,
         entry_price: float = 0.0,
         ml_win_prob: float = 0.0,
+        fill_price_estimate: float = 0.0,
     ) -> None:
         """Record a new signal prediction."""
         trade_id = f"{market_id[:12]}_{int(time.time())}"
@@ -195,6 +200,7 @@ class PerformanceTracker:
             ob_slippage_pct=ob_slippage_pct,
             size_usd=size_usd,
             entry_price=entry_price,
+            fill_price_estimate=fill_price_estimate,
             ml_win_prob=ml_win_prob,
             dry_run=self.cfg.dry_run,
         )
@@ -247,6 +253,19 @@ class PerformanceTracker:
                     rec.pnl = round(shares * 1.0 - rec.size_usd, 2)
                 else:
                     rec.pnl = round(-rec.size_usd, 2)
+
+                # Slippage-adjusted P&L: simulate worse fill from spread
+                adj_entry = rec.fill_price_estimate if rec.fill_price_estimate > 0 else rec.entry_price
+                if adj_entry <= 0:
+                    adj_entry = rec.entry_price
+                elif rec.ob_spread > 0 and rec.fill_price_estimate <= 0:
+                    adj_entry = rec.entry_price + rec.ob_spread / 2
+                adj_shares = rec.size_usd / adj_entry if adj_entry > 0 else 0
+                if rec.won:
+                    rec.slippage_adjusted_pnl = round(adj_shares * 1.0 - rec.size_usd, 2)
+                else:
+                    rec.slippage_adjusted_pnl = round(-rec.size_usd, 2)
+
             resolved_ids.append(trade_id)
 
             result = "WIN" if rec.won else "LOSS"
@@ -465,6 +484,42 @@ class PerformanceTracker:
             "win_rate": round(wins / total * 100, 1) if total else 0.0,
             "pnl": round(total_pnl, 2),
             "total_resolved": self._total_resolved,
+        }
+
+    def get_slippage_report(self) -> dict:
+        """Aggregate raw vs slippage-adjusted P&L across all resolved trades."""
+        raw_pnl = 0.0
+        adjusted_pnl = 0.0
+        trades_with_slippage = 0
+        total_trades = 0
+
+        if not TRADES_FILE.exists():
+            return {"raw_pnl": 0, "adjusted_pnl": 0, "slippage_cost": 0, "trades": 0}
+
+        try:
+            with open(TRADES_FILE) as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    rec = json.loads(line)
+                    if not rec.get("resolved") or rec.get("outcome") not in ("up", "down"):
+                        continue
+                    total_trades += 1
+                    raw_pnl += rec.get("pnl", 0.0)
+                    adj = rec.get("slippage_adjusted_pnl", rec.get("pnl", 0.0))
+                    adjusted_pnl += adj
+                    if adj != rec.get("pnl", 0.0):
+                        trades_with_slippage += 1
+        except Exception:
+            log.exception("Failed to compute slippage report")
+
+        return {
+            "raw_pnl": round(raw_pnl, 2),
+            "adjusted_pnl": round(adjusted_pnl, 2),
+            "slippage_cost": round(raw_pnl - adjusted_pnl, 2),
+            "trades": total_trades,
+            "trades_with_slippage_data": trades_with_slippage,
         }
 
     @property
