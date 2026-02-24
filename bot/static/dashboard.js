@@ -7693,23 +7693,36 @@ async function loadHawkNextCycle() {
     var resp = await fetch('/api/hawk/next-cycle');
     var d = await resp.json();
     var nextAt = d.next_at || 0;
-    var mode = d.mode || 'normal';
-    var badge = document.getElementById('hawk-cycle-mode-badge');
-    if (badge) {
-      badge.textContent = mode.toUpperCase();
-      badge.style.background = mode === 'fast' ? 'rgba(255,68,68,0.2)' : 'rgba(255,215,0,0.15)';
-      badge.style.color = mode === 'fast' ? '#ff4444' : 'var(--agent-hawk)';
-    }
     if (_hawkCycleInterval) clearInterval(_hawkCycleInterval);
     _hawkCycleInterval = setInterval(function() {
-      var now = Date.now() / 1000;
-      var remaining = Math.max(0, nextAt - now);
-      var mins = Math.floor(remaining / 60);
-      var secs = Math.floor(remaining % 60);
       var el = document.getElementById('hawk-cycle-countdown');
-      if (el) el.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
-      if (remaining <= 0 && el) el.textContent = '00:00';
+      var pill = document.getElementById('hawk-cycle-timer');
+      if (!el) return;
+      var now = Date.now() / 1000;
+      var diff = Math.max(0, Math.round(nextAt - now));
+      if (diff <= 0) {
+        el.textContent = 'NOW';
+        el.style.color = 'var(--success)';
+        if (pill) pill.style.boxShadow = '0 0 12px rgba(34,197,94,0.4)';
+      } else {
+        var m = Math.floor(diff / 60);
+        var s = diff % 60;
+        el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+        if (diff < 30) {
+          el.style.color = 'var(--warning)';
+          if (pill) pill.style.boxShadow = '0 0 10px rgba(243,156,18,0.3)';
+        } else {
+          el.style.color = '';
+          if (pill) pill.style.boxShadow = '';
+        }
+      }
     }, 1000);
+    // Flash pill on load
+    var pill = document.getElementById('hawk-cycle-timer');
+    if (pill) {
+      pill.style.boxShadow = '0 0 16px rgba(255,215,0,0.6)';
+      setTimeout(function(){ pill.style.boxShadow = ''; }, 1500);
+    }
   } catch(e) { console.error('hawk next-cycle:', e); }
 }
 

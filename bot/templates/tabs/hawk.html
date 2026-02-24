@@ -6,35 +6,29 @@
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
     <span id="hawk-mode-badge" class="trading-mode-badge trading-mode-paper">Trading: Paper Money</span>
     <button class="trading-mode-toggle" id="hawk-mode-toggle" onclick="toggleHawkMode()">Switch</button>
-    <span class="text-muted" style="font-size:0.76rem;">Non-crypto prediction markets — Smart Degen</span>
-    <!-- Signal Cycle Badge -->
-    <div id="hawk-signal-cycle-pill" style="
-      display:inline-flex;align-items:center;gap:5px;margin-left:auto;
-      padding:4px 12px;border-radius:20px;
-      font-size:0.72rem;font-weight:600;font-family:var(--font-mono);
-      background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.25);
-      cursor:default;position:relative;
-    " onmouseenter="document.getElementById('hawk-sc-tooltip').style.display='block'"
+    <span id="hawk-cycle-timer" style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:0.82rem;font-weight:700;padding:6px 16px;border-radius:999px;border:1px solid rgba(255,215,0,0.35);background:rgba(255,215,0,0.12);color:var(--agent-hawk);margin-left:auto;transition:box-shadow .3s;cursor:default;position:relative;"
+       onmouseenter="document.getElementById('hawk-sc-tooltip').style.display='block'"
        onmouseleave="document.getElementById('hawk-sc-tooltip').style.display='none'">
-      <span id="hawk-sc-dot" style="font-size:0.5rem;color:#f59e0b;">&#x25CF;</span>
-      <span id="hawk-sc-timer" style="color:#fbbf24;">--</span>
-      <span style="color:rgba(255,255,255,0.35);">|</span>
-      <span id="hawk-sc-markets" style="color:var(--text-muted);">-- mkts</span>
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--agent-hawk);animation:rxPulse 2s ease-in-out infinite;"></span>
+      Next Cycle: <span id="hawk-cycle-countdown" style="min-width:38px;text-align:center;">--</span>
+      <span style="color:rgba(255,255,255,0.25);">|</span>
+      <span id="hawk-sc-markets" style="font-size:0.7rem;color:var(--text-muted);">-- mkts</span>
       <div id="hawk-sc-tooltip" style="
         display:none;position:absolute;right:0;bottom:calc(100% + 8px);
-        z-index:100;background:var(--bg-secondary);border:1px solid rgba(245,158,11,0.3);
+        z-index:100;background:var(--bg-secondary);border:1px solid rgba(255,215,0,0.3);
         border-radius:8px;padding:10px 14px;min-width:220px;
         box-shadow:0 8px 32px rgba(0,0,0,0.4);font-size:0.68rem;text-align:left;
         font-weight:400;white-space:normal;
       ">
-        <div style="font-weight:700;margin-bottom:6px;color:#fbbf24;">Scan Pipeline</div>
+        <div style="font-weight:700;margin-bottom:6px;color:var(--agent-hawk);">Scan Pipeline</div>
         <div style="color:var(--text-muted);line-height:1.5;">
           Filters 1000s of markets, analyzes edge via LLM + sportsbook odds, scores confidence tiers &amp; risk checks.
         </div>
         <div id="hawk-sc-detail" style="margin-top:6px;color:var(--text-muted);"></div>
       </div>
-    </div>
-</div>
+    </span>
+    <span class="text-muted" style="font-size:0.68rem;font-style:italic;">"Smart Degen"</span>
+  </div>
 
   <!-- B: Action Bar -->
   <div class="agent-widget-row">
@@ -97,14 +91,10 @@
     </div>
   </div>
 
-  <!-- V6: Next Cycle Countdown -->
-  <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-hawk);padding:8px 14px;">
-    <div style="display:flex;align-items:center;gap:16px;">
-      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Next Cycle</div>
-      <div style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;color:var(--agent-hawk);" id="hawk-cycle-countdown">--:--</div>
-      <span id="hawk-cycle-mode-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:4px;font-weight:600;background:rgba(255,215,0,0.15);color:var(--agent-hawk);">NORMAL</span>
-    </div>
-  </div>
+  <!-- V6: hidden compat elements -->
+  <span id="hawk-cycle-mode-badge" style="display:none;">NORMAL</span>
+  <span id="hawk-sc-dot" style="display:none;"></span>
+  <span id="hawk-sc-timer" style="display:none;"></span>
 
   <!-- D: Activity Feed -->
   <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-hawk);">
