@@ -2200,6 +2200,12 @@ async function atlasExecuteAction(idx) {
   var btn = document.getElementById('atlas-pq-btn-' + idx);
   var result = document.getElementById('atlas-pq-result-' + idx);
   if (btn) { btn.disabled = true; btn.textContent = 'Running...'; btn.style.opacity = '0.5'; }
+  // Show immediate feedback — research takes 10-20s
+  if (result) {
+    result.style.display = 'block';
+    result.style.background = 'rgba(34,170,68,0.06)';
+    result.innerHTML = '<span style="color:var(--agent-atlas);">Researching ' + esc(a.action_body && a.action_body.agent ? a.action_body.agent : a.title || '') + '...</span> <span class="text-muted" style="font-size:0.66rem;">(takes 10-20s)</span>';
+  }
   try {
     var opts = {};
     if (a.action_method === 'POST') {
