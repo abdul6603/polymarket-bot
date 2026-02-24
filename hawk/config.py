@@ -94,6 +94,7 @@ class HawkConfig:
     live_score_exit_threshold: int = int(_env("HAWK_LIVE_SCORE_EXIT_THRESHOLD", "15"))
     live_scale_up_margin: int = int(_env("HAWK_LIVE_SCALE_UP_MARGIN", "10"))
     live_odds_check_minutes: int = int(_env("HAWK_LIVE_ODDS_CHECK_MINUTES", "5"))
+    live_take_profit_threshold: float = float(_env("HAWK_LIVE_TAKE_PROFIT", "0.93"))  # Sell when price >= this (YES) or <= 1-this (NO)
 
     # V9: Kalshi trading integration
     kalshi_api_key: str = _env("KALSHI_API_KEY", "")

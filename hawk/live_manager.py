@@ -70,35 +70,106 @@ class LivePositionManager:
         if not open_pos:
             return []
 
-        # Get live games from ESPN (free, no rate limit)
+        actions = []
+
+        # Phase 1: Price-only take-profit scan (ALL positions, no ESPN needed)
+        # CLOB price alone tells us if a position is essentially won
+        remaining_pos = []
+        for pos in open_pos:
+            cid = pos.get("condition_id", "")
+            if cid in self._paused:
+                remaining_pos.append(pos)
+                continue
+
+            action = self._check_take_profit(pos)
+            if action:
+                actions.append(action)
+                self._log_action(action)
+            else:
+                remaining_pos.append(pos)
+
+        # Phase 2: Live game monitoring (game-matched positions only)
+        if not remaining_pos:
+            return actions
+
         try:
             from hawk.espn import get_live_games
             live_games = get_live_games()
         except Exception:
             log.debug("[LIVE] ESPN fetch failed — holding all positions")
-            return []
+            return actions
 
         if not live_games:
-            return []
+            return actions
 
-        actions = []
-        for pos in open_pos:
+        for pos in remaining_pos:
             cid = pos.get("condition_id", "")
             if cid in self._paused:
                 continue
 
-            # Match position to live game
             game = self._match_to_game(pos, live_games)
             if not game:
                 continue
 
-            # Evaluate and act
             action = self._evaluate(pos, game)
             if action:
                 actions.append(action)
                 self._log_action(action)
 
         return actions
+
+    def _check_take_profit(self, pos: dict) -> LiveAction | None:
+        """Price-only take-profit check. No ESPN match needed.
+
+        Sells when CLOB price indicates position is essentially won.
+        Works even after game ends (ESPN drops it but CLOB still tradeable).
+        """
+        cid = pos.get("condition_id", "")
+        direction = pos.get("direction", "yes")
+        entry_price = pos.get("entry_price", 0.5)
+
+        current_price = self._get_live_price(pos)
+        threshold = self.cfg.live_take_profit_threshold
+
+        should_sell = False
+        if direction == "yes" and current_price >= threshold:
+            should_sell = True
+        elif direction == "no" and current_price <= (1 - threshold):
+            should_sell = True
+
+        if not should_sell:
+            return None
+
+        # Check cooldown
+        now = time.time()
+        last_action = self._last_action_time.get(cid, 0)
+        if last_action and (now - last_action) < 120:
+            return None
+
+        shares = pos.get("size_usd", 0) / entry_price if entry_price > 0 else 0
+        if direction == "yes":
+            pnl_estimate = (current_price - entry_price) * shares
+        else:
+            pnl_estimate = (entry_price - current_price) * shares
+
+        profit_pct = (pnl_estimate / pos.get("size_usd", 1)) * 100 if pos.get("size_usd") else 0
+        reason = (f"Take profit: {direction.upper()} @ {current_price:.2f} "
+                  f"(entry {entry_price:.2f}, +{profit_pct:.0f}%) — "
+                  f"locking ${pnl_estimate:.2f} profit, freeing capital")
+
+        self._execute_exit(pos, reason)
+        self._actions_count[cid] = self._actions_count.get(cid, 0) + 1
+        self._last_action_time[cid] = now
+
+        log.info("[LIVE] TAKE_PROFIT: %s | $%.2f profit | %s",
+                 cid[:12], pnl_estimate, pos.get("question", "")[:50])
+
+        return LiveAction(
+            condition_id=cid, action="TAKE_PROFIT", reason=reason,
+            score_home=0, score_away=0, period=0, clock="",
+            entry_price=entry_price, current_price=current_price,
+            pnl_estimate=pnl_estimate,
+        )
 
     def _match_to_game(self, pos: dict, live_games: list[dict]) -> dict | None:
         """Match a position to a live ESPN game by question text."""
@@ -184,6 +255,28 @@ class LivePositionManager:
         position_assessment = self._assess_position(pos, game, current_price)
 
         # ── DECISION LOGIC ──
+
+        # 0. TAKE PROFIT: Position essentially won — sell now, free capital
+        take_profit_thresh = self.cfg.live_take_profit_threshold
+        should_take_profit = False
+        if direction == "yes" and current_price >= take_profit_thresh:
+            should_take_profit = True
+        elif direction == "no" and current_price <= (1 - take_profit_thresh):
+            should_take_profit = True
+
+        if should_take_profit:
+            profit_pct = (pnl_estimate / pos.get("size_usd", 1)) * 100 if pos.get("size_usd") else 0
+            reason = (f"Take profit: {direction.upper()} @ {current_price:.2f} "
+                      f"(entry {entry_price:.2f}, +{profit_pct:.0f}%) — "
+                      f"locking ${pnl_estimate:.2f} profit, freeing capital")
+            self._execute_exit(pos, reason)
+            return LiveAction(
+                condition_id=cid, action="TAKE_PROFIT", reason=reason,
+                score_home=home_score, score_away=away_score,
+                period=period, clock=clock,
+                entry_price=entry_price, current_price=current_price,
+                pnl_estimate=pnl_estimate,
+            )
 
         # 1. STOP-LOSS: Market price dropped significantly
         price_drop_pct = (entry_price - current_price) / entry_price if entry_price > 0 else 0
