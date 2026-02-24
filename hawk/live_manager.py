@@ -72,6 +72,33 @@ class LivePositionManager:
 
         actions = []
 
+        # Phase 0: Merge on-chain positions not in tracker (catches older positions)
+        try:
+            onchain_file = Path(__file__).parent.parent / "data" / "hawk_positions_onchain.json"
+            if onchain_file.exists():
+                import json as _json
+                onchain_data = _json.loads(onchain_file.read_text())
+                onchain_pos = onchain_data if isinstance(onchain_data, list) else onchain_data.get("positions", [])
+                tracker_cids = {p.get("condition_id", "") for p in open_pos}
+                for op in onchain_pos:
+                    cid = op.get("condition_id", "")
+                    if cid and cid not in tracker_cids and not op.get("resolved"):
+                        # Convert on-chain format to tracker format
+                        open_pos.append({
+                            "condition_id": cid,
+                            "question": op.get("question", op.get("title", "")),
+                            "direction": op.get("direction", "yes"),
+                            "entry_price": op.get("entry_price", 0.5),
+                            "size_usd": op.get("size_usd", op.get("value", 0)),
+                            "token_id": op.get("token_id", ""),
+                            "category": "sports" if op.get("category") in ("", "unknown", None) else op.get("category"),
+                            "shares": op.get("shares", 0),
+                            "cur_price": op.get("cur_price", 0),
+                            "_from_onchain": True,
+                        })
+        except Exception:
+            log.debug("[LIVE] On-chain position merge failed (non-fatal)")
+
         # Phase 1: Price-only take-profit scan (ALL positions, no ESPN needed)
         # CLOB price alone tells us if a position is essentially won
         remaining_pos = []
@@ -129,6 +156,9 @@ class LivePositionManager:
         entry_price = pos.get("entry_price", 0.5)
 
         current_price = self._get_live_price(pos)
+        # On-chain positions may have cur_price already
+        if pos.get("_from_onchain") and current_price == pos.get("entry_price", 0.5):
+            current_price = pos.get("cur_price", current_price)
         threshold = self.cfg.live_take_profit_threshold
 
         should_sell = False
@@ -156,6 +186,19 @@ class LivePositionManager:
         reason = (f"Take profit: {direction.upper()} @ {current_price:.2f} "
                   f"(entry {entry_price:.2f}, +{profit_pct:.0f}%) — "
                   f"locking ${pnl_estimate:.2f} profit, freeing capital")
+
+        # Resolve token_id if missing (on-chain positions don't have it)
+        if not pos.get("token_id") and self.executor and self.executor.client:
+            try:
+                market = self.executor.client.get_market(cid)
+                tokens = market.get("tokens", [])
+                for t in tokens:
+                    if t.get("outcome", "").lower() == direction:
+                        pos["token_id"] = t["token_id"]
+                        log.info("[LIVE] Resolved token_id for %s (%s)", cid[:12], direction)
+                        break
+            except Exception:
+                log.debug("[LIVE] Could not resolve token_id for %s", cid[:12])
 
         self._execute_exit(pos, reason)
         self._actions_count[cid] = self._actions_count.get(cid, 0) + 1
@@ -397,6 +440,8 @@ class LivePositionManager:
         try:
             if self.executor.client:
                 mid = self.executor.client.get_midpoint(token_id)
+                if isinstance(mid, dict):
+                    mid = mid.get("mid", pos.get("entry_price", 0.5))
                 price = float(mid) if mid else pos.get("entry_price", 0.5)
                 self._live_prices[cid] = price
                 return price

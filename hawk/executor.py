@@ -134,6 +134,9 @@ class HawkExecutor:
         try:
             # Get current market price for aggressive sell
             mid = self.client.get_midpoint(token_id)
+            # get_midpoint returns {'mid': '0.9995'} or a string
+            if isinstance(mid, dict):
+                mid = mid.get("mid", entry_price)
             mid_price = float(mid) if mid else entry_price
             # Sell at mid - 0.02 for fast fill (willing to take slightly less)
             sell_price = max(0.01, round(mid_price - 0.02, 2))
