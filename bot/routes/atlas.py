@@ -475,15 +475,29 @@ def api_atlas_kb_health():
         return jsonify({"error": str(e)[:200]}), 500
 
 
+_consolidate_state = {"running": False, "last_result": None, "last_ts": 0}
+
 @atlas_bp.route("/api/atlas/kb-consolidate", methods=["POST"])
 def api_atlas_kb_consolidate():
-    """Trigger knowledge base consolidation — merge similar learnings."""
-    try:
-        from atlas.brain import KnowledgeBase
-        kb = KnowledgeBase()
-        return jsonify(kb.consolidate())
-    except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500
+    """Trigger knowledge base consolidation (runs async in background)."""
+    import threading
+    if _consolidate_state["running"]:
+        return jsonify({"message": "Consolidation already running, check back in 30-60s", "status": "in_progress"})
+
+    def _run():
+        try:
+            _consolidate_state["running"] = True
+            from atlas.brain import KnowledgeBase
+            kb = KnowledgeBase()
+            _consolidate_state["last_result"] = kb.consolidate()
+            _consolidate_state["last_ts"] = __import__("time").time()
+        except Exception as e:
+            _consolidate_state["last_result"] = {"error": str(e)[:200]}
+        finally:
+            _consolidate_state["running"] = False
+
+    threading.Thread(target=_run, daemon=True).start()
+    return jsonify({"message": "KB consolidation started — merging similar learnings in background", "status": "started"})
 
 
 @atlas_bp.route("/api/atlas/kb-contradictions")
@@ -510,16 +524,42 @@ def api_atlas_kb_weighted():
         return jsonify({"error": str(e)[:200]}), 500
 
 
+_summarize_state = {"running": False, "last_result": None, "last_ts": 0}
+
 @atlas_bp.route("/api/atlas/summarize", methods=["POST"])
 def api_atlas_summarize():
-    """Compress old observations into learnings."""
+    """Compress old observations into learnings (runs async in background)."""
+    import threading
     atlas = get_atlas()
     if not atlas:
         return jsonify({"error": "Atlas not available"}), 503
-    try:
-        return jsonify(atlas.api_summarize_kb())
-    except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500
+
+    if _summarize_state["running"]:
+        return jsonify({"message": "KB compression already running, check back in 30-60s", "status": "in_progress"})
+
+    def _run():
+        try:
+            _summarize_state["running"] = True
+            result = atlas.api_summarize_kb()
+            _summarize_state["last_result"] = result
+            _summarize_state["last_ts"] = __import__("time").time()
+        except Exception as e:
+            _summarize_state["last_result"] = {"error": str(e)[:200]}
+        finally:
+            _summarize_state["running"] = False
+
+    threading.Thread(target=_run, daemon=True).start()
+    return jsonify({"message": "KB compression started — Atlas is synthesizing learnings in background", "status": "started"})
+
+
+@atlas_bp.route("/api/atlas/summarize-status")
+def api_atlas_summarize_status():
+    """Check status of KB compression."""
+    return jsonify({
+        "running": _summarize_state["running"],
+        "last_result": _summarize_state["last_result"],
+        "last_ts": _summarize_state["last_ts"],
+    })
 
 
 _atlas_bg_pro_cache = {"data": None, "ts": 0}
