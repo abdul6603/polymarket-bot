@@ -983,15 +983,12 @@ def api_atlas_deep_research():
         # Use Atlas researcher to do targeted research
         results = []
         try:
-            research_result = atlas.researcher.research(
+            results = atlas.researcher.targeted_research(
                 agent=agent or "general",
-                query=query,
-                max_results=5,
+                custom_query=query,
             )
-            if isinstance(research_result, list):
-                results = research_result
-            elif isinstance(research_result, dict):
-                results = research_result.get("results", [research_result])
+            if not isinstance(results, list):
+                results = [results] if results else []
         except Exception as e:
             results = [{"error": str(e)[:200]}]
 
