@@ -22,9 +22,13 @@
 
   <!-- C: Hero Cards -->
   <div class="grid-3" style="margin-bottom:12px;">
-    <div class="stat-card" data-accent="hawk">
-      <div class="stat-value" id="hawk-eff-bankroll" style="font-size:1.4rem;color:var(--agent-hawk);">$200</div>
-      <div class="stat-label">Eff. Bankroll</div>
+    <div class="stat-card" data-accent="hawk" style="position:relative;">
+      <div class="stat-value" id="hawk-capital" style="font-size:1.4rem;color:var(--agent-hawk);">--</div>
+      <div class="stat-label">Capital <span id="hawk-capital-live" style="display:none;font-size:0.58rem;color:var(--success);margin-left:4px;vertical-align:middle;">LIVE</span></div>
+      <div style="display:flex;gap:8px;margin-top:4px;font-size:0.64rem;font-family:var(--font-mono);">
+        <span style="color:var(--text-muted);">Cash: <span id="hawk-capital-cash" style="color:#00d4ff;">--</span></span>
+        <span style="color:var(--text-muted);">Positions: <span id="hawk-capital-positions" style="color:var(--agent-hawk);">--</span></span>
+      </div>
     </div>
     <div class="stat-card" data-accent="hawk">
       <div class="stat-value" id="hawk-pnl" style="font-size:1.4rem;">$0.00</div>
@@ -35,6 +39,15 @@
       <div class="stat-label">Daily P&amp;L</div>
       <div id="hawk-loss-cap-bar" style="margin-top:6px;"></div>
     </div>
+  </div>
+
+  <!-- C2: Open Positions (live on-chain) -->
+  <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-hawk);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <h3 class="section-title" data-accent="hawk" style="font-size:0.82rem;margin-bottom:0;">Open Positions <span id="hawk-pos-count-badge" style="font-size:0.68rem;color:var(--text-muted);font-weight:400;margin-left:6px;">0</span></h3>
+      <span id="hawk-pos-live-dot" style="display:none;font-size:0.6rem;color:var(--success);">&#9679; LIVE</span>
+    </div>
+    <table class="data-table"><thead><tr><th>Market</th><th>Dir</th><th>Cost</th><th>Entry</th><th>Now</th><th>Status</th><th>P&amp;L</th><th>Payout</th><th>Return</th><th>Category</th><th>Risk</th></tr></thead><tbody id="hawk-pos-tbody"><tr><td colspan="11" class="text-muted" style="text-align:center;padding:24px;">Loading on-chain positions...</td></tr></tbody></table>
   </div>
 
   <!-- D-: Market Scanner Stats -->
@@ -198,12 +211,6 @@
         <h3 class="section-title" data-accent="hawk" style="font-size:0.82rem;">Live Opportunities <span id="hawk-opp-total-label" style="font-size:0.72rem;color:var(--text-muted);font-weight:400;margin-left:8px;"></span></h3>
         <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;" id="hawk-cat-filter-pills"></div>
         <div id="hawk-opp-groups"></div>
-      </div>
-
-      <!-- O: Open Positions -->
-      <div class="section-spacer">
-        <h3 class="section-title" data-accent="hawk" style="font-size:0.82rem;">Open Positions</h3>
-        <div class="glass-card"><table class="data-table"><thead><tr><th>Market</th><th>Dir</th><th>Cost</th><th>Entry</th><th>Now</th><th>Status</th><th>P&amp;L</th><th>Payout</th><th>Return</th><th>Category</th><th>Risk</th></tr></thead><tbody id="hawk-pos-tbody"><tr><td colspan="11" class="text-muted" style="text-align:center;padding:24px;">No open positions</td></tr></tbody></table></div>
       </div>
 
       <!-- P: Trade History -->

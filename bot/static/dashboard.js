@@ -7513,11 +7513,8 @@ async function loadHawkTab() {
     document.getElementById('hawk-pnl').style.color = (s.pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)';
     document.getElementById('hawk-open-bets').textContent = s.open_positions || 0;
     document.getElementById('hawk-total-trades').textContent = s.total_trades || 0;
-    // V2: Effective bankroll
-    var effBr = st.effective_bankroll || 200;
-    animateCount('hawk-eff-bankroll', effBr, 800, '$');
-    var effEl = document.getElementById('hawk-eff-bankroll');
-    if (effEl) { effEl.style.color = effBr >= 200 ? 'var(--success)' : '#FFD700'; }
+    // V8: Live on-chain capital (replaces static bankroll)
+    loadHawkCapital();
     animateCount('hawk-daily-pnl', Math.abs(s.daily_pnl || 0), 800, (s.daily_pnl || 0) >= 0 ? '$' : '-$');
     document.getElementById('hawk-daily-pnl').style.color = (s.daily_pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)';
     renderLossCapBar('hawk-loss-cap-bar', s.daily_pnl || 0, 50);
@@ -7578,11 +7575,15 @@ async function loadHawkTab() {
     renderHawkScanSummary(oppData);
   } catch(e) {}
 
-  // Positions
+  // Positions (live on-chain)
   try {
     var posResp = await fetch('/api/hawk/positions?t=' + Date.now());
     var posData = await posResp.json();
     renderHawkPositions(posData.positions || []);
+    var posCountBadge = document.getElementById('hawk-pos-count-badge');
+    var posLiveDot = document.getElementById('hawk-pos-live-dot');
+    if (posCountBadge) posCountBadge.textContent = (posData.positions || []).length;
+    if (posLiveDot && posData.live) posLiveDot.style.display = 'inline';
   } catch(e) {}
 
   // Trade history
@@ -7627,6 +7628,58 @@ async function loadHawkTab() {
   loadHawkGapHeatmap();
   loadHawkLearner();
   loadHawkArbStatus();
+
+  // V8: Auto-refresh capital + positions every 30s
+  if (window._hawkLiveRefresh) clearInterval(window._hawkLiveRefresh);
+  window._hawkLiveRefresh = setInterval(function() {
+    loadHawkCapital();
+    fetch('/api/hawk/positions?t=' + Date.now())
+      .then(function(r){return r.json();})
+      .then(function(d){
+        renderHawkPositions(d.positions || []);
+        var cb = document.getElementById('hawk-pos-count-badge');
+        if (cb) cb.textContent = (d.positions || []).length;
+      })
+      .catch(function(){});
+  }, 30000);
+}
+
+// ═══ V8: Live Capital ═══
+
+async function loadHawkCapital() {
+  try {
+    var balResp = await fetch('/api/garves/balance');
+    var bal = await balResp.json();
+    var portfolio = bal.portfolio || 0;
+    var cash = bal.cash || 0;
+
+    // Calculate hawk positions value from on-chain positions
+    var posResp = await fetch('/api/hawk/positions?t=' + Date.now());
+    var posData = await posResp.json();
+    var hawkPosValue = 0;
+    var hawkPosCost = 0;
+    (posData.positions || []).forEach(function(p) {
+      hawkPosValue += (p.value || 0);
+      hawkPosCost += (p.size_usd || 0);
+    });
+
+    // Capital = total portfolio (shared wallet)
+    var capitalEl = document.getElementById('hawk-capital');
+    var cashEl = document.getElementById('hawk-capital-cash');
+    var posEl = document.getElementById('hawk-capital-positions');
+    var liveEl = document.getElementById('hawk-capital-live');
+
+    if (capitalEl) {
+      animateCount('hawk-capital', portfolio, 600, '$');
+      capitalEl.style.color = portfolio >= 200 ? 'var(--success)' : portfolio >= 100 ? '#FFD700' : 'var(--error)';
+    }
+    if (cashEl) cashEl.textContent = '$' + cash.toFixed(2);
+    if (posEl) posEl.textContent = '$' + hawkPosValue.toFixed(2);
+    if (liveEl) liveEl.style.display = 'inline';
+  } catch(e) {
+    var capitalEl = document.getElementById('hawk-capital');
+    if (capitalEl) capitalEl.textContent = '$200';
+  }
 }
 
 // ═══ V6: New Hawk Functions ═══
