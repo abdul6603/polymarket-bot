@@ -27,6 +27,7 @@ class HawkTracker:
         DATA_DIR.mkdir(exist_ok=True)
         self._positions: list[dict] = []
         self._decision_ids: dict[str, str] = {}
+        self._cancel_cooldowns: dict[str, float] = {}  # condition_id -> cancel timestamp
         self._load_positions()
 
     def _load_positions(self) -> None:
@@ -67,6 +68,12 @@ class HawkTracker:
 
     def has_position_for_market(self, condition_id: str, question: str = "") -> bool:
         """Check by condition_id + question similarity (blocks near-duplicate bets)."""
+        # Block recently-cancelled markets for 30 min to prevent ghost orders
+        cooldown_ts = self._cancel_cooldowns.get(condition_id, 0)
+        if cooldown_ts and (time.time() - cooldown_ts) < 1800:
+            log.info("Cooldown active for %s (cancelled %.0fm ago)",
+                     condition_id[:12], (time.time() - cooldown_ts) / 60)
+            return True
         for p in self._positions:
             # Exact ID match
             if p.get("condition_id") == condition_id or p.get("market_id") == condition_id:
@@ -170,6 +177,17 @@ class HawkTracker:
             return extract_game_id(opp.market.question, getattr(opp.market, 'event_slug', '')) or ""
         except Exception:
             return ""
+
+    def add_cooldown(self, condition_id: str) -> None:
+        """Block a market from new orders for 30 min after cancel."""
+        self._cancel_cooldowns[condition_id] = time.time()
+        # Cleanup expired cooldowns
+        now = time.time()
+        self._cancel_cooldowns = {
+            k: v for k, v in self._cancel_cooldowns.items()
+            if (now - v) < 1800
+        }
+        log.info("Cooldown set for %s (30 min)", condition_id[:12])
 
     def remove_position(self, order_id: str) -> None:
         """Remove a position by order ID."""

@@ -135,10 +135,14 @@ class HawkExecutor:
                                  pos.get("question", "")[:60])
                         try:
                             self.client.cancel(pos["order_id"])
+                            _record_fill_metric(pos, "timeout_cancel")
+                            # Add cooldown BEFORE removing — prevents re-placing
+                            cid = pos.get("condition_id") or pos.get("market_id", "")
+                            if cid:
+                                self.tracker.add_cooldown(cid)
+                            self.tracker.remove_position(pos["order_id"])
                         except Exception:
-                            log.debug("Cancel failed for %s", pos["order_id"])
-                        _record_fill_metric(pos, "timeout_cancel")
-                        self.tracker.remove_position(pos["order_id"])
+                            log.warning("Cancel failed for %s — keeping in tracker to prevent ghost", pos["order_id"])
                 elif status == "matched":
                     _record_fill_metric(pos, "filled")
             except Exception:
