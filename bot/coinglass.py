@@ -250,29 +250,9 @@ def get_data(asset: str, current_price: float = 0.0) -> CoinglassData | None:
     except Exception as e:
         log.warning("[CG] %s OI fetch failed: %s", symbol, str(e)[:80])
 
-    # 3. Long/Short ratio — premium endpoint, skip gracefully if unavailable
-    # The /history endpoint requires Hobbyist plan. If it returns 400/Upgrade,
-    # we silently skip (L/S is a secondary indicator, not critical).
-    try:
-        pair = PAIR_SUFFIX.get(symbol, f"{symbol}USDT")
-        ls_data = _api_get("futures/global-long-short-account-ratio/history", {
-            "exchange": "Binance",
-            "symbol": pair,
-            "interval": "1h",
-            "limit": 1,
-        })
-        if ls_data and isinstance(ls_data, list) and len(ls_data) > 0:
-            latest = ls_data[-1] if isinstance(ls_data[-1], dict) else {}
-            ratio = float(latest.get("longShortRatio", 0))
-            if ratio == 0:
-                long_pct = float(latest.get("longAccount", 50))
-                short_pct = float(latest.get("shortAccount", 50))
-                ratio = long_pct / max(short_pct, 0.01)
-            result.long_short_ratio = ratio
-            any_success = True
-            log.debug("[CG] %s L/S ratio: %.2f", symbol, ratio)
-    except Exception as e:
-        log.debug("[CG] %s L/S ratio unavailable: %s", symbol, str(e)[:60])
+    # 3. Long/Short ratio — DISABLED: requires Professional plan ($79/mo).
+    # Hobbyist ($29/mo) returns 400 "Upgrade plan" on every call, spamming logs.
+    # L/S ratio defaults to 1.0 (neutral). Re-enable if plan upgraded.
 
     # 4. Funding rate — aggregated across exchanges
     try:
