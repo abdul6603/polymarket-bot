@@ -6,8 +6,12 @@
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
     <span id="odin-mode-badge" class="trading-mode-badge trading-mode-paper">Trading: Paper Money</span>
     <button class="trading-mode-toggle" id="odin-mode-toggle" onclick="toggleOdinMode()">Switch</button>
-    <span class="text-muted" style="font-size:0.76rem;">13-Skill All-Seeing Trader — CoinGlass + SMC + OmniCoin</span>
-    <span class="text-muted" style="font-size:0.68rem;font-style:italic;margin-left:auto;">"I see everything. I forget nothing. I trade the imbalance."</span>
+    <span id="odin-cycle-timer" style="display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:0.68rem;font-weight:600;padding:4px 12px;border-radius:999px;border:1px solid rgba(139,92,246,0.25);background:rgba(139,92,246,0.08);color:var(--agent-odin);">
+      <span style="width:6px;height:6px;border-radius:50%;background:var(--agent-odin);animation:rxPulse 2s ease-in-out infinite;"></span>
+      Next: <span id="odin-cycle-countdown">--</span>
+    </span>
+    <span class="text-muted" style="font-size:0.76rem;">13-Skill All-Seeing Trader</span>
+    <span class="text-muted" style="font-size:0.68rem;font-style:italic;margin-left:auto;">"I see everything. I forget nothing."</span>
   </div>
 
   <!-- B: Action Bar -->
@@ -75,6 +79,32 @@
       <table class="data-table">
         <thead><tr><th>Symbol</th><th>Direction</th><th>Score</th><th>Reasons</th></tr></thead>
         <tbody id="odin-opps-tbody"><tr><td colspan="4" class="text-muted">No opportunities detected</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- G: Open Positions (moved above stats) -->
+  <div class="collapse-section default-open">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="odin" style="margin-bottom:0;">Open Positions <span id="odin-positions-badge" style="font-size:0.56rem;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:8px;background:rgba(243,156,18,0.15);border:1px solid var(--warning);color:var(--warning);vertical-align:middle;">PAPER</span></h2>
+    </div>
+    <div class="collapse-body">
+      <table class="data-table">
+        <thead><tr><th>Asset</th><th>Dir</th><th>Leverage</th><th>Entry</th><th>Now</th><th>SL</th><th>TP</th><th>Qty</th><th>Margin</th><th>P&amp;L</th></tr></thead>
+        <tbody id="odin-positions-tbody"><tr><td colspan="10" class="text-muted">No open positions</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- I: Trade History (moved above stats) -->
+  <div class="collapse-section default-open">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="odin" style="margin-bottom:0;">Trade History</h2>
+    </div>
+    <div class="collapse-body">
+      <table class="data-table">
+        <thead><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Entry</th><th>Exit</th><th>P&amp;L</th><th>Reason</th><th>Hold</th></tr></thead>
+        <tbody id="odin-trades-tbody"><tr><td colspan="8" class="text-muted">No trades yet</td></tr></tbody>
       </table>
     </div>
   </div>
@@ -176,19 +206,6 @@
     </div>
   </div>
 
-  <!-- G: Open Positions -->
-  <div class="collapse-section default-open">
-    <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="odin" style="margin-bottom:0;">Open Positions <span id="odin-positions-badge" style="font-size:0.56rem;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:8px;background:rgba(243,156,18,0.15);border:1px solid var(--warning);color:var(--warning);vertical-align:middle;">PAPER</span></h2>
-    </div>
-    <div class="collapse-body">
-      <table class="data-table">
-        <thead><tr><th>Asset</th><th>Dir</th><th>Leverage</th><th>Entry</th><th>Now</th><th>SL</th><th>TP</th><th>Qty</th><th>Margin</th><th>P&amp;L</th></tr></thead>
-        <tbody id="odin-positions-tbody"><tr><td colspan="10" class="text-muted">No open positions</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
   <!-- H: Last Signal -->
   <div class="collapse-section">
     <div class="collapse-trigger">
@@ -196,19 +213,6 @@
     </div>
     <div class="collapse-body">
       <div id="odin-last-signal" class="text-muted" style="font-family:var(--font-mono);font-size:0.74rem;">No signal yet</div>
-    </div>
-  </div>
-
-  <!-- I: Trade History -->
-  <div class="collapse-section">
-    <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="odin" style="margin-bottom:0;">Trade History</h2>
-    </div>
-    <div class="collapse-body">
-      <table class="data-table">
-        <thead><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Entry</th><th>Exit</th><th>P&amp;L</th><th>Reason</th><th>Hold</th></tr></thead>
-        <tbody id="odin-trades-tbody"><tr><td colspan="8" class="text-muted">No trades yet</td></tr></tbody>
-      </table>
     </div>
   </div>
 
@@ -446,6 +450,14 @@ function odinRefresh() {
         + ' | Skills: ' + (d.skill_count || 13);
     }
 
+    // Next cycle countdown
+    var cycleSec = (d.config || {}).cycle_seconds || 300;
+    var lastTs = d.timestamp || 0;
+    if (lastTs > 0) {
+      window._odinNextCycle = lastTs + cycleSec;
+      odinTickCountdown();
+    }
+
     // Intel meter
     if (typeof updateIntelMeter === 'function') {
       var pct = d.running ? 80 : 10;
@@ -574,6 +586,23 @@ function odinPnl(id, val) {
   el.textContent = prefix + Math.abs(val).toFixed(2);
   el.style.color = val >= 0 ? 'var(--success)' : 'var(--error)';
 }
+
+function odinTickCountdown() {
+  var el = document.getElementById('odin-cycle-countdown');
+  if (!el || !window._odinNextCycle) return;
+  var now = Date.now() / 1000;
+  var diff = Math.max(0, Math.round(window._odinNextCycle - now));
+  if (diff <= 0) {
+    el.textContent = 'NOW';
+    el.style.color = 'var(--success)';
+  } else {
+    var m = Math.floor(diff / 60);
+    var s = diff % 60;
+    el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+    el.style.color = diff < 30 ? 'var(--warning)' : '';
+  }
+}
+var _odinCountdownTick = setInterval(odinTickCountdown, 1000);
 
 var _odinPriceCache = {};
 
