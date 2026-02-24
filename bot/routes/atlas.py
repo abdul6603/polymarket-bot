@@ -1043,7 +1043,7 @@ def api_atlas_feed_agent():
                 # Write to agent's SQLite memory (24h TTL)
                 mem.set_knowledge(
                     category="atlas_intel",
-                    key=f"feed_{int(time.time())}_{i}",
+                    key=f"feed_{int(_time.time())}_{i}",
                     value=insight[:2000],
                     source=f"atlas_feed_{now_str}",
                     ttl_hours=24,
