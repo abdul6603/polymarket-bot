@@ -78,11 +78,20 @@ BINANCE_SYMBOLS = {
     "xrp": "XRPUSDT",
 }
 ASSET_CONFIG = {
-    "bitcoin":  {"threshold": 75, "budget": 25.0},
-    "ethereum": {"threshold": 73, "budget": 25.0},
-    "solana":   {"threshold": 72, "budget": 20.0},
-    "xrp":      {"threshold": 72, "budget": 20.0},
+    "bitcoin":  {"base_threshold": 70, "budget": 25.0},
+    "ethereum": {"base_threshold": 70, "budget": 25.0},
+    "solana":   {"base_threshold": 70, "budget": 20.0},
+    "xrp":      {"base_threshold": 70, "budget": 20.0},
 }
+
+# CLOB data-quality thresholds (good data = lower bar, dead data = higher bar)
+CLOB_QUALITY_GOOD_SPREAD_COMPRESSION = 0.50
+CLOB_QUALITY_GOOD_DEPTH_MIN = 20
+CLOB_QUALITY_GOOD_BUY_PRESSURE_MIN = 0.5
+CLOB_QUALITY_THRESHOLD_BONUS = -4         # lower by 4 when CLOB good
+CLOB_QUALITY_THRESHOLD_PENALTY_DEAD = 10  # raise by 10 when CLOB dead
+CLOB_QUALITY_THRESHOLD_PENALTY_STALE = 7  # raise by 7 when CLOB stale
+THRESHOLD_OVERRIDE_FILE = Path(__file__).parent.parent.parent / "data" / "snipe_threshold_override.json"
 MAX_CONCURRENT_POSITIONS = 3
 
 
@@ -140,13 +149,13 @@ class SnipeEngine:
         # Per-asset slots with independent executors + scorers
         self._slots: dict[str, AssetSlot] = {}
         for asset in ASSETS:
-            ac = ASSET_CONFIG.get(asset, {"threshold": 75, "budget": 25.0})
+            ac = ASSET_CONFIG.get(asset, {"base_threshold": 62, "budget": 25.0})
             slot = AssetSlot(asset=asset)
             slot.executor = PyramidExecutor(
                 cfg, clob_client, dry_run=dry_run,
                 budget_per_window=ac["budget"],
             )
-            slot.scorer = SignalScorer(threshold=70)
+            slot.scorer = SignalScorer(threshold=ac["base_threshold"])
             self._slots[asset] = slot
 
         self._orderbook = OrderBookSignal()
@@ -156,9 +165,11 @@ class SnipeEngine:
         self._candle_store = CandleStore()
         self._scorer = SignalScorer(threshold=70)  # Legacy compat
 
-        # Dynamic snipe thresholds — lower during warmup, normal after
-        self._threshold_warmup = 58   # first 60 min while CandleStore matures
-        self._threshold_normal = 70   # after warmup completes
+        # Data-quality-aware threshold state
+        self._last_threshold_log: dict[str, float] = {}
+        self._last_threshold_value: dict[str, int] = {}
+        self._threshold_override: int | None = None
+        self._threshold_override_expires: float = 0.0
 
         # Thread pool for parallel per-asset ticking
         self._tick_pool = ThreadPoolExecutor(max_workers=4, thread_name_prefix="snipe-tick")
@@ -558,12 +569,9 @@ class SnipeEngine:
                 target_book = clob_book.get_orderbook(token_id)
                 opp_book = clob_book.get_orderbook(opp_token_id)
 
-            # Dynamic threshold — lower during warmup, normal after 60 min
-            elapsed_min = (time.time() - self._engine_start_ts) / 60.0
-            dynamic_thresh = self._threshold_normal if elapsed_min >= 60 else self._threshold_warmup
+            # Data-quality-aware threshold (CLOB health drives threshold)
+            dynamic_thresh = self._compute_dynamic_threshold(asset, target_book, slot)
             slot.scorer.threshold = dynamic_thresh
-            if asset == "bitcoin":
-                slot.scorer.threshold = max(dynamic_thresh, 80)
 
             # Score all 10 components (per-slot scorer for thread safety)
             score_result = slot.scorer.score(
@@ -947,6 +955,126 @@ class SnipeEngine:
         )
         return True
 
+    # ── Data-Quality-Aware Threshold System ──
+
+    def _assess_clob_quality(self, book: dict | None, slot: AssetSlot) -> str:
+        """Assess CLOB data quality for threshold adjustment.
+
+        Returns "good", "stale", or "dead".
+        """
+        if not book:
+            return "dead"
+
+        spread = book.get("spread", 0)
+        best_ask = book.get("best_ask", 0)
+        buy_pressure = book.get("buy_pressure", 0)
+        sell_pressure = book.get("sell_pressure", 0)
+
+        # All zeros = dead
+        if spread == 0 and best_ask == 0 and buy_pressure == 0 and sell_pressure == 0:
+            return "dead"
+
+        compression = 1.0 - (spread / slot.initial_spread) if slot.initial_spread > 0 else 0
+        depth = int(sell_pressure / best_ask) if best_ask > 0 else 0
+
+        if (compression >= CLOB_QUALITY_GOOD_SPREAD_COMPRESSION
+                and depth >= CLOB_QUALITY_GOOD_DEPTH_MIN
+                and buy_pressure >= CLOB_QUALITY_GOOD_BUY_PRESSURE_MIN):
+            return "good"
+
+        return "stale"
+
+    def _compute_dynamic_threshold(self, asset: str, book: dict | None,
+                                   slot: AssetSlot) -> int:
+        """Compute per-asset threshold based on CLOB data quality.
+
+        Good CLOB data → lower threshold (more confident).
+        Dead/stale CLOB → raise threshold (less confident).
+        """
+        # Check Robotox override first
+        self._load_threshold_override()
+        if (self._threshold_override is not None
+                and time.time() < self._threshold_override_expires):
+            threshold = self._threshold_override
+            self._log_threshold_change(asset, threshold, "override", book, slot)
+            return threshold
+
+        # Clear expired override
+        if self._threshold_override is not None and time.time() >= self._threshold_override_expires:
+            self._threshold_override = None
+            self._threshold_override_expires = 0.0
+
+        base = ASSET_CONFIG.get(asset, {"base_threshold": 62})["base_threshold"]
+        quality = self._assess_clob_quality(book, slot)
+
+        if quality == "good":
+            adjustment = CLOB_QUALITY_THRESHOLD_BONUS
+        elif quality == "dead":
+            adjustment = CLOB_QUALITY_THRESHOLD_PENALTY_DEAD
+        else:  # stale
+            adjustment = CLOB_QUALITY_THRESHOLD_PENALTY_STALE
+
+        threshold = max(65, min(85, base + adjustment))
+        self._log_threshold_change(asset, threshold, quality, book, slot)
+        return threshold
+
+    def _log_threshold_change(self, asset: str, threshold: int,
+                              quality: str, book: dict | None,
+                              slot: AssetSlot) -> None:
+        """Log threshold changes (rate-limited to prevent spam)."""
+        now = time.time()
+        prev_value = self._last_threshold_value.get(asset)
+        last_log = self._last_threshold_log.get(asset, 0)
+
+        if prev_value == threshold and (now - last_log) < 60:
+            return
+
+        self._last_threshold_value[asset] = threshold
+        self._last_threshold_log[asset] = now
+
+        if book and quality != "dead":
+            spread = book.get("spread", 0)
+            buy_pressure = book.get("buy_pressure", 0)
+            sell_pressure = book.get("sell_pressure", 0)
+            best_ask = book.get("best_ask", 0)
+            compression = 1.0 - (spread / slot.initial_spread) if slot.initial_spread > 0 else 0
+            depth = int(sell_pressure / best_ask) if best_ask > 0 else 0
+            log.info(
+                "[THRESHOLD] %s: threshold=%d — %s CLOB (compression=%.0f%%, depth=%d, bp=%.1f)",
+                asset.upper(), threshold, quality, compression * 100, depth, buy_pressure,
+            )
+        else:
+            log.info("[THRESHOLD] %s: threshold=%d — %s CLOB", asset.upper(), threshold, quality)
+
+    def _load_threshold_override(self) -> None:
+        """Load Robotox threshold override from file if present."""
+        if self._threshold_override is not None and time.time() < self._threshold_override_expires:
+            return  # Already loaded and valid
+
+        try:
+            if THRESHOLD_OVERRIDE_FILE.exists():
+                data = json.loads(THRESHOLD_OVERRIDE_FILE.read_text())
+                expires = data.get("expires", 0)
+                if time.time() < expires:
+                    self._threshold_override = int(data.get("threshold", 55))
+                    self._threshold_override_expires = expires
+                    log.info(
+                        "[THRESHOLD] Override active: threshold=%d (expires in %.0fm, reason=%s)",
+                        self._threshold_override,
+                        (expires - time.time()) / 60,
+                        data.get("reason", "unknown"),
+                    )
+                else:
+                    # Expired — clean up
+                    self._threshold_override = None
+                    self._threshold_override_expires = 0.0
+                    try:
+                        THRESHOLD_OVERRIDE_FILE.unlink()
+                    except OSError:
+                        pass
+        except Exception:
+            pass  # Parse errors — ignore, use normal threshold
+
     def _finish_trade(self, slot: AssetSlot) -> None:
         """Clean up trade and go to cooldown."""
         market_id = slot.current_window_id
@@ -1167,13 +1295,27 @@ class SnipeEngine:
         points_lost = sum(mx - base for _, base, mx in base_components)
         max_realistic = round(100 - points_lost)
 
+        # Per-asset thresholds from data-quality system
+        per_asset_thresholds = {}
+        for a, s in self._slots.items():
+            per_asset_thresholds[a] = self._last_threshold_value.get(a, ASSET_CONFIG.get(a, {"base_threshold": 62})["base_threshold"])
+
+        # Use max per-asset threshold for can_reach check
+        max_thresh = max(per_asset_thresholds.values()) if per_asset_thresholds else 62
+
+        override_active = (self._threshold_override is not None
+                           and time.time() < self._threshold_override_expires)
+
         return {
             "elapsed_min": round(elapsed_min, 1),
             "target_min": 60,
             "progress_pct": warmup["progress_pct"],
             "max_realistic_score": max_realistic,
-            "threshold": self._threshold_normal if elapsed_min >= 60 else self._threshold_warmup,
-            "can_reach_threshold": max_realistic >= (self._threshold_normal if elapsed_min >= 60 else self._threshold_warmup),
+            "threshold": max_thresh,
+            "threshold_mode": "data_quality",
+            "per_asset_thresholds": per_asset_thresholds,
+            "threshold_override_active": override_active,
+            "can_reach_threshold": max_realistic >= max_thresh,
             "base_components": [
                 {"name": n, "current": b, "max": m}
                 for n, b, m in base_components
@@ -1233,6 +1375,7 @@ class SnipeEngine:
                 "exec_timeframe": slot.exec_timeframe,
                 "position": slot.executor.get_status(),
                 "liquidity_ignited": slot.liquidity_ignited,
+                "threshold": self._last_threshold_value.get(asset, ASSET_CONFIG.get(asset, {"base_threshold": 62})["base_threshold"]),
             }
 
         # Hot windows: all assets in TRACKING with scores
@@ -1286,6 +1429,18 @@ class SnipeEngine:
             "candles": self._candle_store.get_status(),
             "candle_warmup": self._candle_store.get_warmup_status(),
             "warmup_diagnostics": self._get_warmup_diagnostics(),
+            "threshold_info": {
+                "mode": "data_quality",
+                "per_asset": {
+                    a: self._last_threshold_value.get(a, ASSET_CONFIG.get(a, {"base_threshold": 62})["base_threshold"])
+                    for a in ASSETS
+                },
+                "override_active": (self._threshold_override is not None
+                                    and time.time() < self._threshold_override_expires),
+                "override_value": self._threshold_override,
+                "override_ttl_s": max(0, int(self._threshold_override_expires - time.time()))
+                    if self._threshold_override is not None else 0,
+            },
             "price_freshness": {
                 asset: {
                     "age_s": round(self._cache.get_price_age(asset), 1),
