@@ -75,7 +75,7 @@ def api_atlas_report():
         report = atlas.api_full_report()
         return jsonify(report)
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500, 500
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/garves")
@@ -87,7 +87,7 @@ def api_atlas_garves():
     try:
         return jsonify(atlas.api_garves_deep())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500, 500
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/soren")
@@ -99,7 +99,7 @@ def api_atlas_soren():
     try:
         return jsonify(atlas.api_soren_deep())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500, 500
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/live-research")
@@ -139,7 +139,7 @@ def api_atlas_experiments():
     try:
         return jsonify(atlas.api_experiments())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500, 500
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/knowledge")
@@ -151,7 +151,7 @@ def api_atlas_knowledge():
     try:
         return jsonify(atlas.api_knowledge())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500, 500
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/shelby")
@@ -163,7 +163,7 @@ def api_atlas_shelby():
     try:
         return jsonify(atlas.api_shelby_deep())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500, 500
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/lisa")
@@ -175,7 +175,7 @@ def api_atlas_mercury():
     try:
         return jsonify(atlas.api_mercury_deep())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500, 500
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/thor")
@@ -187,7 +187,7 @@ def api_atlas_thor():
     try:
         return jsonify(atlas.api_thor_deep())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500, 500
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/robotox")
@@ -199,7 +199,7 @@ def api_atlas_robotox():
     try:
         return jsonify(atlas.api_robotox_deep())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500, 500
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/hawk")
@@ -328,7 +328,7 @@ def api_atlas_improvements():
     try:
         return jsonify(atlas.api_improvements())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500, 500
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/improvements/acknowledge", methods=["POST"])
@@ -348,7 +348,7 @@ def api_atlas_acknowledge():
         count = atlas.improvements.acknowledge(all_suggestions)
         return jsonify({"acknowledged": count, "total_dismissed": len(atlas.improvements._acknowledged)})
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500, 500
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/costs")
@@ -519,7 +519,7 @@ def api_atlas_summarize():
     try:
         return jsonify(atlas.api_summarize_kb())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500, 500
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 _atlas_bg_pro_cache = {"data": None, "ts": 0}
@@ -630,7 +630,7 @@ def api_atlas_bg_start():
     try:
         return jsonify(atlas.api_start_background())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500, 500
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/background/stop", methods=["POST"])
@@ -642,7 +642,7 @@ def api_atlas_bg_stop():
     try:
         return jsonify(atlas.api_stop_background())
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500, 500
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/competitors")
@@ -757,7 +757,7 @@ def api_atlas_infra_eval():
             })
         return jsonify(infra)
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500, 500
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/thoughts")
@@ -788,7 +788,7 @@ def api_atlas_thoughts():
             "recent_research": research_log,
         })
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500, 500
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/hub-eval")
@@ -964,7 +964,7 @@ def api_atlas_hub_eval():
         }
         return jsonify(eval_result)
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500, 500
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 @atlas_bp.route("/api/atlas/deep-research", methods=["POST"])
@@ -997,6 +997,91 @@ def api_atlas_deep_research():
             "query": query,
             "results": results[:5],
             "count": len(results),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@atlas_bp.route("/api/atlas/feed-agent", methods=["POST"])
+def api_atlas_feed_agent():
+    """Full feed pipeline: research → agent memory → event bus → KB → mark fed."""
+    atlas = get_atlas()
+    if not atlas:
+        return jsonify({"error": "Atlas not available"}), 503
+    try:
+        body = request.get_json(silent=True) or {}
+        agent = body.get("agent", "").strip().lower()
+        if not agent:
+            return jsonify({"error": "Agent name is required"}), 400
+
+        now_str = datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d %H:%M:%S")
+        delivered = []
+
+        # Step 1: Research fresh intel
+        query = body.get("query", f"latest intelligence and updates for {agent}")
+        results = []
+        try:
+            results = atlas.researcher.targeted_research(agent=agent, custom_query=query)
+            if not isinstance(results, list):
+                results = [results] if results else []
+        except Exception as e:
+            results = [{"error": str(e)[:200]}]
+
+        # Step 2: Deliver each insight to agent memory + KB
+        try:
+            import sys
+            sys.path.insert(0, str(Path.home()))
+            from shared.agent_memory import AgentMemory
+            from shared.events import publish, INSIGHT_FOUND
+            mem = AgentMemory(agent)
+
+            for i, r in enumerate(results[:5]):
+                insight = r.get("insight", "")
+                if not insight or r.get("error"):
+                    continue
+                source = r.get("source", "atlas_research")
+                # Write to agent's SQLite memory (24h TTL)
+                mem.set_knowledge(
+                    category="atlas_intel",
+                    key=f"feed_{int(time.time())}_{i}",
+                    value=insight[:2000],
+                    source=f"atlas_feed_{now_str}",
+                    ttl_hours=24,
+                )
+                # Store in Atlas KB
+                atlas.kb.observe(agent, "research", insight[:500], r)
+                # Publish to event bus
+                publish(
+                    agent="atlas",
+                    event_type=INSIGHT_FOUND,
+                    data={"target_agent": agent, "insight": insight[:500], "source": source},
+                    summary=f"Atlas fed {agent}: {insight[:100]}",
+                )
+                delivered.append(insight[:150])
+        except Exception as e:
+            return jsonify({"error": f"Delivery failed: {str(e)[:200]}", "research_count": len(results)}), 500
+
+        # Step 3: Mark agent as fed in background_status.json
+        try:
+            bg_file = ATLAS_ROOT / "data" / "background_status.json"
+            bg_data = _read_json(bg_file) or {}
+            feed_log = bg_data.get("agent_feed_log", {})
+            if agent not in feed_log:
+                feed_log[agent] = {"last_fed": now_str, "feed_count": 0, "observations": 0}
+            feed_log[agent]["last_fed"] = now_str
+            feed_log[agent]["feed_count"] = feed_log[agent].get("feed_count", 0) + 1
+            feed_log[agent]["observations"] = feed_log[agent].get("observations", 0) + len(delivered)
+            bg_data["agent_feed_log"] = feed_log
+            bg_file.write_text(json.dumps(bg_data, default=str, indent=2))
+        except Exception as e:
+            log.warning("Failed to update feed log: %s", str(e)[:100])
+
+        return jsonify({
+            "agent": agent,
+            "researched": len(results),
+            "delivered": len(delivered),
+            "insights": delivered,
+            "message": f"Fed {agent.title()} with {len(delivered)} insights",
         })
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500
@@ -1413,7 +1498,7 @@ def api_atlas_suggest_agent():
                        else f"Atlas has identified {len(suggested_agents)} potential new agent(s).",
         })
     except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500, 500
+        return jsonify({"error": str(e)[:200]}), 500
 
 
 # ═══════════════════════════════════════════════════════
@@ -1521,9 +1606,9 @@ def api_atlas_priority_queue():
                     "description": f"Last intel feed was {int(hours_stale)}h ago. {agent.title()} may be operating on outdated data.",
                     "priority": prio,
                     "category": "feeding",
-                    "action_endpoint": "/api/atlas/deep-research",
+                    "action_endpoint": "/api/atlas/feed-agent",
                     "action_method": "POST",
-                    "action_body": {"agent": agent, "query": f"latest market intelligence and updates for {agent}"},
+                    "action_body": {"agent": agent},
                     "impact": f"Fresh intel for {agent.title()}",
                 })
 
