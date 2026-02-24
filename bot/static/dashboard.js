@@ -3632,61 +3632,372 @@ async function loadPostingSchedule() {
 }
 
 function renderSentinel(data) {
+  // Overall status badge
+  var statusEl = document.getElementById('rx-overall-status');
   if (data.error || data.status === 'offline') {
-    document.getElementById('sentinel-agents-online').textContent = '--';
-    document.getElementById('sentinel-agents-online').style.color = 'var(--error)';
+    if (statusEl) { statusEl.className = 'rx-status-badge rx-status-critical'; statusEl.querySelector('.rx-status-text').textContent = 'Offline'; }
     return;
   }
-  document.getElementById('sentinel-agents-online').textContent = data.agents_online || 0;
-  document.getElementById('sentinel-agents-online').style.color = 'var(--success)';
-  document.getElementById('sentinel-active-issues').textContent = data.active_issues || 0;
-  document.getElementById('sentinel-active-issues').style.color = (data.active_issues||0) > 0 ? 'var(--error)' : 'var(--success)';
-  document.getElementById('sentinel-total-fixes').textContent = data.total_fixes || 0;
-  document.getElementById('sentinel-last-scan').textContent = data.last_scan ? new Date(data.last_scan).toLocaleTimeString() : '--';
+  var online = data.agents_online || 0;
+  var total = data.agents_total || 0;
+  var issues = data.active_issues || 0;
+  var statusText = 'Healthy', statusClass = 'rx-status-healthy';
+  if (issues > 2 || online < total - 2) { statusText = 'Critical'; statusClass = 'rx-status-critical'; }
+  else if (issues > 0 || online < total) { statusText = 'Degraded'; statusClass = 'rx-status-degraded'; }
+  if (statusEl) { statusEl.className = 'rx-status-badge ' + statusClass; statusEl.querySelector('.rx-status-text').textContent = statusText; }
+
+  // Quick stats
+  var el;
+  el = document.getElementById('rx-stat-online'); if (el) { el.textContent = online + '/' + total; el.style.color = online === total ? 'var(--success)' : 'var(--warning)'; }
+  el = document.getElementById('rx-stat-issues'); if (el) { el.textContent = issues; el.style.color = issues > 0 ? 'var(--error)' : 'var(--success)'; }
+  el = document.getElementById('rx-stat-fixes'); if (el) el.textContent = data.total_fixes || 0;
+  el = document.getElementById('rx-last-scan'); if (el) el.textContent = data.last_scan ? 'Last scan: ' + new Date(data.last_scan).toLocaleTimeString() : 'Last scan: --';
+
+  // Summary
+  el = document.getElementById('rx-summary');
+  if (el) el.textContent = 'Watching ' + total + ' agents' + (issues === 0 ? ' \u2022 No critical issues' : ' \u2022 ' + issues + ' issue' + (issues > 1 ? 's' : '') + ' detected');
 
   // Error trend
-  var trendEl = document.getElementById('sentinel-error-trend');
+  var trendEl = document.getElementById('rx-error-trend');
   if (trendEl && data.error_trend) {
     var et = data.error_trend;
-    var arrow = et.direction === 'up' ? '&#9650;' : et.direction === 'down' ? '&#9660;' : '&#9644;';
+    var arrow = et.direction === 'up' ? '\u25B2' : et.direction === 'down' ? '\u25BC' : '\u25AC';
     var arrowColor = et.spike ? 'var(--error)' : et.direction === 'up' ? 'var(--warning)' : et.direction === 'down' ? 'var(--success)' : 'var(--text-secondary)';
-    var spikeTag = et.spike ? ' <span class="badge badge-error">SPIKE</span>' : '';
-    trendEl.innerHTML = '<span style="font-size:0.8rem;color:var(--text-secondary);">Error Trend: </span>' +
-      '<span style="font-size:1.2rem;color:' + arrowColor + ';">' + arrow + '</span> ' +
-      '<span style="font-size:0.85rem;">' + (et.latest !== undefined ? et.latest : '--') + ' errors</span>' +
-      '<span style="font-size:0.75rem;color:var(--text-secondary);margin-left:8px;">(avg: ' + (et.avg_last_5||0) + ')</span>' + spikeTag;
+    var spikeTag = et.spike ? ' <span class="badge badge-error" style="margin-left:8px;">SPIKE</span>' : '';
+    trendEl.innerHTML = '<span style="color:var(--text-muted);">Error Trend </span>' +
+      '<span style="font-size:1.1rem;color:' + arrowColor + ';margin:0 6px;">' + arrow + '</span>' +
+      '<span style="font-weight:700;">' + (et.latest !== undefined ? et.latest : '--') + '</span>' +
+      '<span style="color:var(--text-muted);margin-left:4px;">errors</span>' +
+      '<span style="color:var(--text-muted);margin-left:12px;">(5-scan avg: ' + (et.avg_last_5||0).toFixed(1) + ')</span>' + spikeTag;
+  } else if (trendEl) {
+    trendEl.innerHTML = '<span style="color:var(--text-muted);">Error Trend</span> <span style="color:var(--success);margin-left:8px;">\u25AC</span> <span style="color:var(--text-muted);margin-left:4px;">No data yet</span>';
   }
 
+  // Alerts
   var alerts = data.recent_alerts || [];
   var alertEl = document.getElementById('sentinel-alerts');
-  if (alerts.length === 0) {
-    alertEl.innerHTML = '<div class="feed-item"><span class="badge badge-success">OK</span> <span style="font-family:var(--font-mono);font-size:0.76rem;color:var(--text-secondary);margin-left:8px;">All systems nominal</span></div>';
-  } else {
-    var html = '';
-    for (var i = alerts.length - 1; i >= 0 && i >= alerts.length - 10; i--) {
-      var a = alerts[i];
-      var bcls = a.severity === 'critical' ? 'badge-error' : a.severity === 'warning' ? 'badge-warning' : 'badge-success';
-      html += '<div class="feed-item"><span class="badge ' + bcls + '">' + esc(a.severity||'info') + '</span>';
-      html += ' <span style="font-family:var(--font-mono);font-size:0.76rem;color:var(--text-secondary);margin-left:8px;">' + esc(a.message||'') + '</span>';
-      html += ' <span class="text-muted" style="font-size:0.68rem;margin-left:8px;">' + esc(a.timestamp ? new Date(a.timestamp).toLocaleTimeString() : '') + '</span></div>';
+  if (alertEl) {
+    if (alerts.length === 0) {
+      alertEl.innerHTML = '<div class="feed-item"><span class="badge badge-success">OK</span> <span style="font-family:var(--font-mono);font-size:0.76rem;color:var(--text-secondary);margin-left:8px;">All systems nominal</span></div>';
+    } else {
+      var html = '';
+      for (var i = alerts.length - 1; i >= 0 && i >= alerts.length - 10; i--) {
+        var a = alerts[i];
+        var bcls = a.severity === 'critical' ? 'badge-error' : a.severity === 'warning' ? 'badge-warning' : 'badge-success';
+        html += '<div class="feed-item"><span class="badge ' + bcls + '">' + esc(a.severity||'info') + '</span>';
+        html += ' <span style="font-family:var(--font-mono);font-size:0.76rem;color:var(--text-secondary);margin-left:8px;">' + esc(a.message||'') + '</span>';
+        html += ' <span class="text-muted" style="font-size:0.68rem;margin-left:8px;">' + esc(a.timestamp ? new Date(a.timestamp).toLocaleTimeString() : '') + '</span></div>';
+      }
+      alertEl.innerHTML = html;
     }
-    alertEl.innerHTML = html;
   }
 
+  // Fixes
   var fixes = data.recent_fixes || [];
   var fixEl = document.getElementById('sentinel-fixes-tbody');
-  if (fixes.length === 0) {
-    fixEl.innerHTML = '<tr><td colspan="4" class="text-muted" style="text-align:center;padding:24px;">No fixes</td></tr>';
-  } else {
-    var html = '';
-    for (var i = fixes.length - 1; i >= 0; i--) {
-      var f = fixes[i];
-      html += '<tr><td>' + esc(f.timestamp ? new Date(f.timestamp).toLocaleTimeString() : '--') + '</td>';
-      html += '<td>' + esc(f.agent||'--') + '</td>';
-      html += '<td>' + esc(f.action||'--') + '</td>';
-      html += '<td><span class="badge ' + (f.success ? 'badge-success' : 'badge-error') + '">' + (f.success ? 'Fixed' : 'Failed') + '</span></td></tr>';
+  if (fixEl) {
+    if (fixes.length === 0) {
+      fixEl.innerHTML = '<tr><td colspan="4" class="text-muted" style="text-align:center;padding:24px;">No fixes yet</td></tr>';
+    } else {
+      var html = '';
+      for (var i = fixes.length - 1; i >= 0; i--) {
+        var f = fixes[i];
+        html += '<tr><td>' + esc(f.timestamp ? new Date(f.timestamp).toLocaleTimeString() : '--') + '</td>';
+        html += '<td style="font-weight:600;text-transform:capitalize;">' + esc(f.agent||'--') + '</td>';
+        html += '<td>' + esc(f.action||'--') + '</td>';
+        html += '<td><span class="badge ' + (f.success ? 'badge-success' : 'badge-error') + '">' + (f.success ? 'Fixed' : 'Failed') + '</span></td></tr>';
+      }
+      fixEl.innerHTML = html;
     }
-    fixEl.innerHTML = html;
+    var fb = document.getElementById('rx-fixes-badge');
+    if (fb && fixes.length > 0) { fb.textContent = fixes.length; fb.style.background = 'rgba(0,255,136,0.12)'; fb.style.color = '#00ff88'; }
+  }
+}
+
+/* ── Robotox Radar Chart ── */
+function rxRenderRadar(dims) {
+  var svg = document.getElementById('rx-radar-svg');
+  if (!svg) return;
+  var cx = 140, cy = 125, r = 90;
+  var n = dims.length;
+  var angleStep = (2 * Math.PI) / n;
+  var startAngle = -Math.PI / 2;
+
+  function polar(angle, radius) {
+    return { x: cx + radius * Math.cos(angle), y: cy + radius * Math.sin(angle) };
+  }
+
+  var html = '';
+  // Grid rings (3 levels: 33%, 66%, 100%)
+  for (var level = 1; level <= 3; level++) {
+    var lr = r * level / 3;
+    var pts = [];
+    for (var i = 0; i < n; i++) {
+      var p = polar(startAngle + i * angleStep, lr);
+      pts.push(p.x.toFixed(1) + ',' + p.y.toFixed(1));
+    }
+    html += '<polygon points="' + pts.join(' ') + '" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>';
+  }
+
+  // Axis lines
+  for (var i = 0; i < n; i++) {
+    var p = polar(startAngle + i * angleStep, r);
+    html += '<line x1="' + cx + '" y1="' + cy + '" x2="' + p.x.toFixed(1) + '" y2="' + p.y.toFixed(1) + '" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>';
+  }
+
+  // Data polygon
+  var dataPts = [];
+  for (var i = 0; i < n; i++) {
+    var val = Math.max(0, Math.min(100, dims[i].value || 0));
+    var p = polar(startAngle + i * angleStep, r * val / 100);
+    dataPts.push(p.x.toFixed(1) + ',' + p.y.toFixed(1));
+  }
+  html += '<polygon points="' + dataPts.join(' ') + '" fill="rgba(0,255,68,0.1)" stroke="rgba(0,255,68,0.6)" stroke-width="2"/>';
+
+  // Data points + labels
+  for (var i = 0; i < n; i++) {
+    var val = Math.max(0, Math.min(100, dims[i].value || 0));
+    var p = polar(startAngle + i * angleStep, r * val / 100);
+    html += '<circle cx="' + p.x.toFixed(1) + '" cy="' + p.y.toFixed(1) + '" r="3" fill="#00ff44"/>';
+
+    // Labels
+    var lp = polar(startAngle + i * angleStep, r + 22);
+    var anchor = 'middle';
+    if (lp.x < cx - 10) anchor = 'end';
+    else if (lp.x > cx + 10) anchor = 'start';
+    html += '<text x="' + lp.x.toFixed(1) + '" y="' + lp.y.toFixed(1) + '" text-anchor="' + anchor + '" font-family="monospace" font-size="9" fill="#8888aa" dominant-baseline="middle">' + esc(dims[i].name) + '</text>';
+    html += '<text x="' + lp.x.toFixed(1) + '" y="' + (lp.y + 12).toFixed(1) + '" text-anchor="' + anchor + '" font-family="monospace" font-size="10" font-weight="700" fill="' + (val >= 70 ? '#00ff88' : val >= 40 ? '#ffaa00' : '#ff4444') + '" dominant-baseline="middle">' + val + '</text>';
+  }
+
+  svg.innerHTML = html;
+}
+
+/* ── Robotox Score Ring ── */
+function rxRenderScore(score) {
+  var arc = document.getElementById('rx-score-arc');
+  var num = document.getElementById('rx-score-num');
+  var lbl = document.getElementById('rx-score-lbl');
+  if (!arc || !num || !lbl) return;
+
+  score = Math.max(0, Math.min(100, Math.round(score)));
+  var circumference = 2 * Math.PI * 52;
+  var dash = (score / 100) * circumference;
+  arc.setAttribute('stroke-dasharray', dash.toFixed(1) + ' ' + circumference.toFixed(1));
+
+  // Color by score
+  var color = score >= 80 ? '#00ff88' : score >= 60 ? '#00d4ff' : score >= 40 ? '#ffaa00' : '#ff4444';
+  arc.setAttribute('stroke', color);
+
+  num.textContent = score;
+  num.style.color = color;
+
+  var label = score >= 90 ? 'Elite' : score >= 76 ? 'Expert' : score >= 61 ? 'Skilled' : score >= 41 ? 'Fair' : score >= 21 ? 'Poor' : 'Critical';
+  lbl.textContent = label;
+}
+
+/* ── Load Intelligence (Radar + Score) ── */
+async function rxLoadIntelligence(sentinelData) {
+  try {
+    var resp = await fetch('/api/robotox/scorecards');
+    var data = await resp.json();
+    var agents = data.agents || {};
+
+    // Compute dimensions from real data
+    var fixSuccessRates = [];
+    var uptimes = [];
+    var restartCounts = 0;
+    var totalAgents = Object.keys(agents).length || 1;
+
+    for (var key in agents) {
+      var a = agents[key];
+      var u = a.uptime || {};
+      if (u.uptime_pct !== undefined) uptimes.push(u.uptime_pct);
+      if (u.fix_success_rate !== undefined && u.restart_count > 0) fixSuccessRates.push(u.fix_success_rate);
+      restartCounts += (u.restart_count || 0);
+    }
+
+    var avgUptime = uptimes.length > 0 ? uptimes.reduce(function(a,b){return a+b;},0) / uptimes.length : 0;
+    var avgFixRate = fixSuccessRates.length > 0 ? fixSuccessRates.reduce(function(a,b){return a+b;},0) / fixSuccessRates.length : 50;
+
+    // Update uptime stat
+    var uptimeEl = document.getElementById('rx-stat-uptime');
+    if (uptimeEl) uptimeEl.textContent = avgUptime.toFixed(1) + '%';
+
+    var online = sentinelData.agents_online || 0;
+    var total = sentinelData.agents_total || 1;
+    var issues = sentinelData.active_issues || 0;
+
+    var dims = [
+      { name: 'Auto-Fix', value: Math.round(avgFixRate) },
+      { name: 'Coverage', value: Math.round(online / total * 100) },
+      { name: 'Detection', value: Math.min(100, Math.round(70 + restartCounts * 2)) },
+      { name: 'Response', value: Math.round(Math.max(0, 100 - issues * 15)) },
+      { name: 'Vigilance', value: Math.round(avgUptime) }
+    ];
+
+    rxRenderRadar(dims);
+
+    var overallScore = Math.round(dims.reduce(function(s,d){return s+d.value;},0) / dims.length);
+    rxRenderScore(overallScore);
+
+  } catch(e) {
+    console.error('rxLoadIntelligence:', e);
+    rxRenderRadar([
+      {name:'Auto-Fix',value:50},{name:'Coverage',value:50},{name:'Detection',value:50},
+      {name:'Response',value:50},{name:'Vigilance',value:50}
+    ]);
+    rxRenderScore(50);
+  }
+}
+
+/* ── Load Predictive Monitors ── */
+async function rxLoadPredictive() {
+  var el = document.getElementById('rx-predictive-content');
+  var badge = document.getElementById('rx-pred-badge');
+  if (!el) return;
+  try {
+    var resp = await fetch('/api/robotox/predictive');
+    var data = await resp.json();
+    if (data.error) { el.innerHTML = '<span style="color:var(--error);">' + esc(data.error) + '</span>'; return; }
+
+    var leaks = data.memory_leaks || [];
+    var accels = data.error_acceleration || [];
+    var rots = data.log_rotations || [];
+
+    // Badge
+    if (badge) {
+      var total = leaks.length + accels.length;
+      if (total > 0) {
+        var hasCrit = leaks.some(function(l){return l.severity==='critical';}) || accels.some(function(a){return a.severity==='critical';});
+        badge.textContent = total + (hasCrit ? ' CRITICAL' : ' WARNING');
+        badge.style.background = hasCrit ? 'rgba(255,68,68,0.15)' : 'rgba(255,170,0,0.12)';
+        badge.style.color = hasCrit ? '#ff4444' : '#ffaa00';
+      } else {
+        badge.textContent = 'ALL CLEAR';
+        badge.style.background = 'rgba(0,255,136,0.1)';
+        badge.style.color = '#00ff88';
+      }
+    }
+
+    var html = '<div class="rx-pred-row">';
+
+    // Memory Leaks Card
+    html += '<div class="rx-pred-card">';
+    html += '<div class="rx-pred-title">Memory Leaks</div>';
+    if (leaks.length === 0) {
+      html += '<div class="rx-pred-status" style="color:var(--success);">None detected</div>';
+    } else {
+      for (var i = 0; i < leaks.length; i++) {
+        var l = leaks[i];
+        html += '<div class="rx-pred-status" style="color:' + (l.severity === 'critical' ? 'var(--error)' : 'var(--warning)') + ';">' + esc(l.agent.toUpperCase()) + ' +' + l.slope_mb_hr + ' MB/hr</div>';
+        html += '<div class="rx-pred-detail">R\u00B2=' + l.r_squared + ' | ' + l.current_mem_mb + 'MB now' + (l.hours_to_2gb ? ' | 2GB in ' + l.hours_to_2gb + 'h' : '') + '</div>';
+      }
+    }
+    html += '</div>';
+
+    // Error Acceleration Card
+    html += '<div class="rx-pred-card">';
+    html += '<div class="rx-pred-title">Error Acceleration</div>';
+    if (accels.length === 0) {
+      html += '<div class="rx-pred-status" style="color:var(--success);">Stable</div>';
+    } else {
+      for (var i = 0; i < accels.length; i++) {
+        var a = accels[i];
+        html += '<div class="rx-pred-status" style="color:' + (a.severity === 'critical' ? 'var(--error)' : 'var(--warning)') + ';">' + esc(a.agent.toUpperCase()) + '</div>';
+        html += '<div class="rx-pred-detail">' + a.window_counts.join(' \u2192 ') + ' per window | accel +' + a.acceleration + '/w\u00B2</div>';
+      }
+    }
+    html += '</div>';
+
+    // Log Rotations Card
+    html += '<div class="rx-pred-card">';
+    html += '<div class="rx-pred-title">Log Rotation</div>';
+    if (rots.length === 0) {
+      html += '<div class="rx-pred-status" style="color:var(--text-secondary);">No rotations needed</div>';
+    } else {
+      for (var i = 0; i < rots.length; i++) {
+        html += '<div class="rx-pred-detail">' + esc(rots[i].agent) + ': ' + rots[i].size_mb + 'MB rotated</div>';
+      }
+    }
+    html += '</div></div>';
+
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = '<span class="text-muted">Error: ' + esc(e.message) + '</span>'; }
+}
+
+/* ── Load Quiet Hours Status ── */
+async function rxLoadQuietHours() {
+  try {
+    var resp = await fetch('/api/robotox/quiet-hours');
+    var data = await resp.json();
+    var tag = document.getElementById('rx-quiet-tag');
+    if (tag) {
+      if (data.is_quiet_hours) {
+        tag.style.display = 'inline';
+        if (data.pending_alerts > 0) tag.textContent = 'QUIET HOURS (' + data.pending_alerts + ' batched)';
+        else tag.textContent = 'QUIET HOURS';
+      } else {
+        tag.style.display = 'none';
+      }
+    }
+  } catch(e) { console.debug('rxLoadQuietHours:', e); }
+}
+
+/* ── Load Live Status Pills ── */
+async function rxLoadLivePills() {
+  var el = document.getElementById('rx-live-pills');
+  if (!el) return;
+  try {
+    var resp = await fetch('/api/robotox/dep-health');
+    var data = await resp.json();
+    var deps = data.dependencies || data.checks || [];
+    if (!Array.isArray(deps) && typeof deps === 'object') {
+      deps = Object.keys(deps).map(function(k) { var d = deps[k]; d.name = d.name || k; return d; });
+    }
+    if (deps.length === 0) { el.innerHTML = '<span class="text-muted" style="font-size:0.68rem;">No dependency data</span>'; return; }
+    var html = '';
+    for (var i = 0; i < deps.length; i++) {
+      var d = deps[i];
+      var ok = d.status === 'ok' || d.status === 'healthy' || d.reachable === true;
+      var warn = d.status === 'degraded' || d.status === 'slow';
+      var cls = ok ? 'rx-pill-ok' : warn ? 'rx-pill-warn' : 'rx-pill-err';
+      var name = d.name || d.dependency || ('Dep ' + i);
+      var latency = d.latency_ms ? ' ' + d.latency_ms + 'ms' : '';
+      html += '<span class="rx-pill ' + cls + '" title="' + esc(name) + latency + '"><span class="rx-pill-dot"></span>' + esc(name) + '</span>';
+    }
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = '<span class="text-muted" style="font-size:0.68rem;">Deps unavailable</span>'; }
+}
+
+/* ── Export Report ── */
+function rxExportReport() {
+  var parts = ['ROBOTOX HEALTH REPORT', '=' .repeat(40), 'Generated: ' + new Date().toLocaleString(), ''];
+
+  var status = document.getElementById('rx-overall-status');
+  if (status) parts.push('Status: ' + (status.querySelector('.rx-status-text') || {}).textContent);
+
+  var online = document.getElementById('rx-stat-online');
+  var issues = document.getElementById('rx-stat-issues');
+  var fixes = document.getElementById('rx-stat-fixes');
+  var uptime = document.getElementById('rx-stat-uptime');
+  parts.push('Agents: ' + (online ? online.textContent : '--'));
+  parts.push('Issues: ' + (issues ? issues.textContent : '--'));
+  parts.push('Fixes: ' + (fixes ? fixes.textContent : '--'));
+  parts.push('Uptime: ' + (uptime ? uptime.textContent : '--'));
+  parts.push('');
+
+  var trend = document.getElementById('rx-error-trend');
+  if (trend) parts.push('Error Trend: ' + trend.textContent.trim());
+  parts.push('');
+
+  var text = parts.join('\n');
+  try {
+    navigator.clipboard.writeText(text);
+    var el = document.getElementById('sentinel-report');
+    if (el) { el.style.display = 'block'; el.textContent = 'Report copied to clipboard!\n\n' + text; }
+  } catch(e) {
+    var el = document.getElementById('sentinel-report');
+    if (el) { el.style.display = 'block'; el.textContent = text; }
   }
 }
 
@@ -4121,16 +4432,17 @@ async function refresh() {
       testXConnection();
     } else if (currentTab === 'sentinel') {
       var resp = await fetch('/api/sentinel');
-      renderSentinel(await resp.json());
-      loadAgentLearning('sentinel');
-      loadRobotoxDeps();
+      var sentinelData = await resp.json();
+      renderSentinel(sentinelData);
+      rxLoadIntelligence(sentinelData);
+      rxLoadPredictive();
+      rxLoadQuietHours();
+      rxLoadLivePills();
       loadLogWatcherAlerts();
       loadRobotoxPerf();
       loadRobotoxDepHealth();
       loadRobotoxCorrelator();
       loadRobotoxDeployWatches();
-      loadCommandTable('robotox');
-      loadAgentSmartActions('robotox');
       loadAgentActivity('sentinel');
     } else if (currentTab === 'thor') {
       loadThor();
