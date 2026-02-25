@@ -26,6 +26,9 @@
   <button class="sidebar-btn" data-tab="pnl" onclick="switchTab('pnl')" title="P&L">
     <span class="sidebar-icon" style="background:#10B981;">PL</span><span class="sidebar-label">P&L</span>
   </button>
+  <button class="sidebar-btn" data-tab="traders" onclick="switchTab('traders')" title="Traders">
+    <span class="sidebar-icon" style="background:#10B981;">TR</span><span class="sidebar-label">Traders</span>
+  </button>
   <div class="sidebar-divider"></div>
   <div class="sidebar-section-label">TRADING</div>
   <button class="sidebar-btn" data-tab="garves-live" onclick="switchTab('garves-live')" title="Garves">
@@ -89,6 +92,7 @@
   </header>
 
   {% include 'tabs/pnl.html' %}
+  {% include 'tabs/traders.html' %}
   {% include 'tabs/overview.html' %}
   {% include 'tabs/garves_live.html' %}
   {% include 'tabs/soren.html' %}

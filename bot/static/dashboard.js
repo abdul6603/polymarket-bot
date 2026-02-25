@@ -4746,6 +4746,8 @@ async function refresh() {
       if (typeof discordRefresh === 'function') discordRefresh();
     } else if (currentTab === 'intelligence') {
       if (typeof refreshIntelligence === 'function') refreshIntelligence();
+    } else if (currentTab === 'traders') {
+      if (typeof tradersRefresh === 'function') tradersRefresh();
     } else if (currentTab === 'system') {
       loadSystemTab();
     }
