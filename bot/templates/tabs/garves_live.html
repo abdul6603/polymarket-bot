@@ -347,6 +347,30 @@
           <div class="stat-label">Copy P&amp;L</div>
         </div>
       </div>
+      <!-- Whale Details -->
+      <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px;">Top Tracked Whales</div>
+          <table style="width:100%;border-collapse:collapse;font-family:var(--font-mono);">
+            <thead>
+              <tr style="color:var(--text-muted);font-size:0.62rem;">
+                <th style="padding:2px 8px;text-align:left;">Whale</th>
+                <th style="padding:2px 6px;text-align:center;">Score</th>
+                <th style="padding:2px 6px;text-align:center;">Trades</th>
+                <th style="padding:2px 6px;text-align:right;">PnL</th>
+              </tr>
+            </thead>
+            <tbody id="whale-top-wallets-body"></tbody>
+          </table>
+        </div>
+        <div style="flex:0 0 200px;">
+          <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px;">Status</div>
+          <div style="font-size:0.68rem;margin-bottom:3px;">Signals: <span id="whale-signals-count" style="font-weight:600;">0</span></div>
+          <div style="font-size:0.68rem;margin-bottom:3px;">Poll cycles: <span id="whale-ticks" style="font-weight:600;">0</span></div>
+          <div style="font-size:0.68rem;">Backtest: <span id="whale-backtest-status">--</span></div>
+        </div>
+      </div>
+
       <!-- Top Whales Table -->
       <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;">
         <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Top Tracked Whales</div>
@@ -696,7 +720,188 @@
     </div>
   </div>
 
-  <!-- ═══ SECTION 7: Tools (collapsed) ═══ -->
+  <!-- ═══ SECTION 7: Intelligence & Self-Improvement (default-open) ═══ -->
+  <div class="collapse-section default-open" style="margin-bottom:12px;">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">Intelligence &amp; Self-Improvement
+        <span id="gi-score-badge" style="font-size:0.62rem;padding:2px 10px;border-radius:10px;margin-left:8px;background:rgba(139,92,246,0.15);color:#8b5cf6;font-weight:700;font-family:var(--font-mono);">--</span>
+        <span id="gi-edge-trend-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;margin-left:4px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;">--</span>
+      </h2>
+    </div>
+    <div class="collapse-body">
+
+      <!-- Self-Improvement Score + Key Metrics -->
+      <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #a855f7;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <h3 class="section-title" style="font-size:0.72rem;margin:0;text-transform:uppercase;letter-spacing:0.06em;color:#a855f7;">Self-Improvement Score</h3>
+          <span id="gi-score-dot" style="width:10px;height:10px;border-radius:50%;background:#6b7280;"></span>
+          <span id="gi-score-label" style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">--/100</span>
+          <span style="color:rgba(255,255,255,0.15);">|</span>
+          <span id="gi-resolved-label" style="font-size:0.68rem;color:var(--text-muted);">-- resolved trades</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+          <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;">
+            <div class="stat-value" id="gi-wr-component" style="font-size:0.9rem;">--</div>
+            <div class="stat-label">WR Score (L50)</div>
+          </div>
+          <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;">
+            <div class="stat-value" id="gi-ev-component" style="font-size:0.9rem;">--</div>
+            <div class="stat-label">EV Capture</div>
+          </div>
+          <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;">
+            <div class="stat-value" id="gi-mistake-rate" style="font-size:0.9rem;">--</div>
+            <div class="stat-label">Mistake Rate</div>
+          </div>
+          <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;">
+            <div class="stat-value" id="gi-active-rules" style="font-size:0.9rem;">0</div>
+            <div class="stat-label">Active Auto-Rules</div>
+          </div>
+        </div>
+        <!-- Score Breakdown Bar -->
+        <div id="gi-score-breakdown" style="display:flex;gap:2px;height:6px;border-radius:3px;overflow:hidden;margin-bottom:6px;">
+          <div id="gi-bar-wr" style="flex:0;background:#8b5cf6;transition:flex 0.5s;"></div>
+          <div id="gi-bar-ev" style="flex:0;background:#22c55e;transition:flex 0.5s;"></div>
+          <div id="gi-bar-mistake" style="flex:0;background:#eab308;transition:flex 0.5s;"></div>
+          <div id="gi-bar-edge" style="flex:0;background:#06b6d4;transition:flex 0.5s;"></div>
+          <div style="flex:1;background:rgba(255,255,255,0.04);"></div>
+        </div>
+        <div style="display:flex;gap:12px;font-size:0.6rem;color:var(--text-muted);">
+          <span><span style="color:#8b5cf6;">&#9632;</span> Win Rate</span>
+          <span><span style="color:#22c55e;">&#9632;</span> EV Capture</span>
+          <span><span style="color:#eab308;">&#9632;</span> Mistake Avoidance</span>
+          <span><span style="color:#06b6d4;">&#9632;</span> Edge Stability</span>
+        </div>
+      </div>
+
+      <!-- Engine Intelligence (Garves-Specific) -->
+      <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #f7931a;">
+        <h3 class="section-title" style="font-size:0.72rem;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em;color:#f7931a;">Engine Intelligence</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;">
+            <div class="stat-value" id="gi-snipe-wr" style="font-size:0.9rem;">--</div>
+            <div class="stat-label">Snipe Engine WR</div>
+            <div id="gi-snipe-detail" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div>
+          </div>
+          <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;">
+            <div class="stat-value" id="gi-whale-wr" style="font-size:0.9rem;">--</div>
+            <div class="stat-label">Whale Shadow WR</div>
+            <div id="gi-whale-detail" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div>
+          </div>
+          <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;">
+            <div class="stat-value" id="gi-maker-eff" style="font-size:0.9rem;">--</div>
+            <div class="stat-label">Maker Efficiency</div>
+            <div id="gi-maker-detail" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div>
+          </div>
+          <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;">
+            <div class="stat-value" id="gi-flow-acc" style="font-size:0.9rem;">--</div>
+            <div class="stat-label">Flow Detection</div>
+            <div id="gi-flow-detail" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mistake Frequency Trend -->
+      <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #ef4444;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <h3 class="section-title" style="font-size:0.72rem;margin:0;text-transform:uppercase;letter-spacing:0.06em;color:#ef4444;">Mistake Frequency</h3>
+          <span id="gi-mistake-trend-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;">--</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+          <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;">
+            <div class="stat-value" id="gi-mk-model" style="font-size:0.9rem;">0</div>
+            <div class="stat-label">Model</div>
+          </div>
+          <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;">
+            <div class="stat-value" id="gi-mk-thesis" style="font-size:0.9rem;">0</div>
+            <div class="stat-label">Thesis</div>
+          </div>
+          <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;">
+            <div class="stat-value" id="gi-mk-execution" style="font-size:0.9rem;">0</div>
+            <div class="stat-label">Execution</div>
+          </div>
+          <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;">
+            <div class="stat-value" id="gi-mk-sizing" style="font-size:0.9rem;">0</div>
+            <div class="stat-label">Sizing</div>
+          </div>
+        </div>
+        <div style="font-size:0.68rem;color:var(--text-muted);">
+          Total analysed: <span id="gi-mk-total" style="font-family:var(--font-mono);">0</span>
+          &nbsp;|&nbsp; Mistake rate: <span id="gi-mk-rate-pct" style="font-family:var(--font-mono);">--</span>
+          &nbsp;|&nbsp; Avg EV Capture: <span id="gi-mk-avg-ev" style="font-family:var(--font-mono);">--</span>
+        </div>
+      </div>
+
+      <!-- Recent Lessons & Auto-Rules -->
+      <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #22c55e;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <h3 class="section-title" style="font-size:0.72rem;margin:0;text-transform:uppercase;letter-spacing:0.06em;color:#22c55e;">Lessons Learned &amp; Auto-Rules</h3>
+          <span id="gi-lessons-count" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,0.15);color:#22c55e;font-weight:600;">0</span>
+        </div>
+        <div id="gi-lessons-list" style="font-size:0.72rem;">
+          <span class="text-muted">No lessons yet — Garves learns from repeated mistakes</span>
+        </div>
+      </div>
+
+      <!-- Indicator Accuracy Tracker -->
+      <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #06b6d4;">
+        <h3 class="section-title" style="font-size:0.72rem;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em;color:#06b6d4;">Indicator Performance Tracker</h3>
+        <table class="data-table">
+          <thead><tr>
+            <th>Indicator</th>
+            <th style="text-align:center;">All-Time</th>
+            <th style="text-align:center;">Recent</th>
+            <th style="text-align:center;">Trend</th>
+            <th style="text-align:center;">Samples</th>
+            <th style="text-align:center;">Status</th>
+          </tr></thead>
+          <tbody id="gi-indicator-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody>
+        </table>
+      </div>
+
+      <!-- Weekly Competitive Advantage -->
+      <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #eab308;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <h3 class="section-title" style="font-size:0.72rem;margin:0;text-transform:uppercase;letter-spacing:0.06em;color:#eab308;">Competitive Advantage</h3>
+          <span id="gi-comp-status" style="font-size:0.68rem;font-weight:700;color:var(--text-muted);">--</span>
+          <span id="gi-comp-recommendation" style="font-size:0.64rem;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.05);color:var(--text-muted);margin-left:auto;">--</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+          <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;">
+            <div class="stat-value" id="gi-comp-wr-first" style="font-size:0.9rem;">--</div>
+            <div class="stat-label">First Half WR</div>
+          </div>
+          <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;">
+            <div class="stat-value" id="gi-comp-wr-second" style="font-size:0.9rem;">--</div>
+            <div class="stat-label">Second Half WR</div>
+          </div>
+          <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;">
+            <div class="stat-value" id="gi-comp-wr-trend" style="font-size:0.9rem;">--</div>
+            <div class="stat-label">WR Trend</div>
+          </div>
+          <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;">
+            <div class="stat-value" id="gi-comp-ev-trend" style="font-size:0.9rem;">--</div>
+            <div class="stat-label">EV Trend</div>
+          </div>
+        </div>
+        <div id="gi-comp-recommendations" style="font-size:0.68rem;color:var(--text-muted);"></div>
+      </div>
+
+      <!-- Autonomous Debugging Status -->
+      <div class="glass-card" style="border-left:3px solid #8b5cf6;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+          <h3 class="section-title" style="font-size:0.72rem;margin:0;text-transform:uppercase;letter-spacing:0.06em;color:#8b5cf6;">Autonomous Monitoring</h3>
+          <span id="gi-diag-dot" style="width:8px;height:8px;border-radius:50%;background:#22c55e;"></span>
+          <span id="gi-diag-label" style="font-size:0.68rem;font-weight:600;color:var(--text-muted);">All Clear</span>
+          <span id="gi-diag-count" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;margin-left:auto;">0 issues</span>
+        </div>
+        <div id="gi-diag-checks" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+        <div id="gi-diag-fixes" style="font-size:0.7rem;color:var(--text-muted);"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══ SECTION 8: Tools (collapsed) ═══ -->
   <div class="collapse-section">
     <div class="collapse-trigger">
       <h2 class="section-title" data-accent="warning" style="margin-bottom:0;">Tools</h2>
@@ -835,4 +1040,314 @@ function loadWhaleFollower() {
 
 setInterval(populateGarvesHeroExposure, 3000);
 setTimeout(populateGarvesHeroExposure, 2000);
+
+function loadGarvesIntelligence() {
+  var score = {wr: 0, ev: 0, mistake: 0, edge: 0, total: 0};
+
+  // 1. V2 Metrics — WR + EV + improvement suggestions
+  fetch('/api/garves/v2-metrics').then(function(r) { return r.json(); }).then(function(d) {
+    var cm = d.core_metrics || {};
+    var resolved = d.total_resolved || 0;
+    var resolvedEl = document.getElementById('gi-resolved-label');
+    if (resolvedEl) resolvedEl.textContent = resolved + ' resolved trades';
+
+    // WR component: 50%→0, 55%→12.5, 60%→25 (out of 25)
+    var wr50 = cm.wr_50 || 0;
+    score.wr = Math.min(25, Math.max(0, (wr50 - 0.50) * 250));
+    var wrEl = document.getElementById('gi-wr-component');
+    if (wrEl) {
+      wrEl.textContent = wr50 > 0 ? (wr50 * 100).toFixed(1) + '%' : '--';
+      wrEl.style.color = wr50 >= 0.55 ? 'var(--success)' : wr50 > 0 && wr50 < 0.50 ? 'var(--danger)' : '';
+    }
+
+    // EV component: 0%→0, 50%→12.5, 100%→25 (out of 25)
+    var evPct = cm.ev_capture_pct || 0;
+    score.ev = Math.min(25, Math.max(0, evPct * 25));
+    var evEl = document.getElementById('gi-ev-component');
+    if (evEl) {
+      evEl.textContent = evPct > 0 ? (evPct * 100).toFixed(0) + '%' : '--';
+      evEl.style.color = evPct > 0.5 ? 'var(--success)' : evPct > 0 && evPct < 0.3 ? 'var(--danger)' : '';
+    }
+
+    updateIntelScore();
+  }).catch(function() {});
+
+  // 2. Post-Trade Analysis — Mistake frequency
+  fetch('/api/garves/post-trade-analysis').then(function(r) { return r.json(); }).then(function(d) {
+    var total = d.total || 0;
+    var mistakes = d.mistakes || 0;
+    var byType = d.by_type || {};
+    var avgEv = d.avg_ev_capture_pct;
+
+    var modelEl = document.getElementById('gi-mk-model');
+    var thesisEl = document.getElementById('gi-mk-thesis');
+    var execEl = document.getElementById('gi-mk-execution');
+    var sizingEl = document.getElementById('gi-mk-sizing');
+    if (modelEl) modelEl.textContent = byType.model || 0;
+    if (thesisEl) thesisEl.textContent = byType.thesis || 0;
+    if (execEl) execEl.textContent = byType.execution || 0;
+    if (sizingEl) sizingEl.textContent = byType.sizing || 0;
+
+    var totalEl = document.getElementById('gi-mk-total');
+    if (totalEl) totalEl.textContent = total;
+    var rateEl = document.getElementById('gi-mk-rate-pct');
+    var rate = total > 0 ? (mistakes / total * 100) : 0;
+    if (rateEl) {
+      rateEl.textContent = rate.toFixed(1) + '%';
+      rateEl.style.color = rate > 30 ? '#ef4444' : rate < 15 ? '#22c55e' : '#eab308';
+    }
+    var avgEvEl = document.getElementById('gi-mk-avg-ev');
+    if (avgEvEl && avgEv != null) avgEvEl.textContent = avgEv.toFixed(1) + '%';
+
+    var mistakeRateEl = document.getElementById('gi-mistake-rate');
+    if (mistakeRateEl) {
+      mistakeRateEl.textContent = rate.toFixed(0) + '%';
+      mistakeRateEl.style.color = rate > 30 ? '#ef4444' : rate < 15 ? '#22c55e' : '#eab308';
+    }
+
+    // Mistake trend badge
+    var trendBadge = document.getElementById('gi-mistake-trend-badge');
+    if (trendBadge) {
+      if (rate < 15) { trendBadge.textContent = 'LOW'; trendBadge.style.background = 'rgba(34,197,94,0.15)'; trendBadge.style.color = '#22c55e'; }
+      else if (rate > 30) { trendBadge.textContent = 'HIGH'; trendBadge.style.background = 'rgba(239,68,68,0.15)'; trendBadge.style.color = '#ef4444'; }
+      else { trendBadge.textContent = 'MODERATE'; trendBadge.style.background = 'rgba(234,179,8,0.15)'; trendBadge.style.color = '#eab308'; }
+    }
+
+    // Mistake avoidance score: 0% mistakes→25, 50% mistakes→0 (out of 25)
+    score.mistake = Math.min(25, Math.max(0, (1 - rate / 50) * 25));
+    updateIntelScore();
+  }).catch(function() {});
+
+  // 3. Auto-Rules — Lessons learned
+  fetch('/api/garves/auto-rules').then(function(r) { return r.json(); }).then(function(d) {
+    var rules = d.active_rules || [];
+    var rulesEl = document.getElementById('gi-active-rules');
+    if (rulesEl) rulesEl.textContent = rules.length;
+    var countEl = document.getElementById('gi-lessons-count');
+    if (countEl) countEl.textContent = rules.length;
+
+    var listEl = document.getElementById('gi-lessons-list');
+    if (!listEl) return;
+    if (rules.length === 0) {
+      listEl.innerHTML = '<span class="text-muted">No active lessons — Garves learns from repeated mistakes</span>';
+      return;
+    }
+    var html = '';
+    rules.slice(0, 5).forEach(function(r) {
+      var typeColors = {thesis: '#ef4444', model: '#8b5cf6', execution: '#eab308', sizing: '#06b6d4'};
+      var color = typeColors[r.mistake_type] || 'var(--text-muted)';
+      var action = r.action || {};
+      var age = r.created_at ? timeSince(r.created_at) : '';
+      var expires = r.expires_at ? timeSince(r.expires_at, true) : '';
+      html += '<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;gap:8px;">';
+      html += '<span style="font-size:0.62rem;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.06);color:' + color + ';font-weight:600;text-transform:uppercase;min-width:56px;text-align:center;">' + (r.mistake_type || '--') + '</span>';
+      html += '<span style="flex:1;font-size:0.7rem;">' + (r.detail || '--').replace(/_/g, ' / ') + ' <span style="color:var(--text-muted);">(' + (r.count || 0) + 'x)</span></span>';
+      html += '<span style="font-size:0.62rem;color:var(--text-muted);">' + (action.type || '').replace(/_/g, ' ') + '</span>';
+      if (age) html += '<span style="font-size:0.58rem;color:var(--text-muted);">' + age + '</span>';
+      html += '</div>';
+    });
+    listEl.innerHTML = html;
+  }).catch(function() {});
+
+  // 4. Edge Report — Competitive check + indicator health
+  fetch('/api/garves/edge-report').then(function(r) { return r.json(); }).then(function(d) {
+    var cc = d.competitive_check || {};
+    var statusEl = document.getElementById('gi-comp-status');
+    var status = cc.status || 'insufficient_data';
+    if (statusEl) {
+      var statusMap = {stable: ['EDGE STABLE', '#22c55e'], improving: ['EDGE IMPROVING', '#22c55e'], declining: ['EDGE DECLINING', '#ef4444'], insufficient_data: ['INSUFFICIENT DATA', 'var(--text-muted)']};
+      var s = statusMap[status] || statusMap.insufficient_data;
+      statusEl.textContent = s[0];
+      statusEl.style.color = s[1];
+    }
+
+    // Header badge
+    var trendBadge = document.getElementById('gi-edge-trend-badge');
+    if (trendBadge) {
+      if (status === 'stable' || status === 'improving') { trendBadge.textContent = status === 'improving' ? 'IMPROVING' : 'STABLE'; trendBadge.style.background = 'rgba(34,197,94,0.15)'; trendBadge.style.color = '#22c55e'; }
+      else if (status === 'declining') { trendBadge.textContent = 'DECLINING'; trendBadge.style.background = 'rgba(239,68,68,0.15)'; trendBadge.style.color = '#ef4444'; }
+      else { trendBadge.textContent = 'N/A'; }
+    }
+
+    // WR comparison
+    var wrFirst = document.getElementById('gi-comp-wr-first');
+    var wrSecond = document.getElementById('gi-comp-wr-second');
+    var wrTrend = document.getElementById('gi-comp-wr-trend');
+    var evTrend = document.getElementById('gi-comp-ev-trend');
+    if (wrFirst && cc.first_half_wr != null) wrFirst.textContent = (cc.first_half_wr * 100).toFixed(1) + '%';
+    if (wrSecond && cc.second_half_wr != null) { wrSecond.textContent = (cc.second_half_wr * 100).toFixed(1) + '%'; wrSecond.style.color = cc.second_half_wr >= cc.first_half_wr ? '#22c55e' : '#ef4444'; }
+    if (wrTrend && cc.wr_trend_pp != null) { var pp = cc.wr_trend_pp; wrTrend.textContent = (pp >= 0 ? '+' : '') + pp.toFixed(1) + 'pp'; wrTrend.style.color = pp >= 0 ? '#22c55e' : '#ef4444'; }
+    var evt = cc.ev_capture_trend || {};
+    if (evTrend && evt.trend) { evTrend.textContent = evt.trend === 'improving' ? 'IMPROVING' : evt.trend === 'declining' ? 'DECLINING' : evt.trend.toUpperCase(); evTrend.style.color = evt.trend === 'improving' ? '#22c55e' : evt.trend === 'declining' ? '#ef4444' : 'var(--text-muted)'; }
+
+    // Top recommendation
+    var recEl = document.getElementById('gi-comp-recommendation');
+    var recs = cc.recommendations || [];
+    if (recEl && recs.length > 0) { recEl.textContent = recs[0].action || '--'; recEl.style.color = recs[0].priority === 'high' ? '#ef4444' : recs[0].priority === 'medium' ? '#eab308' : 'var(--text-muted)'; }
+
+    // Recommendations list
+    var recsEl = document.getElementById('gi-comp-recommendations');
+    if (recsEl && recs.length > 1) {
+      var html = '';
+      recs.slice(1, 4).forEach(function(r) {
+        var pColor = r.priority === 'high' ? '#ef4444' : r.priority === 'medium' ? '#eab308' : 'var(--text-muted)';
+        html += '<div style="margin-bottom:3px;"><span style="font-size:0.58rem;padding:1px 4px;border-radius:3px;background:rgba(255,255,255,0.06);color:' + pColor + ';font-weight:600;margin-right:6px;">' + (r.priority || '').toUpperCase() + '</span>' + (r.action || '') + '</div>';
+      });
+      recsEl.innerHTML = html;
+    }
+
+    // Indicator health table
+    var indicators = cc.indicator_health || d.edge_decay || [];
+    var tbody = document.getElementById('gi-indicator-tbody');
+    if (tbody && indicators.length > 0) {
+      var html = '';
+      indicators.forEach(function(ind) {
+        var allTime = ind.alltime_accuracy || ind.allTime_accuracy || 0;
+        var recent = ind.recent_accuracy || 0;
+        var diff = recent - allTime;
+        var trendArrow = diff > 0.02 ? '<span style="color:#22c55e;">&#9650;</span>' : diff < -0.02 ? '<span style="color:#ef4444;">&#9660;</span>' : '<span style="color:var(--text-muted);">&#9644;</span>';
+        var statusText = ind.status || (diff > 0.02 ? 'improving' : diff < -0.05 ? 'decaying' : 'healthy');
+        var statusColor = statusText === 'improving' ? '#22c55e' : statusText === 'decaying' ? '#ef4444' : 'var(--text-muted)';
+        html += '<tr>';
+        html += '<td style="font-weight:600;">' + (ind.indicator || '--') + '</td>';
+        html += '<td style="text-align:center;font-family:var(--font-mono);">' + (allTime * 100).toFixed(1) + '%</td>';
+        html += '<td style="text-align:center;font-family:var(--font-mono);color:' + (recent >= 0.55 ? '#22c55e' : recent < 0.45 ? '#ef4444' : 'inherit') + ';">' + (recent * 100).toFixed(1) + '%</td>';
+        html += '<td style="text-align:center;">' + trendArrow + ' ' + (diff >= 0 ? '+' : '') + (diff * 100).toFixed(1) + 'pp</td>';
+        html += '<td style="text-align:center;font-family:var(--font-mono);">' + (ind.alltime_samples || ind.recent_samples || '--') + '</td>';
+        html += '<td style="text-align:center;"><span style="font-size:0.62rem;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,0.06);color:' + statusColor + ';font-weight:600;">' + statusText.toUpperCase() + '</span></td>';
+        html += '</tr>';
+      });
+      tbody.innerHTML = html;
+    }
+
+    // Edge stability score: stable→25, improving→25, declining→5, insufficient→10 (out of 25)
+    score.edge = status === 'improving' ? 25 : status === 'stable' ? 22 : status === 'declining' ? 5 : 10;
+    updateIntelScore();
+  }).catch(function() {});
+
+  // 5. Diagnostics — Autonomous debugging
+  fetch('/api/garves/diagnostics').then(function(r) { return r.json(); }).then(function(d) {
+    var checks = d.checks || {};
+    var fixes = d.suggested_fixes || [];
+    var issueCount = fixes.length;
+
+    var dotEl = document.getElementById('gi-diag-dot');
+    var labelEl = document.getElementById('gi-diag-label');
+    var countEl = document.getElementById('gi-diag-count');
+    if (countEl) countEl.textContent = issueCount + ' issue' + (issueCount !== 1 ? 's' : '');
+    if (dotEl && labelEl) {
+      if (issueCount === 0) { dotEl.style.background = '#22c55e'; labelEl.textContent = 'All Clear'; labelEl.style.color = '#22c55e'; }
+      else if (issueCount <= 2) { dotEl.style.background = '#eab308'; labelEl.textContent = 'Monitoring'; labelEl.style.color = '#eab308'; }
+      else { dotEl.style.background = '#ef4444'; labelEl.textContent = 'Issues Detected'; labelEl.style.color = '#ef4444'; }
+    }
+
+    // Diagnostic check pills
+    var checksEl = document.getElementById('gi-diag-checks');
+    if (checksEl) {
+      var html = '';
+      var checkNames = ['model_drift', 'regime_shift', 'api_health', 'liquidity', 'execution', 'indicator_health', 'ev_capture'];
+      var labels = {model_drift: 'Model Drift', regime_shift: 'Regime', api_health: 'API Health', liquidity: 'Liquidity', execution: 'Execution', indicator_health: 'Indicators', ev_capture: 'EV Capture'};
+      checkNames.forEach(function(name) {
+        var c = checks[name] || {};
+        var st = c.status || 'unknown';
+        var isOk = st === 'normal' || st === 'healthy' || st === 'stable';
+        var color = isOk ? '#22c55e' : st === 'insufficient_data' || st === 'no_data' ? 'var(--text-muted)' : '#ef4444';
+        var bg = isOk ? 'rgba(34,197,94,0.1)' : st === 'insufficient_data' || st === 'no_data' ? 'rgba(255,255,255,0.04)' : 'rgba(239,68,68,0.1)';
+        html += '<span style="font-size:0.62rem;padding:3px 8px;border-radius:4px;background:' + bg + ';color:' + color + ';font-weight:600;">' + (labels[name] || name) + '</span>';
+      });
+      checksEl.innerHTML = html;
+    }
+
+    // Suggested fixes
+    var fixesEl = document.getElementById('gi-diag-fixes');
+    if (fixesEl && fixes.length > 0) {
+      var html = '';
+      fixes.slice(0, 4).forEach(function(f) {
+        html += '<div style="margin-bottom:4px;padding:4px 8px;border-radius:4px;background:rgba(239,68,68,0.06);border-left:2px solid #ef4444;">';
+        html += '<span style="font-weight:600;color:#ef4444;font-size:0.64rem;text-transform:uppercase;">' + (f.check || '') + '</span> ';
+        html += '<span style="color:var(--text-muted);">' + (f.fix || '') + '</span>';
+        html += '</div>';
+      });
+      fixesEl.innerHTML = html;
+    } else if (fixesEl) {
+      fixesEl.innerHTML = '<span class="text-muted" style="font-size:0.68rem;">All 7 diagnostic checks passing</span>';
+    }
+  }).catch(function() {});
+
+  // 6. Engine Comparison — per-engine intelligence
+  fetch('/api/garves/engine-comparison').then(function(r) { return r.json(); }).then(function(d) {
+    var engines = d.engines || {};
+
+    // Snipe Engine WR
+    var snipe = engines.snipe || {};
+    var snipeWrEl = document.getElementById('gi-snipe-wr');
+    var snipeDetailEl = document.getElementById('gi-snipe-detail');
+    if (snipeWrEl) { snipeWrEl.textContent = snipe.trades > 0 ? snipe.win_rate.toFixed(1) + '%' : '--'; snipeWrEl.style.color = snipe.win_rate >= 55 ? '#22c55e' : snipe.win_rate > 0 && snipe.win_rate < 50 ? '#ef4444' : ''; }
+    if (snipeDetailEl) snipeDetailEl.textContent = snipe.wins + 'W-' + snipe.losses + 'L / ' + snipe.trades + ' trades';
+
+    // Whale Shadow WR
+    var whale = engines.whale || {};
+    var whaleWrEl = document.getElementById('gi-whale-wr');
+    var whaleDetailEl = document.getElementById('gi-whale-detail');
+    if (whaleWrEl) { whaleWrEl.textContent = whale.trades > 0 ? whale.win_rate.toFixed(1) + '%' : '--'; whaleWrEl.style.color = whale.win_rate >= 55 ? '#22c55e' : whale.win_rate > 0 && whale.win_rate < 50 ? '#ef4444' : ''; }
+    if (whaleDetailEl) whaleDetailEl.textContent = whale.wins + 'W-' + whale.losses + 'L / ' + whale.trades + ' trades';
+
+    // Maker Efficiency (spread captured / fills)
+    var maker = engines.maker || {};
+    var makerEl = document.getElementById('gi-maker-eff');
+    var makerDetailEl = document.getElementById('gi-maker-detail');
+    if (makerEl) {
+      var rebate = maker.rebate || 0;
+      var pnl = maker.pnl || 0;
+      makerEl.textContent = rebate > 0 ? '$' + rebate.toFixed(2) : pnl > 0 ? '$' + pnl.toFixed(2) : '--';
+      makerEl.style.color = (rebate + pnl) > 0 ? '#22c55e' : '';
+    }
+    if (makerDetailEl) makerDetailEl.textContent = maker.trades + ' fills today';
+
+    // Flow Detection (from snipe performance)
+    var flowEl = document.getElementById('gi-flow-acc');
+    var flowDetailEl = document.getElementById('gi-flow-detail');
+    if (flowEl && snipe.trades > 0) {
+      flowEl.textContent = snipe.win_rate >= 55 ? 'STRONG' : snipe.win_rate >= 45 ? 'MODERATE' : 'WEAK';
+      flowEl.style.color = snipe.win_rate >= 55 ? '#22c55e' : snipe.win_rate >= 45 ? '#eab308' : '#ef4444';
+    }
+    if (flowDetailEl) flowDetailEl.textContent = 'Based on ' + snipe.trades + ' snipe trades';
+  }).catch(function() {});
+
+  function updateIntelScore() {
+    var total = Math.round(score.wr + score.ev + score.mistake + score.edge);
+    score.total = total;
+    var badge = document.getElementById('gi-score-badge');
+    var label = document.getElementById('gi-score-label');
+    var dot = document.getElementById('gi-score-dot');
+    if (badge) badge.textContent = total + '/100';
+    if (label) label.textContent = total + '/100';
+
+    var color = total >= 70 ? '#22c55e' : total >= 45 ? '#eab308' : '#ef4444';
+    if (badge) { badge.style.background = 'rgba(' + (total >= 70 ? '34,197,94' : total >= 45 ? '234,179,8' : '239,68,68') + ',0.15)'; badge.style.color = color; }
+    if (label) label.style.color = color;
+    if (dot) dot.style.background = color;
+
+    // Score breakdown bars (out of 100 total)
+    var barWr = document.getElementById('gi-bar-wr');
+    var barEv = document.getElementById('gi-bar-ev');
+    var barMk = document.getElementById('gi-bar-mistake');
+    var barEdge = document.getElementById('gi-bar-edge');
+    if (barWr) barWr.style.flex = score.wr;
+    if (barEv) barEv.style.flex = score.ev;
+    if (barMk) barMk.style.flex = score.mistake;
+    if (barEdge) barEdge.style.flex = score.edge;
+  }
+
+  function timeSince(ts, future) {
+    var diff = future ? (ts * 1000 - Date.now()) : (Date.now() - ts * 1000);
+    if (diff < 0) diff = Math.abs(diff);
+    var mins = Math.floor(diff / 60000);
+    var hrs = Math.floor(mins / 60);
+    var days = Math.floor(hrs / 24);
+    if (days > 0) return days + 'd ago';
+    if (hrs > 0) return hrs + 'h ago';
+    return mins + 'm ago';
+  }
+}
 </script>

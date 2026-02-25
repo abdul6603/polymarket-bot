@@ -4692,6 +4692,7 @@ async function refresh() {
       loadEngineComparison();
       loadPortfolioAllocation();
       loadWhaleFollower();
+      loadGarvesIntelligence();
     } else if (currentTab === 'soren') {
       var resp = await fetch('/api/soren');
       renderSoren(await resp.json());
@@ -12830,4 +12831,79 @@ function renderEngineComparison(data) {
       + '<td style="padding:8px;text-align:right;"></td>'
       + '<td style="padding:8px;text-align:center;"></td>';
   }
+}
+
+
+// ═══ Whale Follower Dashboard ═══
+function loadWhaleFollower() {
+  fetch('/api/garves/whale-status')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      // Status badge
+      var badge = document.getElementById('whale-status-badge');
+      if (badge) {
+        if (d.enabled) {
+          badge.textContent = 'ACTIVE';
+          badge.style.background = 'rgba(34,197,94,0.15)';
+          badge.style.color = '#22c55e';
+        } else {
+          badge.textContent = 'OFF';
+          badge.style.background = 'rgba(255,255,255,0.06)';
+          badge.style.color = 'var(--text-muted)';
+        }
+      }
+
+      // Stats
+      var el;
+      el = document.getElementById('whale-tracked-wallets');
+      if (el) el.textContent = d.tracked_wallets || 0;
+      el = document.getElementById('whale-tracked-count');
+      if (el) el.textContent = (d.tracked_wallets || 0) + ' whales';
+      el = document.getElementById('whale-copy-count');
+      if (el) el.textContent = (d.performance || {}).total_copies || 0;
+      var wr = (d.performance || {}).win_rate || 0;
+      el = document.getElementById('whale-win-rate');
+      if (el) el.textContent = wr > 0 ? wr.toFixed(1) + '%' : '--';
+      var pnl = (d.performance || {}).total_pnl || 0;
+      el = document.getElementById('whale-total-pnl');
+      if (el) {
+        el.textContent = '$' + (pnl >= 0 ? '+' : '') + pnl.toFixed(2);
+        el.style.color = pnl > 0 ? '#22c55e' : (pnl < 0 ? '#ef4444' : 'var(--text-muted)');
+      }
+
+      // Top wallets table
+      var tbody = document.getElementById('whale-top-wallets-body');
+      if (tbody && d.top_wallets) {
+        var html = '';
+        var wallets = d.top_wallets.slice(0, 10);
+        for (var i = 0; i < wallets.length; i++) {
+          var w = wallets[i];
+          var pnlColor = w.pnl > 0 ? '#22c55e' : '#ef4444';
+          html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">';
+          html += '<td style="padding:4px 8px;font-size:0.68rem;">' + (w.username || w.wallet) + '</td>';
+          html += '<td style="padding:4px 6px;text-align:center;font-size:0.68rem;">' + (w.score || 0).toFixed(0) + '</td>';
+          html += '<td style="padding:4px 6px;text-align:center;font-size:0.68rem;">' + (w.trades || 0) + '</td>';
+          html += '<td style="padding:4px 6px;text-align:right;font-size:0.68rem;color:' + pnlColor + ';">$' + ((w.pnl || 0)/1000).toFixed(1) + 'K</td>';
+          html += '</tr>';
+        }
+        tbody.innerHTML = html;
+      }
+
+      // Signals + backtest
+      el = document.getElementById('whale-signals-count');
+      if (el) el.textContent = d.active_signals || 0;
+      el = document.getElementById('whale-ticks');
+      if (el) el.textContent = d.tick_count || 0;
+
+      var bt = d.backtest || {};
+      el = document.getElementById('whale-backtest-status');
+      if (el) {
+        if (bt.passed) {
+          el.innerHTML = '<span style="color:#22c55e;">PASSED</span> (' + (bt.total_trades || 0) + ' trades, ' + (bt.win_rate || 0).toFixed(0) + '% WR, $' + (bt.total_pnl || 0).toFixed(0) + ')';
+        } else {
+          el.innerHTML = '<span style="color:#eab308;">Pending</span>';
+        }
+      }
+    })
+    .catch(function() {});
 }

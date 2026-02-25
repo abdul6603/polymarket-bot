@@ -1837,6 +1837,21 @@ def api_garves_edge_report():
 
 
 
+
+
+
+@garves_bp.route("/api/garves/whale-status")
+def api_garves_whale_status():
+    """Whale Follower status — tracked wallets, signals, copy trades."""
+    whale_file = DATA_DIR / "whale_status.json"
+    if not whale_file.exists():
+        return jsonify({"enabled": False, "error": "No whale status file"})
+    try:
+        data = json.loads(whale_file.read_text())
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"enabled": False, "error": str(e)[:200]})
+
 @garves_bp.route("/api/garves/engine-comparison")
 def engine_comparison():
     """Aggregate performance stats across all 4 engines for evaluation."""
