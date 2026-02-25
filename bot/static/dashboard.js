@@ -12164,6 +12164,9 @@ function refreshClobPill() {
     } else if (status === 'CONNECTING') {
       emoji = '\uD83D\uDFE1'; color = '#eab308'; bgColor = 'rgba(234,179,8,0.1)';
       alertClass = '';
+    } else if (status === 'REST_FALLBACK') {
+      emoji = '\uD83D\uDFE0'; color = '#f97316'; bgColor = 'rgba(249,115,22,0.12)';
+      alertClass = 'clob-pill-alert';
     } else if (status === 'DEGRADED') {
       emoji = '\uD83D\uDFE1'; color = '#eab308'; bgColor = 'rgba(234,179,8,0.12)';
       alertClass = 'clob-pill-alert';
@@ -12173,7 +12176,7 @@ function refreshClobPill() {
     }
 
     dot.textContent = emoji;
-    label.textContent = status;
+    label.textContent = status === 'REST_FALLBACK' ? 'REST' : status;
     label.style.color = color;
     pill.style.background = bgColor;
     pill.style.borderColor = color + '33';
@@ -12183,6 +12186,9 @@ function refreshClobPill() {
     if (status === 'CONNECTED' && d.uptime_s > 0) {
       age.textContent = formatDuration(d.uptime_s);
       age.style.color = '#22c55e';
+    } else if (status === 'REST_FALLBACK') {
+      age.textContent = '-20 penalty';
+      age.style.color = '#f97316';
     } else if (d.silence_s > 0) {
       age.textContent = 'Last seen ' + formatDuration(d.silence_s) + ' ago';
       age.style.color = status === 'DISCONNECTED' ? '#ef4444' : 'var(--text-muted)';
@@ -12197,7 +12203,7 @@ function refreshClobPill() {
     var popProactive = document.getElementById('clob-pop-proactive');
     var popUptime = document.getElementById('clob-pop-uptime');
     var popSilence = document.getElementById('clob-pop-silence');
-    if (popStatus) popStatus.innerHTML = '<span style="color:' + color + ';font-weight:700;">' + emoji + ' ' + status + '</span>';
+    if (popStatus) popStatus.innerHTML = '<span style="color:' + color + ';font-weight:700;">' + emoji + ' ' + status + '</span>' + (d.rest_fallback ? ' <span style="color:#f97316;font-size:0.68rem;">(REST polling, -20 score)</span>' : '');
     if (popDetail) popDetail.textContent = d.detail ? 'Detail: ' + d.detail : '';
     if (popReconn) popReconn.textContent = 'Reconnects today: ' + (d.reconnects_today || 0);
     if (popProactive) popProactive.textContent = 'Proactive cycles: ' + (d.proactive_reconnects || 0);
@@ -12294,18 +12300,23 @@ function refreshBinancePill() {
       emoji = '\uD83D\uDFE2'; color = '#22c55e'; bgColor = 'rgba(34,197,94,0.1)';
     } else if (status === 'CONNECTING' || status === 'RECONNECTING') {
       emoji = '\uD83D\uDFE1'; color = '#eab308'; bgColor = 'rgba(234,179,8,0.1)';
+    } else if (status === 'REST_FALLBACK') {
+      emoji = '\uD83D\uDFE0'; color = '#f97316'; bgColor = 'rgba(249,115,22,0.12)';
     } else {
       emoji = '\uD83D\uDD34'; color = '#ef4444'; bgColor = 'rgba(239,68,68,0.12)';
     }
 
     dot.textContent = emoji;
-    label.textContent = 'Binance';
+    label.textContent = status === 'REST_FALLBACK' ? 'REST' : 'Binance';
     label.style.color = color;
     pill.style.background = bgColor;
     pill.style.borderColor = color + '33';
 
     // Age display
-    if (status === 'CONNECTED' && d.silence_s >= 0 && d.silence_s < 30) {
+    if (status === 'REST_FALLBACK') {
+      age.textContent = '-20 penalty';
+      age.style.color = '#f97316';
+    } else if (status === 'CONNECTED' && d.silence_s >= 0 && d.silence_s < 30) {
       age.textContent = d.silence_s + 's';
       age.style.color = '#22c55e';
     } else if (d.silence_s > 0) {
@@ -12320,7 +12331,7 @@ function refreshBinancePill() {
     var popReconn = document.getElementById('binance-pop-reconnects');
     var popStream = document.getElementById('binance-pop-stream');
     var popSilence = document.getElementById('binance-pop-silence');
-    if (popStatus) popStatus.innerHTML = '<span style="color:' + color + ';font-weight:700;">' + emoji + ' ' + status + '</span>';
+    if (popStatus) popStatus.innerHTML = '<span style="color:' + color + ';font-weight:700;">' + emoji + ' ' + status + '</span>' + (d.rest_fallback ? ' <span style="color:#f97316;font-size:0.68rem;">(REST polling, -20 score)</span>' : '');
     if (popReconn) popReconn.textContent = 'Reconnects: ' + (d.reconnect_count || 0);
     if (popStream) popStream.textContent = 'Stream: ' + (d.stream_url || 'unknown');
     if (popSilence) popSilence.textContent = d.silence_s > 0 ? 'Last data: ' + formatDuration(d.silence_s) + ' ago' : 'Last data: just now';

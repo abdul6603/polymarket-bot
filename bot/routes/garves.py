@@ -1625,6 +1625,8 @@ def api_garves_binance_status():
         now = time.time()
         lm = data.get("last_message", 0)
         data["silence_s"] = round(now - lm, 1) if lm > 0 else 0
+        data.setdefault("rest_fallback", False)
+        data.setdefault("ws_down_since", 0)
         return jsonify(data)
     except Exception as e:
         return jsonify({"status": "UNKNOWN", "error": str(e)[:200]}), 500
@@ -1647,6 +1649,9 @@ def api_garves_clob_status():
         status = data.get("status", "UNKNOWN")
         data["silence_s"] = round(now - lm, 1) if lm > 0 else 0
         data["uptime_s"] = round(now - lc, 1) if lc > 0 and status == "CONNECTED" else 0
+        data.setdefault("rest_fallback", False)
+        data.setdefault("endpoint", "")
+        data.setdefault("ws_down_since", 0)
         return jsonify(data)
     except Exception as e:
         return jsonify({"status": "UNKNOWN", "error": str(e)[:200]}), 500
