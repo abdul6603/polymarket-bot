@@ -32,8 +32,17 @@ class EnsembleResult:
     questions: list[dict[str, str]]     # the questions sent to models
 
 
-def build_questions(markets: list[WeeklyMarket]) -> list[dict[str, str]]:
-    """Build structured questions from tradeable markets."""
+def build_questions(
+    markets: list[WeeklyMarket],
+    current_prices: dict[str, float] | None = None,
+) -> list[dict[str, str]]:
+    """Build structured questions from tradeable markets.
+
+    Args:
+        markets: Tradeable weekly markets.
+        current_prices: Current asset prices {"bitcoin": 66137, "solana": 81.87, ...}.
+    """
+    prices = current_prices or {}
     questions = []
     for m in markets:
         q_key = m.condition_id[:12]
@@ -59,6 +68,12 @@ def build_questions(markets: list[WeeklyMarket]) -> list[dict[str, str]]:
         else:
             continue
 
+        # Compute distance from current price to threshold
+        asset_price = prices.get(m.asset, 0)
+        distance_pct = 0.0
+        if asset_price > 0 and m.threshold and m.threshold > 0:
+            distance_pct = (asset_price - m.threshold) / m.threshold * 100
+
         questions.append({
             "id": q_key,
             "condition_id": m.condition_id,
@@ -66,6 +81,11 @@ def build_questions(markets: list[WeeklyMarket]) -> list[dict[str, str]]:
             "asset": m.asset,
             "market_type": m.market_type,
             "current_market_price": m.yes_price,
+            "current_asset_price": asset_price,
+            "threshold": m.threshold or 0,
+            "range_low": m.range_low or 0,
+            "range_high": m.range_high or 0,
+            "distance_pct": round(distance_pct, 1),
         })
     return questions
 
@@ -90,6 +110,16 @@ INSTRUCTIONS:
 - Be calibrated: if you say 0.70, it should happen ~70% of the time.
 - Do NOT just copy the current market price — apply your analysis.
 
+CRITICAL — PRICE DISTANCE ANCHORING:
+- Each question shows the CURRENT price and how far it is from the threshold.
+- Use this distance as your anchor. Crypto rarely moves more than 10-15%/week.
+- If the current price is 15% ABOVE the threshold, P(stays above) should be HIGH
+  (likely 70-90%), NOT low. It takes a major crash to move 15% in a few days.
+- If the current price is only 2-3% above, the probability is more uncertain (40-60%).
+- If the current price is BELOW the threshold, P(above) should be LOW (10-40%).
+- Weekly BTC volatility is typically 5-8%. SOL/ETH 8-12%. XRP 10-15%.
+  A 15%+ move in one week is a rare tail event (~5-10% probability).
+
 CRITICAL — DISTRIBUTION CONSTRAINT:
 - Price range questions for the SAME asset are MUTUALLY EXCLUSIVE.
   The asset can only end in ONE range. Your probabilities for all ranges
@@ -104,7 +134,10 @@ RESPOND WITH STRICT JSON ONLY. No text before or after. Format:
 
 
 def _build_user_prompt(questions: list[dict]) -> str:
-    """Build the user prompt with questions, grouped by asset for distribution awareness."""
+    """Build the user prompt with questions, grouped by asset for distribution awareness.
+
+    Includes current asset price and distance-to-threshold for calibration anchoring.
+    """
     from collections import defaultdict
 
     # Group by asset for clarity
@@ -115,12 +148,46 @@ def _build_user_prompt(questions: list[dict]) -> str:
     lines = ["Estimate YES probability for each question:\n"]
 
     for asset, qs in sorted(by_asset.items()):
-        lines.append(f"--- {asset.upper()} ---")
+        asset_price = qs[0].get("current_asset_price", 0)
+        if asset_price > 0:
+            lines.append(f"--- {asset.upper()} (current price: ${asset_price:,.2f}) ---")
+        else:
+            lines.append(f"--- {asset.upper()} ---")
         range_count = sum(1 for q in qs if q["market_type"] == "price_range")
         if range_count > 1:
             lines.append(f"  (NOTE: {range_count} price ranges below are MUTUALLY EXCLUSIVE — probabilities must sum to ~1.0)")
         for q in qs:
-            lines.append(f"- {q['id']}: {q['question']} (current market: {q['current_market_price']:.1%})")
+            # Build distance context for anchoring
+            dist = q.get("distance_pct", 0)
+            threshold = q.get("threshold", 0)
+            mtype = q.get("market_type", "")
+
+            if mtype == "above_below" and threshold > 0 and asset_price > 0:
+                if dist > 0:
+                    dist_str = f" | price is {dist:+.1f}% ABOVE threshold"
+                else:
+                    dist_str = f" | price is {abs(dist):.1f}% BELOW threshold"
+            elif mtype == "price_range":
+                rlow = q.get("range_low", 0)
+                rhigh = q.get("range_high", 0)
+                if asset_price > 0 and rlow > 0 and rhigh > 0:
+                    if rlow <= asset_price <= rhigh:
+                        dist_str = " | price is INSIDE this range"
+                    elif asset_price > rhigh:
+                        pct_above = (asset_price - rhigh) / rhigh * 100
+                        dist_str = f" | price is {pct_above:.1f}% above range"
+                    else:
+                        pct_below = (rlow - asset_price) / rlow * 100
+                        dist_str = f" | price is {pct_below:.1f}% below range"
+                else:
+                    dist_str = ""
+            else:
+                dist_str = ""
+
+            lines.append(
+                f"- {q['id']}: {q['question']} "
+                f"(market: {q['current_market_price']:.1%}{dist_str})"
+            )
         lines.append("")
 
     lines.append(f"Respond with strict JSON. Keys in predictions must match: {[q['id'] for q in questions]}")
@@ -133,7 +200,7 @@ def run_ensemble(
     context: MarketContext,
 ) -> EnsembleResult:
     """Run the full ensemble: build questions → query models → average."""
-    questions = build_questions(markets)
+    questions = build_questions(markets, current_prices=context.prices)
     if not questions:
         return EnsembleResult({}, {}, "unknown", 0.0, [])
 
