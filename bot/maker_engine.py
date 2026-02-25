@@ -658,8 +658,8 @@ class MakerEngine:
         # Check fills on existing quotes before placing new ones
         fills = self.check_fills()
 
-        # Shared balance manager: report exposure + allocation check
-        if self._balance_mgr:
+        # Shared balance manager: report exposure + allocation check (live only)
+        if self._balance_mgr and not self.cfg.dry_run:
             try:
                 total_inv_usd = sum(
                     abs(iv.net_shares) * (iv.cost_basis / max(abs(iv.net_shares), 0.01))
