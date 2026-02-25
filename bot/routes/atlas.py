@@ -1839,3 +1839,47 @@ def api_atlas_dashboard_summary():
             "tavily_budget": 12000,
         },
     })
+
+
+@atlas_bp.route("/api/atlas/framework")
+def api_atlas_framework():
+    """Professional framework compliance and calibration status."""
+    # Read framework metrics directly from data files
+    fw_file = ATLAS_ROOT / "data" / "framework_metrics.json"
+    cal_file = ATLAS_ROOT / "data" / "confidence_calibration.json"
+    src_file = ATLAS_ROOT / "data" / "source_history.json"
+
+    fw_data = _read_json(fw_file) or []
+    cal_data = _read_json(cal_file) or []
+    src_data = _read_json(src_file) or {}
+
+    # Latest compliance metrics
+    latest = fw_data[-1] if fw_data else {}
+    recent = fw_data[-10:] if fw_data else []
+    scores = [m.get("compliance_score", 0) for m in recent]
+    avg_score = round(sum(scores) / len(scores), 1) if scores else 0
+    trend = "improving" if len(scores) >= 2 and scores[-1] > scores[0] else \
+            "declining" if len(scores) >= 2 and scores[-1] < scores[0] else "stable"
+
+    # Source tracking
+    total_sources = len(src_data)
+    good_sources = sum(1 for v in src_data.values() if isinstance(v, dict) and
+                       v.get("total", 0) > 0 and v.get("good", 0) / v.get("total", 1) > 0.5)
+
+    return jsonify({
+        "compliance": {
+            "latest_score": latest.get("compliance_score", 0),
+            "avg_score": avg_score,
+            "trend": trend,
+            "cycles_tracked": len(fw_data),
+            "latest_metrics": latest,
+        },
+        "sources": {
+            "total_tracked": total_sources,
+            "reliable": good_sources,
+        },
+        "calibration": {
+            "total_records": len(cal_data),
+            "resolved": sum(1 for r in cal_data if r.get("actual") is not None),
+        },
+    })
