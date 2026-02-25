@@ -1355,16 +1355,29 @@ def api_hawk_live_positions():
             cid = pos.get("condition_id", "")
             question = pos.get("question", "").lower()
 
-            # Try to match to live game
+            # Match to live game with confidence scoring
             game_match = None
+            match_confidence = 0
+            has_versus = " vs " in question or " vs. " in question
             for g in live_games:
                 home = g.get("home_team", "").lower()
                 away = g.get("away_team", "").lower()
-                home_name = home.split()[-1] if home.split() else ""
-                away_name = away.split()[-1] if away.split() else ""
-                if (home_name in question and len(home_name) > 3) or (away_name in question and len(away_name) > 3):
+                home_kw = [w for w in home.split() if len(w) > 3]
+                away_kw = [w for w in away.split() if len(w) > 3]
+                home_hit = any(kw in question for kw in home_kw)
+                away_hit = any(kw in question for kw in away_kw)
+                if not home_hit and not away_hit:
+                    continue
+                conf = 0
+                if home_hit and away_hit:
+                    conf = 95
+                elif has_versus:
+                    conf = 35  # Only one team in a "X vs Y" question
+                else:
+                    conf = 75  # Single-team question (spread)
+                if conf > match_confidence:
+                    match_confidence = conf
                     game_match = g
-                    break
 
             entry_price = pos.get("entry_price", 0.5)
             size_usd = pos.get("size_usd", 0)
@@ -1380,10 +1393,11 @@ def api_hawk_live_positions():
                 "category": pos.get("category", ""),
                 "edge": round(pos.get("edge", 0) * 100, 1),
                 "opened_at": pos.get("time_str", ""),
-                "is_live": game_match is not None,
+                "is_live": game_match is not None and match_confidence >= 35,
+                "match_confidence": match_confidence if game_match else None,
             }
 
-            if game_match:
+            if game_match and match_confidence >= 35:
                 p_data["game"] = {
                     "home_team": game_match.get("home_team", ""),
                     "away_team": game_match.get("away_team", ""),

@@ -59,6 +59,7 @@ class LivePositionManager:
         self._live_prices: dict[str, float] = {}       # condition_id -> last CLOB midpoint
         self._price_history: dict[str, list[float]] = {}  # condition_id -> last 10 midpoints
         self._peak_price: dict[str, float] = {}           # condition_id -> highest price seen
+        self._match_confidence: dict[str, int] = {}        # condition_id -> last match confidence (0-100)
 
     def monitor_positions(self) -> list[LiveAction]:
         """Main entry — check all open positions against live games.
@@ -137,11 +138,16 @@ class LivePositionManager:
             if cid in self._paused:
                 continue
 
-            game = self._match_to_game(pos, live_games)
+            game, confidence = self._match_to_game(pos, live_games)
             if not game:
                 continue
 
-            action = self._evaluate(pos, game)
+            self._match_confidence[cid] = confidence
+            if confidence < 90:
+                log.warning("[LIVE] Low confidence match (%d%%) for %s — price-only mode | %s",
+                            confidence, cid[:8], pos.get("question", "")[:50])
+
+            action = self._evaluate(pos, game, confidence)
             if action:
                 actions.append(action)
                 self._log_action(action)
@@ -228,11 +234,18 @@ class LivePositionManager:
             pnl_estimate=pnl_estimate,
         )
 
-    def _match_to_game(self, pos: dict, live_games: list[dict]) -> dict | None:
-        """Match a position to a live ESPN game by question text."""
+    def _match_to_game(self, pos: dict, live_games: list[dict]) -> tuple[dict | None, int]:
+        """Match a position to a live ESPN game with confidence scoring.
+
+        Returns (game_dict_copy, confidence) where confidence is 0-100.
+        For 'X vs Y' questions, requires both teams for high confidence.
+        Single-team questions (spreads) can match on one team at lower confidence.
+        """
         question = pos.get("question", "").lower()
+        has_versus = " vs " in question or " vs. " in question
+
         best_match = None
-        best_score = 0.0
+        best_confidence = 0
 
         for game in live_games:
             home = game.get("home_team", "").lower()
@@ -240,36 +253,72 @@ class LivePositionManager:
             if not home or not away:
                 continue
 
-            # Check if both team names appear in question
-            home_parts = home.split()
-            away_parts = away.split()
+            # Extract keywords (words > 3 chars) from ESPN team names
+            home_keywords = [w for w in home.split() if len(w) > 3]
+            away_keywords = [w for w in away.split() if len(w) > 3]
 
-            # Match on last word (team name, not city) for better accuracy
-            home_name = home_parts[-1] if home_parts else ""
-            away_name = away_parts[-1] if away_parts else ""
+            # Check which ESPN teams appear in the question
+            home_hit = any(kw in question for kw in home_keywords)
+            away_hit = any(kw in question for kw in away_keywords)
 
-            home_match = home_name in question and len(home_name) > 3
-            away_match = away_name in question and len(away_name) > 3
+            if not home_hit and not away_hit:
+                continue
 
-            if home_match and away_match:
-                return game  # Exact match
-            elif home_match or away_match:
-                score = 0.5
-                if score > best_score:
-                    best_score = score
-                    best_match = game
+            # ── Score the match ──
+            confidence = 0
 
-        return best_match
+            if home_hit and away_hit:
+                # Both teams found — strong match
+                confidence = 95
+            elif has_versus:
+                # Question has "X vs Y" but only ONE team matched → likely wrong game
+                confidence = 35
+            else:
+                # Single-team question (e.g. "Spread: Cavaliers (-4.5)")
+                confidence = 85
 
-    def _evaluate(self, pos: dict, game: dict) -> LiveAction | None:
+            # League consistency bonus
+            sport_key = game.get("sport_key", "")
+            if self._league_consistent(question, sport_key):
+                confidence = min(confidence + 5, 100)
+
+            if confidence > best_confidence:
+                best_confidence = confidence
+                best_match = game
+
+        if best_match and best_confidence >= 35:
+            # Return a copy so we don't mutate the ESPN cache
+            match_copy = dict(best_match)
+            match_copy["_match_confidence"] = best_confidence
+            return match_copy, best_confidence
+
+        return None, 0
+
+    def _league_consistent(self, question: str, sport_key: str) -> bool:
+        """Check if ESPN sport_key is plausible for this question."""
+        q = question.lower()
+        if "nba" in sport_key or "ncaab" in sport_key or "ncaam" in sport_key:
+            # Basketball team names are distinctive — always consistent
+            return True
+        if "nfl" in sport_key:
+            return True
+        if "nhl" in sport_key:
+            return True
+        if "soccer" in sport_key:
+            return "fc" in q or "united" in q or "city" in q
+        return True  # Default: don't penalize unknown leagues
+
+    def _evaluate(self, pos: dict, game: dict, confidence: int = 100) -> LiveAction | None:
         """Decision engine: EXIT, ADD, or HOLD.
 
         Logic:
         1. Check min hold time
         2. Check max actions per game
         3. Get current market price from CLOB
-        4. Analyze score + time remaining
+        4. Analyze score + time remaining (only if confidence >= 90)
         5. Decide: EXIT if stop-loss hit, ADD if winning big, HOLD otherwise
+
+        confidence < 90 → price-only mode (no game-state decisions).
         """
         cid = pos.get("condition_id", "")
         if cid in self._sold:
@@ -316,8 +365,11 @@ class LivePositionManager:
 
         # ── DECISION LOGIC ──
 
+        # Use verified game data only for game-state decisions
+        verified_game = game if confidence >= 90 else None
+
         # 0. SMART EXIT: Adaptive take-profit based on momentum + game state
-        smart = self._smart_exit_decision(pos, game, current_price, pnl_estimate)
+        smart = self._smart_exit_decision(pos, verified_game, current_price, pnl_estimate)
         if smart == "SELL":
             profit_pct = (pnl_estimate / pos.get("size_usd", 1)) * 100 if pos.get("size_usd") else 0
             reason = self._smart_exit_reason(pos, game, current_price, entry_price, pnl_estimate, profit_pct)
@@ -345,8 +397,8 @@ class LivePositionManager:
                 pnl_estimate=pnl_estimate,
             )
 
-        # 2. SCORE-BASED EXIT: Losing badly late in game
-        if position_assessment == "losing_badly" and self._is_late_game(sport, period, clock):
+        # 2. SCORE-BASED EXIT: Losing badly late in game (verified matches only)
+        if confidence >= 90 and position_assessment == "losing_badly" and self._is_late_game(sport, period, clock):
             reason = (f"Losing badly in late game: {home_score}-{away_score} "
                       f"P{period} {clock} | price {entry_price:.2f}→{current_price:.2f}")
             self._execute_exit(pos, reason)
@@ -358,8 +410,8 @@ class LivePositionManager:
                 pnl_estimate=pnl_estimate,
             )
 
-        # 3. SCALE-UP: Winning comfortably, edge increased
-        if (position_assessment == "winning_big"
+        # 3. SCALE-UP: Winning comfortably, edge increased (verified matches only)
+        if (confidence >= 90 and position_assessment == "winning_big"
                 and self._can_scale_up(pos)
                 and current_price > entry_price * 1.10):
             extra = min(
@@ -381,14 +433,17 @@ class LivePositionManager:
         # 4. HOLD — log significant score changes
         prev = self._last_scores.get(cid, {})
         if prev and (prev.get("home") != home_score or prev.get("away") != away_score):
-            log.info("[LIVE] Score update %s: %d-%d P%d %s | price $%.2f (entry $%.2f) | %s | %s",
+            conf_tag = f"conf={confidence}%" if confidence < 90 else ""
+            log.info("[LIVE] Score update %s: %d-%d P%d %s | price $%.2f (entry $%.2f) | %s%s | %s",
                      cid[:8], home_score, away_score, period, clock,
                      current_price, entry_price, position_assessment,
+                     f" | {conf_tag}" if conf_tag else "",
                      pos.get("question", "")[:50])
 
         # Update tracking
         self._last_scores[cid] = {
             "home": home_score, "away": away_score, "period": period,
+            "confidence": confidence,
         }
 
         return None
@@ -651,6 +706,7 @@ class LivePositionManager:
                     pos, score_data,
                     self._live_prices.get(cid, pos.get("entry_price", 0)),
                 ) if score_data else "pre_game",
+                "match_confidence": self._match_confidence.get(cid, None),
             })
         return statuses
 

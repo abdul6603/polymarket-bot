@@ -7892,6 +7892,13 @@ async function loadHawkLiveMonitor() {
         html += '</div>';
       }
 
+      if (p.match_confidence !== null && p.match_confidence !== undefined && p.match_confidence < 90) {
+        var confColor = p.match_confidence < 50 ? '#ff4444' : '#ffaa00';
+        html += '<div style="background:rgba(255,170,0,0.15);border:1px solid ' + confColor + ';border-radius:6px;padding:4px 8px;margin-bottom:4px;font-size:0.65rem;color:' + confColor + ';">';
+        html += '&#9888; Live score verification low confidence (' + p.match_confidence + '%) for this market';
+        html += '</div>';
+      }
+
       html += '<div style="display:flex;gap:4px;margin-top:6px;">';
       if (isLive) {
         html += '<button data-cid="' + p.condition_id + '" data-act="pause" class="hawk-live-btn" style="flex:1;padding:3px 6px;font-size:0.65rem;background:var(--card-bg);border:1px solid var(--border);border-radius:4px;color:var(--text-muted);cursor:pointer;">Pause</button>';
