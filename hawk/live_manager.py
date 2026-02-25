@@ -166,6 +166,19 @@ class LivePositionManager:
         direction = pos.get("direction", "yes")
         entry_price = pos.get("entry_price", 0.5)
 
+        # Resolve token_id FIRST so _get_live_price can fetch real CLOB midpoint
+        if not pos.get("token_id") and self.executor and self.executor.client:
+            try:
+                market = self.executor.client.get_market(cid)
+                tokens = market.get("tokens", [])
+                for t in tokens:
+                    if t.get("outcome", "").lower() == direction:
+                        pos["token_id"] = t["token_id"]
+                        log.info("[LIVE] Resolved token_id for %s (%s)", cid[:12], direction)
+                        break
+            except Exception:
+                log.debug("[LIVE] Could not resolve token_id for %s", cid[:12])
+
         current_price = self._get_live_price(pos)
         # On-chain positions may have cur_price already
         if pos.get("_from_onchain") and current_price == pos.get("entry_price", 0.5):
@@ -205,19 +218,6 @@ class LivePositionManager:
             reason = (f"Stop-loss: {direction.upper()} @ {current_price:.2f} "
                       f"(entry {entry_price:.2f}, -{drop_pct:.0%}) — "
                       f"cutting ${abs(pnl_estimate):.2f} loss")
-
-        # Resolve token_id if missing (on-chain positions don't have it)
-        if not pos.get("token_id") and self.executor and self.executor.client:
-            try:
-                market = self.executor.client.get_market(cid)
-                tokens = market.get("tokens", [])
-                for t in tokens:
-                    if t.get("outcome", "").lower() == direction:
-                        pos["token_id"] = t["token_id"]
-                        log.info("[LIVE] Resolved token_id for %s (%s)", cid[:12], direction)
-                        break
-            except Exception:
-                log.debug("[LIVE] Could not resolve token_id for %s", cid[:12])
 
         self._execute_exit(pos, reason)
         self._actions_count[cid] = self._actions_count.get(cid, 0) + 1
