@@ -308,6 +308,52 @@ def api_odin_edge():
     return jsonify(status.get("edge", {"status": "UNKNOWN"}))
 
 
+@odin_bp.route("/api/odin/evolution")
+def api_odin_evolution():
+    """Self-evolve generation history from evolution.db."""
+    evo_db = DATA_DIR / "evolution.db"
+    if not evo_db.exists():
+        return jsonify(
+            {"generations": [], "current_gen": 0, "best_wr": 0, "best_sharpe": 0}
+        )
+    try:
+        import sqlite3
+
+        conn = sqlite3.connect(str(evo_db))
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            "SELECT generation, backtest_trades, backtest_wr, backtest_pnl, "
+            "backtest_sharpe, is_current, is_best, created_at, notes "
+            "FROM evolution ORDER BY generation DESC LIMIT 10"
+        ).fetchall()
+        conn.close()
+        gens = [dict(r) for r in rows]
+        current = next((g for g in gens if g.get("is_current")), None)
+        best = next((g for g in gens if g.get("is_best")), None)
+        return jsonify(
+            {
+                "generations": gens,
+                "current_gen": current["generation"] if current else 0,
+                "best_wr": best["backtest_wr"] if best else 0,
+                "best_sharpe": best["backtest_sharpe"] if best else 0,
+            }
+        )
+    except Exception as e:
+        return jsonify({"generations": [], "error": str(e)[:100]})
+
+
+@odin_bp.route("/api/odin/calibration")
+def api_odin_calibration():
+    """Conviction calibration — component predictiveness."""
+    cal_file = DATA_DIR / "conviction_calibration.json"
+    if cal_file.exists():
+        try:
+            return jsonify(json.loads(cal_file.read_text()))
+        except Exception:
+            pass
+    return jsonify({"weights": {}, "changes": [], "calibrated_at": 0})
+
+
 @odin_bp.route("/api/odin/toggle-mode", methods=["POST"])
 def api_odin_toggle_mode():
     """Toggle Odin between live and paper trading."""
