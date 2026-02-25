@@ -202,10 +202,13 @@ def _normalize_odin(data, mode: str = "paper") -> list[dict]:
             tp_dist = round((_safe_float(tp) - current) / current * 100, 2)
         if sl is not None and current > 0:
             sl_dist = round((_safe_float(sl) - current) / current * 100, 2)
+        # Determine mode from position ID — paper_ prefix = paper regardless of config
+        pos_id = p.get("id", p.get("trade_id", ""))
+        pos_mode = "paper" if str(pos_id).startswith("paper_") else mode
         positions.append({
-            "id": f"odin_{p.get('id', p.get('trade_id', symbol))}",
+            "id": f"odin_{pos_id or symbol}",
             "agent": "odin",
-            "mode": mode,
+            "mode": pos_mode,
             "market": f"{symbol.replace('USDT', '')} Perp",
             "asset": symbol.replace("USDT", "").replace("USD", "").replace("/", ""),
             "platform": "hyperliquid",
