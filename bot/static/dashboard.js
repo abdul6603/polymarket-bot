@@ -4680,6 +4680,7 @@ async function refresh() {
       loadSignalCycle();
       loadGarvesV2Metrics();
       loadMakerStatus();
+      loadEngineComparison();
       loadPortfolioAllocation();
     } else if (currentTab === 'soren') {
       var resp = await fetch('/api/soren');
@@ -12717,4 +12718,94 @@ function loadMakerStatus() {
         + ' | Max exp: $' + c.max_total_exposure + ' | Tick: ' + c.tick_interval_s + 's';
     }
   }).catch(function(){});
+}
+
+
+// ═══ Engine Performance Comparison ═══
+function loadEngineComparison() {
+  fetch('/api/garves/engine-comparison')
+    .then(r => r.json())
+    .then(data => {
+      renderEngineComparison(data);
+    })
+    .catch(() => {});
+}
+
+function renderEngineComparison(data) {
+  const body = document.getElementById('engine-comp-body');
+  const totalsRow = document.getElementById('engine-comp-totals');
+  const modeEl = document.getElementById('engine-comp-mode');
+  const bankrollEl = document.getElementById('engine-comp-bankroll');
+  if (!body) return;
+
+  // Mode badge
+  if (modeEl) {
+    if (data.dry_run) {
+      modeEl.textContent = 'PAPER';
+      modeEl.style.background = 'rgba(234,179,8,0.15)';
+      modeEl.style.color = '#eab308';
+    } else {
+      modeEl.textContent = 'LIVE';
+      modeEl.style.background = 'rgba(239,68,68,0.15)';
+      modeEl.style.color = '#ef4444';
+    }
+  }
+  if (bankrollEl) {
+    bankrollEl.textContent = '$' + data.bankroll.toLocaleString() + ' bankroll';
+  }
+
+  // Engine colors
+  var colors = {
+    taker: '#ef4444',
+    snipe: '#8b5cf6',
+    maker: '#22c55e',
+    whale: '#3b82f6'
+  };
+
+  var order = ['snipe', 'maker', 'whale', 'taker'];
+  var rows = '';
+
+  for (var i = 0; i < order.length; i++) {
+    var key = order[i];
+    var e = data.engines[key];
+    var color = colors[key];
+    var pnlColor = e.pnl > 0 ? '#22c55e' : (e.pnl < 0 ? '#ef4444' : 'var(--text-muted)');
+    var wrColor = e.win_rate >= 55 ? '#22c55e' : (e.win_rate >= 45 ? '#eab308' : '#ef4444');
+    var extra = '';
+    if (key === 'maker' && e.rebate !== undefined) {
+      extra = ' title="Rebate: $' + e.rebate.toFixed(4) + '"';
+    }
+    if (key === 'whale' && e.tracked_wallets !== undefined) {
+      extra = ' title="Tracking ' + e.tracked_wallets + ' wallets"';
+    }
+
+    rows += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);"' + extra + '>';
+    rows += '<td style="padding:6px 10px;"><span style="color:' + color + ';font-weight:600;">' + e.name + '</span></td>';
+    rows += '<td style="padding:6px 8px;text-align:center;">' + e.allocation_pct + '%</td>';
+    rows += '<td style="padding:6px 8px;text-align:center;">' + e.trades + (e.pending > 0 ? '<span style="color:var(--text-muted);font-size:0.62rem;"> +' + e.pending + '</span>' : '') + '</td>';
+    rows += '<td style="padding:6px 8px;text-align:center;color:#22c55e;">' + e.wins + '</td>';
+    rows += '<td style="padding:6px 8px;text-align:center;color:#ef4444;">' + e.losses + '</td>';
+    rows += '<td style="padding:6px 8px;text-align:center;color:' + wrColor + ';font-weight:600;">' + (e.trades > 0 ? e.win_rate.toFixed(1) + '%' : '--') + '</td>';
+    rows += '<td style="padding:6px 8px;text-align:right;color:' + pnlColor + ';font-weight:600;">$' + (e.pnl >= 0 ? '+' : '') + e.pnl.toFixed(2) + '</td>';
+    rows += '<td style="padding:6px 8px;text-align:right;">$' + e.avg_size.toFixed(0) + '</td>';
+    rows += '<td style="padding:6px 8px;text-align:center;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:' + color + ';"></span></td>';
+    rows += '</tr>';
+  }
+  body.innerHTML = rows;
+
+  // Totals row
+  if (totalsRow) {
+    var t = data.totals;
+    var tPnlColor = t.pnl > 0 ? '#22c55e' : (t.pnl < 0 ? '#ef4444' : 'var(--text-muted)');
+    var tWrColor = t.win_rate >= 55 ? '#22c55e' : (t.win_rate >= 45 ? '#eab308' : '#ef4444');
+    totalsRow.innerHTML = '<td style="padding:8px 10px;">TOTAL</td>'
+      + '<td style="padding:8px;text-align:center;">100%</td>'
+      + '<td style="padding:8px;text-align:center;">' + t.trades + '</td>'
+      + '<td style="padding:8px;text-align:center;color:#22c55e;">' + t.wins + '</td>'
+      + '<td style="padding:8px;text-align:center;color:#ef4444;">' + t.losses + '</td>'
+      + '<td style="padding:8px;text-align:center;color:' + tWrColor + ';font-weight:700;">' + (t.trades > 0 ? t.win_rate.toFixed(1) + '%' : '--') + '</td>'
+      + '<td style="padding:8px;text-align:right;color:' + tPnlColor + ';font-weight:700;">$' + (t.pnl >= 0 ? '+' : '') + t.pnl.toFixed(2) + '</td>'
+      + '<td style="padding:8px;text-align:right;"></td>'
+      + '<td style="padding:8px;text-align:center;"></td>';
+  }
 }

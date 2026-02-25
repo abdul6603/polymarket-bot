@@ -1,1 +1,1 @@
-{"status": "CONNECTED", "last_message": 1771941115.401429, "silence_s": 0.0, "reconnect_count": 0, "stream_url": "wss://stream.binance.com:9443", "written_at": 1771941115.40154}
+{"status": "CONNECTED", "last_message": 1772031461.655412, "silence_s": 0.0, "reconnect_count": 0, "stream_url": "wss://stream.binance.com:9443", "rest_fallback": false, "ws_down_since": 0.0, "written_at": 1772031461.655505}

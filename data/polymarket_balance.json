@@ -1,10 +1,11 @@
 {
-  "portfolio": 144.75,
-  "cash": 68.89,
-  "positions_value": 75.86,
-  "pnl": -105.25,
-  "bankroll": 250.0,
+  "portfolio": 111.5,
+  "cash": 111.5,
+  "positions_value": 0.0,
+  "pnl": -888.5,
+  "bankroll": 1000.0,
   "live": true,
   "error": null,
-  "fetched_at": 1771988112.112041
+  "fetched_at": 1772031469.678603,
+  "source": "garves_bot"
 }

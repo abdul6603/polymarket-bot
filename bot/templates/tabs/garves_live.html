@@ -103,6 +103,38 @@
   </div>
   <div class="health-inline" id="garves-health-result"></div>
 
+  <!-- Engine Performance Comparison -->
+  <div class="glass-card" style="padding:14px 18px;margin-bottom:14px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div style="font-weight:700;font-size:0.82rem;">Engine Performance Comparison</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span id="engine-comp-mode" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;font-weight:600;"></span>
+        <span id="engine-comp-bankroll" style="font-size:0.68rem;color:var(--text-muted);font-family:var(--font-mono);"></span>
+      </div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:0.72rem;font-family:var(--font-mono);">
+        <thead>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.1);color:var(--text-muted);text-align:left;">
+            <th style="padding:6px 10px;">Engine</th>
+            <th style="padding:6px 8px;text-align:center;">Alloc</th>
+            <th style="padding:6px 8px;text-align:center;">Trades</th>
+            <th style="padding:6px 8px;text-align:center;">W</th>
+            <th style="padding:6px 8px;text-align:center;">L</th>
+            <th style="padding:6px 8px;text-align:center;">WR%</th>
+            <th style="padding:6px 8px;text-align:right;">PnL</th>
+            <th style="padding:6px 8px;text-align:right;">Avg Size</th>
+            <th style="padding:6px 8px;text-align:center;">Status</th>
+          </tr>
+        </thead>
+        <tbody id="engine-comp-body"></tbody>
+        <tfoot>
+          <tr id="engine-comp-totals" style="border-top:2px solid rgba(255,255,255,0.15);font-weight:700;"></tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
   <!-- ═══ Snipe Engine v10 — BTC Flow Scanner + 15m/1h Exec ═══ -->
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
     <div style="font-weight:700;font-size:0.76rem;">Snipe v10 Flow Scanner</div>

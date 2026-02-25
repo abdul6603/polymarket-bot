@@ -1827,3 +1827,165 @@ def api_garves_edge_report():
         })
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500
+
+
+
+@garves_bp.route("/api/garves/engine-comparison")
+def engine_comparison():
+    """Aggregate performance stats across all 4 engines for evaluation."""
+    import json, os
+    from pathlib import Path
+
+    data_dir = Path(__file__).parent.parent.parent / "data"
+
+    def _read_jsonl(path):
+        records = []
+        if not path.exists():
+            return records
+        try:
+            with open(path) as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        records.append(json.loads(line))
+        except Exception:
+            pass
+        return records
+
+    # --- Taker trades (archives + current) ---
+    taker_trades = []
+    archives_dir = data_dir / "archives"
+    if archives_dir.exists():
+        for f in sorted(archives_dir.glob("trades_*.jsonl")):
+            taker_trades.extend(_read_jsonl(f))
+    taker_trades.extend(_read_jsonl(data_dir / "trades.jsonl"))
+
+    taker_resolved = [t for t in taker_trades if t.get("resolved")]
+    taker_wins = sum(1 for t in taker_resolved if t.get("won"))
+    taker_losses = len(taker_resolved) - taker_wins
+    taker_pnl = sum(t.get("pnl", 0) for t in taker_resolved)
+    taker_size = sum(t.get("size_usd", 0) for t in taker_resolved)
+    taker_pending = len([t for t in taker_trades if not t.get("resolved")])
+
+    # --- Snipe trades ---
+    snipe_trades = _read_jsonl(data_dir / "snipe_trades.jsonl")
+    snipe_resolved = [t for t in snipe_trades if "won" in t]
+    snipe_wins = sum(1 for t in snipe_resolved if t.get("won"))
+    snipe_losses = len(snipe_resolved) - snipe_wins
+    snipe_pnl = sum(t.get("pnl_usd", 0) for t in snipe_resolved)
+    snipe_size = sum(t.get("total_size_usd", 0) for t in snipe_resolved)
+
+    # --- Maker stats ---
+    maker_data = {"fills": 0, "rebate": 0.0, "pnl": 0.0, "active_quotes": 0}
+    maker_state_file = data_dir / "maker_state.json"
+    if maker_state_file.exists():
+        try:
+            ms = json.loads(maker_state_file.read_text())
+            maker_data["fills"] = ms.get("stats", {}).get("fills_today", 0)
+            maker_data["rebate"] = ms.get("stats", {}).get("estimated_rebate_today", 0.0)
+            maker_data["active_quotes"] = len(ms.get("active_quotes", []))
+            maker_data["pnl"] = ms.get("session_pnl", 0.0)
+        except Exception:
+            pass
+
+    # --- Whale follower trades ---
+    whale_trades = _read_jsonl(data_dir / "whale_copy_trades.jsonl")
+    whale_resolved = [t for t in whale_trades if t.get("resolved")]
+    whale_wins = sum(1 for t in whale_resolved if t.get("won"))
+    whale_losses = len(whale_resolved) - whale_wins
+    whale_pnl = sum(t.get("pnl_usd", t.get("pnl", 0)) for t in whale_resolved)
+    whale_size = sum(t.get("size_usd", 0) for t in whale_resolved)
+
+    whale_status_file = data_dir / "whale_status.json"
+    whale_tracked = 0
+    if whale_status_file.exists():
+        try:
+            ws = json.loads(whale_status_file.read_text())
+            whale_tracked = ws.get("tracked_wallets", 0)
+        except Exception:
+            pass
+
+    def _wr(wins, total):
+        return round(wins / total * 100, 1) if total > 0 else 0.0
+
+    def _avg(total, count):
+        return round(total / count, 2) if count > 0 else 0.0
+
+    engines = {
+        "taker": {
+            "name": "Main Taker",
+            "allocation_pct": 15,
+            "max_exposure": 150,
+            "trades": len(taker_resolved),
+            "pending": taker_pending,
+            "wins": taker_wins,
+            "losses": taker_losses,
+            "win_rate": _wr(taker_wins, len(taker_resolved)),
+            "pnl": round(taker_pnl, 2),
+            "total_invested": round(taker_size, 2),
+            "avg_size": _avg(taker_size, len(taker_resolved)),
+            "status": "active",
+        },
+        "snipe": {
+            "name": "Snipe v10",
+            "allocation_pct": 30,
+            "max_exposure": 300,
+            "trades": len(snipe_resolved),
+            "pending": 0,
+            "wins": snipe_wins,
+            "losses": snipe_losses,
+            "win_rate": _wr(snipe_wins, len(snipe_resolved)),
+            "pnl": round(snipe_pnl, 2),
+            "total_invested": round(snipe_size, 2),
+            "avg_size": _avg(snipe_size, len(snipe_resolved)),
+            "status": "active",
+        },
+        "maker": {
+            "name": "Maker",
+            "allocation_pct": 30,
+            "max_exposure": 300,
+            "trades": maker_data["fills"],
+            "pending": maker_data["active_quotes"],
+            "wins": maker_data["fills"],
+            "losses": 0,
+            "win_rate": 0.0,
+            "pnl": round(maker_data["pnl"], 2),
+            "total_invested": 0,
+            "avg_size": 0,
+            "rebate": round(maker_data["rebate"], 4),
+            "status": "active",
+        },
+        "whale": {
+            "name": "Whale Follower",
+            "allocation_pct": 25,
+            "max_exposure": 250,
+            "trades": len(whale_resolved),
+            "pending": len(whale_trades) - len(whale_resolved),
+            "wins": whale_wins,
+            "losses": whale_losses,
+            "win_rate": _wr(whale_wins, len(whale_resolved)),
+            "pnl": round(whale_pnl, 2),
+            "total_invested": round(whale_size, 2),
+            "avg_size": _avg(whale_size, len(whale_resolved)),
+            "tracked_wallets": whale_tracked,
+            "status": "active",
+        },
+    }
+
+    total_trades = sum(e["trades"] for e in engines.values())
+    total_wins = sum(e["wins"] for e in engines.values())
+    total_losses = sum(e["losses"] for e in engines.values())
+    total_pnl = sum(e["pnl"] for e in engines.values())
+
+    return jsonify({
+        "engines": engines,
+        "totals": {
+            "trades": total_trades,
+            "wins": total_wins,
+            "losses": total_losses,
+            "win_rate": _wr(total_wins, total_trades),
+            "pnl": round(total_pnl, 2),
+        },
+        "bankroll": float(os.getenv("BANKROLL_USD", "250")),
+        "dry_run": os.getenv("DRY_RUN", "true").lower() in ("true", "1", "yes"),
+    })

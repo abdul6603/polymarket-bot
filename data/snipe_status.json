@@ -1,8 +1,11 @@
 {
   "enabled": true,
-  "version": "v8-multi-asset",
-  "dry_run": false,
-  "exec_preference": "15m",
+  "version": "v10-flow-scanner-mtf-exec",
+  "strategy": "flow_scanner_mtf_exec",
+  "default_exec_tf": "15m",
+  "execution_routing": "5m \u2192 15m",
+  "last_exec_routing": {},
+  "dry_run": true,
   "delta_threshold_pct": 0.08,
   "threshold_mode": "weekday",
   "tick_interval_s": 2,
@@ -20,106 +23,65 @@
   "slots": {
     "bitcoin": {
       "state": "tracking",
-      "last_score": 31.3,
+      "last_score": 48.1,
       "last_direction": "up",
       "exec_timeframe": "",
       "position": {
         "active": false
       },
-      "liquidity_ignited": false
-    },
-    "ethereum": {
-      "state": "tracking",
-      "last_score": 39.6,
-      "last_direction": "up",
-      "exec_timeframe": "",
-      "position": {
-        "active": false
-      },
-      "liquidity_ignited": false
-    },
-    "solana": {
-      "state": "tracking",
-      "last_score": 43.8,
-      "last_direction": "up",
-      "exec_timeframe": "",
-      "position": {
-        "active": false
-      },
-      "liquidity_ignited": false
-    },
-    "xrp": {
-      "state": "tracking",
-      "last_score": 0.0,
-      "last_direction": "",
-      "exec_timeframe": "",
-      "position": {
-        "active": false
-      },
-      "liquidity_ignited": false
+      "threshold": 70
     }
   },
   "hot_windows": [
     {
       "asset": "bitcoin",
       "direction": "up",
-      "score": 31.3,
-      "state": "tracking"
-    },
-    {
-      "asset": "ethereum",
-      "direction": "up",
-      "score": 39.6,
-      "state": "tracking"
-    },
-    {
-      "asset": "solana",
-      "direction": "up",
-      "score": 43.8,
+      "score": 48.1,
       "state": "tracking"
     }
   ],
-  "correlation": {
-    "dominant_direction": "up",
-    "aligned_count": 3,
-    "total_scored": 3,
-    "score_bonus": 5.0,
-    "size_multiplier": 1.0
+  "flow_detector": {
+    "direction": "none",
+    "strength": 0.0,
+    "sustained_ticks": 0,
+    "is_strong": false,
+    "detail": "dir=none",
+    "snapshots": 66
   },
   "window": {
     "active_windows": 4,
     "windows": [
       {
-        "market_id": "0xae2ad5a9b5",
+        "market_id": "0xba400333f4",
         "asset": "bitcoin",
-        "open_price": 62934.47,
-        "remaining_s": 128,
+        "open_price": 66704.1,
+        "remaining_s": 107,
         "traded": false,
-        "question": "Bitcoin Up or Down - February 24, 8:50AM-8:55AM ET"
+        "question": "Bitcoin Up or Down - February 25, 9:55AM-10:00AM ET"
       },
       {
-        "market_id": "0x2246162afc",
+        "market_id": "0xec5bbfe431",
         "asset": "ethereum",
-        "open_price": 1815.24,
-        "remaining_s": 128,
+        "open_price": 1987.24,
+        "remaining_s": 107,
         "traded": false,
-        "question": "Ethereum Up or Down - February 24, 8:50AM-8:55AM ET"
+        "question": "Ethereum Up or Down - February 25, 9:55AM-10:00AM ET"
       },
       {
-        "market_id": "0x5d182297e2",
-        "asset": "xrp",
-        "open_price": 1.3316,
-        "remaining_s": 128,
-        "traded": false,
-        "question": "XRP Up or Down - February 24, 8:50AM-8:55AM ET"
-      },
-      {
-        "market_id": "0x9790e3d232",
+        "market_id": "0x8a05a3feb6",
         "asset": "solana",
-        "open_price": 76.56,
-        "remaining_s": 128,
+        "open_price": 85.35,
+        "remaining_s": 107,
         "traded": false,
-        "question": "Solana Up or Down - February 24, 8:50AM-8:55AM ET"
+        "question": "Solana Up or Down - February 25, 9:55AM-10:00AM ET"
+      },
+      {
+        "market_id": "0x673d4d831a",
+        "asset": "xrp",
+        "open_price": 1.4302,
+        "remaining_s": 107,
+        "traded": false,
+        "question": "XRP Up or Down - February 25, 9:55AM-10:00AM ET"
       }
     ]
   },
@@ -283,7 +245,7 @@
     "assets": {
       "bitcoin": {
         "readings": 30,
-        "latest_imbalance": 0.031,
+        "latest_imbalance": 0.4111,
         "latest_direction": "up",
         "signal_active": false,
         "signal_direction": null,
@@ -292,7 +254,7 @@
       },
       "ethereum": {
         "readings": 30,
-        "latest_imbalance": 0.0027,
+        "latest_imbalance": 0.2382,
         "latest_direction": "up",
         "signal_active": false,
         "signal_direction": null,
@@ -301,7 +263,7 @@
       },
       "solana": {
         "readings": 30,
-        "latest_imbalance": -0.1058,
+        "latest_imbalance": -0.0147,
         "latest_direction": "down",
         "signal_active": false,
         "signal_direction": null,
@@ -310,29 +272,29 @@
       },
       "xrp": {
         "readings": 30,
-        "latest_imbalance": -0.5267,
+        "latest_imbalance": -0.068,
         "latest_direction": "down",
-        "signal_active": true,
-        "signal_direction": "down",
-        "signal_strength": 0.553,
-        "signal_sustained": 15
+        "signal_active": false,
+        "signal_direction": null,
+        "signal_strength": null,
+        "signal_sustained": null
       }
     }
   },
   "scorer": {
     "active": false,
-    "threshold": 70
+    "threshold": 75
   },
   "candles": {
     "bitcoin": {
       "5m": {
-        "completed_candles": 2,
+        "completed_candles": 1,
         "current": {
-          "open": 62940.19,
-          "high": 62980.02,
-          "low": 62905.59,
-          "close": 62958.27,
-          "ticks": 76
+          "open": 66704.1,
+          "high": 66960.0,
+          "low": 66704.1,
+          "close": 66911.99,
+          "ticks": 75
         },
         "structure": {
           "bos": null,
@@ -343,13 +305,13 @@
         }
       },
       "15m": {
-        "completed_candles": 1,
+        "completed_candles": 0,
         "current": {
-          "open": 62931.53,
-          "high": 63030.0,
-          "low": 62890.39,
-          "close": 62958.27,
-          "ticks": 207
+          "open": 66685.97,
+          "high": 66960.0,
+          "low": 66668.75,
+          "close": 66911.99,
+          "ticks": 114
         },
         "structure": {
           "bos": null,
@@ -362,11 +324,11 @@
       "1h": {
         "completed_candles": 0,
         "current": {
-          "open": 62944.72,
-          "high": 63030.0,
-          "low": 62890.39,
-          "close": 62958.27,
-          "ticks": 221
+          "open": 66685.97,
+          "high": 66960.0,
+          "low": 66668.75,
+          "close": 66911.99,
+          "ticks": 114
         },
         "structure": {
           "bos": null,
@@ -379,14 +341,8 @@
     },
     "ethereum": {
       "5m": {
-        "completed_candles": 2,
-        "current": {
-          "open": 1815.34,
-          "high": 1817.04,
-          "low": 1813.32,
-          "close": 1816.89,
-          "ticks": 76
-        },
+        "completed_candles": 0,
+        "current": null,
         "structure": {
           "bos": null,
           "choch": null,
@@ -396,14 +352,8 @@
         }
       },
       "15m": {
-        "completed_candles": 1,
-        "current": {
-          "open": 1817.71,
-          "high": 1820.57,
-          "low": 1813.32,
-          "close": 1816.89,
-          "ticks": 207
-        },
+        "completed_candles": 0,
+        "current": null,
         "structure": {
           "bos": null,
           "choch": null,
@@ -414,13 +364,7 @@
       },
       "1h": {
         "completed_candles": 0,
-        "current": {
-          "open": 1818.55,
-          "high": 1820.57,
-          "low": 1813.32,
-          "close": 1816.89,
-          "ticks": 221
-        },
+        "current": null,
         "structure": {
           "bos": null,
           "choch": null,
@@ -432,14 +376,8 @@
     },
     "solana": {
       "5m": {
-        "completed_candles": 2,
-        "current": {
-          "open": 76.56,
-          "high": 76.66,
-          "low": 76.5,
-          "close": 76.65,
-          "ticks": 76
-        },
+        "completed_candles": 0,
+        "current": null,
         "structure": {
           "bos": null,
           "choch": null,
@@ -449,14 +387,8 @@
         }
       },
       "15m": {
-        "completed_candles": 1,
-        "current": {
-          "open": 76.51,
-          "high": 76.68,
-          "low": 76.43,
-          "close": 76.65,
-          "ticks": 207
-        },
+        "completed_candles": 0,
+        "current": null,
         "structure": {
           "bos": null,
           "choch": null,
@@ -467,13 +399,7 @@
       },
       "1h": {
         "completed_candles": 0,
-        "current": {
-          "open": 76.5,
-          "high": 76.68,
-          "low": 76.43,
-          "close": 76.65,
-          "ticks": 221
-        },
+        "current": null,
         "structure": {
           "bos": null,
           "choch": null,
@@ -485,14 +411,8 @@
     },
     "xrp": {
       "5m": {
-        "completed_candles": 2,
-        "current": {
-          "open": 1.3316,
-          "high": 1.3321,
-          "low": 1.3306,
-          "close": 1.3316,
-          "ticks": 76
-        },
+        "completed_candles": 0,
+        "current": null,
         "structure": {
           "bos": null,
           "choch": null,
@@ -502,14 +422,8 @@
         }
       },
       "15m": {
-        "completed_candles": 1,
-        "current": {
-          "open": 1.3312,
-          "high": 1.3341,
-          "low": 1.3301,
-          "close": 1.3316,
-          "ticks": 207
-        },
+        "completed_candles": 0,
+        "current": null,
         "structure": {
           "bos": null,
           "choch": null,
@@ -520,13 +434,7 @@
       },
       "1h": {
         "completed_candles": 0,
-        "current": {
-          "open": 1.3311,
-          "high": 1.3341,
-          "low": 1.3301,
-          "close": 1.3316,
-          "ticks": 221
-        },
+        "current": null,
         "structure": {
           "bos": null,
           "choch": null,
@@ -543,14 +451,14 @@
     "assets": {
       "bitcoin": {
         "5m": {
-          "candles": 2,
+          "candles": 1,
           "needed": 5,
           "ready": false,
           "has_trend": false,
           "has_bos": false
         },
         "15m": {
-          "candles": 1,
+          "candles": 0,
           "needed": 5,
           "ready": false,
           "has_trend": false,
@@ -566,14 +474,14 @@
       },
       "ethereum": {
         "5m": {
-          "candles": 2,
+          "candles": 0,
           "needed": 5,
           "ready": false,
           "has_trend": false,
           "has_bos": false
         },
         "15m": {
-          "candles": 1,
+          "candles": 0,
           "needed": 5,
           "ready": false,
           "has_trend": false,
@@ -589,14 +497,14 @@
       },
       "solana": {
         "5m": {
-          "candles": 2,
+          "candles": 0,
           "needed": 5,
           "ready": false,
           "has_trend": false,
           "has_bos": false
         },
         "15m": {
-          "candles": 1,
+          "candles": 0,
           "needed": 5,
           "ready": false,
           "has_trend": false,
@@ -612,14 +520,14 @@
       },
       "xrp": {
         "5m": {
-          "candles": 2,
+          "candles": 0,
           "needed": 5,
           "ready": false,
           "has_trend": false,
           "has_bos": false
         },
         "15m": {
-          "candles": 1,
+          "candles": 0,
           "needed": 5,
           "ready": false,
           "has_trend": false,
@@ -636,62 +544,41 @@
     }
   },
   "warmup_diagnostics": {
-    "elapsed_min": 10.0,
+    "elapsed_min": 8.6,
     "target_min": 60,
     "progress_pct": 0,
-    "max_realistic_score": 66,
-    "threshold": 58,
+    "max_realistic_score": 96,
+    "threshold": 70,
+    "threshold_mode": "data_quality",
+    "per_asset_thresholds": {
+      "bitcoin": 70
+    },
+    "threshold_override_active": false,
     "can_reach_threshold": true,
     "base_components": [
       {
-        "name": "clob_spread_compression",
-        "current": 3.0,
-        "max": 10
-      },
-      {
-        "name": "clob_yes_no_pressure",
-        "current": 3.0,
-        "max": 10
-      },
-      {
         "name": "bos_choch_5m",
-        "current": 3.6,
-        "max": 12
-      },
-      {
-        "name": "bos_choch_15m",
-        "current": 2.4,
-        "max": 8
-      },
-      {
-        "name": "volume_delta",
-        "current": 2.4,
-        "max": 8
+        "current": 1.5,
+        "max": 5
       }
     ],
     "has_5m_structure": false,
     "has_15m_structure": false,
-    "clob_bypassed": true,
+    "clob_bypassed": false,
     "ready": false
+  },
+  "threshold_info": {
+    "mode": "data_quality",
+    "per_asset": {
+      "bitcoin": 70
+    },
+    "override_active": false,
+    "override_value": null,
+    "override_ttl_s": 0
   },
   "price_freshness": {
     "bitcoin": {
-      "age_s": -0.3,
-      "source": "ws",
-      "stale": false
-    },
-    "ethereum": {
-      "age_s": -0.3,
-      "source": "ws",
-      "stale": false
-    },
-    "solana": {
-      "age_s": 3.0,
-      "source": "ws",
-      "stale": false
-    },
-    "xrp": {
-      "age_s": -0.1,
+      "age_s": 1.6,
       "source": "ws",
       "stale": false
     }
@@ -748,31 +635,31 @@
   },
   "timing_assistant": {
     "active": true,
-    "timing_score": 40.0,
+    "timing_score": 46.2,
     "action": "auto_skip",
     "direction": "up",
     "size_pct": 0.0,
     "factors": {
       "snipe_signal_strength": {
-        "raw": 0.438,
-        "weighted": 17.5
+        "raw": 0.481,
+        "weighted": 19.2
       },
       "liquidity_quality": {
-        "raw": 0.0,
-        "weighted": 0.0
+        "raw": 0.15,
+        "weighted": 3.0
       },
       "time_positioning": {
-        "raw": 0.5,
-        "weighted": 7.5
+        "raw": 0.7,
+        "weighted": 10.5
       },
       "regime_alignment": {
         "raw": 0.5,
         "weighted": 5.0
       },
       "historical_accuracy": {
-        "raw": 0.667,
-        "weighted": 10.0,
-        "total_samples": 9
+        "raw": 0.565,
+        "weighted": 8.5,
+        "total_samples": 23
       }
     },
     "agent_overrides": {
@@ -801,14 +688,14 @@
       "conservative": 65
     },
     "learner": {
-      "total_records": 16,
-      "resolved": 16,
-      "wins": 10,
-      "overall_wr": 62.5,
-      "total_pnl": -30.27
+      "total_records": 32,
+      "resolved": 32,
+      "wins": 18,
+      "overall_wr": 56.2,
+      "total_pnl": -56.01
     },
-    "expires_at": 1771941292.274453,
-    "timestamp": 1771941172.274454
+    "expires_at": 1772031613.261415,
+    "timestamp": 1772031493.261417
   },
-  "timestamp": 1771941172.278645
+  "timestamp": 1772031493.265968
 }

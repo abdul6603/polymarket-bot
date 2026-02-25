@@ -1,14 +1,14 @@
 {
   "running": true,
   "mode": "intelligence",
-  "cycle": 6,
-  "total_intel": 12,
+  "cycle": 3,
+  "total_intel": 46,
   "total_matched": 0,
-  "last_scan_items": 45,
-  "last_scan_new": 1,
+  "last_scan_items": 43,
+  "last_scan_new": 43,
   "last_scan_matched": 0,
   "sources": {
-    "reddit": 45
+    "reddit": 43
   },
   "briefing_active": false,
   "briefed_markets": 1,
@@ -16,8 +16,8 @@
   "soren_opportunities": null,
   "anomalies": [],
   "digests_generated": false,
-  "pushes": 0,
-  "pushed_to_shelby": 170,
+  "pushes": 1,
+  "pushed_to_shelby": 176,
   "governor_throttled": [],
-  "last_update": "2026-02-24T08:51:50.802351-05:00"
+  "last_update": "2026-02-25T09:54:45.746126-05:00"
 }

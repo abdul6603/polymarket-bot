@@ -1,50 +1,500 @@
 {
   "enabled": true,
-  "timestamp": 1771622009.600744,
+  "timestamp": 1772031492.036747,
   "active_quotes": [
     {
-      "order_id": "dry-maker-buy-1771622009",
-      "token_id": "token123",
-      "side": "BUY",
-      "price": 0.49,
-      "size_usd": 8.0,
-      "age_s": 0
-    },
-    {
-      "order_id": "dry-maker-sell-1771622009",
-      "token_id": "token123",
+      "order_id": "dry-maker-sell-1772031274",
+      "token_id": "8126293880156803",
+      "asset": "xrp",
       "side": "SELL",
-      "price": 0.51,
-      "size_usd": 8.0,
+      "price": 0.59,
+      "size_usd": 3.0,
+      "age_s": 217
+    },
+    {
+      "order_id": "dry-maker-sell-1772031492",
+      "token_id": "7248266927643742",
+      "asset": "bitcoin",
+      "side": "SELL",
+      "price": 0.61,
+      "size_usd": 15.0,
       "age_s": 0
     },
     {
-      "order_id": "dry-maker-buy-1771622009",
-      "token_id": "tok1",
+      "order_id": "dry-maker-sell-1772031492",
+      "token_id": "5031531384031342",
+      "asset": "ethereum",
+      "side": "SELL",
+      "price": 0.89,
+      "size_usd": 15.0,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-buy-1772031492",
+      "token_id": "1155068151829779",
+      "asset": "solana",
       "side": "BUY",
-      "price": 0.51,
-      "size_usd": 8.0,
+      "price": 0.86,
+      "size_usd": 15.0,
       "age_s": 0
     },
     {
-      "order_id": "dry-maker-sell-1771622009",
-      "token_id": "tok1",
+      "order_id": "dry-maker-sell-1772031492",
+      "token_id": "1155068151829779",
+      "asset": "solana",
+      "side": "SELL",
+      "price": 0.9,
+      "size_usd": 15.0,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-sell-1772031492",
+      "token_id": "7741594846102636",
+      "asset": "xrp",
+      "side": "SELL",
+      "price": 0.89,
+      "size_usd": 15.0,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-buy-1772031492",
+      "token_id": "1129018891925955",
+      "asset": "xrp",
+      "side": "BUY",
+      "price": 0.63,
+      "size_usd": 3.0,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-sell-1772031492",
+      "token_id": "2761125218693002",
+      "asset": "bitcoin",
       "side": "SELL",
       "price": 0.53,
-      "size_usd": 8.0,
+      "size_usd": 3.0,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-buy-1772031492",
+      "token_id": "9921097040458323",
+      "asset": "ethereum",
+      "side": "BUY",
+      "price": 0.44,
+      "size_usd": 3.0,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-sell-1772031492",
+      "token_id": "9921097040458323",
+      "asset": "ethereum",
+      "side": "SELL",
+      "price": 0.48,
+      "size_usd": 3.0,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-sell-1772031492",
+      "token_id": "3134979740813822",
+      "asset": "solana",
+      "side": "SELL",
+      "price": 0.52,
+      "size_usd": 3.0,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-buy-1772031492",
+      "token_id": "3881463888930321",
+      "asset": "xrp",
+      "side": "BUY",
+      "price": 0.49,
+      "size_usd": 3.0,
       "age_s": 0
     }
   ],
-  "inventory": {},
+  "inventory": {
+    "31652692666342041128140178106093781909098548812284915872719036017733063630961": {
+      "asset": "solana",
+      "net_shares": 0.3,
+      "fills_today": 2,
+      "estimated_rebate": 0.006,
+      "remaining_s": 371
+    },
+    "101165732917974638909813908425280682050033961063459450658047086621235773704408": {
+      "asset": "ethereum",
+      "net_shares": -3.55,
+      "fills_today": 3,
+      "estimated_rebate": 0.009,
+      "remaining_s": 371
+    },
+    "75411922911056136904312399288548581364840018295629112434704123264071217029264": {
+      "asset": "bitcoin",
+      "net_shares": -1.77,
+      "fills_today": 2,
+      "estimated_rebate": 0.006,
+      "remaining_s": 371
+    },
+    "95314159578461240821232564867729706535972446327357942331380693888539062269564": {
+      "asset": "bitcoin",
+      "net_shares": -5.13,
+      "fills_today": 5,
+      "estimated_rebate": 0.015,
+      "remaining_s": 137
+    },
+    "2096042573856034437781448461688208282327428970523318751542877280033266694646": {
+      "asset": "ethereum",
+      "net_shares": 2.48,
+      "fills_today": 4,
+      "estimated_rebate": 0.012,
+      "remaining_s": 137
+    },
+    "101917690711851443853121274906619840731625269068663160013724169062683255739162": {
+      "asset": "solana",
+      "net_shares": 0.37,
+      "fills_today": 2,
+      "estimated_rebate": 0.006,
+      "remaining_s": 137
+    },
+    "112901889192595544149911666820376680868579436422224325682957453878791002233967": {
+      "asset": "xrp",
+      "net_shares": -2.07,
+      "fills_today": 5,
+      "estimated_rebate": 0.015,
+      "remaining_s": 137
+    },
+    "98860009376680111500793443233785531391269795423555739840166908358764161467844": {
+      "asset": "solana",
+      "net_shares": 0.35,
+      "fills_today": 2,
+      "estimated_rebate": 0.006,
+      "remaining_s": 71
+    },
+    "100963049164609490743940220094622623069322811533303016952710065732324441745260": {
+      "asset": "bitcoin",
+      "net_shares": 0.35,
+      "fills_today": 2,
+      "estimated_rebate": 0.006,
+      "remaining_s": 71
+    },
+    "77415948461026364660956711225305133034000523457494685121625868795003128398287": {
+      "asset": "xrp",
+      "net_shares": 19.51,
+      "fills_today": 7,
+      "estimated_rebate": 0.105,
+      "remaining_s": 7337
+    },
+    "101934563970004018594799895671128378830038369220122237748337028610490963538062": {
+      "asset": "ethereum",
+      "net_shares": 0.37,
+      "fills_today": 2,
+      "estimated_rebate": 0.006,
+      "remaining_s": 71
+    },
+    "72482669276437426635650202502508565501385059026308685324341321173861309943949": {
+      "asset": "bitcoin",
+      "net_shares": 31.45,
+      "fills_today": 3,
+      "estimated_rebate": 0.045,
+      "remaining_s": 7337
+    },
+    "115506815182977947151078490082782111845414705217209044846754026121915875784725": {
+      "asset": "solana",
+      "net_shares": 0.77,
+      "fills_today": 6,
+      "estimated_rebate": 0.09,
+      "remaining_s": 7337
+    },
+    "5031531384031342911107495670704459295748594028683081294030288167763335766606": {
+      "asset": "ethereum",
+      "net_shares": 28.17,
+      "fills_today": 5,
+      "estimated_rebate": 0.075,
+      "remaining_s": 7337
+    },
+    "31349797408138226748276119854438067970883577588937505608355705828331148808583": {
+      "asset": "solana",
+      "net_shares": 0.82,
+      "fills_today": 4,
+      "estimated_rebate": 0.012,
+      "remaining_s": 137
+    },
+    "38814638889303211399748391820977200741221523610244845293759131792605419765861": {
+      "asset": "xrp",
+      "net_shares": -5.06,
+      "fills_today": 5,
+      "estimated_rebate": 0.015,
+      "remaining_s": 137
+    },
+    "27611252186930026213607751828003038364975748949775957710396902268965391385376": {
+      "asset": "bitcoin",
+      "net_shares": 1.09,
+      "fills_today": 6,
+      "estimated_rebate": 0.018,
+      "remaining_s": 137
+    },
+    "66223203596791215981902385939215459475868699237225098107417927835273120193967": {
+      "asset": "xrp",
+      "net_shares": 0.37,
+      "fills_today": 2,
+      "estimated_rebate": 0.006,
+      "remaining_s": 71
+    },
+    "9921097040458323886187016035727694546972813025062713165454509196103805373634": {
+      "asset": "ethereum",
+      "net_shares": 0.48,
+      "fills_today": 2,
+      "estimated_rebate": 0.006,
+      "remaining_s": 137
+    },
+    "8126293880156803674975301035489558992727259557394501633556893542033984918806": {
+      "asset": "xrp",
+      "net_shares": 5.45,
+      "fills_today": 1,
+      "estimated_rebate": 0.003,
+      "remaining_s": 371
+    }
+  },
+  "warnings": [
+    "XRP: LONG 20 shares \u2014 HARD CAP HIT",
+    "BITCOIN: LONG 31 shares \u2014 HARD CAP HIT",
+    "ETHEREUM: LONG 28 shares \u2014 HARD CAP HIT"
+  ],
   "config": {
-    "quote_size_usd": 8.0,
-    "max_inventory_usd": 30.0,
-    "max_total_exposure": 60.0,
+    "quote_size_usd": 15.0,
+    "max_inventory_usd": 50.0,
+    "max_total_exposure": 300.0,
     "tick_interval_s": 5.0
   },
   "stats": {
-    "fills_today": 0,
-    "estimated_rebate_today": 0.0,
-    "active_quote_count": 4
-  }
+    "fills_today": 70,
+    "estimated_rebate_today": 0.462,
+    "active_quote_count": 12
+  },
+  "pnl": {
+    "session_pnl": 12.1288,
+    "spread_captured": 11.6668,
+    "resolution_losses": 0.0,
+    "kill_reason": null
+  },
+  "recent_fills": [
+    {
+      "ts": 1772031398.202826,
+      "side": "BUY",
+      "asset": "solana",
+      "price": 0.87,
+      "fair": 0.8816,
+      "size_usd": 15.0,
+      "spread_captured": 0.2,
+      "rebate": 0.015,
+      "token_id": "1155068151829779"
+    },
+    {
+      "ts": 1772031398.20284,
+      "side": "SELL",
+      "asset": "bitcoin",
+      "price": 0.51,
+      "fair": 0.4962,
+      "size_usd": 3.0,
+      "spread_captured": 0.0812,
+      "rebate": 0.003,
+      "token_id": "2761125218693002"
+    },
+    {
+      "ts": 1772031398.202852,
+      "side": "SELL",
+      "asset": "ethereum",
+      "price": 0.52,
+      "fair": 0.5011,
+      "size_usd": 3.0,
+      "spread_captured": 0.109,
+      "rebate": 0.003,
+      "token_id": "9921097040458323"
+    },
+    {
+      "ts": 1772031405.528574,
+      "side": "SELL",
+      "asset": "ethereum",
+      "price": 0.72,
+      "fair": 0.7018,
+      "size_usd": 15.0,
+      "spread_captured": 0.3792,
+      "rebate": 0.015,
+      "token_id": "5031531384031342"
+    },
+    {
+      "ts": 1772031405.528598,
+      "side": "BUY",
+      "asset": "solana",
+      "price": 0.49,
+      "fair": 0.5072,
+      "size_usd": 3.0,
+      "spread_captured": 0.1053,
+      "rebate": 0.003,
+      "token_id": "3134979740813822"
+    },
+    {
+      "ts": 1772031417.610135,
+      "side": "BUY",
+      "asset": "xrp",
+      "price": 0.55,
+      "fair": 0.5695,
+      "size_usd": 3.0,
+      "spread_captured": 0.1064,
+      "rebate": 0.003,
+      "token_id": "8126293880156803"
+    },
+    {
+      "ts": 1772031417.6116228,
+      "side": "BUY",
+      "asset": "solana",
+      "price": 0.86,
+      "fair": 0.8817,
+      "size_usd": 15.0,
+      "spread_captured": 0.3785,
+      "rebate": 0.015,
+      "token_id": "1155068151829779"
+    },
+    {
+      "ts": 1772031417.611941,
+      "side": "SELL",
+      "asset": "bitcoin",
+      "price": 0.51,
+      "fair": 0.4964,
+      "size_usd": 3.0,
+      "spread_captured": 0.08,
+      "rebate": 0.003,
+      "token_id": "9531415957846124"
+    },
+    {
+      "ts": 1772031417.612105,
+      "side": "SELL",
+      "asset": "xrp",
+      "price": 0.51,
+      "fair": 0.4913,
+      "size_usd": 3.0,
+      "spread_captured": 0.11,
+      "rebate": 0.003,
+      "token_id": "1129018891925955"
+    },
+    {
+      "ts": 1772031469.6662421,
+      "side": "BUY",
+      "asset": "ethereum",
+      "price": 0.68,
+      "fair": 0.7014,
+      "size_usd": 15.0,
+      "spread_captured": 0.4721,
+      "rebate": 0.015,
+      "token_id": "5031531384031342"
+    },
+    {
+      "ts": 1772031469.666414,
+      "side": "SELL",
+      "asset": "xrp",
+      "price": 0.89,
+      "fair": 0.8763,
+      "size_usd": 15.0,
+      "spread_captured": 0.2309,
+      "rebate": 0.015,
+      "token_id": "7741594846102636"
+    },
+    {
+      "ts": 1772031469.666501,
+      "side": "BUY",
+      "asset": "xrp",
+      "price": 0.47,
+      "fair": 0.4913,
+      "size_usd": 3.0,
+      "spread_captured": 0.136,
+      "rebate": 0.003,
+      "token_id": "1129018891925955"
+    },
+    {
+      "ts": 1772031469.666568,
+      "side": "BUY",
+      "asset": "bitcoin",
+      "price": 0.48,
+      "fair": 0.4964,
+      "size_usd": 3.0,
+      "spread_captured": 0.1025,
+      "rebate": 0.003,
+      "token_id": "2761125218693002"
+    },
+    {
+      "ts": 1772031476.111798,
+      "side": "SELL",
+      "asset": "bitcoin",
+      "price": 0.51,
+      "fair": 0.4964,
+      "size_usd": 3.0,
+      "spread_captured": 0.08,
+      "rebate": 0.003,
+      "token_id": "9531415957846124"
+    },
+    {
+      "ts": 1772031476.111857,
+      "side": "BUY",
+      "asset": "ethereum",
+      "price": 0.47,
+      "fair": 0.4914,
+      "size_usd": 3.0,
+      "spread_captured": 0.1366,
+      "rebate": 0.003,
+      "token_id": "2096042573856034"
+    },
+    {
+      "ts": 1772031476.1118772,
+      "side": "BUY",
+      "asset": "xrp",
+      "price": 0.86,
+      "fair": 0.8766,
+      "size_usd": 15.0,
+      "spread_captured": 0.2895,
+      "rebate": 0.015,
+      "token_id": "7741594846102636"
+    },
+    {
+      "ts": 1772031476.111892,
+      "side": "SELL",
+      "asset": "xrp",
+      "price": 0.52,
+      "fair": 0.5066,
+      "size_usd": 3.0,
+      "spread_captured": 0.0773,
+      "rebate": 0.003,
+      "token_id": "3881463888930321"
+    },
+    {
+      "ts": 1772031484.127949,
+      "side": "SELL",
+      "asset": "solana",
+      "price": 0.9,
+      "fair": 0.8823,
+      "size_usd": 15.0,
+      "spread_captured": 0.295,
+      "rebate": 0.015,
+      "token_id": "1155068151829779"
+    },
+    {
+      "ts": 1772031484.127975,
+      "side": "SELL",
+      "asset": "solana",
+      "price": 0.53,
+      "fair": 0.5073,
+      "size_usd": 3.0,
+      "spread_captured": 0.1285,
+      "rebate": 0.003,
+      "token_id": "3134979740813822"
+    },
+    {
+      "ts": 1772031492.0363462,
+      "side": "SELL",
+      "asset": "xrp",
+      "price": 0.67,
+      "fair": 0.651,
+      "size_usd": 3.0,
+      "spread_captured": 0.0851,
+      "rebate": 0.003,
+      "token_id": "1129018891925955"
+    }
+  ]
 }

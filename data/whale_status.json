@@ -1,0 +1,227 @@
+{
+  "enabled": true,
+  "dry_run": true,
+  "tracked_wallets": 20,
+  "total_wallets_scanned": 114,
+  "blacklisted": 0,
+  "active_signals": 0,
+  "tick_count": 15,
+  "stats": {
+    "signals_generated": 0,
+    "trades_executed": 0,
+    "trades_skipped": 0,
+    "daily_exposure": 0.0
+  },
+  "performance": {
+    "total_copies": 0,
+    "resolved": 0,
+    "wins": 0,
+    "losses": 0,
+    "win_rate": 0,
+    "total_pnl": 0
+  },
+  "recent_copies": [],
+  "top_wallets": [
+    {
+      "wallet": "0x49447d65ba",
+      "username": "Peggyt",
+      "score": 100.0,
+      "pnl": 43625.50000000001,
+      "trades": 35
+    },
+    {
+      "wallet": "0xbab70ccb89",
+      "username": "Flourishing6",
+      "score": 100.0,
+      "pnl": 24103.499999999996,
+      "trades": 38
+    },
+    {
+      "wallet": "0xced0f285df",
+      "username": "Florag",
+      "score": 100.0,
+      "pnl": 18577.499999999996,
+      "trades": 29
+    },
+    {
+      "wallet": "0xa301c667a8",
+      "username": "wedfr34",
+      "score": 100.0,
+      "pnl": 16636.500000000004,
+      "trades": 40
+    },
+    {
+      "wallet": "0x7780e9f103",
+      "username": "kindlydelta",
+      "score": 100.0,
+      "pnl": 119689.721191,
+      "trades": 200
+    },
+    {
+      "wallet": "0x799c226709",
+      "username": "qwqbw",
+      "score": 100.0,
+      "pnl": 110898.99999999997,
+      "trades": 45
+    },
+    {
+      "wallet": "0x82a5540246",
+      "username": "Dorisad",
+      "score": 99.9,
+      "pnl": 23668.999999999996,
+      "trades": 27
+    },
+    {
+      "wallet": "0x1070ee77f3",
+      "username": "KimballDavies",
+      "score": 99.8,
+      "pnl": 543088.24951103,
+      "trades": 26
+    },
+    {
+      "wallet": "0xf8001e720d",
+      "username": "Losu2w",
+      "score": 99.3,
+      "pnl": 105745.39622795,
+      "trades": 200
+    },
+    {
+      "wallet": "0x6170ae24c5",
+      "username": "marcus54",
+      "score": 98.7,
+      "pnl": 13942.000000000004,
+      "trades": 18
+    }
+  ],
+  "backtest": {
+    "passed": true,
+    "total_trades": 594,
+    "wins": 594,
+    "losses": 0,
+    "win_rate": 100.0,
+    "total_pnl": 3232.27,
+    "avg_pnl_per_trade": 5.44,
+    "per_wallet": {
+      "0x49447d65ba": {
+        "trades": 7,
+        "wins": 7,
+        "wr": 1.0,
+        "pnl": 63.71
+      },
+      "0xbab70ccb89": {
+        "trades": 10,
+        "wins": 10,
+        "wr": 1.0,
+        "pnl": 72.23
+      },
+      "0xced0f285df": {
+        "trades": 6,
+        "wins": 6,
+        "wr": 1.0,
+        "pnl": 48.8
+      },
+      "0xa301c667a8": {
+        "trades": 17,
+        "wins": 17,
+        "wr": 1.0,
+        "pnl": 68.67
+      },
+      "0x7780e9f103": {
+        "trades": 143,
+        "wins": 143,
+        "wr": 1.0,
+        "pnl": 993.44
+      },
+      "0x799c226709": {
+        "trades": 7,
+        "wins": 7,
+        "wr": 1.0,
+        "pnl": 31.16
+      },
+      "0x82a5540246": {
+        "trades": 3,
+        "wins": 3,
+        "wr": 1.0,
+        "pnl": 29.34
+      },
+      "0x1070ee77f3": {
+        "trades": 21,
+        "wins": 21,
+        "wr": 1.0,
+        "pnl": 132.49
+      },
+      "0xf8001e720d": {
+        "trades": 156,
+        "wins": 156,
+        "wr": 1.0,
+        "pnl": 657.16
+      },
+      "0x6170ae24c5": {
+        "trades": 2,
+        "wins": 2,
+        "wr": 1.0,
+        "pnl": 20.44
+      },
+      "0x68469ab900": {
+        "trades": 27,
+        "wins": 27,
+        "wr": 1.0,
+        "pnl": 153.52
+      },
+      "0xb96903067a": {
+        "trades": 83,
+        "wins": 83,
+        "wr": 1.0,
+        "pnl": 262.41
+      },
+      "0x34eccd57d8": {
+        "trades": 9,
+        "wins": 9,
+        "wr": 1.0,
+        "pnl": 167.67
+      },
+      "0x19f19dd8ee": {
+        "trades": 46,
+        "wins": 46,
+        "wr": 1.0,
+        "pnl": 205.77
+      },
+      "0x62bdbaa502": {
+        "trades": 41,
+        "wins": 41,
+        "wr": 1.0,
+        "pnl": 150.67
+      },
+      "0x66e2711412": {
+        "trades": 6,
+        "wins": 6,
+        "wr": 1.0,
+        "pnl": 75.0
+      },
+      "0xe790950382": {
+        "trades": 5,
+        "wins": 5,
+        "wr": 1.0,
+        "pnl": 49.9
+      },
+      "0x2da9cdcfc0": {
+        "trades": 5,
+        "wins": 5,
+        "wr": 1.0,
+        "pnl": 49.9
+      }
+    },
+    "config": {
+      "lookback_days": 30,
+      "min_wr": 0.55,
+      "min_trades": 10,
+      "max_copy_size": 25.0,
+      "max_daily_exposure": 100.0
+    },
+    "ran_at": "2026-02-25T14:09:41.073158+00:00"
+  },
+  "signals": [],
+  "daily_exposure": 0.0,
+  "daily_cap": 100.0,
+  "updated_at": "2026-02-25T14:30:25.196360+00:00"
+}

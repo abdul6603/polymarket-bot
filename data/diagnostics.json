@@ -1,0 +1,58 @@
+{
+  "timestamp": 1772031374.703491,
+  "checks": {
+    "model_drift": {
+      "status": "insufficient_data",
+      "detail": "0 trades"
+    },
+    "regime_shift": {
+      "status": "insufficient_data"
+    },
+    "api_health": {
+      "status": "healthy",
+      "checks": {
+        "signal_cycle_age_s": 4,
+        "signal_cycle_ok": true,
+        "binance_silence_s": 34,
+        "binance_ok": true
+      }
+    },
+    "liquidity": {
+      "status": "no_data"
+    },
+    "execution": {
+      "status": "no_data"
+    },
+    "indicator_health": {
+      "status": "indicators_failing",
+      "failing_indicators": [
+        {
+          "indicator": "bollinger",
+          "accuracy": 0.318,
+          "total_votes": 211
+        },
+        {
+          "indicator": "rsi",
+          "accuracy": 0.318,
+          "total_votes": 132
+        },
+        {
+          "indicator": "funding_rate",
+          "accuracy": 0.143,
+          "total_votes": 14
+        }
+      ],
+      "suggested_fix": "Indicators underperforming (<45% accuracy): bollinger, rsi, funding_rate. Reduce their weight via weight_learner or disable them. Retrain ML model to adjust feature importance."
+    },
+    "ev_capture": {
+      "status": "insufficient_data"
+    }
+  },
+  "suggested_fixes": [
+    {
+      "check": "indicator_health",
+      "status": "indicators_failing",
+      "fix": "Indicators underperforming (<45% accuracy): bollinger, rsi, funding_rate. Reduce their weight via weight_learner or disable them. Retrain ML model to adjust feature importance."
+    }
+  ]
+}

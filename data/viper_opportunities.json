@@ -1,32 +1,27 @@
 {
   "opportunities": [
     {
-      "id": "622a373f4ec9ae19",
+      "id": "0465d08453811ec7",
       "source": "reddit/r/wallstreetbets",
-      "headline": "Bitcoin falls below $65,000 as Trump tariff moves raise uncertainty",
-      "summary": "&gt;tldr:\n\n&gt;Bitcoin fell more than 5% to below $65,000 on Monday after U.S. President Donald Trump announced plans to raise global tariffs to 15%.\n\n&gt;The drop came as Asian equities rose in early trade, underscoring crypto\u2019s divergence from regional stock markets amid renewed tariff uncertainty.",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1rc58xh/bitcoin_falls_below_65000_as_trump_tariff_moves/",
+      "headline": "Warner Bros. Discovery says Paramount raised its bid to $31 per share",
+      "summary": "$31 is not enough to beat a Netflix deal. Most likely, Netflix will match it.",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1rdtr7y/warner_bros_discovery_says_paramount_raised_its/",
       "relevance_tags": [
-        "trump",
-        "president",
-        "bitcoin",
-        "crypto",
-        "ai",
-        "market",
-        "stock",
-        "tariff"
+        "match",
+        "etf",
+        "ai"
       ],
-      "sentiment": -1.0,
+      "sentiment": 1.0,
       "confidence": 0.8,
-      "timestamp": 1771941079.173522,
+      "timestamp": 1772031246.175373,
       "matched_markets": [],
-      "category": "economy",
+      "category": "sports",
       "raw_data": {
-        "score": 17737,
-        "comments": 1491,
+        "score": 866,
+        "comments": 161,
         "sub": "wallstreetbets"
       },
-      "score": 85
+      "score": 81
     },
     {
       "id": "866ab95a2a4cbe9c",
@@ -42,12 +37,12 @@
       ],
       "sentiment": -1.0,
       "confidence": 0.8,
-      "timestamp": 1771941081.549821,
+      "timestamp": 1772031247.902337,
       "matched_markets": [],
       "category": "crypto",
       "raw_data": {
-        "score": 407,
-        "comments": 262,
+        "score": 1050,
+        "comments": 407,
         "sub": "cryptocurrency"
       },
       "score": 81
@@ -56,7 +51,7 @@
       "id": "e87f547663a80588",
       "source": "reddit/r/wallstreetbets",
       "headline": "FedEx sues for refund of Trump tariffs, days after Supreme Court ruling",
-      "summary": "Score: 902, Comments: 93",
+      "summary": "Score: 5635, Comments: 283",
       "url": "https://reddit.com/r/wallstreetbets/comments/1rddbev/fedex_sues_for_refund_of_trump_tariffs_days_after/",
       "relevance_tags": [
         "trump",
@@ -66,189 +61,190 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.8,
-      "timestamp": 1771941079.1709151,
+      "timestamp": 1772031246.177017,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {
-        "score": 902,
-        "comments": 93,
+        "score": 5635,
+        "comments": 283,
         "sub": "wallstreetbets"
       },
       "score": 78
     },
     {
-      "id": "b4bc2c25f4f28fa8",
+      "id": "54f8fecb4a063688",
       "source": "reddit/r/politics",
-      "headline": "FedEx sues U.S. seeking full refund of Trump tariffs days after Supreme Court ruling",
-      "summary": "Score: 9088, Comments: 310",
-      "url": "https://reddit.com/r/politics/comments/1rcxzlm/fedex_sues_us_seeking_full_refund_of_trump/",
+      "headline": "Democrat wins special state House election in Maine",
+      "summary": "Score: 12718, Comments: 165",
+      "url": "https://reddit.com/r/politics/comments/1re075u/democrat_wins_special_state_house_election_in/",
       "relevance_tags": [
-        "trump",
-        "supreme court",
-        "fed",
-        "tariff"
+        "election",
+        "democrat",
+        "ai"
       ],
       "sentiment": 0.0,
       "confidence": 0.8,
-      "timestamp": 1771941076.924424,
+      "timestamp": 1772031244.255022,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {
-        "score": 9088,
-        "comments": 310,
+        "score": 12718,
+        "comments": 165,
         "sub": "politics"
       },
       "score": 73
     },
     {
-      "id": "3c935707c0688803",
+      "id": "05c8953358f7e2ed",
       "source": "reddit/r/politics",
-      "headline": "Trump Melts Down After Favorite General Sounds Alarm on His War Plotting",
-      "summary": "Score: 18173, Comments: 778",
-      "url": "https://reddit.com/r/politics/comments/1rd03pf/trump_melts_down_after_favorite_general_sounds/",
+      "headline": "Trump Hit by New Epstein Files Bombshell Before Big Speech - An investigation alleges there are more than 50 pages worth of documents missing from the Epstein files that may pertain to allegations against the president.",
+      "summary": "Score: 46863, Comments: 1377",
+      "url": "https://reddit.com/r/politics/comments/1rdpr1m/trump_hit_by_new_epstein_files_bombshell_before/",
+      "relevance_tags": [
+        "trump",
+        "president",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1772031244.256769,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 46863,
+        "comments": 1377,
+        "sub": "politics"
+      },
+      "score": 73
+    },
+    {
+      "id": "5ab36fe8c5c7358b",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Trump to announce data center energy deals during State of the Union",
+      "summary": "President Donald Trump plans to use his 2026 State of the Union address to highlight **new data center energy agreements** with major tech firms that are intended to address rising electricity demand tied to AI infrastructure. The administration has been negotiating **\u201cratepayer protection\u201d pledges** under which companies such as Microsoft, Google, OpenAI, Amazon, and Meta would publicly commit to",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1rdrvaz/trump_to_announce_data_center_energy_deals_during/",
+      "relevance_tags": [
+        "trump",
+        "president",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1772031246.1750379,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 1430,
+        "comments": 296,
+        "sub": "wallstreetbets"
+      },
+      "score": 73
+    },
+    {
+      "id": "8cbddb4a62ae3a7c",
+      "source": "reddit/r/politics",
+      "headline": "Trump\u2019s Epstein Scandal Takes Damning Turn as Dem Drops New Bombshell",
+      "summary": "Score: 4645, Comments: 326",
+      "url": "https://reddit.com/r/politics/comments/1rebd0w/trumps_epstein_scandal_takes_damning_turn_as_dem/",
       "relevance_tags": [
         "trump"
       ],
       "sentiment": -1.0,
       "confidence": 0.8,
-      "timestamp": 1771941076.923421,
+      "timestamp": 1772031244.2535522,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {
-        "score": 18173,
-        "comments": 778,
+        "score": 4645,
+        "comments": 326,
         "sub": "politics"
       },
       "score": 72
     },
     {
-      "id": "c768bff73b3429a0",
-      "source": "reddit/r/cryptocurrency",
-      "headline": "Michael Saylor\u2019s Strategy Acquires Another 592 Bitcoin For $40 Million",
-      "summary": "Score: 309, Comments: 62",
-      "url": "https://reddit.com/r/CryptoCurrency/comments/1rcpttn/michael_saylors_strategy_acquires_another_592/",
+      "id": "413cb89509665a16",
+      "source": "reddit/r/politics",
+      "headline": "\u2018Didn\u2019t mention Epstein once\u2019: Americans react to Trump\u2019s record-breaking \u2018nearly two hours of lies\u2019 State of the Union",
+      "summary": "Score: 4894, Comments: 240",
+      "url": "https://reddit.com/r/politics/comments/1re9l4p/didnt_mention_epstein_once_americans_react_to/",
       "relevance_tags": [
-        "bitcoin"
+        "trump"
       ],
-      "sentiment": 0.0,
+      "sentiment": 1.0,
       "confidence": 0.8,
-      "timestamp": 1771941081.551044,
+      "timestamp": 1772031244.253922,
       "matched_markets": [],
-      "category": "crypto",
+      "category": "politics",
       "raw_data": {
-        "score": 309,
-        "comments": 62,
-        "sub": "cryptocurrency"
+        "score": 4894,
+        "comments": 240,
+        "sub": "politics"
       },
-      "score": 69
+      "score": 72
     },
     {
-      "id": "5f71ee0e4847c938",
-      "source": "reddit/r/cryptocurrency",
-      "headline": "Strategy Acquires 592 BTC, Total Holdings Now 717,722 Bitcoin",
-      "summary": "Score: 260, Comments: 87",
-      "url": "https://reddit.com/r/CryptoCurrency/comments/1rcijoj/strategy_acquires_592_btc_total_holdings_now/",
-      "relevance_tags": [
-        "bitcoin",
-        "btc"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.76,
-      "timestamp": 1771941081.551955,
-      "matched_markets": [],
-      "category": "crypto",
-      "raw_data": {
-        "score": 260,
-        "comments": 87,
-        "sub": "cryptocurrency"
-      },
-      "score": 68
-    },
-    {
-      "id": "d7d866e4913380e9",
+      "id": "3edd900b058e368a",
       "source": "reddit/r/wallstreetbets",
-      "headline": "IBM crashed 13% because the market found out LLMs can write code, bought $190k",
-      "summary": "Totally insane drop\n\n  \nEasiest buy of the year\n\n\n\nhttps://preview.redd.it/lpbk2nqdmblg1.png?width=712&amp;format=png&amp;auto=webp&amp;s=5d8c907d278a5d8e71b3392c453a8f7d8ae800ef\n\n  \n\n\nhttps://preview.redd.it/6ledavfcmblg1.png?width=941&amp;format=png&amp;auto=webp&amp;s=3f45299d1eafe6b07657b3a19edac2d9c27b1aaa\n\n",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1rcw869/ibm_crashed_13_because_the_market_found_out_llms/",
+      "headline": "'$7 billion break-up fee': Warner Bros. Discovery says Paramount\u2019s new bid might top Netflix\u2019s",
+      "summary": "Score: 1171, Comments: 238",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1re2zku/7_billion_breakup_fee_warner_bros_discovery_says/",
       "relevance_tags": [
+        "etf"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.8,
+      "timestamp": 1772031246.173645,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 1171,
+        "comments": 238,
+        "sub": "wallstreetbets"
+      },
+      "score": 72
+    },
+    {
+      "id": "40da7d5d6108b1fe",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "DHT Gains +$0.5 mil",
+      "summary": "Yolo'd DHT monthlies because I thought we were striking Iran before Ramadan. Didn't happen, instead some guys Sinokor started hoarding VLCC's, tanker rates spiking up. Best way to profit for all the wrong reasons. \n\nhttps://www.reddit.com/r/wallstreetbets/comments/1r7azho/yolo_bet_that_we_smack_iran_after_market_close/",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1rdqc2y/dht_gains_05_mil/",
+      "relevance_tags": [
+        "ai",
         "market"
       ],
-      "sentiment": -1.0,
+      "sentiment": 1.0,
       "confidence": 0.8,
-      "timestamp": 1771941079.171513,
+      "timestamp": 1772031246.178167,
       "matched_markets": [],
-      "category": "economy",
+      "category": "culture",
       "raw_data": {
-        "score": 2672,
-        "comments": 478,
+        "score": 629,
+        "comments": 95,
         "sub": "wallstreetbets"
       },
-      "score": 67
+      "score": 72
     },
     {
-      "id": "a45c0a8c4e421519",
+      "id": "f92e35d484f18a91",
       "source": "reddit/r/wallstreetbets",
-      "headline": "AMD clinches second mega chip supply deal, this time with Meta",
-      "summary": "Score: 207, Comments: 67",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1rdeku3/amd_clinches_second_mega_chip_supply_deal_this/",
+      "headline": "Novo just cut Wegovy/Ozempic prices up to 50% the day after CagriSema failed.",
+      "summary": "Novo announced yesterday they're cutting Wegovy list prices 50% and Ozempic prices up to 40%. This came one day after CagriSema \u2014 their next-gen obesity drug that was supposed to close the gap on Lilly's Zepbound \u2014 missed the primary endpoint in a head-to-head trial. NVO is down 60% from its 2024 peak. Copenhagen shares at their lowest since June 2021.\n\n**I went back and found every major case of ",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1rdvepp/novo_just_cut_wegovyozempic_prices_up_to_50_the/",
       "relevance_tags": [
-        "sec"
+        "ai"
       ],
       "sentiment": 0.0,
-      "confidence": 0.707,
-      "timestamp": 1771941079.17195,
-      "matched_markets": [],
-      "category": "crypto",
-      "raw_data": {
-        "score": 207,
-        "comments": 67,
-        "sub": "wallstreetbets"
-      },
-      "score": 67
-    },
-    {
-      "id": "20e03709aa5b796e",
-      "source": "reddit/r/wallstreetbets",
-      "headline": "Novo Nordisk sinks 15% after weight loss drug fails to match Eli Lilly's in trial",
-      "summary": "rip bagholders ",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1rcerpx/novo_nordisk_sinks_15_after_weight_loss_drug/",
-      "relevance_tags": [
-        "match",
-        "ai"
-      ],
-      "sentiment": -1.0,
       "confidence": 0.8,
-      "timestamp": 1771941079.173714,
+      "timestamp": 1772031246.176769,
       "matched_markets": [],
-      "category": "sports",
+      "category": "culture",
       "raw_data": {
-        "score": 1735,
-        "comments": 187,
+        "score": 624,
+        "comments": 162,
         "sub": "wallstreetbets"
       },
-      "score": 67
-    },
-    {
-      "id": "6e013babec01eedd",
-      "source": "reddit/r/wallstreetbets",
-      "headline": "I decided to be a \ud83c\udf08 \ud83d\udc3b today 0DTE",
-      "summary": "I was down 200k since April, YOLO\u2019d 50k into 0DTE spy puts a few minutes after open today. I\u2019m broken even again, I need to stop now, I definitely have a problem.",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1rcorvh/i_decided_to_be_a_today_0dte/",
-      "relevance_tags": [
-        "defi",
-        "ai"
-      ],
-      "sentiment": -1.0,
-      "confidence": 0.8,
-      "timestamp": 1771941079.173981,
-      "matched_markets": [],
-      "category": "crypto",
-      "raw_data": {
-        "score": 435,
-        "comments": 100,
-        "sub": "wallstreetbets"
-      },
-      "score": 67
+      "score": 69
     },
     {
       "id": "0281b17fdea3664f",
@@ -261,636 +257,624 @@
         "ai"
       ],
       "sentiment": 1.0,
-      "confidence": 0.527,
-      "timestamp": 1771941074.961299,
+      "confidence": 0.526,
+      "timestamp": 1772031242.5050392,
       "matched_markets": [],
       "category": "sports",
       "raw_data": {
-        "score": 27,
+        "score": 26,
         "comments": 67,
         "sub": "sportsbook"
       },
       "score": 65
     },
     {
-      "id": "42253138d94d570d",
-      "source": "reddit/r/politics",
-      "headline": "Justice Department withheld and removed some Epstein files related to Trump",
-      "summary": "Score: 1249, Comments: 68",
-      "url": "https://reddit.com/r/politics/comments/1rdcv0z/justice_department_withheld_and_removed_some/",
-      "relevance_tags": [
-        "trump"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771941076.9236841,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {
-        "score": 1249,
-        "comments": 68,
-        "sub": "politics"
-      },
-      "score": 64
-    },
-    {
-      "id": "5e4bf746e4369221",
-      "source": "reddit/r/politics",
-      "headline": "House Democrats bringing Jeffrey Epstein survivors to Trump's State of the Union speech",
-      "summary": "Score: 18321, Comments: 445",
-      "url": "https://reddit.com/r/politics/comments/1rcuosa/house_democrats_bringing_jeffrey_epstein/",
-      "relevance_tags": [
-        "trump",
-        "democrat"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771941076.924157,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {
-        "score": 18321,
-        "comments": 445,
-        "sub": "politics"
-      },
-      "score": 64
-    },
-    {
-      "id": "3ecf1bdd74b419fd",
-      "source": "reddit/r/politics",
-      "headline": "Trump Called USA Hockey Team To Congratulate Them, Then Made Disgusting Joke On Women's Team \u2014 And It Was All Caught On Video",
-      "summary": "Score: 23165, Comments: 1167",
-      "url": "https://reddit.com/r/politics/comments/1rcqc5y/trump_called_usa_hockey_team_to_congratulate_them/",
-      "relevance_tags": [
-        "trump",
-        "hockey"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771941076.9251342,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {
-        "score": 23165,
-        "comments": 1167,
-        "sub": "politics"
-      },
-      "score": 64
-    },
-    {
-      "id": "27238a53e7d4c3ec",
-      "source": "reddit/r/politics",
-      "headline": "Former ICE instructor testifies agents were trained to discard constitutional rights",
-      "summary": "Score: 9229, Comments: 174",
-      "url": "https://reddit.com/r/politics/comments/1rctonq/former_ice_instructor_testifies_agents_were/",
-      "relevance_tags": [
-        "ai"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771941076.925303,
-      "matched_markets": [],
-      "category": "culture",
-      "raw_data": {
-        "score": 9229,
-        "comments": 174,
-        "sub": "politics"
-      },
-      "score": 64
-    },
-    {
-      "id": "8787f374f59c6a49",
-      "source": "reddit/r/politics",
-      "headline": "Trump DOJ Email Calling Epstein\u2019s Death \u2018Murder\u2019 Surfaces: The Email Suggests That Epstein\u2019s Death May Have Been Investigated as a Murder Long After Officials Declared That He Died by Suicide.",
-      "summary": "Score: 5322, Comments: 176",
-      "url": "https://reddit.com/r/politics/comments/1rcw7s1/trump_doj_email_calling_epsteins_death_murder/",
-      "relevance_tags": [
-        "trump",
-        "ai"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771941076.925566,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {
-        "score": 5322,
-        "comments": 176,
-        "sub": "politics"
-      },
-      "score": 64
-    },
-    {
-      "id": "887c0bab0cb802d9",
-      "source": "reddit/r/politics",
-      "headline": "America is realising that Trump is failing \u2013 just look at the polls",
-      "summary": "Score: 512, Comments: 103",
-      "url": "https://reddit.com/r/politics/comments/1rdd426/america_is_realising_that_trump_is_failing_just/",
-      "relevance_tags": [
-        "trump",
-        "ai"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771941076.925749,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {
-        "score": 512,
-        "comments": 103,
-        "sub": "politics"
-      },
-      "score": 64
-    },
-    {
-      "id": "e229be6428777c78",
-      "source": "reddit/r/politics",
-      "headline": "Republican Lawmakers' Bid to Execute Tennessee Abortion Patients Slammed as 'Christofascism'",
-      "summary": "Score: 312, Comments: 46",
-      "url": "https://reddit.com/r/politics/comments/1rdev6k/republican_lawmakers_bid_to_execute_tennessee/",
-      "relevance_tags": [
-        "republican"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771941076.926077,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {
-        "score": 312,
-        "comments": 46,
-        "sub": "politics"
-      },
-      "score": 64
-    },
-    {
-      "id": "46e12e517486c01b",
-      "source": "reddit/r/wallstreetbets",
-      "headline": "OpenAI cuts spending plan to $600B from $1.4T through 2030",
-      "summary": "They also expect $280B in revenue in 2030 from $13B last year, so I guess subsidized AIs might slowly fade away. I wonder how this will affect AI adoption when the companies\u2019 bills from OpenAI start multiplying.",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1rd3460/openai_cuts_spending_plan_to_600b_from_14t/",
-      "relevance_tags": [
-        "ai"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771941079.17036,
-      "matched_markets": [],
-      "category": "culture",
-      "raw_data": {
-        "score": 6221,
-        "comments": 631,
-        "sub": "wallstreetbets"
-      },
-      "score": 64
-    },
-    {
-      "id": "03f85e7a3036c7ce",
-      "source": "reddit/r/wallstreetbets",
-      "headline": "Data centres seek credit ratings to unlock billions in funding for AI push",
-      "summary": "Another bubble in the making \ud83d\udcc8\ud83d\udcc9",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1rcofsj/data_centres_seek_credit_ratings_to_unlock/",
-      "relevance_tags": [
-        "ai"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771941079.172686,
-      "matched_markets": [],
-      "category": "culture",
-      "raw_data": {
-        "score": 1135,
-        "comments": 188,
-        "sub": "wallstreetbets"
-      },
-      "score": 64
-    },
-    {
-      "id": "d65823a4b8ce308c",
+      "id": "cde90aefeadb30bb",
       "source": "reddit/r/cryptocurrency",
-      "headline": "Vitalik Buterin dumps over $8m Ethereum as price sinks below $1,900",
-      "summary": "Score: 605, Comments: 104",
-      "url": "https://reddit.com/r/CryptoCurrency/comments/1rcieyh/vitalik_buterin_dumps_over_8m_ethereum_as_price/",
+      "headline": "Crypto.com Is One Step From Becoming A US National Trust Bank",
+      "summary": "Score: 155, Comments: 42",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1rdja48/cryptocom_is_one_step_from_becoming_a_us_national/",
       "relevance_tags": [
-        "ethereum",
-        "eth"
+        "crypto"
       ],
       "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771941081.5512729,
+      "confidence": 0.655,
+      "timestamp": 1772031247.902613,
       "matched_markets": [],
       "category": "crypto",
       "raw_data": {
-        "score": 605,
-        "comments": 104,
+        "score": 155,
+        "comments": 42,
         "sub": "cryptocurrency"
       },
-      "score": 64
+      "score": 65
     },
     {
-      "id": "9a705b3e59bb0ce4",
-      "source": "reddit/r/cryptocurrency",
-      "headline": "Crime Season? Binance holds ~96% of the supply of USD1 the Trump Family Stable Coin.",
-      "summary": "[https://intel.arkm.com/explorer/token/usd1-wlfi](https://intel.arkm.com/explorer/token/usd1-wlfi)",
-      "url": "https://reddit.com/r/CryptoCurrency/comments/1rcwrdm/crime_season_binance_holds_96_of_the_supply_of/",
-      "relevance_tags": [
-        "trump",
-        "token"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.715,
-      "timestamp": 1771941081.5507798,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {
-        "score": 215,
-        "comments": 33,
-        "sub": "cryptocurrency"
-      },
-      "score": 62
-    },
-    {
-      "id": "eede1fd1dd875788",
-      "source": "reddit/r/sportsbook",
-      "headline": "Pick of the Day - 2/24/26 (Tuesday)",
-      "summary": "Free Reddit Pick of the Day\n\n* Post **ONE** pick. No side picks in comments. You can provide a link to your other picks in the other daily threads.\n* **TWO** leg parlays and teasers are **allowed**. Must stay within odds requirements. \n* Must be between -200 and +200 (1.5 and 3.0) odds.\n* Bet size should be between 1 and 5 units. No \"100 unit locks\"\n* Provide a write up on why this is your Pick of",
-      "url": "https://reddit.com/r/sportsbook/comments/1rcvnm6/pick_of_the_day_22426_tuesday/",
-      "relevance_tags": [
-        "ai"
-      ],
-      "sentiment": 1.0,
-      "confidence": 0.557,
-      "timestamp": 1771941074.9619641,
-      "matched_markets": [],
-      "category": "culture",
-      "raw_data": {
-        "score": 57,
-        "comments": 137,
-        "sub": "sportsbook"
-      },
-      "score": 61
-    },
-    {
-      "id": "03ab7dbbd66ab56f",
+      "id": "518a54323cf2a32f",
       "source": "reddit/r/politics",
-      "headline": "Trump has turned the US into a laughing stock",
-      "summary": "Score: 1593, Comments: 143",
-      "url": "https://reddit.com/r/politics/comments/1rdbgfr/trump_has_turned_the_us_into_a_laughing_stock/",
+      "headline": "Trump\u2019s ICE is quietly stockpiling weaponry-and it should alarm us all",
+      "summary": "Score: 2684, Comments: 119",
+      "url": "https://reddit.com/r/politics/comments/1reapco/trumps_ice_is_quietly_stockpiling_weaponryand_it/",
       "relevance_tags": [
         "trump",
         "stock"
       ],
       "sentiment": 0.0,
       "confidence": 0.8,
-      "timestamp": 1771941076.92391,
+      "timestamp": 1772031244.2542138,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {
-        "score": 1593,
-        "comments": 143,
+        "score": 2684,
+        "comments": 119,
         "sub": "politics"
       },
-      "score": 59
+      "score": 64
     },
     {
-      "id": "ccb1841ccf992658",
+      "id": "b32686e79a5a6413",
       "source": "reddit/r/politics",
-      "headline": "US women's hockey team declines Trump's State of the Union invite",
-      "summary": "Score: 47008, Comments: 1307",
-      "url": "https://reddit.com/r/politics/comments/1rcpwwj/us_womens_hockey_team_declines_trumps_state_of/",
-      "relevance_tags": [
-        "trump",
-        "hockey"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771941076.92491,
-      "matched_markets": [],
-      "category": "politics",
-      "raw_data": {
-        "score": 47008,
-        "comments": 1307,
-        "sub": "politics"
-      },
-      "score": 59
-    },
-    {
-      "id": "ee77e31c35d448ab",
-      "source": "reddit/r/wallstreetbets",
-      "headline": "I see fat people everywhere - 100k on NVO",
-      "summary": "Like title said, I keep seeing fat people everywhere I go. They are now valued at even cheaper than pre- ozempic price. And pill forms about to come out. WHO doesn\u2019t want skinny pills. 2500 shares  @ $39.73",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1rcv8bt/i_see_fat_people_everywhere_100k_on_nvo/",
-      "relevance_tags": [
-        "ai"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771941079.173162,
-      "matched_markets": [],
-      "category": "culture",
-      "raw_data": {
-        "score": 370,
-        "comments": 132,
-        "sub": "wallstreetbets"
-      },
-      "score": 59
-    },
-    {
-      "id": "cb2884c20f26105d",
-      "source": "reddit/r/cryptocurrency",
-      "headline": "Wealthy spouses are hiding crypto assets in divorce cases, say lawyers",
-      "summary": "Score: 99, Comments: 42",
-      "url": "https://reddit.com/r/CryptoCurrency/comments/1rd9wc2/wealthy_spouses_are_hiding_crypto_assets_in/",
-      "relevance_tags": [
-        "crypto"
-      ],
-      "sentiment": 0.0,
-      "confidence": 0.599,
-      "timestamp": 1771941081.550432,
-      "matched_markets": [],
-      "category": "crypto",
-      "raw_data": {
-        "score": 99,
-        "comments": 42,
-        "sub": "cryptocurrency"
-      },
-      "score": 59
-    },
-    {
-      "id": "c7a91f3bd87bf324",
-      "source": "reddit/r/cryptocurrency",
-      "headline": "Trump-Linked USD1 Stablecoin Briefly Depegs, WLFI Under Fire",
-      "summary": "Score: 81, Comments: 31",
-      "url": "https://reddit.com/r/CryptoCurrency/comments/1rctqxm/trumplinked_usd1_stablecoin_briefly_depegs_wlfi/",
+      "headline": "Rep. Al Green ejected from Trump's State of the Union after holding a 'Black people aren't apes' sign",
+      "summary": "Score: 21915, Comments: 771",
+      "url": "https://reddit.com/r/politics/comments/1re0s5i/rep_al_green_ejected_from_trumps_state_of_the/",
       "relevance_tags": [
         "trump"
       ],
       "sentiment": 0.0,
-      "confidence": 0.581,
-      "timestamp": 1771941081.551718,
+      "confidence": 0.8,
+      "timestamp": 1772031244.254512,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {
-        "score": 81,
-        "comments": 31,
-        "sub": "cryptocurrency"
+        "score": 21915,
+        "comments": 771,
+        "sub": "politics"
       },
-      "score": 59
+      "score": 64
     },
     {
-      "id": "67735f4aac0b648f",
+      "id": "2937a5ffa5b2c1a6",
+      "source": "reddit/r/politics",
+      "headline": "Majority of Supreme Court Justices Skip Trump's State of the Union After He Called Them a 'Disgrace to Our Nation'",
+      "summary": "Score: 15761, Comments: 347",
+      "url": "https://reddit.com/r/politics/comments/1re1snd/majority_of_supreme_court_justices_skip_trumps/",
+      "relevance_tags": [
+        "trump",
+        "supreme court"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1772031244.2547982,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 15761,
+        "comments": 347,
+        "sub": "politics"
+      },
+      "score": 64
+    },
+    {
+      "id": "756dba96095ea7df",
+      "source": "reddit/r/politics",
+      "headline": "Trump\u2019s delusional State of the Union address",
+      "summary": "Score: 4477, Comments: 329",
+      "url": "https://reddit.com/r/politics/comments/1re4lsy/trumps_delusional_state_of_the_union_address/",
+      "relevance_tags": [
+        "trump"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1772031244.2552588,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 4477,
+        "comments": 329,
+        "sub": "politics"
+      },
+      "score": 64
+    },
+    {
+      "id": "abf1a6dbd0963a8a",
+      "source": "reddit/r/politics",
+      "headline": "Trump celebrates 2.4 million Americans \"lifted\" off SNAP benefits after his tax-cut law slashed funding and tightened work requirements",
+      "summary": "Score: 4351, Comments: 282",
+      "url": "https://reddit.com/r/politics/comments/1re1qp2/trump_celebrates_24_million_americans_lifted_off/",
+      "relevance_tags": [
+        "trump"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1772031244.2555351,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 4351,
+        "comments": 282,
+        "sub": "politics"
+      },
+      "score": 64
+    },
+    {
+      "id": "e715055657ae5ea6",
+      "source": "reddit/r/politics",
+      "headline": "Democrats celebrate three election wins during State of the Union",
+      "summary": "Score: 3399, Comments: 121",
+      "url": "https://reddit.com/r/politics/comments/1re38wc/democrats_celebrate_three_election_wins_during/",
+      "relevance_tags": [
+        "election",
+        "democrat"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1772031244.255758,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 3399,
+        "comments": 121,
+        "sub": "politics"
+      },
+      "score": 64
+    },
+    {
+      "id": "3ac7054963ad4648",
+      "source": "reddit/r/politics",
+      "headline": "NPR finds DOJ withheld, removed some Epstein files related to Trump",
+      "summary": "Score: 14162, Comments: 169",
+      "url": "https://reddit.com/r/politics/comments/1rdtzda/npr_finds_doj_withheld_removed_some_epstein_files/",
+      "relevance_tags": [
+        "trump"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1772031244.255975,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 14162,
+        "comments": 169,
+        "sub": "politics"
+      },
+      "score": 64
+    },
+    {
+      "id": "645393d88c319fe9",
       "source": "reddit/r/wallstreetbets",
-      "headline": "Daily Discussion Thread for February 24, 2026",
-      "summary": "This post contains content not supported on old Reddit. [Click here to view the full post](https://sh.reddit.com/r/wallstreetbets/comments/1rdeei8)",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1rdeei8/daily_discussion_thread_for_february_24_2026/",
+      "headline": "AMD &amp; MU Saved My Ass, +200K and still holding MU",
+      "summary": "Portfolio was on life support, bleeding out like a true regard. Then MU and AMD rolled up with the defibrillator: shock +$232k (144%). Memory chips and red-team rockets brought me back from the dead. \n\nMU Memory King reigns supreme \ud83d\udc51\ud83d\udcc8 Tendies resurrected",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1rdzx53/amd_mu_saved_my_ass_200k_and_still_holding_mu/",
+      "relevance_tags": [
+        "defi"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.666,
+      "timestamp": 1772031246.179061,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 166,
+        "comments": 41,
+        "sub": "wallstreetbets"
+      },
+      "score": 64
+    },
+    {
+      "id": "3a84b6a717a458bf",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "Bitcoin loses over 20,000 millionaires since the start of 2026",
+      "summary": "Score: 516, Comments: 37",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1re691u/bitcoin_loses_over_20000_millionaires_since_the/",
+      "relevance_tags": [
+        "bitcoin",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1772031247.9009259,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 516,
+        "comments": 37,
+        "sub": "cryptocurrency"
+      },
+      "score": 64
+    },
+    {
+      "id": "77490f4d1b222110",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "As of late February 2026, Bitcoin has been declared \"dead\" approximately 467 times, if you invested $100 each time, you'd have approximately $66M",
+      "summary": "Score: 547, Comments: 108",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1rdrv37/as_of_late_february_2026_bitcoin_has_been/",
+      "relevance_tags": [
+        "bitcoin"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1772031247.901207,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 547,
+        "comments": 108,
+        "sub": "cryptocurrency"
+      },
+      "score": 64
+    },
+    {
+      "id": "314f2a99623e02b8",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "First 5 figure month!",
+      "summary": "Made 138% in 2025 when I solidified my strategy with shares only. Started 2026 with just over 20k and decided to scale into options for my big winners to juice returns and protect profits. Ended up working even better than I thought because I made 102% in January alone thanks to South Korea for 14% and silver for the other 88%, making money from both the way up and as the bubble popped with silver",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1re49t3/first_5_figure_month/",
+      "relevance_tags": [
+        "winner",
+        "sol"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.621,
+      "timestamp": 1772031246.177579,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {
+        "score": 121,
+        "comments": 45,
+        "sub": "wallstreetbets"
+      },
+      "score": 63
+    },
+    {
+      "id": "16b6d7d64cc919a0",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "Meta To Begin Stablecoin Integration in 2026 on Ethereum",
+      "summary": "Score: 274, Comments: 59",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1rdu9gc/meta_to_begin_stablecoin_integration_in_2026_on/",
+      "relevance_tags": [
+        "ethereum",
+        "eth"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.774,
+      "timestamp": 1772031247.901474,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 274,
+        "comments": 59,
+        "sub": "cryptocurrency"
+      },
+      "score": 63
+    },
+    {
+      "id": "fce20409bc969a63",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "Solo Bitcoin Miner Nabs $200K After Renting $75 Worth of Hash Power",
+      "summary": "Score: 273, Comments: 22",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1rds1db/solo_bitcoin_miner_nabs_200k_after_renting_75/",
+      "relevance_tags": [
+        "bitcoin",
+        "sol"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.773,
+      "timestamp": 1772031247.9016929,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 273,
+        "comments": 22,
+        "sub": "cryptocurrency"
+      },
+      "score": 63
+    },
+    {
+      "id": "bb04e8eb10d7ff06",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "Bitcoin price news: BTC zoomes above $65,000 as bullish 'double-bottom' hopes build",
+      "summary": "Score: 22, Comments: 29",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1re4qeq/bitcoin_price_news_btc_zoomes_above_65000_as/",
+      "relevance_tags": [
+        "bitcoin",
+        "btc"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.522,
+      "timestamp": 1772031247.90186,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 22,
+        "comments": 29,
+        "sub": "cryptocurrency"
+      },
+      "score": 62
+    },
+    {
+      "id": "91d35efb8e88bc6d",
+      "source": "reddit/r/sportsbook",
+      "headline": "Pick of the Day - 2/25/26 (Wednesday)",
+      "summary": "Free Reddit Pick of the Day\n\n* Post **ONE** pick. No side picks in comments. You can provide a link to your other picks in the other daily threads.\n* **TWO** leg parlays and teasers are **allowed**. Must stay within odds requirements. \n* Must be between -200 and +200 (1.5 and 3.0) odds.\n* Bet size should be between 1 and 5 units. No \"100 unit locks\"\n* Provide a write up on why this is your Pick of",
+      "url": "https://reddit.com/r/sportsbook/comments/1rduuzp/pick_of_the_day_22526_wednesday/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.563,
+      "timestamp": 1772031242.505515,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {
+        "score": 63,
+        "comments": 166,
+        "sub": "sportsbook"
+      },
+      "score": 61
+    },
+    {
+      "id": "fda0cb01d9a12ba7",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Here we go again",
+      "summary": "Score: 683, Comments: 36",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1reck2w/here_we_go_again/",
       "relevance_tags": [
         "ai"
       ],
       "sentiment": 0.0,
-      "confidence": 0.609,
-      "timestamp": 1771941079.1695511,
+      "confidence": 0.8,
+      "timestamp": 1772031246.173116,
       "matched_markets": [],
       "category": "culture",
       "raw_data": {
-        "score": 109,
-        "comments": 1461,
+        "score": 683,
+        "comments": 36,
         "sub": "wallstreetbets"
       },
-      "score": 54
+      "score": 59
     },
     {
-      "id": "054d0748ddee93a4",
-      "source": "reddit/r/sportsbook",
-      "headline": "NBA Betting and Picks - 2/24/26 (Tuesday)",
-      "summary": "NBA Betting Picks and NBA Sports Betting Odds for Tuesday, February 24, 2026\n\n\n|Time (ET)| Teams | ML | Spread | Total |\n|:-:|:-:|:-:|:-:|:-:|\n|2/24|Philadelphia 76ers|[-475](https://sportsbook.link/)|[-9.5 -120](https://sportsbook.link/)|[o233.5 -110](https://sportsbook.link/)|\n|7:10 PM|Indiana Pacers|[+360](https://sportsbook.link/)|[+9.5 +100](https://sportsbook.link/)| [u233.5 -110](https://sp",
-      "url": "https://reddit.com/r/sportsbook/comments/1rd4rn5/nba_betting_and_picks_22426_tuesday/",
+      "id": "da72947b6468d97b",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "OpenAI\u2019s planned cash burn is insane...",
+      "summary": "I see a lot of red in the image; I don't know if it's a coincidence.",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1rdhg4h/openais_planned_cash_burn_is_insane/",
       "relevance_tags": [
-        "nba"
+        "ai"
       ],
       "sentiment": 0.0,
-      "confidence": 0.502,
-      "timestamp": 1771941074.963131,
+      "confidence": 0.8,
+      "timestamp": 1772031246.1739578,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {
+        "score": 22488,
+        "comments": 1886,
+        "sub": "wallstreetbets"
+      },
+      "score": 59
+    },
+    {
+      "id": "74b580a744ce7745",
+      "source": "reddit/r/politics",
+      "headline": "Discussion Thread: 2026 State of the Union Address",
+      "summary": "Tonight's address is scheduled to start at 9 p.m. Eastern.\n\n**News, Analysis, and Fact Checking**\n\n- AP: [5 questions heading into Trump\u2019s State of the Union address](https://apnews.com/article/state-of-union-trump-takeaways-fec4b2cf2de394188b4b9e89d2d24de6)\n\n- NPR: [What you need to know about tonight's State of the Union address](https://www.npr.org/2026/02/24/nx-s1-5717048/trump-congress-state-",
+      "url": "https://reddit.com/r/politics/comments/1rdx65z/discussion_thread_2026_state_of_the_union_address/",
+      "relevance_tags": [
+        "trump",
+        "congress"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.681,
+      "timestamp": 1772031244.2531672,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 181,
+        "comments": 17716,
+        "sub": "politics"
+      },
+      "score": 56
+    },
+    {
+      "id": "c4d62d34a410f6a6",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Daily Discussion Thread for February 25, 2026",
+      "summary": "This post contains content not supported on old Reddit. [Click here to view the full post](https://sh.reddit.com/r/wallstreetbets/comments/1rebc6n)",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1rebc6n/daily_discussion_thread_for_february_25_2026/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.664,
+      "timestamp": 1772031246.172752,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {
+        "score": 164,
+        "comments": 2770,
+        "sub": "wallstreetbets"
+      },
+      "score": 56
+    },
+    {
+      "id": "84bf5466ec42d20d",
+      "source": "reddit/r/sportsbook",
+      "headline": "NCAABB College Basketball Betting and Picks - 2/25/26 (Wednesday)",
+      "summary": "NCAABB College Basketball Betting Picks and College Basketball Sports Betting Odds for Wednesday, February 25, 2026\n\n\n|Time (ET)| Teams | ML | Spread | Total |\n|:-:|:-:|:-:|:-:|:-:|\n|2/25|Bucknell|[+135](https://sportsbook.link/)|[+3.5 -115](https://sportsbook.link/)|[o142.5 -112](https://sportsbook.link/)|\n|11:00 AM|Army|[-165](https://sportsbook.link/)|[-3.5 -105](https://sportsbook.link/)| [u14",
+      "url": "https://reddit.com/r/sportsbook/comments/1re36kt/ncaabb_college_basketball_betting_and_picks_22526/",
+      "relevance_tags": [
+        "basketball"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.506,
+      "timestamp": 1772031242.506046,
       "matched_markets": [],
       "category": "sports",
       "raw_data": {
-        "score": 2,
-        "comments": 20,
+        "score": 6,
+        "comments": 30,
         "sub": "sportsbook"
       },
       "score": 52
     },
     {
-      "id": "0565d423983cd822",
+      "id": "12c5952dfa15afb8",
       "source": "reddit/r/sportsbook",
-      "headline": "Tennis Betting and Picks Daily Discussion - 2/24/26 (Tuesday)",
-      "summary": "Score: 4, Comments: 142",
-      "url": "https://reddit.com/r/sportsbook/comments/1rcvmwm/tennis_betting_and_picks_daily_discussion_22426/",
+      "headline": "NBA Betting and Picks - 2/25/26 (Wednesday)",
+      "summary": "NBA Betting Picks and NBA Sports Betting Odds for Wednesday, February 25, 2026\n\n\n|Time (ET)| Teams | ML | Spread | Total |\n|:-:|:-:|:-:|:-:|:-:|\n|2/25|Oklahoma City Thunder|[+260](https://sportsbook.link/)|[+8.0 -114](https://sportsbook.link/)|[o220.5 -110](https://sportsbook.link/)|\n|7:30 PM|Detroit Pistons|[-325](https://sportsbook.link/)|[-8.0 -106](https://sportsbook.link/)| [u220.5 -110](http",
+      "url": "https://reddit.com/r/sportsbook/comments/1re34oc/nba_betting_and_picks_22526_wednesday/",
+      "relevance_tags": [
+        "nba"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.503,
+      "timestamp": 1772031242.506578,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {
+        "score": 3,
+        "comments": 23,
+        "sub": "sportsbook"
+      },
+      "score": 52
+    },
+    {
+      "id": "aa72f6e13b020a08",
+      "source": "reddit/r/sportsbook",
+      "headline": "Tennis Betting and Picks Daily Discussion - 2/25/26 (Wednesday)",
+      "summary": "Score: 6, Comments: 110",
+      "url": "https://reddit.com/r/sportsbook/comments/1rduue0/tennis_betting_and_picks_daily_discussion_22526/",
       "relevance_tags": [
         "tennis",
         "ai"
       ],
       "sentiment": 0.0,
-      "confidence": 0.504,
-      "timestamp": 1771941074.963327,
+      "confidence": 0.506,
+      "timestamp": 1772031242.507046,
       "matched_markets": [],
       "category": "sports",
       "raw_data": {
-        "score": 4,
-        "comments": 142,
+        "score": 6,
+        "comments": 110,
         "sub": "sportsbook"
       },
       "score": 52
     },
     {
-      "id": "cb79a0d0ce0ff441",
+      "id": "2d1720d46a5877a3",
       "source": "reddit/r/cryptocurrency",
-      "headline": "Daily Crypto Discussion - February 24, 2026 (GMT+0)",
+      "headline": "Daily Crypto Discussion - February 25, 2026 (GMT+0)",
       "summary": "**Welcome to the Daily Crypto Discussion thread. Please read the disclaimer and rules before participating.**\n\n\u00a0\n\n# Disclaimer:\n\nConsider all information posted here with several liberal heaps of salt, and always cross check any information you may read on this thread with known sources. Any trade information posted in this open thread may be highly misleading, and could be an attempt to manipulat",
-      "url": "https://reddit.com/r/CryptoCurrency/comments/1rd02io/daily_crypto_discussion_february_24_2026_gmt0/",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1rdysfj/daily_crypto_discussion_february_25_2026_gmt0/",
       "relevance_tags": [
         "crypto",
         "ai"
       ],
       "sentiment": 0.0,
-      "confidence": 0.523,
-      "timestamp": 1771941081.549429,
+      "confidence": 0.514,
+      "timestamp": 1772031247.900654,
       "matched_markets": [],
       "category": "crypto",
       "raw_data": {
-        "score": 23,
-        "comments": 254,
+        "score": 14,
+        "comments": 156,
         "sub": "cryptocurrency"
       },
       "score": 52
     },
     {
-      "id": "76f2aef78a752810",
-      "source": "reddit/r/politics",
-      "headline": "Why I\u2019m not watching the State of the Union \u2013 and you shouldn\u2019t either",
-      "summary": "Score: 1797, Comments: 380",
-      "url": "https://reddit.com/r/politics/comments/1rddjyr/why_im_not_watching_the_state_of_the_union_and/",
+      "id": "d8454fb64f652f2e",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Finally beating the S&amp;P 500 thanks to GLW",
+      "summary": "Bought these leaps when GLW first hit $85 in 10/25, 12/27 expiry, $100 strike because I read that GLW makes fiber optics for data centers, among other things. It barely moved for three months, then they went ITM when GLW announced their $6 billion deal with Meta early January. Rolled to a higher ($125) strike but longer expiration when GLW was at at $110. Up over $30k since December. I think it st",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1rebg9c/finally_beating_the_sp_500_thanks_to_glw/",
       "relevance_tags": [],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771941076.923064,
+      "sentiment": 1.0,
+      "confidence": 0.555,
+      "timestamp": 1772031246.175915,
       "matched_markets": [],
       "category": "other",
       "raw_data": {
-        "score": 1797,
-        "comments": 380,
+        "score": 55,
+        "comments": 22,
+        "sub": "wallstreetbets"
+      },
+      "score": 47
+    },
+    {
+      "id": "6099fb09fd6a1c1b",
+      "source": "reddit/r/politics",
+      "headline": "Rep. Al Green removed from chamber during State of the Union",
+      "summary": "Score: 4394, Comments: 244",
+      "url": "https://reddit.com/r/politics/comments/1re0qh1/rep_al_green_removed_from_chamber_during_state_of/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1772031244.256196,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 4394,
+        "comments": 244,
         "sub": "politics"
       },
       "score": 45
     },
     {
-      "id": "62f706763f9ae1ce",
+      "id": "98e636dd8dfd326a",
       "source": "reddit/r/politics",
-      "headline": "France moves to bar US Ambassador Charles Kushner from direct government access",
-      "summary": "Score: 5543, Comments: 110",
-      "url": "https://reddit.com/r/politics/comments/1rd09k7/france_moves_to_bar_us_ambassador_charles_kushner/",
+      "headline": "Lawmaker Names Three Men from the Epstein Files on the House Floor, Demands Investigation",
+      "summary": "Score: 8259, Comments: 133",
+      "url": "https://reddit.com/r/politics/comments/1rdwc9w/lawmaker_names_three_men_from_the_epstein_files/",
       "relevance_tags": [],
       "sentiment": 0.0,
       "confidence": 0.8,
-      "timestamp": 1771941076.924599,
+      "timestamp": 1772031244.256434,
       "matched_markets": [],
       "category": "other",
       "raw_data": {
-        "score": 5543,
-        "comments": 110,
+        "score": 8259,
+        "comments": 133,
         "sub": "politics"
       },
       "score": 45
     },
     {
-      "id": "1331f656909d8a24",
-      "source": "reddit/r/politics",
-      "headline": "Most say US worse off compared to a year ago",
-      "summary": "Score: 3366, Comments: 115",
-      "url": "https://reddit.com/r/politics/comments/1rd3qni/most_say_us_worse_off_compared_to_a_year_ago/",
-      "relevance_tags": [],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771941076.924747,
-      "matched_markets": [],
-      "category": "other",
-      "raw_data": {
-        "score": 3366,
-        "comments": 115,
-        "sub": "politics"
-      },
-      "score": 45
-    },
-    {
-      "id": "ff4f0f779583451a",
-      "source": "reddit/r/politics",
-      "headline": "RFK Jr. says we need more herbicide production, stunning his followers",
-      "summary": "Score: 1802, Comments: 172",
-      "url": "https://reddit.com/r/politics/comments/1rd46ge/rfk_jr_says_we_need_more_herbicide_production/",
-      "relevance_tags": [],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771941076.925909,
-      "matched_markets": [],
-      "category": "other",
-      "raw_data": {
-        "score": 1802,
-        "comments": 172,
-        "sub": "politics"
-      },
-      "score": 45
-    },
-    {
-      "id": "8c3c81cdbdda99dd",
+      "id": "a2ff4d91cde37cd3",
       "source": "reddit/r/wallstreetbets",
-      "headline": "Are the Claude fears legit or extremely overblown?",
-      "summary": "Personally, I feel like this is a huge buy the dip opportunity for generational wealth. But I would love the opinion and get a discussion going with others who are more informed. ",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1rczm5m/are_the_claude_fears_legit_or_extremely_overblown/",
+      "headline": "MAG-7 are trading at the lowest premium vs. S&amp;P 493 in the last 10 years",
+      "summary": "Funny looking bubble...",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1rdxkvf/mag7_are_trading_at_the_lowest_premium_vs_sp_493/",
       "relevance_tags": [],
       "sentiment": 0.0,
       "confidence": 0.8,
-      "timestamp": 1771941079.172277,
+      "timestamp": 1772031246.1733801,
       "matched_markets": [],
       "category": "other",
       "raw_data": {
-        "score": 940,
-        "comments": 903,
+        "score": 2495,
+        "comments": 293,
         "sub": "wallstreetbets"
       },
       "score": 45
     },
     {
-      "id": "e8ca438583e4a477",
+      "id": "e41d8d4d4d4bfd25",
       "source": "reddit/r/wallstreetbets",
-      "headline": "Paypal Halted following Takeover report.",
-      "summary": "Score: 2307, Comments: 287",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1rcmijp/paypal_halted_following_takeover_report/",
+      "headline": "I love this sub.",
+      "summary": "Score: 331, Comments: 47",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1rdyval/i_love_this_sub/",
       "relevance_tags": [],
       "sentiment": 0.0,
       "confidence": 0.8,
-      "timestamp": 1771941079.172456,
+      "timestamp": 1772031246.177206,
       "matched_markets": [],
       "category": "other",
       "raw_data": {
-        "score": 2307,
-        "comments": 287,
+        "score": 331,
+        "comments": 47,
         "sub": "wallstreetbets"
-      },
-      "score": 45
-    },
-    {
-      "id": "e6255eca8570bed7",
-      "source": "reddit/r/wallstreetbets",
-      "headline": "Uber acquiring parking app SpotHero",
-      "summary": "Score: 438, Comments: 58",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1rcv2vy/uber_acquiring_parking_app_spothero/",
-      "relevance_tags": [],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771941079.172836,
-      "matched_markets": [],
-      "category": "other",
-      "raw_data": {
-        "score": 438,
-        "comments": 58,
-        "sub": "wallstreetbets"
-      },
-      "score": 45
-    },
-    {
-      "id": "ab75da0b44cd9d56",
-      "source": "reddit/r/wallstreetbets",
-      "headline": "AMA: My name is Jensen Huang and I'm here to save the S&amp;P, ask me anything..",
-      "summary": "Score: 7148, Comments: 759",
-      "url": "https://reddit.com/r/wallstreetbets/comments/1rc61v8/ama_my_name_is_jensen_huang_and_im_here_to_save/",
-      "relevance_tags": [],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771941079.174152,
-      "matched_markets": [],
-      "category": "other",
-      "raw_data": {
-        "score": 7148,
-        "comments": 759,
-        "sub": "wallstreetbets"
-      },
-      "score": 45
-    },
-    {
-      "id": "c7752223fc0d1921",
-      "source": "reddit/r/cryptocurrency",
-      "headline": "From moon to break even please",
-      "summary": "Score: 2961, Comments: 79",
-      "url": "https://reddit.com/r/CryptoCurrency/comments/1rcldi2/from_moon_to_break_even_please/",
-      "relevance_tags": [],
-      "sentiment": 0.0,
-      "confidence": 0.8,
-      "timestamp": 1771941081.550127,
-      "matched_markets": [],
-      "category": "other",
-      "raw_data": {
-        "score": 2961,
-        "comments": 79,
-        "sub": "cryptocurrency"
       },
       "score": 45
     },
@@ -898,59 +882,40 @@
       "id": "fdf971e9a17c8d71",
       "source": "reddit/r/wallstreetbets",
       "headline": "Weekly Earnings Thread 2/23 - 2/27",
-      "summary": "Score: 207, Comments: 706",
+      "summary": "Score: 229, Comments: 1058",
       "url": "https://reddit.com/r/wallstreetbets/comments/1ra00b2/weekly_earnings_thread_223_227/",
       "relevance_tags": [],
       "sentiment": 0.0,
-      "confidence": 0.707,
-      "timestamp": 1771941079.169106,
+      "confidence": 0.729,
+      "timestamp": 1772031246.1723351,
       "matched_markets": [],
       "category": "other",
       "raw_data": {
-        "score": 207,
-        "comments": 706,
+        "score": 229,
+        "comments": 1058,
         "sub": "wallstreetbets"
       },
       "score": 43
     },
     {
-      "id": "c9c85949fa5fdf9d",
-      "source": "reddit/r/cryptocurrency",
-      "headline": "Claude-Generated Code Led to Nearly $2 Million Moonwell Protocol Hack",
-      "summary": "Score: 122, Comments: 22",
-      "url": "https://reddit.com/r/CryptoCurrency/comments/1rcq003/claudegenerated_code_led_to_nearly_2_million/",
-      "relevance_tags": [],
-      "sentiment": 0.0,
-      "confidence": 0.622,
-      "timestamp": 1771941081.5514948,
-      "matched_markets": [],
-      "category": "other",
-      "raw_data": {
-        "score": 122,
-        "comments": 22,
-        "sub": "cryptocurrency"
-      },
-      "score": 41
-    },
-    {
-      "id": "19a5cb1586f81707",
+      "id": "af7a12479e80236e",
       "source": "reddit/r/sportsbook",
-      "headline": "Cognizant Classic 2026 (GOLF)",
-      "summary": "Congrats to anyone who hit Bridgeman! That\u2019s a tough one for everyone who\u2019s bet him the last few weeks. But, that just means our reads are good and it\u2019s only a matter of time before we get hot! Players now begin the Florida swing with the Cognizant (Formerly known as the Honda) Classic at PGA National.",
-      "url": "https://reddit.com/r/sportsbook/comments/1rcicmn/cognizant_classic_2026_golf/",
+      "headline": "KING OF THE COURT",
+      "summary": "Who are you picking for Draft Kings Tuesday pick for King of the Court?",
+      "url": "https://reddit.com/r/sportsbook/comments/1rdhzmm/king_of_the_court/",
       "relevance_tags": [],
       "sentiment": 0.0,
-      "confidence": 0.531,
-      "timestamp": 1771941074.962708,
+      "confidence": 0.526,
+      "timestamp": 1772031242.50685,
       "matched_markets": [],
       "category": "other",
       "raw_data": {
-        "score": 31,
-        "comments": 57,
+        "score": 26,
+        "comments": 158,
         "sub": "sportsbook"
       },
       "score": 38
     }
   ],
-  "updated": 1771941110.722324
+  "updated": 1772031285.666811
 }
