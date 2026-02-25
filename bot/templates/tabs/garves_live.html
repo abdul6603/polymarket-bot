@@ -1,37 +1,25 @@
-<!-- GARVES — Unified Trading Tab -->
+<!-- GARVES — Unified Trading Tab (Redesigned) -->
 <div class="tab-content" id="tab-garves-live">
-  <!-- Health Warning Banner (auto-hidden when no warnings) -->
+
+  <!-- ═══ HEADER ZONE ═══ -->
   <div id="garves-health-banner" style="display:none;margin-bottom:12px;padding:10px 16px;border-radius:8px;font-size:0.78rem;font-weight:600;"></div>
-  <!-- Always visible: Intel meter + mode -->
   <div id="intel-garves" class="intel-meter" style="margin-bottom:12px;"></div>
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
     <span id="garves-mode-badge" class="trading-mode-badge trading-mode-live">Trading: Real Money</span>
     <button class="trading-mode-toggle" id="garves-mode-toggle" onclick="toggleGarvesMode()">Switch</button>
     <span class="text-muted" style="font-size:0.76rem;">BTC Flow Sniper — <span id="garves-bankroll-label">-- bankroll</span></span>
-</div>
+  </div>
   <div class="agent-widget-row" id="garves-widgets" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
     <div class="widget-badge" id="garves-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
     <button class="btn" onclick="healthCheckAgent('garves')" style="font-size:0.72rem;">Health Check</button>
     <!-- Binance Status Pill -->
     <div id="binance-pill-wrap" style="margin-left:auto;position:relative;">
-      <div id="binance-pill" onclick="toggleBinancePopover()" style="
-        display:inline-flex;align-items:center;gap:5px;
-        padding:4px 12px;border-radius:20px;cursor:pointer;
-        font-size:0.72rem;font-weight:600;font-family:var(--font-mono);
-        background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);
-        transition:all 0.3s ease;user-select:none;
-      ">
+      <div id="binance-pill" onclick="toggleBinancePopover()" style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;cursor:pointer;font-size:0.72rem;font-weight:600;font-family:var(--font-mono);background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);transition:all 0.3s ease;user-select:none;">
         <span id="binance-pill-dot" style="font-size:0.8rem;">&#x26AB;</span>
         <span id="binance-pill-label">Binance</span>
         <span id="binance-pill-age" style="font-size:0.62rem;color:var(--text-muted);"></span>
       </div>
-      <!-- Popover -->
-      <div id="binance-popover" style="
-        display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:100;
-        background:var(--bg-secondary);border:1px solid rgba(255,255,255,0.12);
-        border-radius:10px;padding:14px 18px;min-width:260px;
-        box-shadow:0 8px 32px rgba(0,0,0,0.4);font-size:0.72rem;
-      ">
+      <div id="binance-popover" style="display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:100;background:var(--bg-secondary);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:14px 18px;min-width:260px;box-shadow:0 8px 32px rgba(0,0,0,0.4);font-size:0.72rem;">
         <div style="font-weight:700;margin-bottom:8px;font-size:0.76rem;">Binance WebSocket</div>
         <div id="binance-pop-status" style="margin-bottom:4px;"></div>
         <div id="binance-pop-reconnects" style="color:var(--text-muted);margin-bottom:4px;"></div>
@@ -41,24 +29,12 @@
     </div>
     <!-- CLOB Status Pill -->
     <div id="clob-pill-wrap" style="position:relative;">
-      <div id="clob-pill" onclick="toggleClobPopover()" style="
-        display:inline-flex;align-items:center;gap:5px;
-        padding:4px 12px;border-radius:20px;cursor:pointer;
-        font-size:0.72rem;font-weight:600;font-family:var(--font-mono);
-        background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);
-        transition:all 0.3s ease;user-select:none;
-      ">
+      <div id="clob-pill" onclick="toggleClobPopover()" style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;cursor:pointer;font-size:0.72rem;font-weight:600;font-family:var(--font-mono);background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);transition:all 0.3s ease;user-select:none;">
         <span id="clob-pill-dot" style="font-size:0.8rem;">&#x26AB;</span>
         <span id="clob-pill-label">CLOB</span>
         <span id="clob-pill-age" style="font-size:0.62rem;color:var(--text-muted);"></span>
       </div>
-      <!-- Popover -->
-      <div id="clob-popover" style="
-        display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:100;
-        background:var(--bg-secondary);border:1px solid rgba(255,255,255,0.12);
-        border-radius:10px;padding:14px 18px;min-width:260px;
-        box-shadow:0 8px 32px rgba(0,0,0,0.4);font-size:0.72rem;
-      ">
+      <div id="clob-popover" style="display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:100;background:var(--bg-secondary);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:14px 18px;min-width:260px;box-shadow:0 8px 32px rgba(0,0,0,0.4);font-size:0.72rem;">
         <div style="font-weight:700;margin-bottom:8px;font-size:0.76rem;">CLOB WebSocket</div>
         <div id="clob-pop-status" style="margin-bottom:4px;"></div>
         <div id="clob-pop-detail" style="color:var(--text-muted);margin-bottom:4px;"></div>
@@ -66,14 +42,10 @@
         <div id="clob-pop-proactive" style="color:var(--text-muted);margin-bottom:4px;"></div>
         <div id="clob-pop-uptime" style="color:var(--text-muted);margin-bottom:4px;"></div>
         <div id="clob-pop-silence" style="color:var(--text-muted);margin-bottom:10px;"></div>
-        <button onclick="forceReconnectClob()" style="
-          width:100%;padding:6px 0;border:none;border-radius:6px;cursor:pointer;
-          background:rgba(239,68,68,0.15);color:#ef4444;font-weight:600;
-          font-size:0.72rem;transition:background 0.2s;
-        " onmouseover="this.style.background='rgba(239,68,68,0.3)'" onmouseout="this.style.background='rgba(239,68,68,0.15)'">Force Reconnect</button>
+        <button onclick="forceReconnectClob()" style="width:100%;padding:6px 0;border:none;border-radius:6px;cursor:pointer;background:rgba(239,68,68,0.15);color:#ef4444;font-weight:600;font-size:0.72rem;transition:background 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.3)'" onmouseout="this.style.background='rgba(239,68,68,0.15)'">Force Reconnect</button>
       </div>
     </div>
-    <!-- Signal Cycle Badge (Odin-style) -->
+    <!-- Signal Cycle Badge -->
     <span id="signal-cycle-pill" style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:0.82rem;font-weight:700;padding:6px 16px;border-radius:999px;border:1px solid rgba(139,92,246,0.35);background:rgba(139,92,246,0.12);color:#8b5cf6;transition:box-shadow .3s;cursor:default;position:relative;"
        onmouseenter="document.getElementById('signal-cycle-tooltip').style.display='block'"
        onmouseleave="document.getElementById('signal-cycle-tooltip').style.display='none'">
@@ -83,17 +55,9 @@
       <span style="font-size:0.7rem;color:var(--text-muted);">#<span id="signal-cycle-num">0</span></span>
       <span style="color:rgba(255,255,255,0.2);">|</span>
       <span id="signal-cycle-markets" style="font-size:0.7rem;color:var(--text-muted);">-- mkts</span>
-      <div id="signal-cycle-tooltip" style="
-        display:none;position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);
-        z-index:100;background:var(--bg-secondary);border:1px solid rgba(139,92,246,0.3);
-        border-radius:8px;padding:10px 14px;min-width:220px;
-        box-shadow:0 8px 32px rgba(0,0,0,0.4);font-size:0.68rem;text-align:left;
-        font-weight:400;white-space:normal;
-      ">
+      <div id="signal-cycle-tooltip" style="display:none;position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);z-index:100;background:var(--bg-secondary);border:1px solid rgba(139,92,246,0.3);border-radius:8px;padding:10px 14px;min-width:220px;box-shadow:0 8px 32px rgba(0,0,0,0.4);font-size:0.68rem;text-align:left;font-weight:400;white-space:normal;">
         <div style="font-weight:700;margin-bottom:6px;color:#c4b5fd;">Signal Pipeline</div>
-        <div style="color:var(--text-muted);line-height:1.5;">
-          20+ indicators per market: regime, momentum, sentiment, volume, derivatives, on-chain, correlation &amp; consensus scoring.
-        </div>
+        <div style="color:var(--text-muted);line-height:1.5;">20+ indicators per market: regime, momentum, sentiment, volume, derivatives, on-chain, correlation &amp; consensus scoring.</div>
         <div id="signal-cycle-detail" style="margin-top:6px;color:var(--text-muted);"></div>
       </div>
     </span>
@@ -103,7 +67,7 @@
   </div>
   <div class="health-inline" id="garves-health-result"></div>
 
-  <!-- Engine Performance Comparison -->
+  <!-- ═══ ENGINE PERFORMANCE COMPARISON ═══ -->
   <div class="glass-card" style="padding:14px 18px;margin-bottom:14px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
       <div style="font-weight:700;font-size:0.82rem;">Engine Performance Comparison</div>
@@ -135,153 +99,172 @@
     </div>
   </div>
 
-  <!-- ═══ Snipe Engine v10 — BTC Flow Scanner + 15m/1h Exec ═══ -->
-  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-    <div style="font-weight:700;font-size:0.76rem;">Snipe v10 Flow Scanner</div>
-    <div id="snipe-exec-venue" onclick="toggleExecVenue()" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;font-weight:600;cursor:pointer;">5m → 15m</div>
-    <div id="snipe-positions-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,0.15);color:#22c55e;font-weight:600;">0/3</div>
-  </div>
-
-  <!-- Execution Routing Card -->
-  <div id="exec-routing-card" class="glass-card" style="padding:10px 14px;margin-bottom:12px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;">
-      <span style="font-weight:700;font-size:0.76rem;">Execution Routing</span>
-      <span id="exec-routing-badge" style="padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:600;
-        background:rgba(139,92,246,0.15);color:#8b5cf6;">5m → 15m</span>
-    </div>
-    <div id="exec-routing-detail" style="font-size:0.68rem;color:var(--text-muted);margin-top:6px;">
-      Scanner detects flow on 5m, executes on 15m/1h where liquidity exists
-    </div>
-    <div id="exec-last-route" style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;display:none;"></div>
-  </div>
-
-  <!-- BTC Scanner Card + Flow Detection Status -->
-  <div id="snipe-v8-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-    <div class="stat-card" id="snipe-card-bitcoin" style="border-left:3px solid #f7931a;">
-      <div class="stat-value" id="snipe-score-bitcoin" style="font-size:1.6rem;color:#f7931a;">--</div>
-      <div class="stat-label">BTC Score</div>
-      <div id="snipe-state-bitcoin" style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;">idle</div>
-      <div id="snipe-thresh-bitcoin" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div>
-    </div>
-    <div class="stat-card" id="flow-status-card" style="border-left:3px solid #8b5cf6;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-        <span id="flow-direction-badge" style="font-size:1.1rem;font-weight:700;color:var(--text-muted);">--</span>
-        <span id="flow-active-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;display:none;font-weight:600;">FLOW ACTIVE</span>
-      </div>
-      <div class="stat-label">Flow Detection</div>
-      <div style="margin-top:6px;">
-        <div style="display:flex;align-items:center;gap:6px;font-size:0.68rem;">
-          <span style="color:var(--text-muted);width:55px;">Strength</span>
-          <div style="flex:1;height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">
-            <div id="flow-strength-bar" style="width:0%;height:100%;background:#8b5cf6;border-radius:3px;transition:width 0.5s;"></div>
-          </div>
-          <span id="flow-strength-pct" style="width:32px;font-family:var(--font-mono);font-size:0.68rem;">0%</span>
-        </div>
-        <div id="flow-sustained-label" style="font-size:0.62rem;color:var(--text-muted);margin-top:3px;">0 sustained ticks</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Aggregate Stats Row -->
-  <div id="snipe-v7-cards" class="grid-4" style="margin-bottom:12px;">
+  <!-- ═══ KEY METRICS ROW (Hero Cards) ═══ -->
+  <div class="grid-4" style="margin-bottom:14px;">
     <div class="stat-card" style="border-left:3px solid #22c55e;">
-      <div class="stat-value" id="snipe-success-rate" style="font-size:1.3rem;">--</div>
-      <div class="stat-label">Success Rate (50)</div>
-      <div id="snipe-wl-record" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div>
-    </div>
-    <div class="stat-card" style="border-left:3px solid #eab308;">
-      <div class="stat-value" id="snipe-avg-latency" style="font-size:1.3rem;">--</div>
-      <div class="stat-label">Avg Latency</div>
-      <div id="snipe-latency-detail" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div>
+      <div style="display:flex;align-items:baseline;gap:8px;">
+        <div class="stat-value" id="garves-hero-today-pnl" style="font-size:1.4rem;">--</div>
+        <span style="font-size:0.68rem;color:var(--text-muted);">today</span>
+      </div>
+      <div class="stat-label">P&amp;L</div>
+      <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px;">Total: <span id="garves-hero-total-pnl" style="font-family:var(--font-mono);">--</span></div>
     </div>
     <div class="stat-card" style="border-left:3px solid #8b5cf6;">
-      <div class="stat-value" id="snipe-signal-score" style="font-size:1.3rem;color:#8b5cf6;">--</div>
-      <div class="stat-label">Last Score</div>
-      <div id="snipe-score-dir" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div>
+      <div class="stat-value" id="garves-hero-wr-20" style="font-size:1.4rem;">--</div>
+      <div class="stat-label">Win Rate (L20)</div>
+      <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px;">
+        L50: <span id="garves-hero-wr-50" style="font-family:var(--font-mono);">--</span>
+        &nbsp; L100: <span id="garves-hero-wr-100" style="font-family:var(--font-mono);">--</span>
+      </div>
+    </div>
+    <div class="stat-card" style="border-left:3px solid #eab308;">
+      <div class="stat-value" id="garves-hero-exposure" style="font-size:1.4rem;">--</div>
+      <div class="stat-label">Active Exposure</div>
+      <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px;">Util: <span id="garves-hero-util-pct" style="font-family:var(--font-mono);">--</span></div>
     </div>
     <div class="stat-card" style="border-left:3px solid #06b6d4;">
-      <div class="stat-value" id="snipe-clob-spread" style="font-size:1.3rem;">--</div>
-      <div class="stat-label">CLOB Spread</div>
-      <div id="snipe-state-label" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div>
+      <div class="stat-value" id="garves-hero-ev-capture" style="font-size:1.4rem;">--</div>
+      <div class="stat-label">EV Capture</div>
+      <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px;">Edge: <span id="garves-hero-edge-quality" style="font-family:var(--font-mono);">--</span></div>
     </div>
   </div>
 
-  <!-- Hot Windows Table (collapsible) -->
-  <div id="snipe-hot-windows" style="margin-bottom:12px;display:none;">
-    <div class="glass-card" style="padding:10px 14px;">
-      <div style="font-weight:700;font-size:0.76rem;margin-bottom:8px;">Hot Windows</div>
-      <table class="data-table"><thead><tr><th>Asset</th><th>Direction</th><th>Score</th><th>State</th></tr></thead>
-      <tbody id="snipe-hot-tbody"><tr><td colspan="4" class="text-muted" style="text-align:center;">No hot windows</td></tr></tbody></table>
-    </div>
-  </div>
-
-  <!-- Snipe Engine Warm-up Status -->
-  <div id="snipe-warmup-card" style="margin-bottom:12px;display:none;"></div>
-
-  <!-- Snipe Threshold Status -->
-  <div id="snipe-threshold-card" style="margin-bottom:12px;display:none;"></div>
-
-  <!-- Price Freshness Warning -->
-  <div id="snipe-price-freshness" style="margin-bottom:12px;display:none;"></div>
-
-  <!-- Snipe v7 Scoring Breakdown (collapsible) -->
-  <div id="snipe-v7-breakdown" style="margin-bottom:12px;display:none;">
-    <div class="glass-card" style="padding:10px 14px;">
-      <div style="font-weight:700;font-size:0.76rem;margin-bottom:8px;">Signal Score Breakdown</div>
-      <div id="snipe-score-bars" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:0.68rem;"></div>
-    </div>
-  </div>
-
-  <!-- Snipe v8 Performance Tracking -->
-  <div class="glass-card" style="padding:10px 14px;margin-bottom:12px;">
-    <div style="font-weight:700;font-size:0.76rem;margin-bottom:8px;">Snipe v10 Performance</div>
-    <div id="snipe-perf-stats" style="font-size:0.78rem;"></div>
-  </div>
-
-  <!-- ═══ Snipe Assist Live — Entry Timing Oracle ═══ -->
-  <div class="glass-card" style="padding:10px 14px;margin-bottom:12px;border-left:3px solid #a855f7;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-      <div style="font-weight:700;font-size:0.76rem;">Snipe Assist Live</div>
-      <div id="sa-override-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;display:none;"></div>
-    </div>
-    <div class="grid-4" style="margin-bottom:8px;">
-      <div class="stat-card" style="border-left:3px solid #a855f7;">
-        <div class="stat-value" id="sa-timing-score" style="font-size:1.3rem;color:#a855f7;">--</div>
-        <div class="stat-label">Timing Score</div>
-      </div>
-      <div class="stat-card" style="border-left:3px solid #06b6d4;">
-        <div class="stat-value" id="sa-direction" style="font-size:1.3rem;">--</div>
-        <div class="stat-label">Direction</div>
-      </div>
-      <div class="stat-card" style="border-left:3px solid #22c55e;">
-        <div class="stat-value" id="sa-size-rec" style="font-size:1.3rem;">--</div>
-        <div class="stat-label">Size Rec</div>
-      </div>
-      <div class="stat-card" style="border-left:3px solid #eab308;">
-        <div class="stat-value" id="sa-accuracy" style="font-size:1.3rem;">--</div>
-        <div class="stat-label">Accuracy (50)</div>
-      </div>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-      <div id="sa-action-badge" style="font-size:0.72rem;font-weight:700;padding:3px 12px;border-radius:6px;background:rgba(255,255,255,0.06);">--</div>
-      <span id="sa-age" style="font-size:0.62rem;color:var(--text-muted);"></span>
-      <div style="margin-left:auto;display:flex;gap:6px;">
-        <button onclick="snipeAssistOverride('force_execute')" style="font-size:0.64rem;padding:3px 8px;border:1px solid #22c55e;border-radius:4px;background:rgba(34,197,94,0.1);color:#22c55e;cursor:pointer;">Force Execute</button>
-        <button onclick="snipeAssistOverride('force_skip')" style="font-size:0.64rem;padding:3px 8px;border:1px solid #ef4444;border-radius:4px;background:rgba(239,68,68,0.1);color:#ef4444;cursor:pointer;">Force Skip</button>
-        <button onclick="snipeAssistOverride('clear')" style="font-size:0.64rem;padding:3px 8px;border:1px solid #888;border-radius:4px;background:rgba(255,255,255,0.05);color:#888;cursor:pointer;">Clear</button>
-      </div>
-    </div>
-    <div id="sa-factors" style="display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;font-size:0.66rem;margin-bottom:6px;"></div>
-    <div id="sa-agents-row" style="display:flex;gap:12px;font-size:0.64rem;color:var(--text-muted);margin-bottom:4px;"></div>
-    <div id="sa-learner-footer" style="font-size:0.62rem;color:var(--text-muted);"></div>
-  </div>
-
-  <!-- ═══ Maker Engine ═══ -->
-  <div class="collapse-section" style="margin-bottom:12px;">
+  <!-- ═══ SECTION 1: Snipe Engine (default-open) ═══ -->
+  <div class="collapse-section default-open" style="margin-bottom:12px;">
     <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">Maker Engine
-        <span id="maker-status-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;margin-left:8px;
-          background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;">OFF</span>
+      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">Snipe Engine
+        <span id="snipe-exec-venue" onclick="event.stopPropagation();toggleExecVenue()" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;font-weight:600;cursor:pointer;margin-left:8px;">5m &rarr; 15m</span>
+        <span id="snipe-positions-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,0.15);color:#22c55e;font-weight:600;">0/3</span>
+      </h2>
+    </div>
+    <div class="collapse-body">
+      <!-- Execution Routing Card -->
+      <div id="exec-routing-card" class="glass-card" style="padding:10px 14px;margin-bottom:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-weight:700;font-size:0.76rem;">Execution Routing</span>
+          <span id="exec-routing-badge" style="padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:600;background:rgba(139,92,246,0.15);color:#8b5cf6;">5m &rarr; 15m</span>
+        </div>
+        <div id="exec-routing-detail" style="font-size:0.68rem;color:var(--text-muted);margin-top:6px;">Scanner detects flow on 5m, executes on 15m/1h where liquidity exists</div>
+        <div id="exec-last-route" style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;display:none;"></div>
+      </div>
+      <!-- BTC Scanner + Flow Detection -->
+      <div id="snipe-v8-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div class="stat-card" id="snipe-card-bitcoin" style="border-left:3px solid #f7931a;">
+          <div class="stat-value" id="snipe-score-bitcoin" style="font-size:1.6rem;color:#f7931a;">--</div>
+          <div class="stat-label">BTC Score</div>
+          <div id="snipe-state-bitcoin" style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;">idle</div>
+          <div id="snipe-thresh-bitcoin" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div>
+        </div>
+        <div class="stat-card" id="flow-status-card" style="border-left:3px solid #8b5cf6;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <span id="flow-direction-badge" style="font-size:1.1rem;font-weight:700;color:var(--text-muted);">--</span>
+            <span id="flow-active-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;display:none;font-weight:600;">FLOW ACTIVE</span>
+          </div>
+          <div class="stat-label">Flow Detection</div>
+          <div style="margin-top:6px;">
+            <div style="display:flex;align-items:center;gap:6px;font-size:0.68rem;">
+              <span style="color:var(--text-muted);width:55px;">Strength</span>
+              <div style="flex:1;height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">
+                <div id="flow-strength-bar" style="width:0%;height:100%;background:#8b5cf6;border-radius:3px;transition:width 0.5s;"></div>
+              </div>
+              <span id="flow-strength-pct" style="width:32px;font-family:var(--font-mono);font-size:0.68rem;">0%</span>
+            </div>
+            <div id="flow-sustained-label" style="font-size:0.62rem;color:var(--text-muted);margin-top:3px;">0 sustained ticks</div>
+          </div>
+        </div>
+      </div>
+      <!-- Aggregate Stats -->
+      <div id="snipe-v7-cards" class="grid-4" style="margin-bottom:12px;">
+        <div class="stat-card" style="border-left:3px solid #22c55e;">
+          <div class="stat-value" id="snipe-success-rate" style="font-size:1.3rem;">--</div>
+          <div class="stat-label">Success Rate (50)</div>
+          <div id="snipe-wl-record" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div>
+        </div>
+        <div class="stat-card" style="border-left:3px solid #eab308;">
+          <div class="stat-value" id="snipe-avg-latency" style="font-size:1.3rem;">--</div>
+          <div class="stat-label">Avg Latency</div>
+          <div id="snipe-latency-detail" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div>
+        </div>
+        <div class="stat-card" style="border-left:3px solid #8b5cf6;">
+          <div class="stat-value" id="snipe-signal-score" style="font-size:1.3rem;color:#8b5cf6;">--</div>
+          <div class="stat-label">Last Score</div>
+          <div id="snipe-score-dir" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div>
+        </div>
+        <div class="stat-card" style="border-left:3px solid #06b6d4;">
+          <div class="stat-value" id="snipe-clob-spread" style="font-size:1.3rem;">--</div>
+          <div class="stat-label">CLOB Spread</div>
+          <div id="snipe-state-label" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div>
+        </div>
+      </div>
+      <!-- Hot Windows -->
+      <div id="snipe-hot-windows" style="margin-bottom:12px;display:none;">
+        <div class="glass-card" style="padding:10px 14px;">
+          <div style="font-weight:700;font-size:0.76rem;margin-bottom:8px;">Hot Windows</div>
+          <table class="data-table"><thead><tr><th>Asset</th><th>Direction</th><th>Score</th><th>State</th></tr></thead>
+          <tbody id="snipe-hot-tbody"><tr><td colspan="4" class="text-muted" style="text-align:center;">No hot windows</td></tr></tbody></table>
+        </div>
+      </div>
+      <!-- Warm-up / Threshold / Freshness -->
+      <div id="snipe-warmup-card" style="margin-bottom:12px;display:none;"></div>
+      <div id="snipe-threshold-card" style="margin-bottom:12px;display:none;"></div>
+      <div id="snipe-price-freshness" style="margin-bottom:12px;display:none;"></div>
+      <!-- Score Breakdown -->
+      <div id="snipe-v7-breakdown" style="margin-bottom:12px;display:none;">
+        <div class="glass-card" style="padding:10px 14px;">
+          <div style="font-weight:700;font-size:0.76rem;margin-bottom:8px;">Signal Score Breakdown</div>
+          <div id="snipe-score-bars" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:0.68rem;"></div>
+        </div>
+      </div>
+      <!-- Snipe v10 Performance -->
+      <div class="glass-card" style="padding:10px 14px;margin-bottom:12px;">
+        <div style="font-weight:700;font-size:0.76rem;margin-bottom:8px;">Snipe v10 Performance</div>
+        <div id="snipe-perf-stats" style="font-size:0.78rem;"></div>
+      </div>
+      <!-- Snipe Assist Live -->
+      <div class="glass-card" style="padding:10px 14px;margin-bottom:12px;border-left:3px solid #a855f7;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <div style="font-weight:700;font-size:0.76rem;">Snipe Assist Live</div>
+          <div id="sa-override-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;display:none;"></div>
+        </div>
+        <div class="grid-4" style="margin-bottom:8px;">
+          <div class="stat-card" style="border-left:3px solid #a855f7;">
+            <div class="stat-value" id="sa-timing-score" style="font-size:1.3rem;color:#a855f7;">--</div>
+            <div class="stat-label">Timing Score</div>
+          </div>
+          <div class="stat-card" style="border-left:3px solid #06b6d4;">
+            <div class="stat-value" id="sa-direction" style="font-size:1.3rem;">--</div>
+            <div class="stat-label">Direction</div>
+          </div>
+          <div class="stat-card" style="border-left:3px solid #22c55e;">
+            <div class="stat-value" id="sa-size-rec" style="font-size:1.3rem;">--</div>
+            <div class="stat-label">Size Rec</div>
+          </div>
+          <div class="stat-card" style="border-left:3px solid #eab308;">
+            <div class="stat-value" id="sa-accuracy" style="font-size:1.3rem;">--</div>
+            <div class="stat-label">Accuracy (50)</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div id="sa-action-badge" style="font-size:0.72rem;font-weight:700;padding:3px 12px;border-radius:6px;background:rgba(255,255,255,0.06);">--</div>
+          <span id="sa-age" style="font-size:0.62rem;color:var(--text-muted);"></span>
+          <div style="margin-left:auto;display:flex;gap:6px;">
+            <button onclick="snipeAssistOverride('force_execute')" style="font-size:0.64rem;padding:3px 8px;border:1px solid #22c55e;border-radius:4px;background:rgba(34,197,94,0.1);color:#22c55e;cursor:pointer;">Force Execute</button>
+            <button onclick="snipeAssistOverride('force_skip')" style="font-size:0.64rem;padding:3px 8px;border:1px solid #ef4444;border-radius:4px;background:rgba(239,68,68,0.1);color:#ef4444;cursor:pointer;">Force Skip</button>
+            <button onclick="snipeAssistOverride('clear')" style="font-size:0.64rem;padding:3px 8px;border:1px solid #888;border-radius:4px;background:rgba(255,255,255,0.05);color:#888;cursor:pointer;">Clear</button>
+          </div>
+        </div>
+        <div id="sa-factors" style="display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;font-size:0.66rem;margin-bottom:6px;"></div>
+        <div id="sa-agents-row" style="display:flex;gap:12px;font-size:0.64rem;color:var(--text-muted);margin-bottom:4px;"></div>
+        <div id="sa-learner-footer" style="font-size:0.62rem;color:var(--text-muted);"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SECTION 2: Market Making (default-open) ═══ -->
+  <div class="collapse-section default-open" style="margin-bottom:12px;">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">Market Making
+        <span id="maker-status-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;margin-left:8px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;">OFF</span>
       </h2>
     </div>
     <div class="collapse-body">
@@ -289,7 +272,7 @@
       <div class="grid-4" style="margin-bottom:10px;">
         <div class="stat-card" style="border-left:3px solid #22c55e;">
           <div class="stat-value" id="maker-session-pnl" style="font-size:1.3rem;">$0.00</div>
-          <div class="stat-label">Session P&L</div>
+          <div class="stat-label">Session P&amp;L</div>
         </div>
         <div class="stat-card" style="border-left:3px solid #8b5cf6;">
           <div class="stat-value" id="maker-spread-captured" style="font-size:1.3rem;">$0.00</div>
@@ -310,12 +293,6 @@
         <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:#ef4444;font-weight:700;margin-bottom:4px;">Inventory Risk Warnings</div>
         <div id="maker-warnings-list" style="font-family:var(--font-mono);font-size:0.72rem;color:#ef4444;"></div>
       </div>
-      <!-- Inventory -->
-      <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;">
-        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Inventory</div>
-        <table class="data-table"><thead><tr><th>Asset</th><th>Direction</th><th>Shares</th><th>Fills</th><th>TTR</th><th>Risk</th></tr></thead>
-        <tbody id="maker-inventory-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">No inventory</td></tr></tbody></table>
-      </div>
       <!-- Active Quotes -->
       <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
@@ -324,6 +301,12 @@
         </div>
         <table class="data-table"><thead><tr><th>Asset</th><th>Side</th><th>Price</th><th>Size</th><th>Age</th></tr></thead>
         <tbody id="maker-quotes-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;">No active quotes</td></tr></tbody></table>
+      </div>
+      <!-- Inventory -->
+      <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Inventory</div>
+        <table class="data-table"><thead><tr><th>Asset</th><th>Direction</th><th>Shares</th><th>Fills</th><th>TTR</th><th>Risk</th></tr></thead>
+        <tbody id="maker-inventory-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">No inventory</td></tr></tbody></table>
       </div>
       <!-- Recent Fills -->
       <div class="glass-card" style="padding:10px 14px;">
@@ -336,51 +319,63 @@
     </div>
   </div>
 
-  <!-- ═══ Portfolio Allocation (Shared Balance Manager) ═══ -->
-  <div id="portfolio-alloc-card" class="glass-card" style="padding:12px 16px;margin-bottom:12px;border-left:3px solid #8b5cf6;display:none;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-      <div style="font-weight:700;font-size:0.78rem;">Portfolio Allocation</div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span id="pa-wallet-age" style="font-size:0.62rem;color:var(--text-muted);"></span>
-        <span id="pa-total-util" style="font-size:0.68rem;font-weight:700;font-family:var(--font-mono);padding:2px 8px;border-radius:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;">0%</span>
+  <!-- ═══ SECTION 3: Smart Money Follower (default-open) ═══ -->
+  <div class="collapse-section default-open" id="garves-whale-section" style="margin-bottom:12px;">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">Smart Money Follower
+        <span id="whale-status-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;margin-left:8px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;">OFF</span>
+        <span id="whale-tracked-count" style="font-size:0.62rem;color:var(--text-muted);margin-left:4px;">0 whales</span>
+      </h2>
+    </div>
+    <div class="collapse-body">
+      <!-- Stats -->
+      <div class="grid-4" style="margin-bottom:12px;">
+        <div class="stat-card" style="border-left:3px solid #FFD700;">
+          <div class="stat-value" id="whale-tracked-wallets" style="font-size:1.3rem;">0</div>
+          <div class="stat-label">Tracked Whales</div>
+        </div>
+        <div class="stat-card" style="border-left:3px solid #8b5cf6;">
+          <div class="stat-value" id="whale-copy-count" style="font-size:1.3rem;">0</div>
+          <div class="stat-label">Copy Trades</div>
+        </div>
+        <div class="stat-card" style="border-left:3px solid #22c55e;">
+          <div class="stat-value" id="whale-win-rate" style="font-size:1.3rem;">--</div>
+          <div class="stat-label">Win Rate</div>
+        </div>
+        <div class="stat-card" style="border-left:3px solid #ef4444;">
+          <div class="stat-value" id="whale-total-pnl" style="font-size:1.3rem;">$0.00</div>
+          <div class="stat-label">Copy P&amp;L</div>
+        </div>
+      </div>
+      <!-- Top Whales Table -->
+      <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Top Tracked Whales</div>
+        <table class="data-table">
+          <thead><tr><th>Wallet</th><th>Username</th><th>Score</th><th>Trades</th><th>Win Rate</th><th>P&amp;L</th></tr></thead>
+          <tbody id="whale-wallets-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">No tracked whales</td></tr></tbody>
+        </table>
+      </div>
+      <!-- Active Signals -->
+      <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <span style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);">Active Whale Signals</span>
+          <span id="whale-signal-count" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;font-weight:600;">0</span>
+        </div>
+        <div id="whale-signals-list" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">No active signals</span></div>
+      </div>
+      <!-- Recent Copy Trades -->
+      <div class="glass-card" style="padding:10px 14px;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Recent Copy Trades</div>
+        <table class="data-table">
+          <thead><tr><th>Time</th><th>Whale</th><th>Market</th><th>Dir</th><th>Size</th><th>Status</th><th>P&amp;L</th></tr></thead>
+          <tbody id="whale-trades-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;">No copy trades</td></tr></tbody>
+        </table>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
-      <div style="text-align:center;">
-        <div style="font-size:0.62rem;color:var(--text-muted);">Deployable</div>
-        <div id="pa-deployable" style="font-size:1rem;font-weight:700;font-family:var(--font-mono);">--</div>
-      </div>
-      <div style="text-align:center;">
-        <div style="font-size:0.62rem;color:var(--text-muted);">Total Exposure</div>
-        <div id="pa-total-exposure" style="font-size:1rem;font-weight:700;font-family:var(--font-mono);">--</div>
-      </div>
-      <div style="text-align:center;">
-        <div style="font-size:0.62rem;color:var(--text-muted);">Reserve (20%)</div>
-        <div id="pa-reserve" style="font-size:1rem;font-weight:700;font-family:var(--font-mono);color:var(--warning);">--</div>
-      </div>
-    </div>
-    <div id="pa-agent-bars" style="display:flex;flex-direction:column;gap:6px;"></div>
   </div>
 
-  <!-- Hero cards: Portfolio, Cash, Real PnL -->
-  <div class="grid-3" style="margin-bottom:12px;">
-    <div class="stat-card" data-accent="success" style="border-left:3px solid var(--success);">
-      <div class="stat-value" id="live-portfolio" style="font-size:1.4rem;">--</div>
-      <div class="stat-label">Portfolio</div>
-    </div>
-    <div class="stat-card" data-accent="garves" style="border-left:3px solid var(--agent-garves);">
-      <div class="stat-value" id="live-cash" style="font-size:1.4rem;">--</div>
-      <div class="stat-label">Cash</div>
-    </div>
-    <div class="stat-card" data-accent="success" style="border-left:3px solid var(--warning);">
-      <div class="stat-value" id="live-real-pnl" style="font-size:1.4rem;">--</div>
-      <div class="stat-label">Real PnL</div>
-      <div id="garves-loss-cap-bar" style="margin-top:6px;"></div>
-    </div>
-  </div>
-
-  <!-- ═══ COLLAPSIBLE: Open Positions (default OPEN) ═══ -->
-  <div class="collapse-section default-open">
+  <!-- ═══ SECTION 4: Open Positions (default-open) ═══ -->
+  <div class="collapse-section default-open" style="margin-bottom:12px;">
     <div class="collapse-trigger">
       <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">Open Positions
         <span id="positions-live-dot" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;animation:pulse-glow 2s ease-in-out infinite;margin-left:8px;"></span>
@@ -388,42 +383,133 @@
       </h2>
     </div>
     <div class="collapse-body">
-      <div class="glass-card"><table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Bet</th><th>Shares</th><th>Entry</th><th>Now</th><th>Margin</th><th>Value</th><th>Resolves</th><th>P&L</th><th>Payout</th><th>Return</th></tr></thead>
-      <tbody id="oc-holdings-tbody"><tr><td colspan="12" class="text-muted" style="text-align:center;padding:16px;">No open positions</td></tr></tbody></table></div>
+      <!-- Holdings Table -->
+      <div class="glass-card" style="margin-bottom:12px;">
+        <table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Bet</th><th>Shares</th><th>Entry</th><th>Now</th><th>Margin</th><th>Value</th><th>Resolves</th><th>P&amp;L</th><th>Payout</th><th>Return</th></tr></thead>
+        <tbody id="oc-holdings-tbody"><tr><td colspan="12" class="text-muted" style="text-align:center;padding:16px;">No open positions</td></tr></tbody></table>
+      </div>
+      <!-- Portfolio Allocation -->
+      <div id="portfolio-alloc-card" class="glass-card" style="padding:12px 16px;margin-bottom:12px;border-left:3px solid #8b5cf6;display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-weight:700;font-size:0.78rem;">Portfolio Allocation</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span id="pa-wallet-age" style="font-size:0.62rem;color:var(--text-muted);"></span>
+            <span id="pa-total-util" style="font-size:0.68rem;font-weight:700;font-family:var(--font-mono);padding:2px 8px;border-radius:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;">0%</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+          <div style="text-align:center;">
+            <div style="font-size:0.62rem;color:var(--text-muted);">Deployable</div>
+            <div id="pa-deployable" style="font-size:1rem;font-weight:700;font-family:var(--font-mono);">--</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:0.62rem;color:var(--text-muted);">Total Exposure</div>
+            <div id="pa-total-exposure" style="font-size:1rem;font-weight:700;font-family:var(--font-mono);">--</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:0.62rem;color:var(--text-muted);">Reserve (20%)</div>
+            <div id="pa-reserve" style="font-size:1rem;font-weight:700;font-family:var(--font-mono);color:var(--warning);">--</div>
+          </div>
+        </div>
+        <div id="pa-agent-bars" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+      <!-- Hero Balance Cards -->
+      <div class="grid-3">
+        <div class="stat-card" data-accent="success" style="border-left:3px solid var(--success);">
+          <div class="stat-value" id="live-portfolio" style="font-size:1.4rem;">--</div>
+          <div class="stat-label">Portfolio</div>
+        </div>
+        <div class="stat-card" data-accent="garves" style="border-left:3px solid var(--agent-garves);">
+          <div class="stat-value" id="live-cash" style="font-size:1.4rem;">--</div>
+          <div class="stat-label">Cash</div>
+        </div>
+        <div class="stat-card" data-accent="success" style="border-left:3px solid var(--warning);">
+          <div class="stat-value" id="live-real-pnl" style="font-size:1.4rem;">--</div>
+          <div class="stat-label">Real PnL</div>
+          <div id="garves-loss-cap-bar" style="margin-top:6px;"></div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <!-- 6 Stats Grid -->
-  <div class="grid-6" id="live-stats-grid">
-    <div class="stat-card" data-accent="success"><div class="stat-value" id="live-winrate">--</div><div class="stat-label">Win Rate</div></div>
-    <div class="stat-card" data-accent="success"><div class="stat-value" id="live-pnl">--</div><div class="stat-label">Trade P&amp;L</div></div>
-    <div class="stat-card" data-accent="garves"><div class="stat-value" id="live-wins-losses">--</div><div class="stat-label">Wins / Losses</div></div>
-    <div class="stat-card" data-accent="garves"><div class="stat-value" id="live-total">--</div><div class="stat-label">Total</div></div>
-    <div class="stat-card" data-accent="garves"><div class="stat-value" id="live-resolved">--</div><div class="stat-label">Resolved</div></div>
-    <div class="stat-card" data-accent="warning"><div class="stat-value" id="live-pending">--</div><div class="stat-label">Pending</div></div>
-  </div>
-
-  <!-- Charts + Regime -->
-  <div class="grid-2" style="margin-top:12px;">
-    <div class="glass-card">
-      <h3 class="section-title" style="font-size:0.72rem;margin-bottom:8px;">Equity Curve</h3>
-      <div class="chart-container chart-sm"><canvas id="garves-pnl-chart"></canvas></div>
-    </div>
-    <div class="glass-card">
-      <h3 class="section-title" style="font-size:0.72rem;margin-bottom:8px;">Win Rate</h3>
-      <div class="chart-container chart-sm"><canvas id="garves-wr-donut"></canvas></div>
-    </div>
-  </div>
-  <div class="mt-6" id="garves-regime-badge"><span class="badge badge-info">Regime: --</span></div>
-
-  <!-- ═══════════════════════════════════════════ -->
-  <!-- COLLAPSIBLE: ML & Strategy (default open)  -->
-  <!-- ═══════════════════════════════════════════ -->
-  <div class="collapse-section default-open" style="margin-top:var(--space-8);">
+  <!-- ═══ SECTION 5: Trade History (collapsed) ═══ -->
+  <div class="collapse-section" style="margin-bottom:12px;">
     <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">ML &amp; Strategy</h2>
+      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">Trade History</h2>
     </div>
     <div class="collapse-body">
+      <!-- Stats Grid -->
+      <div class="grid-6" id="live-stats-grid" style="margin-bottom:12px;">
+        <div class="stat-card" data-accent="success"><div class="stat-value" id="live-winrate">--</div><div class="stat-label">Win Rate</div></div>
+        <div class="stat-card" data-accent="success"><div class="stat-value" id="live-pnl">--</div><div class="stat-label">Trade P&amp;L</div></div>
+        <div class="stat-card" data-accent="garves"><div class="stat-value" id="live-wins-losses">--</div><div class="stat-label">Wins / Losses</div></div>
+        <div class="stat-card" data-accent="garves"><div class="stat-value" id="live-total">--</div><div class="stat-label">Total</div></div>
+        <div class="stat-card" data-accent="garves"><div class="stat-value" id="live-resolved">--</div><div class="stat-label">Resolved</div></div>
+        <div class="stat-card" data-accent="warning"><div class="stat-value" id="live-pending">--</div><div class="stat-label">Pending</div></div>
+      </div>
+      <!-- Charts + Regime -->
+      <div class="grid-2" style="margin-bottom:12px;">
+        <div class="glass-card">
+          <h3 class="section-title" style="font-size:0.72rem;margin-bottom:8px;">Equity Curve</h3>
+          <div class="chart-container chart-sm"><canvas id="garves-pnl-chart"></canvas></div>
+        </div>
+        <div class="glass-card">
+          <h3 class="section-title" style="font-size:0.72rem;margin-bottom:8px;">Win Rate</h3>
+          <div class="chart-container chart-sm"><canvas id="garves-wr-donut"></canvas></div>
+        </div>
+      </div>
+      <div id="garves-regime-badge" style="margin-bottom:12px;"><span class="badge badge-info">Regime: --</span></div>
+      <!-- Activity Feed -->
+      <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-garves);">
+        <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Agent Activity</h3>
+        <div id="garves-activity-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:150px;overflow-y:auto;"><span class="text-muted">Waiting for activity...</span></div>
+      </div>
+      <!-- Trade History Table -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:var(--space-2);">
+        <h3 class="section-title" style="font-size:0.76rem;margin:0;">Trade History</h3>
+        <span id="oc-record" class="text-muted" style="font-size:0.72rem;">--</span>
+        <span id="oc-realized-pnl" class="text-muted" style="font-size:0.72rem;margin-left:auto;">--</span>
+      </div>
+      <div class="glass-card" style="margin-bottom:12px;"><table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Bet</th><th>Cost</th><th>Result</th><th>P&amp;L</th></tr></thead>
+      <tbody id="oc-history-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:16px;">No trade history</td></tr></tbody></table></div>
+      <!-- Pending Trades -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <h3 class="section-title" data-accent="warning" style="margin:0;font-size:0.76rem;">Pending Trades</h3>
+        <span id="pending-count-badge" style="background:var(--warning);color:#000;font-weight:700;padding:2px 8px;border-radius:10px;font-size:0.72rem;">0</span>
+        <span id="pending-exposure" class="text-muted" style="font-size:0.76rem;margin-left:auto;">Exposure: --</span>
+      </div>
+      <div class="glass-card" id="live-positions-table-wrap" style="margin-bottom:12px;">
+        <table class="data-table"><thead><tr><th>Placed</th><th>Market</th><th>Direction</th><th>Stake</th><th>Edge</th><th style="min-width:100px;">Countdown</th><th>Pot. Profit</th><th>Pot. Loss</th></tr></thead>
+        <tbody id="live-pending-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No pending trades</td></tr></tbody></table>
+      </div>
+      <!-- Resolved Trades -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <h3 class="section-title" data-accent="garves" style="margin:0;font-size:0.76rem;">Resolved Trades</h3>
+        <span id="resolved-summary" class="text-muted" style="font-size:0.76rem;margin-left:auto;">--</span>
+      </div>
+      <div class="glass-card" style="margin-bottom:12px;"><table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Direction</th><th>Stake</th><th>Edge</th><th>Result</th><th>PnL</th></tr></thead><tbody id="live-resolved-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;padding:24px;">No resolved trades yet</td></tr></tbody></table></div>
+      <!-- Breakdowns -->
+      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">Breakdowns</h3>
+      <div class="grid-3" id="live-breakdowns" style="margin-bottom:12px;">
+        <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Asset</h3><table class="data-table"><thead><tr><th>Asset</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-asset"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+        <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Timeframe</h3><table class="data-table"><thead><tr><th>TF</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-tf"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+        <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Direction</h3><table class="data-table"><thead><tr><th>Dir</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-dir"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+      </div>
+      <!-- Daily Performance -->
+      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">Daily Performance History</h3>
+      <div class="glass-card"><table class="data-table"><thead><tr><th>Date</th><th>Trades</th><th>W-L</th><th>Win Rate</th><th>PnL</th><th>Avg Edge</th><th>Regime</th><th>Issues</th></tr></thead><tbody id="daily-history-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No daily reports yet</td></tr></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- ═══ SECTION 6: Performance Insights (collapsed) ═══ -->
+  <div class="collapse-section" style="margin-bottom:12px;">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">Performance Insights</h2>
+    </div>
+    <div class="collapse-body">
+
+      <!-- Sub-section A: ML & Strategy -->
+      <h3 class="section-title" data-accent="garves" style="font-size:0.82rem;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.06);">ML &amp; Strategy</h3>
       <!-- ML Intelligence -->
       <div class="grid-3" id="ml-models-grid" style="margin-bottom:12px;">
         <div class="glass-card" style="border-left:3px solid #ff6600;">
@@ -459,25 +545,20 @@
           Indicators with accuracy above 55% get boosted +30%. Below 45% accuracy = disabled (0 weight). <strong>Samples</strong> = total votes cast by this indicator across all trades.
         </div>
       </div>
-      <div class="glass-card"><table class="data-table"><thead><tr><th>Indicator</th><th>Base</th><th>Dynamic</th><th>Accuracy</th><th>Samples</th><th>Status</th></tr></thead><tbody id="conv-weights-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody></table></div>
-
-      <!-- Trade Journal Analyzer -->
-      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;margin-top:16px;">Trade Journal</h3>
+      <div class="glass-card" style="margin-bottom:12px;"><table class="data-table"><thead><tr><th>Indicator</th><th>Base</th><th>Dynamic</th><th>Accuracy</th><th>Samples</th><th>Status</th></tr></thead><tbody id="conv-weights-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody></table></div>
+      <!-- Trade Journal -->
+      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">Trade Journal</h3>
       <div class="grid-3" id="journal-summary-cards" style="margin-bottom:10px;">
         <div class="stat-card" data-accent="garves"><div class="stat-value" id="journal-streak">--</div><div class="stat-label">Current Streak</div></div>
         <div class="stat-card" data-accent="success"><div class="stat-value" id="journal-best-combo">--</div><div class="stat-label">Best Combo</div></div>
         <div class="stat-card" data-accent="warning"><div class="stat-value" id="journal-worst-combo">--</div><div class="stat-label">Worst Combo</div></div>
       </div>
-
-      <!-- Hour Heatmap -->
       <div class="glass-card" style="margin-bottom:10px;">
         <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Hour Heatmap (ET)</div>
         <div id="journal-hour-heatmap" style="display:grid;grid-template-columns:repeat(12,1fr);gap:3px;font-family:var(--font-mono);font-size:0.64rem;">
           <span class="text-muted" style="grid-column:1/-1;text-align:center;">Loading...</span>
         </div>
       </div>
-
-      <!-- Best/Worst Combos Tables -->
       <div class="grid-2" style="margin-bottom:10px;">
         <div class="glass-card" style="border-left:3px solid var(--success);">
           <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--success);margin-bottom:4px;">Best Combos</div>
@@ -490,30 +571,18 @@
           <tbody id="journal-worst-tbody"><tr><td colspan="3" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody></table>
         </div>
       </div>
-
-      <!-- Mistake Patterns -->
       <div class="glass-card" style="margin-bottom:10px;border-left:3px solid var(--warning);">
         <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--warning);margin-bottom:4px;">Mistake Patterns</div>
         <div id="journal-mistakes" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">Loading...</span></div>
       </div>
-
-      <!-- Recommendations -->
-      <div class="glass-card" style="border-left:3px solid var(--agent-garves);">
+      <div class="glass-card" style="margin-bottom:16px;border-left:3px solid var(--agent-garves);">
         <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px;">Recommendations</div>
         <div id="journal-recommendations" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">Loading...</span></div>
       </div>
-    </div>
-  </div>
 
-  <!-- ═══════════════════════════════════════════ -->
-  <!-- COLLAPSIBLE: V2 Intelligence                -->
-  <!-- ═══════════════════════════════════════════ -->
-  <div class="collapse-section">
-    <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">V2 Intelligence</h2>
-    </div>
-    <div class="collapse-body">
-      <!-- Kill Switch Status -->
+      <!-- Sub-section B: V2 Intelligence -->
+      <h3 class="section-title" data-accent="garves" style="font-size:0.82rem;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.06);">V2 Intelligence</h3>
+      <!-- Kill Switch -->
       <div class="glass-card" style="margin-bottom:10px;" id="v2-kill-switch-card">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
           <span style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);">Kill Switch</span>
@@ -521,7 +590,6 @@
         </div>
         <div id="v2-kill-switch-reason" style="font-size:0.72rem;color:var(--text-muted);display:none;"></div>
       </div>
-
       <!-- Core Metrics -->
       <div class="glass-card" style="margin-bottom:10px;">
         <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Core Metrics</div>
@@ -562,29 +630,25 @@
           </div>
         </div>
       </div>
-
       <!-- Weekly Competitive Check -->
       <div id="v2-weekly-card" class="glass-card" style="margin-bottom:10px;border-left:3px solid var(--agent-garves);display:none;">
         <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--agent-garves);margin-bottom:4px;">Weekly Competitive Check</div>
         <div id="v2-weekly-content" style="font-family:var(--font-mono);font-size:0.72rem;"></div>
       </div>
-
-      <!-- Autonomous Debug Suggestions -->
+      <!-- Auto-Debug Suggestions -->
       <div id="v2-debug-card" class="glass-card" style="margin-bottom:10px;border-left:3px solid var(--warning);display:none;">
         <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--warning);margin-bottom:4px;">Auto-Debug Suggestions</div>
         <div id="v2-debug-fixes" style="font-family:var(--font-mono);font-size:0.72rem;"></div>
       </div>
-
-      <!-- Post-Trade Analysis Feed -->
+      <!-- Post-Trade Analysis -->
       <div class="glass-card" style="margin-bottom:10px;border-left:3px solid var(--info);">
         <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--info);margin-bottom:4px;">Post-Trade Analysis</div>
         <div id="v2-post-trade-feed" style="font-family:var(--font-mono);font-size:0.72rem;max-height:120px;overflow-y:auto;">
           <span class="text-muted">Loading...</span>
         </div>
       </div>
-
-      <!-- Auto-Rules + Edge Decay side by side -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+      <!-- Auto-Rules + Edge Decay -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
         <div class="glass-card" style="border-left:3px solid var(--warning);">
           <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--warning);margin-bottom:4px;">Active Auto-Rules</div>
           <div id="v2-auto-rules" style="font-family:var(--font-mono);font-size:0.72rem;">
@@ -598,78 +662,14 @@
           </div>
         </div>
       </div>
-
       <!-- Performance Warnings -->
-      <div id="v2-warnings-card" class="glass-card" style="margin-top:10px;border-left:3px solid var(--danger);display:none;">
+      <div id="v2-warnings-card" class="glass-card" style="margin-bottom:16px;border-left:3px solid var(--danger);display:none;">
         <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--danger);margin-bottom:4px;">Performance Warnings</div>
         <div id="v2-warnings-list" style="font-family:var(--font-mono);font-size:0.72rem;"></div>
       </div>
-    </div>
-  </div>
 
-  <!-- ═══════════════════════════════════════════ -->
-  <!-- COLLAPSIBLE: Trade Details (default open)   -->
-  <!-- ═══════════════════════════════════════════ -->
-  <div class="collapse-section default-open">
-    <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">Trade Details</h2>
-    </div>
-    <div class="collapse-body">
-      <!-- Activity Feed -->
-      <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-garves);">
-        <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Agent Activity</h3>
-        <div id="garves-activity-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:150px;overflow-y:auto;"><span class="text-muted">Waiting for activity...</span></div>
-      </div>
-
-      <!-- Trade History -->
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:var(--space-2);">
-        <h3 class="section-title" style="font-size:0.76rem;margin:0;">Trade History</h3>
-        <span id="oc-record" class="text-muted" style="font-size:0.72rem;">--</span>
-        <span id="oc-realized-pnl" class="text-muted" style="font-size:0.72rem;margin-left:auto;">--</span>
-      </div>
-      <div class="glass-card" style="margin-bottom:12px;"><table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Bet</th><th>Cost</th><th>Result</th><th>P&L</th></tr></thead>
-      <tbody id="oc-history-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:16px;">No trade history</td></tr></tbody></table></div>
-
-      <!-- Pending Trades -->
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <h3 class="section-title" data-accent="warning" style="margin:0;font-size:0.76rem;">Pending Trades</h3>
-        <span id="pending-count-badge" style="background:var(--warning);color:#000;font-weight:700;padding:2px 8px;border-radius:10px;font-size:0.72rem;">0</span>
-        <span id="pending-exposure" class="text-muted" style="font-size:0.76rem;margin-left:auto;">Exposure: --</span>
-      </div>
-      <div class="glass-card" id="live-positions-table-wrap" style="margin-bottom:12px;">
-        <table class="data-table"><thead><tr><th>Placed</th><th>Market</th><th>Direction</th><th>Stake</th><th>Edge</th><th style="min-width:100px;">Countdown</th><th>Pot. Profit</th><th>Pot. Loss</th></tr></thead>
-        <tbody id="live-pending-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No pending trades</td></tr></tbody></table>
-      </div>
-
-      <!-- Resolved Trades -->
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <h3 class="section-title" data-accent="garves" style="margin:0;font-size:0.76rem;">Resolved Trades</h3>
-        <span id="resolved-summary" class="text-muted" style="font-size:0.76rem;margin-left:auto;">--</span>
-      </div>
-      <div class="glass-card" style="margin-bottom:12px;"><table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Direction</th><th>Stake</th><th>Edge</th><th>Result</th><th>PnL</th></tr></thead><tbody id="live-resolved-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;padding:24px;">No resolved trades yet</td></tr></tbody></table></div>
-
-      <!-- Breakdowns -->
-      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">Breakdowns</h3>
-      <div class="grid-3" id="live-breakdowns" style="margin-bottom:12px;">
-        <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Asset</h3><table class="data-table"><thead><tr><th>Asset</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-asset"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
-        <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Timeframe</h3><table class="data-table"><thead><tr><th>TF</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-tf"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
-        <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Direction</h3><table class="data-table"><thead><tr><th>Dir</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-dir"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
-      </div>
-
-      <!-- Daily Performance -->
-      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">Daily Performance History</h3>
-      <div class="glass-card"><table class="data-table"><thead><tr><th>Date</th><th>Trades</th><th>W-L</th><th>Win Rate</th><th>PnL</th><th>Avg Edge</th><th>Regime</th><th>Issues</th></tr></thead><tbody id="daily-history-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No daily reports yet</td></tr></tbody></table></div>
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════ -->
-  <!-- COLLAPSIBLE: Market Data (default closed)   -->
-  <!-- ═══════════════════════════════════════════ -->
-  <div class="collapse-section">
-    <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">Market Data</h2>
-    </div>
-    <div class="collapse-body">
+      <!-- Sub-section C: Market Data -->
+      <h3 class="section-title" data-accent="garves" style="font-size:0.82rem;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.06);">Market Data</h3>
       <!-- Derivatives Intelligence -->
       <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">Derivatives Intelligence</h3>
       <div class="grid grid-3" id="deriv-cards" style="margin-bottom:12px;">
@@ -696,20 +696,143 @@
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════ -->
-  <!-- COLLAPSIBLE: Tools (default closed)         -->
-  <!-- ═══════════════════════════════════════════ -->
+  <!-- ═══ SECTION 7: Tools (collapsed) ═══ -->
   <div class="collapse-section">
     <div class="collapse-trigger">
       <h2 class="section-title" data-accent="warning" style="margin-bottom:0;">Tools</h2>
     </div>
     <div class="collapse-body">
-      <!-- Mistake Analysis -->
       <h3 class="section-title" data-accent="warning" style="font-size:0.76rem;">Today's Mistake Analysis</h3>
       <div id="daily-mistakes" class="flex flex-col gap-2" style="margin-bottom:12px;"><div class="text-muted" style="padding:var(--space-4);">Loading analysis...</div></div>
-      <!-- Live Log -->
       <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">Live Log</h3>
       <div class="log-feed" id="live-log-feed"><div class="log-line"><span class="log-time">--:--:--</span><span class="log-msg">Waiting for log data...</span></div></div>
     </div>
   </div>
+
 </div>
+
+<!-- Embedded JS: Hero Metrics Populator + Whale Follower Loader -->
+<script>
+function populateGarvesHeroExposure() {
+  var paUtil = document.getElementById('pa-total-util');
+  var paExposure = document.getElementById('pa-total-exposure');
+  if (paUtil) {
+    var elUtil = document.getElementById('garves-hero-util-pct');
+    if (elUtil && paUtil.textContent !== '0%') elUtil.textContent = paUtil.textContent;
+  }
+  if (paExposure) {
+    var elExp = document.getElementById('garves-hero-exposure');
+    if (elExp && paExposure.textContent !== '--') elExp.textContent = paExposure.textContent;
+  }
+}
+
+function loadWhaleFollower() {
+  fetch('/api/whale').then(function(r) { return r.json(); }).then(function(data) {
+    var badge = document.getElementById('whale-status-badge');
+    var countLabel = document.getElementById('whale-tracked-count');
+    if (data.enabled) {
+      if (badge) { badge.textContent = 'ON'; badge.style.background = 'rgba(34,197,94,0.15)'; badge.style.color = '#22c55e'; }
+    } else {
+      if (badge) { badge.textContent = 'OFF'; badge.style.background = 'rgba(255,255,255,0.06)'; badge.style.color = 'var(--text-muted)'; }
+    }
+    var tracked = (data.tracked_wallets || []).length || data.total_tracked || 0;
+    if (countLabel) countLabel.textContent = tracked + ' whales';
+    var elW = document.getElementById('whale-tracked-wallets');
+    if (elW) elW.textContent = tracked;
+  }).catch(function() {});
+
+  fetch('/api/whale/wallets').then(function(r) { return r.json(); }).then(function(data) {
+    var wallets = data.tracked || [];
+    var elW = document.getElementById('whale-tracked-wallets');
+    if (elW && wallets.length > 0) elW.textContent = wallets.length;
+    var tbody = document.getElementById('whale-wallets-tbody');
+    if (!tbody) return;
+    if (wallets.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;">No tracked whales</td></tr>';
+      return;
+    }
+    var html = '';
+    wallets.slice(0, 15).forEach(function(w) {
+      var wallet = w.wallet ? (w.wallet.substring(0, 6) + '...' + w.wallet.slice(-4)) : '--';
+      var username = w.username || '--';
+      var score = w.score != null ? w.score.toFixed(1) : '--';
+      var trades = w.trades || w.total_trades || '--';
+      var wr = w.win_rate != null ? (w.win_rate * 100).toFixed(1) + '%' : '--';
+      var pnl = w.pnl != null ? '$' + w.pnl.toFixed(2) : '--';
+      var pnlColor = (w.pnl || 0) >= 0 ? '#22c55e' : '#ef4444';
+      html += '<tr><td style="font-family:var(--font-mono);font-size:0.68rem;">' + wallet + '</td><td>' + username + '</td><td>' + score + '</td><td>' + trades + '</td><td>' + wr + '</td><td style="color:' + pnlColor + ';">' + pnl + '</td></tr>';
+    });
+    tbody.innerHTML = html;
+  }).catch(function() {});
+
+  fetch('/api/whale/copy-trades').then(function(r) { return r.json(); }).then(function(data) {
+    var summary = data.summary || {};
+    var elCount = document.getElementById('whale-copy-count');
+    var elWR = document.getElementById('whale-win-rate');
+    var elPnl = document.getElementById('whale-total-pnl');
+    if (elCount) elCount.textContent = summary.total || 0;
+    if (elWR) elWR.textContent = summary.win_rate != null ? (summary.win_rate * 100).toFixed(1) + '%' : '--';
+    if (elPnl) {
+      var pnl = summary.total_pnl || 0;
+      elPnl.textContent = '$' + pnl.toFixed(2);
+      elPnl.style.color = pnl >= 0 ? '#22c55e' : '#ef4444';
+    }
+    var trades = data.trades || [];
+    var tbody = document.getElementById('whale-trades-tbody');
+    if (!tbody) return;
+    if (trades.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7" class="text-muted" style="text-align:center;">No copy trades</td></tr>';
+      return;
+    }
+    var html = '';
+    trades.slice(0, 20).forEach(function(t) {
+      var time = t.time || t.placed_at || '--';
+      if (time.length > 16) time = time.substring(5, 16);
+      var whale = t.whale || t.wallet || '--';
+      if (whale.length > 10) whale = whale.substring(0, 6) + '..';
+      var market = t.market || t.question || '--';
+      if (market.length > 30) market = market.substring(0, 30) + '..';
+      var dir = t.direction || '--';
+      var dirColor = dir === 'YES' ? '#22c55e' : dir === 'NO' ? '#ef4444' : 'inherit';
+      var size = t.size != null ? '$' + Number(t.size).toFixed(2) : '--';
+      var status = t.status || t.result || 'pending';
+      var statusColor = status === 'won' ? '#22c55e' : status === 'lost' ? '#ef4444' : '#eab308';
+      var pnl = t.pnl != null ? '$' + Number(t.pnl).toFixed(2) : '--';
+      var pnlColor = (t.pnl || 0) >= 0 ? '#22c55e' : '#ef4444';
+      html += '<tr><td style="font-size:0.68rem;">' + time + '</td><td style="font-size:0.68rem;">' + whale + '</td><td style="font-size:0.68rem;">' + market + '</td><td style="color:' + dirColor + ';font-weight:600;">' + dir + '</td><td>' + size + '</td><td style="color:' + statusColor + ';font-weight:600;">' + status + '</td><td style="color:' + pnlColor + ';">' + pnl + '</td></tr>';
+    });
+    tbody.innerHTML = html;
+  }).catch(function() {});
+
+  fetch('/api/whale/signals').then(function(r) { return r.json(); }).then(function(data) {
+    var signals = data.signals || [];
+    var elCount = document.getElementById('whale-signal-count');
+    if (elCount) elCount.textContent = signals.length;
+    var el = document.getElementById('whale-signals-list');
+    if (!el) return;
+    if (signals.length === 0) {
+      el.innerHTML = '<span class="text-muted">No active signals</span>';
+      return;
+    }
+    var html = '';
+    signals.slice(0, 10).forEach(function(s) {
+      var dir = s.direction || '--';
+      var dirColor = dir === 'YES' ? '#22c55e' : dir === 'NO' ? '#ef4444' : '#eab308';
+      var market = s.market || s.question || '--';
+      if (market.length > 40) market = market.substring(0, 40) + '..';
+      var wallets = s.wallets || s.whale_count || 1;
+      var consensus = s.consensus ? 'CONSENSUS' : '';
+      html += '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);">';
+      html += '<span style="color:' + dirColor + ';font-weight:700;min-width:28px;">' + dir + '</span>';
+      html += '<span style="flex:1;font-size:0.68rem;">' + market + '</span>';
+      html += '<span style="font-size:0.62rem;color:var(--text-muted);">' + wallets + ' whale' + (wallets !== 1 ? 's' : '') + '</span>';
+      if (consensus) html += '<span style="font-size:0.58rem;padding:1px 6px;border-radius:8px;background:rgba(139,92,246,0.15);color:#8b5cf6;font-weight:600;">CONSENSUS</span>';
+      html += '</div>';
+    });
+    el.innerHTML = html;
+  }).catch(function() {});
+}
+
+setInterval(populateGarvesHeroExposure, 3000);
+setTimeout(populateGarvesHeroExposure, 2000);
+</script>

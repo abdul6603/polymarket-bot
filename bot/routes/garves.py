@@ -1053,6 +1053,10 @@ def api_garves_balance():
     else:
         result["error"] = "Balance unavailable — no cache and API unreachable"
 
+
+
+
+
     result["fetched_at"] = time.time()
     try:
         BALANCE_CACHE_FILE.write_text(json.dumps(result, indent=2))

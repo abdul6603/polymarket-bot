@@ -271,6 +271,15 @@ function renderLiveBalance(data) {
     label += ' <span style="color:var(--warning);font-size:0.6rem;">STALE</span>';
   }
   portEl.parentElement.querySelector('.stat-label').innerHTML = label;
+  // Populate hero cards
+  var heroToday = document.getElementById('garves-hero-today-pnl');
+  var heroTotal = document.getElementById('garves-hero-total-pnl');
+  if (heroTotal) heroTotal.textContent = (pnl >= 0 ? '+$' : '-$') + Math.abs(pnl).toFixed(2);
+  if (heroToday && data.today_pnl != null) {
+    var tp = data.today_pnl;
+    heroToday.textContent = (tp >= 0 ? '+$' : '-$') + Math.abs(tp).toFixed(2);
+    heroToday.style.color = tp >= 0 ? 'var(--success)' : 'var(--error)';
+  }
 }
 
 // === LIVE COUNTDOWN TIMER ENGINE ===
@@ -4682,6 +4691,7 @@ async function refresh() {
       loadMakerStatus();
       loadEngineComparison();
       loadPortfolioAllocation();
+      loadWhaleFollower();
     } else if (currentTab === 'soren') {
       var resp = await fetch('/api/soren');
       renderSoren(await resp.json());
@@ -12414,6 +12424,18 @@ function loadGarvesV2Metrics() {
     if (wr50El) { wr50El.textContent = cm.wr_50 != null ? (cm.wr_50 * 100).toFixed(0) + '%' : '--'; wr50El.style.color = cm.wr_50 != null && cm.wr_50 >= 0.55 ? 'var(--success)' : cm.wr_50 != null && cm.wr_50 < 0.52 ? 'var(--danger)' : 'var(--text)'; }
     if (evEl) { evEl.textContent = cm.ev_capture_pct != null ? (cm.ev_capture_pct * 100).toFixed(0) + '%' : '--'; evEl.style.color = cm.ev_capture_pct > 0.5 ? 'var(--success)' : cm.ev_capture_pct < 0.3 ? 'var(--danger)' : 'var(--text)'; }
     if (ddEl) { ddEl.textContent = cm.current_drawdown_pct != null ? cm.current_drawdown_pct.toFixed(0) + '%' : '--'; ddEl.style.color = cm.current_drawdown_pct > 20 ? 'var(--danger)' : cm.current_drawdown_pct > 10 ? 'var(--warning)' : 'var(--text)'; }
+
+    // Hero card population from V2 metrics
+    var heroWr20 = document.getElementById('garves-hero-wr-20');
+    var heroWr50 = document.getElementById('garves-hero-wr-50');
+    var heroWr100 = document.getElementById('garves-hero-wr-100');
+    var heroEv = document.getElementById('garves-hero-ev-capture');
+    var heroEdge = document.getElementById('garves-hero-edge-quality');
+    if (heroWr20 && cm.wr_20 != null) { heroWr20.textContent = (cm.wr_20 * 100).toFixed(0) + '%'; heroWr20.style.color = cm.wr_20 >= 0.55 ? 'var(--success)' : cm.wr_20 < 0.50 ? 'var(--danger)' : 'var(--text)'; }
+    if (heroWr50 && cm.wr_50 != null) heroWr50.textContent = (cm.wr_50 * 100).toFixed(0) + '%';
+    if (heroWr100 && cm.wr_100 != null) heroWr100.textContent = (cm.wr_100 * 100).toFixed(0) + '%';
+    if (heroEv && cm.ev_capture_pct != null) { heroEv.textContent = (cm.ev_capture_pct * 100).toFixed(0) + '%'; heroEv.style.color = cm.ev_capture_pct > 0.5 ? 'var(--success)' : cm.ev_capture_pct < 0.3 ? 'var(--danger)' : 'var(--text)'; }
+    if (heroEdge && cm.ev_capture_20 != null) heroEdge.textContent = (cm.ev_capture_20 * 100).toFixed(0) + '%';
 
     // Second row: rolling EV capture + slippage + timing
     var ev20El = document.getElementById('v2-ev-20');

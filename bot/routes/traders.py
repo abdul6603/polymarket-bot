@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
@@ -479,6 +480,110 @@ def _normalize_hawk_trades(trades: list[dict]) -> list[dict]:
     return out
 
 
+
+def _read_garves_engine_trades() -> list[dict]:
+    """Read trades from ALL Garves engines directly (snipe, taker, whale)."""
+    import json as _json
+    from pathlib import Path as _Path
+
+    data_dir = _Path(__file__).parent.parent.parent / "data"
+    is_paper = os.getenv("DRY_RUN", "true").lower() in ("true", "1", "yes")
+    mode = "paper" if is_paper else "live"
+    out = []
+
+    def _read_jsonl(path):
+        records = []
+        if not path.exists():
+            return records
+        try:
+            with open(path) as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        records.append(_json.loads(line))
+        except Exception:
+            pass
+        return records
+
+    # --- Taker trades (archives + current) ---
+    taker_trades = []
+    archives_dir = data_dir / "archives"
+    if archives_dir.exists():
+        for f in sorted(archives_dir.glob("trades_*.jsonl")):
+            taker_trades.extend(_read_jsonl(f))
+    taker_trades.extend(_read_jsonl(data_dir / "trades.jsonl"))
+
+    for t in taker_trades:
+        if not t.get("resolved"):
+            continue
+        pnl = _safe_float(t.get("pnl", 0))
+        ts = _safe_float(t.get("resolved_at", t.get("timestamp", 0)))
+        asset = (t.get("asset") or "unknown").upper()[:3]
+        out.append({
+            "agent": "garves",
+            "engine": "taker",
+            "mode": mode if t.get("dry_run", True) else "live",
+            "market": (t.get("question") or f"Taker {asset}")[:80],
+            "asset": asset,
+            "direction": (t.get("direction") or "up").upper(),
+            "category": "crypto",
+            "platform": "polymarket",
+            "cost": round(_safe_float(t.get("size_usd", 0)), 2),
+            "payout": round(_safe_float(t.get("size_usd", 0)) + pnl, 2) if t.get("won") else 0.0,
+            "pnl": round(pnl, 2),
+            "won": t.get("won", False),
+            "resolved_at": ts,
+            "edge": _safe_float(t.get("edge")),
+        })
+
+    # --- Snipe trades ---
+    for t in _read_jsonl(data_dir / "snipe_trades.jsonl"):
+        if "won" not in t:
+            continue
+        pnl = _safe_float(t.get("pnl_usd", 0))
+        asset = (t.get("asset") or "unknown").upper()[:3]
+        out.append({
+            "agent": "garves",
+            "engine": "snipe",
+            "mode": mode,
+            "market": f"Snipe {asset} {(t.get('direction') or '').upper()} ({t.get('waves', 0)}w ${t.get('total_size_usd', 0):.0f})",
+            "asset": asset,
+            "direction": (t.get("direction") or "up").upper(),
+            "category": "crypto",
+            "platform": "polymarket",
+            "cost": round(_safe_float(t.get("total_size_usd", 0)), 2),
+            "payout": round(_safe_float(t.get("total_size_usd", 0)) + pnl, 2) if t.get("won") else 0.0,
+            "pnl": round(pnl, 2),
+            "won": t.get("won", False),
+            "resolved_at": _safe_float(t.get("timestamp", 0)),
+            "edge": None,
+        })
+
+    # --- Whale copy trades ---
+    for t in _read_jsonl(data_dir / "whale_copy_trades.jsonl"):
+        if not t.get("resolved"):
+            continue
+        pnl = _safe_float(t.get("pnl_usd", t.get("pnl", 0)))
+        asset = (t.get("asset") or "unknown").upper()[:3]
+        out.append({
+            "agent": "garves",
+            "engine": "whale",
+            "mode": mode,
+            "market": (t.get("question") or f"Whale Copy {asset}")[:80],
+            "asset": asset,
+            "direction": (t.get("direction") or "up").upper(),
+            "category": "crypto",
+            "platform": "polymarket",
+            "cost": round(_safe_float(t.get("size_usd", 0)), 2),
+            "payout": round(_safe_float(t.get("size_usd", 0)) + pnl, 2) if t.get("won") else 0.0,
+            "pnl": round(pnl, 2),
+            "won": t.get("won", False),
+            "resolved_at": _safe_float(t.get("resolved_at", t.get("timestamp", 0))),
+            "edge": None,
+        })
+
+    return out
+
 def _normalize_garves_history(history: list[dict]) -> list[dict]:
     """Normalize Garves resolved trades."""
     out = []
@@ -559,9 +664,19 @@ def api_traders_history():
     hawk_raw = hawk_f.result() or {}
     hawk_trades = _normalize_hawk_trades(hawk_raw.get("trades", []))
 
-    # Garves — history is in the "history" key of positions response
+    # Garves — read ALL engine trades directly (snipe, taker, whale)
+    garves_trades = _read_garves_engine_trades()
+    # Also include on-chain history as fallback
     garves_raw = garves_f.result() or {}
-    garves_trades = _normalize_garves_history(garves_raw.get("history", []))
+    on_chain = _normalize_garves_history(garves_raw.get("history", []))
+    # Merge: engine trades take priority, add on-chain only if no engine data
+    if garves_trades:
+        # De-dup: on-chain trades may overlap with taker trades
+        existing_markets = {t["market"][:30] for t in garves_trades}
+        for t in on_chain:
+            if t["market"][:30] not in existing_markets:
+                t["engine"] = "on-chain"
+                garves_trades.append(t)
 
     # Odin
     odin_raw = odin_f.result()
