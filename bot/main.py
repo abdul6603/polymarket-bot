@@ -31,6 +31,7 @@ from bot.maker_engine import MakerEngine
 from bot.market_quality import MarketQualityScorer
 from bot.performance_monitor import PerformanceMonitor
 from bot.snipe.engine import SnipeEngine
+from bot.whale_follower import WhaleTracker
 
 log = logging.getLogger("bot")
 
@@ -124,6 +125,13 @@ class TradingBot:
             delta_threshold=cfg.snipe_delta_threshold / 100,
         )
         log.info("[SNIPE] dry_run=%s (from .env)", cfg.dry_run)
+
+        # Whale Follower — Smart Money copy trader
+        self.whale_tracker = WhaleTracker(
+            clob_client=self.client,
+            dry_run=cfg.dry_run,
+        )
+
         # Connect CLOB orderbook bridge — REST-based with 5s cache
         from bot.snipe import clob_book
         clob_book.init(cfg.clob_host)
@@ -298,6 +306,11 @@ class TradingBot:
                      self.maker_engine.max_total_exposure, self.maker_engine.tick_interval_s)
         else:
             log.info("MakerEngine: disabled (set MAKER_ENABLED=true to activate)")
+        if cfg.whale_enabled:
+            log.info("WhaleTracker: ENABLED (poll=%.0fs, max_copy=$%.0f, daily_cap=$%.0f)",
+                     cfg.whale_poll_interval_s, 25.0, 100.0)
+        else:
+            log.info("WhaleTracker: disabled (set WHALE_ENABLED=true to activate)")
         log.info("=" * 60)
 
         # Start Binance real-time price feed + derivatives feed + Polymarket WebSocket feed
@@ -310,11 +323,12 @@ class TradingBot:
             loop.add_signal_handler(sig, self._handle_shutdown)
 
         try:
-            # Run taker + maker + snipe loops concurrently
+            # Run taker + maker + snipe + whale loops concurrently
             taker_task = asyncio.create_task(self._taker_loop())
             maker_task = asyncio.create_task(self._maker_loop())
             snipe_task = asyncio.create_task(self._snipe_loop())
-            await asyncio.gather(taker_task, maker_task, snipe_task)
+            whale_task = asyncio.create_task(self._whale_loop())
+            await asyncio.gather(taker_task, maker_task, snipe_task, whale_task)
         finally:
             await self._cleanup()
 
@@ -387,6 +401,35 @@ class TradingBot:
     async def _snipe_loop(self) -> None:
         """Snipe engine loop for BTC 5m markets (5s tick)."""
         await self.snipe_engine.run_loop(self._shutdown_event)
+
+    async def _whale_loop(self) -> None:
+        """Whale Follower loop: poll whale wallets, generate copy signals."""
+        if not self.cfg.whale_enabled:
+            return
+
+        # Initialize in a thread to avoid blocking the event loop
+        loop = asyncio.get_running_loop()
+        try:
+            await loop.run_in_executor(None, self.whale_tracker.initialize)
+        except Exception as e:
+            log.warning("[WHALE] Initialization failed: %s", str(e)[:200])
+            return
+
+        log.info("[WHALE] Whale loop started (%.0fs interval)", self.cfg.whale_poll_interval_s)
+
+        while not self._shutdown_event.is_set():
+            try:
+                await loop.run_in_executor(None, self.whale_tracker.tick)
+            except Exception as e:
+                log.warning("[WHALE] Tick error: %s", str(e)[:200])
+
+            try:
+                await asyncio.wait_for(
+                    self._shutdown_event.wait(),
+                    timeout=self.cfg.whale_poll_interval_s,
+                )
+            except asyncio.TimeoutError:
+                pass
 
     def _handle_shutdown(self) -> None:
         log.info("Shutdown signal received")

@@ -54,6 +54,10 @@ class Config:
     maker_max_total_exposure: float = float(_env("MAKER_MAX_TOTAL_EXPOSURE", "60.0"))
     maker_tick_interval_s: float = float(_env("MAKER_TICK_INTERVAL_S", "5.0"))
 
+    # Whale Follower — Smart Money copy trader (disabled by default)
+    whale_enabled: bool = _env("WHALE_ENABLED", "false").lower() in ("true", "1", "yes")
+    whale_poll_interval_s: float = float(_env("WHALE_POLL_INTERVAL_S", "4.0"))
+
 
 # ── Brotherhood Hierarchy ──
 # Jordan (Owner) → Claude (Godfather) → Shelby (Commander) → Agents

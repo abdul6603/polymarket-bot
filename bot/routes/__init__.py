@@ -30,6 +30,7 @@ def register_all_blueprints(app: Flask) -> None:
     from bot.routes.discord_intel import discord_bp
     from bot.routes.snipe_assist import snipe_assist_bp
     from bot.routes.pnl import pnl_bp
+    from bot.routes.whale import whale_bp
 
     app.register_blueprint(garves_bp)
     app.register_blueprint(soren_bp)
@@ -52,3 +53,4 @@ def register_all_blueprints(app: Flask) -> None:
     app.register_blueprint(discord_bp)
     app.register_blueprint(snipe_assist_bp)
     app.register_blueprint(pnl_bp)
+    app.register_blueprint(whale_bp)
