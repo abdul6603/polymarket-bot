@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 import os
 import time
+from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 
@@ -36,6 +37,7 @@ def _fetch_all() -> dict:
     """Parallel-fetch all trading data from existing endpoints."""
     paths = {
         "garves": "/api/garves/positions",
+        "maker": "/api/garves/maker",
         "hawk": "/api/hawk/positions",
         "odin": "/api/odin/positions",
         "odin_status": "/api/odin",
@@ -122,6 +124,88 @@ def _normalize_garves(data: dict | None, mode: str = "live") -> list[dict]:
             "pnl_pct": _safe_float(h.get("pnl_pct")),
             "status": h.get("status", "active"),
             "end_date": h.get("end_date"),
+            "leverage": None,
+            "tp_price": None,
+            "sl_price": None,
+            "tp_distance_pct": None,
+            "sl_distance_pct": None,
+            "edge": None,
+            "conviction": None,
+            "payout": None,
+        })
+    return positions
+
+
+def _normalize_maker(data: dict | None, mode: str = "paper") -> list[dict]:
+    """Normalize Garves MakerEngine inventory into unified position schema.
+
+    Aggregates per-token inventory by asset (BTC, ETH, SOL, XRP) and creates
+    one position per asset with non-zero aggregate net shares.
+    """
+    if not data or not isinstance(data, dict) or not data.get("enabled"):
+        return []
+    inventory = data.get("inventory", {})
+    if not inventory:
+        return []
+
+    # Fair-price lookup from recent fills (token_id → last fair price)
+    fair_prices: dict[str, float] = {}
+    for fill in data.get("recent_fills", []):
+        tid = fill.get("token_id")
+        if tid:
+            fair_prices[tid] = _safe_float(fill.get("fair", 0.5))
+
+    # Aggregate by asset
+    asset_map = {"bitcoin": "BTC", "ethereum": "ETH", "solana": "SOL", "xrp": "XRP"}
+    agg: dict[str, dict] = defaultdict(
+        lambda: {"net_shares": 0.0, "fills": 0, "rebate": 0.0, "tokens": 0, "value_est": 0.0}
+    )
+    for token_id, inv in inventory.items():
+        shares = _safe_float(inv.get("net_shares"))
+        if shares == 0:
+            continue
+        asset_key = (inv.get("asset") or "unknown").lower()
+        fair = fair_prices.get(token_id, 0.5)
+        a = agg[asset_key]
+        a["net_shares"] += shares
+        a["fills"] += inv.get("fills_today", 0)
+        a["rebate"] += _safe_float(inv.get("estimated_rebate"))
+        a["tokens"] += 1
+        a["value_est"] += abs(shares) * fair
+
+    # Proportionally split session PnL across assets
+    session_pnl = _safe_float((data.get("pnl") or {}).get("session_pnl"))
+    total_abs = sum(abs(info["net_shares"]) for info in agg.values())
+
+    positions = []
+    for asset_lower, info in agg.items():
+        net = info["net_shares"]
+        if net == 0:
+            continue
+        asset_upper = asset_map.get(asset_lower, asset_lower.upper()[:3])
+        direction = "UP" if net > 0 else "DOWN"
+        size_est = info["value_est"]
+        share_frac = abs(net) / total_abs if total_abs > 0 else 0.25
+        est_pnl = round(session_pnl * share_frac, 2)
+
+        positions.append({
+            "id": f"garves_maker_{asset_lower}",
+            "agent": "garves",
+            "mode": mode,
+            "market": f"Maker {asset_upper} ({info['tokens']} mkts, {info['fills']} fills)",
+            "asset": asset_upper,
+            "platform": "polymarket",
+            "direction": direction,
+            "direction_class": _direction_class(direction),
+            "category": "crypto",
+            "size_usd": round(size_est, 2),
+            "entry_price": None,
+            "current_price": None,
+            "value": round(size_est + est_pnl, 2),
+            "pnl": est_pnl,
+            "pnl_pct": round(est_pnl / size_est * 100, 1) if size_est > 0 else 0.0,
+            "status": "active",
+            "end_date": None,
             "leverage": None,
             "tp_price": None,
             "sl_price": None,
@@ -286,6 +370,8 @@ def api_traders_positions():
     modes = _agent_mode(raw)
 
     garves_pos = _normalize_garves(raw.get("garves"), modes["garves"])
+    maker_pos = _normalize_maker(raw.get("maker"), modes["garves"])
+    garves_pos = garves_pos + maker_pos
     hawk_pos = _normalize_hawk(raw.get("hawk"), modes["hawk"])
     odin_pos = _normalize_odin(raw.get("odin"), modes["odin"])
     oracle_pos = _normalize_oracle(raw.get("oracle"), modes["oracle"])
@@ -334,6 +420,8 @@ def api_traders_overview():
 
     modes = _agent_mode(raw)
     garves_pos = _normalize_garves(raw.get("garves"), modes["garves"])
+    maker_pos = _normalize_maker(raw.get("maker"), modes["garves"])
+    garves_pos = garves_pos + maker_pos
     hawk_pos = _normalize_hawk(raw.get("hawk"), modes["hawk"])
     odin_pos = _normalize_odin(raw.get("odin"), modes["odin"])
     oracle_pos = _normalize_oracle(raw.get("oracle"), modes["oracle"])
@@ -401,6 +489,8 @@ def api_traders_risk():
     # Detect correlation: multiple agents holding same asset
     modes = _agent_mode(raw)
     garves_pos = _normalize_garves(raw.get("garves"), modes["garves"])
+    maker_pos = _normalize_maker(raw.get("maker"), modes["garves"])
+    garves_pos = garves_pos + maker_pos
     hawk_pos = _normalize_hawk(raw.get("hawk"), modes["hawk"])
     odin_pos = _normalize_odin(raw.get("odin"), modes["odin"])
     oracle_pos = _normalize_oracle(raw.get("oracle"), modes["oracle"])
