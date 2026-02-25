@@ -47,7 +47,7 @@ class HawkConfig:
 
     # V3 precision params
     max_per_event_usd: float = float(_env("HAWK_MAX_PER_EVENT_USD", "20"))  # Max total exposure per event
-    kelly_fraction: float = float(_env("HAWK_KELLY_FRACTION", "0.15"))
+    kelly_fraction: float = float(_env("HAWK_KELLY_FRACTION", "0.25"))
     max_risk_score: int = int(_env("HAWK_MAX_RISK_SCORE", "6"))
 
     # Toxic source kill switch — hard-block these edge sources immediately
@@ -105,7 +105,7 @@ class HawkConfig:
     sizing_domain_wr_boost: float = float(_env("HAWK_SIZING_DOMAIN_WR_BOOST", "1.3"))
     sizing_domain_wr_penalty: float = float(_env("HAWK_SIZING_DOMAIN_WR_PENALTY", "0.5"))
     sizing_books_boost: float = float(_env("HAWK_SIZING_BOOKS_BOOST", "1.2"))
-    sizing_books_penalty: float = float(_env("HAWK_SIZING_BOOKS_PENALTY", "0.6"))
+    sizing_books_penalty: float = float(_env("HAWK_SIZING_BOOKS_PENALTY", "0.75"))
     sizing_consensus_boost: float = float(_env("HAWK_SIZING_CONSENSUS_BOOST", "1.2"))
     sizing_consensus_penalty: float = float(_env("HAWK_SIZING_CONSENSUS_PENALTY", "0.7"))
     sizing_movement_boost: float = float(_env("HAWK_SIZING_MOVEMENT_BOOST", "1.2"))

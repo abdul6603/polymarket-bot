@@ -104,7 +104,7 @@ def smart_kelly_size(
             multiplier *= cfg.sizing_movement_penalty
             conviction_parts.append(f"movement={ctx.line_movement:+.1%}↓")
 
-    final_size = max(1.0, min(max_bet, base_size * multiplier))
+    final_size = max(5.0, min(max_bet, base_size * multiplier))
 
     # Conviction score: 0-100 based on multiplier + base quality
     conviction = int(min(100, max(0,
