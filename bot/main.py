@@ -915,7 +915,7 @@ class TradingBot:
                 )
                 continue
 
-            # ── Snipe Assist timing gate (advisory, non-fatal) ──
+            # ── Snipe Assist timing gate (advisory — size reduction only, never blocks) ──
             try:
                 import json as _json
                 from pathlib import Path as _Path
@@ -928,12 +928,15 @@ class TradingBot:
                         _ta_score = _assist.get("timing_score", 0)
                         _taker_ovr = (_assist.get("agent_overrides") or {}).get("garves_taker", {})
                         _ta_action = _taker_ovr.get("action", _ta_action)
-                        if _ta_action == "auto_skip" and _ta_score < 65:
-                            log.info("  -> Snipe Assist: AUTO-SKIP (score=%.0f)", _ta_score)
-                            continue
+                        if _ta_action == "auto_skip":
+                            # Advisory only — reduce size but NEVER block. Let Garves learn.
+                            _old_size = conviction.position_size_usd
+                            conviction.position_size_usd *= 0.80
+                            log.info("  -> Snipe Assist: LOW-TIMING (score=%.0f) $%.2f -> $%.2f (reduced, not blocked)",
+                                     _ta_score, _old_size, conviction.position_size_usd)
                         elif _ta_action == "conservative":
                             _old_size = conviction.position_size_usd
-                            conviction.position_size_usd *= 0.70
+                            conviction.position_size_usd *= 0.85
                             log.info("  -> Snipe Assist: CONSERVATIVE (score=%.0f) $%.2f -> $%.2f",
                                      _ta_score, _old_size, conviction.position_size_usd)
                         else:

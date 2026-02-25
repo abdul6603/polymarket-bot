@@ -1271,9 +1271,9 @@ class SignalEngine:
                         indicator_votes=ind_votes,
                     )
                     _ml_prob = _ml.predict(_temp_signal, _temp_snap)
-                    if _ml_prob is not None and _ml_prob < 0.40:
+                    if _ml_prob is not None and _ml_prob < 0.35:
                         log.info(
-                            "[%s/%s] ML VETO: win_prob=%.3f < 0.40, blocking trade",
+                            "[%s/%s] ML VETO: win_prob=%.3f < 0.35, blocking trade",
                             asset.upper(), timeframe, _ml_prob,
                         )
                         return None
