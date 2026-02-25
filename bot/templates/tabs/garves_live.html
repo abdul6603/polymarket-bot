@@ -425,6 +425,36 @@
             <div id="v2-drawdown" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">--</div>
           </div>
         </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px;border-top:1px solid rgba(255,255,255,0.05);padding-top:6px;">
+          <div style="text-align:center;">
+            <div style="font-size:0.62rem;color:var(--text-muted);">EV 20</div>
+            <div id="v2-ev-20" style="font-size:0.88rem;font-weight:600;font-family:var(--font-mono);">--</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:0.62rem;color:var(--text-muted);">EV 50</div>
+            <div id="v2-ev-50" style="font-size:0.88rem;font-weight:600;font-family:var(--font-mono);">--</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:0.62rem;color:var(--text-muted);">Slippage</div>
+            <div id="v2-slippage" style="font-size:0.88rem;font-weight:600;font-family:var(--font-mono);">--</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:0.62rem;color:var(--text-muted);">Timing Cost</div>
+            <div id="v2-timing" style="font-size:0.88rem;font-weight:600;font-family:var(--font-mono);">--</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weekly Competitive Check -->
+      <div id="v2-weekly-card" class="glass-card" style="margin-bottom:10px;border-left:3px solid var(--agent-garves);display:none;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--agent-garves);margin-bottom:4px;">Weekly Competitive Check</div>
+        <div id="v2-weekly-content" style="font-family:var(--font-mono);font-size:0.72rem;"></div>
+      </div>
+
+      <!-- Autonomous Debug Suggestions -->
+      <div id="v2-debug-card" class="glass-card" style="margin-bottom:10px;border-left:3px solid var(--warning);display:none;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--warning);margin-bottom:4px;">Auto-Debug Suggestions</div>
+        <div id="v2-debug-fixes" style="font-family:var(--font-mono);font-size:0.72rem;"></div>
       </div>
 
       <!-- Post-Trade Analysis Feed -->

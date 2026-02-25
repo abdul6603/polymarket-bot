@@ -25,9 +25,12 @@ class CoreMetrics:
     wr_20: float | None = None      # 20-trade rolling win rate
     wr_50: float | None = None      # 50-trade rolling win rate
     wr_100: float | None = None     # 100-trade rolling win rate
-    ev_capture_pct: float = 0.0     # Actual PnL / Expected PnL
+    ev_capture_pct: float = 0.0     # Actual PnL / Expected PnL (all-time)
+    ev_capture_20: float | None = None  # 20-trade rolling EV capture
+    ev_capture_50: float | None = None  # 50-trade rolling EV capture
     avg_slippage_pct: float = 0.0   # Average execution slippage
     total_slippage_cost: float = 0.0
+    avg_timing_impact: float = 0.0  # Average timing cost per trade
     current_drawdown_pct: float = 0.0
     max_drawdown_pct: float = 0.0
     variance_vs_expected: float = 0.0  # How much actual results differ from expected
@@ -79,12 +82,21 @@ class SelfImprovementEngine:
         elif total_pnl > 0:
             metrics.ev_capture_pct = 1.0
 
+        # Rolling EV capture (20 and 50 trade windows)
+        metrics.ev_capture_20 = self._rolling_ev_capture(resolved, 20)
+        metrics.ev_capture_50 = self._rolling_ev_capture(resolved, 50)
+
         # Slippage
         slippages = [t.get("ob_slippage_pct", 0) for t in resolved if t.get("ob_slippage_pct")]
         if slippages:
             metrics.avg_slippage_pct = sum(slippages) / len(slippages)
         slip_costs = [t.get("ob_slippage_pct", 0) * t.get("size_usd", 0) for t in resolved]
         metrics.total_slippage_cost = round(sum(slip_costs), 2)
+
+        # Timing impact
+        timing_impacts = [t.get("timing_impact_pct", 0) for t in resolved if t.get("timing_impact_pct")]
+        if timing_impacts:
+            metrics.avg_timing_impact = round(sum(timing_impacts) / len(timing_impacts), 4)
 
         # Drawdown
         equity = 0.0
@@ -199,7 +211,40 @@ class SelfImprovementEngine:
                 "value": metrics.variance_vs_expected,
             })
 
+        # EV capture declining (recent worse than all-time)
+        if (metrics.ev_capture_20 is not None and metrics.ev_capture_pct > 0
+                and metrics.ev_capture_20 < metrics.ev_capture_pct * 0.6):
+            suggestions.append({
+                "priority": "high",
+                "component": "execution",
+                "suggestion": f"EV capture declining: 20-trade={metrics.ev_capture_20:.0%} vs all-time={metrics.ev_capture_pct:.0%} — execution quality degrading",
+                "metric": "ev_capture_20",
+                "value": metrics.ev_capture_20,
+            })
+
+        # Timing impact
+        if metrics.avg_timing_impact > 0.02:
+            suggestions.append({
+                "priority": "medium",
+                "component": "execution",
+                "suggestion": f"Avg timing impact {metrics.avg_timing_impact:.2%} — consider tighter entry timing",
+                "metric": "avg_timing_impact",
+                "value": metrics.avg_timing_impact,
+            })
+
         return suggestions
+
+    @staticmethod
+    def _rolling_ev_capture(resolved: list[dict], window: int) -> float | None:
+        """Compute EV capture % over last N trades."""
+        if len(resolved) < window:
+            return None
+        recent = resolved[-window:]
+        ev_pred = sum(t.get("ev_predicted", 0) for t in recent)
+        ev_actual = sum(t.get("pnl", 0) for t in recent)
+        if ev_pred > 0:
+            return round(ev_actual / ev_pred, 3)
+        return 0.0 if ev_actual <= 0 else 1.0
 
     @staticmethod
     def get_improvement_log(limit: int = 20) -> list[dict]:

@@ -358,7 +358,10 @@ def generate_daily_report(date_str: str | None = None) -> dict:
             "wr_50": metrics.wr_50,
             "wr_100": metrics.wr_100,
             "ev_capture_pct": metrics.ev_capture_pct,
+            "ev_capture_20": metrics.ev_capture_20,
+            "ev_capture_50": metrics.ev_capture_50,
             "avg_slippage_pct": metrics.avg_slippage_pct,
+            "avg_timing_impact": metrics.avg_timing_impact,
             "current_drawdown_pct": metrics.current_drawdown_pct,
             "max_drawdown_pct": metrics.max_drawdown_pct,
         }
@@ -436,27 +439,34 @@ def archive_and_reset() -> dict:
     except Exception as e:
         log.warning("[ML] Retrain failed (non-fatal): %s", str(e)[:100])
 
-    # V2: Save daily performance metrics snapshot
+    # V2: Save daily performance metrics snapshot (reuse from report if available)
     try:
-        from bot.self_improvement import SelfImprovementEngine
-        si = SelfImprovementEngine()
-        metrics = si.calculate_metrics()
-        metrics_file = DATA_DIR / "performance_metrics.json"
-        import json as _json
-        metrics_file.write_text(_json.dumps({
-            "date": date_str,
-            "wr_20": metrics.wr_20,
-            "wr_50": metrics.wr_50,
-            "wr_100": metrics.wr_100,
-            "ev_capture_pct": metrics.ev_capture_pct,
-            "avg_slippage_pct": metrics.avg_slippage_pct,
-            "current_drawdown_pct": metrics.current_drawdown_pct,
-            "max_drawdown_pct": metrics.max_drawdown_pct,
-        }, indent=2))
-        log.info("[V2] Performance metrics saved: WR20=%.1f%% WR50=%.1f%%",
-                 (metrics.wr_20 or 0) * 100, (metrics.wr_50 or 0) * 100)
+        cm = report.get("core_metrics")
+        if cm:
+            metrics_file = DATA_DIR / "performance_metrics.json"
+            metrics_file.write_text(json.dumps({"date": date_str, **cm}, indent=2))
+            log.info("[V2] Performance metrics saved: WR20=%.1f%% WR50=%.1f%% EV20=%.0f%%",
+                     (cm.get("wr_20") or 0) * 100, (cm.get("wr_50") or 0) * 100,
+                     (cm.get("ev_capture_20") or 0) * 100)
     except Exception as e:
         log.debug("Performance metrics save failed: %s", str(e)[:100])
+
+    # V2: Sunday weekly competitive check
+    try:
+        if now.weekday() == 6:  # Sunday
+            from bot.edge_monitor import EdgeMonitor
+            em = EdgeMonitor()
+            weekly = em.weekly_competitive_check()
+            log.info("[V2 WEEKLY] Status=%s WR_trend=%+.1fpp Recs=%d",
+                     weekly.get("status", "?"),
+                     weekly.get("wr_trend_pp", 0),
+                     len(weekly.get("recommendations", [])))
+            for rec in weekly.get("recommendations", []):
+                if rec.get("priority") in ("high", "medium"):
+                    log.warning("[V2 WEEKLY] %s: %s — %s",
+                                rec["priority"].upper(), rec["action"], rec["reason"])
+    except Exception as e:
+        log.debug("Weekly competitive check failed: %s", str(e)[:100])
 
     return report
 

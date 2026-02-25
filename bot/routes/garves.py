@@ -1713,7 +1713,10 @@ def api_garves_v2_metrics():
                 "wr_50": metrics.wr_50,
                 "wr_100": metrics.wr_100,
                 "ev_capture_pct": metrics.ev_capture_pct,
+                "ev_capture_20": metrics.ev_capture_20,
+                "ev_capture_50": metrics.ev_capture_50,
                 "avg_slippage_pct": metrics.avg_slippage_pct,
+                "avg_timing_impact": metrics.avg_timing_impact,
                 "total_slippage_cost": metrics.total_slippage_cost,
                 "current_drawdown_pct": metrics.current_drawdown_pct,
                 "max_drawdown_pct": metrics.max_drawdown_pct,
@@ -1762,7 +1765,7 @@ def api_garves_auto_rules():
 
 @garves_bp.route("/api/garves/diagnostics")
 def api_garves_diagnostics():
-    """Garves V2 performance diagnostics (6-point check)."""
+    """Garves V2 autonomous debugging — 7-point diagnostic with fix suggestions."""
     try:
         from bot.performance_monitor import PerformanceMonitor
         pm = PerformanceMonitor()

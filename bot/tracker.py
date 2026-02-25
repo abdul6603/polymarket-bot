@@ -82,6 +82,11 @@ class TradeRecord:
     resolve_time: float = 0.0
     market_end_time: float = 0.0  # when the candle expires
 
+    # V2: EV Capture metrics (filled on resolution)
+    ev_actual: float = 0.0          # Actual P&L from this trade
+    ev_capture_pct: float = 0.0     # actual / predicted (1.0 = perfect)
+    timing_impact_pct: float = 0.0  # How much timing cost us
+
     # Live vs dry-run
     dry_run: bool = True
 
@@ -273,13 +278,25 @@ class PerformanceTracker:
                 else:
                     rec.slippage_adjusted_pnl = round(-rec.size_usd, 2)
 
+            # V2: EV Capture — predicted vs actual return
+            rec.ev_actual = rec.pnl
+            if rec.ev_predicted > 0:
+                rec.ev_capture_pct = round(rec.pnl / rec.ev_predicted, 3)
+            elif rec.pnl > 0:
+                rec.ev_capture_pct = 1.0
+            # Timing impact: how much resolve delay cost (spread decay proxy)
+            if rec.resolve_time > 0 and rec.market_end_time > 0:
+                delay_s = rec.resolve_time - rec.market_end_time
+                rec.timing_impact_pct = round(min(delay_s / 300.0, 1.0) * rec.ob_spread, 4)
+
             resolved_ids.append(trade_id)
 
             result = "WIN" if rec.won else "LOSS"
             log.info(
-                "RESOLVED %s: %s %s/%s predicted=%s actual=%s | %s",
+                "RESOLVED %s: %s %s/%s predicted=%s actual=%s P&L=$%.2f EV_capture=%.0f%% | %s",
                 trade_id, rec.asset.upper(), rec.timeframe,
                 result, rec.direction.upper(), outcome.upper(),
+                rec.pnl, rec.ev_capture_pct * 100,
                 rec.question[:50],
             )
 
@@ -332,9 +349,12 @@ class PerformanceTracker:
                         "implied_up_price": rec.implied_up_price,
                         "binance_price": rec.binance_price,
                         "ml_win_prob": rec.ml_win_prob,
+                        "ev_predicted": rec.ev_predicted,
+                        "ev_actual": rec.ev_actual,
+                        "ev_capture_pct": rec.ev_capture_pct,
                         "dry_run": rec.dry_run,
                     },
-                    summary=f"{'WIN' if rec.won else 'LOSS'}: {rec.asset.upper()}/{rec.timeframe} predicted={rec.direction.upper()} actual={rec.outcome.upper()}",
+                    summary=f"{'WIN' if rec.won else 'LOSS'}: {rec.asset.upper()}/{rec.timeframe} predicted={rec.direction.upper()} actual={rec.outcome.upper()} EV_capture={rec.ev_capture_pct:.0%}",
                 )
             except Exception:
                 pass

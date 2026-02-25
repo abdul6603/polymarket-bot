@@ -148,40 +148,45 @@ class PerformanceMonitor:
         return state
 
     def run_diagnostics(self) -> dict:
-        """Run 6-point diagnostic check when performance degrades.
+        """Run autonomous diagnostic when performance degrades.
 
-        Returns:
-            Dict with diagnostic results for each check.
+        Checks: model drift, regime shift, liquidity, execution latency,
+        indicator health, EV capture degradation.
+        Each check includes a suggested fix.
         """
         log.info("[DIAGNOSTICS] Running autonomous debugging...")
         diag = {
             "timestamp": time.time(),
             "checks": {},
+            "suggested_fixes": [],
         }
 
-        # Check 1: Model drift
         resolved = self._load_resolved_trades()
         diag["checks"]["model_drift"] = self._diag_model_drift(resolved)
-
-        # Check 2: Regime shift
         diag["checks"]["regime_shift"] = self._diag_regime_shift(resolved)
-
-        # Check 3: API inconsistencies
         diag["checks"]["api_health"] = self._diag_api_health()
-
-        # Check 4: Liquidity changes
         diag["checks"]["liquidity"] = self._diag_liquidity(resolved)
-
-        # Check 5: Execution latency
         diag["checks"]["execution"] = self._diag_execution()
-
-        # Check 6: Indicator correlation breakdown
         diag["checks"]["indicator_health"] = self._diag_indicator_health()
+        diag["checks"]["ev_capture"] = self._diag_ev_capture(resolved)
 
-        # Save diagnostics
+        # Generate specific fix suggestions from each check
+        for name, result in diag["checks"].items():
+            fix = result.get("suggested_fix")
+            if fix:
+                diag["suggested_fixes"].append({
+                    "check": name,
+                    "status": result.get("status", "unknown"),
+                    "fix": fix,
+                })
+
+        if diag["suggested_fixes"]:
+            for sf in diag["suggested_fixes"]:
+                log.warning("[AUTO-DEBUG] %s: %s → %s", sf["check"], sf["status"], sf["fix"])
+
         DATA_DIR.mkdir(parents=True, exist_ok=True)
         DIAGNOSTICS_FILE.write_text(json.dumps(diag, indent=2))
-        log.info("[DIAGNOSTICS] Complete — saved to %s", DIAGNOSTICS_FILE.name)
+        log.info("[DIAGNOSTICS] Complete — %d issues found", len(diag["suggested_fixes"]))
 
         return diag
 
@@ -314,12 +319,24 @@ class PerformanceMonitor:
         all_wr = sum(1 for t in resolved if t.get("won")) / len(resolved)
         drift = abs(all_wr - recent_wr)
 
-        return {
+        result = {
             "status": "drift_detected" if drift > 0.10 else "normal",
             "all_time_wr": round(all_wr, 3),
             "recent_20_wr": round(recent_wr, 3),
             "drift": round(drift, 3),
         }
+        if drift > 0.10:
+            if recent_wr < all_wr:
+                result["suggested_fix"] = (
+                    f"Model degrading: WR dropped {drift*100:.0f}pp. "
+                    f"Retrain ML model, review indicator weights, raise edge floor by 2pp."
+                )
+            else:
+                result["suggested_fix"] = (
+                    f"Model outperforming recent average by {drift*100:.0f}pp — "
+                    f"consider lowering edge floor to capture more trades."
+                )
+        return result
 
     @staticmethod
     def _diag_regime_shift(resolved: list[dict]) -> dict:
@@ -336,12 +353,41 @@ class PerformanceMonitor:
         dominant = max(regime_counts, key=regime_counts.get) if regime_counts else "unknown"
         dominant_pct = regime_counts.get(dominant, 0) / len(recent) if recent else 0
 
-        return {
+        # Check WR per regime in recent trades
+        regime_wr = {}
+        for t in recent:
+            r = t.get("regime_label", "unknown")
+            if r not in regime_wr:
+                regime_wr[r] = {"wins": 0, "total": 0}
+            regime_wr[r]["total"] += 1
+            if t.get("won"):
+                regime_wr[r]["wins"] += 1
+
+        result = {
             "status": "regime_shift" if dominant_pct < 0.5 else "stable",
             "recent_regimes": regime_counts,
             "dominant": dominant,
             "dominant_pct": round(dominant_pct, 2),
+            "regime_wr": {r: round(s["wins"]/s["total"], 2) if s["total"] else 0 for r, s in regime_wr.items()},
         }
+        if dominant_pct < 0.5:
+            result["suggested_fix"] = (
+                f"Regime instability: no dominant regime (max={dominant_pct:.0%}). "
+                f"Reduce position sizes by 30% until regime stabilizes. "
+                f"Current regimes: {regime_counts}"
+            )
+        # Warn if dominant regime has low WR
+        dom_wr_data = regime_wr.get(dominant, {})
+        if dom_wr_data.get("total", 0) >= 5:
+            dom_wr = dom_wr_data["wins"] / dom_wr_data["total"]
+            if dom_wr < 0.40:
+                result["status"] = "regime_mismatch"
+                result["suggested_fix"] = (
+                    f"Strategy underperforms in current regime '{dominant}' "
+                    f"(WR={dom_wr:.0%}). Pause trading or apply regime-specific "
+                    f"edge floor boost for {dominant}."
+                )
+        return result
 
     @staticmethod
     def _diag_api_health() -> dict:
@@ -392,11 +438,19 @@ class PerformanceMonitor:
         recent_5 = spreads[-5:] if len(spreads) >= 5 else spreads
         recent_avg = sum(recent_5) / len(recent_5)
 
-        return {
+        result = {
             "status": "widening" if recent_avg > avg_spread * 1.3 else "normal",
             "avg_spread_20": round(avg_spread, 4),
             "avg_spread_5": round(recent_avg, 4),
         }
+        if recent_avg > avg_spread * 1.3:
+            result["suggested_fix"] = (
+                f"Spreads widened {((recent_avg/avg_spread)-1)*100:.0f}%: "
+                f"avg={avg_spread:.4f} → recent={recent_avg:.4f}. "
+                f"Raise market quality spread threshold, reduce order sizes, "
+                f"or switch to limit orders with tighter pricing."
+            )
+        return result
 
     @staticmethod
     def _diag_execution() -> dict:
@@ -417,14 +471,35 @@ class PerformanceMonitor:
             return {"status": "empty"}
 
         fill_times = [r.get("fill_time_s", 0) for r in records if r.get("fill_time_s")]
+        slippages = [r.get("slippage_pct", 0) for r in records if r.get("slippage_pct")]
+
+        result = {"status": "normal", "samples": len(records)}
+
         if fill_times:
             avg_fill = sum(fill_times) / len(fill_times)
-            return {
-                "status": "slow" if avg_fill > 30 else "normal",
-                "avg_fill_time_s": round(avg_fill, 1),
-                "samples": len(fill_times),
-            }
-        return {"status": "no_fill_data"}
+            result["avg_fill_time_s"] = round(avg_fill, 1)
+            if avg_fill > 30:
+                result["status"] = "slow"
+                result["suggested_fix"] = (
+                    f"Avg fill time {avg_fill:.0f}s is too slow. "
+                    f"Switch to aggressive taker pricing for orders >$10. "
+                    f"Check CLOB API latency and VPN connection stability."
+                )
+
+        if slippages:
+            avg_slip = sum(slippages) / len(slippages)
+            result["avg_slippage_pct"] = round(avg_slip, 4)
+            if avg_slip > 0.03:
+                result["status"] = "high_slippage"
+                result["suggested_fix"] = (
+                    f"Avg slippage {avg_slip:.2%} exceeds 3% threshold. "
+                    f"Use mid-price optimization, split orders >$15, "
+                    f"skip markets with spread >4c."
+                )
+
+        if not fill_times and not slippages:
+            result["status"] = "no_fill_data"
+        return result
 
     @staticmethod
     def _diag_indicator_health() -> dict:
@@ -448,10 +523,54 @@ class PerformanceMonitor:
                     "total_votes": total,
                 })
 
-        return {
+        result = {
             "status": "indicators_failing" if failing else "healthy",
             "failing_indicators": failing,
         }
+        if failing:
+            names = ", ".join(f["indicator"] for f in failing[:3])
+            result["suggested_fix"] = (
+                f"Indicators underperforming (<45% accuracy): {names}. "
+                f"Reduce their weight via weight_learner or disable them. "
+                f"Retrain ML model to adjust feature importance."
+            )
+        return result
+
+    @staticmethod
+    def _diag_ev_capture(resolved: list[dict]) -> dict:
+        """Check 7: Is EV capture degrading?"""
+        if len(resolved) < 20:
+            return {"status": "insufficient_data"}
+
+        recent_20 = resolved[-20:]
+        ev_pred = sum(t.get("ev_predicted", 0) for t in recent_20)
+        ev_actual = sum(t.get("pnl", 0) for t in recent_20)
+
+        capture = ev_actual / ev_pred if ev_pred > 0 else 0.0
+
+        result = {
+            "status": "normal",
+            "ev_capture_20": round(capture, 3),
+            "ev_predicted_total": round(ev_pred, 2),
+            "ev_actual_total": round(ev_actual, 2),
+        }
+
+        if capture < 0.0:
+            result["status"] = "negative_ev"
+            result["suggested_fix"] = (
+                f"Negative EV capture ({capture:.0%}): losing money on trades we expected to profit from. "
+                f"Check: (1) edge calculation may be wrong, (2) slippage eating profits, "
+                f"(3) market quality gate not strict enough. "
+                f"Immediate action: raise edge floor to 15%, reduce max bet to $10."
+            )
+        elif capture < 0.30:
+            result["status"] = "low_capture"
+            result["suggested_fix"] = (
+                f"Low EV capture ({capture:.0%}): only capturing {capture:.0%} of expected value. "
+                f"Check execution pricing — are we paying too much spread? "
+                f"Tighten order pricing, reduce sizing on wide-spread markets."
+            )
+        return result
 
     def _load_state(self) -> PerformanceState:
         """Load last saved state."""

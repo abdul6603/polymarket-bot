@@ -12352,6 +12352,16 @@ function loadGarvesV2Metrics() {
     if (evEl) { evEl.textContent = cm.ev_capture_pct != null ? (cm.ev_capture_pct * 100).toFixed(0) + '%' : '--'; evEl.style.color = cm.ev_capture_pct > 0.5 ? 'var(--success)' : cm.ev_capture_pct < 0.3 ? 'var(--danger)' : 'var(--text)'; }
     if (ddEl) { ddEl.textContent = cm.current_drawdown_pct != null ? cm.current_drawdown_pct.toFixed(0) + '%' : '--'; ddEl.style.color = cm.current_drawdown_pct > 20 ? 'var(--danger)' : cm.current_drawdown_pct > 10 ? 'var(--warning)' : 'var(--text)'; }
 
+    // Second row: rolling EV capture + slippage + timing
+    var ev20El = document.getElementById('v2-ev-20');
+    var ev50El = document.getElementById('v2-ev-50');
+    var slipEl = document.getElementById('v2-slippage');
+    var timingEl = document.getElementById('v2-timing');
+    if (ev20El) { ev20El.textContent = cm.ev_capture_20 != null ? (cm.ev_capture_20 * 100).toFixed(0) + '%' : '--'; ev20El.style.color = cm.ev_capture_20 != null && cm.ev_capture_20 > 0.5 ? 'var(--success)' : cm.ev_capture_20 != null && cm.ev_capture_20 < 0.2 ? 'var(--danger)' : 'var(--text)'; }
+    if (ev50El) { ev50El.textContent = cm.ev_capture_50 != null ? (cm.ev_capture_50 * 100).toFixed(0) + '%' : '--'; ev50El.style.color = cm.ev_capture_50 != null && cm.ev_capture_50 > 0.5 ? 'var(--success)' : cm.ev_capture_50 != null && cm.ev_capture_50 < 0.2 ? 'var(--danger)' : 'var(--text)'; }
+    if (slipEl) { slipEl.textContent = cm.avg_slippage_pct != null ? (cm.avg_slippage_pct * 100).toFixed(1) + '%' : '--'; slipEl.style.color = cm.avg_slippage_pct > 0.03 ? 'var(--danger)' : 'var(--text)'; }
+    if (timingEl) { timingEl.textContent = cm.avg_timing_impact != null ? (cm.avg_timing_impact * 100).toFixed(2) + '%' : '--'; timingEl.style.color = cm.avg_timing_impact > 0.02 ? 'var(--warning)' : 'var(--text)'; }
+
     // Warnings
     var warningsCard = document.getElementById('v2-warnings-card');
     var warningsList = document.getElementById('v2-warnings-list');
@@ -12412,6 +12422,38 @@ function loadGarvesV2Metrics() {
     }
     el.innerHTML = decay.map(function(d) {
       return '<div style="margin-bottom:3px;color:var(--danger);">' + d.indicator + ': ' + (d.alltime_accuracy * 100).toFixed(0) + '% -> ' + (d.recent_accuracy * 100).toFixed(0) + '% (-' + d.drop_pp.toFixed(0) + 'pp)</div>';
+    }).join('');
+
+    // Weekly competitive check recommendations
+    var weeklyCard = document.getElementById('v2-weekly-card');
+    var weeklyContent = document.getElementById('v2-weekly-content');
+    var cc = d.competitive_check || {};
+    if (weeklyCard && weeklyContent && cc.recommendations && cc.recommendations.length > 0) {
+      weeklyCard.style.display = 'block';
+      var statusColor = cc.status === 'improving' ? 'var(--success)' : cc.status === 'declining' ? 'var(--danger)' : 'var(--text-muted)';
+      var header = '<div style="margin-bottom:4px;">Status: <span style="color:' + statusColor + ';font-weight:700;">' + (cc.status || 'unknown').toUpperCase() + '</span> | WR trend: ' + (cc.wr_trend_pp || 0).toFixed(1) + 'pp | Edge trend: ' + (cc.edge_trend_pp || 0).toFixed(2) + 'pp</div>';
+      var recs = cc.recommendations.map(function(r) {
+        var pcolor = r.priority === 'high' ? 'var(--danger)' : r.priority === 'medium' ? 'var(--warning)' : 'var(--text-muted)';
+        return '<div style="margin-bottom:2px;"><span style="color:' + pcolor + ';font-weight:600;">[' + r.priority.toUpperCase() + ']</span> ' + r.action + '</div>';
+      }).join('');
+      weeklyContent.innerHTML = header + recs;
+    }
+  }).catch(function(){});
+
+  // Fetch diagnostics for auto-debug suggestions
+  fetch('/api/garves/diagnostics').then(function(r){return r.json();}).then(function(d) {
+    var debugCard = document.getElementById('v2-debug-card');
+    var debugFixes = document.getElementById('v2-debug-fixes');
+    if (!debugCard || !debugFixes) return;
+    var fixes = d.suggested_fixes || [];
+    if (fixes.length === 0) {
+      debugCard.style.display = 'none';
+      return;
+    }
+    debugCard.style.display = 'block';
+    debugFixes.innerHTML = fixes.map(function(f) {
+      var scolor = f.status === 'normal' || f.status === 'healthy' ? 'var(--success)' : 'var(--warning)';
+      return '<div style="margin-bottom:4px;"><span style="color:' + scolor + ';font-weight:600;">' + f.check + '</span>: ' + f.fix + '</div>';
     }).join('');
   }).catch(function(){});
 }
