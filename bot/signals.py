@@ -215,22 +215,22 @@ NY_OPEN_AVOID_END = (10, 15)    # 10:15 AM ET
 # Timeframe-specific minimum edge — must exceed estimated fees
 # Data: 0-8% edge = 20% WR, 8-11% = 62.5% WR — 8% is the breakeven floor
 MIN_EDGE_BY_TF = {
-    "5m": 0.04,     # 4% — lowered from 8%. Old floor caused paralysis during 11% rallies.
-    "15m": 0.04,    # 4% — fees are ~2.8%, 4% gives 1.2% real edge minimum.
-    "1h": 0.05,     # 5% — slightly higher for longer hold. Fees ~3.6%.
-    "4h": 0.06,     # 6% — RE-ENABLED. Old 35% WR was pre-weight-learner. Fresh epoch starts now.
-    "weekly": 0.03, # 3% — lowest edge floor for longest timeframe
+    "5m": 0.02,     # 2% — brain data: low edge (<10%) wins 56% on 79 trades. Consensus gates quality.
+    "15m": 0.02,    # 2% — any positive edge after fees is tradeable. Confidence is the real gate.
+    "1h": 0.02,     # 2% — position sizing limits risk, not edge floors.
+    "4h": 0.02,     # 2% — RE-ENABLED. Brain says 4h is best: 74% WR on 19 trades.
+    "weekly": 0.02, # 2% — uniform floor, let other gates do their job.
 }
 
-# Dynamic edge floor — regime-aware. Previous 12% caused total paralysis (0 trades during 11% ETH rally).
-# Fees are 2.3-3.6%, so 4% edge = real profit. Position sizing + confidence are the risk guards.
-MIN_EDGE_ABSOLUTE = 0.04  # default — lowered from 12% which blocked ALL trades
+# Dynamic edge floor — regime-aware. Uniform 2% — consensus, confidence, and sizing are the real guards.
+# Brain data proves low-edge trades are profitable. Edge floors were causing total paralysis.
+MIN_EDGE_ABSOLUTE = 0.02  # 2% — lowered from 12% which blocked ALL trades during 11% rallies
 MIN_EDGE_BY_REGIME = {
-    "extreme_fear": 0.03,
-    "fear": 0.04,
-    "neutral": 0.04,
-    "greed": 0.04,
-    "extreme_greed": 0.03,
+    "extreme_fear": 0.02,
+    "fear": 0.02,
+    "neutral": 0.02,
+    "greed": 0.02,
+    "extreme_greed": 0.02,
 }
 MIN_EDGE_HARD_FLOOR = 0.02  # absolute minimum — 2% after fees still profitable
 
