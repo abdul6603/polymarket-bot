@@ -95,7 +95,7 @@ class HawkRiskManager:
             import sys as _bm_sys
             _bm_sys.path.insert(0, str(Path.home() / "shared"))
             from balance_manager import BalanceManager
-            self._balance_mgr = BalanceManager("hawk")
+            self._balance_mgr = None  # Disabled: Garves is paper mode, Hawk gets full wallet
             self._balance_mgr.register(float(os.environ.get("HAWK_ALLOCATION_WEIGHT", "3")))
         except Exception:
             pass
