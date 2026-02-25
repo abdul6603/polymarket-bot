@@ -1,19 +1,29 @@
-<!-- GARVES — Unified Trading Tab (Redesigned) -->
+<!-- GARVES — 5m BTC Multi-Engine Trader -->
 <div class="tab-content" id="tab-garves-live">
 
-  <!-- ═══ HEADER ZONE ═══ -->
+  <!-- Health Banner -->
   <div id="garves-health-banner" style="display:none;margin-bottom:12px;padding:10px 16px;border-radius:8px;font-size:0.78rem;font-weight:600;"></div>
   <div id="intel-garves" class="intel-meter" style="margin-bottom:12px;"></div>
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+    <h2 style="margin:0;font-size:1.1rem;font-weight:700;">Garves &mdash; 5m BTC Multi-Engine Trader</h2>
     <span id="garves-mode-badge" class="trading-mode-badge trading-mode-live">Trading: Real Money</span>
-    <button class="trading-mode-toggle" id="garves-mode-toggle" onclick="toggleGarvesMode()">Switch</button>
-    <span class="text-muted" style="font-size:0.76rem;">BTC Flow Sniper — <span id="garves-bankroll-label">-- bankroll</span></span>
+    <button class="trading-mode-toggle" id="garves-mode-toggle" onclick="toggleGarvesMode()" style="font-size:0.66rem;">Switch</button>
+    <span class="text-muted" style="font-size:0.72rem;"><span id="garves-bankroll-label">-- bankroll</span></span>
+    <button class="btn" onclick="garvesRefreshAll()" style="font-size:0.72rem;font-weight:700;border-color:#10B981;color:#10B981;margin-left:auto;">Refresh</button>
+    <span class="text-muted" style="font-size:0.68rem;">Updated: <span id="garves-updated">--</span></span>
   </div>
-  <div class="agent-widget-row" id="garves-widgets" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-    <div class="widget-badge" id="garves-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
-    <button class="btn" onclick="healthCheckAgent('garves')" style="font-size:0.72rem;">Health Check</button>
-    <!-- Binance Status Pill -->
-    <div id="binance-pill-wrap" style="margin-left:auto;position:relative;">
+
+  <!-- Status Pills -->
+  <div id="garves-widgets" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+    <div class="garves-engine-pill"><span class="gep-dot" style="background:#22c55e;"></span> Snipe <span id="snipe-positions-badge" style="font-size:0.58rem;padding:1px 6px;border-radius:8px;background:rgba(34,197,94,0.15);color:#22c55e;font-weight:600;margin-left:2px;">0/3</span></div>
+    <div class="garves-engine-pill"><span class="gep-dot" style="background:#6b7280;"></span> Maker <span id="maker-status-badge" style="font-size:0.58rem;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;margin-left:2px;">OFF</span></div>
+    <div class="garves-engine-pill"><span class="gep-dot" style="background:#6b7280;"></span> Whale <span id="whale-status-badge" style="font-size:0.58rem;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;margin-left:2px;">OFF</span> <span id="whale-tracked-count" style="font-size:0.56rem;color:var(--text-muted);margin-left:2px;">0 whales</span></div>
+    <div class="garves-engine-pill"><span class="gep-dot" style="background:#6b7280;"></span> Taker <span id="taker-status-badge" style="font-size:0.58rem;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;margin-left:2px;">OFF</span></div>
+    <div style="flex:1;"></div>
+    <!-- Binance WS -->
+    <div id="binance-pill-wrap" style="position:relative;">
       <div id="binance-pill" onclick="toggleBinancePopover()" style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;cursor:pointer;font-size:0.72rem;font-weight:600;font-family:var(--font-mono);background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);transition:all 0.3s ease;user-select:none;">
         <span id="binance-pill-dot" style="font-size:0.8rem;">&#x26AB;</span>
         <span id="binance-pill-label">Binance</span>
@@ -27,7 +37,7 @@
         <div id="binance-pop-silence" style="color:var(--text-muted);margin-bottom:4px;"></div>
       </div>
     </div>
-    <!-- CLOB Status Pill -->
+    <!-- CLOB -->
     <div id="clob-pill-wrap" style="position:relative;">
       <div id="clob-pill" onclick="toggleClobPopover()" style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;cursor:pointer;font-size:0.72rem;font-weight:600;font-family:var(--font-mono);background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);transition:all 0.3s ease;user-select:none;">
         <span id="clob-pill-dot" style="font-size:0.8rem;">&#x26AB;</span>
@@ -45,10 +55,8 @@
         <button onclick="forceReconnectClob()" style="width:100%;padding:6px 0;border:none;border-radius:6px;cursor:pointer;background:rgba(239,68,68,0.15);color:#ef4444;font-weight:600;font-size:0.72rem;transition:background 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.3)'" onmouseout="this.style.background='rgba(239,68,68,0.15)'">Force Reconnect</button>
       </div>
     </div>
-    <!-- Signal Cycle Badge -->
-    <span id="signal-cycle-pill" style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:0.82rem;font-weight:700;padding:6px 16px;border-radius:999px;border:1px solid rgba(139,92,246,0.35);background:rgba(139,92,246,0.12);color:#8b5cf6;transition:box-shadow .3s;cursor:default;position:relative;"
-       onmouseenter="document.getElementById('signal-cycle-tooltip').style.display='block'"
-       onmouseleave="document.getElementById('signal-cycle-tooltip').style.display='none'">
+    <!-- Signal Cycle -->
+    <span id="signal-cycle-pill" style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:0.82rem;font-weight:700;padding:6px 16px;border-radius:999px;border:1px solid rgba(139,92,246,0.35);background:rgba(139,92,246,0.12);color:#8b5cf6;transition:box-shadow .3s;cursor:default;position:relative;" onmouseenter="document.getElementById('signal-cycle-tooltip').style.display='block'" onmouseleave="document.getElementById('signal-cycle-tooltip').style.display='none'">
       <span style="width:8px;height:8px;border-radius:50%;background:#8b5cf6;animation:rxPulse 2s ease-in-out infinite;"></span>
       Next: <span id="signal-cycle-countdown" style="min-width:38px;text-align:center;">--</span>
       <span style="color:rgba(255,255,255,0.2);">|</span>
@@ -61,84 +69,143 @@
         <div id="signal-cycle-detail" style="margin-top:6px;color:var(--text-muted);"></div>
       </div>
     </span>
-    <!-- Hidden compat elements -->
     <span id="signal-cycle-dot" style="display:none;"></span>
     <span id="signal-cycle-timer" style="display:none;"></span>
   </div>
+
+  <!-- Learning + Health -->
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+    <div class="widget-badge" id="garves-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
+    <button class="btn" onclick="healthCheckAgent('garves')" style="font-size:0.72rem;">Health Check</button>
+  </div>
   <div class="health-inline" id="garves-health-result"></div>
 
-  <!-- ═══ ENGINE PERFORMANCE COMPARISON ═══ -->
-  <div class="glass-card" style="padding:14px 18px;margin-bottom:14px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-      <div style="font-weight:700;font-size:0.82rem;">Engine Performance Comparison</div>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span id="engine-comp-mode" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;font-weight:600;"></span>
-        <span id="engine-comp-bankroll" style="font-size:0.68rem;color:var(--text-muted);font-family:var(--font-mono);"></span>
-      </div>
+  <!-- Hero Metrics -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;">
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">P&amp;L</div>
+      <div id="garves-hero-today-pnl" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">--</div>
+      <div style="font-size:0.6rem;color:var(--text-muted);">today</div>
+      <div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;">Total: <span id="garves-hero-total-pnl" style="font-family:var(--font-mono);">--</span></div>
     </div>
-    <div style="overflow-x:auto;">
-      <table style="width:100%;border-collapse:collapse;font-size:0.72rem;font-family:var(--font-mono);">
-        <thead>
-          <tr style="border-bottom:1px solid rgba(255,255,255,0.1);color:var(--text-muted);text-align:left;">
-            <th style="padding:6px 10px;">Engine</th>
-            <th style="padding:6px 8px;text-align:center;">Alloc</th>
-            <th style="padding:6px 8px;text-align:center;">Trades</th>
-            <th style="padding:6px 8px;text-align:center;">W</th>
-            <th style="padding:6px 8px;text-align:center;">L</th>
-            <th style="padding:6px 8px;text-align:center;">WR%</th>
-            <th style="padding:6px 8px;text-align:right;">PnL</th>
-            <th style="padding:6px 8px;text-align:right;">Avg Size</th>
-            <th style="padding:6px 8px;text-align:center;">Status</th>
-          </tr>
-        </thead>
-        <tbody id="engine-comp-body"></tbody>
-        <tfoot>
-          <tr id="engine-comp-totals" style="border-top:2px solid rgba(255,255,255,0.15);font-weight:700;"></tr>
-        </tfoot>
-      </table>
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Win Rate (L20)</div>
+      <div id="garves-hero-wr-20" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">--</div>
+      <div style="font-size:0.6rem;color:var(--text-muted);">L50: <span id="garves-hero-wr-50" style="font-family:var(--font-mono);">--</span> &nbsp; L100: <span id="garves-hero-wr-100" style="font-family:var(--font-mono);">--</span></div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Active Exposure</div>
+      <div id="garves-hero-exposure" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">--</div>
+      <div style="font-size:0.6rem;color:var(--text-muted);">Util: <span id="garves-hero-util-pct" style="font-family:var(--font-mono);">--</span></div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">EV Capture</div>
+      <div id="garves-hero-ev-capture" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">--</div>
+      <div style="font-size:0.6rem;color:var(--text-muted);">Edge: <span id="garves-hero-edge-quality" style="font-family:var(--font-mono);">--</span></div>
     </div>
   </div>
 
-  <!-- ═══ KEY METRICS ROW (Hero Cards) ═══ -->
-  <div class="grid-4" style="margin-bottom:14px;">
-    <div class="stat-card" style="border-left:3px solid #22c55e;">
-      <div style="display:flex;align-items:baseline;gap:8px;">
-        <div class="stat-value" id="garves-hero-today-pnl" style="font-size:1.4rem;">--</div>
-        <span style="font-size:0.68rem;color:var(--text-muted);">today</span>
+  <!-- Sub-tab Navigation -->
+  <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+    <button class="garves-subtab active" data-sub="overview" onclick="garvesSwitchSub('overview')">Overview</button>
+    <button class="garves-subtab" data-sub="engines" onclick="garvesSwitchSub('engines')">Engines Comparison</button>
+    <button class="garves-subtab" data-sub="positions" onclick="garvesSwitchSub('positions')">Open Positions</button>
+    <button class="garves-subtab" data-sub="history" onclick="garvesSwitchSub('history')">Trade History</button>
+    <button class="garves-subtab" data-sub="performance" onclick="garvesSwitchSub('performance')">Performance Insights</button>
+    <button class="garves-subtab" data-sub="intelligence" onclick="garvesSwitchSub('intelligence')">Intelligence &amp; Self-Improvement</button>
+  </div>
+
+  <!-- ═══ OVERVIEW PANEL ═══ -->
+  <div class="garves-panel" id="garves-panel-overview">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;">
+      <div class="glass-card" style="border-left:3px solid #22c55e;padding:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-weight:700;font-size:0.78rem;">Snipe Engine</span>
+          <span id="ov-snipe-status" style="font-size:0.6rem;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,0.15);color:#22c55e;font-weight:600;">ACTIVE</span>
+        </div>
+        <div style="font-size:1.1rem;font-weight:800;font-family:var(--font-mono);" id="ov-snipe-wr">--</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);">Win Rate</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);margin-top:4px;" id="ov-snipe-trades">0 trades</div>
       </div>
-      <div class="stat-label">P&amp;L</div>
-      <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px;">Total: <span id="garves-hero-total-pnl" style="font-family:var(--font-mono);">--</span></div>
-    </div>
-    <div class="stat-card" style="border-left:3px solid #8b5cf6;">
-      <div class="stat-value" id="garves-hero-wr-20" style="font-size:1.4rem;">--</div>
-      <div class="stat-label">Win Rate (L20)</div>
-      <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px;">
-        L50: <span id="garves-hero-wr-50" style="font-family:var(--font-mono);">--</span>
-        &nbsp; L100: <span id="garves-hero-wr-100" style="font-family:var(--font-mono);">--</span>
+      <div class="glass-card" style="border-left:3px solid #8b5cf6;padding:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-weight:700;font-size:0.78rem;">Market Making</span>
+          <span id="ov-maker-status" style="font-size:0.6rem;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;">OFF</span>
+        </div>
+        <div style="font-size:1.1rem;font-weight:800;font-family:var(--font-mono);" id="ov-maker-pnl">$0.00</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);">Session P&amp;L</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);margin-top:4px;" id="ov-maker-fills">0 fills</div>
+      </div>
+      <div class="glass-card" style="border-left:3px solid #FFD700;padding:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-weight:700;font-size:0.78rem;">Whale Follower</span>
+          <span id="ov-whale-status" style="font-size:0.6rem;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;">OFF</span>
+        </div>
+        <div style="font-size:1.1rem;font-weight:800;font-family:var(--font-mono);" id="ov-whale-wr">--</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);">Win Rate</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);margin-top:4px;" id="ov-whale-count">0 whales tracked</div>
+      </div>
+      <div class="glass-card" style="border-left:3px solid #06b6d4;padding:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-weight:700;font-size:0.78rem;">Taker Engine</span>
+          <span id="ov-taker-status" style="font-size:0.6rem;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;">OFF</span>
+        </div>
+        <div style="font-size:1.1rem;font-weight:800;font-family:var(--font-mono);" id="ov-taker-wr">--</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);">Win Rate</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);margin-top:4px;" id="ov-taker-trades">0 trades</div>
       </div>
     </div>
-    <div class="stat-card" style="border-left:3px solid #eab308;">
-      <div class="stat-value" id="garves-hero-exposure" style="font-size:1.4rem;">--</div>
-      <div class="stat-label">Active Exposure</div>
-      <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px;">Util: <span id="garves-hero-util-pct" style="font-family:var(--font-mono);">--</span></div>
+    <div class="glass-card" style="margin-bottom:14px;border-left:3px solid var(--agent-garves);">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px;">Agent Activity</div>
+      <div id="garves-activity-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:150px;overflow-y:auto;"><span class="text-muted">Waiting for activity...</span></div>
     </div>
-    <div class="stat-card" style="border-left:3px solid #06b6d4;">
-      <div class="stat-value" id="garves-hero-ev-capture" style="font-size:1.4rem;">--</div>
-      <div class="stat-label">EV Capture</div>
-      <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px;">Edge: <span id="garves-hero-edge-quality" style="font-family:var(--font-mono);">--</span></div>
+    <div class="glass-card" style="margin-bottom:14px;">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px;">Today's Mistake Analysis</div>
+      <div id="daily-mistakes" style="font-size:0.72rem;"><span class="text-muted">Loading analysis...</span></div>
+    </div>
+    <div class="glass-card">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px;">Live Log</div>
+      <div class="log-feed" id="live-log-feed"><div class="log-line"><span class="log-time">--:--:--</span><span class="log-msg">Waiting for log data...</span></div></div>
     </div>
   </div>
 
-  <!-- ═══ SECTION 1: Snipe Engine (default-open) ═══ -->
-  <div class="collapse-section default-open" style="margin-bottom:12px;">
-    <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">Snipe Engine
-        <span id="snipe-exec-venue" onclick="event.stopPropagation();toggleExecVenue()" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;font-weight:600;cursor:pointer;margin-left:8px;">5m &rarr; 15m</span>
-        <span id="snipe-positions-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,0.15);color:#22c55e;font-weight:600;">0/3</span>
-      </h2>
+  <!-- ═══ ENGINES COMPARISON PANEL ═══ -->
+  <div class="garves-panel" id="garves-panel-engines" style="display:none;">
+    <div class="glass-card" style="padding:14px 18px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-weight:700;font-size:0.82rem;">Engine Performance Comparison</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="engine-comp-mode" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;font-weight:600;"></span>
+          <span id="engine-comp-bankroll" style="font-size:0.68rem;color:var(--text-muted);font-family:var(--font-mono);"></span>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.72rem;font-family:var(--font-mono);">
+          <thead>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.1);color:var(--text-muted);text-align:left;">
+              <th style="padding:6px 10px;">Engine</th><th style="padding:6px 8px;text-align:center;">Alloc</th><th style="padding:6px 8px;text-align:center;">Trades</th><th style="padding:6px 8px;text-align:center;">W</th><th style="padding:6px 8px;text-align:center;">L</th><th style="padding:6px 8px;text-align:center;">WR%</th><th style="padding:6px 8px;text-align:right;">PnL</th><th style="padding:6px 8px;text-align:right;">Avg Size</th><th style="padding:6px 8px;text-align:center;">Status</th>
+            </tr>
+          </thead>
+          <tbody id="engine-comp-body"></tbody>
+          <tfoot><tr id="engine-comp-totals" style="border-top:2px solid rgba(255,255,255,0.15);font-weight:700;"></tr></tfoot>
+        </table>
+      </div>
     </div>
-    <div class="collapse-body">
-      <!-- Execution Routing Card -->
+
+    <!-- Engine Selector -->
+    <div style="display:flex;gap:6px;margin-bottom:14px;">
+      <button class="garves-engine-tab active" data-engine="snipe" onclick="garvesSelectEngine('snipe')">Snipe Engine</button>
+      <button class="garves-engine-tab" data-engine="maker" onclick="garvesSelectEngine('maker')">Market Making</button>
+      <button class="garves-engine-tab" data-engine="whale" onclick="garvesSelectEngine('whale')">Whale Follower</button>
+      <button class="garves-engine-tab" data-engine="taker" onclick="garvesSelectEngine('taker')">Taker Engine</button>
+    </div>
+
+    <!-- SNIPE ENGINE -->
+    <div class="garves-engine-panel" id="garves-engine-snipe">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-weight:700;font-size:0.82rem;">Snipe Engine</span>
+        <span id="snipe-exec-venue" onclick="event.stopPropagation();toggleExecVenue()" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;font-weight:600;cursor:pointer;">5m &rarr; 15m</span>
+      </div>
       <div id="exec-routing-card" class="glass-card" style="padding:10px 14px;margin-bottom:12px;">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <span style="font-weight:700;font-size:0.76rem;">Execution Routing</span>
@@ -147,7 +214,6 @@
         <div id="exec-routing-detail" style="font-size:0.68rem;color:var(--text-muted);margin-top:6px;">Scanner detects flow on 5m, executes on 15m/1h where liquidity exists</div>
         <div id="exec-last-route" style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;display:none;"></div>
       </div>
-      <!-- BTC Scanner + Flow Detection -->
       <div id="snipe-v8-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
         <div class="stat-card" id="snipe-card-bitcoin" style="border-left:3px solid #f7931a;">
           <div class="stat-value" id="snipe-score-bitcoin" style="font-size:1.6rem;color:#f7931a;">--</div>
@@ -173,30 +239,12 @@
           </div>
         </div>
       </div>
-      <!-- Aggregate Stats -->
       <div id="snipe-v7-cards" class="grid-4" style="margin-bottom:12px;">
-        <div class="stat-card" style="border-left:3px solid #22c55e;">
-          <div class="stat-value" id="snipe-success-rate" style="font-size:1.3rem;">--</div>
-          <div class="stat-label">Success Rate (50)</div>
-          <div id="snipe-wl-record" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div>
-        </div>
-        <div class="stat-card" style="border-left:3px solid #eab308;">
-          <div class="stat-value" id="snipe-avg-latency" style="font-size:1.3rem;">--</div>
-          <div class="stat-label">Avg Latency</div>
-          <div id="snipe-latency-detail" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div>
-        </div>
-        <div class="stat-card" style="border-left:3px solid #8b5cf6;">
-          <div class="stat-value" id="snipe-signal-score" style="font-size:1.3rem;color:#8b5cf6;">--</div>
-          <div class="stat-label">Last Score</div>
-          <div id="snipe-score-dir" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div>
-        </div>
-        <div class="stat-card" style="border-left:3px solid #06b6d4;">
-          <div class="stat-value" id="snipe-clob-spread" style="font-size:1.3rem;">--</div>
-          <div class="stat-label">CLOB Spread</div>
-          <div id="snipe-state-label" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div>
-        </div>
+        <div class="stat-card" style="border-left:3px solid #22c55e;"><div class="stat-value" id="snipe-success-rate" style="font-size:1.3rem;">--</div><div class="stat-label">Success Rate (50)</div><div id="snipe-wl-record" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div></div>
+        <div class="stat-card" style="border-left:3px solid #eab308;"><div class="stat-value" id="snipe-avg-latency" style="font-size:1.3rem;">--</div><div class="stat-label">Avg Latency</div><div id="snipe-latency-detail" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div></div>
+        <div class="stat-card" style="border-left:3px solid #8b5cf6;"><div class="stat-value" id="snipe-signal-score" style="font-size:1.3rem;color:#8b5cf6;">--</div><div class="stat-label">Last Score</div><div id="snipe-score-dir" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div></div>
+        <div class="stat-card" style="border-left:3px solid #06b6d4;"><div class="stat-value" id="snipe-clob-spread" style="font-size:1.3rem;">--</div><div class="stat-label">CLOB Spread</div><div id="snipe-state-label" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div></div>
       </div>
-      <!-- Hot Windows -->
       <div id="snipe-hot-windows" style="margin-bottom:12px;display:none;">
         <div class="glass-card" style="padding:10px 14px;">
           <div style="font-weight:700;font-size:0.76rem;margin-bottom:8px;">Hot Windows</div>
@@ -204,45 +252,29 @@
           <tbody id="snipe-hot-tbody"><tr><td colspan="4" class="text-muted" style="text-align:center;">No hot windows</td></tr></tbody></table>
         </div>
       </div>
-      <!-- Warm-up / Threshold / Freshness -->
       <div id="snipe-warmup-card" style="margin-bottom:12px;display:none;"></div>
       <div id="snipe-threshold-card" style="margin-bottom:12px;display:none;"></div>
       <div id="snipe-price-freshness" style="margin-bottom:12px;display:none;"></div>
-      <!-- Score Breakdown -->
       <div id="snipe-v7-breakdown" style="margin-bottom:12px;display:none;">
         <div class="glass-card" style="padding:10px 14px;">
           <div style="font-weight:700;font-size:0.76rem;margin-bottom:8px;">Signal Score Breakdown</div>
           <div id="snipe-score-bars" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:0.68rem;"></div>
         </div>
       </div>
-      <!-- Snipe v10 Performance -->
       <div class="glass-card" style="padding:10px 14px;margin-bottom:12px;">
         <div style="font-weight:700;font-size:0.76rem;margin-bottom:8px;">Snipe v10 Performance</div>
         <div id="snipe-perf-stats" style="font-size:0.78rem;"></div>
       </div>
-      <!-- Snipe Assist Live -->
       <div class="glass-card" style="padding:10px 14px;margin-bottom:12px;border-left:3px solid #a855f7;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <div style="font-weight:700;font-size:0.76rem;">Snipe Assist Live</div>
           <div id="sa-override-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;display:none;"></div>
         </div>
         <div class="grid-4" style="margin-bottom:8px;">
-          <div class="stat-card" style="border-left:3px solid #a855f7;">
-            <div class="stat-value" id="sa-timing-score" style="font-size:1.3rem;color:#a855f7;">--</div>
-            <div class="stat-label">Timing Score</div>
-          </div>
-          <div class="stat-card" style="border-left:3px solid #06b6d4;">
-            <div class="stat-value" id="sa-direction" style="font-size:1.3rem;">--</div>
-            <div class="stat-label">Direction</div>
-          </div>
-          <div class="stat-card" style="border-left:3px solid #22c55e;">
-            <div class="stat-value" id="sa-size-rec" style="font-size:1.3rem;">--</div>
-            <div class="stat-label">Size Rec</div>
-          </div>
-          <div class="stat-card" style="border-left:3px solid #eab308;">
-            <div class="stat-value" id="sa-accuracy" style="font-size:1.3rem;">--</div>
-            <div class="stat-label">Accuracy (50)</div>
-          </div>
+          <div class="stat-card" style="border-left:3px solid #a855f7;"><div class="stat-value" id="sa-timing-score" style="font-size:1.3rem;color:#a855f7;">--</div><div class="stat-label">Timing Score</div></div>
+          <div class="stat-card" style="border-left:3px solid #06b6d4;"><div class="stat-value" id="sa-direction" style="font-size:1.3rem;">--</div><div class="stat-label">Direction</div></div>
+          <div class="stat-card" style="border-left:3px solid #22c55e;"><div class="stat-value" id="sa-size-rec" style="font-size:1.3rem;">--</div><div class="stat-label">Size Rec</div></div>
+          <div class="stat-card" style="border-left:3px solid #eab308;"><div class="stat-value" id="sa-accuracy" style="font-size:1.3rem;">--</div><div class="stat-label">Accuracy (50)</div></div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
           <div id="sa-action-badge" style="font-size:0.72rem;font-weight:700;padding:3px 12px;border-radius:6px;background:rgba(255,255,255,0.06);">--</div>
@@ -258,42 +290,20 @@
         <div id="sa-learner-footer" style="font-size:0.62rem;color:var(--text-muted);"></div>
       </div>
     </div>
-  </div>
 
-  <!-- ═══ SECTION 2: Market Making (default-open) ═══ -->
-  <div class="collapse-section default-open" style="margin-bottom:12px;">
-    <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">Market Making
-        <span id="maker-status-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;margin-left:8px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;">OFF</span>
-      </h2>
-    </div>
-    <div class="collapse-body">
-      <!-- P&L Cards -->
+    <!-- MARKET MAKING ENGINE -->
+    <div class="garves-engine-panel" id="garves-engine-maker" style="display:none;">
+      <div style="font-weight:700;font-size:0.82rem;margin-bottom:12px;">Market Making Engine</div>
       <div class="grid-4" style="margin-bottom:10px;">
-        <div class="stat-card" style="border-left:3px solid #22c55e;">
-          <div class="stat-value" id="maker-session-pnl" style="font-size:1.3rem;">$0.00</div>
-          <div class="stat-label">Session P&amp;L</div>
-        </div>
-        <div class="stat-card" style="border-left:3px solid #8b5cf6;">
-          <div class="stat-value" id="maker-spread-captured" style="font-size:1.3rem;">$0.00</div>
-          <div class="stat-label">Spread Captured</div>
-        </div>
-        <div class="stat-card" style="border-left:3px solid #ef4444;">
-          <div class="stat-value" id="maker-resolution-losses" style="font-size:1.3rem;">$0.00</div>
-          <div class="stat-label">Resolution Losses</div>
-        </div>
-        <div class="stat-card" style="border-left:3px solid #eab308;">
-          <div class="stat-value" id="maker-fills-today" style="font-size:1.3rem;">0</div>
-          <div class="stat-label">Fills Today</div>
-          <div id="maker-rebate-label" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div>
-        </div>
+        <div class="stat-card" style="border-left:3px solid #22c55e;"><div class="stat-value" id="maker-session-pnl" style="font-size:1.3rem;">$0.00</div><div class="stat-label">Session P&amp;L</div></div>
+        <div class="stat-card" style="border-left:3px solid #8b5cf6;"><div class="stat-value" id="maker-spread-captured" style="font-size:1.3rem;">$0.00</div><div class="stat-label">Spread Captured</div></div>
+        <div class="stat-card" style="border-left:3px solid #ef4444;"><div class="stat-value" id="maker-resolution-losses" style="font-size:1.3rem;">$0.00</div><div class="stat-label">Resolution Losses</div></div>
+        <div class="stat-card" style="border-left:3px solid #eab308;"><div class="stat-value" id="maker-fills-today" style="font-size:1.3rem;">0</div><div class="stat-label">Fills Today</div><div id="maker-rebate-label" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div></div>
       </div>
-      <!-- Warnings -->
       <div id="maker-warnings-card" style="display:none;margin-bottom:10px;padding:10px 14px;border-radius:8px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);">
         <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:#ef4444;font-weight:700;margin-bottom:4px;">Inventory Risk Warnings</div>
         <div id="maker-warnings-list" style="font-family:var(--font-mono);font-size:0.72rem;color:#ef4444;"></div>
       </div>
-      <!-- Active Quotes -->
       <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
           <span style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);">Active Quotes</span>
@@ -302,66 +312,32 @@
         <table class="data-table"><thead><tr><th>Asset</th><th>Side</th><th>Price</th><th>Size</th><th>Age</th></tr></thead>
         <tbody id="maker-quotes-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;">No active quotes</td></tr></tbody></table>
       </div>
-      <!-- Inventory -->
       <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;">
         <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Inventory</div>
         <table class="data-table"><thead><tr><th>Asset</th><th>Direction</th><th>Shares</th><th>Fills</th><th>TTR</th><th>Risk</th></tr></thead>
         <tbody id="maker-inventory-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">No inventory</td></tr></tbody></table>
       </div>
-      <!-- Recent Fills -->
       <div class="glass-card" style="padding:10px 14px;">
         <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Recent Fills</div>
         <table class="data-table"><thead><tr><th>Time</th><th>Asset</th><th>Side</th><th>Price</th><th>Fair</th><th>Spread</th></tr></thead>
         <tbody id="maker-fills-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">No fills yet</td></tr></tbody></table>
       </div>
-      <!-- Config -->
       <div style="margin-top:8px;font-size:0.62rem;color:var(--text-muted);font-family:var(--font-mono);" id="maker-config-label"></div>
     </div>
-  </div>
 
-  <!-- ═══ SECTION 3: Smart Money Follower (default-open) ═══ -->
-  <div class="collapse-section default-open" id="garves-whale-section" style="margin-bottom:12px;">
-    <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">Smart Money Follower
-        <span id="whale-status-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;margin-left:8px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;">OFF</span>
-        <span id="whale-tracked-count" style="font-size:0.62rem;color:var(--text-muted);margin-left:4px;">0 whales</span>
-      </h2>
-    </div>
-    <div class="collapse-body">
-      <!-- Stats -->
+    <!-- WHALE FOLLOWER ENGINE -->
+    <div class="garves-engine-panel" id="garves-whale-section" style="display:none;">
+      <div style="font-weight:700;font-size:0.82rem;margin-bottom:12px;">Smart Money Follower</div>
       <div class="grid-4" style="margin-bottom:12px;">
-        <div class="stat-card" style="border-left:3px solid #FFD700;">
-          <div class="stat-value" id="whale-tracked-wallets" style="font-size:1.3rem;">0</div>
-          <div class="stat-label">Tracked Whales</div>
-        </div>
-        <div class="stat-card" style="border-left:3px solid #8b5cf6;">
-          <div class="stat-value" id="whale-copy-count" style="font-size:1.3rem;">0</div>
-          <div class="stat-label">Copy Trades</div>
-        </div>
-        <div class="stat-card" style="border-left:3px solid #22c55e;">
-          <div class="stat-value" id="whale-win-rate" style="font-size:1.3rem;">--</div>
-          <div class="stat-label">Win Rate</div>
-        </div>
-        <div class="stat-card" style="border-left:3px solid #ef4444;">
-          <div class="stat-value" id="whale-total-pnl" style="font-size:1.3rem;">$0.00</div>
-          <div class="stat-label">Copy P&amp;L</div>
-        </div>
+        <div class="stat-card" style="border-left:3px solid #FFD700;"><div class="stat-value" id="whale-tracked-wallets" style="font-size:1.3rem;">0</div><div class="stat-label">Tracked Whales</div></div>
+        <div class="stat-card" style="border-left:3px solid #8b5cf6;"><div class="stat-value" id="whale-copy-count" style="font-size:1.3rem;">0</div><div class="stat-label">Copy Trades</div></div>
+        <div class="stat-card" style="border-left:3px solid #22c55e;"><div class="stat-value" id="whale-win-rate" style="font-size:1.3rem;">--</div><div class="stat-label">Win Rate</div></div>
+        <div class="stat-card" style="border-left:3px solid #ef4444;"><div class="stat-value" id="whale-total-pnl" style="font-size:1.3rem;">$0.00</div><div class="stat-label">Copy P&amp;L</div></div>
       </div>
-      <!-- Whale Details -->
       <div style="display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
         <div style="flex:1;min-width:200px;">
           <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px;">Quick View</div>
-          <table style="width:100%;border-collapse:collapse;font-family:var(--font-mono);">
-            <thead>
-              <tr style="color:var(--text-muted);font-size:0.62rem;">
-                <th style="padding:2px 8px;text-align:left;">Whale</th>
-                <th style="padding:2px 6px;text-align:center;">Score</th>
-                <th style="padding:2px 6px;text-align:center;">Trades</th>
-                <th style="padding:2px 6px;text-align:right;">PnL</th>
-              </tr>
-            </thead>
-            <tbody id="whale-top-wallets-body"></tbody>
-          </table>
+          <table style="width:100%;border-collapse:collapse;font-family:var(--font-mono);"><thead><tr style="color:var(--text-muted);font-size:0.62rem;"><th style="padding:2px 8px;text-align:left;">Whale</th><th style="padding:2px 6px;text-align:center;">Score</th><th style="padding:2px 6px;text-align:center;">Trades</th><th style="padding:2px 6px;text-align:right;">PnL</th></tr></thead><tbody id="whale-top-wallets-body"></tbody></table>
         </div>
         <div style="flex:0 0 200px;">
           <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px;">Status</div>
@@ -370,15 +346,11 @@
           <div style="font-size:0.68rem;">Backtest: <span id="whale-backtest-status">--</span></div>
         </div>
       </div>
-      <!-- Top Whales Table -->
       <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;">
         <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Top Tracked Whales</div>
-        <table class="data-table">
-          <thead><tr><th>Wallet</th><th>Username</th><th>Score</th><th>Trades</th><th>Win Rate</th><th>P&amp;L</th></tr></thead>
-          <tbody id="whale-wallets-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">No tracked whales</td></tr></tbody>
-        </table>
+        <table class="data-table"><thead><tr><th>Wallet</th><th>Username</th><th>Score</th><th>Trades</th><th>Win Rate</th><th>P&amp;L</th></tr></thead>
+        <tbody id="whale-wallets-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">No tracked whales</td></tr></tbody></table>
       </div>
-      <!-- Active Signals -->
       <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
           <span style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);">Active Whale Signals</span>
@@ -386,537 +358,409 @@
         </div>
         <div id="whale-signals-list" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">No active signals</span></div>
       </div>
-      <!-- Recent Copy Trades -->
       <div class="glass-card" style="padding:10px 14px;">
         <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Recent Copy Trades</div>
-        <table class="data-table">
-          <thead><tr><th>Time</th><th>Whale</th><th>Market</th><th>Dir</th><th>Size</th><th>Status</th><th>P&amp;L</th></tr></thead>
-          <tbody id="whale-trades-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;">No copy trades</td></tr></tbody>
-        </table>
+        <table class="data-table"><thead><tr><th>Time</th><th>Whale</th><th>Market</th><th>Dir</th><th>Size</th><th>Status</th><th>P&amp;L</th></tr></thead>
+        <tbody id="whale-trades-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;">No copy trades</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- TAKER ENGINE -->
+    <div class="garves-engine-panel" id="garves-engine-taker" style="display:none;">
+      <div style="font-weight:700;font-size:0.82rem;margin-bottom:12px;">Taker Engine</div>
+      <div class="grid-4" style="margin-bottom:12px;">
+        <div class="stat-card" style="border-left:3px solid #06b6d4;"><div class="stat-value" id="taker-trades" style="font-size:1.3rem;">0</div><div class="stat-label">Trades</div></div>
+        <div class="stat-card" style="border-left:3px solid #22c55e;"><div class="stat-value" id="taker-wr" style="font-size:1.3rem;">--</div><div class="stat-label">Win Rate</div></div>
+        <div class="stat-card" style="border-left:3px solid #8b5cf6;"><div class="stat-value" id="taker-pnl" style="font-size:1.3rem;">$0.00</div><div class="stat-label">PnL</div></div>
+        <div class="stat-card" style="border-left:3px solid #eab308;"><div class="stat-value" id="taker-alloc" style="font-size:1.3rem;">15%</div><div class="stat-label">Allocation</div></div>
+      </div>
+      <div class="glass-card" style="padding:10px 14px;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Recent Taker Trades</div>
+        <table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Direction</th><th>Size</th><th>Edge</th><th>Result</th><th>PnL</th></tr></thead>
+        <tbody id="taker-trades-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;">No taker trades yet</td></tr></tbody></table>
       </div>
     </div>
   </div>
 
-  <!-- ═══ SECTION 4: Open Positions (default-open) ═══ -->
-  <div class="collapse-section default-open" style="margin-bottom:12px;">
-    <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">Open Positions
-        <span id="positions-live-dot" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;animation:pulse-glow 2s ease-in-out infinite;margin-left:8px;"></span>
-        <span style="font-size:0.64rem;color:var(--success);margin-left:4px;">LIVE</span>
-      </h2>
+  <!-- ═══ OPEN POSITIONS PANEL ═══ -->
+  <div class="garves-panel" id="garves-panel-positions" style="display:none;">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+      <span style="font-weight:700;font-size:0.82rem;">Open Positions</span>
+      <span id="positions-live-dot" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;animation:pulse-glow 2s ease-in-out infinite;"></span>
+      <span style="font-size:0.64rem;color:var(--success);">LIVE</span>
     </div>
-    <div class="collapse-body">
-      <!-- Holdings Table -->
-      <div class="glass-card" style="margin-bottom:12px;">
-        <table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Bet</th><th>Shares</th><th>Entry</th><th>Now</th><th>Margin</th><th>Value</th><th>Resolves</th><th>P&amp;L</th><th>Payout</th><th>Return</th></tr></thead>
-        <tbody id="oc-holdings-tbody"><tr><td colspan="12" class="text-muted" style="text-align:center;padding:16px;">No open positions</td></tr></tbody></table>
-      </div>
-      <!-- Portfolio Allocation -->
-      <div id="portfolio-alloc-card" class="glass-card" style="padding:12px 16px;margin-bottom:12px;border-left:3px solid #8b5cf6;display:none;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-          <div style="font-weight:700;font-size:0.78rem;">Portfolio Allocation</div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span id="pa-wallet-age" style="font-size:0.62rem;color:var(--text-muted);"></span>
-            <span id="pa-total-util" style="font-size:0.68rem;font-weight:700;font-family:var(--font-mono);padding:2px 8px;border-radius:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;">0%</span>
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
-          <div style="text-align:center;">
-            <div style="font-size:0.62rem;color:var(--text-muted);">Deployable</div>
-            <div id="pa-deployable" style="font-size:1rem;font-weight:700;font-family:var(--font-mono);">--</div>
-          </div>
-          <div style="text-align:center;">
-            <div style="font-size:0.62rem;color:var(--text-muted);">Total Exposure</div>
-            <div id="pa-total-exposure" style="font-size:1rem;font-weight:700;font-family:var(--font-mono);">--</div>
-          </div>
-          <div style="text-align:center;">
-            <div style="font-size:0.62rem;color:var(--text-muted);">Reserve (20%)</div>
-            <div id="pa-reserve" style="font-size:1rem;font-weight:700;font-family:var(--font-mono);color:var(--warning);">--</div>
-          </div>
-        </div>
-        <div id="pa-agent-bars" style="display:flex;flex-direction:column;gap:6px;"></div>
-      </div>
-      <!-- Hero Balance Cards -->
-      <div class="grid-3">
-        <div class="stat-card" data-accent="success" style="border-left:3px solid var(--success);">
-          <div class="stat-value" id="live-portfolio" style="font-size:1.4rem;">--</div>
-          <div class="stat-label">Portfolio</div>
-        </div>
-        <div class="stat-card" data-accent="garves" style="border-left:3px solid var(--agent-garves);">
-          <div class="stat-value" id="live-cash" style="font-size:1.4rem;">--</div>
-          <div class="stat-label">Cash</div>
-        </div>
-        <div class="stat-card" data-accent="success" style="border-left:3px solid var(--warning);">
-          <div class="stat-value" id="live-real-pnl" style="font-size:1.4rem;">--</div>
-          <div class="stat-label">Real PnL</div>
-          <div id="garves-loss-cap-bar" style="margin-top:6px;"></div>
+    <div class="glass-card" style="margin-bottom:12px;overflow-x:auto;padding:0;">
+      <table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Bet</th><th>Shares</th><th>Entry</th><th>Now</th><th>Margin</th><th>Value</th><th>Resolves</th><th>P&amp;L</th><th>Payout</th><th>Return</th></tr></thead>
+      <tbody id="oc-holdings-tbody"><tr><td colspan="12" class="text-muted" style="text-align:center;padding:16px;">No open positions</td></tr></tbody></table>
+    </div>
+    <div id="portfolio-alloc-card" class="glass-card" style="padding:12px 16px;margin-bottom:12px;border-left:3px solid #8b5cf6;display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="font-weight:700;font-size:0.78rem;">Portfolio Allocation</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="pa-wallet-age" style="font-size:0.62rem;color:var(--text-muted);"></span>
+          <span id="pa-total-util" style="font-size:0.68rem;font-weight:700;font-family:var(--font-mono);padding:2px 8px;border-radius:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;">0%</span>
         </div>
       </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+        <div style="text-align:center;"><div style="font-size:0.62rem;color:var(--text-muted);">Deployable</div><div id="pa-deployable" style="font-size:1rem;font-weight:700;font-family:var(--font-mono);">--</div></div>
+        <div style="text-align:center;"><div style="font-size:0.62rem;color:var(--text-muted);">Total Exposure</div><div id="pa-total-exposure" style="font-size:1rem;font-weight:700;font-family:var(--font-mono);">--</div></div>
+        <div style="text-align:center;"><div style="font-size:0.62rem;color:var(--text-muted);">Reserve (20%)</div><div id="pa-reserve" style="font-size:1rem;font-weight:700;font-family:var(--font-mono);color:var(--warning);">--</div></div>
+      </div>
+      <div id="pa-agent-bars" style="display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+      <div class="stat-card" style="border-left:3px solid var(--success);"><div class="stat-value" id="live-portfolio" style="font-size:1.4rem;">--</div><div class="stat-label">Portfolio</div></div>
+      <div class="stat-card" style="border-left:3px solid var(--agent-garves);"><div class="stat-value" id="live-cash" style="font-size:1.4rem;">--</div><div class="stat-label">Cash</div></div>
+      <div class="stat-card" style="border-left:3px solid var(--warning);"><div class="stat-value" id="live-real-pnl" style="font-size:1.4rem;">--</div><div class="stat-label">Real PnL</div><div id="garves-loss-cap-bar" style="margin-top:6px;"></div></div>
     </div>
   </div>
 
-  <!-- ═══ SECTION 5: Trade History (collapsed) ═══ -->
-  <div class="collapse-section" style="margin-bottom:12px;">
-    <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">Trade History</h2>
+  <!-- ═══ TRADE HISTORY PANEL ═══ -->
+  <div class="garves-panel" id="garves-panel-history" style="display:none;">
+    <!-- Filter Bar -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+      <select id="garves-hist-engine" onchange="garvesFilterHistory()" style="background:var(--surface-elevated);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 8px;font-size:0.72rem;font-family:var(--font-mono);">
+        <option value="all">All Engines</option>
+        <option value="snipe">Snipe</option>
+        <option value="maker">Maker</option>
+        <option value="whale">Whale</option>
+        <option value="taker">Taker</option>
+      </select>
+      <span style="font-weight:700;font-size:0.82rem;">Trade History</span>
     </div>
-    <div class="collapse-body">
-      <!-- Stats Grid -->
-      <div class="grid-6" id="live-stats-grid" style="margin-bottom:12px;">
-        <div class="stat-card" data-accent="success"><div class="stat-value" id="live-winrate">--</div><div class="stat-label">Win Rate</div></div>
-        <div class="stat-card" data-accent="success"><div class="stat-value" id="live-pnl">--</div><div class="stat-label">Trade P&amp;L</div></div>
-        <div class="stat-card" data-accent="garves"><div class="stat-value" id="live-wins-losses">--</div><div class="stat-label">Wins / Losses</div></div>
-        <div class="stat-card" data-accent="garves"><div class="stat-value" id="live-total">--</div><div class="stat-label">Total</div></div>
-        <div class="stat-card" data-accent="garves"><div class="stat-value" id="live-resolved">--</div><div class="stat-label">Resolved</div></div>
-        <div class="stat-card" data-accent="warning"><div class="stat-value" id="live-pending">--</div><div class="stat-label">Pending</div></div>
-      </div>
-      <!-- Charts + Regime -->
-      <div class="grid-2" style="margin-bottom:12px;">
-        <div class="glass-card">
-          <h3 class="section-title" style="font-size:0.72rem;margin-bottom:8px;">Equity Curve</h3>
-          <div class="chart-container chart-sm"><canvas id="garves-pnl-chart"></canvas></div>
-        </div>
-        <div class="glass-card">
-          <h3 class="section-title" style="font-size:0.72rem;margin-bottom:8px;">Win Rate</h3>
-          <div class="chart-container chart-sm"><canvas id="garves-wr-donut"></canvas></div>
-        </div>
-      </div>
-      <div id="garves-regime-badge" style="margin-bottom:12px;"><span class="badge badge-info">Regime: --</span></div>
-      <!-- Activity Feed -->
-      <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-garves);">
-        <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Agent Activity</h3>
-        <div id="garves-activity-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:150px;overflow-y:auto;"><span class="text-muted">Waiting for activity...</span></div>
-      </div>
-      <!-- Trade History Table -->
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:var(--space-2);">
-        <h3 class="section-title" style="font-size:0.76rem;margin:0;">Trade History</h3>
-        <span id="oc-record" class="text-muted" style="font-size:0.72rem;">--</span>
-        <span id="oc-realized-pnl" class="text-muted" style="font-size:0.72rem;margin-left:auto;">--</span>
-      </div>
-      <div class="glass-card" style="margin-bottom:12px;"><table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Bet</th><th>Cost</th><th>Result</th><th>P&amp;L</th></tr></thead>
-      <tbody id="oc-history-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:16px;">No trade history</td></tr></tbody></table></div>
-      <!-- Pending Trades -->
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <h3 class="section-title" data-accent="warning" style="margin:0;font-size:0.76rem;">Pending Trades</h3>
-        <span id="pending-count-badge" style="background:var(--warning);color:#000;font-weight:700;padding:2px 8px;border-radius:10px;font-size:0.72rem;">0</span>
-        <span id="pending-exposure" class="text-muted" style="font-size:0.76rem;margin-left:auto;">Exposure: --</span>
-      </div>
-      <div class="glass-card" id="live-positions-table-wrap" style="margin-bottom:12px;">
-        <table class="data-table"><thead><tr><th>Placed</th><th>Market</th><th>Direction</th><th>Stake</th><th>Edge</th><th style="min-width:100px;">Countdown</th><th>Pot. Profit</th><th>Pot. Loss</th></tr></thead>
-        <tbody id="live-pending-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No pending trades</td></tr></tbody></table>
-      </div>
-      <!-- Resolved Trades -->
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-        <h3 class="section-title" data-accent="garves" style="margin:0;font-size:0.76rem;">Resolved Trades</h3>
-        <span id="resolved-summary" class="text-muted" style="font-size:0.76rem;margin-left:auto;">--</span>
-      </div>
-      <div class="glass-card" style="margin-bottom:12px;"><table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Direction</th><th>Stake</th><th>Edge</th><th>Result</th><th>PnL</th></tr></thead><tbody id="live-resolved-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;padding:24px;">No resolved trades yet</td></tr></tbody></table></div>
-      <!-- Breakdowns -->
-      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">Breakdowns</h3>
-      <div class="grid-3" id="live-breakdowns" style="margin-bottom:12px;">
-        <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Asset</h3><table class="data-table"><thead><tr><th>Asset</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-asset"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
-        <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Timeframe</h3><table class="data-table"><thead><tr><th>TF</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-tf"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
-        <div class="glass-card"><h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-3);">By Direction</h3><table class="data-table"><thead><tr><th>Dir</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-dir"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
-      </div>
-      <!-- Daily Performance -->
-      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">Daily Performance History</h3>
-      <div class="glass-card"><table class="data-table"><thead><tr><th>Date</th><th>Trades</th><th>W-L</th><th>Win Rate</th><th>PnL</th><th>Avg Edge</th><th>Regime</th><th>Issues</th></tr></thead><tbody id="daily-history-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No daily reports yet</td></tr></tbody></table></div>
+    <div class="grid-6" id="live-stats-grid" style="margin-bottom:12px;">
+      <div class="stat-card" data-accent="success"><div class="stat-value" id="live-winrate">--</div><div class="stat-label">Win Rate</div></div>
+      <div class="stat-card" data-accent="success"><div class="stat-value" id="live-pnl">--</div><div class="stat-label">Trade P&amp;L</div></div>
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="live-wins-losses">--</div><div class="stat-label">Wins / Losses</div></div>
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="live-total">--</div><div class="stat-label">Total</div></div>
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="live-resolved">--</div><div class="stat-label">Resolved</div></div>
+      <div class="stat-card" data-accent="warning"><div class="stat-value" id="live-pending">--</div><div class="stat-label">Pending</div></div>
     </div>
+    <div class="grid-2" style="margin-bottom:12px;">
+      <div class="glass-card"><h3 class="section-title" style="font-size:0.72rem;margin-bottom:8px;">Equity Curve</h3><div class="chart-container chart-sm"><canvas id="garves-pnl-chart"></canvas></div></div>
+      <div class="glass-card"><h3 class="section-title" style="font-size:0.72rem;margin-bottom:8px;">Win Rate</h3><div class="chart-container chart-sm"><canvas id="garves-wr-donut"></canvas></div></div>
+    </div>
+    <div id="garves-regime-badge" style="margin-bottom:12px;"><span class="badge badge-info">Regime: --</span></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span style="font-size:0.76rem;font-weight:700;">Trade History</span>
+      <span id="oc-record" class="text-muted" style="font-size:0.72rem;">--</span>
+      <span id="oc-realized-pnl" class="text-muted" style="font-size:0.72rem;margin-left:auto;">--</span>
+    </div>
+    <div class="glass-card" style="margin-bottom:12px;overflow-x:auto;padding:0;"><table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Bet</th><th>Cost</th><th>Result</th><th>P&amp;L</th></tr></thead>
+    <tbody id="oc-history-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:16px;">No trade history</td></tr></tbody></table></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span style="font-size:0.76rem;font-weight:700;">Pending Trades</span>
+      <span id="pending-count-badge" style="background:var(--warning);color:#000;font-weight:700;padding:2px 8px;border-radius:10px;font-size:0.72rem;">0</span>
+      <span id="pending-exposure" class="text-muted" style="font-size:0.76rem;margin-left:auto;">Exposure: --</span>
+    </div>
+    <div class="glass-card" id="live-positions-table-wrap" style="margin-bottom:12px;overflow-x:auto;padding:0;">
+      <table class="data-table"><thead><tr><th>Placed</th><th>Market</th><th>Direction</th><th>Stake</th><th>Edge</th><th style="min-width:100px;">Countdown</th><th>Pot. Profit</th><th>Pot. Loss</th></tr></thead>
+      <tbody id="live-pending-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No pending trades</td></tr></tbody></table>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <span style="font-size:0.76rem;font-weight:700;">Resolved Trades</span>
+      <span id="resolved-summary" class="text-muted" style="font-size:0.76rem;margin-left:auto;">--</span>
+    </div>
+    <div class="glass-card" style="margin-bottom:12px;overflow-x:auto;padding:0;"><table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Direction</th><th>Stake</th><th>Edge</th><th>Result</th><th>PnL</th></tr></thead><tbody id="live-resolved-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;padding:24px;">No resolved trades yet</td></tr></tbody></table></div>
+    <div style="font-size:0.76rem;font-weight:700;margin-bottom:8px;">Breakdowns</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;" id="live-breakdowns">
+      <div class="glass-card"><div style="font-size:0.72rem;font-weight:600;margin-bottom:8px;">By Asset</div><table class="data-table"><thead><tr><th>Asset</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-asset"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+      <div class="glass-card"><div style="font-size:0.72rem;font-weight:600;margin-bottom:8px;">By Timeframe</div><table class="data-table"><thead><tr><th>TF</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-tf"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+      <div class="glass-card"><div style="font-size:0.72rem;font-weight:600;margin-bottom:8px;">By Direction</div><table class="data-table"><thead><tr><th>Dir</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-dir"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+    </div>
+    <div style="font-size:0.76rem;font-weight:700;margin-bottom:8px;">Daily Performance History</div>
+    <div class="glass-card" style="overflow-x:auto;padding:0;"><table class="data-table"><thead><tr><th>Date</th><th>Trades</th><th>W-L</th><th>Win Rate</th><th>PnL</th><th>Avg Edge</th><th>Regime</th><th>Issues</th></tr></thead><tbody id="daily-history-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No daily reports yet</td></tr></tbody></table></div>
   </div>
 
-  <!-- ═══ SECTION 6: Performance Insights (collapsed) ═══ -->
-  <div class="collapse-section" style="margin-bottom:12px;">
-    <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">Performance Insights</h2>
+  <!-- ═══ PERFORMANCE INSIGHTS PANEL ═══ -->
+  <div class="garves-panel" id="garves-panel-performance" style="display:none;">
+    <!-- ML & Strategy -->
+    <div style="font-size:0.82rem;font-weight:700;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.06);">ML &amp; Strategy</div>
+    <div class="grid-3" id="ml-models-grid" style="margin-bottom:12px;">
+      <div class="glass-card" style="border-left:3px solid #ff6600;"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px;">LSTM Neural Predictor</div><div id="ml-lstm-status" style="font-size:0.76rem;">Loading...</div></div>
+      <div class="glass-card" style="border-left:3px solid #00BFFF;"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px;">XGBoost Trade Predictor</div><div id="ml-xgb-status" style="font-size:0.76rem;">Loading...</div></div>
+      <div class="glass-card" style="border-left:3px solid #00ff88;"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px;">FinBERT Sentiment</div><div id="ml-finbert-status" style="font-size:0.76rem;">Loading...</div></div>
     </div>
-    <div class="collapse-body">
-
-      <!-- Sub-section A: ML & Strategy -->
-      <h3 class="section-title" data-accent="garves" style="font-size:0.82rem;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.06);">ML &amp; Strategy</h3>
-      <!-- ML Intelligence -->
-      <div class="grid-3" id="ml-models-grid" style="margin-bottom:12px;">
-        <div class="glass-card" style="border-left:3px solid #ff6600;">
-          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px;">LSTM Neural Predictor</div>
-          <div id="ml-lstm-status" style="font-size:0.76rem;">Loading...</div>
-        </div>
-        <div class="glass-card" style="border-left:3px solid #00BFFF;">
-          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px;">XGBoost Trade Predictor</div>
-          <div id="ml-xgb-status" style="font-size:0.76rem;">Loading...</div>
-        </div>
-        <div class="glass-card" style="border-left:3px solid #00ff88;">
-          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px;">FinBERT Sentiment</div>
-          <div id="ml-finbert-status" style="font-size:0.76rem;">Loading...</div>
-        </div>
-      </div>
-      <!-- ML Win Predictor -->
-      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">ML Win Predictor</h3>
-      <div class="grid-4" id="ml-summary-cards" style="margin-bottom:10px;">
-        <div class="stat-card" data-accent="garves"><div class="stat-value" id="ml-status">--</div><div class="stat-label">Model Status</div></div>
-        <div class="stat-card" data-accent="success"><div class="stat-value" id="ml-accuracy">--</div><div class="stat-label">CV Accuracy</div></div>
-        <div class="stat-card" data-accent="garves"><div class="stat-value" id="ml-samples">--</div><div class="stat-label">Training Samples</div></div>
-        <div class="stat-card" data-accent="garves"><div class="stat-value" id="ml-f1">--</div><div class="stat-label">F1 Score</div></div>
-      </div>
-      <div class="glass-card" style="margin-bottom:12px;">
-        <h3 class="section-title" style="font-size:0.76rem;margin-bottom:var(--space-2);">Top Feature Importances</h3>
-        <div id="ml-feature-bars" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">Loading...</span></div>
-      </div>
-      <!-- Indicator Weights -->
-      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">Indicator Weights</h3>
-      <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;border-left:3px solid var(--agent-garves);">
-        <div style="font-size:0.68rem;color:var(--text-muted);line-height:1.5;">
-          <strong>Base</strong> = starting weight from Quant backtesting. <strong>Dynamic</strong> = auto-adjusted by the weight learner based on each indicator's live accuracy.
-          Indicators with accuracy above 55% get boosted +30%. Below 45% accuracy = disabled (0 weight). <strong>Samples</strong> = total votes cast by this indicator across all trades.
-        </div>
-      </div>
-      <div class="glass-card" style="margin-bottom:12px;"><table class="data-table"><thead><tr><th>Indicator</th><th>Base</th><th>Dynamic</th><th>Accuracy</th><th>Samples</th><th>Status</th></tr></thead><tbody id="conv-weights-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody></table></div>
-      <!-- Trade Journal -->
-      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">Trade Journal</h3>
-      <div class="grid-3" id="journal-summary-cards" style="margin-bottom:10px;">
-        <div class="stat-card" data-accent="garves"><div class="stat-value" id="journal-streak">--</div><div class="stat-label">Current Streak</div></div>
-        <div class="stat-card" data-accent="success"><div class="stat-value" id="journal-best-combo">--</div><div class="stat-label">Best Combo</div></div>
-        <div class="stat-card" data-accent="warning"><div class="stat-value" id="journal-worst-combo">--</div><div class="stat-label">Worst Combo</div></div>
-      </div>
-      <div class="glass-card" style="margin-bottom:10px;">
-        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Hour Heatmap (ET)</div>
-        <div id="journal-hour-heatmap" style="display:grid;grid-template-columns:repeat(12,1fr);gap:3px;font-family:var(--font-mono);font-size:0.64rem;">
-          <span class="text-muted" style="grid-column:1/-1;text-align:center;">Loading...</span>
-        </div>
-      </div>
-      <div class="grid-2" style="margin-bottom:10px;">
-        <div class="glass-card" style="border-left:3px solid var(--success);">
-          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--success);margin-bottom:4px;">Best Combos</div>
-          <table class="data-table"><thead><tr><th>Combo</th><th>W-L</th><th>WR</th></tr></thead>
-          <tbody id="journal-best-tbody"><tr><td colspan="3" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody></table>
-        </div>
-        <div class="glass-card" style="border-left:3px solid var(--danger);">
-          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--danger);margin-bottom:4px;">Worst Combos</div>
-          <table class="data-table"><thead><tr><th>Combo</th><th>W-L</th><th>WR</th></tr></thead>
-          <tbody id="journal-worst-tbody"><tr><td colspan="3" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody></table>
-        </div>
-      </div>
-      <div class="glass-card" style="margin-bottom:10px;border-left:3px solid var(--warning);">
-        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--warning);margin-bottom:4px;">Mistake Patterns</div>
-        <div id="journal-mistakes" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">Loading...</span></div>
-      </div>
-      <div class="glass-card" style="margin-bottom:16px;border-left:3px solid var(--agent-garves);">
-        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px;">Recommendations</div>
-        <div id="journal-recommendations" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">Loading...</span></div>
-      </div>
-
-      <!-- Sub-section B: V2 Intelligence -->
-      <h3 class="section-title" data-accent="garves" style="font-size:0.82rem;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.06);">V2 Intelligence</h3>
-      <!-- Kill Switch -->
-      <div class="glass-card" style="margin-bottom:10px;" id="v2-kill-switch-card">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-          <span style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);">Kill Switch</span>
-          <span id="v2-kill-switch-badge" style="padding:2px 8px;border-radius:10px;font-size:0.68rem;font-weight:700;background:var(--success);color:#000;">SAFE</span>
-        </div>
-        <div id="v2-kill-switch-reason" style="font-size:0.72rem;color:var(--text-muted);display:none;"></div>
-      </div>
-      <!-- Core Metrics -->
-      <div class="glass-card" style="margin-bottom:10px;">
-        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Core Metrics</div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;" id="v2-core-metrics">
-          <div style="text-align:center;">
-            <div style="font-size:0.68rem;color:var(--text-muted);">WR 20</div>
-            <div id="v2-wr-20" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">--</div>
-          </div>
-          <div style="text-align:center;">
-            <div style="font-size:0.68rem;color:var(--text-muted);">WR 50</div>
-            <div id="v2-wr-50" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">--</div>
-          </div>
-          <div style="text-align:center;">
-            <div style="font-size:0.68rem;color:var(--text-muted);">EV Capture</div>
-            <div id="v2-ev-capture" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">--</div>
-          </div>
-          <div style="text-align:center;">
-            <div style="font-size:0.68rem;color:var(--text-muted);">Drawdown</div>
-            <div id="v2-drawdown" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">--</div>
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px;border-top:1px solid rgba(255,255,255,0.05);padding-top:6px;">
-          <div style="text-align:center;">
-            <div style="font-size:0.62rem;color:var(--text-muted);">EV 20</div>
-            <div id="v2-ev-20" style="font-size:0.88rem;font-weight:600;font-family:var(--font-mono);">--</div>
-          </div>
-          <div style="text-align:center;">
-            <div style="font-size:0.62rem;color:var(--text-muted);">EV 50</div>
-            <div id="v2-ev-50" style="font-size:0.88rem;font-weight:600;font-family:var(--font-mono);">--</div>
-          </div>
-          <div style="text-align:center;">
-            <div style="font-size:0.62rem;color:var(--text-muted);">Slippage</div>
-            <div id="v2-slippage" style="font-size:0.88rem;font-weight:600;font-family:var(--font-mono);">--</div>
-          </div>
-          <div style="text-align:center;">
-            <div style="font-size:0.62rem;color:var(--text-muted);">Timing Cost</div>
-            <div id="v2-timing" style="font-size:0.88rem;font-weight:600;font-family:var(--font-mono);">--</div>
-          </div>
-        </div>
-      </div>
-      <!-- Weekly Competitive Check -->
-      <div id="v2-weekly-card" class="glass-card" style="margin-bottom:10px;border-left:3px solid var(--agent-garves);display:none;">
-        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--agent-garves);margin-bottom:4px;">Weekly Competitive Check</div>
-        <div id="v2-weekly-content" style="font-family:var(--font-mono);font-size:0.72rem;"></div>
-      </div>
-      <!-- Auto-Debug Suggestions -->
-      <div id="v2-debug-card" class="glass-card" style="margin-bottom:10px;border-left:3px solid var(--warning);display:none;">
-        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--warning);margin-bottom:4px;">Auto-Debug Suggestions</div>
-        <div id="v2-debug-fixes" style="font-family:var(--font-mono);font-size:0.72rem;"></div>
-      </div>
-      <!-- Post-Trade Analysis -->
-      <div class="glass-card" style="margin-bottom:10px;border-left:3px solid var(--info);">
-        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--info);margin-bottom:4px;">Post-Trade Analysis</div>
-        <div id="v2-post-trade-feed" style="font-family:var(--font-mono);font-size:0.72rem;max-height:120px;overflow-y:auto;">
-          <span class="text-muted">Loading...</span>
-        </div>
-      </div>
-      <!-- Auto-Rules + Edge Decay -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-        <div class="glass-card" style="border-left:3px solid var(--warning);">
-          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--warning);margin-bottom:4px;">Active Auto-Rules</div>
-          <div id="v2-auto-rules" style="font-family:var(--font-mono);font-size:0.72rem;">
-            <span class="text-muted">None</span>
-          </div>
-        </div>
-        <div class="glass-card" style="border-left:3px solid var(--danger);">
-          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--danger);margin-bottom:4px;">Edge Decay Warnings</div>
-          <div id="v2-edge-decay" style="font-family:var(--font-mono);font-size:0.72rem;">
-            <span class="text-muted">None</span>
-          </div>
-        </div>
-      </div>
-      <!-- Performance Warnings -->
-      <div id="v2-warnings-card" class="glass-card" style="margin-bottom:16px;border-left:3px solid var(--danger);display:none;">
-        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--danger);margin-bottom:4px;">Performance Warnings</div>
-        <div id="v2-warnings-list" style="font-family:var(--font-mono);font-size:0.72rem;"></div>
-      </div>
-
-      <!-- Sub-section C: Market Data -->
-      <h3 class="section-title" data-accent="garves" style="font-size:0.82rem;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.06);">Market Data</h3>
-      <!-- Derivatives Intelligence -->
-      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">Derivatives Intelligence</h3>
-      <div class="grid grid-3" id="deriv-cards" style="margin-bottom:12px;">
-        <div class="glass-card" id="deriv-funding"><div class="stat-label">Funding Rates</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-        <div class="glass-card" id="deriv-liquidations"><div class="stat-label">Liquidations (5m)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-        <div class="glass-card" id="deriv-depth"><div class="stat-label">Spot Depth (Top 5)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-      </div>
-      <!-- External Data Intelligence -->
-      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">External Data Intelligence</h3>
-      <div class="grid-3" id="ext-data-cards" style="margin-bottom:8px;">
-        <div class="glass-card" id="ext-macro"><div class="stat-label">Macro (FRED)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-        <div class="glass-card" id="ext-defi"><div class="stat-label">DeFi (DeFiLlama)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-        <div class="glass-card" id="ext-mempool"><div class="stat-label">Mempool (BTC)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-      </div>
-      <div class="grid-4 mt-3" id="ext-asset-cards" style="margin-bottom:12px;">
-        <div class="glass-card" id="ext-btc"><div class="stat-label">BTC External</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-        <div class="glass-card" id="ext-eth"><div class="stat-label">ETH External</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-        <div class="glass-card" id="ext-sol"><div class="stat-label">SOL External</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-        <div class="glass-card" id="ext-xrp"><div class="stat-label">XRP External</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-      </div>
-      <!-- News Sentiment -->
-      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">News Sentiment</h3>
-      <div class="grid-3" id="garves-sentiment-grid"><div class="text-muted" style="padding:var(--space-4);grid-column:1/-1;text-align:center;">Loading sentiment data...</div></div>
+    <div style="font-size:0.76rem;font-weight:700;margin-bottom:8px;">ML Win Predictor</div>
+    <div class="grid-4" id="ml-summary-cards" style="margin-bottom:10px;">
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="ml-status">--</div><div class="stat-label">Model Status</div></div>
+      <div class="stat-card" data-accent="success"><div class="stat-value" id="ml-accuracy">--</div><div class="stat-label">CV Accuracy</div></div>
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="ml-samples">--</div><div class="stat-label">Training Samples</div></div>
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="ml-f1">--</div><div class="stat-label">F1 Score</div></div>
     </div>
+    <div class="glass-card" style="margin-bottom:12px;"><div style="font-size:0.72rem;font-weight:600;margin-bottom:8px;">Top Feature Importances</div><div id="ml-feature-bars" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">Loading...</span></div></div>
+    <div style="font-size:0.76rem;font-weight:700;margin-bottom:8px;">Indicator Weights</div>
+    <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;border-left:3px solid var(--agent-garves);">
+      <div style="font-size:0.68rem;color:var(--text-muted);line-height:1.5;"><strong>Base</strong> = starting weight from Quant backtesting. <strong>Dynamic</strong> = auto-adjusted by the weight learner based on each indicator's live accuracy. Indicators with accuracy above 55% get boosted +30%. Below 45% accuracy = disabled (0 weight). <strong>Samples</strong> = total votes cast by this indicator across all trades.</div>
+    </div>
+    <div class="glass-card" style="margin-bottom:12px;overflow-x:auto;padding:0;"><table class="data-table"><thead><tr><th>Indicator</th><th>Base</th><th>Dynamic</th><th>Accuracy</th><th>Samples</th><th>Status</th></tr></thead><tbody id="conv-weights-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody></table></div>
+    <div style="font-size:0.76rem;font-weight:700;margin-bottom:8px;">Trade Journal</div>
+    <div class="grid-3" id="journal-summary-cards" style="margin-bottom:10px;">
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="journal-streak">--</div><div class="stat-label">Current Streak</div></div>
+      <div class="stat-card" data-accent="success"><div class="stat-value" id="journal-best-combo">--</div><div class="stat-label">Best Combo</div></div>
+      <div class="stat-card" data-accent="warning"><div class="stat-value" id="journal-worst-combo">--</div><div class="stat-label">Worst Combo</div></div>
+    </div>
+    <div class="glass-card" style="margin-bottom:10px;"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Hour Heatmap (ET)</div><div id="journal-hour-heatmap" style="display:grid;grid-template-columns:repeat(12,1fr);gap:3px;font-family:var(--font-mono);font-size:0.64rem;"><span class="text-muted" style="grid-column:1/-1;text-align:center;">Loading...</span></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;">
+      <div class="glass-card" style="border-left:3px solid var(--success);"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--success);margin-bottom:4px;">Best Combos</div><table class="data-table"><thead><tr><th>Combo</th><th>W-L</th><th>WR</th></tr></thead><tbody id="journal-best-tbody"><tr><td colspan="3" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody></table></div>
+      <div class="glass-card" style="border-left:3px solid var(--danger);"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--danger);margin-bottom:4px;">Worst Combos</div><table class="data-table"><thead><tr><th>Combo</th><th>W-L</th><th>WR</th></tr></thead><tbody id="journal-worst-tbody"><tr><td colspan="3" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody></table></div>
+    </div>
+    <div class="glass-card" style="margin-bottom:10px;border-left:3px solid var(--warning);"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--warning);margin-bottom:4px;">Mistake Patterns</div><div id="journal-mistakes" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">Loading...</span></div></div>
+    <div class="glass-card" style="margin-bottom:16px;border-left:3px solid var(--agent-garves);"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px;">Recommendations</div><div id="journal-recommendations" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">Loading...</span></div></div>
+
+    <!-- V2 Intelligence -->
+    <div style="font-size:0.82rem;font-weight:700;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.06);">V2 Intelligence</div>
+    <div class="glass-card" style="margin-bottom:10px;" id="v2-kill-switch-card">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);">Kill Switch</span><span id="v2-kill-switch-badge" style="padding:2px 8px;border-radius:10px;font-size:0.68rem;font-weight:700;background:var(--success);color:#000;">SAFE</span></div>
+      <div id="v2-kill-switch-reason" style="font-size:0.72rem;color:var(--text-muted);display:none;"></div>
+    </div>
+    <div class="glass-card" style="margin-bottom:10px;">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Core Metrics</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;" id="v2-core-metrics">
+        <div style="text-align:center;"><div style="font-size:0.68rem;color:var(--text-muted);">WR 20</div><div id="v2-wr-20" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">--</div></div>
+        <div style="text-align:center;"><div style="font-size:0.68rem;color:var(--text-muted);">WR 50</div><div id="v2-wr-50" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">--</div></div>
+        <div style="text-align:center;"><div style="font-size:0.68rem;color:var(--text-muted);">EV Capture</div><div id="v2-ev-capture" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">--</div></div>
+        <div style="text-align:center;"><div style="font-size:0.68rem;color:var(--text-muted);">Drawdown</div><div id="v2-drawdown" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">--</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px;border-top:1px solid rgba(255,255,255,0.05);padding-top:6px;">
+        <div style="text-align:center;"><div style="font-size:0.62rem;color:var(--text-muted);">EV 20</div><div id="v2-ev-20" style="font-size:0.88rem;font-weight:600;font-family:var(--font-mono);">--</div></div>
+        <div style="text-align:center;"><div style="font-size:0.62rem;color:var(--text-muted);">EV 50</div><div id="v2-ev-50" style="font-size:0.88rem;font-weight:600;font-family:var(--font-mono);">--</div></div>
+        <div style="text-align:center;"><div style="font-size:0.62rem;color:var(--text-muted);">Slippage</div><div id="v2-slippage" style="font-size:0.88rem;font-weight:600;font-family:var(--font-mono);">--</div></div>
+        <div style="text-align:center;"><div style="font-size:0.62rem;color:var(--text-muted);">Timing Cost</div><div id="v2-timing" style="font-size:0.88rem;font-weight:600;font-family:var(--font-mono);">--</div></div>
+      </div>
+    </div>
+    <div id="v2-weekly-card" class="glass-card" style="margin-bottom:10px;border-left:3px solid var(--agent-garves);display:none;"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--agent-garves);margin-bottom:4px;">Weekly Competitive Check</div><div id="v2-weekly-content" style="font-family:var(--font-mono);font-size:0.72rem;"></div></div>
+    <div id="v2-debug-card" class="glass-card" style="margin-bottom:10px;border-left:3px solid var(--warning);display:none;"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--warning);margin-bottom:4px;">Auto-Debug Suggestions</div><div id="v2-debug-fixes" style="font-family:var(--font-mono);font-size:0.72rem;"></div></div>
+    <div class="glass-card" style="margin-bottom:10px;border-left:3px solid var(--info);"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--info);margin-bottom:4px;">Post-Trade Analysis</div><div id="v2-post-trade-feed" style="font-family:var(--font-mono);font-size:0.72rem;max-height:120px;overflow-y:auto;"><span class="text-muted">Loading...</span></div></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+      <div class="glass-card" style="border-left:3px solid var(--warning);"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--warning);margin-bottom:4px;">Active Auto-Rules</div><div id="v2-auto-rules" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">None</span></div></div>
+      <div class="glass-card" style="border-left:3px solid var(--danger);"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--danger);margin-bottom:4px;">Edge Decay Warnings</div><div id="v2-edge-decay" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">None</span></div></div>
+    </div>
+    <div id="v2-warnings-card" class="glass-card" style="margin-bottom:16px;border-left:3px solid var(--danger);display:none;"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--danger);margin-bottom:4px;">Performance Warnings</div><div id="v2-warnings-list" style="font-family:var(--font-mono);font-size:0.72rem;"></div></div>
+
+    <!-- Market Data -->
+    <div style="font-size:0.82rem;font-weight:700;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.06);">Market Data</div>
+    <div style="font-size:0.76rem;font-weight:700;margin-bottom:8px;">Derivatives Intelligence</div>
+    <div class="grid-3" id="deriv-cards" style="margin-bottom:12px;">
+      <div class="glass-card" id="deriv-funding"><div class="stat-label">Funding Rates</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+      <div class="glass-card" id="deriv-liquidations"><div class="stat-label">Liquidations (5m)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+      <div class="glass-card" id="deriv-depth"><div class="stat-label">Spot Depth (Top 5)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+    </div>
+    <div style="font-size:0.76rem;font-weight:700;margin-bottom:8px;">External Data Intelligence</div>
+    <div class="grid-3" id="ext-data-cards" style="margin-bottom:8px;">
+      <div class="glass-card" id="ext-macro"><div class="stat-label">Macro (FRED)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+      <div class="glass-card" id="ext-defi"><div class="stat-label">DeFi (DeFiLlama)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+      <div class="glass-card" id="ext-mempool"><div class="stat-label">Mempool (BTC)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+    </div>
+    <div class="grid-4" id="ext-asset-cards" style="margin-bottom:12px;">
+      <div class="glass-card" id="ext-btc"><div class="stat-label">BTC External</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+      <div class="glass-card" id="ext-eth"><div class="stat-label">ETH External</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+      <div class="glass-card" id="ext-sol"><div class="stat-label">SOL External</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+      <div class="glass-card" id="ext-xrp"><div class="stat-label">XRP External</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+    </div>
+    <div style="font-size:0.76rem;font-weight:700;margin-bottom:8px;">News Sentiment</div>
+    <div class="grid-3" id="garves-sentiment-grid"><div class="text-muted" style="padding:16px;grid-column:1/-1;text-align:center;">Loading sentiment data...</div></div>
   </div>
 
-  <!-- ═══ SECTION 7: Intelligence & Self-Improvement (default-open) ═══ -->
-  <div class="collapse-section default-open" style="margin-bottom:12px;">
-    <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">Intelligence &amp; Self-Improvement
-        <span id="gi-score-badge" style="font-size:0.62rem;padding:2px 10px;border-radius:10px;margin-left:8px;background:rgba(139,92,246,0.15);color:#8b5cf6;font-weight:700;font-family:var(--font-mono);">--</span>
-        <span id="gi-edge-trend-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;margin-left:4px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;">--</span>
-      </h2>
+  <!-- ═══ INTELLIGENCE & SELF-IMPROVEMENT PANEL ═══ -->
+  <div class="garves-panel" id="garves-panel-intelligence" style="display:none;">
+    <!-- Self-Improvement Score -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #a855f7;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#a855f7;">Self-Improvement Score</span>
+        <span id="gi-score-badge" style="font-size:0.62rem;padding:2px 10px;border-radius:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;font-weight:700;font-family:var(--font-mono);">--</span>
+        <span id="gi-edge-trend-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;">--</span>
+        <span id="gi-score-dot" style="width:10px;height:10px;border-radius:50%;background:#6b7280;"></span>
+        <span id="gi-score-label" style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">--/100</span>
+        <span style="color:rgba(255,255,255,0.15);">|</span>
+        <span id="gi-resolved-label" style="font-size:0.68rem;color:var(--text-muted);">-- resolved trades</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;"><div class="stat-value" id="gi-wr-component" style="font-size:0.9rem;">--</div><div class="stat-label">WR Score (L50)</div></div>
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;"><div class="stat-value" id="gi-ev-component" style="font-size:0.9rem;">--</div><div class="stat-label">EV Capture</div></div>
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;"><div class="stat-value" id="gi-mistake-rate" style="font-size:0.9rem;">--</div><div class="stat-label">Mistake Rate</div></div>
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;"><div class="stat-value" id="gi-active-rules" style="font-size:0.9rem;">0</div><div class="stat-label">Active Auto-Rules</div></div>
+      </div>
+      <div id="gi-score-breakdown" style="display:flex;gap:2px;height:6px;border-radius:3px;overflow:hidden;margin-bottom:6px;">
+        <div id="gi-bar-wr" style="flex:0;background:#8b5cf6;transition:flex 0.5s;"></div>
+        <div id="gi-bar-ev" style="flex:0;background:#22c55e;transition:flex 0.5s;"></div>
+        <div id="gi-bar-mistake" style="flex:0;background:#eab308;transition:flex 0.5s;"></div>
+        <div id="gi-bar-edge" style="flex:0;background:#06b6d4;transition:flex 0.5s;"></div>
+        <div style="flex:1;background:rgba(255,255,255,0.04);"></div>
+      </div>
+      <div style="display:flex;gap:12px;font-size:0.6rem;color:var(--text-muted);">
+        <span><span style="color:#8b5cf6;">&#9632;</span> Win Rate</span>
+        <span><span style="color:#22c55e;">&#9632;</span> EV Capture</span>
+        <span><span style="color:#eab308;">&#9632;</span> Mistake Avoidance</span>
+        <span><span style="color:#06b6d4;">&#9632;</span> Edge Stability</span>
+      </div>
     </div>
-    <div class="collapse-body">
 
-      <!-- Self-Improvement Score + Key Metrics -->
-      <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #a855f7;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-          <h3 class="section-title" style="font-size:0.72rem;margin:0;text-transform:uppercase;letter-spacing:0.06em;color:#a855f7;">Self-Improvement Score</h3>
-          <span id="gi-score-dot" style="width:10px;height:10px;border-radius:50%;background:#6b7280;"></span>
-          <span id="gi-score-label" style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">--/100</span>
-          <span style="color:rgba(255,255,255,0.15);">|</span>
-          <span id="gi-resolved-label" style="font-size:0.68rem;color:var(--text-muted);">-- resolved trades</span>
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-          <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;">
-            <div class="stat-value" id="gi-wr-component" style="font-size:0.9rem;">--</div>
-            <div class="stat-label">WR Score (L50)</div>
-          </div>
-          <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;">
-            <div class="stat-value" id="gi-ev-component" style="font-size:0.9rem;">--</div>
-            <div class="stat-label">EV Capture</div>
-          </div>
-          <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;">
-            <div class="stat-value" id="gi-mistake-rate" style="font-size:0.9rem;">--</div>
-            <div class="stat-label">Mistake Rate</div>
-          </div>
-          <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;">
-            <div class="stat-value" id="gi-active-rules" style="font-size:0.9rem;">0</div>
-            <div class="stat-label">Active Auto-Rules</div>
-          </div>
-        </div>
-        <!-- Score Breakdown Bar -->
-        <div id="gi-score-breakdown" style="display:flex;gap:2px;height:6px;border-radius:3px;overflow:hidden;margin-bottom:6px;">
-          <div id="gi-bar-wr" style="flex:0;background:#8b5cf6;transition:flex 0.5s;"></div>
-          <div id="gi-bar-ev" style="flex:0;background:#22c55e;transition:flex 0.5s;"></div>
-          <div id="gi-bar-mistake" style="flex:0;background:#eab308;transition:flex 0.5s;"></div>
-          <div id="gi-bar-edge" style="flex:0;background:#06b6d4;transition:flex 0.5s;"></div>
-          <div style="flex:1;background:rgba(255,255,255,0.04);"></div>
-        </div>
-        <div style="display:flex;gap:12px;font-size:0.6rem;color:var(--text-muted);">
-          <span><span style="color:#8b5cf6;">&#9632;</span> Win Rate</span>
-          <span><span style="color:#22c55e;">&#9632;</span> EV Capture</span>
-          <span><span style="color:#eab308;">&#9632;</span> Mistake Avoidance</span>
-          <span><span style="color:#06b6d4;">&#9632;</span> Edge Stability</span>
-        </div>
+    <!-- Engine Intelligence -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #f7931a;">
+      <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#f7931a;margin-bottom:8px;">Engine Intelligence</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;"><div class="stat-value" id="gi-snipe-wr" style="font-size:0.9rem;">--</div><div class="stat-label">Snipe Engine WR</div><div id="gi-snipe-detail" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div></div>
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;"><div class="stat-value" id="gi-whale-wr" style="font-size:0.9rem;">--</div><div class="stat-label">Whale Shadow WR</div><div id="gi-whale-detail" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div></div>
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;"><div class="stat-value" id="gi-maker-eff" style="font-size:0.9rem;">--</div><div class="stat-label">Maker Efficiency</div><div id="gi-maker-detail" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div></div>
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;"><div class="stat-value" id="gi-flow-acc" style="font-size:0.9rem;">--</div><div class="stat-label">Flow Detection</div><div id="gi-flow-detail" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div></div>
       </div>
-
-      <!-- Engine Intelligence (Garves-Specific) -->
-      <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #f7931a;">
-        <h3 class="section-title" style="font-size:0.72rem;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em;color:#f7931a;">Engine Intelligence</h3>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;">
-          <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;">
-            <div class="stat-value" id="gi-snipe-wr" style="font-size:0.9rem;">--</div>
-            <div class="stat-label">Snipe Engine WR</div>
-            <div id="gi-snipe-detail" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div>
-          </div>
-          <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;">
-            <div class="stat-value" id="gi-whale-wr" style="font-size:0.9rem;">--</div>
-            <div class="stat-label">Whale Shadow WR</div>
-            <div id="gi-whale-detail" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div>
-          </div>
-          <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;">
-            <div class="stat-value" id="gi-maker-eff" style="font-size:0.9rem;">--</div>
-            <div class="stat-label">Maker Efficiency</div>
-            <div id="gi-maker-detail" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div>
-          </div>
-          <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;">
-            <div class="stat-value" id="gi-flow-acc" style="font-size:0.9rem;">--</div>
-            <div class="stat-label">Flow Detection</div>
-            <div id="gi-flow-detail" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Mistake Frequency Trend -->
-      <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #ef4444;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-          <h3 class="section-title" style="font-size:0.72rem;margin:0;text-transform:uppercase;letter-spacing:0.06em;color:#ef4444;">Mistake Frequency</h3>
-          <span id="gi-mistake-trend-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;">--</span>
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
-          <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;">
-            <div class="stat-value" id="gi-mk-model" style="font-size:0.9rem;">0</div>
-            <div class="stat-label">Model</div>
-          </div>
-          <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;">
-            <div class="stat-value" id="gi-mk-thesis" style="font-size:0.9rem;">0</div>
-            <div class="stat-label">Thesis</div>
-          </div>
-          <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;">
-            <div class="stat-value" id="gi-mk-execution" style="font-size:0.9rem;">0</div>
-            <div class="stat-label">Execution</div>
-          </div>
-          <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;">
-            <div class="stat-value" id="gi-mk-sizing" style="font-size:0.9rem;">0</div>
-            <div class="stat-label">Sizing</div>
-          </div>
-        </div>
-        <div style="font-size:0.68rem;color:var(--text-muted);">
-          Total analysed: <span id="gi-mk-total" style="font-family:var(--font-mono);">0</span>
-          &nbsp;|&nbsp; Mistake rate: <span id="gi-mk-rate-pct" style="font-family:var(--font-mono);">--</span>
-          &nbsp;|&nbsp; Avg EV Capture: <span id="gi-mk-avg-ev" style="font-family:var(--font-mono);">--</span>
-        </div>
-      </div>
-
-      <!-- Recent Lessons & Auto-Rules -->
-      <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #22c55e;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-          <h3 class="section-title" style="font-size:0.72rem;margin:0;text-transform:uppercase;letter-spacing:0.06em;color:#22c55e;">Lessons Learned &amp; Auto-Rules</h3>
-          <span id="gi-lessons-count" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,0.15);color:#22c55e;font-weight:600;">0</span>
-        </div>
-        <div id="gi-lessons-list" style="font-size:0.72rem;">
-          <span class="text-muted">No lessons yet — Garves learns from repeated mistakes</span>
-        </div>
-      </div>
-
-      <!-- Indicator Accuracy Tracker -->
-      <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #06b6d4;">
-        <h3 class="section-title" style="font-size:0.72rem;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.06em;color:#06b6d4;">Indicator Performance Tracker</h3>
-        <table class="data-table">
-          <thead><tr>
-            <th>Indicator</th>
-            <th style="text-align:center;">All-Time</th>
-            <th style="text-align:center;">Recent</th>
-            <th style="text-align:center;">Trend</th>
-            <th style="text-align:center;">Samples</th>
-            <th style="text-align:center;">Status</th>
-          </tr></thead>
-          <tbody id="gi-indicator-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody>
-        </table>
-      </div>
-
-      <!-- Weekly Competitive Advantage -->
-      <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #eab308;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-          <h3 class="section-title" style="font-size:0.72rem;margin:0;text-transform:uppercase;letter-spacing:0.06em;color:#eab308;">Competitive Advantage</h3>
-          <span id="gi-comp-status" style="font-size:0.68rem;font-weight:700;color:var(--text-muted);">--</span>
-          <span id="gi-comp-recommendation" style="font-size:0.64rem;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.05);color:var(--text-muted);margin-left:auto;">--</span>
-        </div>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
-          <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;">
-            <div class="stat-value" id="gi-comp-wr-first" style="font-size:0.9rem;">--</div>
-            <div class="stat-label">First Half WR</div>
-          </div>
-          <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;">
-            <div class="stat-value" id="gi-comp-wr-second" style="font-size:0.9rem;">--</div>
-            <div class="stat-label">Second Half WR</div>
-          </div>
-          <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;">
-            <div class="stat-value" id="gi-comp-wr-trend" style="font-size:0.9rem;">--</div>
-            <div class="stat-label">WR Trend</div>
-          </div>
-          <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;">
-            <div class="stat-value" id="gi-comp-ev-trend" style="font-size:0.9rem;">--</div>
-            <div class="stat-label">EV Trend</div>
-          </div>
-        </div>
-        <div id="gi-comp-recommendations" style="font-size:0.68rem;color:var(--text-muted);"></div>
-      </div>
-
-      <!-- Autonomous Debugging Status -->
-      <div class="glass-card" style="border-left:3px solid #8b5cf6;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-          <h3 class="section-title" style="font-size:0.72rem;margin:0;text-transform:uppercase;letter-spacing:0.06em;color:#8b5cf6;">Autonomous Monitoring</h3>
-          <span id="gi-diag-dot" style="width:8px;height:8px;border-radius:50%;background:#22c55e;"></span>
-          <span id="gi-diag-label" style="font-size:0.68rem;font-weight:600;color:var(--text-muted);">All Clear</span>
-          <span id="gi-diag-count" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;margin-left:auto;">0 issues</span>
-        </div>
-        <div id="gi-diag-checks" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
-        <div id="gi-diag-fixes" style="font-size:0.7rem;color:var(--text-muted);"></div>
-      </div>
-
     </div>
-  </div>
 
-  <!-- ═══ SECTION 8: Tools (collapsed) ═══ -->
-  <div class="collapse-section">
-    <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="warning" style="margin-bottom:0;">Tools</h2>
+    <!-- Mistake Frequency -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #ef4444;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <span style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#ef4444;">Mistake Frequency</span>
+        <span id="gi-mistake-trend-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;">--</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;"><div class="stat-value" id="gi-mk-model" style="font-size:0.9rem;">0</div><div class="stat-label">Model</div></div>
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;"><div class="stat-value" id="gi-mk-thesis" style="font-size:0.9rem;">0</div><div class="stat-label">Thesis</div></div>
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;"><div class="stat-value" id="gi-mk-execution" style="font-size:0.9rem;">0</div><div class="stat-label">Execution</div></div>
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;"><div class="stat-value" id="gi-mk-sizing" style="font-size:0.9rem;">0</div><div class="stat-label">Sizing</div></div>
+      </div>
+      <div style="font-size:0.68rem;color:var(--text-muted);">Total analysed: <span id="gi-mk-total" style="font-family:var(--font-mono);">0</span> &nbsp;|&nbsp; Mistake rate: <span id="gi-mk-rate-pct" style="font-family:var(--font-mono);">--</span> &nbsp;|&nbsp; Avg EV Capture: <span id="gi-mk-avg-ev" style="font-family:var(--font-mono);">--</span></div>
     </div>
-    <div class="collapse-body">
-      <h3 class="section-title" data-accent="warning" style="font-size:0.76rem;">Today's Mistake Analysis</h3>
-      <div id="daily-mistakes" class="flex flex-col gap-2" style="margin-bottom:12px;"><div class="text-muted" style="padding:var(--space-4);">Loading analysis...</div></div>
-      <h3 class="section-title" data-accent="garves" style="font-size:0.76rem;">Live Log</h3>
-      <div class="log-feed" id="live-log-feed"><div class="log-line"><span class="log-time">--:--:--</span><span class="log-msg">Waiting for log data...</span></div></div>
+
+    <!-- Lessons & Auto-Rules -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #22c55e;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <span style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#22c55e;">Lessons Learned &amp; Auto-Rules</span>
+        <span id="gi-lessons-count" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,0.15);color:#22c55e;font-weight:600;">0</span>
+      </div>
+      <div id="gi-lessons-list" style="font-size:0.72rem;"><span class="text-muted">No lessons yet — Garves learns from repeated mistakes</span></div>
+    </div>
+
+    <!-- Indicator Tracker -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #06b6d4;">
+      <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#06b6d4;margin-bottom:8px;">Indicator Performance Tracker</div>
+      <table class="data-table"><thead><tr><th>Indicator</th><th style="text-align:center;">All-Time</th><th style="text-align:center;">Recent</th><th style="text-align:center;">Trend</th><th style="text-align:center;">Samples</th><th style="text-align:center;">Status</th></tr></thead>
+      <tbody id="gi-indicator-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody></table>
+    </div>
+
+    <!-- Competitive Advantage -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #eab308;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <span style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#eab308;">Competitive Advantage</span>
+        <span id="gi-comp-status" style="font-size:0.68rem;font-weight:700;color:var(--text-muted);">--</span>
+        <span id="gi-comp-recommendation" style="font-size:0.64rem;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.05);color:var(--text-muted);margin-left:auto;">--</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;"><div class="stat-value" id="gi-comp-wr-first" style="font-size:0.9rem;">--</div><div class="stat-label">First Half WR</div></div>
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;"><div class="stat-value" id="gi-comp-wr-second" style="font-size:0.9rem;">--</div><div class="stat-label">Second Half WR</div></div>
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;"><div class="stat-value" id="gi-comp-wr-trend" style="font-size:0.9rem;">--</div><div class="stat-label">WR Trend</div></div>
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;"><div class="stat-value" id="gi-comp-ev-trend" style="font-size:0.9rem;">--</div><div class="stat-label">EV Trend</div></div>
+      </div>
+      <div id="gi-comp-recommendations" style="font-size:0.68rem;color:var(--text-muted);"></div>
+    </div>
+
+    <!-- Autonomous Monitoring -->
+    <div class="glass-card" style="border-left:3px solid #8b5cf6;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <span style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#8b5cf6;">Autonomous Monitoring</span>
+        <span id="gi-diag-dot" style="width:8px;height:8px;border-radius:50%;background:#22c55e;"></span>
+        <span id="gi-diag-label" style="font-size:0.68rem;font-weight:600;color:var(--text-muted);">All Clear</span>
+        <span id="gi-diag-count" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;margin-left:auto;">0 issues</span>
+      </div>
+      <div id="gi-diag-checks" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+      <div id="gi-diag-fixes" style="font-size:0.7rem;color:var(--text-muted);"></div>
     </div>
   </div>
 
 </div>
 
-<!-- Embedded JS: Hero Metrics Populator + Whale Follower Loader -->
+<style>
+  .garves-subtab {
+    background: var(--surface-elevated);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    padding: 5px 16px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .garves-subtab:hover { color: var(--text); border-color: var(--text-muted); }
+  .garves-subtab.active { background: #10B981; color: #000; border-color: #10B981; }
+  .garves-engine-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: all 0.2s;
+  }
+  .garves-engine-pill:hover { border-color: rgba(255,255,255,0.2); }
+  .gep-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .garves-engine-tab {
+    background: var(--surface-elevated);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 4px 14px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .garves-engine-tab:hover { color: var(--text); border-color: var(--text-muted); }
+  .garves-engine-tab.active { background: rgba(139,92,246,0.15); color: #8b5cf6; border-color: rgba(139,92,246,0.4); }
+</style>
+
 <script>
+/* Sub-tab switching */
+function garvesSwitchSub(name) {
+  document.querySelectorAll('.garves-panel').forEach(function(p) { p.style.display = 'none'; });
+  var panel = document.getElementById('garves-panel-' + name);
+  if (panel) panel.style.display = '';
+  document.querySelectorAll('.garves-subtab').forEach(function(b) {
+    b.classList.toggle('active', b.getAttribute('data-sub') === name);
+  });
+  if (name === 'intelligence' && !window._garvesIntelLoaded) {
+    window._garvesIntelLoaded = true;
+    loadGarvesIntelligence();
+  }
+  if (name === 'engines' && !window._garvesWhaleLoaded) {
+    window._garvesWhaleLoaded = true;
+    loadWhaleFollower();
+  }
+}
+
+/* Engine selector within Engines tab */
+function garvesSelectEngine(name) {
+  var panels = {snipe:'garves-engine-snipe', maker:'garves-engine-maker', whale:'garves-whale-section', taker:'garves-engine-taker'};
+  Object.keys(panels).forEach(function(k) {
+    var el = document.getElementById(panels[k]);
+    if (el) el.style.display = k === name ? '' : 'none';
+  });
+  document.querySelectorAll('.garves-engine-tab').forEach(function(b) {
+    b.classList.toggle('active', b.getAttribute('data-engine') === name);
+  });
+}
+
+/* Engine filter for trade history (placeholder) */
+function garvesFilterHistory() {
+  /* Engine filter dropdown - future: filter oc-history-tbody rows by engine */
+}
+
+/* Refresh all garves data */
+function garvesRefreshAll() {
+  populateGarvesHeroExposure();
+  loadWhaleFollower();
+  loadGarvesIntelligence();
+  var el = document.getElementById('garves-updated');
+  if (el) el.textContent = new Date().toLocaleTimeString();
+}
+
+/* Hero Metrics Populator */
 function populateGarvesHeroExposure() {
   var paUtil = document.getElementById('pa-total-util');
   var paExposure = document.getElementById('pa-total-exposure');
@@ -930,6 +774,7 @@ function populateGarvesHeroExposure() {
   }
 }
 
+/* Whale Follower Loader */
 function loadWhaleFollower() {
   fetch('/api/whale').then(function(r) { return r.json(); }).then(function(data) {
     var badge = document.getElementById('whale-status-badge');
@@ -951,10 +796,7 @@ function loadWhaleFollower() {
     if (elW && wallets.length > 0) elW.textContent = wallets.length;
     var tbody = document.getElementById('whale-wallets-tbody');
     if (!tbody) return;
-    if (wallets.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;">No tracked whales</td></tr>';
-      return;
-    }
+    if (wallets.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;">No tracked whales</td></tr>'; return; }
     var html = '';
     wallets.slice(0, 15).forEach(function(w) {
       var wallet = w.wallet ? (w.wallet.substring(0, 6) + '...' + w.wallet.slice(-4)) : '--';
@@ -976,33 +818,20 @@ function loadWhaleFollower() {
     var elPnl = document.getElementById('whale-total-pnl');
     if (elCount) elCount.textContent = summary.total || 0;
     if (elWR) elWR.textContent = summary.win_rate != null ? (summary.win_rate * 100).toFixed(1) + '%' : '--';
-    if (elPnl) {
-      var pnl = summary.total_pnl || 0;
-      elPnl.textContent = '$' + pnl.toFixed(2);
-      elPnl.style.color = pnl >= 0 ? '#22c55e' : '#ef4444';
-    }
+    if (elPnl) { var pnl = summary.total_pnl || 0; elPnl.textContent = '$' + pnl.toFixed(2); elPnl.style.color = pnl >= 0 ? '#22c55e' : '#ef4444'; }
     var trades = data.trades || [];
     var tbody = document.getElementById('whale-trades-tbody');
     if (!tbody) return;
-    if (trades.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="text-muted" style="text-align:center;">No copy trades</td></tr>';
-      return;
-    }
+    if (trades.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="text-muted" style="text-align:center;">No copy trades</td></tr>'; return; }
     var html = '';
     trades.slice(0, 20).forEach(function(t) {
-      var time = t.time || t.placed_at || '--';
-      if (time.length > 16) time = time.substring(5, 16);
-      var whale = t.whale || t.wallet || '--';
-      if (whale.length > 10) whale = whale.substring(0, 6) + '..';
-      var market = t.market || t.question || '--';
-      if (market.length > 30) market = market.substring(0, 30) + '..';
-      var dir = t.direction || '--';
-      var dirColor = dir === 'YES' ? '#22c55e' : dir === 'NO' ? '#ef4444' : 'inherit';
+      var time = t.time || t.placed_at || '--'; if (time.length > 16) time = time.substring(5, 16);
+      var whale = t.whale || t.wallet || '--'; if (whale.length > 10) whale = whale.substring(0, 6) + '..';
+      var market = t.market || t.question || '--'; if (market.length > 30) market = market.substring(0, 30) + '..';
+      var dir = t.direction || '--'; var dirColor = dir === 'YES' ? '#22c55e' : dir === 'NO' ? '#ef4444' : 'inherit';
       var size = t.size != null ? '$' + Number(t.size).toFixed(2) : '--';
-      var status = t.status || t.result || 'pending';
-      var statusColor = status === 'won' ? '#22c55e' : status === 'lost' ? '#ef4444' : '#eab308';
-      var pnl = t.pnl != null ? '$' + Number(t.pnl).toFixed(2) : '--';
-      var pnlColor = (t.pnl || 0) >= 0 ? '#22c55e' : '#ef4444';
+      var status = t.status || t.result || 'pending'; var statusColor = status === 'won' ? '#22c55e' : status === 'lost' ? '#ef4444' : '#eab308';
+      var pnl = t.pnl != null ? '$' + Number(t.pnl).toFixed(2) : '--'; var pnlColor = (t.pnl || 0) >= 0 ? '#22c55e' : '#ef4444';
       html += '<tr><td style="font-size:0.68rem;">' + time + '</td><td style="font-size:0.68rem;">' + whale + '</td><td style="font-size:0.68rem;">' + market + '</td><td style="color:' + dirColor + ';font-weight:600;">' + dir + '</td><td>' + size + '</td><td style="color:' + statusColor + ';font-weight:600;">' + status + '</td><td style="color:' + pnlColor + ';">' + pnl + '</td></tr>';
     });
     tbody.innerHTML = html;
@@ -1014,16 +843,11 @@ function loadWhaleFollower() {
     if (elCount) elCount.textContent = signals.length;
     var el = document.getElementById('whale-signals-list');
     if (!el) return;
-    if (signals.length === 0) {
-      el.innerHTML = '<span class="text-muted">No active signals</span>';
-      return;
-    }
+    if (signals.length === 0) { el.innerHTML = '<span class="text-muted">No active signals</span>'; return; }
     var html = '';
     signals.slice(0, 10).forEach(function(s) {
-      var dir = s.direction || '--';
-      var dirColor = dir === 'YES' ? '#22c55e' : dir === 'NO' ? '#ef4444' : '#eab308';
-      var market = s.market || s.question || '--';
-      if (market.length > 40) market = market.substring(0, 40) + '..';
+      var dir = s.direction || '--'; var dirColor = dir === 'YES' ? '#22c55e' : dir === 'NO' ? '#ef4444' : '#eab308';
+      var market = s.market || s.question || '--'; if (market.length > 40) market = market.substring(0, 40) + '..';
       var wallets = s.wallets || s.whale_count || 1;
       var consensus = s.consensus ? 'CONSENSUS' : '';
       html += '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);">';
@@ -1040,104 +864,61 @@ function loadWhaleFollower() {
 setInterval(populateGarvesHeroExposure, 3000);
 setTimeout(populateGarvesHeroExposure, 2000);
 
+/* Intelligence Loader */
 function loadGarvesIntelligence() {
   var score = {wr: 0, ev: 0, mistake: 0, edge: 0, total: 0};
 
-  // 1. V2 Metrics — WR + EV + improvement suggestions
   fetch('/api/garves/v2-metrics').then(function(r) { return r.json(); }).then(function(d) {
     var cm = d.core_metrics || {};
     var resolved = d.total_resolved || 0;
     var resolvedEl = document.getElementById('gi-resolved-label');
     if (resolvedEl) resolvedEl.textContent = resolved + ' resolved trades';
-
-    // WR component: 50%→0, 55%→12.5, 60%→25 (out of 25)
     var wr50 = cm.wr_50 || 0;
     score.wr = Math.min(25, Math.max(0, (wr50 - 0.50) * 250));
     var wrEl = document.getElementById('gi-wr-component');
-    if (wrEl) {
-      wrEl.textContent = wr50 > 0 ? (wr50 * 100).toFixed(1) + '%' : '--';
-      wrEl.style.color = wr50 >= 0.55 ? 'var(--success)' : wr50 > 0 && wr50 < 0.50 ? 'var(--danger)' : '';
-    }
-
-    // EV component: 0%→0, 50%→12.5, 100%→25 (out of 25)
+    if (wrEl) { wrEl.textContent = wr50 > 0 ? (wr50 * 100).toFixed(1) + '%' : '--'; wrEl.style.color = wr50 >= 0.55 ? 'var(--success)' : wr50 > 0 && wr50 < 0.50 ? 'var(--danger)' : ''; }
     var evPct = cm.ev_capture_pct || 0;
     score.ev = Math.min(25, Math.max(0, evPct * 25));
     var evEl = document.getElementById('gi-ev-component');
-    if (evEl) {
-      evEl.textContent = evPct > 0 ? (evPct * 100).toFixed(0) + '%' : '--';
-      evEl.style.color = evPct > 0.5 ? 'var(--success)' : evPct > 0 && evPct < 0.3 ? 'var(--danger)' : '';
-    }
-
+    if (evEl) { evEl.textContent = evPct > 0 ? (evPct * 100).toFixed(0) + '%' : '--'; evEl.style.color = evPct > 0.5 ? 'var(--success)' : evPct > 0 && evPct < 0.3 ? 'var(--danger)' : ''; }
     updateIntelScore();
   }).catch(function() {});
 
-  // 2. Post-Trade Analysis — Mistake frequency
   fetch('/api/garves/post-trade-analysis').then(function(r) { return r.json(); }).then(function(d) {
-    var total = d.total || 0;
-    var mistakes = d.mistakes || 0;
-    var byType = d.by_type || {};
-    var avgEv = d.avg_ev_capture_pct;
-
-    var modelEl = document.getElementById('gi-mk-model');
-    var thesisEl = document.getElementById('gi-mk-thesis');
-    var execEl = document.getElementById('gi-mk-execution');
-    var sizingEl = document.getElementById('gi-mk-sizing');
-    if (modelEl) modelEl.textContent = byType.model || 0;
-    if (thesisEl) thesisEl.textContent = byType.thesis || 0;
-    if (execEl) execEl.textContent = byType.execution || 0;
-    if (sizingEl) sizingEl.textContent = byType.sizing || 0;
-
-    var totalEl = document.getElementById('gi-mk-total');
-    if (totalEl) totalEl.textContent = total;
-    var rateEl = document.getElementById('gi-mk-rate-pct');
+    var total = d.total || 0; var mistakes = d.mistakes || 0; var byType = d.by_type || {}; var avgEv = d.avg_ev_capture_pct;
+    var modelEl = document.getElementById('gi-mk-model'); var thesisEl = document.getElementById('gi-mk-thesis');
+    var execEl = document.getElementById('gi-mk-execution'); var sizingEl = document.getElementById('gi-mk-sizing');
+    if (modelEl) modelEl.textContent = byType.model || 0; if (thesisEl) thesisEl.textContent = byType.thesis || 0;
+    if (execEl) execEl.textContent = byType.execution || 0; if (sizingEl) sizingEl.textContent = byType.sizing || 0;
+    var totalEl = document.getElementById('gi-mk-total'); if (totalEl) totalEl.textContent = total;
     var rate = total > 0 ? (mistakes / total * 100) : 0;
-    if (rateEl) {
-      rateEl.textContent = rate.toFixed(1) + '%';
-      rateEl.style.color = rate > 30 ? '#ef4444' : rate < 15 ? '#22c55e' : '#eab308';
-    }
-    var avgEvEl = document.getElementById('gi-mk-avg-ev');
-    if (avgEvEl && avgEv != null) avgEvEl.textContent = avgEv.toFixed(1) + '%';
-
+    var rateEl = document.getElementById('gi-mk-rate-pct');
+    if (rateEl) { rateEl.textContent = rate.toFixed(1) + '%'; rateEl.style.color = rate > 30 ? '#ef4444' : rate < 15 ? '#22c55e' : '#eab308'; }
+    var avgEvEl = document.getElementById('gi-mk-avg-ev'); if (avgEvEl && avgEv != null) avgEvEl.textContent = avgEv.toFixed(1) + '%';
     var mistakeRateEl = document.getElementById('gi-mistake-rate');
-    if (mistakeRateEl) {
-      mistakeRateEl.textContent = rate.toFixed(0) + '%';
-      mistakeRateEl.style.color = rate > 30 ? '#ef4444' : rate < 15 ? '#22c55e' : '#eab308';
-    }
-
-    // Mistake trend badge
+    if (mistakeRateEl) { mistakeRateEl.textContent = rate.toFixed(0) + '%'; mistakeRateEl.style.color = rate > 30 ? '#ef4444' : rate < 15 ? '#22c55e' : '#eab308'; }
     var trendBadge = document.getElementById('gi-mistake-trend-badge');
     if (trendBadge) {
       if (rate < 15) { trendBadge.textContent = 'LOW'; trendBadge.style.background = 'rgba(34,197,94,0.15)'; trendBadge.style.color = '#22c55e'; }
       else if (rate > 30) { trendBadge.textContent = 'HIGH'; trendBadge.style.background = 'rgba(239,68,68,0.15)'; trendBadge.style.color = '#ef4444'; }
       else { trendBadge.textContent = 'MODERATE'; trendBadge.style.background = 'rgba(234,179,8,0.15)'; trendBadge.style.color = '#eab308'; }
     }
-
-    // Mistake avoidance score: 0% mistakes→25, 50% mistakes→0 (out of 25)
     score.mistake = Math.min(25, Math.max(0, (1 - rate / 50) * 25));
     updateIntelScore();
   }).catch(function() {});
 
-  // 3. Auto-Rules — Lessons learned
   fetch('/api/garves/auto-rules').then(function(r) { return r.json(); }).then(function(d) {
     var rules = d.active_rules || [];
-    var rulesEl = document.getElementById('gi-active-rules');
-    if (rulesEl) rulesEl.textContent = rules.length;
-    var countEl = document.getElementById('gi-lessons-count');
-    if (countEl) countEl.textContent = rules.length;
-
+    var rulesEl = document.getElementById('gi-active-rules'); if (rulesEl) rulesEl.textContent = rules.length;
+    var countEl = document.getElementById('gi-lessons-count'); if (countEl) countEl.textContent = rules.length;
     var listEl = document.getElementById('gi-lessons-list');
     if (!listEl) return;
-    if (rules.length === 0) {
-      listEl.innerHTML = '<span class="text-muted">No active lessons — Garves learns from repeated mistakes</span>';
-      return;
-    }
+    if (rules.length === 0) { listEl.innerHTML = '<span class="text-muted">No active lessons — Garves learns from repeated mistakes</span>'; return; }
     var html = '';
     rules.slice(0, 5).forEach(function(r) {
-      var typeColors = {thesis: '#ef4444', model: '#8b5cf6', execution: '#eab308', sizing: '#06b6d4'};
+      var typeColors = {thesis:'#ef4444', model:'#8b5cf6', execution:'#eab308', sizing:'#06b6d4'};
       var color = typeColors[r.mistake_type] || 'var(--text-muted)';
-      var action = r.action || {};
-      var age = r.created_at ? timeSince(r.created_at) : '';
-      var expires = r.expires_at ? timeSince(r.expires_at, true) : '';
+      var action = r.action || {}; var age = r.created_at ? timeSince(r.created_at) : ''; var expires = r.expires_at ? timeSince(r.expires_at, true) : '';
       html += '<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;gap:8px;">';
       html += '<span style="font-size:0.62rem;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.06);color:' + color + ';font-weight:600;text-transform:uppercase;min-width:56px;text-align:center;">' + (r.mistake_type || '--') + '</span>';
       html += '<span style="flex:1;font-size:0.7rem;">' + (r.detail || '--').replace(/_/g, ' / ') + ' <span style="color:var(--text-muted);">(' + (r.count || 0) + 'x)</span></span>';
@@ -1148,43 +929,29 @@ function loadGarvesIntelligence() {
     listEl.innerHTML = html;
   }).catch(function() {});
 
-  // 4. Edge Report — Competitive check + indicator health
   fetch('/api/garves/edge-report').then(function(r) { return r.json(); }).then(function(d) {
     var cc = d.competitive_check || {};
     var statusEl = document.getElementById('gi-comp-status');
     var status = cc.status || 'insufficient_data';
     if (statusEl) {
-      var statusMap = {stable: ['EDGE STABLE', '#22c55e'], improving: ['EDGE IMPROVING', '#22c55e'], declining: ['EDGE DECLINING', '#ef4444'], insufficient_data: ['INSUFFICIENT DATA', 'var(--text-muted)']};
-      var s = statusMap[status] || statusMap.insufficient_data;
-      statusEl.textContent = s[0];
-      statusEl.style.color = s[1];
+      var statusMap = {stable:['EDGE STABLE','#22c55e'], improving:['EDGE IMPROVING','#22c55e'], declining:['EDGE DECLINING','#ef4444'], insufficient_data:['INSUFFICIENT DATA','var(--text-muted)']};
+      var s = statusMap[status] || statusMap.insufficient_data; statusEl.textContent = s[0]; statusEl.style.color = s[1];
     }
-
-    // Header badge
     var trendBadge = document.getElementById('gi-edge-trend-badge');
     if (trendBadge) {
       if (status === 'stable' || status === 'improving') { trendBadge.textContent = status === 'improving' ? 'IMPROVING' : 'STABLE'; trendBadge.style.background = 'rgba(34,197,94,0.15)'; trendBadge.style.color = '#22c55e'; }
       else if (status === 'declining') { trendBadge.textContent = 'DECLINING'; trendBadge.style.background = 'rgba(239,68,68,0.15)'; trendBadge.style.color = '#ef4444'; }
       else { trendBadge.textContent = 'N/A'; }
     }
-
-    // WR comparison
-    var wrFirst = document.getElementById('gi-comp-wr-first');
-    var wrSecond = document.getElementById('gi-comp-wr-second');
-    var wrTrend = document.getElementById('gi-comp-wr-trend');
-    var evTrend = document.getElementById('gi-comp-ev-trend');
+    var wrFirst = document.getElementById('gi-comp-wr-first'); var wrSecond = document.getElementById('gi-comp-wr-second');
+    var wrTrend = document.getElementById('gi-comp-wr-trend'); var evTrend = document.getElementById('gi-comp-ev-trend');
     if (wrFirst && cc.first_half_wr != null) wrFirst.textContent = (cc.first_half_wr * 100).toFixed(1) + '%';
     if (wrSecond && cc.second_half_wr != null) { wrSecond.textContent = (cc.second_half_wr * 100).toFixed(1) + '%'; wrSecond.style.color = cc.second_half_wr >= cc.first_half_wr ? '#22c55e' : '#ef4444'; }
     if (wrTrend && cc.wr_trend_pp != null) { var pp = cc.wr_trend_pp; wrTrend.textContent = (pp >= 0 ? '+' : '') + pp.toFixed(1) + 'pp'; wrTrend.style.color = pp >= 0 ? '#22c55e' : '#ef4444'; }
     var evt = cc.ev_capture_trend || {};
     if (evTrend && evt.trend) { evTrend.textContent = evt.trend === 'improving' ? 'IMPROVING' : evt.trend === 'declining' ? 'DECLINING' : evt.trend.toUpperCase(); evTrend.style.color = evt.trend === 'improving' ? '#22c55e' : evt.trend === 'declining' ? '#ef4444' : 'var(--text-muted)'; }
-
-    // Top recommendation
-    var recEl = document.getElementById('gi-comp-recommendation');
-    var recs = cc.recommendations || [];
+    var recEl = document.getElementById('gi-comp-recommendation'); var recs = cc.recommendations || [];
     if (recEl && recs.length > 0) { recEl.textContent = recs[0].action || '--'; recEl.style.color = recs[0].priority === 'high' ? '#ef4444' : recs[0].priority === 'medium' ? '#eab308' : 'var(--text-muted)'; }
-
-    // Recommendations list
     var recsEl = document.getElementById('gi-comp-recommendations');
     if (recsEl && recs.length > 1) {
       var html = '';
@@ -1194,8 +961,6 @@ function loadGarvesIntelligence() {
       });
       recsEl.innerHTML = html;
     }
-
-    // Indicator health table
     var indicators = cc.indicator_health || d.edge_decay || [];
     var tbody = document.getElementById('gi-indicator-tbody');
     if (tbody && indicators.length > 0) {
@@ -1207,48 +972,35 @@ function loadGarvesIntelligence() {
         var trendArrow = diff > 0.02 ? '<span style="color:#22c55e;">&#9650;</span>' : diff < -0.02 ? '<span style="color:#ef4444;">&#9660;</span>' : '<span style="color:var(--text-muted);">&#9644;</span>';
         var statusText = ind.status || (diff > 0.02 ? 'improving' : diff < -0.05 ? 'decaying' : 'healthy');
         var statusColor = statusText === 'improving' ? '#22c55e' : statusText === 'decaying' ? '#ef4444' : 'var(--text-muted)';
-        html += '<tr>';
-        html += '<td style="font-weight:600;">' + (ind.indicator || '--') + '</td>';
+        html += '<tr><td style="font-weight:600;">' + (ind.indicator || '--') + '</td>';
         html += '<td style="text-align:center;font-family:var(--font-mono);">' + (allTime * 100).toFixed(1) + '%</td>';
         html += '<td style="text-align:center;font-family:var(--font-mono);color:' + (recent >= 0.55 ? '#22c55e' : recent < 0.45 ? '#ef4444' : 'inherit') + ';">' + (recent * 100).toFixed(1) + '%</td>';
         html += '<td style="text-align:center;">' + trendArrow + ' ' + (diff >= 0 ? '+' : '') + (diff * 100).toFixed(1) + 'pp</td>';
         html += '<td style="text-align:center;font-family:var(--font-mono);">' + (ind.alltime_samples || ind.recent_samples || '--') + '</td>';
-        html += '<td style="text-align:center;"><span style="font-size:0.62rem;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,0.06);color:' + statusColor + ';font-weight:600;">' + statusText.toUpperCase() + '</span></td>';
-        html += '</tr>';
+        html += '<td style="text-align:center;"><span style="font-size:0.62rem;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,0.06);color:' + statusColor + ';font-weight:600;">' + statusText.toUpperCase() + '</span></td></tr>';
       });
       tbody.innerHTML = html;
     }
-
-    // Edge stability score: stable→25, improving→25, declining→5, insufficient→10 (out of 25)
     score.edge = status === 'improving' ? 25 : status === 'stable' ? 22 : status === 'declining' ? 5 : 10;
     updateIntelScore();
   }).catch(function() {});
 
-  // 5. Diagnostics — Autonomous debugging
   fetch('/api/garves/diagnostics').then(function(r) { return r.json(); }).then(function(d) {
-    var checks = d.checks || {};
-    var fixes = d.suggested_fixes || [];
-    var issueCount = fixes.length;
-
-    var dotEl = document.getElementById('gi-diag-dot');
-    var labelEl = document.getElementById('gi-diag-label');
-    var countEl = document.getElementById('gi-diag-count');
+    var checks = d.checks || {}; var fixes = d.suggested_fixes || []; var issueCount = fixes.length;
+    var dotEl = document.getElementById('gi-diag-dot'); var labelEl = document.getElementById('gi-diag-label'); var countEl = document.getElementById('gi-diag-count');
     if (countEl) countEl.textContent = issueCount + ' issue' + (issueCount !== 1 ? 's' : '');
     if (dotEl && labelEl) {
       if (issueCount === 0) { dotEl.style.background = '#22c55e'; labelEl.textContent = 'All Clear'; labelEl.style.color = '#22c55e'; }
       else if (issueCount <= 2) { dotEl.style.background = '#eab308'; labelEl.textContent = 'Monitoring'; labelEl.style.color = '#eab308'; }
       else { dotEl.style.background = '#ef4444'; labelEl.textContent = 'Issues Detected'; labelEl.style.color = '#ef4444'; }
     }
-
-    // Diagnostic check pills
     var checksEl = document.getElementById('gi-diag-checks');
     if (checksEl) {
       var html = '';
-      var checkNames = ['model_drift', 'regime_shift', 'api_health', 'liquidity', 'execution', 'indicator_health', 'ev_capture'];
-      var labels = {model_drift: 'Model Drift', regime_shift: 'Regime', api_health: 'API Health', liquidity: 'Liquidity', execution: 'Execution', indicator_health: 'Indicators', ev_capture: 'EV Capture'};
+      var checkNames = ['model_drift','regime_shift','api_health','liquidity','execution','indicator_health','ev_capture'];
+      var labels = {model_drift:'Model Drift', regime_shift:'Regime', api_health:'API Health', liquidity:'Liquidity', execution:'Execution', indicator_health:'Indicators', ev_capture:'EV Capture'};
       checkNames.forEach(function(name) {
-        var c = checks[name] || {};
-        var st = c.status || 'unknown';
+        var c = checks[name] || {}; var st = c.status || 'unknown';
         var isOk = st === 'normal' || st === 'healthy' || st === 'stable';
         var color = isOk ? '#22c55e' : st === 'insufficient_data' || st === 'no_data' ? 'var(--text-muted)' : '#ef4444';
         var bg = isOk ? 'rgba(34,197,94,0.1)' : st === 'insufficient_data' || st === 'no_data' ? 'rgba(255,255,255,0.04)' : 'rgba(239,68,68,0.1)';
@@ -1256,97 +1008,71 @@ function loadGarvesIntelligence() {
       });
       checksEl.innerHTML = html;
     }
-
-    // Suggested fixes
     var fixesEl = document.getElementById('gi-diag-fixes');
     if (fixesEl && fixes.length > 0) {
       var html = '';
       fixes.slice(0, 4).forEach(function(f) {
         html += '<div style="margin-bottom:4px;padding:4px 8px;border-radius:4px;background:rgba(239,68,68,0.06);border-left:2px solid #ef4444;">';
         html += '<span style="font-weight:600;color:#ef4444;font-size:0.64rem;text-transform:uppercase;">' + (f.check || '') + '</span> ';
-        html += '<span style="color:var(--text-muted);">' + (f.fix || '') + '</span>';
-        html += '</div>';
+        html += '<span style="color:var(--text-muted);">' + (f.fix || '') + '</span></div>';
       });
       fixesEl.innerHTML = html;
-    } else if (fixesEl) {
-      fixesEl.innerHTML = '<span class="text-muted" style="font-size:0.68rem;">All 7 diagnostic checks passing</span>';
-    }
+    } else if (fixesEl) { fixesEl.innerHTML = '<span class="text-muted" style="font-size:0.68rem;">All 7 diagnostic checks passing</span>'; }
   }).catch(function() {});
 
-  // 6. Engine Comparison — per-engine intelligence
   fetch('/api/garves/engine-comparison').then(function(r) { return r.json(); }).then(function(d) {
     var engines = d.engines || {};
-
-    // Snipe Engine WR
     var snipe = engines.snipe || {};
-    var snipeWrEl = document.getElementById('gi-snipe-wr');
-    var snipeDetailEl = document.getElementById('gi-snipe-detail');
+    var snipeWrEl = document.getElementById('gi-snipe-wr'); var snipeDetailEl = document.getElementById('gi-snipe-detail');
     if (snipeWrEl) { snipeWrEl.textContent = snipe.trades > 0 ? snipe.win_rate.toFixed(1) + '%' : '--'; snipeWrEl.style.color = snipe.win_rate >= 55 ? '#22c55e' : snipe.win_rate > 0 && snipe.win_rate < 50 ? '#ef4444' : ''; }
     if (snipeDetailEl) snipeDetailEl.textContent = snipe.wins + 'W-' + snipe.losses + 'L / ' + snipe.trades + ' trades';
-
-    // Whale Shadow WR
     var whale = engines.whale || {};
-    var whaleWrEl = document.getElementById('gi-whale-wr');
-    var whaleDetailEl = document.getElementById('gi-whale-detail');
+    var whaleWrEl = document.getElementById('gi-whale-wr'); var whaleDetailEl = document.getElementById('gi-whale-detail');
     if (whaleWrEl) { whaleWrEl.textContent = whale.trades > 0 ? whale.win_rate.toFixed(1) + '%' : '--'; whaleWrEl.style.color = whale.win_rate >= 55 ? '#22c55e' : whale.win_rate > 0 && whale.win_rate < 50 ? '#ef4444' : ''; }
     if (whaleDetailEl) whaleDetailEl.textContent = whale.wins + 'W-' + whale.losses + 'L / ' + whale.trades + ' trades';
-
-    // Maker Efficiency (spread captured / fills)
     var maker = engines.maker || {};
-    var makerEl = document.getElementById('gi-maker-eff');
-    var makerDetailEl = document.getElementById('gi-maker-detail');
-    if (makerEl) {
-      var rebate = maker.rebate || 0;
-      var pnl = maker.pnl || 0;
-      makerEl.textContent = rebate > 0 ? '$' + rebate.toFixed(2) : pnl > 0 ? '$' + pnl.toFixed(2) : '--';
-      makerEl.style.color = (rebate + pnl) > 0 ? '#22c55e' : '';
-    }
+    var makerEl = document.getElementById('gi-maker-eff'); var makerDetailEl = document.getElementById('gi-maker-detail');
+    if (makerEl) { var rebate = maker.rebate || 0; var pnl = maker.pnl || 0; makerEl.textContent = rebate > 0 ? '$' + rebate.toFixed(2) : pnl > 0 ? '$' + pnl.toFixed(2) : '--'; makerEl.style.color = (rebate + pnl) > 0 ? '#22c55e' : ''; }
     if (makerDetailEl) makerDetailEl.textContent = maker.trades + ' fills today';
-
-    // Flow Detection (from snipe performance)
-    var flowEl = document.getElementById('gi-flow-acc');
-    var flowDetailEl = document.getElementById('gi-flow-detail');
-    if (flowEl && snipe.trades > 0) {
-      flowEl.textContent = snipe.win_rate >= 55 ? 'STRONG' : snipe.win_rate >= 45 ? 'MODERATE' : 'WEAK';
-      flowEl.style.color = snipe.win_rate >= 55 ? '#22c55e' : snipe.win_rate >= 45 ? '#eab308' : '#ef4444';
-    }
+    var flowEl = document.getElementById('gi-flow-acc'); var flowDetailEl = document.getElementById('gi-flow-detail');
+    if (flowEl && snipe.trades > 0) { flowEl.textContent = snipe.win_rate >= 55 ? 'STRONG' : snipe.win_rate >= 45 ? 'MODERATE' : 'WEAK'; flowEl.style.color = snipe.win_rate >= 55 ? '#22c55e' : snipe.win_rate >= 45 ? '#eab308' : '#ef4444'; }
     if (flowDetailEl) flowDetailEl.textContent = 'Based on ' + snipe.trades + ' snipe trades';
+    /* Update overview cards */
+    var ovSnipeWr = document.getElementById('ov-snipe-wr');
+    if (ovSnipeWr && snipe.trades > 0) ovSnipeWr.textContent = snipe.win_rate.toFixed(1) + '%';
+    var ovSnipeTrades = document.getElementById('ov-snipe-trades');
+    if (ovSnipeTrades) ovSnipeTrades.textContent = snipe.trades + ' trades';
+    var ovWhaleWr = document.getElementById('ov-whale-wr');
+    if (ovWhaleWr && whale.trades > 0) ovWhaleWr.textContent = whale.win_rate.toFixed(1) + '%';
+    var ovMakerPnl = document.getElementById('ov-maker-pnl');
+    if (ovMakerPnl) { var mp = maker.pnl || 0; ovMakerPnl.textContent = '$' + mp.toFixed(2); }
+    var ovMakerFills = document.getElementById('ov-maker-fills');
+    if (ovMakerFills) ovMakerFills.textContent = maker.trades + ' fills';
+    var taker = engines.taker || {};
+    var ovTakerWr = document.getElementById('ov-taker-wr');
+    if (ovTakerWr && taker.trades > 0) ovTakerWr.textContent = taker.win_rate.toFixed(1) + '%';
+    var ovTakerTrades = document.getElementById('ov-taker-trades');
+    if (ovTakerTrades) ovTakerTrades.textContent = taker.trades + ' trades';
   }).catch(function() {});
 
   function updateIntelScore() {
-    var total = Math.round(score.wr + score.ev + score.mistake + score.edge);
-    score.total = total;
-    var badge = document.getElementById('gi-score-badge');
-    var label = document.getElementById('gi-score-label');
-    var dot = document.getElementById('gi-score-dot');
-    if (badge) badge.textContent = total + '/100';
-    if (label) label.textContent = total + '/100';
-
+    var total = Math.round(score.wr + score.ev + score.mistake + score.edge); score.total = total;
+    var badge = document.getElementById('gi-score-badge'); var label = document.getElementById('gi-score-label'); var dot = document.getElementById('gi-score-dot');
+    if (badge) badge.textContent = total + '/100'; if (label) label.textContent = total + '/100';
     var color = total >= 70 ? '#22c55e' : total >= 45 ? '#eab308' : '#ef4444';
     if (badge) { badge.style.background = 'rgba(' + (total >= 70 ? '34,197,94' : total >= 45 ? '234,179,8' : '239,68,68') + ',0.15)'; badge.style.color = color; }
-    if (label) label.style.color = color;
-    if (dot) dot.style.background = color;
-
-    // Score breakdown bars (out of 100 total)
-    var barWr = document.getElementById('gi-bar-wr');
-    var barEv = document.getElementById('gi-bar-ev');
-    var barMk = document.getElementById('gi-bar-mistake');
-    var barEdge = document.getElementById('gi-bar-edge');
-    if (barWr) barWr.style.flex = score.wr;
-    if (barEv) barEv.style.flex = score.ev;
-    if (barMk) barMk.style.flex = score.mistake;
-    if (barEdge) barEdge.style.flex = score.edge;
+    if (label) label.style.color = color; if (dot) dot.style.background = color;
+    var barWr = document.getElementById('gi-bar-wr'); var barEv = document.getElementById('gi-bar-ev');
+    var barMk = document.getElementById('gi-bar-mistake'); var barEdge = document.getElementById('gi-bar-edge');
+    if (barWr) barWr.style.flex = score.wr; if (barEv) barEv.style.flex = score.ev;
+    if (barMk) barMk.style.flex = score.mistake; if (barEdge) barEdge.style.flex = score.edge;
   }
 
   function timeSince(ts, future) {
     var diff = future ? (ts * 1000 - Date.now()) : (Date.now() - ts * 1000);
     if (diff < 0) diff = Math.abs(diff);
-    var mins = Math.floor(diff / 60000);
-    var hrs = Math.floor(mins / 60);
-    var days = Math.floor(hrs / 24);
-    if (days > 0) return days + 'd ago';
-    if (hrs > 0) return hrs + 'h ago';
-    return mins + 'm ago';
+    var mins = Math.floor(diff / 60000); var hrs = Math.floor(mins / 60); var days = Math.floor(hrs / 24);
+    if (days > 0) return days + 'd ago'; if (hrs > 0) return hrs + 'h ago'; return mins + 'm ago';
   }
 }
 </script>
