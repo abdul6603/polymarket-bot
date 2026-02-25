@@ -108,7 +108,7 @@ class LivePositionManager:
                 remaining_pos.append(pos)
                 continue
 
-            action = self._check_take_profit(pos)
+            action = self._check_price_exits(pos)
             if action:
                 actions.append(action)
                 self._log_action(action)
@@ -145,10 +145,10 @@ class LivePositionManager:
 
         return actions
 
-    def _check_take_profit(self, pos: dict) -> LiveAction | None:
-        """Price-only take-profit check. No ESPN match needed.
+    def _check_price_exits(self, pos: dict) -> LiveAction | None:
+        """Price-only exit check. No ESPN match needed.
 
-        Sells when CLOB price indicates position is essentially won.
+        Handles both take-profit AND stop-loss based purely on CLOB price.
         Works even after game ends (ESPN drops it but CLOB still tradeable).
         """
         cid = pos.get("condition_id", "")
@@ -159,12 +159,18 @@ class LivePositionManager:
         # On-chain positions may have cur_price already
         if pos.get("_from_onchain") and current_price == pos.get("entry_price", 0.5):
             current_price = pos.get("cur_price", current_price)
-        threshold = self.cfg.live_take_profit_threshold
 
-        # Our token hitting high price = we won (both YES and NO tokens)
-        should_sell = current_price >= threshold
-
-        if not should_sell:
+        # TAKE PROFIT: our token hit high price
+        if current_price >= self.cfg.live_take_profit_threshold:
+            pass  # fall through to exit logic below
+        # STOP LOSS: our token dropped significantly
+        elif entry_price > 0:
+            drop_pct = (entry_price - current_price) / entry_price
+            if drop_pct >= self.cfg.live_stop_loss_pct:
+                pass  # fall through to exit logic below
+            else:
+                return None  # No action needed
+        else:
             return None
 
         # Check cooldown
@@ -174,15 +180,20 @@ class LivePositionManager:
             return None
 
         shares = pos.get("size_usd", 0) / entry_price if entry_price > 0 else 0
-        if direction == "yes":
-            pnl_estimate = (current_price - entry_price) * shares
-        else:
-            pnl_estimate = (entry_price - current_price) * shares
+        pnl_estimate = (current_price - entry_price) * shares
 
-        profit_pct = (pnl_estimate / pos.get("size_usd", 1)) * 100 if pos.get("size_usd") else 0
-        reason = (f"Take profit: {direction.upper()} @ {current_price:.2f} "
-                  f"(entry {entry_price:.2f}, +{profit_pct:.0f}%) — "
-                  f"locking ${pnl_estimate:.2f} profit, freeing capital")
+        # Determine if this is take-profit or stop-loss
+        is_take_profit = current_price >= self.cfg.live_take_profit_threshold
+        if is_take_profit:
+            profit_pct = (pnl_estimate / pos.get("size_usd", 1)) * 100 if pos.get("size_usd") else 0
+            reason = (f"Take profit: {direction.upper()} @ {current_price:.2f} "
+                      f"(entry {entry_price:.2f}, +{profit_pct:.0f}%) — "
+                      f"locking ${pnl_estimate:.2f} profit, freeing capital")
+        else:
+            drop_pct = (entry_price - current_price) / entry_price if entry_price > 0 else 0
+            reason = (f"Stop-loss: {direction.upper()} @ {current_price:.2f} "
+                      f"(entry {entry_price:.2f}, -{drop_pct:.0%}) — "
+                      f"cutting ${abs(pnl_estimate):.2f} loss")
 
         # Resolve token_id if missing (on-chain positions don't have it)
         if not pos.get("token_id") and self.executor and self.executor.client:
@@ -201,11 +212,12 @@ class LivePositionManager:
         self._actions_count[cid] = self._actions_count.get(cid, 0) + 1
         self._last_action_time[cid] = now
 
-        log.info("[LIVE] TAKE_PROFIT: %s | $%.2f profit | %s",
-                 cid[:12], pnl_estimate, pos.get("question", "")[:50])
+        action_name = "TAKE_PROFIT" if is_take_profit else "STOP_LOSS"
+        log.info("[LIVE] %s: %s | $%.2f | %s",
+                 action_name, cid[:12], pnl_estimate, pos.get("question", "")[:50])
 
         return LiveAction(
-            condition_id=cid, action="TAKE_PROFIT", reason=reason,
+            condition_id=cid, action=action_name, reason=reason,
             score_home=0, score_away=0, period=0, clock="",
             entry_price=entry_price, current_price=current_price,
             pnl_estimate=pnl_estimate,
