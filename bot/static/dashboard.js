@@ -7848,6 +7848,9 @@ async function loadHawkTab() {
   // V9: Live in-play monitor
   loadHawkLiveMonitor();
 
+  // V10: Intelligence & Self-Improvement
+  loadHawkIntelligence();
+
   // V8: Auto-refresh capital + positions every 30s
   if (window._hawkLiveRefresh) clearInterval(window._hawkLiveRefresh);
   window._hawkLiveRefresh = setInterval(function() {
@@ -9123,6 +9126,93 @@ async function hawkTriggerScan() {
     console.error('hawk scan:', e);
     _hawkUpdateProgress({step: 'Error: ' + e.message, detail: '', pct: 0});
     if (btn) { btn.disabled = false; btn.textContent = 'Trigger Scan'; btn.style.opacity = '1'; }
+  }
+}
+
+// ═══ V10: Intelligence & Self-Improvement ═══
+
+async function loadHawkIntelligence() {
+  try {
+    // Fetch reviews and learner data in parallel
+    var results = await Promise.allSettled([
+      fetch('/api/hawk/reviews').then(function(r){return r.json();}),
+      fetch('/api/hawk/learner').then(function(r){return r.json();}),
+      fetch('/api/hawk/performance').then(function(r){return r.json();})
+    ]);
+    var reviewData = results[0].status === 'fulfilled' ? results[0].value : {};
+    var learnerData = results[1].status === 'fulfilled' ? results[1].value : {};
+    var perfData = results[2].status === 'fulfilled' ? results[2].value : {};
+
+    // 1. Model Accuracy (average of 6D learner dimensions)
+    var dims = learnerData.dimensions || {};
+    var dimNames = Object.keys(dims);
+    var totalAcc = 0, dimCount = 0;
+    for (var i = 0; i < dimNames.length; i++) {
+      var dimData = dims[dimNames[i]] || {};
+      var dw = 0, dl = 0;
+      for (var k in dimData) { dw += dimData[k].wins || 0; dl += dimData[k].losses || 0; }
+      if (dw + dl > 0) { totalAcc += (dw / (dw + dl)) * 100; dimCount++; }
+    }
+    var avgAccuracy = dimCount > 0 ? totalAcc / dimCount : 0;
+    var accEl = document.getElementById('hawk-model-accuracy');
+    var accDetailEl = document.getElementById('hawk-model-accuracy-detail');
+    if (accEl && avgAccuracy > 0) {
+      accEl.textContent = avgAccuracy.toFixed(1) + '%';
+      accEl.style.color = avgAccuracy >= 55 ? '#00ff88' : avgAccuracy >= 45 ? '#FFD700' : '#ff4444';
+    }
+    if (accDetailEl && dimCount > 0) accDetailEl.textContent = dimCount + ' dimensions tracked';
+
+    // 2. Lessons count + last lessons
+    var reviews = reviewData.trade_reviews || [];
+    var recs = reviewData.recommendations || [];
+    var lessonsEl = document.getElementById('hawk-lessons-count');
+    var lessonsDetailEl = document.getElementById('hawk-lessons-count-detail');
+    var lessonsListEl = document.getElementById('hawk-lessons-list');
+    if (lessonsEl) lessonsEl.textContent = recs.length;
+    if (lessonsDetailEl) lessonsDetailEl.textContent = reviews.length + ' trades reviewed';
+    if (lessonsListEl && recs.length > 0) {
+      var lhtml = '';
+      var shown = recs.slice(0, 3);
+      for (var j = 0; j < shown.length; j++) {
+        lhtml += '<div style="background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.1);border-left:3px solid var(--agent-hawk);border-radius:8px;padding:10px 14px;margin-bottom:8px;">';
+        lhtml += '<div style="font-size:0.76rem;color:var(--text-secondary);line-height:1.4;">' + esc(shown[j]) + '</div>';
+        lhtml += '</div>';
+      }
+      lessonsListEl.innerHTML = lhtml;
+    }
+
+    // 3. Failure patterns count
+    var patterns = reviewData.failure_patterns || [];
+    var mistakeEl = document.getElementById('hawk-mistake-freq');
+    var mistakeTrendEl = document.getElementById('hawk-mistake-trend');
+    if (mistakeEl) {
+      mistakeEl.textContent = patterns.length;
+      mistakeEl.style.color = patterns.length === 0 ? '#00ff88' : patterns.length <= 2 ? '#FFD700' : '#ff4444';
+    }
+    if (mistakeTrendEl) {
+      var critCount = patterns.filter(function(p){return p.severity === 'critical';}).length;
+      mistakeTrendEl.textContent = patterns.length === 0 ? 'Clean — no toxic combos' : critCount + ' critical, ' + (patterns.length - critCount) + ' warning';
+    }
+
+    // 4. Self-improvement score (composite)
+    var score = 50; // baseline
+    if (avgAccuracy > 55) score += 15; else if (avgAccuracy > 50) score += 8;
+    if (patterns.length === 0) score += 15; else if (patterns.length <= 1) score += 8;
+    if (recs.length >= 3) score += 10; else if (recs.length >= 1) score += 5;
+    var wr = perfData.overall_wr || reviewData.win_rate || 0;
+    if (wr >= 55) score += 10; else if (wr >= 50) score += 5;
+    score = Math.min(100, Math.max(0, score));
+    var scoreEl = document.getElementById('hawk-self-score');
+    var scoreDetailEl = document.getElementById('hawk-self-score-detail');
+    if (scoreEl) {
+      scoreEl.textContent = score;
+      scoreEl.style.color = score >= 75 ? '#00ff88' : score >= 50 ? '#FFD700' : '#ff4444';
+    }
+    if (scoreDetailEl) {
+      scoreDetailEl.textContent = score >= 75 ? 'Strong — system learning' : score >= 50 ? 'Stable — room to improve' : 'Needs attention';
+    }
+  } catch(e) {
+    console.error('hawk intelligence:', e);
   }
 }
 

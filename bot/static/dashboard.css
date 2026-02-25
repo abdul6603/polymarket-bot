@@ -2405,3 +2405,414 @@
     .qt-stats-col { grid-template-columns:repeat(2,1fr); }
     .qt-header { flex-direction:column; align-items:flex-start; }
   }
+
+  /* ═══════════════════════════════════════════════════════════
+     HAWK — Professional Sports & Weather Trader (Premium)
+     ═══════════════════════════════════════════════════════════ */
+
+  /* Header */
+  .hk-header {
+    padding:20px 0 16px;
+    margin-bottom:16px;
+    border-bottom:1px solid rgba(255,215,0,0.08);
+  }
+  .hk-header-top {
+    display:flex; justify-content:space-between; align-items:flex-start;
+    gap:16px; flex-wrap:wrap; margin-bottom:12px;
+  }
+  .hk-header-left { display:flex; flex-direction:column; gap:4px; }
+  .hk-header-right { display:flex; align-items:center; gap:8px; }
+  .hk-title {
+    font-family:var(--font-heading); font-size:1.5rem; font-weight:700;
+    color:#fff; letter-spacing:0.04em;
+  }
+  .hk-title-sep { color:rgba(255,215,0,0.3); font-weight:300; }
+  .hk-title-role {
+    font-size:1rem; font-weight:400; color:var(--agent-hawk);
+    letter-spacing:0.02em;
+  }
+  .hk-tagline {
+    font-family:var(--font-mono); font-size:0.70rem; color:var(--text-muted);
+    letter-spacing:0.03em; font-style:italic;
+  }
+
+  /* Status Pills */
+  .hk-pills-row {
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  }
+  .hk-pill {
+    display:inline-flex; align-items:center; gap:5px;
+    font-family:var(--font-mono); font-size:0.68rem; font-weight:600;
+    padding:4px 12px; border-radius:999px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.06);
+    color:var(--text-muted);
+    transition:all var(--transition-base);
+  }
+  .hk-pill:hover { background:rgba(255,255,255,0.06); border-color:rgba(255,255,255,0.1); }
+  .hk-pill-on {
+    background:rgba(255,215,0,0.08);
+    border-color:rgba(255,215,0,0.2);
+    color:var(--agent-hawk);
+  }
+  .hk-pill-dot {
+    width:6px; height:6px; border-radius:50%;
+    background:var(--agent-hawk); box-shadow:0 0 6px var(--agent-hawk);
+  }
+  .hk-cycle-pill {
+    display:inline-flex; align-items:center; gap:7px;
+    font-family:var(--font-mono); font-size:0.76rem; font-weight:700;
+    padding:5px 14px; border-radius:999px;
+    border:1px solid rgba(255,215,0,0.25);
+    background:rgba(255,215,0,0.08);
+    color:var(--agent-hawk); margin-left:auto;
+    transition:box-shadow .3s; cursor:default; position:relative;
+  }
+
+  /* Key Metrics */
+  .hk-metrics {
+    display:grid; grid-template-columns:repeat(4,1fr);
+    gap:12px; margin-bottom:16px;
+  }
+  .hk-metric-card {
+    display:flex; align-items:flex-start; gap:12px;
+    background:rgba(255,255,255,0.02);
+    border:1px solid rgba(255,255,255,0.05);
+    border-radius:12px; padding:16px;
+    backdrop-filter:blur(8px);
+    transition:all 0.25s ease;
+  }
+  .hk-metric-card:hover {
+    background:rgba(255,255,255,0.04);
+    border-color:rgba(255,215,0,0.12);
+    box-shadow:0 4px 24px rgba(255,215,0,0.04);
+  }
+  .hk-metric-icon {
+    width:36px; height:36px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-heading); font-size:1rem; font-weight:700;
+    border:1px solid transparent; flex-shrink:0;
+  }
+  .hk-metric-body { flex:1; min-width:0; }
+  .hk-metric-val {
+    font-family:var(--font-heading); font-size:1.4rem; font-weight:700;
+    line-height:1.2;
+  }
+  .hk-metric-lbl {
+    font-size:0.68rem; color:var(--text-muted);
+    text-transform:uppercase; letter-spacing:0.06em;
+    margin-top:2px;
+  }
+  .hk-metric-sub {
+    font-family:var(--font-mono); font-size:0.64rem;
+    color:var(--text-muted); margin-top:4px;
+  }
+  .hk-metric-small {
+    font-size:0.82rem; color:var(--text-muted); font-weight:400;
+  }
+
+  /* Section Titles */
+  .hk-section-title {
+    font-family:var(--font-heading); font-size:0.92rem; font-weight:700;
+    color:var(--agent-hawk); letter-spacing:0.04em;
+    text-transform:uppercase;
+    position:relative; padding-left:14px;
+  }
+  .hk-section-title::before {
+    content:''; position:absolute; left:0; top:50%;
+    transform:translateY(-50%);
+    width:4px; height:16px; border-radius:2px;
+    background:var(--agent-hawk);
+  }
+  .hk-sub-title {
+    font-size:0.78rem; font-weight:600; color:var(--text-secondary);
+    margin-bottom:10px; text-transform:uppercase;
+    letter-spacing:0.04em;
+  }
+  .hk-mini-title {
+    font-size:0.72rem; text-transform:uppercase;
+    letter-spacing:0.06em; color:var(--text-muted);
+    margin-bottom:8px;
+  }
+  .hk-inner { margin-bottom:16px; }
+
+  /* Pipeline */
+  .hk-pipeline {
+    display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    padding:12px 16px; margin-bottom:14px;
+    background:rgba(255,215,0,0.03);
+    border:1px solid rgba(255,215,0,0.08);
+    border-radius:10px;
+  }
+  .hk-pipeline-item { text-align:center; }
+  .hk-pipeline-val {
+    font-family:var(--font-mono); font-size:0.88rem; font-weight:700;
+    color:var(--agent-hawk);
+  }
+  .hk-pipeline-lbl {
+    display:block; font-size:0.58rem; color:var(--text-muted);
+    text-transform:uppercase; letter-spacing:0.04em;
+  }
+  .hk-pipeline-arrow { color:rgba(255,215,0,0.3); font-size:0.82rem; }
+  .hk-pipeline-sep { color:var(--text-muted); font-size:0.72rem; }
+  .hk-pipeline-final { font-size:1rem; }
+
+  /* Reasoning Card */
+  .hk-reasoning-card {
+    background:rgba(255,215,0,0.04);
+    border:1px solid rgba(255,215,0,0.12);
+    border-radius:10px; padding:16px 20px;
+  }
+  .hk-reasoning-header {
+    font-size:0.68rem; color:var(--text-muted);
+    text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;
+  }
+  .hk-reasoning-row { margin-bottom:8px; }
+  .hk-reasoning-lbl {
+    font-size:0.64rem; color:var(--text-muted);
+    text-transform:uppercase; letter-spacing:0.04em; margin-bottom:2px;
+  }
+  .hk-reasoning-val {
+    font-size:0.78rem; color:var(--text-secondary); line-height:1.5;
+  }
+
+  /* Positions */
+  .hk-positions {
+    margin-bottom:16px; padding:16px;
+    background:rgba(255,215,0,0.02);
+    border:1px solid rgba(255,215,0,0.1);
+    border-left:3px solid var(--agent-hawk);
+    border-radius:12px;
+  }
+  .hk-positions-header {
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:10px;
+  }
+  .hk-table-wrap { overflow-x:auto; }
+  .hk-risk-bar {
+    display:flex; gap:12px; flex-wrap:wrap;
+    margin-top:10px; padding-top:10px;
+    border-top:1px solid rgba(255,255,255,0.04);
+    font-family:var(--font-mono); font-size:0.72rem;
+  }
+  .hk-risk-item { font-weight:600; }
+
+  /* Live In-Play */
+  .hk-live {
+    margin-bottom:16px; padding:16px;
+    background:rgba(255,68,68,0.03);
+    border:1px solid rgba(255,68,68,0.12);
+    border-left:3px solid #ff4444;
+    border-radius:12px;
+  }
+  .hk-live-header { margin-bottom:10px; }
+  .hk-live-pulse {
+    display:inline-block; width:8px; height:8px;
+    border-radius:50%; background:#ff4444;
+    animation:rxPulse 1s ease-in-out infinite;
+    margin-right:6px;
+  }
+
+  /* Intelligence Section */
+  .hk-intel { margin-bottom:16px; }
+  .hk-intel-accent { color:#4FC3F7 !important; }
+  .hk-intel-accent::before { background:#4FC3F7 !important; }
+
+  .hk-intel-metrics {
+    display:grid; grid-template-columns:repeat(4,1fr);
+    gap:10px; margin-bottom:16px;
+  }
+  .hk-intel-card {
+    text-align:center; padding:16px 12px;
+    background:rgba(79,195,247,0.03);
+    border:1px solid rgba(79,195,247,0.08);
+    border-radius:10px;
+    transition:all 0.25s ease;
+  }
+  .hk-intel-card:hover {
+    background:rgba(79,195,247,0.06);
+    border-color:rgba(79,195,247,0.15);
+    box-shadow:0 4px 20px rgba(79,195,247,0.06);
+  }
+  .hk-intel-score {
+    font-family:var(--font-heading); font-size:1.8rem; font-weight:700;
+    color:#4FC3F7; line-height:1.1;
+  }
+  .hk-intel-label {
+    font-size:0.68rem; color:var(--text-muted);
+    text-transform:uppercase; letter-spacing:0.04em;
+    margin-top:4px;
+  }
+  .hk-intel-sub {
+    font-family:var(--font-mono); font-size:0.60rem;
+    color:var(--text-muted); margin-top:4px;
+  }
+
+  /* Core Principles */
+  .hk-principles {
+    padding:14px 16px; margin-bottom:16px;
+    background:rgba(255,215,0,0.03);
+    border:1px solid rgba(255,215,0,0.08);
+    border-radius:10px;
+  }
+  .hk-principles-title {
+    font-family:var(--font-heading); font-size:0.68rem; font-weight:700;
+    color:var(--agent-hawk); letter-spacing:0.08em;
+    text-transform:uppercase; margin-bottom:10px;
+  }
+  .hk-principles-grid {
+    display:flex; flex-wrap:wrap; gap:6px;
+  }
+  .hk-principle {
+    display:inline-flex; align-items:center; gap:4px;
+    font-family:var(--font-mono); font-size:0.66rem;
+    padding:4px 10px; border-radius:6px;
+    background:rgba(255,215,0,0.05);
+    border:1px solid rgba(255,215,0,0.1);
+    color:var(--text-secondary);
+    transition:all var(--transition-base);
+  }
+  .hk-principle:hover {
+    background:rgba(255,215,0,0.1);
+    color:var(--agent-hawk);
+  }
+
+  /* Learner Grid */
+  .hk-learner-grid {
+    display:grid; grid-template-columns:repeat(6,1fr); gap:8px;
+  }
+  .hk-learner-card {
+    text-align:center; padding:12px 8px;
+    background:rgba(255,255,255,0.02);
+    border:1px solid rgba(255,255,255,0.05);
+    border-radius:8px;
+    transition:all 0.25s ease;
+  }
+  .hk-learner-card:hover {
+    background:rgba(255,215,0,0.04);
+    border-color:rgba(255,215,0,0.12);
+  }
+  .hk-learner-lbl {
+    font-size:0.62rem; color:var(--text-muted);
+    text-transform:uppercase; letter-spacing:0.04em;
+  }
+  .hk-learner-val {
+    font-size:1.2rem; font-weight:700; color:var(--agent-hawk);
+    margin-top:4px;
+  }
+
+  /* Competitive Advantage */
+  .hk-competitive {
+    background:rgba(255,255,255,0.02);
+    border:1px solid rgba(255,255,255,0.05);
+    border-radius:10px; padding:14px 16px;
+  }
+  .hk-competitive-grid {
+    display:grid; grid-template-columns:1fr 1fr; gap:10px;
+  }
+  .hk-competitive-item {
+    padding:8px 12px;
+    background:rgba(255,255,255,0.02);
+    border:1px solid rgba(255,255,255,0.04);
+    border-radius:8px;
+  }
+  .hk-competitive-q {
+    font-size:0.70rem; font-weight:600; color:var(--text-secondary);
+    margin-bottom:4px;
+  }
+  .hk-competitive-a {
+    font-family:var(--font-mono); font-size:0.66rem;
+    color:var(--text-muted); font-style:italic;
+  }
+  .hk-competitive-footer {
+    text-align:center; margin-top:12px;
+    font-family:var(--font-mono); font-size:0.68rem;
+    color:var(--error); font-weight:600;
+    letter-spacing:0.04em;
+  }
+
+  /* Tools Bar */
+  .hk-tools {
+    padding:16px; margin-bottom:16px;
+    background:rgba(255,255,255,0.02);
+    border:1px solid rgba(255,255,255,0.05);
+    border-radius:12px;
+  }
+  .hk-tools-label {
+    font-size:0.68rem; font-weight:600; color:var(--text-muted);
+    text-transform:uppercase; letter-spacing:0.06em;
+    margin-bottom:10px;
+  }
+  .hk-tools-row {
+    display:flex; gap:8px; flex-wrap:wrap;
+  }
+  .hk-tool-btn {
+    padding:6px 14px; border-radius:8px;
+    font-family:var(--font-ui); font-size:0.72rem; font-weight:600;
+    background:rgba(255,255,255,0.04);
+    border:1px solid rgba(255,255,255,0.08);
+    color:var(--text-secondary); cursor:pointer;
+    transition:all var(--transition-base);
+  }
+  .hk-tool-btn:hover {
+    background:rgba(255,255,255,0.08);
+    border-color:rgba(255,255,255,0.15);
+    color:#fff;
+  }
+  .hk-tool-primary {
+    background:rgba(255,215,0,0.1);
+    border-color:rgba(255,215,0,0.25);
+    color:var(--agent-hawk);
+  }
+  .hk-tool-primary:hover {
+    background:rgba(255,215,0,0.18);
+    border-color:rgba(255,215,0,0.4);
+    box-shadow:0 0 16px rgba(255,215,0,0.1);
+  }
+
+  /* Small Button */
+  .hk-sm-btn {
+    background:rgba(255,215,0,0.1);
+    color:var(--agent-hawk);
+    border:1px solid rgba(255,215,0,0.2);
+    border-radius:6px; padding:3px 10px;
+    font-size:0.66rem; font-weight:600;
+    cursor:pointer;
+    transition:all var(--transition-base);
+  }
+  .hk-sm-btn:hover {
+    background:rgba(255,215,0,0.18);
+    border-color:rgba(255,215,0,0.35);
+  }
+
+  /* Progress Card */
+  .hk-progress-card {
+    background:rgba(255,215,0,0.04);
+    border:1px solid rgba(255,215,0,0.12);
+    border-radius:10px; padding:14px 18px;
+  }
+
+  /* Final Rule */
+  .hk-final-rule {
+    text-align:center; padding:16px 20px;
+    margin:20px 0 8px;
+    font-family:var(--font-mono); font-size:0.72rem;
+    color:var(--text-muted); line-height:1.6;
+    border-top:1px solid rgba(255,215,0,0.06);
+    border-bottom:1px solid rgba(255,215,0,0.06);
+  }
+  .hk-final-rule strong { color:var(--agent-hawk); }
+
+  /* Responsive */
+  @media (max-width:1100px) {
+    .hk-metrics { grid-template-columns:repeat(2,1fr); }
+    .hk-intel-metrics { grid-template-columns:repeat(2,1fr); }
+    .hk-learner-grid { grid-template-columns:repeat(3,1fr); }
+  }
+  @media (max-width:700px) {
+    .hk-metrics { grid-template-columns:1fr; }
+    .hk-intel-metrics { grid-template-columns:1fr 1fr; }
+    .hk-learner-grid { grid-template-columns:repeat(2,1fr); }
+    .hk-header-top { flex-direction:column; }
+    .hk-competitive-grid { grid-template-columns:1fr; }
+  }
