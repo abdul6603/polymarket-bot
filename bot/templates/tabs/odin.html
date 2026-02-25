@@ -1,24 +1,47 @@
-<!-- ODIN — Crypto Futures Swing Trading Bot (Redesigned) -->
+<!-- ODIN — BTC/ETH Futures Swing Trader (Hyperliquid) -->
 <div class="tab-content" id="tab-odin">
 
-  <!-- A: Header + Status Bar -->
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
-    <span id="odin-mode-badge" class="trading-mode-badge trading-mode-paper" style="font-size:0.82rem;padding:5px 16px;">Trading: Paper Money</span>
-    <button class="trading-mode-toggle" id="odin-mode-toggle" onclick="toggleOdinMode()">Switch</button>
-    <span id="odin-cycle-timer" style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:0.82rem;font-weight:700;padding:6px 16px;border-radius:999px;border:1px solid rgba(139,92,246,0.35);background:rgba(139,92,246,0.12);color:var(--agent-odin);transition:box-shadow .3s;">
-      <span style="width:8px;height:8px;border-radius:50%;background:var(--agent-odin);animation:rxPulse 2s ease-in-out infinite;"></span>
-      Next: <span id="odin-cycle-countdown" style="min-width:38px;text-align:center;">--</span>
-      <span style="color:rgba(255,255,255,0.2);">|</span>
-      <span style="font-size:0.7rem;color:var(--text-muted);">#<span id="odin-cycle-num">0</span></span>
-    </span>
-    <button class="btn" onclick="odinRefresh()" style="font-size:0.72rem;font-weight:700;border-color:var(--agent-odin);color:var(--agent-odin);">Refresh</button>
-    <button class="btn" onclick="healthCheckAgent('odin')" style="font-size:0.72rem;">Health Check</button>
-    <span style="margin-left:auto;display:flex;align-items:center;gap:6px;">
-      <input type="text" id="odin-omni-input" placeholder="Coin (e.g. BTC)" style="width:100px;padding:4px 10px;font-size:0.72rem;border:1px solid var(--agent-odin);border-radius:4px;background:transparent;color:var(--text);">
-      <button class="btn" onclick="odinRunOmniCoin()" style="font-size:0.72rem;font-weight:700;border-color:var(--agent-odin);color:#fff;background:var(--agent-odin);">OmniCoin</button>
-    </span>
-    <span class="text-muted" style="font-size:0.66rem;font-style:italic;">"I see everything. I forget nothing."</span>
+  <!-- Hidden compat elements -->
+  <span id="odin-sc-dot" style="display:none;"></span>
+  <span id="odin-sc-timer" style="display:none;"></span>
+  <span id="odin-sc-syms" style="display:none;"></span>
+  <span id="odin-sc-detail" style="display:none;"></span>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       HEADER
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="odin-header">
+    <div class="odin-header-top">
+      <div class="odin-header-left">
+        <h1 class="odin-title">Odin <span class="odin-title-sep">&mdash;</span> <span class="odin-title-role">BTC/ETH Futures Swing Trader</span></h1>
+        <div class="odin-tagline">"I see everything. I forget nothing." &nbsp;&bull;&nbsp; SMC + Macro &nbsp;&bull;&nbsp; Hyperliquid</div>
+      </div>
+      <div class="odin-header-right">
+        <span id="odin-mode-badge" class="trading-mode-badge trading-mode-paper">Trading: Paper Money</span>
+        <button class="trading-mode-toggle" id="odin-mode-toggle" onclick="toggleOdinMode()">Switch</button>
+      </div>
+    </div>
+    <div class="odin-pills-row">
+      <span class="odin-pill odin-pill-on"><span class="odin-pill-dot"></span>CoinGlass Regime</span>
+      <span class="odin-pill odin-pill-on"><span class="odin-pill-dot" style="background:#8B5CF6;box-shadow:0 0 6px #8B5CF6;"></span>SMC Engine</span>
+      <span class="odin-pill"><span class="odin-pill-dot" style="background:#4FC3F7;box-shadow:0 0 6px #4FC3F7;"></span>Macro Alignment</span>
+      <span class="odin-pill"><span class="odin-pill-dot" style="background:#00d4ff;box-shadow:0 0 6px #00d4ff;"></span>Brother Sync</span>
+      <span class="odin-pill"><span class="odin-pill-dot" style="background:#22c55e;box-shadow:0 0 6px #22c55e;"></span>Circuit Breaker</span>
+      <span id="odin-cycle-timer" class="odin-cycle-pill">
+        <span style="width:8px;height:8px;border-radius:50%;background:var(--agent-odin);animation:rxPulse 2s ease-in-out infinite;display:inline-block;"></span>
+        Next: <span id="odin-cycle-countdown" style="min-width:38px;text-align:center;">--</span>
+        <span style="color:rgba(255,255,255,0.12);">|</span>
+        <span style="font-size:0.66rem;color:var(--text-muted);">#<span id="odin-cycle-num">0</span></span>
+      </span>
+      <span style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+        <button class="btn" onclick="odinRefresh()" style="font-size:0.68rem;font-weight:700;border-color:var(--agent-odin);color:var(--agent-odin);">Refresh</button>
+        <button class="btn" onclick="healthCheckAgent('odin')" style="font-size:0.68rem;">Health</button>
+        <input type="text" id="odin-omni-input" placeholder="Coin (e.g. BTC)" style="width:80px;padding:3px 8px;font-size:0.68rem;border:1px solid var(--agent-odin);border-radius:4px;background:transparent;color:var(--text);">
+        <button class="btn" onclick="odinRunOmniCoin()" style="font-size:0.68rem;font-weight:700;border-color:var(--agent-odin);color:#fff;background:var(--agent-odin);">OmniCoin</button>
+      </span>
+    </div>
   </div>
+
   <div class="health-inline" id="odin-health-result"></div>
 
   <!-- Warning Banner -->
@@ -27,10 +50,10 @@
     <span id="odin-warning-text"></span>
   </div>
 
-  <!-- OmniCoin Results (hidden until triggered) -->
+  <!-- OmniCoin Results -->
   <div id="odin-omnicoin-section" class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-odin);display:none;">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-      <h3 class="section-title" style="font-size:0.76rem;margin:0;text-transform:uppercase;letter-spacing:0.06em;color:var(--agent-odin);">OmniCoin: <span id="odin-omni-symbol">--</span></h3>
+      <h3 style="font-size:0.76rem;margin:0;text-transform:uppercase;letter-spacing:0.06em;color:var(--agent-odin);">OmniCoin: <span id="odin-omni-symbol">--</span></h3>
       <span id="odin-omni-confidence" style="font-weight:700;font-size:1rem;padding:2px 10px;border-radius:6px;background:rgba(139,92,246,0.15);color:var(--agent-odin);">--/10</span>
       <span id="odin-omni-bias" class="badge" style="font-size:0.64rem;font-weight:700;padding:2px 10px;">--</span>
       <span id="odin-omni-time" class="text-muted" style="font-size:0.64rem;margin-left:auto;">--</span>
@@ -40,111 +63,393 @@
     <div id="odin-omni-loading" style="display:none;text-align:center;padding:20px;color:var(--agent-odin);font-size:0.8rem;">Analyzing... <span style="animation:pulse 1.5s infinite;">&#9679;</span></div>
   </div>
 
-  <!-- B: Hero Metric Cards -->
-  <div class="grid-4" style="margin-bottom:14px;">
-    <div class="stat-card" data-accent="odin">
-      <div class="stat-value" id="odin-balance" style="font-size:1.5rem;color:var(--agent-odin);">$200.00</div>
-      <div class="stat-label">Balance</div>
+  <!-- ═══════════════════════════════════════════════════════════════
+       HERO METRICS (4 glass-cards)
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="odin-metrics">
+    <div class="odin-metric-card">
+      <div class="odin-metric-icon" style="background:rgba(139,92,246,0.06);border-color:rgba(139,92,246,0.15);color:var(--agent-odin);">R</div>
+      <div class="odin-metric-body">
+        <div class="odin-metric-val" id="odin-regime-score" style="color:var(--agent-odin);">50</div>
+        <div class="odin-metric-lbl">Regime Score</div>
+        <div class="odin-metric-sub"><span id="odin-regime" style="font-weight:600;">--</span> &middot; <span id="odin-regime-bias" style="font-weight:600;">--</span></div>
+      </div>
     </div>
-    <div class="stat-card" data-accent="odin">
-      <div class="stat-value" id="odin-total-pnl" style="font-size:1.5rem;">$0.00</div>
-      <div class="stat-label">Total P&amp;L</div>
+    <div class="odin-metric-card">
+      <div class="odin-metric-icon" style="background:rgba(255,215,0,0.06);border-color:rgba(255,215,0,0.15);color:#FFD700;">C</div>
+      <div class="odin-metric-body">
+        <div class="odin-metric-val" id="odin-conviction-badge" style="color:#FFD700;">--/10</div>
+        <div class="odin-metric-lbl">Conviction Level</div>
+        <div class="odin-metric-sub">Tier: <span id="odin-conv-tier" style="font-weight:600;">--</span></div>
+      </div>
     </div>
-    <div class="stat-card" data-accent="odin">
-      <div class="stat-value" id="odin-winrate" style="font-size:1.5rem;">--</div>
-      <div class="stat-label">Win Rate</div>
+    <div class="odin-metric-card">
+      <div class="odin-metric-icon" style="background:rgba(0,255,136,0.06);border-color:rgba(0,255,136,0.15);color:var(--success);">$</div>
+      <div class="odin-metric-body">
+        <div class="odin-metric-val" id="odin-total-pnl">$0.00</div>
+        <div class="odin-metric-lbl">Total P&amp;L</div>
+        <div class="odin-metric-sub">Opps: <span id="odin-regime-opps" style="font-weight:600;color:var(--agent-odin);">0</span> &middot; Bal: <span id="odin-balance" style="font-weight:600;">$200.00</span></div>
+      </div>
     </div>
-    <div class="stat-card" data-accent="odin">
-      <div class="stat-value" id="odin-drawdown" style="font-size:1.5rem;">0%</div>
-      <div class="stat-label">Drawdown</div>
+    <div class="odin-metric-card">
+      <div class="odin-metric-icon" style="background:rgba(0,212,255,0.06);border-color:rgba(0,212,255,0.15);color:#00d4ff;">%</div>
+      <div class="odin-metric-body">
+        <div class="odin-metric-val" id="odin-winrate">--</div>
+        <div class="odin-metric-lbl">Win Rate</div>
+        <div class="odin-metric-sub">Sharpe: <span id="odin-d-sharpe" style="font-weight:600;">--</span> &middot; DD: <span id="odin-drawdown" style="font-weight:600;">0%</span></div>
+      </div>
     </div>
   </div>
 
-  <!-- C: Regime Intelligence Panel -->
-  <div class="glass-card" style="margin-bottom:14px;border-left:3px solid var(--agent-odin);">
-    <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">CoinGlass Regime</h3>
-    <div class="grid-6" style="margin-bottom:8px;">
-      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-regime" style="font-size:0.9rem;color:var(--agent-odin);">--</div><div class="stat-label">Regime</div></div>
-      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-regime-score">50</div><div class="stat-label">Score (0-100)</div></div>
-      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-regime-bias">--</div><div class="stat-label">Direction</div></div>
-      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-regime-opps">0</div><div class="stat-label">Opportunities</div></div>
-      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-top-long">--</div><div class="stat-label">Top Long</div></div>
-      <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-top-short">--</div><div class="stat-label">Top Short</div></div>
-    </div>
-    <div class="collapse-section default-open" style="margin-bottom:0;">
-      <div class="collapse-trigger">
-        <h2 class="section-title" data-accent="odin" style="margin-bottom:0;font-size:0.7rem;">Regime Opportunities</h2>
+  <!-- ═══════════════════════════════════════════════════════════════
+       SUB-TAB NAVIGATION
+       ═══════════════════════════════════════════════════════════════ -->
+  <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+    <button class="odin-subtab" data-sub="overview" onclick="odinSwitchSub('overview')">Overview</button>
+    <button class="odin-subtab active" data-sub="regime" onclick="odinSwitchSub('regime')">&#9733; Regime Monitor</button>
+    <button class="odin-subtab" data-sub="opportunities" onclick="odinSwitchSub('opportunities')">Opportunities</button>
+    <button class="odin-subtab" data-sub="positions" onclick="odinSwitchSub('positions')">Open Positions</button>
+    <button class="odin-subtab" data-sub="history" onclick="odinSwitchSub('history')">Trade History</button>
+    <button class="odin-subtab" data-sub="performance" onclick="odinSwitchSub('performance')">Performance</button>
+    <button class="odin-subtab" data-sub="intelligence" onclick="odinSwitchSub('intelligence')">Intelligence</button>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL 1: OVERVIEW
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="odin-panel" id="odin-panel-overview" style="display:none;">
+
+    <!-- Circuit Breaker & Portfolio Guard -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;border-left:3px solid var(--agent-odin);">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Circuit Breaker</span>
+        <span id="odin-cb-status" style="font-weight:700;font-size:0.82rem;color:var(--success);">TRADING ALLOWED</span>
+        <span id="odin-cb-reason" class="text-muted" style="font-size:0.72rem;"></span>
+        <span class="text-muted" style="font-size:0.72rem;margin-left:auto;">Size mod: <span id="odin-size-mod">1.0x</span></span>
       </div>
-      <div class="collapse-body">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-daily-pnl" style="font-size:1rem;">$0.00</div>
+          <div class="stat-label" style="font-size:0.64rem;">Daily P&amp;L</div>
+        </div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-weekly-pnl" style="font-size:1rem;">$0.00</div>
+          <div class="stat-label" style="font-size:0.64rem;">Weekly P&amp;L</div>
+        </div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-peak-balance" style="font-size:1rem;">$200.00</div>
+          <div class="stat-label" style="font-size:0.64rem;">Peak Balance</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Portfolio Guard -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;">
+      <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;">Portfolio Guard</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px;">
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-pg-heat" style="font-size:0.9rem;">0%</div>
+          <div class="stat-label" style="font-size:0.64rem;">Portfolio Heat</div>
+        </div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-pg-direction" style="font-size:0.9rem;">0L / 0S</div>
+          <div class="stat-label" style="font-size:0.64rem;">Direction Balance</div>
+        </div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-pg-positions" style="font-size:0.9rem;">0 / 5</div>
+          <div class="stat-label" style="font-size:0.64rem;">Open / Max</div>
+        </div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-pg-universe" style="font-size:0.9rem;">0</div>
+          <div class="stat-label" style="font-size:0.64rem;">Coin Universe</div>
+        </div>
+      </div>
+      <div id="odin-pg-exposure" style="font-size:0.70rem;color:var(--text-secondary);"></div>
+      <div id="odin-pg-blacklist" style="margin-top:4px;font-size:0.70rem;"></div>
+    </div>
+
+    <!-- WebSocket & Pending Orders -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Real-Time Feed</span>
+        <span id="odin-ws-dot" style="width:8px;height:8px;border-radius:50%;background:#ef4444;"></span>
+        <span id="odin-ws-label" style="font-size:0.68rem;color:var(--text-muted);">Disconnected</span>
+        <span id="odin-ws-stats" style="font-size:0.64rem;color:var(--text-secondary);margin-left:auto;"></span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px;">
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-ws-tick-age" style="font-size:0.9rem;">--</div>
+          <div class="stat-label" style="font-size:0.64rem;">Last Tick</div>
+        </div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-ws-events" style="font-size:0.9rem;">0</div>
+          <div class="stat-label" style="font-size:0.64rem;">Events</div>
+        </div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-ws-pending" style="font-size:0.9rem;">0</div>
+          <div class="stat-label" style="font-size:0.64rem;">Pending Orders</div>
+        </div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-ws-coins" style="font-size:0.9rem;">0</div>
+          <div class="stat-label" style="font-size:0.64rem;">Tracked Coins</div>
+        </div>
+      </div>
+      <div id="odin-pending-orders-table" style="font-size:0.70rem;"></div>
+    </div>
+
+    <!-- Config -->
+    <div class="glass-card" style="padding:14px;">
+      <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px;">Configuration</div>
+      <div id="odin-config" class="text-muted" style="font-family:var(--font-mono);font-size:0.72rem;">Loading config...</div>
+    </div>
+
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL 2: REGIME MONITOR (DEFAULT — visible on load)
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="odin-panel" id="odin-panel-regime">
+
+    <!-- Large Regime Display -->
+    <div class="glass-card" style="padding:16px;margin-bottom:14px;border:1px solid rgba(139,92,246,0.2);text-align:center;">
+      <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:6px;">CoinGlass Regime</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:24px;margin-bottom:12px;">
+        <div>
+          <div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Top Long</div>
+          <div id="odin-top-long" style="font-size:1.1rem;font-weight:800;font-family:var(--font-mono);color:var(--success);">--</div>
+        </div>
+        <div>
+          <div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Top Short</div>
+          <div id="odin-top-short" style="font-size:1.1rem;font-weight:800;font-family:var(--font-mono);color:var(--error);">--</div>
+        </div>
+      </div>
+      <button class="btn" onclick="odinRefresh()" style="font-size:0.72rem;font-weight:700;border-color:var(--agent-odin);color:#fff;background:var(--agent-odin);padding:6px 20px;border-radius:6px;">Force Regime Scan</button>
+    </div>
+
+    <!-- Conviction Component Bars -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Conviction Engine</span>
+        <span style="font-size:0.72rem;font-weight:700;color:var(--agent-odin);">Score: <span id="odin-conv-score">--</span>/100</span>
+        <span style="font-size:0.68rem;color:var(--text-muted);">Risk mult: <span id="odin-conv-mult">--</span></span>
+        <span id="odin-conv-rails" class="text-muted" style="font-size:0.64rem;margin-left:auto;"></span>
+      </div>
+      <div id="odin-conviction-bars" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;">
+        <div class="text-muted" style="font-size:0.72rem;grid-column:span 2;">No conviction data yet</div>
+      </div>
+    </div>
+
+    <!-- Last Signal -->
+    <div class="glass-card" style="padding:14px;">
+      <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px;">Last Signal</div>
+      <div id="odin-last-signal" class="text-muted" style="font-family:var(--font-mono);font-size:0.74rem;">No signal yet</div>
+    </div>
+
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL 3: OPPORTUNITIES
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="odin-panel" id="odin-panel-opportunities" style="display:none;">
+
+    <div class="glass-card" style="padding:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Regime Opportunities</span>
+        </div>
+        <button class="btn" onclick="odinRefresh()" style="font-size:0.68rem;font-weight:600;border-color:var(--agent-odin);color:var(--agent-odin);">Refresh</button>
+      </div>
+      <div class="hk-table-wrap">
         <table class="data-table">
-          <thead><tr><th>Symbol</th><th>Direction</th><th>Score</th><th>Reasons</th></tr></thead>
-          <tbody id="odin-opps-tbody"><tr><td colspan="4" class="text-muted">No opportunities detected</td></tr></tbody>
+          <thead>
+            <tr><th>Symbol</th><th>Direction</th><th>Score</th><th>Reasons</th></tr>
+          </thead>
+          <tbody id="odin-opps-tbody">
+            <tr><td colspan="4" class="text-muted" style="text-align:center;padding:24px;">No opportunities detected</td></tr>
+          </tbody>
         </table>
       </div>
     </div>
+
   </div>
 
-  <!-- D: Open Positions -->
-  <div class="collapse-section default-open">
-    <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="odin" style="margin-bottom:0;">Open Positions <span id="odin-positions-badge" style="font-size:0.56rem;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:8px;vertical-align:middle;"></span></h2>
-    </div>
-    <div class="collapse-body">
-      <table class="data-table">
-        <thead><tr><th>Asset</th><th>Dir</th><th>Lev</th><th>Entry</th><th>Now</th><th>SL</th><th>TP</th><th>Qty</th><th>Margin</th><th>P&amp;L</th></tr></thead>
-        <tbody id="odin-positions-tbody"><tr><td colspan="10" class="text-muted">No open positions</td></tr></tbody>
-      </table>
-    </div>
-  </div>
 
-  <!-- ═══════════════════════════════════════════════════════════
-       E: INTELLIGENCE & SELF-IMPROVEMENT (THE STAR SECTION)
-       ═══════════════════════════════════════════════════════════ -->
-  <div class="glass-card" style="margin-bottom:14px;padding:20px;border:1px solid transparent;background-image:linear-gradient(var(--glass-bg), var(--glass-bg)), linear-gradient(135deg, rgba(139,92,246,0.4), rgba(0,212,255,0.4));background-origin:border-box;background-clip:padding-box, border-box;border-radius:var(--radius);">
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-      <h3 class="section-title" style="font-size:0.82rem;margin:0;text-transform:uppercase;letter-spacing:0.08em;color:var(--agent-odin);">Intelligence &amp; Self-Improvement</h3>
-      <span id="odin-intel-badge" style="font-size:0.64rem;font-weight:700;padding:2px 10px;border-radius:999px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.3);color:var(--agent-odin);">Score: --</span>
-    </div>
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL 4: OPEN POSITIONS
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="odin-panel" id="odin-panel-positions" style="display:none;">
 
-    <!-- E1: Intelligence Score Ring + E2: Four Pillars -->
-    <div style="display:flex;gap:20px;align-items:center;margin-bottom:18px;flex-wrap:wrap;">
-      <!-- SVG Ring -->
-      <div style="flex-shrink:0;text-align:center;">
-        <svg id="odin-intel-ring" width="130" height="130" viewBox="0 0 130 130">
-          <circle cx="65" cy="65" r="52" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
-          <circle id="odin-intel-ring-fill" cx="65" cy="65" r="52" fill="none" stroke="var(--agent-odin)" stroke-width="8" stroke-linecap="round"
-                  stroke-dasharray="326.73" stroke-dashoffset="326.73" transform="rotate(-90 65 65)"
-                  style="transition:stroke-dashoffset 1.2s ease-out;"/>
-          <text x="65" y="60" text-anchor="middle" fill="var(--text)" font-family="var(--font-heading)" font-size="28" font-weight="700">
-            <tspan id="odin-intel-score-text">0</tspan>
-          </text>
-          <text x="65" y="78" text-anchor="middle" fill="var(--text-muted)" font-family="var(--font-ui)" font-size="10">INTELLIGENCE</text>
-        </svg>
+    <div class="glass-card" style="padding:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Open Positions</span>
+          <span id="odin-positions-badge" style="font-size:0.56rem;font-weight:700;padding:2px 8px;border-radius:4px;"></span>
+        </div>
       </div>
-      <!-- Four Pillars -->
-      <div style="flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;min-width:320px;">
-        <div class="stat-card" data-accent="odin">
-          <div class="stat-value" id="odin-intel-decisions" style="font-size:1rem;">0</div>
-          <div class="stat-label">Decisions Logged</div>
+      <div class="hk-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Asset</th><th>Dir</th><th>Lev</th><th>Entry</th><th>Now</th><th>SL</th><th>TP</th><th>Qty</th><th>Margin</th><th>P&amp;L</th></tr>
+          </thead>
+          <tbody id="odin-positions-tbody">
+            <tr><td colspan="10" class="text-muted" style="text-align:center;padding:24px;">No open positions</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL 5: TRADE HISTORY
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="odin-panel" id="odin-panel-history" style="display:none;">
+
+    <!-- Trade Stats Summary -->
+    <div id="odin-trades-summary" style="display:none;margin-bottom:14px;">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-th-total" style="font-size:1rem;">0</div>
+          <div class="stat-label" style="font-size:0.64rem;">Total Trades</div>
         </div>
-        <div class="stat-card" data-accent="odin">
-          <div class="stat-value" id="odin-intel-patterns" style="font-size:1rem;">0</div>
-          <div class="stat-label">Patterns Learned</div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-th-wr" style="font-size:1rem;">--</div>
+          <div class="stat-label" style="font-size:0.64rem;">Win Rate</div>
         </div>
-        <div class="stat-card" data-accent="odin">
-          <div class="stat-value" id="odin-intel-gen" style="font-size:1rem;">0</div>
-          <div class="stat-label">Evolution Gen</div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-th-pnl" style="font-size:1rem;">$0</div>
+          <div class="stat-label" style="font-size:0.64rem;">Net P&amp;L</div>
         </div>
-        <div class="stat-card" data-accent="odin">
-          <div class="stat-value" id="odin-intel-knowledge" style="font-size:1rem;">0</div>
-          <div class="stat-label">Knowledge Items</div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-th-avghold" style="font-size:1rem;">--</div>
+          <div class="stat-label" style="font-size:0.64rem;">Avg Hold</div>
         </div>
       </div>
     </div>
 
-    <!-- E3: Self-Improvement Loop -->
-    <div style="margin-bottom:18px;">
-      <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px;">Self-Improvement Loop</div>
+    <!-- Trade Count Badge (hidden, used by JS) -->
+    <span id="odin-trades-count-badge" style="display:none;">0</span>
+
+    <!-- History Table -->
+    <div class="glass-card" style="padding:14px;">
+      <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;">Trade Log</div>
+      <div class="hk-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Time</th><th>Symbol</th><th>Side</th><th>Mode</th><th>Entry</th><th>Exit</th><th>P&amp;L</th><th>Lev</th><th>Reason</th><th>Hold</th></tr>
+          </thead>
+          <tbody id="odin-trades-tbody">
+            <tr><td colspan="10" class="text-muted" style="text-align:center;padding:24px;font-style:italic;">Odin is scanning markets &mdash; closed trades will appear here</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL 6: PERFORMANCE INSIGHTS
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="odin-panel" id="odin-panel-performance" style="display:none;">
+
+    <!-- Edge Tracker -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Edge Tracker</span>
+        <span id="odin-edge-dot" style="width:8px;height:8px;border-radius:50%;background:#6b7280;"></span>
+        <span id="odin-edge-label" style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">--</span>
+        <span id="odin-edge-recommendation" style="font-size:0.64rem;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.05);color:var(--text-muted);margin-left:auto;">--</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-d-edge-scalar" style="font-size:1rem;">1.0x</div>
+          <div class="stat-label" style="font-size:0.64rem;">Edge Scalar</div>
+        </div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-d-rolling-wr" style="font-size:1rem;">--</div>
+          <div class="stat-label" style="font-size:0.64rem;">Rolling WR</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Health Monitor -->
+    <div class="glass-card" style="padding:14px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Health Monitor</span>
+        <span id="odin-health-dot" style="width:8px;height:8px;border-radius:50%;background:#6b7280;"></span>
+        <span id="odin-health-label" style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">--</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px;">
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-d-flags" style="font-size:1rem;">0</div>
+          <div class="stat-label" style="font-size:0.64rem;">Red Flags</div>
+        </div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" style="font-size:1rem;color:var(--text-muted);">--</div>
+          <div class="stat-label" style="font-size:0.64rem;">Risk Status</div>
+        </div>
+      </div>
+      <div id="odin-health-issues" style="font-size:0.66rem;color:var(--text-secondary);"></div>
+    </div>
+
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL 7: INTELLIGENCE & SELF-IMPROVEMENT
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="odin-panel" id="odin-panel-intelligence" style="display:none;">
+
+    <!-- Intelligence Score Ring + Pillars -->
+    <div class="glass-card" style="padding:16px;margin-bottom:14px;border:1px solid transparent;background-image:linear-gradient(var(--glass-bg), var(--glass-bg)), linear-gradient(135deg, rgba(139,92,246,0.4), rgba(0,212,255,0.4));background-origin:border-box;background-clip:padding-box, border-box;border-radius:var(--radius);">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--agent-odin);">Intelligence &amp; Self-Improvement</span>
+        <span id="odin-intel-badge" style="font-size:0.64rem;font-weight:700;padding:2px 10px;border-radius:999px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.3);color:var(--agent-odin);">Score: --</span>
+      </div>
+      <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
+        <!-- SVG Ring -->
+        <div style="flex-shrink:0;text-align:center;">
+          <svg id="odin-intel-ring" width="130" height="130" viewBox="0 0 130 130">
+            <circle cx="65" cy="65" r="52" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+            <circle id="odin-intel-ring-fill" cx="65" cy="65" r="52" fill="none" stroke="var(--agent-odin)" stroke-width="8" stroke-linecap="round"
+                    stroke-dasharray="326.73" stroke-dashoffset="326.73" transform="rotate(-90 65 65)"
+                    style="transition:stroke-dashoffset 1.2s ease-out;"/>
+            <text x="65" y="60" text-anchor="middle" fill="var(--text)" font-family="var(--font-heading)" font-size="28" font-weight="700">
+              <tspan id="odin-intel-score-text">0</tspan>
+            </text>
+            <text x="65" y="78" text-anchor="middle" fill="var(--text-muted)" font-family="var(--font-ui)" font-size="10">INTELLIGENCE</text>
+          </svg>
+        </div>
+        <!-- Four Pillars -->
+        <div style="flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;min-width:320px;">
+          <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+            <div class="stat-value" id="odin-intel-decisions" style="font-size:1rem;">0</div>
+            <div class="stat-label" style="font-size:0.64rem;">Decisions Logged</div>
+          </div>
+          <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+            <div class="stat-value" id="odin-intel-patterns" style="font-size:1rem;">0</div>
+            <div class="stat-label" style="font-size:0.64rem;">Patterns Learned</div>
+          </div>
+          <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+            <div class="stat-value" id="odin-intel-gen" style="font-size:1rem;">0</div>
+            <div class="stat-label" style="font-size:0.64rem;">Evolution Gen</div>
+          </div>
+          <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+            <div class="stat-value" id="odin-intel-knowledge" style="font-size:1rem;">0</div>
+            <div class="stat-label" style="font-size:0.64rem;">Knowledge Items</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Self-Improvement Loop -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;">
+      <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;">Self-Improvement Loop</div>
       <div style="display:flex;align-items:center;gap:0;justify-content:center;flex-wrap:wrap;">
         <div id="odin-loop-trade" style="flex:1;min-width:120px;text-align:center;padding:10px 8px;background:rgba(139,92,246,0.08);border-radius:8px;border:1px solid rgba(139,92,246,0.2);">
           <div style="font-size:1.1rem;margin-bottom:4px;">&#128200;</div>
@@ -176,151 +481,97 @@
       </div>
     </div>
 
-    <!-- E4: Conviction Calibrator -->
-    <div style="margin-bottom:16px;">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-        <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Conviction Engine</span>
-        <span id="odin-conviction-badge" class="badge" style="font-size:0.56rem;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(139,92,246,0.15);border:1px solid var(--agent-odin);color:var(--agent-odin);">--/10</span>
-        <span style="font-size:0.72rem;font-weight:700;color:var(--agent-odin);">Score: <span id="odin-conv-score">--</span>/100</span>
-        <span id="odin-conv-tier" class="badge" style="font-size:0.64rem;padding:2px 8px;border-radius:4px;background:rgba(139,92,246,0.1);color:var(--text-muted);">--</span>
-        <span style="font-size:0.68rem;color:var(--text-muted);">Risk mult: <span id="odin-conv-mult">--</span></span>
-        <span id="odin-conv-rails" class="text-muted" style="font-size:0.64rem;margin-left:auto;"></span>
-      </div>
-      <div id="odin-conviction-bars" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;">
-        <div class="text-muted" style="font-size:0.72rem;grid-column:span 2;">No conviction data yet</div>
-      </div>
+    <!-- Learned Patterns -->
+    <div class="glass-card" style="padding:14px;">
+      <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px;">Learned Patterns</div>
+      <div id="odin-top-patterns" style="font-size:0.72rem;color:var(--text-secondary);">No patterns learned yet &mdash; needs more trade data</div>
     </div>
 
-    <!-- E5: Edge Tracker + E6: Health Monitor (inline) -->
-    <div style="display:flex;gap:14px;margin-bottom:16px;flex-wrap:wrap;">
-      <!-- Edge -->
-      <div style="flex:1;min-width:200px;padding:10px 14px;background:rgba(139,92,246,0.05);border-radius:8px;border:1px solid rgba(139,92,246,0.15);">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-          <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Edge Tracker</span>
-          <span id="odin-edge-dot" style="width:8px;height:8px;border-radius:50%;background:#6b7280;"></span>
-          <span id="odin-edge-label" style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">--</span>
-          <span id="odin-edge-recommendation" style="font-size:0.64rem;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.05);color:var(--text-muted);margin-left:auto;">--</span>
-        </div>
-        <div style="display:flex;gap:8px;">
-          <div class="stat-card" data-accent="odin" style="flex:1;"><div class="stat-value" id="odin-d-sharpe" style="font-size:0.9rem;">--</div><div class="stat-label">Sharpe</div></div>
-          <div class="stat-card" data-accent="odin" style="flex:1;"><div class="stat-value" id="odin-d-edge-scalar" style="font-size:0.9rem;">1.0x</div><div class="stat-label">Edge Scalar</div></div>
-        </div>
-      </div>
-      <!-- Health -->
-      <div style="flex:1;min-width:200px;padding:10px 14px;background:rgba(139,92,246,0.05);border-radius:8px;border:1px solid rgba(139,92,246,0.15);">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-          <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Health Monitor</span>
-          <span id="odin-health-dot" style="width:8px;height:8px;border-radius:50%;background:#6b7280;"></span>
-          <span id="odin-health-label" style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">--</span>
-        </div>
-        <div style="display:flex;gap:8px;">
-          <div class="stat-card" data-accent="odin" style="flex:1;"><div class="stat-value" id="odin-d-flags" style="font-size:0.9rem;">0</div><div class="stat-label">Red Flags</div></div>
-          <div class="stat-card" data-accent="odin" style="flex:1;"><div class="stat-value" id="odin-d-rolling-wr" style="font-size:0.9rem;">--</div><div class="stat-label">Rolling WR</div></div>
-        </div>
-        <div id="odin-health-issues" style="font-size:0.66rem;color:var(--text-secondary);margin-top:6px;"></div>
-      </div>
-    </div>
-
-    <!-- E7: Learned Patterns -->
-    <div style="padding:8px 12px;background:rgba(139,92,246,0.04);border-radius:6px;border:1px solid rgba(139,92,246,0.1);">
-      <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Learned Patterns</span>
-      <div id="odin-top-patterns" style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px;">No patterns learned yet &mdash; needs more trade data</div>
-    </div>
-  </div>
-  <!-- END Intelligence Section -->
-
-  <!-- F: Trade History -->
-  <div class="collapse-section default-open">
-    <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="odin" style="margin-bottom:0;">Trade History <span id="odin-trades-count-badge" style="font-size:0.56rem;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:8px;background:rgba(139,92,246,0.15);border:1px solid var(--agent-odin);color:var(--agent-odin);vertical-align:middle;">0</span></h2>
-    </div>
-    <div class="collapse-body">
-      <div id="odin-trades-summary" style="display:none;margin-bottom:10px;">
-        <div style="display:flex;flex-wrap:wrap;gap:8px;">
-          <div class="stat-card" data-accent="odin" style="flex:1;min-width:100px;"><div class="stat-value" id="odin-th-total" style="font-size:0.9rem;">0</div><div class="stat-label">Total Trades</div></div>
-          <div class="stat-card" data-accent="odin" style="flex:1;min-width:100px;"><div class="stat-value" id="odin-th-wr" style="font-size:0.9rem;">--</div><div class="stat-label">Win Rate</div></div>
-          <div class="stat-card" data-accent="odin" style="flex:1;min-width:100px;"><div class="stat-value" id="odin-th-pnl" style="font-size:0.9rem;">$0</div><div class="stat-label">Net P&amp;L</div></div>
-          <div class="stat-card" data-accent="odin" style="flex:1;min-width:100px;"><div class="stat-value" id="odin-th-avghold" style="font-size:0.9rem;">--</div><div class="stat-label">Avg Hold</div></div>
-        </div>
-      </div>
-      <table class="data-table">
-        <thead><tr><th>Time</th><th>Symbol</th><th>Side</th><th>Mode</th><th>Entry</th><th>Exit</th><th>P&amp;L</th><th>Lev</th><th>Reason</th><th>Hold</th></tr></thead>
-        <tbody id="odin-trades-tbody"><tr><td colspan="10" class="text-muted" style="text-align:center;padding:20px;font-style:italic;">Odin is scanning markets &mdash; closed trades will appear here</td></tr></tbody>
-      </table>
-    </div>
   </div>
 
-  <!-- G: Circuit Breaker + Portfolio Guard -->
-  <div class="collapse-section">
-    <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="odin" style="margin-bottom:0;">Circuit Breaker &amp; Portfolio Guard</h2>
-    </div>
-    <div class="collapse-body">
-      <!-- Circuit Breaker -->
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
-        <span id="odin-cb-status" style="font-weight:700;font-size:0.82rem;color:var(--success);">TRADING ALLOWED</span>
-        <span id="odin-cb-reason" class="text-muted" style="font-size:0.72rem;"></span>
-        <span class="text-muted" style="font-size:0.72rem;margin-left:auto;">Size mod: <span id="odin-size-mod">1.0x</span></span>
-      </div>
-      <div class="grid-3" style="margin-bottom:12px;">
-        <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-daily-pnl">$0.00</div><div class="stat-label">Daily P&amp;L</div></div>
-        <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-weekly-pnl">$0.00</div><div class="stat-label">Weekly P&amp;L</div></div>
-        <div class="stat-card" data-accent="odin"><div class="stat-value" id="odin-peak-balance">$200.00</div><div class="stat-label">Peak Balance</div></div>
-      </div>
-      <!-- Portfolio Guard -->
-      <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:6px;">Portfolio Guard</div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
-        <div class="stat-card" data-accent="odin" style="flex:1;min-width:120px;"><div class="stat-value" id="odin-pg-heat">0%</div><div class="stat-label">Portfolio Heat</div></div>
-        <div class="stat-card" data-accent="odin" style="flex:1;min-width:120px;"><div class="stat-value" id="odin-pg-direction">0L / 0S</div><div class="stat-label">Direction Balance</div></div>
-        <div class="stat-card" data-accent="odin" style="flex:1;min-width:120px;"><div class="stat-value" id="odin-pg-positions">0 / 5</div><div class="stat-label">Open / Max</div></div>
-        <div class="stat-card" data-accent="odin" style="flex:1;min-width:120px;"><div class="stat-value" id="odin-pg-universe">0</div><div class="stat-label">Coin Universe</div></div>
-      </div>
-      <div id="odin-pg-exposure" style="font-size:0.7rem;color:var(--text-secondary);"></div>
-      <div id="odin-pg-blacklist" style="margin-top:4px;font-size:0.7rem;"></div>
-    </div>
-  </div>
 
-  <!-- H: Real-Time Feed + Pending Orders -->
-  <div class="collapse-section">
-    <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="odin" style="margin-bottom:0;">Real-Time Feed &amp; Pending Orders</h2>
-    </div>
-    <div class="collapse-body">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-        <span id="odin-ws-dot" style="width:8px;height:8px;border-radius:50%;background:#ef4444;"></span>
-        <span id="odin-ws-label" style="font-size:0.68rem;color:var(--text-muted);">Disconnected</span>
-        <span id="odin-ws-stats" style="font-size:0.64rem;color:var(--text-secondary);margin-left:auto;"></span>
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
-        <div class="stat-card" data-accent="odin" style="flex:1;min-width:100px;"><div class="stat-value" id="odin-ws-tick-age" style="font-size:0.9rem;">--</div><div class="stat-label">Last Tick</div></div>
-        <div class="stat-card" data-accent="odin" style="flex:1;min-width:100px;"><div class="stat-value" id="odin-ws-events" style="font-size:0.9rem;">0</div><div class="stat-label">Events</div></div>
-        <div class="stat-card" data-accent="odin" style="flex:1;min-width:100px;"><div class="stat-value" id="odin-ws-pending" style="font-size:0.9rem;">0</div><div class="stat-label">Pending Orders</div></div>
-        <div class="stat-card" data-accent="odin" style="flex:1;min-width:100px;"><div class="stat-value" id="odin-ws-coins" style="font-size:0.9rem;">0</div><div class="stat-label">Tracked Coins</div></div>
-      </div>
-      <div id="odin-pending-orders-table" style="font-size:0.7rem;"></div>
-    </div>
+  <!-- Final Rule -->
+  <div style="margin-top:20px;padding:16px;text-align:center;font-size:0.72rem;color:var(--text-muted);border-top:1px solid rgba(139,92,246,0.1);">
+    This is a probabilistic engine competing against institutions, algos, and market makers. <strong style="color:var(--agent-odin);">Discipline is the edge.</strong>
   </div>
-
-  <!-- I: Config + Last Signal -->
-  <div class="collapse-section">
-    <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="odin" style="margin-bottom:0;">Config &amp; Last Signal</h2>
-    </div>
-    <div class="collapse-body">
-      <div id="odin-config" class="text-muted" style="font-family:var(--font-mono);font-size:0.72rem;margin-bottom:10px;">Loading config...</div>
-      <div id="odin-last-signal" class="text-muted" style="font-family:var(--font-mono);font-size:0.74rem;">No signal yet</div>
-    </div>
-  </div>
-
-  <!-- Hidden compat elements -->
-  <span id="odin-sc-dot" style="display:none;"></span>
-  <span id="odin-sc-timer" style="display:none;"></span>
-  <span id="odin-sc-syms" style="display:none;"></span>
-  <span id="odin-sc-detail" style="display:none;"></span>
 
 </div>
 
+<!-- ═══ Odin Sub-Tab Styles ═══ -->
+<style>
+.odin-header { margin-bottom:14px; }
+.odin-header-top { display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap; }
+.odin-header-left { flex:1;min-width:240px; }
+.odin-header-right { display:flex;align-items:center;gap:8px; }
+.odin-title { font-size:1.1rem;font-weight:800;margin:0;font-family:var(--font-heading);letter-spacing:-0.02em; }
+.odin-title-sep { color:var(--text-muted);font-weight:300; }
+.odin-title-role { color:var(--text-secondary);font-weight:400;font-size:0.82rem; }
+.odin-tagline { font-size:0.66rem;color:var(--text-muted);font-style:italic;margin-top:2px; }
+.odin-pills-row { display:flex;align-items:center;gap:8px;flex-wrap:wrap; }
+.odin-pill {
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 12px;border-radius:20px;font-size:0.68rem;font-weight:600;
+  font-family:var(--font-mono);background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);transition:all 0.2s;
+}
+.odin-pill:hover { border-color:rgba(255,255,255,0.15); }
+.odin-pill-on { border-color:rgba(139,92,246,0.3);background:rgba(139,92,246,0.08); }
+.odin-pill-dot { width:6px;height:6px;border-radius:50%;background:var(--agent-odin);box-shadow:0 0 6px var(--agent-odin);display:inline-block; }
+.odin-cycle-pill {
+  display:inline-flex;align-items:center;gap:7px;
+  font-family:var(--font-mono);font-size:0.72rem;font-weight:700;
+  padding:4px 14px;border-radius:999px;
+  border:1px solid rgba(139,92,246,0.35);background:rgba(139,92,246,0.12);
+  color:var(--agent-odin);transition:box-shadow .3s;
+}
+.odin-metrics {
+  display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;
+}
+.odin-metric-card {
+  display:flex;align-items:center;gap:12px;
+  padding:14px 16px;border-radius:var(--radius);
+  background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-border);
+  transition:border-color 200ms ease,box-shadow 200ms ease,transform 200ms ease;
+}
+.odin-metric-card:hover { border-color:rgba(255,255,255,0.1);box-shadow:0 4px 24px rgba(0,0,0,0.3);transform:translateY(-1px); }
+.odin-metric-icon {
+  width:36px;height:36px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-family:var(--font-mono);font-size:0.9rem;
+  border:1px solid transparent;flex-shrink:0;
+}
+.odin-metric-body { flex:1;min-width:0; }
+.odin-metric-val { font-size:1.1rem;font-weight:800;font-family:var(--font-mono);line-height:1.2; }
+.odin-metric-lbl { font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:1px; }
+.odin-metric-sub { font-size:0.60rem;color:var(--text-muted);margin-top:2px; }
+.odin-subtab {
+  background: var(--surface-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 5px 16px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.odin-subtab:hover { color: var(--text); border-color: var(--text-muted); }
+.odin-subtab.active { background: var(--agent-odin); color: #fff; border-color: var(--agent-odin); }
+</style>
+
+<!-- ═══ Odin Sub-Tab Switching + Inline JS ═══ -->
 <script>
+function odinSwitchSub(name) {
+  document.querySelectorAll('.odin-panel').forEach(function(p) { p.style.display = 'none'; });
+  var panel = document.getElementById('odin-panel-' + name);
+  if (panel) panel.style.display = '';
+  document.querySelectorAll('.odin-subtab').forEach(function(b) {
+    b.classList.toggle('active', b.getAttribute('data-sub') === name);
+  });
+}
+
 /* ═══════════════════════════════════════════════════════════
    ODIN DASHBOARD — JavaScript
    ═══════════════════════════════════════════════════════════ */
