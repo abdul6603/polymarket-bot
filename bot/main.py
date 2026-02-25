@@ -32,6 +32,7 @@ from bot.market_quality import MarketQualityScorer
 from bot.performance_monitor import PerformanceMonitor
 from bot.snipe.engine import SnipeEngine
 from bot.whale_follower import WhaleTracker
+from bot.whale_config import MAX_COPY_SIZE_USD, MAX_DAILY_EXPOSURE_USD
 
 log = logging.getLogger("bot")
 
@@ -308,7 +309,7 @@ class TradingBot:
             log.info("MakerEngine: disabled (set MAKER_ENABLED=true to activate)")
         if self.cfg.whale_enabled:
             log.info("WhaleTracker: ENABLED (poll=%.0fs, max_copy=$%.0f, daily_cap=$%.0f)",
-                     self.cfg.whale_poll_interval_s, 25.0, 100.0)
+                     self.cfg.whale_poll_interval_s, MAX_COPY_SIZE_USD, MAX_DAILY_EXPOSURE_USD)
         else:
             log.info("WhaleTracker: disabled (set WHALE_ENABLED=true to activate)")
         log.info("=" * 60)

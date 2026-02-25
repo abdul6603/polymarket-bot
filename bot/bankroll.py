@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import time
+import os
 from pathlib import Path
 
 log = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ def calculate_trade_pnl(won: bool, probability: float, size_usd: float) -> float
 
 
 class BankrollManager:
-    INITIAL_BANKROLL = 250.0  # Starting bankroll from .env
+    INITIAL_BANKROLL = float(os.getenv("BANKROLL_USD", "250.0"))  # Starting bankroll from .env
     MIN_MULTIPLIER = 0.30     # Floor: never size below 30% of base (prevents death spiral)
     MAX_MULTIPLIER = 2.0      # Cap: never size above 200% of base
     CACHE_TTL = 60            # Refresh every 60 seconds

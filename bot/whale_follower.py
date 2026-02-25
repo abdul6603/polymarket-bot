@@ -24,11 +24,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from threading import Lock
 
+import os
 import requests
 
 from bot.whale_config import (
     CACHE_TTL_S,
     DATA_API,
+    GAMMA_API,
     LEADERBOARD_CATEGORIES,
     LEADERBOARD_PERIODS,
     LEADERBOARD_REFRESH_H,
@@ -37,14 +39,17 @@ from bot.whale_config import (
     MAX_COPY_SIZE_USD,
     MAX_DAILY_EXPOSURE_USD,
     MAX_IMPLIED_PRICE,
+    MAX_MANIPULATION_SCORE,
     MAX_SLIPPAGE_PCT,
     MAX_TRACKED_WALLETS,
     MIN_CONSENSUS,
+    MIN_MARKET_DURATION_S,
     MIN_TRADES_FOR_BLACKLIST,
     MIN_WALLET_SCORE,
     MIN_WR_THRESHOLD,
     POLL_INTERVAL_S,
     POSITION_CHANGE_MIN_USD,
+    RAPID_EXIT_WINDOW_S,
     REQUESTS_PER_MINUTE,
     RESCORE_INTERVAL_H,
     SCORE_WEIGHTS,
@@ -458,6 +463,14 @@ class WhaleMonitor:
         self._response_cache: dict[str, tuple[float, list]] = {}
         self._active_signals: list[dict] = []
         self._lock = Lock()
+        # Manipulation tracking: wallet -> {condition_id -> entry_timestamp}
+        self._entry_timestamps: dict[str, dict[str, float]] = {}
+        self._manipulation_scores: dict[str, int] = {}
+        # Market end time cache: condition_id -> end_timestamp
+        self._market_end_cache: dict[str, float] = {}
+        # Wallet co-entry tracking for clustering: frozenset(w1,w2) -> overlap_count
+        self._co_entry_counts: dict[frozenset, int] = {}
+        self._entry_counts: dict[str, int] = {}
 
     def poll_wallets(self) -> list[dict]:
         """Poll all tracked wallets and return new copy signals."""
@@ -540,14 +553,17 @@ class WhaleMonitor:
     def _detect_changes(
         self, wallet: str, current: list[dict], wallet_info: dict,
     ) -> list[dict]:
-        """Compare current positions with cache, detect new entries/increases."""
+        """Compare current positions with cache, detect entries, increases, and exits."""
         previous = self._position_cache.get(wallet, {})
         signals = []
+        now = time.time()
+        current_cids = set()
 
         for pos in current:
             cid = pos.get("conditionId", "")
             if not cid:
                 continue
+            current_cids.add(cid)
 
             cur_size = float(pos.get("size", 0))
             cur_value = cur_size * float(pos.get("curPrice", 0))
@@ -559,17 +575,59 @@ class WhaleMonitor:
                     signals.append(self._build_signal(
                         wallet, wallet_info, pos, "NEW_ENTRY", cur_size, 0,
                     ))
+                    # Track entry time for manipulation detection
+                    self._entry_timestamps.setdefault(wallet, {})[cid] = now
+                    # Track for clustering
+                    self._entry_counts[wallet] = self._entry_counts.get(wallet, 0) + 1
             else:
                 old_size = float(old.get("size", 0))
-                increase = cur_size - old_size
-                increase_value = increase * float(pos.get("curPrice", 0))
+                change = cur_size - old_size
+                change_value = abs(change) * float(pos.get("curPrice", 0))
 
-                if increase > 0 and increase_value >= POSITION_CHANGE_MIN_USD:
+                if change > 0 and change_value >= POSITION_CHANGE_MIN_USD:
+                    # Size INCREASE
                     signals.append(self._build_signal(
                         wallet, wallet_info, pos, "INCREASE", cur_size, old_size,
                     ))
+                elif change < 0 and change_value >= POSITION_CHANGE_MIN_USD:
+                    # Size DECREASE — whale is exiting partially
+                    signals.append(self._build_signal(
+                        wallet, wallet_info, pos, "EXIT_PARTIAL", cur_size, old_size,
+                    ))
+                    # Manipulation check: entry→exit within 5 min
+                    self._check_rapid_exit(wallet, cid, now)
+
+        # Detect full exits: positions in cache but not in current
+        if previous:
+            for cid, old_pos in previous.items():
+                if cid not in current_cids:
+                    old_size = float(old_pos.get("size", 0))
+                    old_value = old_size * float(old_pos.get("curPrice", 0))
+                    if old_value >= POSITION_CHANGE_MIN_USD:
+                        signals.append(self._build_signal(
+                            wallet, wallet_info, old_pos, "EXIT_FULL", 0, old_size,
+                        ))
+                        self._check_rapid_exit(wallet, cid, now)
 
         return signals
+
+    def _check_rapid_exit(self, wallet: str, cid: str, now: float) -> None:
+        """Flag manipulation if whale exits within RAPID_EXIT_WINDOW_S of entry."""
+        entry_time = self._entry_timestamps.get(wallet, {}).get(cid)
+        if entry_time and (now - entry_time) < RAPID_EXIT_WINDOW_S:
+            score = self._manipulation_scores.get(wallet, 0) + 1
+            self._manipulation_scores[wallet] = score
+            log.warning(
+                "[WHALE] Rapid reversal detected: %s exited %s in %.0fs (score=%d)",
+                wallet[:12], cid[:12], now - entry_time, score,
+            )
+            if score >= MAX_MANIPULATION_SCORE:
+                self._db.blacklist_wallet(
+                    wallet, f"Manipulation: {score} rapid reversals detected",
+                )
+        # Clean up entry timestamp
+        if wallet in self._entry_timestamps:
+            self._entry_timestamps[wallet].pop(cid, None)
 
     @staticmethod
     def _build_signal(
@@ -598,34 +656,82 @@ class WhaleMonitor:
         }
 
     def _apply_consensus(self, signals: list[dict]) -> list[dict]:
-        """Filter signals: require MIN_CONSENSUS whales on same direction."""
+        """Filter signals: require MIN_CONSENSUS independent whales on same direction.
+
+        Wallet clustering: if two wallets consistently co-enter (>80% overlap),
+        they count as one entity for consensus purposes.
+        """
+        # Separate entry signals from exit signals
+        entry_signals = [s for s in signals if s["signal_type"] not in ("EXIT_PARTIAL", "EXIT_FULL")]
+        exit_signals = [s for s in signals if s["signal_type"] in ("EXIT_PARTIAL", "EXIT_FULL")]
+
+        # Track co-entries for clustering detection
         groups: dict[tuple, list[dict]] = defaultdict(list)
-        for s in signals:
+        for s in entry_signals:
             key = (s["condition_id"], s["outcome"])
             groups[key].append(s)
 
+        for key, group in groups.items():
+            wallets = sorted(s["wallet"] for s in group)
+            for i in range(len(wallets)):
+                for j in range(i + 1, len(wallets)):
+                    pair = frozenset((wallets[i], wallets[j]))
+                    self._co_entry_counts[pair] = self._co_entry_counts.get(pair, 0) + 1
+
+        # Build consensus with clustering awareness
         consensus_signals = []
         for key, group in groups.items():
-            unique_wallets = {s["wallet"] for s in group}
-            if len(unique_wallets) >= MIN_CONSENSUS:
+            wallets = {s["wallet"] for s in group}
+
+            # Remove clustered wallets: if pair has >80% co-entry rate, count as 1
+            independent = set(wallets)
+            for pair, co_count in self._co_entry_counts.items():
+                if not pair.issubset(wallets):
+                    continue
+                w1, w2 = list(pair)
+                min_entries = min(
+                    self._entry_counts.get(w1, 1),
+                    self._entry_counts.get(w2, 1),
+                )
+                if min_entries > 3 and co_count / min_entries > 0.8:
+                    # Clustered — remove the lower-scored wallet
+                    scores = {s["wallet"]: s["wallet_score"] for s in group}
+                    weaker = w2 if scores.get(w1, 0) >= scores.get(w2, 0) else w1
+                    independent.discard(weaker)
+                    log.info(
+                        "[WHALE] Cluster detected: %s + %s (%.0f%% overlap) — counting as 1",
+                        w1[:12], w2[:12], co_count / min_entries * 100,
+                    )
+
+            if len(independent) >= MIN_CONSENSUS:
                 best = max(group, key=lambda s: s["wallet_score"])
-                best["consensus_count"] = len(unique_wallets)
+                best["consensus_count"] = len(independent)
                 best["signal_type"] = "CONSENSUS"
-                best["consensus_wallets"] = list(unique_wallets)
+                best["consensus_wallets"] = list(independent)
                 consensus_signals.append(best)
                 log.info(
-                    "[WHALE] CONSENSUS signal: %s | %s | %d whales agree | price=$%.3f",
+                    "[WHALE] CONSENSUS signal: %s | %s | %d independent whales | price=$%.3f",
                     best["title"][:50], best["outcome"],
-                    len(unique_wallets), best["current_price"],
+                    len(independent), best["current_price"],
                 )
             else:
                 for s in group:
-                    s["consensus_count"] = len(unique_wallets)
+                    s["consensus_count"] = len(independent)
                     log.info(
-                        "[WHALE] Signal (no consensus): %s | %s from %s (score=%.0f)",
+                        "[WHALE] Signal (no consensus): %s | %s from %s (score=%.0f) [%d independent]",
                         s["title"][:40], s["outcome"],
-                        s["wallet"][:12], s["wallet_score"],
+                        s["wallet"][:12], s["wallet_score"], len(independent),
                     )
+
+        # Process exit signals — these bypass consensus (if our whale exits, we should too)
+        for s in exit_signals:
+            s["consensus_count"] = 1
+            consensus_signals.append(s)
+            log.info(
+                "[WHALE] EXIT signal: %s | %s from %s (score=%.0f)",
+                s["title"][:40], s["signal_type"],
+                s["wallet"][:12], s["wallet_score"],
+            )
 
         return consensus_signals
 
@@ -648,8 +754,23 @@ class CopyExecutor:
 
     def execute_signal(self, signal: dict) -> dict | None:
         """Execute a copy trade from a whale signal. Returns trade record or None."""
+        signal_type = signal.get("signal_type", "")
+
+        # Handle exit signals separately
+        if signal_type in ("EXIT_PARTIAL", "EXIT_FULL"):
+            return self._handle_exit_signal(signal)
+
         whale_price = signal.get("whale_price", 0)
         current_price = signal.get("current_price", 0)
+
+        # 0. Market duration check — skip short-lived markets
+        market_remaining = self._get_market_remaining_s(signal.get("condition_id", ""))
+        if market_remaining is not None and market_remaining < MIN_MARKET_DURATION_S:
+            log.info(
+                "[WHALE COPY] SKIP: market ends in %.0f min (< 60 min) | %s",
+                market_remaining / 60, signal.get("title", "")[:40],
+            )
+            return None
 
         # 1. Max implied price check
         if current_price > MAX_IMPLIED_PRICE:
@@ -680,11 +801,14 @@ class CopyExecutor:
             )
             return None
 
-        # 4. Copy size: min(15% of whale, $25, remaining daily budget)
+        # 4. Copy size: min(15% of whale, 3% bankroll, remaining daily budget)
         whale_size = signal.get("whale_increase", 0) or signal.get("whale_size", 0)
+        bankroll = float(os.getenv("BANKROLL_USD", "1000"))
+        bankroll_cap = round(bankroll * 0.03, 2)
         size = min(
             whale_size * MAX_COPY_PCT_OF_WHALE,
             MAX_COPY_SIZE_USD,
+            bankroll_cap,
             MAX_DAILY_EXPOSURE_USD - daily_exposure,
         )
         if size < 1.0:
@@ -735,6 +859,105 @@ class CopyExecutor:
         # Log to JSONL for dashboard
         self._log_copy_trade(trade)
         return trade
+
+    def _handle_exit_signal(self, signal: dict) -> dict | None:
+        """Close our copy trade when the whale exits."""
+        cid = signal.get("condition_id", "")
+        if not cid:
+            return None
+
+        # Find our open copy trade for this market
+        open_trades = self._db.get_copy_trades(status="FILLED", limit=100)
+        matching = [t for t in open_trades if t.get("condition_id") == cid]
+        if not matching:
+            log.debug("[WHALE EXIT] No open copy trade for %s", cid[:12])
+            return None
+
+        for trade in matching:
+            exit_price = signal.get("current_price", 0)
+            entry_price = trade.get("entry_price", 0)
+            pnl = (exit_price - entry_price) * trade.get("size", 0) if entry_price > 0 else 0
+
+            if self._dry_run:
+                log.info(
+                    "[WHALE EXIT][DRY] Closing copy trade #%d | entry=$%.3f exit=$%.3f | PnL=$%.2f | %s",
+                    trade["id"], entry_price, exit_price, pnl, signal.get("title", "")[:40],
+                )
+            else:
+                # Place sell order
+                self._place_exit_order(trade, exit_price)
+
+            # Update trade status
+            status = "WON" if pnl > 0 else "LOST"
+            self._db.update_copy_trade(
+                trade["id"],
+                status=status,
+                exit_price=round(exit_price, 4),
+                exit_timestamp=_now_iso(),
+                pnl=round(pnl, 2),
+            )
+            log.info(
+                "[WHALE EXIT] Trade #%d → %s ($%.2f) | whale=%s",
+                trade["id"], status, pnl, signal.get("wallet", "")[:12],
+            )
+
+        return {"action": "exit", "trades_closed": len(matching)}
+
+    def _place_exit_order(self, trade: dict, price: float) -> str | None:
+        """Place a sell order to close a copy trade position."""
+        if not self._client:
+            return None
+        try:
+            from py_clob_client.clob_types import OrderArgs, OrderType
+            from py_clob_client.order_builder.constants import SELL
+
+            token_id = trade.get("token_id", "")
+            if not token_id:
+                return None
+            size = trade.get("size", 0)
+            shares = int(size / price) if price > 0 else 0
+            if shares < 1:
+                return None
+
+            order_args = OrderArgs(price=price, size=shares, side=SELL, token_id=token_id)
+            signed = self._client.create_order(order_args)
+            resp = self._client.post_order(signed, OrderType.FOK)
+            return resp.get("orderID") or resp.get("id", "")
+        except Exception as e:
+            log.error("[WHALE EXIT] Sell order error: %s", str(e)[:200])
+            return None
+
+    def _get_market_remaining_s(self, condition_id: str) -> float | None:
+        """Query Gamma API for market end time, return seconds remaining."""
+        if not condition_id:
+            return None
+
+        # Check cache on the monitor (shared via WhaleTracker)
+        try:
+            resp = requests.get(
+                f"{GAMMA_API}/markets",
+                params={"condition_id": condition_id, "limit": "1"},
+                timeout=5,
+                headers={"User-Agent": "GarvesWhaleTracker/1.0"},
+            )
+            if resp.status_code != 200:
+                return None
+            data = resp.json()
+            if not data:
+                return None
+
+            market = data[0] if isinstance(data, list) else data
+            end_str = market.get("end_date_iso") or market.get("endDate", "")
+            if not end_str:
+                return None
+
+            from datetime import datetime, timezone
+            end_dt = datetime.fromisoformat(end_str.replace("Z", "+00:00"))
+            remaining = (end_dt - datetime.now(timezone.utc)).total_seconds()
+            return remaining
+        except Exception as e:
+            log.debug("[WHALE] Market duration check error: %s", str(e)[:80])
+            return None
 
     def _place_fok_order(self, signal: dict, size: float, price: float) -> str | None:
         """Place FOK order on CLOB. Returns order_id or None."""
@@ -1159,6 +1382,17 @@ class WhaleTracker:
         wins = sum(1 for t in resolved if t["status"] == "WON")
         total_pnl = sum(t.get("pnl", 0) for t in resolved)
 
+        # Gather manipulation + clustering stats from monitor
+        manipulation_scores = getattr(self.monitor, "_manipulation_scores", {})
+        co_entries = getattr(self.monitor, "_co_entry_counts", {})
+        clusters = []
+        entry_counts = getattr(self.monitor, "_entry_counts", {})
+        for pair, cnt in co_entries.items():
+            w1, w2 = list(pair)
+            min_e = min(entry_counts.get(w1, 1), entry_counts.get(w2, 1))
+            if min_e > 3 and cnt / min_e > 0.8:
+                clusters.append({"wallets": [w1[:12], w2[:12]], "overlap_pct": round(cnt / min_e * 100, 1)})
+
         return {
             "enabled": self.enabled,
             "dry_run": self.dry_run,
@@ -1191,6 +1425,10 @@ class WhaleTracker:
             "signals": active_signals[:5],
             "daily_exposure": self._stats.get("daily_exposure", 0),
             "daily_cap": MAX_DAILY_EXPOSURE_USD,
+            "manipulation_flags": {
+                w[:12]: s for w, s in manipulation_scores.items() if s > 0
+            },
+            "detected_clusters": clusters,
             "updated_at": _now_iso(),
         }
 
