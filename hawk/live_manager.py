@@ -55,6 +55,7 @@ class LivePositionManager:
         self._last_action_time: dict[str, float] = {}  # condition_id -> timestamp
         self._last_odds_check: float = 0.0             # global odds check timestamp
         self._paused: set[str] = set()                 # condition_ids paused by user
+        self._sold: set[str] = set()                   # condition_ids already sold (prevent repeats)
         self._live_prices: dict[str, float] = {}       # condition_id -> last CLOB midpoint
 
     def monitor_positions(self) -> list[LiveAction]:
@@ -152,6 +153,8 @@ class LivePositionManager:
         Works even after game ends (ESPN drops it but CLOB still tradeable).
         """
         cid = pos.get("condition_id", "")
+        if cid in self._sold:
+            return None  # Already sold, skip
         direction = pos.get("direction", "yes")
         entry_price = pos.get("entry_price", 0.5)
 
@@ -267,6 +270,8 @@ class LivePositionManager:
         5. Decide: EXIT if stop-loss hit, ADD if winning big, HOLD otherwise
         """
         cid = pos.get("condition_id", "")
+        if cid in self._sold:
+            return None  # Already sold
         now = time.time()
 
         # Min hold time check
@@ -469,11 +474,19 @@ class LivePositionManager:
         cid = pos.get("condition_id", "")
         sell_id = self.executor.sell_position(pos, reason)
         if sell_id:
+            self._sold.add(cid)  # Prevent repeated sells
             self._actions_count[cid] = self._actions_count.get(cid, 0) + 1
             self._last_action_time[cid] = time.time()
             log.info("[LIVE] EXIT executed: %s | %s", sell_id, reason)
-            # Remove from tracker after successful sell
-            self.tracker.remove_position(pos.get("order_id", ""))
+            # Remove from tracker by condition_id (order_id may be missing for on-chain)
+            removed = False
+            for p in list(self.tracker._positions):
+                if p.get("condition_id") == cid:
+                    self.tracker._positions.remove(p)
+                    removed = True
+                    break
+            if not removed:
+                self.tracker.remove_position(pos.get("order_id", ""))
             # Add cooldown to prevent re-buying
             self.tracker.add_cooldown(cid)
 
