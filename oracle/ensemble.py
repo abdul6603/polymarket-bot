@@ -248,6 +248,9 @@ def run_ensemble(
     # Normalize mutually exclusive ranges per asset
     averaged = _normalize_distributions(averaged, questions)
 
+    # Sanity check: clamp probabilities based on price distance
+    averaged = _sanity_check_probabilities(averaged, questions)
+
     # Map back to condition_ids
     id_to_cid = {q["id"]: q["condition_id"] for q in questions}
     predictions = {id_to_cid[qid]: prob for qid, prob in averaged.items() if qid in id_to_cid}
@@ -368,6 +371,65 @@ def _normalize_distributions(
                     # Fix: cap at previous level
                     result[qid] = min(result[qid], prev_prob + 0.02)
                 prev_prob = result[qid]
+
+    return result
+
+
+def _sanity_check_probabilities(
+    averaged: dict[str, float],
+    questions: list[dict],
+) -> dict[str, float]:
+    """Clamp extreme probabilities based on price distance from threshold.
+
+    LLMs systematically underestimate P(above threshold) when sentiment is
+    bearish, even when the current price is far above the threshold. This
+    guard enforces mathematical floors/ceilings:
+    - If price is 15%+ above threshold, P(above) >= 0.75
+    - If price is 10%+ above threshold, P(above) >= 0.55
+    - If price is  5%+ above threshold, P(above) >= 0.40
+    - If price is below threshold, P(above) <= 0.40
+    - If price is 5%+ below threshold, P(above) <= 0.25
+    """
+    result = dict(averaged)
+
+    # Distance floors for above_below markets
+    ABOVE_FLOORS = [
+        (15.0, 0.75),
+        (10.0, 0.55),
+        (5.0, 0.40),
+    ]
+    BELOW_CEILINGS = [
+        (-5.0, 0.25),
+        (0.0, 0.40),
+    ]
+
+    for q in questions:
+        qid = q["id"]
+        if qid not in result:
+            continue
+        mtype = q.get("market_type", "")
+        dist = q.get("distance_pct", 0)
+        old_p = result[qid]
+
+        if mtype == "above_below":
+            # Apply floors when price is above threshold
+            for min_dist, floor in ABOVE_FLOORS:
+                if dist >= min_dist and old_p < floor:
+                    log.info(
+                        "[SANITY] %s %s: dist +%.1f%%, P %.2f → %.2f (floor)",
+                        q.get("asset", "?").upper(), qid, dist, old_p, floor,
+                    )
+                    result[qid] = floor
+                    break
+            # Apply ceilings when price is below threshold
+            for max_dist, ceil in BELOW_CEILINGS:
+                if dist <= max_dist and old_p > ceil:
+                    log.info(
+                        "[SANITY] %s %s: dist %.1f%%, P %.2f → %.2f (ceiling)",
+                        q.get("asset", "?").upper(), qid, dist, old_p, ceil,
+                    )
+                    result[qid] = ceil
+                    break
 
     return result
 
