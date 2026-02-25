@@ -186,7 +186,12 @@ class HawkExecutor:
                 pass
 
             return sell_id
-        except Exception:
+        except Exception as e:
+            err_str = str(e).lower()
+            if "404" in err_str or "no orderbook" in err_str:
+                log.warning("[LIVE] Market closed (no orderbook) for %s — marking as dead",
+                            pos.get("condition_id", "")[:12])
+                return "MARKET_CLOSED"
             log.exception("[LIVE] Failed to sell position %s", pos.get("order_id", ""))
             return None
 

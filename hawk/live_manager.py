@@ -641,6 +641,18 @@ class LivePositionManager:
         """Execute a position exit."""
         cid = pos.get("condition_id", "")
         sell_id = self.executor.sell_position(pos, reason)
+
+        # Market closed / no orderbook — force-remove to stop retry spam
+        if sell_id == "MARKET_CLOSED":
+            log.warning("[LIVE] Market closed for %s — force-removing position", cid[:12])
+            self._sold.add(cid)
+            for p in list(self.tracker._positions):
+                if p.get("condition_id") == cid:
+                    self.tracker._positions.remove(p)
+                    break
+            self.tracker.add_cooldown(cid)
+            return
+
         if sell_id:
             self._sold.add(cid)  # Prevent repeated sells
             self._actions_count[cid] = self._actions_count.get(cid, 0) + 1
