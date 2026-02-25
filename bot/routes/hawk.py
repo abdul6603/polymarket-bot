@@ -362,7 +362,7 @@ def api_hawk_positions():
         headers = {"User-Agent": "Hawk/1.0"}
 
         # ── 1. Fetch on-chain positions ──
-        pos_url = f"https://data-api.polymarket.com/positions?user={wallet.lower()}"
+        pos_url = f"https://data-api.polymarket.com/positions?user={wallet.lower()}&limit=500"
         req = urllib.request.Request(pos_url, headers=headers)
         with urllib.request.urlopen(req, timeout=10) as resp:
             pos_data = json.loads(resp.read().decode())

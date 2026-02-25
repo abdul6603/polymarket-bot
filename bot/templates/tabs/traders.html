@@ -224,21 +224,28 @@ setInterval(function() {
   }
 }, 1000);
 
-/* --- Master refresh --- */
+/* --- Master refresh (debounced to prevent flicker) --- */
+var _tradersRefreshing = false;
 async function tradersRefresh() {
+  if (_tradersRefreshing) return;
+  _tradersRefreshing = true;
   try {
     var [posResp, ovResp] = await Promise.all([
       fetch('/api/traders/positions'),
       fetch('/api/traders/overview')
     ]);
-    _tradersData = await posResp.json();
-    _tradersOverview = await ovResp.json();
+    var posData = await posResp.json();
+    var ovData = await ovResp.json();
+    if (posData && posData.positions) _tradersData = posData;
+    if (ovData && ovData.hero) _tradersOverview = ovData;
     tradersRenderHero(_tradersOverview);
     tradersRenderPositions(_tradersData);
     tradersRenderOverview(_tradersOverview);
     document.getElementById('traders-updated').textContent = new Date().toLocaleTimeString();
   } catch (e) {
     console.error('[Traders] refresh error:', e);
+  } finally {
+    _tradersRefreshing = false;
   }
 }
 

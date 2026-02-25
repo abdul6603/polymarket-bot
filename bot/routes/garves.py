@@ -1203,7 +1203,7 @@ def api_garves_positions():
         headers = {"User-Agent": "GarvesV2/2.0"}
 
         # ── 1. Fetch current positions (open holdings) ──
-        pos_url = f"https://data-api.polymarket.com/positions?user={wallet.lower()}"
+        pos_url = f"https://data-api.polymarket.com/positions?user={wallet.lower()}&limit=500"
         req = urllib.request.Request(pos_url, headers=headers)
         with urllib.request.urlopen(req, timeout=10) as resp:
             pos_data = json.loads(resp.read().decode())
