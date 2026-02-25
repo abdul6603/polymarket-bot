@@ -236,8 +236,8 @@ MIN_EDGE_HARD_FLOOR = 0.02  # absolute minimum — 2% after fees still profitabl
 
 # Reward-to-Risk ratio filter
 # R:R = ((1-P) * 0.98) / P  where P = token price, 0.98 = payout after 2% winner fee
-MIN_RR_RATIO = 1.0  # Lowered 1.2→1.0: old 1.2 required token≤$0.45, but most crypto markets price $0.47-0.50. Edge+confidence are the real guards.
-MAX_TOKEN_PRICE = 0.50  # Never buy tokens above $0.50 — forces cheap side with R:R > 0.96
+MIN_RR_RATIO = 0.80  # Lowered 1.0→0.80: at P=0.50 R:R=0.98, old 1.0 blocked EVERY 50/50 market.
+MAX_TOKEN_PRICE = 0.55  # Raised 0.50→0.55: allows buying slightly above 50% when edge is real.
 
 # Minimum confidence to count toward consensus vote
 # Indicators below this confidence are basically guessing — don't let them inflate head count
