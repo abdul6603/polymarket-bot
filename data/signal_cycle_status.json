@@ -1,1 +1,5 @@
+<<<<<<< Updated upstream
 {"last_eval_at": 1772031492.0362089, "tick_interval_s": 5, "markets_evaluated": 4, "trades_this_tick": 0, "regime": "extreme_fear", "cycle_count": 126}
+=======
+{"last_eval_at": 1772031706.734826, "tick_interval_s": 5, "markets_evaluated": 12, "trades_this_tick": 0, "regime": "extreme_fear", "cycle_count": 142}
+>>>>>>> Stashed changes

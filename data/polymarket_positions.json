@@ -1,4 +1,5 @@
 {
+<<<<<<< Updated upstream
   "holdings": [
     {
       "market": "Celtics vs. Nuggets",
@@ -1902,4 +1903,20 @@
   "live": true,
   "fetched_at": 1772031249.320574,
   "error": null
+=======
+  "holdings": [],
+  "history": [],
+  "totals": {
+    "open_count": 0,
+    "open_margin": 0.0,
+    "open_value": 0.0,
+    "open_pnl": 0.0,
+    "record_wins": 0,
+    "record_losses": 0,
+    "realized_pnl": 0.0
+  },
+  "live": false,
+  "fetched_at": 1772031712.802984,
+  "error": "<urlopen error [Errno 65] No route to host>"
+>>>>>>> Stashed changes
 }

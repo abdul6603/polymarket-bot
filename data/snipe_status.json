@@ -4,16 +4,28 @@
   "strategy": "flow_scanner_mtf_exec",
   "default_exec_tf": "15m",
   "execution_routing": "5m \u2192 15m",
+<<<<<<< Updated upstream
   "last_exec_routing": {},
+=======
+  "last_exec_routing": {
+    "scanner_tf": "5m",
+    "exec_tf": "15m",
+    "exec_market": "0x539a3fc18101fd",
+    "direction": "up",
+    "score": 83.1,
+    "flow_strength": 0.9979436193545713,
+    "timestamp": 1772031715.721602
+  },
+>>>>>>> Stashed changes
   "dry_run": true,
   "delta_threshold_pct": 0.08,
   "threshold_mode": "weekday",
   "tick_interval_s": 2,
   "max_positions": 3,
-  "active_positions": 0,
+  "active_positions": 1,
   "consecutive_wins": 0,
   "stats": {
-    "signals": 0,
+    "signals": 1,
     "trades": 0,
     "wins": 0,
     "losses": 0,
@@ -22,16 +34,30 @@
   },
   "slots": {
     "bitcoin": {
+<<<<<<< Updated upstream
       "state": "tracking",
       "last_score": 48.1,
+=======
+      "state": "executing",
+      "last_score": 83.1,
+>>>>>>> Stashed changes
       "last_direction": "up",
-      "exec_timeframe": "",
+      "exec_timeframe": "15m",
       "position": {
-        "active": false
+        "active": true,
+        "market_id": "0x539a3fc181",
+        "asset": "bitcoin",
+        "direction": "up",
+        "waves_fired": 1,
+        "total_invested": 75.0,
+        "total_shares": 136.0,
+        "avg_entry": 0.5515,
+        "pending_order": false
       },
       "threshold": 70
     }
   },
+<<<<<<< Updated upstream
   "hot_windows": [
     {
       "asset": "bitcoin",
@@ -47,11 +73,22 @@
     "is_strong": false,
     "detail": "dir=none",
     "snapshots": 66
+=======
+  "hot_windows": [],
+  "flow_detector": {
+    "direction": "up",
+    "strength": 0.998,
+    "sustained_ticks": 5,
+    "is_strong": true,
+    "detail": "dir=up | change=49.9% | str=1.00 | sus=5",
+    "snapshots": 33
+>>>>>>> Stashed changes
   },
   "window": {
     "active_windows": 4,
     "windows": [
       {
+<<<<<<< Updated upstream
         "market_id": "0xba400333f4",
         "asset": "bitcoin",
         "open_price": 66704.1,
@@ -82,6 +119,38 @@
         "remaining_s": 107,
         "traded": false,
         "question": "XRP Up or Down - February 25, 9:55AM-10:00AM ET"
+=======
+        "market_id": "0x80335c6516",
+        "asset": "bitcoin",
+        "open_price": 66973.19,
+        "remaining_s": 171,
+        "traded": true,
+        "question": "Bitcoin Up or Down - February 25, 10:00AM-10:05AM ET"
+      },
+      {
+        "market_id": "0xe779c175d4",
+        "asset": "ethereum",
+        "open_price": 1997.38,
+        "remaining_s": 171,
+        "traded": false,
+        "question": "Ethereum Up or Down - February 25, 10:00AM-10:05AM ET"
+      },
+      {
+        "market_id": "0x1f4bc2539b",
+        "asset": "solana",
+        "open_price": 85.63,
+        "remaining_s": 171,
+        "traded": false,
+        "question": "Solana Up or Down - February 25, 10:00AM-10:05AM ET"
+      },
+      {
+        "market_id": "0x715655810a",
+        "asset": "xrp",
+        "open_price": 1.4359,
+        "remaining_s": 171,
+        "traded": false,
+        "question": "XRP Up or Down - February 25, 10:00AM-10:05AM ET"
+>>>>>>> Stashed changes
       }
     ]
   },
@@ -245,7 +314,11 @@
     "assets": {
       "bitcoin": {
         "readings": 30,
+<<<<<<< Updated upstream
         "latest_imbalance": 0.4111,
+=======
+        "latest_imbalance": 0.1185,
+>>>>>>> Stashed changes
         "latest_direction": "up",
         "signal_active": false,
         "signal_direction": null,
@@ -254,8 +327,13 @@
       },
       "ethereum": {
         "readings": 30,
+<<<<<<< Updated upstream
         "latest_imbalance": 0.2382,
         "latest_direction": "up",
+=======
+        "latest_imbalance": -0.5658,
+        "latest_direction": "down",
+>>>>>>> Stashed changes
         "signal_active": false,
         "signal_direction": null,
         "signal_strength": null,
@@ -263,7 +341,11 @@
       },
       "solana": {
         "readings": 30,
+<<<<<<< Updated upstream
         "latest_imbalance": -0.0147,
+=======
+        "latest_imbalance": -0.1567,
+>>>>>>> Stashed changes
         "latest_direction": "down",
         "signal_active": false,
         "signal_direction": null,
@@ -272,12 +354,21 @@
       },
       "xrp": {
         "readings": 30,
+<<<<<<< Updated upstream
         "latest_imbalance": -0.068,
         "latest_direction": "down",
         "signal_active": false,
         "signal_direction": null,
         "signal_strength": null,
         "signal_sustained": null
+=======
+        "latest_imbalance": -0.5793,
+        "latest_direction": "down",
+        "signal_active": true,
+        "signal_direction": "down",
+        "signal_strength": 0.659,
+        "signal_sustained": 3
+>>>>>>> Stashed changes
       }
     }
   },
@@ -290,11 +381,19 @@
       "5m": {
         "completed_candles": 1,
         "current": {
+<<<<<<< Updated upstream
           "open": 66704.1,
           "high": 66960.0,
           "low": 66704.1,
           "close": 66911.99,
           "ticks": 75
+=======
+          "open": 66959.82,
+          "high": 67174.92,
+          "low": 66959.82,
+          "close": 67057.17,
+          "ticks": 52
+>>>>>>> Stashed changes
         },
         "structure": {
           "bos": null,
@@ -307,11 +406,19 @@
       "15m": {
         "completed_candles": 0,
         "current": {
+<<<<<<< Updated upstream
           "open": 66685.97,
           "high": 66960.0,
           "low": 66668.75,
           "close": 66911.99,
           "ticks": 114
+=======
+          "open": 66959.82,
+          "high": 67174.92,
+          "low": 66959.82,
+          "close": 67057.17,
+          "ticks": 52
+>>>>>>> Stashed changes
         },
         "structure": {
           "bos": null,
@@ -322,13 +429,21 @@
         }
       },
       "1h": {
-        "completed_candles": 0,
+        "completed_candles": 1,
         "current": {
+<<<<<<< Updated upstream
           "open": 66685.97,
           "high": 66960.0,
           "low": 66668.75,
           "close": 66911.99,
           "ticks": 114
+=======
+          "open": 66959.82,
+          "high": 67174.92,
+          "low": 66959.82,
+          "close": 67057.17,
+          "ticks": 52
+>>>>>>> Stashed changes
         },
         "structure": {
           "bos": null,
@@ -465,7 +580,7 @@
           "has_bos": false
         },
         "1h": {
-          "candles": 0,
+          "candles": 1,
           "needed": 5,
           "ready": false,
           "has_trend": false,
@@ -544,7 +659,11 @@
     }
   },
   "warmup_diagnostics": {
+<<<<<<< Updated upstream
     "elapsed_min": 8.6,
+=======
+    "elapsed_min": 12.5,
+>>>>>>> Stashed changes
     "target_min": 60,
     "progress_pct": 0,
     "max_realistic_score": 96,
@@ -578,13 +697,17 @@
   },
   "price_freshness": {
     "bitcoin": {
+<<<<<<< Updated upstream
       "age_s": 1.6,
+=======
+      "age_s": 3.6,
+>>>>>>> Stashed changes
       "source": "ws",
       "stale": false
     }
   },
   "success_rate_50": 66.7,
-  "avg_latency_ms": null,
+  "avg_latency_ms": 0.3,
   "performance": {
     "total_trades": 9,
     "wins": 6,
@@ -635,22 +758,36 @@
   },
   "timing_assistant": {
     "active": true,
+<<<<<<< Updated upstream
     "timing_score": 46.2,
+=======
+    "timing_score": 52.7,
+>>>>>>> Stashed changes
     "action": "auto_skip",
     "direction": "up",
     "size_pct": 0.0,
     "factors": {
       "snipe_signal_strength": {
+<<<<<<< Updated upstream
         "raw": 0.481,
         "weighted": 19.2
+=======
+        "raw": 0.831,
+        "weighted": 33.2
+>>>>>>> Stashed changes
       },
       "liquidity_quality": {
         "raw": 0.15,
         "weighted": 3.0
       },
       "time_positioning": {
+<<<<<<< Updated upstream
         "raw": 0.7,
         "weighted": 10.5
+=======
+        "raw": 0.2,
+        "weighted": 3.0
+>>>>>>> Stashed changes
       },
       "regime_alignment": {
         "raw": 0.5,
@@ -694,8 +831,15 @@
       "overall_wr": 56.2,
       "total_pnl": -56.01
     },
+<<<<<<< Updated upstream
     "expires_at": 1772031613.261415,
     "timestamp": 1772031493.261417
   },
   "timestamp": 1772031493.265968
+=======
+    "expires_at": 1772031835.052864,
+    "timestamp": 1772031715.052865
+  },
+  "timestamp": 1772031728.910084
+>>>>>>> Stashed changes
 }

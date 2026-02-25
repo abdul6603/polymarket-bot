@@ -872,8 +872,269 @@
         "comments": 42,
         "sub": "cryptocurrency"
       }
+<<<<<<< Updated upstream
     }
   ],
   "count": 43,
   "updated": 1772031249.033678
+=======
+    },
+    {
+      "id": "417e04decdda5d36",
+      "source": "tavily",
+      "headline": "Trending Markets Predictions & Real-Time Odds - Polymarket",
+      "summary": "Explore the latest Trending Markets predictions on Polymarket as of February 23, 2026. Track real-time odds and trade on The World's Largest Prediction",
+      "url": "https://polymarket.com/predictions/trending-markets",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031619.126764,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {}
+    },
+    {
+      "id": "b84aa81a8c0dca71",
+      "source": "tavily",
+      "headline": "Market Trends Predictions & Real-Time Odds - Polymarket",
+      "summary": "Explore the latest Market Trends predictions on Polymarket as of February 23, 2026. Track real-time odds and trade on The World's Largest Prediction Market\u2122",
+      "url": "https://polymarket.com/predictions/market-trends",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031619.127017,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {}
+    },
+    {
+      "id": "6dd9652b10a78e8e",
+      "source": "tavily",
+      "headline": "Today Predictions & Real-Time Odds | Polymarket",
+      "summary": "Explore the latest Today predictions on Polymarket as of February 25, 2026. Track real-time odds and trade on The World's Largest Prediction Market\u2122",
+      "url": "https://polymarket.com/predictions/today",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031619.127171,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {}
+    },
+    {
+      "id": "48f52b8abf11cce3",
+      "source": "tavily",
+      "headline": "Prediction Markets Predictions & Real-Time Odds - Polymarket",
+      "summary": "Polymarket currently hosts 9 active markets for Prediction Markets that lets you track or trade on predictions like \"Which companies will be acquired before",
+      "url": "https://polymarket.com/predictions/prediction-markets",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031619.127311,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {}
+    },
+    {
+      "id": "2583ed8d89f21965",
+      "source": "tavily",
+      "headline": "Polymarket | The World's Largest Prediction Market",
+      "summary": "Polymarket is the world's largest prediction market, allowing you to stay informed and profit from your knowledge by trading on future events across various",
+      "url": "https://polymarket.com/",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031619.127442,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {}
+    },
+    {
+      "id": "c27a7a2a81f7886f",
+      "source": "tavily",
+      "headline": "Gambling on wars? Prediction markets usher in a 'Wild West' of betting",
+      "summary": "Betting on whether Donald Trump would regain the presidency reportedly skyrocketed on Polymarket and Kalshi during the frenetic last weeks of",
+      "url": "https://www.usatoday.com/story/news/politics/2026/02/25/prediction-markets-polymarket-kalshi-politics-sports-trump/88640927007/",
+      "relevance_tags": [
+        "trump",
+        "eth",
+        "ai",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031619.127574,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "4d77574e5b9b0c89",
+      "source": "tavily",
+      "headline": "All Predictions & Real-Time Odds - Polymarket",
+      "summary": "Explore the latest All predictions on Polymarket as of February 25, 2026. Track real-time odds and trade on The World's Largest Prediction Market\u2122",
+      "url": "https://polymarket.com/predictions/all",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031619.127717,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {}
+    },
+    {
+      "id": "7bd694ff8f63e965",
+      "source": "tavily",
+      "headline": "Crypto Predictions & Real-Time Odds | Polymarket",
+      "summary": "Explore the latest Crypto predictions on Polymarket as of February 25, 2026. Track real-time odds and trade on The World's Largest Prediction Market\u2122",
+      "url": "https://polymarket.com/predictions/crypto",
+      "relevance_tags": [
+        "crypto",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031619.127856,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {}
+    },
+    {
+      "id": "e0609b9da3be218a",
+      "source": "tavily",
+      "headline": "'Hockey' and 'World Cup' references top Kalshi odds on State of the ...",
+      "summary": "Prediction market Kalshi forecasts President Trump will mention sports issues in his State of the Union address, with high odds for",
+      "url": "https://www.newsnationnow.com/politics/kalshi-odds-state-of-the-union-hockey-world-cup/",
+      "relevance_tags": [
+        "trump",
+        "president",
+        "hockey",
+        "world cup",
+        "market"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1772031620.1866581,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "d0bdeb88e3684fcd",
+      "source": "tavily",
+      "headline": "Polymarket, Kalshi Showcase the Power of Prediction Markets",
+      "summary": "Mention markets are the high-octane, fast-twitch speed competitions of the prediction market ... events major and minor, from politics to sports",
+      "url": "https://www.youtube.com/watch?v=07qJvdSSSD8",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1772031620.1870122,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {}
+    },
+    {
+      "id": "c39e1ce1915dd729",
+      "source": "tavily",
+      "headline": "Todays Sports Predictions & Real-Time Odds | Polymarket",
+      "summary": "Explore the latest Todays Sports predictions on Polymarket as of February 23, 2026. Track real-time odds and trade on The World's Largest Prediction Market\u2122",
+      "url": "https://polymarket.com/predictions/todays-sports",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031620.187422,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {}
+    },
+    {
+      "id": "9c6bfb7484f8f243",
+      "source": "tavily",
+      "headline": "Prediction market Kalshi is anticipating President Trump will make ...",
+      "summary": "The oddsmaker is predicting a 93 percent chance Trump says the words \u201cOlympics\u201d or \u201cWorld Cup\u201d during his speech while \u201chockey\u201d specifically",
+      "url": "https://www.facebook.com/FOX2Now/posts/prediction-market-kalshi-is-anticipating-president-trump-will-make-several-refer/1478176107232348/",
+      "relevance_tags": [
+        "trump",
+        "president",
+        "hockey",
+        "world cup",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031620.187962,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    },
+    {
+      "id": "8402e94b1fcbfbc4",
+      "source": "tavily",
+      "headline": "Kalshi - Prediction Market for Trading the Future",
+      "summary": "Kalshi is a regulated exchange & prediction market where you can trade on the outcome of real-world events. Buy and sell Event Contracts.",
+      "url": "https://kalshi.com/",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031620.188568,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {}
+    },
+    {
+      "id": "41050a5fb34b5370",
+      "source": "tavily",
+      "headline": "Sports Predictions & Real-Time Odds | Polymarket",
+      "summary": "Explore the latest Sports predictions on Polymarket as of February 25, 2026. Track real-time odds and trade on The World's Largest Prediction Market\u2122",
+      "url": "https://polymarket.com/predictions/sports",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031620.18902,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {}
+    },
+    {
+      "id": "6843a00553d40740",
+      "source": "tavily",
+      "headline": "State of the Union Picks: Prediction Market Odds - Action Network",
+      "summary": "Picks and prediction market odds for President Donald Trump's State of the Union Address.",
+      "url": "https://www.actionnetwork.com/politics/trump-state-of-the-union-picks-prediction-market-odds",
+      "relevance_tags": [
+        "trump",
+        "president",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031620.189365,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {}
+    }
+  ],
+  "count": 58,
+  "updated": 1772031651.945965
+>>>>>>> Stashed changes
 }

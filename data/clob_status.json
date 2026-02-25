@@ -1,1 +1,5 @@
+<<<<<<< Updated upstream
 {"status": "CONNECTED", "detail": "", "reconnects_today": 1, "proactive_reconnects": 4, "last_connected": 1772031477.905319, "last_message": 1772031492.34512, "silence_s": 0.6, "uptime_s": 15.0, "rest_fallback": false, "endpoint": "wss://ws-subscriptions-clob.polymarket.com/ws/market", "ws_down_since": 0.0, "written_at": 1772031492.9141219}
+=======
+{"status": "CONNECTED", "detail": "", "reconnects_today": 1, "proactive_reconnects": 9, "last_connected": 1772031605.0919812, "last_message": 1772031655.32635, "silence_s": 21.0, "uptime_s": 71.2, "rest_fallback": false, "endpoint": "wss://ws-subscriptions-clob.polymarket.com/ws/market", "ws_down_since": 0.0, "written_at": 1772031676.2886028}
+>>>>>>> Stashed changes

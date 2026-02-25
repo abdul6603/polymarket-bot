@@ -1,6 +1,7 @@
 {
   "opportunities": [
     {
+<<<<<<< Updated upstream
       "id": "0465d08453811ec7",
       "source": "reddit/r/wallstreetbets",
       "headline": "Warner Bros. Discovery says Paramount raised its bid to $31 per share",
@@ -18,6 +19,46 @@
       "category": "sports",
       "raw_data": {
         "score": 866,
+=======
+      "id": "e0609b9da3be218a",
+      "source": "tavily",
+      "headline": "'Hockey' and 'World Cup' references top Kalshi odds on State of the ...",
+      "summary": "Prediction market Kalshi forecasts President Trump will mention sports issues in his State of the Union address, with high odds for",
+      "url": "https://www.newsnationnow.com/politics/kalshi-odds-state-of-the-union-hockey-world-cup/",
+      "relevance_tags": [
+        "trump",
+        "president",
+        "hockey",
+        "world cup",
+        "market"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1772031620.1866581,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {},
+      "score": 87
+    },
+    {
+      "id": "0465d08453811ec7",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Warner Bros. Discovery says Paramount raised its bid to $31 per share",
+      "summary": "$31 is not enough to beat a Netflix deal. Most likely, Netflix will match it.",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1rdtr7y/warner_bros_discovery_says_paramount_raised_its/",
+      "relevance_tags": [
+        "match",
+        "etf",
+        "ai"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.8,
+      "timestamp": 1772031649.154221,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {
+        "score": 868,
+>>>>>>> Stashed changes
         "comments": 161,
         "sub": "wallstreetbets"
       },
@@ -37,21 +78,54 @@
       ],
       "sentiment": -1.0,
       "confidence": 0.8,
+<<<<<<< Updated upstream
       "timestamp": 1772031247.902337,
       "matched_markets": [],
       "category": "crypto",
       "raw_data": {
         "score": 1050,
+=======
+      "timestamp": 1772031650.836063,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 1049,
+>>>>>>> Stashed changes
         "comments": 407,
         "sub": "cryptocurrency"
       },
       "score": 81
     },
     {
+      "id": "9c6bfb7484f8f243",
+      "source": "tavily",
+      "headline": "Prediction market Kalshi is anticipating President Trump will make ...",
+      "summary": "The oddsmaker is predicting a 93 percent chance Trump says the words \u201cOlympics\u201d or \u201cWorld Cup\u201d during his speech while \u201chockey\u201d specifically",
+      "url": "https://www.facebook.com/FOX2Now/posts/prediction-market-kalshi-is-anticipating-president-trump-will-make-several-refer/1478176107232348/",
+      "relevance_tags": [
+        "trump",
+        "president",
+        "hockey",
+        "world cup",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031620.187962,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {},
+      "score": 79
+    },
+    {
       "id": "e87f547663a80588",
       "source": "reddit/r/wallstreetbets",
       "headline": "FedEx sues for refund of Trump tariffs, days after Supreme Court ruling",
+<<<<<<< Updated upstream
       "summary": "Score: 5635, Comments: 283",
+=======
+      "summary": "Score: 5644, Comments: 283",
+>>>>>>> Stashed changes
       "url": "https://reddit.com/r/wallstreetbets/comments/1rddbev/fedex_sues_for_refund_of_trump_tariffs_days_after/",
       "relevance_tags": [
         "trump",
@@ -61,11 +135,19 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.8,
+<<<<<<< Updated upstream
       "timestamp": 1772031246.177017,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {
         "score": 5635,
+=======
+      "timestamp": 1772031649.155714,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 5644,
+>>>>>>> Stashed changes
         "comments": 283,
         "sub": "wallstreetbets"
       },
@@ -75,7 +157,11 @@
       "id": "54f8fecb4a063688",
       "source": "reddit/r/politics",
       "headline": "Democrat wins special state House election in Maine",
+<<<<<<< Updated upstream
       "summary": "Score: 12718, Comments: 165",
+=======
+      "summary": "Score: 12772, Comments: 165",
+>>>>>>> Stashed changes
       "url": "https://reddit.com/r/politics/comments/1re075u/democrat_wins_special_state_house_election_in/",
       "relevance_tags": [
         "election",
@@ -84,11 +170,19 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.8,
+<<<<<<< Updated upstream
       "timestamp": 1772031244.255022,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {
         "score": 12718,
+=======
+      "timestamp": 1772031647.0575302,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 12772,
+>>>>>>> Stashed changes
         "comments": 165,
         "sub": "politics"
       },
@@ -98,7 +192,11 @@
       "id": "05c8953358f7e2ed",
       "source": "reddit/r/politics",
       "headline": "Trump Hit by New Epstein Files Bombshell Before Big Speech - An investigation alleges there are more than 50 pages worth of documents missing from the Epstein files that may pertain to allegations against the president.",
+<<<<<<< Updated upstream
       "summary": "Score: 46863, Comments: 1377",
+=======
+      "summary": "Score: 46888, Comments: 1378",
+>>>>>>> Stashed changes
       "url": "https://reddit.com/r/politics/comments/1rdpr1m/trump_hit_by_new_epstein_files_bombshell_before/",
       "relevance_tags": [
         "trump",
@@ -107,12 +205,21 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.8,
+<<<<<<< Updated upstream
       "timestamp": 1772031244.256769,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {
         "score": 46863,
         "comments": 1377,
+=======
+      "timestamp": 1772031647.058816,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 46888,
+        "comments": 1378,
+>>>>>>> Stashed changes
         "sub": "politics"
       },
       "score": 73
@@ -130,11 +237,19 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.8,
+<<<<<<< Updated upstream
       "timestamp": 1772031246.1750379,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {
         "score": 1430,
+=======
+      "timestamp": 1772031649.153738,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 1433,
+>>>>>>> Stashed changes
         "comments": 296,
         "sub": "wallstreetbets"
       },
@@ -144,19 +259,32 @@
       "id": "8cbddb4a62ae3a7c",
       "source": "reddit/r/politics",
       "headline": "Trump\u2019s Epstein Scandal Takes Damning Turn as Dem Drops New Bombshell",
+<<<<<<< Updated upstream
       "summary": "Score: 4645, Comments: 326",
+=======
+      "summary": "Score: 5016, Comments: 349",
+>>>>>>> Stashed changes
       "url": "https://reddit.com/r/politics/comments/1rebd0w/trumps_epstein_scandal_takes_damning_turn_as_dem/",
       "relevance_tags": [
         "trump"
       ],
       "sentiment": -1.0,
       "confidence": 0.8,
+<<<<<<< Updated upstream
       "timestamp": 1772031244.2535522,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {
         "score": 4645,
         "comments": 326,
+=======
+      "timestamp": 1772031647.0562031,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 5016,
+        "comments": 349,
+>>>>>>> Stashed changes
         "sub": "politics"
       },
       "score": 72
@@ -165,24 +293,159 @@
       "id": "413cb89509665a16",
       "source": "reddit/r/politics",
       "headline": "\u2018Didn\u2019t mention Epstein once\u2019: Americans react to Trump\u2019s record-breaking \u2018nearly two hours of lies\u2019 State of the Union",
+<<<<<<< Updated upstream
       "summary": "Score: 4894, Comments: 240",
+=======
+      "summary": "Score: 5080, Comments: 248",
+>>>>>>> Stashed changes
       "url": "https://reddit.com/r/politics/comments/1re9l4p/didnt_mention_epstein_once_americans_react_to/",
       "relevance_tags": [
         "trump"
       ],
       "sentiment": 1.0,
       "confidence": 0.8,
+<<<<<<< Updated upstream
       "timestamp": 1772031244.253922,
+=======
+      "timestamp": 1772031647.056631,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {
-        "score": 4894,
-        "comments": 240,
+        "score": 5080,
+        "comments": 248,
         "sub": "politics"
       },
       "score": 72
     },
     {
+      "id": "3edd900b058e368a",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "'$7 billion break-up fee': Warner Bros. Discovery says Paramount\u2019s new bid might top Netflix\u2019s",
+      "summary": "Score: 1179, Comments: 239",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1re2zku/7_billion_breakup_fee_warner_bros_discovery_says/",
+      "relevance_tags": [
+        "etf"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.8,
+      "timestamp": 1772031649.15249,
+>>>>>>> Stashed changes
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+<<<<<<< Updated upstream
+        "score": 4894,
+        "comments": 240,
+        "sub": "politics"
+=======
+        "score": 1179,
+        "comments": 239,
+        "sub": "wallstreetbets"
+      },
+      "score": 72
+    },
+    {
+      "id": "40da7d5d6108b1fe",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "DHT Gains +$0.5 mil",
+      "summary": "Yolo'd DHT monthlies because I thought we were striking Iran before Ramadan. Didn't happen, instead some guys Sinokor started hoarding VLCC's, tanker rates spiking up. Best way to profit for all the wrong reasons. \n\nhttps://www.reddit.com/r/wallstreetbets/comments/1r7azho/yolo_bet_that_we_smack_iran_after_market_close/",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1rdqc2y/dht_gains_05_mil/",
+      "relevance_tags": [
+        "ai",
+        "market"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.8,
+      "timestamp": 1772031649.156714,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {
+        "score": 627,
+        "comments": 95,
+        "sub": "wallstreetbets"
+      },
+      "score": 72
+    },
+    {
+      "id": "c27a7a2a81f7886f",
+      "source": "tavily",
+      "headline": "Gambling on wars? Prediction markets usher in a 'Wild West' of betting",
+      "summary": "Betting on whether Donald Trump would regain the presidency reportedly skyrocketed on Polymarket and Kalshi during the frenetic last weeks of",
+      "url": "https://www.usatoday.com/story/news/politics/2026/02/25/prediction-markets-polymarket-kalshi-politics-sports-trump/88640927007/",
+      "relevance_tags": [
+        "trump",
+        "eth",
+        "ai",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031619.127574,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {},
+      "score": 70
+    },
+    {
+      "id": "d0bdeb88e3684fcd",
+      "source": "tavily",
+      "headline": "Polymarket, Kalshi Showcase the Power of Prediction Markets",
+      "summary": "Mention markets are the high-octane, fast-twitch speed competitions of the prediction market ... events major and minor, from politics to sports",
+      "url": "https://www.youtube.com/watch?v=07qJvdSSSD8",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 1.0,
+      "confidence": 0.7,
+      "timestamp": 1772031620.1870122,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {},
+      "score": 70
+    },
+    {
+      "id": "6843a00553d40740",
+      "source": "tavily",
+      "headline": "State of the Union Picks: Prediction Market Odds - Action Network",
+      "summary": "Picks and prediction market odds for President Donald Trump's State of the Union Address.",
+      "url": "https://www.actionnetwork.com/politics/trump-state-of-the-union-picks-prediction-market-odds",
+      "relevance_tags": [
+        "trump",
+        "president",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031620.189365,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {},
+      "score": 70
+    },
+    {
+      "id": "f92e35d484f18a91",
+      "source": "reddit/r/wallstreetbets",
+      "headline": "Novo just cut Wegovy/Ozempic prices up to 50% the day after CagriSema failed.",
+      "summary": "Novo announced yesterday they're cutting Wegovy list prices 50% and Ozempic prices up to 40%. This came one day after CagriSema \u2014 their next-gen obesity drug that was supposed to close the gap on Lilly's Zepbound \u2014 missed the primary endpoint in a head-to-head trial. NVO is down 60% from its 2024 peak. Copenhagen shares at their lowest since June 2021.\n\n**I went back and found every major case of ",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1rdvepp/novo_just_cut_wegovyozempic_prices_up_to_50_the/",
+      "relevance_tags": [
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1772031649.155465,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {
+        "score": 624,
+        "comments": 162,
+        "sub": "wallstreetbets"
+>>>>>>> Stashed changes
+      },
+      "score": 72
+    },
+    {
+<<<<<<< Updated upstream
       "id": "3edd900b058e368a",
       "source": "reddit/r/wallstreetbets",
       "headline": "'$7 billion break-up fee': Warner Bros. Discovery says Paramount\u2019s new bid might top Netflix\u2019s",
@@ -245,6 +508,27 @@
         "sub": "wallstreetbets"
       },
       "score": 69
+=======
+      "id": "cde90aefeadb30bb",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "Crypto.com Is One Step From Becoming A US National Trust Bank",
+      "summary": "Score: 162, Comments: 42",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1rdja48/cryptocom_is_one_step_from_becoming_a_us_national/",
+      "relevance_tags": [
+        "crypto"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.662,
+      "timestamp": 1772031650.836268,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 162,
+        "comments": 42,
+        "sub": "cryptocurrency"
+      },
+      "score": 66
+>>>>>>> Stashed changes
     },
     {
       "id": "0281b17fdea3664f",
@@ -258,7 +542,11 @@
       ],
       "sentiment": 1.0,
       "confidence": 0.526,
+<<<<<<< Updated upstream
       "timestamp": 1772031242.5050392,
+=======
+      "timestamp": 1772031645.156899,
+>>>>>>> Stashed changes
       "matched_markets": [],
       "category": "sports",
       "raw_data": {
@@ -269,6 +557,7 @@
       "score": 65
     },
     {
+<<<<<<< Updated upstream
       "id": "cde90aefeadb30bb",
       "source": "reddit/r/cryptocurrency",
       "headline": "Crypto.com Is One Step From Becoming A US National Trust Bank",
@@ -294,6 +583,12 @@
       "source": "reddit/r/politics",
       "headline": "Trump\u2019s ICE is quietly stockpiling weaponry-and it should alarm us all",
       "summary": "Score: 2684, Comments: 119",
+=======
+      "id": "518a54323cf2a32f",
+      "source": "reddit/r/politics",
+      "headline": "Trump\u2019s ICE is quietly stockpiling weaponry-and it should alarm us all",
+      "summary": "Score: 2880, Comments: 122",
+>>>>>>> Stashed changes
       "url": "https://reddit.com/r/politics/comments/1reapco/trumps_ice_is_quietly_stockpiling_weaponryand_it/",
       "relevance_tags": [
         "trump",
@@ -301,12 +596,21 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.8,
+<<<<<<< Updated upstream
       "timestamp": 1772031244.2542138,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {
         "score": 2684,
         "comments": 119,
+=======
+      "timestamp": 1772031647.0569332,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 2880,
+        "comments": 122,
+>>>>>>> Stashed changes
         "sub": "politics"
       },
       "score": 64
@@ -315,19 +619,32 @@
       "id": "b32686e79a5a6413",
       "source": "reddit/r/politics",
       "headline": "Rep. Al Green ejected from Trump's State of the Union after holding a 'Black people aren't apes' sign",
+<<<<<<< Updated upstream
       "summary": "Score: 21915, Comments: 771",
+=======
+      "summary": "Score: 21967, Comments: 772",
+>>>>>>> Stashed changes
       "url": "https://reddit.com/r/politics/comments/1re0s5i/rep_al_green_ejected_from_trumps_state_of_the/",
       "relevance_tags": [
         "trump"
       ],
       "sentiment": 0.0,
       "confidence": 0.8,
+<<<<<<< Updated upstream
       "timestamp": 1772031244.254512,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {
         "score": 21915,
         "comments": 771,
+=======
+      "timestamp": 1772031647.057153,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 21967,
+        "comments": 772,
+>>>>>>> Stashed changes
         "sub": "politics"
       },
       "score": 64
@@ -336,7 +653,11 @@
       "id": "2937a5ffa5b2c1a6",
       "source": "reddit/r/politics",
       "headline": "Majority of Supreme Court Justices Skip Trump's State of the Union After He Called Them a 'Disgrace to Our Nation'",
+<<<<<<< Updated upstream
       "summary": "Score: 15761, Comments: 347",
+=======
+      "summary": "Score: 15826, Comments: 348",
+>>>>>>> Stashed changes
       "url": "https://reddit.com/r/politics/comments/1re1snd/majority_of_supreme_court_justices_skip_trumps/",
       "relevance_tags": [
         "trump",
@@ -344,12 +665,21 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.8,
+<<<<<<< Updated upstream
       "timestamp": 1772031244.2547982,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {
         "score": 15761,
         "comments": 347,
+=======
+      "timestamp": 1772031647.057365,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 15826,
+        "comments": 348,
+>>>>>>> Stashed changes
         "sub": "politics"
       },
       "score": 64
@@ -358,19 +688,32 @@
       "id": "756dba96095ea7df",
       "source": "reddit/r/politics",
       "headline": "Trump\u2019s delusional State of the Union address",
+<<<<<<< Updated upstream
       "summary": "Score: 4477, Comments: 329",
+=======
+      "summary": "Score: 4647, Comments: 338",
+>>>>>>> Stashed changes
       "url": "https://reddit.com/r/politics/comments/1re4lsy/trumps_delusional_state_of_the_union_address/",
       "relevance_tags": [
         "trump"
       ],
       "sentiment": 0.0,
       "confidence": 0.8,
+<<<<<<< Updated upstream
       "timestamp": 1772031244.2552588,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {
         "score": 4477,
         "comments": 329,
+=======
+      "timestamp": 1772031647.0577059,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 4647,
+        "comments": 338,
+>>>>>>> Stashed changes
         "sub": "politics"
       },
       "score": 64
@@ -379,18 +722,30 @@
       "id": "abf1a6dbd0963a8a",
       "source": "reddit/r/politics",
       "headline": "Trump celebrates 2.4 million Americans \"lifted\" off SNAP benefits after his tax-cut law slashed funding and tightened work requirements",
+<<<<<<< Updated upstream
       "summary": "Score: 4351, Comments: 282",
+=======
+      "summary": "Score: 4402, Comments: 282",
+>>>>>>> Stashed changes
       "url": "https://reddit.com/r/politics/comments/1re1qp2/trump_celebrates_24_million_americans_lifted_off/",
       "relevance_tags": [
         "trump"
       ],
       "sentiment": 0.0,
       "confidence": 0.8,
+<<<<<<< Updated upstream
       "timestamp": 1772031244.2555351,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {
         "score": 4351,
+=======
+      "timestamp": 1772031647.057919,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 4402,
+>>>>>>> Stashed changes
         "comments": 282,
         "sub": "politics"
       },
@@ -400,7 +755,11 @@
       "id": "e715055657ae5ea6",
       "source": "reddit/r/politics",
       "headline": "Democrats celebrate three election wins during State of the Union",
+<<<<<<< Updated upstream
       "summary": "Score: 3399, Comments: 121",
+=======
+      "summary": "Score: 3448, Comments: 121",
+>>>>>>> Stashed changes
       "url": "https://reddit.com/r/politics/comments/1re38wc/democrats_celebrate_three_election_wins_during/",
       "relevance_tags": [
         "election",
@@ -408,11 +767,19 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.8,
+<<<<<<< Updated upstream
       "timestamp": 1772031244.255758,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {
         "score": 3399,
+=======
+      "timestamp": 1772031647.058081,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 3448,
+>>>>>>> Stashed changes
         "comments": 121,
         "sub": "politics"
       },
@@ -422,24 +789,37 @@
       "id": "3ac7054963ad4648",
       "source": "reddit/r/politics",
       "headline": "NPR finds DOJ withheld, removed some Epstein files related to Trump",
+<<<<<<< Updated upstream
       "summary": "Score: 14162, Comments: 169",
+=======
+      "summary": "Score: 14193, Comments: 169",
+>>>>>>> Stashed changes
       "url": "https://reddit.com/r/politics/comments/1rdtzda/npr_finds_doj_withheld_removed_some_epstein_files/",
       "relevance_tags": [
         "trump"
       ],
       "sentiment": 0.0,
       "confidence": 0.8,
+<<<<<<< Updated upstream
       "timestamp": 1772031244.255975,
       "matched_markets": [],
       "category": "politics",
       "raw_data": {
         "score": 14162,
+=======
+      "timestamp": 1772031647.0582368,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 14193,
+>>>>>>> Stashed changes
         "comments": 169,
         "sub": "politics"
       },
       "score": 64
     },
     {
+<<<<<<< Updated upstream
       "id": "645393d88c319fe9",
       "source": "reddit/r/wallstreetbets",
       "headline": "AMD &amp; MU Saved My Ass, +200K and still holding MU",
@@ -506,6 +886,53 @@
     {
       "id": "314f2a99623e02b8",
       "source": "reddit/r/wallstreetbets",
+=======
+      "id": "3a84b6a717a458bf",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "Bitcoin loses over 20,000 millionaires since the start of 2026",
+      "summary": "Score: 525, Comments: 36",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1re691u/bitcoin_loses_over_20000_millionaires_since_the/",
+      "relevance_tags": [
+        "bitcoin",
+        "ai"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1772031650.834731,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 525,
+        "comments": 36,
+        "sub": "cryptocurrency"
+      },
+      "score": 64
+    },
+    {
+      "id": "77490f4d1b222110",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "As of late February 2026, Bitcoin has been declared \"dead\" approximately 467 times, if you invested $100 each time, you'd have approximately $66M",
+      "summary": "Score: 541, Comments: 108",
+      "url": "https://reddit.com/r/CryptoCurrency/comments/1rdrv37/as_of_late_february_2026_bitcoin_has_been/",
+      "relevance_tags": [
+        "bitcoin"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.8,
+      "timestamp": 1772031650.835008,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 541,
+        "comments": 108,
+        "sub": "cryptocurrency"
+      },
+      "score": 64
+    },
+    {
+      "id": "314f2a99623e02b8",
+      "source": "reddit/r/wallstreetbets",
+>>>>>>> Stashed changes
       "headline": "First 5 figure month!",
       "summary": "Made 138% in 2025 when I solidified my strategy with shares only. Started 2026 with just over 20k and decided to scale into options for my big winners to juice returns and protect profits. Ended up working even better than I thought because I made 102% in January alone thanks to South Korea for 14% and silver for the other 88%, making money from both the way up and as the bubble popped with silver",
       "url": "https://reddit.com/r/wallstreetbets/comments/1re49t3/first_5_figure_month/",
@@ -514,12 +941,21 @@
         "sol"
       ],
       "sentiment": 1.0,
+<<<<<<< Updated upstream
       "confidence": 0.621,
       "timestamp": 1772031246.177579,
       "matched_markets": [],
       "category": "sports",
       "raw_data": {
         "score": 121,
+=======
+      "confidence": 0.625,
+      "timestamp": 1772031649.156409,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {
+        "score": 125,
+>>>>>>> Stashed changes
         "comments": 45,
         "sub": "wallstreetbets"
       },
@@ -529,19 +965,32 @@
       "id": "16b6d7d64cc919a0",
       "source": "reddit/r/cryptocurrency",
       "headline": "Meta To Begin Stablecoin Integration in 2026 on Ethereum",
+<<<<<<< Updated upstream
       "summary": "Score: 274, Comments: 59",
+=======
+      "summary": "Score: 272, Comments: 59",
+>>>>>>> Stashed changes
       "url": "https://reddit.com/r/CryptoCurrency/comments/1rdu9gc/meta_to_begin_stablecoin_integration_in_2026_on/",
       "relevance_tags": [
         "ethereum",
         "eth"
       ],
       "sentiment": 0.0,
+<<<<<<< Updated upstream
       "confidence": 0.774,
       "timestamp": 1772031247.901474,
       "matched_markets": [],
       "category": "crypto",
       "raw_data": {
         "score": 274,
+=======
+      "confidence": 0.772,
+      "timestamp": 1772031650.835191,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 272,
+>>>>>>> Stashed changes
         "comments": 59,
         "sub": "cryptocurrency"
       },
@@ -551,41 +1000,156 @@
       "id": "fce20409bc969a63",
       "source": "reddit/r/cryptocurrency",
       "headline": "Solo Bitcoin Miner Nabs $200K After Renting $75 Worth of Hash Power",
+<<<<<<< Updated upstream
       "summary": "Score: 273, Comments: 22",
+=======
+      "summary": "Score: 275, Comments: 22",
+>>>>>>> Stashed changes
       "url": "https://reddit.com/r/CryptoCurrency/comments/1rds1db/solo_bitcoin_miner_nabs_200k_after_renting_75/",
       "relevance_tags": [
         "bitcoin",
         "sol"
       ],
       "sentiment": 0.0,
+<<<<<<< Updated upstream
       "confidence": 0.773,
       "timestamp": 1772031247.9016929,
       "matched_markets": [],
       "category": "crypto",
       "raw_data": {
         "score": 273,
+=======
+      "confidence": 0.775,
+      "timestamp": 1772031650.8353631,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 275,
+>>>>>>> Stashed changes
         "comments": 22,
         "sub": "cryptocurrency"
       },
       "score": 63
     },
     {
+<<<<<<< Updated upstream
       "id": "bb04e8eb10d7ff06",
       "source": "reddit/r/cryptocurrency",
       "headline": "Bitcoin price news: BTC zoomes above $65,000 as bullish 'double-bottom' hopes build",
       "summary": "Score: 22, Comments: 29",
+=======
+      "id": "417e04decdda5d36",
+      "source": "tavily",
+      "headline": "Trending Markets Predictions & Real-Time Odds - Polymarket",
+      "summary": "Explore the latest Trending Markets predictions on Polymarket as of February 23, 2026. Track real-time odds and trade on The World's Largest Prediction",
+      "url": "https://polymarket.com/predictions/trending-markets",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031619.126764,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {},
+      "score": 62
+    },
+    {
+      "id": "b84aa81a8c0dca71",
+      "source": "tavily",
+      "headline": "Market Trends Predictions & Real-Time Odds - Polymarket",
+      "summary": "Explore the latest Market Trends predictions on Polymarket as of February 23, 2026. Track real-time odds and trade on The World's Largest Prediction Market\u2122",
+      "url": "https://polymarket.com/predictions/market-trends",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031619.127017,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {},
+      "score": 62
+    },
+    {
+      "id": "6dd9652b10a78e8e",
+      "source": "tavily",
+      "headline": "Today Predictions & Real-Time Odds | Polymarket",
+      "summary": "Explore the latest Today predictions on Polymarket as of February 25, 2026. Track real-time odds and trade on The World's Largest Prediction Market\u2122",
+      "url": "https://polymarket.com/predictions/today",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031619.127171,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {},
+      "score": 62
+    },
+    {
+      "id": "48f52b8abf11cce3",
+      "source": "tavily",
+      "headline": "Prediction Markets Predictions & Real-Time Odds - Polymarket",
+      "summary": "Polymarket currently hosts 9 active markets for Prediction Markets that lets you track or trade on predictions like \"Which companies will be acquired before",
+      "url": "https://polymarket.com/predictions/prediction-markets",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031619.127311,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {},
+      "score": 62
+    },
+    {
+      "id": "7bd694ff8f63e965",
+      "source": "tavily",
+      "headline": "Crypto Predictions & Real-Time Odds | Polymarket",
+      "summary": "Explore the latest Crypto predictions on Polymarket as of February 25, 2026. Track real-time odds and trade on The World's Largest Prediction Market\u2122",
+      "url": "https://polymarket.com/predictions/crypto",
+      "relevance_tags": [
+        "crypto",
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031619.127856,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {},
+      "score": 62
+    },
+    {
+      "id": "bb04e8eb10d7ff06",
+      "source": "reddit/r/cryptocurrency",
+      "headline": "Bitcoin price news: BTC zoomes above $65,000 as bullish 'double-bottom' hopes build",
+      "summary": "Score: 24, Comments: 29",
+>>>>>>> Stashed changes
       "url": "https://reddit.com/r/CryptoCurrency/comments/1re4qeq/bitcoin_price_news_btc_zoomes_above_65000_as/",
       "relevance_tags": [
         "bitcoin",
         "btc"
       ],
       "sentiment": 0.0,
+<<<<<<< Updated upstream
       "confidence": 0.522,
       "timestamp": 1772031247.90186,
       "matched_markets": [],
       "category": "crypto",
       "raw_data": {
         "score": 22,
+=======
+      "confidence": 0.524,
+      "timestamp": 1772031650.835546,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 24,
+>>>>>>> Stashed changes
         "comments": 29,
         "sub": "cryptocurrency"
       },
@@ -601,6 +1165,7 @@
         "ai"
       ],
       "sentiment": 1.0,
+<<<<<<< Updated upstream
       "confidence": 0.563,
       "timestamp": 1772031242.505515,
       "matched_markets": [],
@@ -608,6 +1173,15 @@
       "raw_data": {
         "score": 63,
         "comments": 166,
+=======
+      "confidence": 0.56,
+      "timestamp": 1772031645.1573708,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {
+        "score": 60,
+        "comments": 167,
+>>>>>>> Stashed changes
         "sub": "sportsbook"
       },
       "score": 61
@@ -616,19 +1190,32 @@
       "id": "fda0cb01d9a12ba7",
       "source": "reddit/r/wallstreetbets",
       "headline": "Here we go again",
+<<<<<<< Updated upstream
       "summary": "Score: 683, Comments: 36",
+=======
+      "summary": "Score: 736, Comments: 40",
+>>>>>>> Stashed changes
       "url": "https://reddit.com/r/wallstreetbets/comments/1reck2w/here_we_go_again/",
       "relevance_tags": [
         "ai"
       ],
       "sentiment": 0.0,
       "confidence": 0.8,
+<<<<<<< Updated upstream
       "timestamp": 1772031246.173116,
       "matched_markets": [],
       "category": "culture",
       "raw_data": {
         "score": 683,
         "comments": 36,
+=======
+      "timestamp": 1772031649.15211,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {
+        "score": 736,
+        "comments": 40,
+>>>>>>> Stashed changes
         "sub": "wallstreetbets"
       },
       "score": 59
@@ -644,17 +1231,113 @@
       ],
       "sentiment": 0.0,
       "confidence": 0.8,
+<<<<<<< Updated upstream
       "timestamp": 1772031246.1739578,
       "matched_markets": [],
       "category": "culture",
       "raw_data": {
         "score": 22488,
+=======
+      "timestamp": 1772031649.1531,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {
+        "score": 22506,
+>>>>>>> Stashed changes
         "comments": 1886,
         "sub": "wallstreetbets"
       },
       "score": 59
     },
     {
+<<<<<<< Updated upstream
+=======
+      "id": "2583ed8d89f21965",
+      "source": "tavily",
+      "headline": "Polymarket | The World's Largest Prediction Market",
+      "summary": "Polymarket is the world's largest prediction market, allowing you to stay informed and profit from your knowledge by trading on future events across various",
+      "url": "https://polymarket.com/",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031619.127442,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {},
+      "score": 57
+    },
+    {
+      "id": "4d77574e5b9b0c89",
+      "source": "tavily",
+      "headline": "All Predictions & Real-Time Odds - Polymarket",
+      "summary": "Explore the latest All predictions on Polymarket as of February 25, 2026. Track real-time odds and trade on The World's Largest Prediction Market\u2122",
+      "url": "https://polymarket.com/predictions/all",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031619.127717,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {},
+      "score": 57
+    },
+    {
+      "id": "c39e1ce1915dd729",
+      "source": "tavily",
+      "headline": "Todays Sports Predictions & Real-Time Odds | Polymarket",
+      "summary": "Explore the latest Todays Sports predictions on Polymarket as of February 23, 2026. Track real-time odds and trade on The World's Largest Prediction Market\u2122",
+      "url": "https://polymarket.com/predictions/todays-sports",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031620.187422,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {},
+      "score": 57
+    },
+    {
+      "id": "8402e94b1fcbfbc4",
+      "source": "tavily",
+      "headline": "Kalshi - Prediction Market for Trading the Future",
+      "summary": "Kalshi is a regulated exchange & prediction market where you can trade on the outcome of real-world events. Buy and sell Event Contracts.",
+      "url": "https://kalshi.com/",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031620.188568,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {},
+      "score": 57
+    },
+    {
+      "id": "41050a5fb34b5370",
+      "source": "tavily",
+      "headline": "Sports Predictions & Real-Time Odds | Polymarket",
+      "summary": "Explore the latest Sports predictions on Polymarket as of February 25, 2026. Track real-time odds and trade on The World's Largest Prediction Market\u2122",
+      "url": "https://polymarket.com/predictions/sports",
+      "relevance_tags": [
+        "market"
+      ],
+      "sentiment": 0.0,
+      "confidence": 0.7,
+      "timestamp": 1772031620.18902,
+      "matched_markets": [],
+      "category": "economy",
+      "raw_data": {},
+      "score": 57
+    },
+    {
+>>>>>>> Stashed changes
       "id": "74b580a744ce7745",
       "source": "reddit/r/politics",
       "headline": "Discussion Thread: 2026 State of the Union Address",
@@ -665,6 +1348,7 @@
         "congress"
       ],
       "sentiment": 0.0,
+<<<<<<< Updated upstream
       "confidence": 0.681,
       "timestamp": 1772031244.2531672,
       "matched_markets": [],
@@ -672,6 +1356,15 @@
       "raw_data": {
         "score": 181,
         "comments": 17716,
+=======
+      "confidence": 0.6799999999999999,
+      "timestamp": 1772031647.055691,
+      "matched_markets": [],
+      "category": "politics",
+      "raw_data": {
+        "score": 180,
+        "comments": 17718,
+>>>>>>> Stashed changes
         "sub": "politics"
       },
       "score": 56
@@ -686,6 +1379,7 @@
         "ai"
       ],
       "sentiment": 0.0,
+<<<<<<< Updated upstream
       "confidence": 0.664,
       "timestamp": 1772031246.172752,
       "matched_markets": [],
@@ -693,6 +1387,15 @@
       "raw_data": {
         "score": 164,
         "comments": 2770,
+=======
+      "confidence": 0.662,
+      "timestamp": 1772031649.151863,
+      "matched_markets": [],
+      "category": "culture",
+      "raw_data": {
+        "score": 162,
+        "comments": 2957,
+>>>>>>> Stashed changes
         "sub": "wallstreetbets"
       },
       "score": 56
@@ -707,12 +1410,21 @@
         "basketball"
       ],
       "sentiment": 0.0,
+<<<<<<< Updated upstream
       "confidence": 0.506,
       "timestamp": 1772031242.506046,
       "matched_markets": [],
       "category": "sports",
       "raw_data": {
         "score": 6,
+=======
+      "confidence": 0.507,
+      "timestamp": 1772031645.157807,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {
+        "score": 7,
+>>>>>>> Stashed changes
         "comments": 30,
         "sub": "sportsbook"
       },
@@ -728,12 +1440,21 @@
         "nba"
       ],
       "sentiment": 0.0,
+<<<<<<< Updated upstream
       "confidence": 0.503,
       "timestamp": 1772031242.506578,
       "matched_markets": [],
       "category": "sports",
       "raw_data": {
         "score": 3,
+=======
+      "confidence": 0.505,
+      "timestamp": 1772031645.158239,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {
+        "score": 5,
+>>>>>>> Stashed changes
         "comments": 23,
         "sub": "sportsbook"
       },
@@ -743,13 +1464,18 @@
       "id": "aa72f6e13b020a08",
       "source": "reddit/r/sportsbook",
       "headline": "Tennis Betting and Picks Daily Discussion - 2/25/26 (Wednesday)",
+<<<<<<< Updated upstream
       "summary": "Score: 6, Comments: 110",
+=======
+      "summary": "Score: 5, Comments: 112",
+>>>>>>> Stashed changes
       "url": "https://reddit.com/r/sportsbook/comments/1rduue0/tennis_betting_and_picks_daily_discussion_22526/",
       "relevance_tags": [
         "tennis",
         "ai"
       ],
       "sentiment": 0.0,
+<<<<<<< Updated upstream
       "confidence": 0.506,
       "timestamp": 1772031242.507046,
       "matched_markets": [],
@@ -757,6 +1483,15 @@
       "raw_data": {
         "score": 6,
         "comments": 110,
+=======
+      "confidence": 0.505,
+      "timestamp": 1772031645.158922,
+      "matched_markets": [],
+      "category": "sports",
+      "raw_data": {
+        "score": 5,
+        "comments": 112,
+>>>>>>> Stashed changes
         "sub": "sportsbook"
       },
       "score": 52
@@ -772,6 +1507,7 @@
         "ai"
       ],
       "sentiment": 0.0,
+<<<<<<< Updated upstream
       "confidence": 0.514,
       "timestamp": 1772031247.900654,
       "matched_markets": [],
@@ -779,6 +1515,15 @@
       "raw_data": {
         "score": 14,
         "comments": 156,
+=======
+      "confidence": 0.513,
+      "timestamp": 1772031650.834462,
+      "matched_markets": [],
+      "category": "crypto",
+      "raw_data": {
+        "score": 13,
+        "comments": 157,
+>>>>>>> Stashed changes
         "sub": "cryptocurrency"
       },
       "score": 52
@@ -791,12 +1536,21 @@
       "url": "https://reddit.com/r/wallstreetbets/comments/1rebg9c/finally_beating_the_sp_500_thanks_to_glw/",
       "relevance_tags": [],
       "sentiment": 1.0,
+<<<<<<< Updated upstream
       "confidence": 0.555,
       "timestamp": 1772031246.175915,
       "matched_markets": [],
       "category": "other",
       "raw_data": {
         "score": 55,
+=======
+      "confidence": 0.5589999999999999,
+      "timestamp": 1772031649.154783,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 59,
+>>>>>>> Stashed changes
         "comments": 22,
         "sub": "wallstreetbets"
       },
@@ -806,16 +1560,28 @@
       "id": "6099fb09fd6a1c1b",
       "source": "reddit/r/politics",
       "headline": "Rep. Al Green removed from chamber during State of the Union",
+<<<<<<< Updated upstream
       "summary": "Score: 4394, Comments: 244",
+=======
+      "summary": "Score: 4403, Comments: 244",
+>>>>>>> Stashed changes
       "url": "https://reddit.com/r/politics/comments/1re0qh1/rep_al_green_removed_from_chamber_during_state_of/",
       "relevance_tags": [],
       "sentiment": 0.0,
       "confidence": 0.8,
+<<<<<<< Updated upstream
       "timestamp": 1772031244.256196,
       "matched_markets": [],
       "category": "other",
       "raw_data": {
         "score": 4394,
+=======
+      "timestamp": 1772031647.058393,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 4403,
+>>>>>>> Stashed changes
         "comments": 244,
         "sub": "politics"
       },
@@ -825,16 +1591,28 @@
       "id": "98e636dd8dfd326a",
       "source": "reddit/r/politics",
       "headline": "Lawmaker Names Three Men from the Epstein Files on the House Floor, Demands Investigation",
+<<<<<<< Updated upstream
       "summary": "Score: 8259, Comments: 133",
+=======
+      "summary": "Score: 8276, Comments: 133",
+>>>>>>> Stashed changes
       "url": "https://reddit.com/r/politics/comments/1rdwc9w/lawmaker_names_three_men_from_the_epstein_files/",
       "relevance_tags": [],
       "sentiment": 0.0,
       "confidence": 0.8,
+<<<<<<< Updated upstream
       "timestamp": 1772031244.256434,
       "matched_markets": [],
       "category": "other",
       "raw_data": {
         "score": 8259,
+=======
+      "timestamp": 1772031647.05857,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 8276,
+>>>>>>> Stashed changes
         "comments": 133,
         "sub": "politics"
       },
@@ -849,11 +1627,19 @@
       "relevance_tags": [],
       "sentiment": 0.0,
       "confidence": 0.8,
+<<<<<<< Updated upstream
       "timestamp": 1772031246.1733801,
       "matched_markets": [],
       "category": "other",
       "raw_data": {
         "score": 2495,
+=======
+      "timestamp": 1772031649.1527748,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 2508,
+>>>>>>> Stashed changes
         "comments": 293,
         "sub": "wallstreetbets"
       },
@@ -863,16 +1649,28 @@
       "id": "e41d8d4d4d4bfd25",
       "source": "reddit/r/wallstreetbets",
       "headline": "I love this sub.",
+<<<<<<< Updated upstream
       "summary": "Score: 331, Comments: 47",
+=======
+      "summary": "Score: 330, Comments: 47",
+>>>>>>> Stashed changes
       "url": "https://reddit.com/r/wallstreetbets/comments/1rdyval/i_love_this_sub/",
       "relevance_tags": [],
       "sentiment": 0.0,
       "confidence": 0.8,
+<<<<<<< Updated upstream
       "timestamp": 1772031246.177206,
       "matched_markets": [],
       "category": "other",
       "raw_data": {
         "score": 331,
+=======
+      "timestamp": 1772031649.155919,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 330,
+>>>>>>> Stashed changes
         "comments": 47,
         "sub": "wallstreetbets"
       },
@@ -882,6 +1680,7 @@
       "id": "fdf971e9a17c8d71",
       "source": "reddit/r/wallstreetbets",
       "headline": "Weekly Earnings Thread 2/23 - 2/27",
+<<<<<<< Updated upstream
       "summary": "Score: 229, Comments: 1058",
       "url": "https://reddit.com/r/wallstreetbets/comments/1ra00b2/weekly_earnings_thread_223_227/",
       "relevance_tags": [],
@@ -893,6 +1692,19 @@
       "raw_data": {
         "score": 229,
         "comments": 1058,
+=======
+      "summary": "Score: 230, Comments: 1062",
+      "url": "https://reddit.com/r/wallstreetbets/comments/1ra00b2/weekly_earnings_thread_223_227/",
+      "relevance_tags": [],
+      "sentiment": 0.0,
+      "confidence": 0.73,
+      "timestamp": 1772031649.151382,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 230,
+        "comments": 1062,
+>>>>>>> Stashed changes
         "sub": "wallstreetbets"
       },
       "score": 43
@@ -905,17 +1717,30 @@
       "url": "https://reddit.com/r/sportsbook/comments/1rdhzmm/king_of_the_court/",
       "relevance_tags": [],
       "sentiment": 0.0,
+<<<<<<< Updated upstream
       "confidence": 0.526,
       "timestamp": 1772031242.50685,
       "matched_markets": [],
       "category": "other",
       "raw_data": {
         "score": 26,
+=======
+      "confidence": 0.525,
+      "timestamp": 1772031645.158571,
+      "matched_markets": [],
+      "category": "other",
+      "raw_data": {
+        "score": 25,
+>>>>>>> Stashed changes
         "comments": 158,
         "sub": "sportsbook"
       },
       "score": 38
     }
   ],
+<<<<<<< Updated upstream
   "updated": 1772031285.666811
+=======
+  "updated": 1772031684.190795
+>>>>>>> Stashed changes
 }

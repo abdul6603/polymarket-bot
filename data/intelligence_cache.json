@@ -34,24 +34,24 @@
   },
   "shelby": {
     "dimensions": {
-      "Team Awareness": 25,
-      "Task Management": 50,
-      "Communication": 40,
-      "Scheduling": 35,
-      "Decision Quality": 10
+      "Team Awareness": 100,
+      "Task Management": 18,
+      "Communication": 100,
+      "Scheduling": 41,
+      "Decision Quality": 78
     },
-    "overall": 32,
+    "overall": 67,
     "title": "The Commander"
   },
   "lisa": {
     "dimensions": {
       "Platform Knowledge": 25,
-      "Posting Discipline": 20,
+      "Posting Discipline": 80,
       "Brand Alignment": 40,
       "Strategy Depth": 30,
       "Engagement IQ": 25
     },
-    "overall": 28,
+    "overall": 40,
     "title": "The Operator"
   },
   "robotox": {
@@ -67,13 +67,13 @@
   },
   "thor": {
     "dimensions": {
-      "Code Quality": 30,
+      "Code Quality": 58,
       "Knowledge Depth": 100,
-      "Task Execution": 40,
-      "System Coverage": 15,
+      "Task Execution": 100,
+      "System Coverage": 100,
       "Efficiency": 54
     },
-    "overall": 47,
+    "overall": 82,
     "title": "The Engineer"
   },
   "hawk": {
@@ -89,13 +89,13 @@
   },
   "viper": {
     "dimensions": {
-      "Discovery": 100,
+      "Discovery": 15,
       "Cost Intelligence": 100,
-      "Revenue Potential": 100,
-      "Push Rate": 100,
-      "Monetization IQ": 100
+      "Revenue Potential": 15,
+      "Push Rate": 10,
+      "Monetization IQ": 60
     },
-    "overall": 100,
+    "overall": 40,
     "title": "The Opportunity Hunter"
   },
   "quant": {
@@ -112,48 +112,48 @@
   "odin": {
     "dimensions": {
       "Regime Detection": 92,
-      "Risk Management": 20,
-      "Accuracy": 89,
+      "Risk Management": 100,
+      "Accuracy": 30,
       "Capital Efficiency": 30,
       "Market Scanning": 32
     },
-    "overall": 52,
+    "overall": 56,
     "title": "The Regime Trader"
   },
   "oracle": {
     "dimensions": {
       "Market Analysis": 100,
       "Prediction Accuracy": 15,
-      "Ensemble Quality": 69,
-      "Experience": 21,
+      "Ensemble Quality": 70,
+      "Experience": 13,
       "Capital Efficiency": 30
     },
-    "overall": 47,
+    "overall": 45,
     "title": "The Weekly Crypto Oracle"
   },
   "team": {
     "dimensions": {
       "Collective Knowledge": 74,
-      "Coordination": 62,
+      "Coordination": 85,
       "Performance": 52,
       "Autonomy": 84,
-      "Adaptability": 49
+      "Adaptability": 67
     },
-    "overall": 64,
+    "overall": 72,
     "title": "Brotherhood",
     "agent_scores": {
       "garves": 91,
       "soren": 82,
       "atlas": 93,
-      "shelby": 32,
-      "lisa": 28,
+      "shelby": 67,
+      "lisa": 40,
       "robotox": 74,
-      "thor": 47,
+      "thor": 82,
       "hawk": 39,
-      "viper": 100,
+      "viper": 40,
       "quant": 48,
-      "odin": 52,
-      "oracle": 47
+      "odin": 56,
+      "oracle": 45
     }
   }
 }

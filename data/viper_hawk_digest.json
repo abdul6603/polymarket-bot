@@ -2,11 +2,20 @@
   "agent": "hawk",
   "items": [
     {
-      "headline": "Bitcoin falls below $65,000 as Trump tariff moves raise uncertainty",
-      "detail": "&gt;tldr:\n\n&gt;Bitcoin fell more than 5% to below $65,000 on Monday after U.S. President Donald Trump announced plans to raise global tariffs to 15%.\n\n&gt;The drop came as Asian equities rose in early trade, underscoring crypto\u2019s divergence from regional stock markets amid renewed tariff uncertainty.",
+      "headline": "'Hockey' and 'World Cup' references top Kalshi odds on State of the ...",
+      "detail": "Prediction market Kalshi forecasts President Trump will mention sports issues in his State of the Union address, with high odds for",
+      "source": "tavily",
+      "score": 87,
+      "ts": 1772031684.262576,
+      "category": "intel",
+      "matched_markets": []
+    },
+    {
+      "headline": "Warner Bros. Discovery says Paramount raised its bid to $31 per share",
+      "detail": "$31 is not enough to beat a Netflix deal. Most likely, Netflix will match it.",
       "source": "reddit/r/wallstreetbets",
-      "score": 85,
-      "ts": 1771940431.783324,
+      "score": 81,
+      "ts": 1772031684.2625768,
       "category": "intel",
       "matched_markets": []
     },
@@ -15,84 +24,75 @@
       "detail": "All the people that hated Bitcoin on the previous bear market piled in at the top and this sub was littered with\n\n\u201cI sold my stocks and went all in Bitcoin\u201d\n\n\u201cI\u2019m about to go all in is it a good idea?\u201d\n\n\u201cSold my house for Bitcoin\u201d\n\n\u201cIs it a good price to buy here at 120k?\u201d\n\n\u201cDeploying my retirement money\u201d\n\nEvery.single.one.\n\nAnd if you dared to have a different opinion you were attacked. I know I ",
       "source": "reddit/r/cryptocurrency",
       "score": 81,
-      "ts": 1771940431.783326,
+      "ts": 1772031684.262578,
       "category": "intel",
       "matched_markets": []
     },
     {
-      "headline": "Prediction-Market Battle Heats Up - Front Office Sports",
-      "detail": "With the CFTC chairman's announcement, the stage is set for an eventual Supreme Court battle over sports event contracts.",
+      "headline": "Prediction market Kalshi is anticipating President Trump will make ...",
+      "detail": "The oddsmaker is predicting a 93 percent chance Trump says the words \u201cOlympics\u201d or \u201cWorld Cup\u201d during his speech while \u201chockey\u201d specifically",
       "source": "tavily",
-      "score": 78,
-      "ts": 1771940431.783326,
-      "category": "intel",
-      "matched_markets": []
-    },
-    {
-      "headline": "Polymarket",
-      "detail": "Over $700,000,000,000 eliminated from the U.S. stock market today. The S&P 500 is now projected to fall below $6.75k this month: polymarket.com/event/what-wil\u2026",
-      "source": "tavily",
-      "score": 75,
-      "ts": 1771940431.7833269,
-      "category": "intel",
-      "matched_markets": []
-    },
-    {
-      "headline": "Why prediction markets are thriving \u2013 and facing scrutiny | PBS News",
-      "detail": "The day before the election, Polymarket gave candidate Trump a 58 percent chance of winning. Now, part of the prediction market boom has been",
-      "source": "tavily",
-      "score": 75,
-      "ts": 1771940431.7833269,
-      "category": "intel",
-      "matched_markets": []
-    },
-    {
-      "headline": "FedEx sues U.S. seeking full refund of Trump tariffs days after Supreme Court ruling",
-      "detail": "Score: 9029, Comments: 308",
-      "source": "reddit/r/politics",
-      "score": 73,
-      "ts": 1771940431.783328,
+      "score": 79,
+      "ts": 1772031684.262579,
       "category": "intel",
       "matched_markets": []
     },
     {
       "headline": "FedEx sues for refund of Trump tariffs, days after Supreme Court ruling",
-      "detail": "Score: 794, Comments: 90",
+      "detail": "Score: 5644, Comments: 283",
+      "source": "reddit/r/wallstreetbets",
+      "score": 78,
+      "ts": 1772031684.262579,
+      "category": "intel",
+      "matched_markets": []
+    },
+    {
+      "headline": "Democrat wins special state House election in Maine",
+      "detail": "Score: 12772, Comments: 165",
+      "source": "reddit/r/politics",
+      "score": 73,
+      "ts": 1772031684.26258,
+      "category": "intel",
+      "matched_markets": []
+    },
+    {
+      "headline": "Trump Hit by New Epstein Files Bombshell Before Big Speech - An investigation alleges there are more than 50 pages worth of documents missing from the Epstein files that may pertain to allegations aga",
+      "detail": "Score: 46888, Comments: 1378",
+      "source": "reddit/r/politics",
+      "score": 73,
+      "ts": 1772031684.26258,
+      "category": "intel",
+      "matched_markets": []
+    },
+    {
+      "headline": "Trump to announce data center energy deals during State of the Union",
+      "detail": "President Donald Trump plans to use his 2026 State of the Union address to highlight **new data center energy agreements** with major tech firms that are intended to address rising electricity demand tied to AI infrastructure. The administration has been negotiating **\u201cratepayer protection\u201d pledges** under which companies such as Microsoft, Google, OpenAI, Amazon, and Meta would publicly commit to",
       "source": "reddit/r/wallstreetbets",
       "score": 73,
-      "ts": 1771940431.783328,
+      "ts": 1772031684.262581,
       "category": "intel",
       "matched_markets": []
     },
     {
-      "headline": "Trump Melts Down After Favorite General Sounds Alarm on His War Plotting",
-      "detail": "Score: 17880, Comments: 755",
+      "headline": "Trump\u2019s Epstein Scandal Takes Damning Turn as Dem Drops New Bombshell",
+      "detail": "Score: 5016, Comments: 349",
       "source": "reddit/r/politics",
       "score": 72,
-      "ts": 1771940431.783329,
+      "ts": 1772031684.262581,
       "category": "intel",
       "matched_markets": []
     },
     {
-      "headline": "Prediction markets love sports, but the feeling isn't exactly mutual",
-      "detail": "\u201d The AGA has accused prediction market platforms of using sports event contracts \u201cto evade state regulations and ignore the voice of voters",
-      "source": "tavily",
-      "score": 70,
-      "ts": 1771940431.783329,
-      "category": "intel",
-      "matched_markets": []
-    },
-    {
-      "headline": "Senators tell CFTC prediction market contracts need clear guidance",
-      "detail": "Six Democratic senators told the Commodity Futures Trading Commission in a previously unreported letter that they have strong concerns about",
-      "source": "tavily",
-      "score": 70,
-      "ts": 1771940431.78333,
+      "headline": "\u2018Didn\u2019t mention Epstein once\u2019: Americans react to Trump\u2019s record-breaking \u2018nearly two hours of lies\u2019 State of the Union",
+      "detail": "Score: 5080, Comments: 248",
+      "source": "reddit/r/politics",
+      "score": 72,
+      "ts": 1772031684.262582,
       "category": "intel",
       "matched_markets": []
     }
   ],
-  "generated_at": 1771940431.783336,
+  "generated_at": 1772031684.26259,
   "item_count": 10,
   "fresh": true
 }

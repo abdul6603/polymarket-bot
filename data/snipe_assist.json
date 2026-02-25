@@ -1,21 +1,35 @@
 {
+<<<<<<< Updated upstream
   "timing_score": 46.2,
+=======
+  "timing_score": 52.7,
+>>>>>>> Stashed changes
   "action": "auto_skip",
   "direction": "up",
   "recommended_size_pct": 0.0,
   "optimal_entry_window_s": 0,
   "confidence_factors": {
     "snipe_signal_strength": {
+<<<<<<< Updated upstream
       "raw": 0.481,
       "weighted": 19.2
+=======
+      "raw": 0.831,
+      "weighted": 33.2
+>>>>>>> Stashed changes
     },
     "liquidity_quality": {
       "raw": 0.15,
       "weighted": 3.0
     },
     "time_positioning": {
+<<<<<<< Updated upstream
       "raw": 0.7,
       "weighted": 10.5
+=======
+      "raw": 0.2,
+      "weighted": 3.0
+>>>>>>> Stashed changes
     },
     "regime_alignment": {
       "raw": 0.5,
@@ -48,8 +62,13 @@
       "crypto_only": true
     }
   },
+<<<<<<< Updated upstream
   "expires_at": 1772031613.261415,
   "timestamp": 1772031493.261417,
+=======
+  "expires_at": 1772031835.052864,
+  "timestamp": 1772031715.052865,
+>>>>>>> Stashed changes
   "thresholds": {
     "auto": 80,
     "conservative": 65

@@ -1,0 +1,20 @@
+{
+  "suggestions": [
+    {
+      "insight": "### Performance Trend Analysis for Garves (Period: 2026-02-17 to 2026-02-18)\n\n#### Key Trend:\nThe performance trend for Garves over this period is **improving**. The win rate has shown a consistent upward trajectory, starting from 53.8% and reaching a peak of 70.0%. \n\n#### Performance Breakdown:\n- *",
+      "confidence": 0.85,
+      "timestamp": "2026-02-18T03:38:24.153023-05:00"
+    },
+    {
+      "insight": "**Performance Trend Analysis for Garves (Period: 2026-02-20)**\n\n**Key Trend: Declining**\n- The performance data indicates a consistent win rate of 0% across all 28 checks, with no trades executed (total_trades = 0). This suggests a significant decline in performance, as there are no successful trade",
+      "confidence": 0.85,
+      "timestamp": "2026-02-21T04:18:47.062214-05:00"
+    },
+    {
+      "insight": "### Performance Trend Analysis for Garves (Feb 21 - Feb 23, 2026)\n\n**Key Trend:**\nThe performance trend for Garves during this period can be characterized as **unstable**. The win rates fluctuated significantly, with a notable improvement towards the end of the period.\n\n**Performance Breakdown:**\n1.",
+      "confidence": 0.85,
+      "timestamp": "2026-02-23T23:48:19.368131-05:00"
+    }
+  ],
+  "generated_at": "2026-02-25T05:52:59.498445-05:00"
+}

@@ -2,11 +2,19 @@
   "agent": "shelby",
   "items": [
     {
-      "headline": "[ACTION] Bitcoin falls below $65,000 as Trump tariff moves raise uncertainty",
-      "detail": "&gt;tldr:\n\n&gt;Bitcoin fell more than 5% to below $65,000 on Monday after U.S. President Donald Trump announced plans to raise global tariffs to 15%.\n\n&gt;The drop came as Asian equities rose in early trade, underscoring crypto\u2019s divergence from regional stock markets amid renewed tariff uncertainty.",
+      "headline": "[ACTION] 'Hockey' and 'World Cup' references top Kalshi odds on State of the ...",
+      "detail": "Prediction market Kalshi forecasts President Trump will mention sports issues in his State of the Union address, with high odds for",
+      "source": "tavily",
+      "score": 87,
+      "ts": 1772031684.2633631,
+      "category": "action_item"
+    },
+    {
+      "headline": "[ACTION] Warner Bros. Discovery says Paramount raised its bid to $31 per share",
+      "detail": "$31 is not enough to beat a Netflix deal. Most likely, Netflix will match it.",
       "source": "reddit/r/wallstreetbets",
-      "score": 85,
-      "ts": 1771940431.784102,
+      "score": 81,
+      "ts": 1772031684.263364,
       "category": "action_item"
     },
     {
@@ -14,31 +22,23 @@
       "detail": "All the people that hated Bitcoin on the previous bear market piled in at the top and this sub was littered with\n\n\u201cI sold my stocks and went all in Bitcoin\u201d\n\n\u201cI\u2019m about to go all in is it a good idea?\u201d\n\n\u201cSold my house for Bitcoin\u201d\n\n\u201cIs it a good price to buy here at 120k?\u201d\n\n\u201cDeploying my retirement money\u201d\n\nEvery.single.one.\n\nAnd if you dared to have a different opinion you were attacked. I know I ",
       "source": "reddit/r/cryptocurrency",
       "score": 81,
-      "ts": 1771940431.784103,
+      "ts": 1772031684.263365,
       "category": "action_item"
     },
     {
-      "headline": "[ACTION] Prediction-Market Battle Heats Up - Front Office Sports",
-      "detail": "With the CFTC chairman's announcement, the stage is set for an eventual Supreme Court battle over sports event contracts.",
+      "headline": "[ACTION] Prediction market Kalshi is anticipating President Trump will make ...",
+      "detail": "The oddsmaker is predicting a 93 percent chance Trump says the words \u201cOlympics\u201d or \u201cWorld Cup\u201d during his speech while \u201chockey\u201d specifically",
       "source": "tavily",
+      "score": 79,
+      "ts": 1772031684.263365,
+      "category": "action_item"
+    },
+    {
+      "headline": "[ACTION] FedEx sues for refund of Trump tariffs, days after Supreme Court ruling",
+      "detail": "Score: 5644, Comments: 283",
+      "source": "reddit/r/wallstreetbets",
       "score": 78,
-      "ts": 1771940431.7841039,
-      "category": "action_item"
-    },
-    {
-      "headline": "[ACTION] Polymarket",
-      "detail": "Over $700,000,000,000 eliminated from the U.S. stock market today. The S&P 500 is now projected to fall below $6.75k this month: polymarket.com/event/what-wil\u2026",
-      "source": "tavily",
-      "score": 75,
-      "ts": 1771940431.784105,
-      "category": "action_item"
-    },
-    {
-      "headline": "[ACTION] Why prediction markets are thriving \u2013 and facing scrutiny | PBS News",
-      "detail": "The day before the election, Polymarket gave candidate Trump a 58 percent chance of winning. Now, part of the prediction market boom has been",
-      "source": "tavily",
-      "score": 75,
-      "ts": 1771940431.784105,
+      "ts": 1772031684.263366,
       "category": "action_item"
     },
     {
@@ -46,7 +46,7 @@
       "detail": "High monthly spend \u2014 review if all calls are necessary",
       "source": "cost_audit",
       "score": 60,
-      "ts": 1771940431.784161,
+      "ts": 1772031684.263426,
       "category": "cost_waste"
     },
     {
@@ -54,19 +54,19 @@
       "detail": "High monthly spend \u2014 review if all calls are necessary",
       "source": "cost_audit",
       "score": 60,
-      "ts": 1771940431.784162,
+      "ts": 1772031684.263427,
       "category": "cost_waste"
     },
     {
-      "headline": "Pipeline stats: 170 total pushes to Shelby",
+      "headline": "Pipeline stats: 173 total pushes to Shelby",
       "detail": "System cost: $299.54/mo",
       "source": "pipeline",
       "score": 20,
-      "ts": 1771940431.7841978,
+      "ts": 1772031684.263463,
       "category": "stats"
     }
   ],
-  "generated_at": 1771940431.784199,
+  "generated_at": 1772031684.263465,
   "item_count": 8,
   "fresh": true
 }

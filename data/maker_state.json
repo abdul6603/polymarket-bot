@@ -1,5 +1,6 @@
 {
   "enabled": true,
+<<<<<<< Updated upstream
   "timestamp": 1772031492.036747,
   "active_quotes": [
     {
@@ -17,19 +18,56 @@
       "asset": "bitcoin",
       "side": "SELL",
       "price": 0.61,
+=======
+  "timestamp": 1772031708.612715,
+  "active_quotes": [
+    {
+      "order_id": "dry-maker-buy-1772031708",
+      "token_id": "7248266927643742",
+      "asset": "bitcoin",
+      "side": "BUY",
+      "price": 0.79,
       "size_usd": 15.0,
       "age_s": 0
     },
     {
+      "order_id": "dry-maker-sell-1772031708",
+      "token_id": "7248266927643742",
+      "asset": "bitcoin",
+      "side": "SELL",
+      "price": 0.82,
+>>>>>>> Stashed changes
+      "size_usd": 15.0,
+      "age_s": 0
+    },
+    {
+<<<<<<< Updated upstream
       "order_id": "dry-maker-sell-1772031492",
       "token_id": "5031531384031342",
       "asset": "ethereum",
       "side": "SELL",
       "price": 0.89,
+=======
+      "order_id": "dry-maker-buy-1772031708",
+      "token_id": "5031531384031342",
+      "asset": "ethereum",
+      "side": "BUY",
+      "price": 0.75,
       "size_usd": 15.0,
       "age_s": 0
     },
     {
+      "order_id": "dry-maker-sell-1772031708",
+      "token_id": "5031531384031342",
+      "asset": "ethereum",
+      "side": "SELL",
+      "price": 0.78,
+>>>>>>> Stashed changes
+      "size_usd": 15.0,
+      "age_s": 0
+    },
+    {
+<<<<<<< Updated upstream
       "order_id": "dry-maker-buy-1772031492",
       "token_id": "1155068151829779",
       "asset": "solana",
@@ -69,12 +107,198 @@
       "order_id": "dry-maker-sell-1772031492",
       "token_id": "2761125218693002",
       "asset": "bitcoin",
+=======
+      "order_id": "dry-maker-buy-1772031708",
+      "token_id": "1155068151829779",
+      "asset": "solana",
+      "side": "BUY",
+      "price": 0.87,
+      "size_usd": 15.0,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-sell-1772031708",
+      "token_id": "1155068151829779",
+      "asset": "solana",
+      "side": "SELL",
+      "price": 0.91,
+      "size_usd": 15.0,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-buy-1772031708",
+      "token_id": "7741594846102636",
+      "asset": "xrp",
+      "side": "BUY",
+      "price": 0.81,
+      "size_usd": 15.0,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-sell-1772031708",
+      "token_id": "7741594846102636",
+      "asset": "xrp",
+      "side": "SELL",
+      "price": 0.85,
+      "size_usd": 15.0,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-buy-1772031708",
+      "token_id": "9868334899954399",
+      "asset": "bitcoin",
+      "side": "BUY",
+      "price": 0.45,
+      "size_usd": 7.5,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-sell-1772031708",
+      "token_id": "9868334899954399",
+      "asset": "bitcoin",
+      "side": "SELL",
+      "price": 0.49,
+      "size_usd": 7.5,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-sell-1772031708",
+      "token_id": "3404934191956838",
+      "asset": "xrp",
+      "side": "SELL",
+      "price": 0.5,
+      "size_usd": 7.5,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-buy-1772031708",
+      "token_id": "9557828204724123",
+      "asset": "ethereum",
+      "side": "BUY",
+      "price": 0.46,
+      "size_usd": 7.5,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-sell-1772031708",
+      "token_id": "9557828204724123",
+      "asset": "ethereum",
+      "side": "SELL",
+      "price": 0.5,
+      "size_usd": 7.5,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-buy-1772031708",
+      "token_id": "1003144195527763",
+      "asset": "solana",
+      "side": "BUY",
+      "price": 0.46,
+      "size_usd": 7.5,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-sell-1772031708",
+      "token_id": "1003144195527763",
+      "asset": "solana",
+      "side": "SELL",
+      "price": 0.5,
+      "size_usd": 7.5,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-buy-1772031708",
+      "token_id": "9140336995347827",
+      "asset": "bitcoin",
+      "side": "BUY",
+      "price": 0.45,
+      "size_usd": 4.5,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-sell-1772031708",
+      "token_id": "9140336995347827",
+      "asset": "bitcoin",
+      "side": "SELL",
+      "price": 0.49,
+      "size_usd": 4.5,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-buy-1772031708",
+      "token_id": "1593511705973839",
+      "asset": "ethereum",
+      "side": "BUY",
+      "price": 0.47,
+      "size_usd": 4.5,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-sell-1772031708",
+      "token_id": "1593511705973839",
+      "asset": "ethereum",
+      "side": "SELL",
+      "price": 0.51,
+      "size_usd": 4.5,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-buy-1772031708",
+      "token_id": "3118259937600948",
+      "asset": "solana",
+      "side": "BUY",
+      "price": 0.46,
+      "size_usd": 4.5,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-sell-1772031708",
+      "token_id": "3118259937600948",
+      "asset": "solana",
+      "side": "SELL",
+      "price": 0.5,
+      "size_usd": 4.5,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-buy-1772031708",
+      "token_id": "5557209064512804",
+      "asset": "xrp",
+      "side": "BUY",
+      "price": 0.48,
+      "size_usd": 4.5,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-buy-1772031708",
+      "token_id": "8858226172647908",
+      "asset": "bitcoin",
+      "side": "BUY",
+      "price": 0.49,
+      "size_usd": 3.0,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-buy-1772031708",
+      "token_id": "9597920610520576",
+      "asset": "ethereum",
+      "side": "BUY",
+      "price": 0.49,
+      "size_usd": 3.0,
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-sell-1772031708",
+      "token_id": "2077032283952325",
+      "asset": "solana",
+>>>>>>> Stashed changes
       "side": "SELL",
       "price": 0.53,
       "size_usd": 3.0,
       "age_s": 0
     },
     {
+<<<<<<< Updated upstream
       "order_id": "dry-maker-buy-1772031492",
       "token_id": "9921097040458323",
       "asset": "ethereum",
@@ -104,10 +328,26 @@
     {
       "order_id": "dry-maker-buy-1772031492",
       "token_id": "3881463888930321",
+=======
+      "order_id": "dry-maker-buy-1772031708",
+      "token_id": "4395759344793997",
+>>>>>>> Stashed changes
       "asset": "xrp",
       "side": "BUY",
       "price": 0.49,
       "size_usd": 3.0,
+<<<<<<< Updated upstream
+=======
+      "age_s": 0
+    },
+    {
+      "order_id": "dry-maker-sell-1772031708",
+      "token_id": "4395759344793997",
+      "asset": "xrp",
+      "side": "SELL",
+      "price": 0.52,
+      "size_usd": 3.0,
+>>>>>>> Stashed changes
       "age_s": 0
     }
   ],
@@ -156,9 +396,15 @@
     },
     "112901889192595544149911666820376680868579436422224325682957453878791002233967": {
       "asset": "xrp",
+<<<<<<< Updated upstream
       "net_shares": -2.07,
       "fills_today": 5,
       "estimated_rebate": 0.015,
+=======
+      "net_shares": 2.69,
+      "fills_today": 6,
+      "estimated_rebate": 0.018,
+>>>>>>> Stashed changes
       "remaining_s": 137
     },
     "98860009376680111500793443233785531391269795423555739840166908358764161467844": {
@@ -177,10 +423,17 @@
     },
     "77415948461026364660956711225305133034000523457494685121625868795003128398287": {
       "asset": "xrp",
+<<<<<<< Updated upstream
       "net_shares": 19.51,
       "fills_today": 7,
       "estimated_rebate": 0.105,
       "remaining_s": 7337
+=======
+      "net_shares": -14.61,
+      "fills_today": 11,
+      "estimated_rebate": 0.165,
+      "remaining_s": 7135
+>>>>>>> Stashed changes
     },
     "101934563970004018594799895671128378830038369220122237748337028610490963538062": {
       "asset": "ethereum",
@@ -191,6 +444,7 @@
     },
     "72482669276437426635650202502508565501385059026308685324341321173861309943949": {
       "asset": "bitcoin",
+<<<<<<< Updated upstream
       "net_shares": 31.45,
       "fills_today": 3,
       "estimated_rebate": 0.045,
@@ -230,6 +484,47 @@
       "fills_today": 6,
       "estimated_rebate": 0.018,
       "remaining_s": 137
+=======
+      "net_shares": 8.95,
+      "fills_today": 10,
+      "estimated_rebate": 0.15,
+      "remaining_s": 7135
+    },
+    "115506815182977947151078490082782111845414705217209044846754026121915875784725": {
+      "asset": "solana",
+      "net_shares": -13.2,
+      "fills_today": 15,
+      "estimated_rebate": 0.225,
+      "remaining_s": 7135
+    },
+    "5031531384031342911107495670704459295748594028683081294030288167763335766606": {
+      "asset": "ethereum",
+      "net_shares": 13.12,
+      "fills_today": 10,
+      "estimated_rebate": 0.15,
+      "remaining_s": 7135
+    },
+    "31349797408138226748276119854438067970883577588937505608355705828331148808583": {
+      "asset": "solana",
+      "net_shares": -4.95,
+      "fills_today": 5,
+      "estimated_rebate": 0.015,
+      "remaining_s": 61
+    },
+    "38814638889303211399748391820977200741221523610244845293759131792605419765861": {
+      "asset": "xrp",
+      "net_shares": 1.06,
+      "fills_today": 6,
+      "estimated_rebate": 0.018,
+      "remaining_s": 61
+    },
+    "27611252186930026213607751828003038364975748949775957710396902268965391385376": {
+      "asset": "bitcoin",
+      "net_shares": -4.22,
+      "fills_today": 9,
+      "estimated_rebate": 0.027,
+      "remaining_s": 61
+>>>>>>> Stashed changes
     },
     "66223203596791215981902385939215459475868699237225098107417927835273120193967": {
       "asset": "xrp",
@@ -240,6 +535,7 @@
     },
     "9921097040458323886187016035727694546972813025062713165454509196103805373634": {
       "asset": "ethereum",
+<<<<<<< Updated upstream
       "net_shares": 0.48,
       "fills_today": 2,
       "estimated_rebate": 0.006,
@@ -257,6 +553,100 @@
     "XRP: LONG 20 shares \u2014 HARD CAP HIT",
     "BITCOIN: LONG 31 shares \u2014 HARD CAP HIT",
     "ETHEREUM: LONG 28 shares \u2014 HARD CAP HIT"
+=======
+      "net_shares": 0.92,
+      "fills_today": 4,
+      "estimated_rebate": 0.012,
+      "remaining_s": 61
+    },
+    "8126293880156803674975301035489558992727259557394501633556893542033984918806": {
+      "asset": "xrp",
+      "net_shares": 0.37,
+      "fills_today": 2,
+      "estimated_rebate": 0.006,
+      "remaining_s": 371
+    },
+    "95578282047241235222863639340347627233106009358658620638833342498197435481384": {
+      "asset": "ethereum",
+      "net_shares": 1.0,
+      "fills_today": 2,
+      "estimated_rebate": 0.015,
+      "remaining_s": 3535
+    },
+    "91403369953478276782472917408571648193380762833127419802341729869339955359669": {
+      "asset": "bitcoin",
+      "net_shares": 0.82,
+      "fills_today": 4,
+      "estimated_rebate": 0.018,
+      "remaining_s": 835
+    },
+    "15935117059738398774245146605273044514249755269255296270269203717085727126935": {
+      "asset": "ethereum",
+      "net_shares": 0.38,
+      "fills_today": 2,
+      "estimated_rebate": 0.009,
+      "remaining_s": 835
+    },
+    "3118259937600948277595192389302794060372694874488343930583768045423407232062": {
+      "asset": "solana",
+      "net_shares": 0.6,
+      "fills_today": 2,
+      "estimated_rebate": 0.009,
+      "remaining_s": 835
+    },
+    "55572090645128045786500572694440289498549206048849000833548886190965224513754": {
+      "asset": "xrp",
+      "net_shares": -8.58,
+      "fills_today": 3,
+      "estimated_rebate": 0.0135,
+      "remaining_s": 835
+    },
+    "88582261726479081041313284436569830130328763467777041976311237810138156408861": {
+      "asset": "bitcoin",
+      "net_shares": -5.77,
+      "fills_today": 1,
+      "estimated_rebate": 0.003,
+      "remaining_s": 235
+    },
+    "20770322839523253593342070118321385962861330646716882904732857542640631298202": {
+      "asset": "solana",
+      "net_shares": 0.92,
+      "fills_today": 4,
+      "estimated_rebate": 0.012,
+      "remaining_s": 235
+    },
+    "3404934191956838485872039203120654653393595651263799497679469459586423898915": {
+      "asset": "xrp",
+      "net_shares": 15.96,
+      "fills_today": 1,
+      "estimated_rebate": 0.0075,
+      "remaining_s": 3535
+    },
+    "43957593447939977250981529851979778454364464924223333957697344602291887882336": {
+      "asset": "xrp",
+      "net_shares": 0.35,
+      "fills_today": 2,
+      "estimated_rebate": 0.006,
+      "remaining_s": 235
+    },
+    "100314419552776368922417674694132154910686964340771246672653498056428534553323": {
+      "asset": "solana",
+      "net_shares": 1.3,
+      "fills_today": 2,
+      "estimated_rebate": 0.015,
+      "remaining_s": 3535
+    },
+    "9597920610520576669761822079867920657402973019895497012096206829212286482270": {
+      "asset": "ethereum",
+      "net_shares": -5.77,
+      "fills_today": 1,
+      "estimated_rebate": 0.003,
+      "remaining_s": 235
+    }
+  },
+  "warnings": [
+    "XRP: LONG 16 shares \u2014 HARD CAP HIT"
+>>>>>>> Stashed changes
   ],
   "config": {
     "quote_size_usd": 15.0,
@@ -265,6 +655,7 @@
     "tick_interval_s": 5.0
   },
   "stats": {
+<<<<<<< Updated upstream
     "fills_today": 70,
     "estimated_rebate_today": 0.462,
     "active_quote_count": 12
@@ -272,11 +663,21 @@
   "pnl": {
     "session_pnl": 12.1288,
     "spread_captured": 11.6668,
+=======
+    "fills_today": 128,
+    "estimated_rebate_today": 0.975,
+    "active_quote_count": 27
+  },
+  "pnl": {
+    "session_pnl": 24.78,
+    "spread_captured": 23.805,
+>>>>>>> Stashed changes
     "resolution_losses": 0.0,
     "kill_reason": null
   },
   "recent_fills": [
     {
+<<<<<<< Updated upstream
       "ts": 1772031398.202826,
       "side": "BUY",
       "asset": "solana",
@@ -471,10 +872,20 @@
       "fair": 0.8823,
       "size_usd": 15.0,
       "spread_captured": 0.295,
+=======
+      "ts": 1772031676.282227,
+      "side": "SELL",
+      "asset": "solana",
+      "price": 0.9,
+      "fair": 0.8821,
+      "size_usd": 15.0,
+      "spread_captured": 0.2983,
+>>>>>>> Stashed changes
       "rebate": 0.015,
       "token_id": "1155068151829779"
     },
     {
+<<<<<<< Updated upstream
       "ts": 1772031484.127975,
       "side": "SELL",
       "asset": "solana",
@@ -495,6 +906,215 @@
       "spread_captured": 0.0851,
       "rebate": 0.003,
       "token_id": "1129018891925955"
+=======
+      "ts": 1772031676.282358,
+      "side": "SELL",
+      "asset": "xrp",
+      "price": 0.49,
+      "fair": 0.4763,
+      "size_usd": 4.5,
+      "spread_captured": 0.1258,
+      "rebate": 0.0045,
+      "token_id": "5557209064512804"
+    },
+    {
+      "ts": 1772031676.2824802,
+      "side": "SELL",
+      "asset": "solana",
+      "price": 0.53,
+      "fair": 0.5071,
+      "size_usd": 3.0,
+      "spread_captured": 0.1296,
+      "rebate": 0.003,
+      "token_id": "2077032283952325"
+    },
+    {
+      "ts": 1772031682.659483,
+      "side": "BUY",
+      "asset": "solana",
+      "price": 0.87,
+      "fair": 0.8837,
+      "size_usd": 15.0,
+      "spread_captured": 0.2362,
+      "rebate": 0.015,
+      "token_id": "1155068151829779"
+    },
+    {
+      "ts": 1772031682.659551,
+      "side": "BUY",
+      "asset": "solana",
+      "price": 0.46,
+      "fair": 0.4787,
+      "size_usd": 7.5,
+      "spread_captured": 0.3049,
+      "rebate": 0.0075,
+      "token_id": "1003144195527763"
+    },
+    {
+      "ts": 1772031682.6595762,
+      "side": "SELL",
+      "asset": "bitcoin",
+      "price": 0.48,
+      "fair": 0.467,
+      "size_usd": 4.5,
+      "spread_captured": 0.1219,
+      "rebate": 0.0045,
+      "token_id": "9140336995347827"
+    },
+    {
+      "ts": 1772031682.659598,
+      "side": "BUY",
+      "asset": "solana",
+      "price": 0.49,
+      "fair": 0.5087,
+      "size_usd": 3.0,
+      "spread_captured": 0.1145,
+      "rebate": 0.003,
+      "token_id": "2077032283952325"
+    },
+    {
+      "ts": 1772031695.2521658,
+      "side": "BUY",
+      "asset": "bitcoin",
+      "price": 0.79,
+      "fair": 0.8019,
+      "size_usd": 15.0,
+      "spread_captured": 0.2259,
+      "rebate": 0.015,
+      "token_id": "7248266927643742"
+    },
+    {
+      "ts": 1772031695.252219,
+      "side": "BUY",
+      "asset": "ethereum",
+      "price": 0.75,
+      "fair": 0.7623,
+      "size_usd": 15.0,
+      "spread_captured": 0.246,
+      "rebate": 0.015,
+      "token_id": "5031531384031342"
+    },
+    {
+      "ts": 1772031695.25224,
+      "side": "SELL",
+      "asset": "solana",
+      "price": 0.9,
+      "fair": 0.8836,
+      "size_usd": 15.0,
+      "spread_captured": 0.2733,
+      "rebate": 0.015,
+      "token_id": "1155068151829779"
+    },
+    {
+      "ts": 1772031695.252258,
+      "side": "BUY",
+      "asset": "bitcoin",
+      "price": 0.45,
+      "fair": 0.4669,
+      "size_usd": 4.5,
+      "spread_captured": 0.169,
+      "rebate": 0.0045,
+      "token_id": "9140336995347827"
+    },
+    {
+      "ts": 1772031695.252274,
+      "side": "SELL",
+      "asset": "bitcoin",
+      "price": 0.48,
+      "fair": 0.4669,
+      "size_usd": 4.5,
+      "spread_captured": 0.1228,
+      "rebate": 0.0045,
+      "token_id": "9140336995347827"
+    },
+    {
+      "ts": 1772031695.252288,
+      "side": "SELL",
+      "asset": "ethereum",
+      "price": 0.5,
+      "fair": 0.4873,
+      "size_usd": 4.5,
+      "spread_captured": 0.1143,
+      "rebate": 0.0045,
+      "token_id": "1593511705973839"
+    },
+    {
+      "ts": 1772031695.2523022,
+      "side": "BUY",
+      "asset": "solana",
+      "price": 0.46,
+      "fair": 0.4786,
+      "size_usd": 4.5,
+      "spread_captured": 0.182,
+      "rebate": 0.0045,
+      "token_id": "3118259937600948"
+    },
+    {
+      "ts": 1772031695.2523148,
+      "side": "SELL",
+      "asset": "solana",
+      "price": 0.53,
+      "fair": 0.5086,
+      "size_usd": 3.0,
+      "spread_captured": 0.1211,
+      "rebate": 0.003,
+      "token_id": "2077032283952325"
+    },
+    {
+      "ts": 1772031695.252328,
+      "side": "SELL",
+      "asset": "xrp",
+      "price": 0.52,
+      "fair": 0.5026,
+      "size_usd": 3.0,
+      "spread_captured": 0.1004,
+      "rebate": 0.003,
+      "token_id": "4395759344793997"
+    },
+    {
+      "ts": 1772031708.608219,
+      "side": "SELL",
+      "asset": "xrp",
+      "price": 0.84,
+      "fair": 0.8234,
+      "size_usd": 15.0,
+      "spread_captured": 0.2964,
+      "rebate": 0.015,
+      "token_id": "7741594846102636"
+    },
+    {
+      "ts": 1772031708.608448,
+      "side": "SELL",
+      "asset": "ethereum",
+      "price": 0.49,
+      "fair": 0.478,
+      "size_usd": 7.5,
+      "spread_captured": 0.1837,
+      "rebate": 0.0075,
+      "token_id": "9557828204724123"
+    },
+    {
+      "ts": 1772031708.608583,
+      "side": "SELL",
+      "asset": "solana",
+      "price": 0.5,
+      "fair": 0.4794,
+      "size_usd": 7.5,
+      "spread_captured": 0.309,
+      "rebate": 0.0075,
+      "token_id": "1003144195527763"
+    },
+    {
+      "ts": 1772031708.608716,
+      "side": "SELL",
+      "asset": "ethereum",
+      "price": 0.52,
+      "fair": 0.503,
+      "size_usd": 3.0,
+      "spread_captured": 0.0981,
+      "rebate": 0.003,
+      "token_id": "9597920610520576"
+>>>>>>> Stashed changes
     }
   ]
 }

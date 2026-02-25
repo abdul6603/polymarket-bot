@@ -6,15 +6,23 @@
       "detail": "Total: $299.54/mo across 10 agents",
       "source": "cost_audit",
       "score": 50,
-      "ts": 1771940431.7843862,
+      "ts": 1772031684.26368,
       "category": "cost_trend"
     },
     {
-      "headline": "Active intel category: economy",
-      "detail": "Latest: Bitcoin falls below $65,000 as Trump tariff moves raise uncertainty",
+      "headline": "Active intel category: politics",
+      "detail": "Latest: 'Hockey' and 'World Cup' references top Kalshi odds on State of the ...",
       "source": "intel_categories",
       "score": 30,
-      "ts": 1771940431.7845252,
+      "ts": 1772031684.263822,
+      "category": "research_topic"
+    },
+    {
+      "headline": "Active intel category: sports",
+      "detail": "Latest: Warner Bros. Discovery says Paramount raised its bid to $31 per share",
+      "source": "intel_categories",
+      "score": 30,
+      "ts": 1772031684.263823,
       "category": "research_topic"
     },
     {
@@ -22,43 +30,35 @@
       "detail": "Latest: All of the sudden this sub is real quiet with people going all in Bitcoin with their life savings",
       "source": "intel_categories",
       "score": 30,
-      "ts": 1771940431.784526,
-      "category": "research_topic"
-    },
-    {
-      "headline": "Active intel category: politics",
-      "detail": "Latest: Prediction-Market Battle Heats Up - Front Office Sports",
-      "source": "intel_categories",
-      "score": 30,
-      "ts": 1771940431.784527,
-      "category": "research_topic"
-    },
-    {
-      "headline": "Active intel category: sports",
-      "detail": "Latest: Novo Nordisk sinks 15% after weight loss drug fails to match Eli Lilly's in trial",
-      "source": "intel_categories",
-      "score": 30,
-      "ts": 1771940431.784529,
+      "ts": 1772031684.263824,
       "category": "research_topic"
     },
     {
       "headline": "Active intel category: culture",
-      "detail": "Latest: Former ICE instructor testifies agents were trained to discard constitutional rights",
+      "detail": "Latest: DHT Gains +$0.5 mil",
       "source": "intel_categories",
       "score": 30,
-      "ts": 1771940431.78453,
+      "ts": 1772031684.263825,
+      "category": "research_topic"
+    },
+    {
+      "headline": "Active intel category: economy",
+      "detail": "Latest: Polymarket, Kalshi Showcase the Power of Prediction Markets",
+      "source": "intel_categories",
+      "score": 30,
+      "ts": 1772031684.263826,
       "category": "research_topic"
     },
     {
       "headline": "Monitoring 10 agents",
-      "detail": "Baselines updated: 2026-02-24T08:40:31.781996",
+      "detail": "Baselines updated: 2026-02-25T10:01:24.261217",
       "source": "anomaly_detector",
       "score": 20,
-      "ts": 1771940431.784561,
+      "ts": 1772031684.2638662,
       "category": "system_health"
     }
   ],
-  "generated_at": 1771940431.7845619,
+  "generated_at": 1772031684.263867,
   "item_count": 7,
   "fresh": true
 }

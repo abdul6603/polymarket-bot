@@ -1,6 +1,6 @@
 {
   "garves": {
-    "running": true,
+    "running": false,
     "win_rate": 0,
     "total_trades": 0,
     "resolved": 0,
@@ -96,30 +96,30 @@
     }
   },
   "soren": {
-    "queue_pending": 213,
+    "queue_pending": 262,
     "total_posted": 0
   },
   "shelby": {
-    "running": true
+    "running": false
   },
   "lisa": {
-    "total_posts": 0,
-    "review_avg": null
+    "total_posts": 12,
+    "review_avg": 5.8
   },
   "thor": {
     "state": "idle",
-    "pending": 0,
-    "completed": 0
+    "pending": 4,
+    "completed": 30
   },
   "hawk": {
     "running": true,
-    "win_rate": 33.3,
-    "open_bets": 2
+    "win_rate": 0,
+    "open_bets": 0
   },
   "viper": {
-    "running": true,
+    "running": false,
     "opportunities": 0,
-    "pushed": 193
+    "pushed": 0
   },
   "quant": {
     "running": true,
@@ -127,18 +127,18 @@
     "best_win_rate": 69.9
   },
   "odin": {
-    "running": true,
+    "running": false,
     "mode": "paper",
     "open_positions": 0,
-    "total_pnl": 232.2,
-    "balance": 1232.2,
+    "total_pnl": 249.9,
+    "balance": 0.0,
     "drawdown_pct": 0.0
   },
   "oracle": {
-    "running": false,
-    "regime": "",
-    "trades_placed": 0,
-    "total_wagered": 0,
+    "running": true,
+    "regime": "neutral",
+    "trades_placed": 3,
+    "total_wagered": 75.0,
     "win_rate": 0,
     "dry_run": true
   }
