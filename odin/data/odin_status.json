@@ -1,0 +1,38 @@
+{
+  "agent": "odin",
+  "version": "0.1.0",
+  "mode": "paper",
+  "running": false,
+  "uptime_hours": 492145.28,
+  "cycle_count": 0,
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT"
+  ],
+  "timestamp": 1771722994.6612532,
+  "timestamp_et": "2026-02-21 20:16:34",
+  "balance": 1000.0,
+  "peak_balance": 1000.0,
+  "total_pnl": 0.0,
+  "daily_pnl": 0.0,
+  "weekly_pnl": 0.0,
+  "drawdown_pct": 0.0,
+  "trading_allowed": true,
+  "cb_reason": "",
+  "consecutive_losses": 0,
+  "size_modifier": 1.0,
+  "open_positions": 0,
+  "total_exposure": 0,
+  "paper_positions": [],
+  "macro": null,
+  "last_signal": null,
+  "config": {
+    "htf": "1D",
+    "mtf": "4H",
+    "ltf": "15m",
+    "leverage": 3,
+    "risk_per_trade": 3.25,
+    "kelly_fraction": 0.1,
+    "cycle_seconds": 300
+  }
+}
