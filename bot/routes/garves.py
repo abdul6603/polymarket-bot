@@ -1262,12 +1262,15 @@ def api_garves_positions():
         holdings.sort(key=lambda x: -x["value"])
 
         # ── 1b. Fetch game times from Gamma API for countdown timers ──
-        # Collect unique event slugs from positions data
+        # Only collect slugs for condition_ids in the filtered holdings
+        active_cids = {h.get("_cid", "") for h in holdings}
         slug_to_cids: dict[str, list[str]] = {}
         cid_to_slug: dict[str, str] = {}
         if isinstance(pos_data, list):
             for pos in pos_data:
                 cid = pos.get("conditionId", pos.get("asset", ""))
+                if cid not in active_cids:
+                    continue
                 slug = pos.get("eventSlug", "")
                 if slug and cid:
                     slug_to_cids.setdefault(slug, []).append(cid)

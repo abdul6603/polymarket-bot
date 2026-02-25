@@ -426,11 +426,14 @@ def api_hawk_positions():
             })
 
         # ── 4. Fetch game times from Gamma API ──
-        # Collect event slugs from positions data
+        # Only collect slugs for condition_ids that survived the filter
+        active_cids = {p["_cid"] for p in positions}
         slug_to_cids: dict[str, list[str]] = {}
         if isinstance(pos_data, list):
             for p in pos_data:
                 cid = p.get("conditionId", p.get("asset", ""))
+                if cid not in active_cids:
+                    continue
                 slug = p.get("eventSlug", "")
                 if slug and cid:
                     slug_to_cids.setdefault(slug, []).append(cid)
