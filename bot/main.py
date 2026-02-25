@@ -306,9 +306,9 @@ class TradingBot:
                      self.maker_engine.max_total_exposure, self.maker_engine.tick_interval_s)
         else:
             log.info("MakerEngine: disabled (set MAKER_ENABLED=true to activate)")
-        if cfg.whale_enabled:
+        if self.cfg.whale_enabled:
             log.info("WhaleTracker: ENABLED (poll=%.0fs, max_copy=$%.0f, daily_cap=$%.0f)",
-                     cfg.whale_poll_interval_s, 25.0, 100.0)
+                     self.cfg.whale_poll_interval_s, 25.0, 100.0)
         else:
             log.info("WhaleTracker: disabled (set WHALE_ENABLED=true to activate)")
         log.info("=" * 60)
