@@ -202,13 +202,11 @@ def _normalize_odin(data, mode: str = "paper") -> list[dict]:
             tp_dist = round((_safe_float(tp) - current) / current * 100, 2)
         if sl is not None and current > 0:
             sl_dist = round((_safe_float(sl) - current) / current * 100, 2)
-        # Determine mode from position ID — paper_ prefix = paper regardless of config
-        pos_id = p.get("id", p.get("trade_id", ""))
-        pos_mode = "paper" if str(pos_id).startswith("paper_") else mode
+        pos_id = p.get("id", p.get("trade_id", symbol))
         positions.append({
-            "id": f"odin_{pos_id or symbol}",
+            "id": f"odin_{pos_id}",
             "agent": "odin",
-            "mode": pos_mode,
+            "mode": mode,
             "market": f"{symbol.replace('USDT', '')} Perp",
             "asset": symbol.replace("USDT", "").replace("USD", "").replace("/", ""),
             "platform": "hyperliquid",
@@ -435,5 +433,164 @@ def api_traders_risk():
     return jsonify({
         "allocation": alloc,
         "correlations": correlations,
+        "timestamp": time.time(),
+    })
+
+
+# ---------------------------------------------------------------------------
+# Trade History
+# ---------------------------------------------------------------------------
+
+# Cutoff: only show trades from Feb 24, 2025 onward (post-upgrade)
+_HISTORY_CUTOFF = datetime(2026, 2, 24, 0, 0, 0, tzinfo=timezone.utc).timestamp()
+
+
+def _normalize_hawk_trades(trades: list[dict]) -> list[dict]:
+    """Normalize Hawk trade history into unified schema."""
+    out = []
+    for t in trades:
+        ts = t.get("resolved_at", t.get("timestamp", 0))
+        if isinstance(ts, str):
+            try:
+                ts = datetime.fromisoformat(ts.replace("Z", "+00:00")).timestamp()
+            except Exception:
+                ts = 0
+        if ts < _HISTORY_CUTOFF:
+            continue
+        cost = _safe_float(t.get("cost", t.get("size_usd")))
+        payout = _safe_float(t.get("payout", t.get("redeemed")))
+        pnl = payout - cost if payout > 0 else -cost
+        won = pnl > 0
+        out.append({
+            "agent": "hawk",
+            "mode": "live",
+            "market": t.get("question", t.get("market", "Unknown")),
+            "asset": _parse_asset_from_question(t.get("question", "")),
+            "direction": (t.get("outcome", t.get("direction", "")) or "").upper(),
+            "category": t.get("category", "unknown"),
+            "platform": "polymarket",
+            "cost": round(cost, 2),
+            "payout": round(payout, 2),
+            "pnl": round(pnl, 2),
+            "won": won,
+            "resolved_at": ts,
+            "edge": _safe_float(t.get("edge")),
+        })
+    return out
+
+
+def _normalize_garves_history(history: list[dict]) -> list[dict]:
+    """Normalize Garves resolved trades."""
+    out = []
+    for h in history:
+        # Garves history comes from the activity API, already grouped
+        cost = _safe_float(h.get("cost"))
+        result_pnl = _safe_float(h.get("result_pnl"))
+        won = h.get("won", result_pnl > 0)
+        # Estimate timestamp from market title dates (best effort)
+        ts = h.get("resolved_at", 0)
+        if isinstance(ts, str):
+            try:
+                ts = datetime.fromisoformat(ts.replace("Z", "+00:00")).timestamp()
+            except Exception:
+                ts = 0
+        if ts and ts < _HISTORY_CUTOFF:
+            continue
+        out.append({
+            "agent": "garves",
+            "mode": "live",
+            "market": h.get("market", "Unknown"),
+            "asset": h.get("asset", "?"),
+            "direction": (h.get("outcome", "") or "").upper(),
+            "category": "crypto",
+            "platform": "polymarket",
+            "cost": round(cost, 2),
+            "payout": round(cost + result_pnl, 2) if won else 0.0,
+            "pnl": round(result_pnl, 2),
+            "won": won,
+            "resolved_at": ts,
+            "edge": None,
+        })
+    return out
+
+
+def _normalize_odin_trades(trades: list[dict]) -> list[dict]:
+    """Normalize Odin closed trades."""
+    out = []
+    for t in trades:
+        exit_time = _safe_float(t.get("exit_time", 0))
+        if exit_time < _HISTORY_CUTOFF:
+            continue
+        pnl = _safe_float(t.get("pnl_usd"))
+        mode = t.get("mode", "paper")
+        if not mode:
+            mode = "paper" if str(t.get("trade_id", "")).startswith("paper_") else "live"
+        symbol = t.get("symbol", "BTC")
+        out.append({
+            "agent": "odin",
+            "mode": mode,
+            "market": f"{symbol.replace('USDT', '')} Perp",
+            "asset": symbol.replace("USDT", "").replace("USD", ""),
+            "direction": (t.get("side", "") or "").upper(),
+            "category": "futures",
+            "platform": "hyperliquid",
+            "cost": round(_safe_float(t.get("qty", 0)) * _safe_float(t.get("entry_price", 0)), 2),
+            "payout": 0,
+            "pnl": round(pnl, 2),
+            "won": t.get("is_win", pnl > 0),
+            "resolved_at": exit_time,
+            "edge": None,
+            "leverage": _safe_float(t.get("leverage"), 1.0),
+            "exit_reason": t.get("exit_reason", ""),
+            "hold_hours": round(_safe_float(t.get("hold_hours")), 1),
+        })
+    return out
+
+
+@traders_bp.route("/api/traders/history")
+def api_traders_history():
+    """Unified trade history from all agents — post-upgrade only."""
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        hawk_f = ex.submit(_fetch, "/api/hawk/history")
+        garves_f = ex.submit(_fetch, "/api/garves/positions")
+        odin_f = ex.submit(_fetch, "/api/odin/trades")
+
+    # Hawk
+    hawk_raw = hawk_f.result() or {}
+    hawk_trades = _normalize_hawk_trades(hawk_raw.get("trades", []))
+
+    # Garves — history is in the "history" key of positions response
+    garves_raw = garves_f.result() or {}
+    garves_trades = _normalize_garves_history(garves_raw.get("history", []))
+
+    # Odin
+    odin_raw = odin_f.result()
+    odin_trades = _normalize_odin_trades(odin_raw if isinstance(odin_raw, list) else [])
+
+    all_trades = hawk_trades + garves_trades + odin_trades
+    # Sort by resolved_at descending (newest first)
+    all_trades.sort(key=lambda t: t.get("resolved_at", 0), reverse=True)
+
+    # Stats
+    wins = [t for t in all_trades if t.get("won")]
+    losses = [t for t in all_trades if not t.get("won")]
+    total_pnl = sum(t["pnl"] for t in all_trades)
+    live_trades = [t for t in all_trades if t["mode"] == "live"]
+    paper_trades = [t for t in all_trades if t["mode"] == "paper"]
+
+    return jsonify({
+        "trades": all_trades,
+        "stats": {
+            "total": len(all_trades),
+            "wins": len(wins),
+            "losses": len(losses),
+            "win_rate": round(len(wins) / len(all_trades) * 100, 1) if all_trades else 0,
+            "total_pnl": round(total_pnl, 2),
+            "live_count": len(live_trades),
+            "paper_count": len(paper_trades),
+            "live_pnl": round(sum(t["pnl"] for t in live_trades), 2),
+            "paper_pnl": round(sum(t["pnl"] for t in paper_trades), 2),
+        },
+        "cutoff": _HISTORY_CUTOFF,
         "timestamp": time.time(),
     })

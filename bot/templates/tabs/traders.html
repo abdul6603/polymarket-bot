@@ -34,6 +34,7 @@
     <button class="traders-subtab active" data-sub="overview" onclick="tradersSwitchSub('overview')">Overview</button>
     <button class="traders-subtab" data-sub="positions" onclick="tradersSwitchSub('positions')">Live Positions</button>
     <button class="traders-subtab" data-sub="paper" onclick="tradersSwitchSub('paper')">Paper Positions</button>
+    <button class="traders-subtab" data-sub="history" onclick="tradersSwitchSub('history')">Trade History</button>
     <button class="traders-subtab" data-sub="performance" onclick="tradersSwitchSub('performance')">Performance</button>
     <button class="traders-subtab" data-sub="risk" onclick="tradersSwitchSub('risk')">Risk Overview</button>
   </div>
@@ -120,6 +121,55 @@
         </thead>
         <tbody id="traders-paper-body"></tbody>
         <tfoot id="traders-paper-foot" style="border-top:1px solid var(--border);"></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- SUB-TAB: Trade History -->
+  <div class="traders-panel" id="traders-panel-history" style="display:none;">
+    <!-- History Stats Bar -->
+    <div id="traders-history-stats" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px;"></div>
+
+    <!-- History Filters -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+      <select id="traders-hist-agent" onchange="tradersFilterHistory()" style="background:var(--surface-elevated);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 8px;font-size:0.72rem;font-family:var(--font-mono);">
+        <option value="all">All Agents</option>
+        <option value="garves">Garves</option>
+        <option value="hawk">Hawk</option>
+        <option value="odin">Odin</option>
+      </select>
+      <select id="traders-hist-mode" onchange="tradersFilterHistory()" style="background:var(--surface-elevated);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 8px;font-size:0.72rem;font-family:var(--font-mono);">
+        <option value="all">All Modes</option>
+        <option value="live">Live Only</option>
+        <option value="paper">Paper Only</option>
+      </select>
+      <select id="traders-hist-result" onchange="tradersFilterHistory()" style="background:var(--surface-elevated);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 8px;font-size:0.72rem;font-family:var(--font-mono);">
+        <option value="all">All Results</option>
+        <option value="won">Wins</option>
+        <option value="lost">Losses</option>
+      </select>
+      <span class="text-muted" style="font-size:0.62rem;margin-left:auto;">Post-upgrade only (Feb 24+)</span>
+    </div>
+
+    <!-- History Table -->
+    <div id="traders-history-wrap" class="glass-card" style="overflow-x:auto;padding:0;">
+      <table style="width:100%;border-collapse:collapse;font-size:0.72rem;">
+        <thead>
+          <tr style="background:var(--surface-elevated);text-align:left;">
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Agent</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Mode</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Market</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Dir</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Cat</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;text-align:right;">Cost</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;text-align:right;">Payout</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;text-align:right;">P&L</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Result</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Closed</th>
+          </tr>
+        </thead>
+        <tbody id="traders-history-body"></tbody>
+        <tfoot id="traders-history-foot" style="border-top:1px solid var(--border);"></tfoot>
       </table>
     </div>
   </div>
@@ -220,8 +270,26 @@
     border-radius: var(--radius);
     padding: 12px;
   }
-  #traders-table-body tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
-  #traders-table-body tr:hover { background: rgba(255,255,255,0.02); }
+  #traders-table-body tr, #traders-history-body tr, #traders-paper-body tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  #traders-table-body tr:hover, #traders-history-body tr:hover, #traders-paper-body tr:hover { background: rgba(255,255,255,0.02); }
+  .traders-mode-live {
+    display: inline-block; padding: 1px 6px; border-radius: 3px;
+    font-size: 0.58rem; font-weight: 700; font-family: var(--font-mono);
+    background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3);
+  }
+  .traders-mode-paper {
+    display: inline-block; padding: 1px 6px; border-radius: 3px;
+    font-size: 0.58rem; font-weight: 700; font-family: var(--font-mono);
+    background: rgba(251,191,36,0.15); color: #FBBF24; border: 1px solid rgba(251,191,36,0.3);
+  }
+  .traders-result-win {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 0.66rem; font-weight: 700; color: var(--success);
+  }
+  .traders-result-loss {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 0.66rem; font-weight: 700; color: var(--error);
+  }
 </style>
 
 <script>
@@ -298,6 +366,7 @@ function tradersSwitchSub(name) {
     if (btns[i].getAttribute('data-sub') === name) btns[i].classList.add('active');
   }
 
+  if (name === 'history') tradersLoadHistory();
   if (name === 'performance') tradersLoadPerformance();
   if (name === 'risk') tradersLoadRisk();
 }
@@ -617,6 +686,106 @@ function tradersRenderPaper(data) {
     + '<td></td>'
     + '<td style="padding:8px 10px;text-align:right;font-family:var(--font-mono);color:' + (totalPnl >= 0 ? 'var(--success)' : 'var(--error)') + ';">' + (totalPnl >= 0 ? '+' : '') + '$' + Math.abs(totalPnl).toFixed(2) + '</td>'
     + '<td colspan="3"></td></tr>';
+}
+
+/* --- Trade History sub-tab --- */
+var _tradersHistoryData = null;
+
+async function tradersLoadHistory() {
+  var statsWrap = document.getElementById('traders-history-stats');
+  var tbody = document.getElementById('traders-history-body');
+  if (!_tradersHistoryData) {
+    tbody.innerHTML = '<tr><td colspan="10" style="padding:20px;text-align:center;color:var(--text-muted);">Loading trade history...</td></tr>';
+  }
+  try {
+    var resp = await fetch('/api/traders/history');
+    var data = await resp.json();
+    _tradersHistoryData = data;
+    tradersRenderHistoryStats(data.stats || {});
+    tradersRenderHistory(data.trades || []);
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="10" style="padding:20px;text-align:center;color:var(--text-muted);">Error loading history</td></tr>';
+  }
+}
+
+function tradersRenderHistoryStats(s) {
+  var wrap = document.getElementById('traders-history-stats');
+  var pnlColor = (s.total_pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)';
+  var wrColor = (s.win_rate || 0) >= 50 ? 'var(--success)' : 'var(--error)';
+  wrap.innerHTML = ''
+    + tradersStatCard('Total Trades', s.total || 0, 'var(--text)')
+    + tradersStatCard('Win Rate', (s.win_rate || 0).toFixed(1) + '%', wrColor)
+    + tradersStatCard('Total P&L', (s.total_pnl >= 0 ? '+$' : '-$') + Math.abs(s.total_pnl || 0).toFixed(2), pnlColor)
+    + tradersStatCard('Live Trades', s.live_count || 0, '#10B981')
+    + tradersStatCard('Paper Trades', s.paper_count || 0, '#FBBF24')
+    + tradersStatCard('W / L', (s.wins || 0) + ' / ' + (s.losses || 0), 'var(--text)');
+}
+
+function tradersRenderHistory(trades) {
+  var tbody = document.getElementById('traders-history-body');
+  var tfoot = document.getElementById('traders-history-foot');
+  var agentFilter = document.getElementById('traders-hist-agent').value;
+  var modeFilter = document.getElementById('traders-hist-mode').value;
+  var resultFilter = document.getElementById('traders-hist-result').value;
+
+  var filtered = trades.filter(function(t) {
+    if (agentFilter !== 'all' && t.agent !== agentFilter) return false;
+    if (modeFilter !== 'all' && t.mode !== modeFilter) return false;
+    if (resultFilter === 'won' && !t.won) return false;
+    if (resultFilter === 'lost' && t.won) return false;
+    return true;
+  });
+
+  var rows = '';
+  for (var i = 0; i < filtered.length; i++) {
+    var t = filtered[i];
+    var agentColor = AGENT_COLORS[t.agent] || 'var(--text-muted)';
+    var badge = AGENT_BADGES[t.agent] || '??';
+    var dirArrow = t.direction && ['UP','LONG','YES'].indexOf(t.direction) >= 0 ? '&#9650;' : '&#9660;';
+    var dirClass = ['UP','LONG','YES'].indexOf((t.direction||'').toUpperCase()) >= 0 ? 'dir-long' : 'dir-short';
+    var pnlColor = t.pnl >= 0 ? 'var(--success)' : 'var(--error)';
+    var pnlSign = t.pnl >= 0 ? '+' : '';
+    var modeClass = t.mode === 'live' ? 'traders-mode-live' : 'traders-mode-paper';
+    var resultHtml = t.won
+      ? '<span class="traders-result-win">&#10003; WIN</span>'
+      : '<span class="traders-result-loss">&#10007; LOSS</span>';
+    var closedAt = t.resolved_at ? new Date(t.resolved_at * 1000).toLocaleDateString('en-US', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : '--';
+    var marketShort = (t.market || '').length > 38 ? t.market.substring(0, 38) + '...' : (t.market || '');
+
+    rows += '<tr class="tr-agent-' + t.agent + '">';
+    rows += '<td style="padding:6px 10px;"><span class="traders-badge" style="background:' + agentColor + ';">' + badge + '</span></td>';
+    rows += '<td style="padding:6px 10px;"><span class="' + modeClass + '">' + t.mode.toUpperCase() + '</span></td>';
+    rows += '<td style="padding:6px 10px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + tradersEsc(t.market) + '">' + tradersEsc(marketShort) + '</td>';
+    rows += '<td style="padding:6px 10px;" class="' + dirClass + '">' + dirArrow + ' ' + (t.direction || '') + '</td>';
+    rows += '<td style="padding:6px 10px;"><span class="traders-cat-badge">' + (t.category || '') + '</span></td>';
+    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);">$' + (t.cost || 0).toFixed(2) + '</td>';
+    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);">$' + (t.payout || 0).toFixed(2) + '</td>';
+    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);color:' + pnlColor + ';">' + pnlSign + '$' + Math.abs(t.pnl).toFixed(2) + '</td>';
+    rows += '<td style="padding:6px 10px;">' + resultHtml + '</td>';
+    rows += '<td style="padding:6px 10px;font-size:0.64rem;color:var(--text-secondary);">' + closedAt + '</td>';
+    rows += '</tr>';
+  }
+
+  if (filtered.length === 0) {
+    rows = '<tr><td colspan="10" style="padding:20px;text-align:center;color:var(--text-muted);">No trades in this period</td></tr>';
+  }
+  tbody.innerHTML = rows;
+
+  // Footer
+  var totalPnl = filtered.reduce(function(s, t) { return s + t.pnl; }, 0);
+  var totalCost = filtered.reduce(function(s, t) { return s + (t.cost || 0); }, 0);
+  var winCount = filtered.filter(function(t) { return t.won; }).length;
+  var wr = filtered.length > 0 ? (winCount / filtered.length * 100).toFixed(1) : '0.0';
+  tfoot.innerHTML = '<tr style="font-size:0.72rem;font-weight:600;background:var(--surface-elevated);">'
+    + '<td colspan="5" style="padding:8px 10px;">' + filtered.length + ' trades | WR: ' + wr + '%</td>'
+    + '<td style="padding:8px 10px;text-align:right;font-family:var(--font-mono);">$' + totalCost.toFixed(2) + '</td>'
+    + '<td></td>'
+    + '<td style="padding:8px 10px;text-align:right;font-family:var(--font-mono);color:' + (totalPnl >= 0 ? 'var(--success)' : 'var(--error)') + ';">' + (totalPnl >= 0 ? '+' : '') + '$' + Math.abs(totalPnl).toFixed(2) + '</td>'
+    + '<td colspan="2"></td></tr>';
+}
+
+function tradersFilterHistory() {
+  if (_tradersHistoryData) tradersRenderHistory(_tradersHistoryData.trades || []);
 }
 
 /* --- Performance sub-tab --- */
