@@ -57,6 +57,8 @@ class LivePositionManager:
         self._paused: set[str] = set()                 # condition_ids paused by user
         self._sold: set[str] = set()                   # condition_ids already sold (prevent repeats)
         self._live_prices: dict[str, float] = {}       # condition_id -> last CLOB midpoint
+        self._price_history: dict[str, list[float]] = {}  # condition_id -> last 10 midpoints
+        self._peak_price: dict[str, float] = {}           # condition_id -> highest price seen
 
     def monitor_positions(self) -> list[LiveAction]:
         """Main entry — check all open positions against live games.
@@ -314,18 +316,11 @@ class LivePositionManager:
 
         # ── DECISION LOGIC ──
 
-        # 0. TAKE PROFIT: Position essentially won — sell now, free capital
-        take_profit_thresh = self.cfg.live_take_profit_threshold
-        should_take_profit = False
-        # Our token hitting high price = we won (both YES and NO tokens)
-        if current_price >= take_profit_thresh:
-            should_take_profit = True
-
-        if should_take_profit:
+        # 0. SMART EXIT: Adaptive take-profit based on momentum + game state
+        smart = self._smart_exit_decision(pos, game, current_price, pnl_estimate)
+        if smart == "SELL":
             profit_pct = (pnl_estimate / pos.get("size_usd", 1)) * 100 if pos.get("size_usd") else 0
-            reason = (f"Take profit: {direction.upper()} @ {current_price:.2f} "
-                      f"(entry {entry_price:.2f}, +{profit_pct:.0f}%) — "
-                      f"locking ${pnl_estimate:.2f} profit, freeing capital")
+            reason = self._smart_exit_reason(pos, game, current_price, entry_price, pnl_estimate, profit_pct)
             self._execute_exit(pos, reason)
             return LiveAction(
                 condition_id=cid, action="TAKE_PROFIT", reason=reason,
@@ -398,6 +393,116 @@ class LivePositionManager:
 
         return None
 
+    def _smart_exit_decision(self, pos: dict, game: dict, current_price: float, pnl: float) -> str:
+        """Adaptive exit decision. Returns 'SELL', 'HOLD', or 'WAIT'.
+
+        Decision factors:
+        1. Profit level — are we up enough to care?
+        2. Momentum — is price still climbing or reversing?
+        3. Game state — blowout with 2 min left? Hold for resolution.
+        4. Peak drawdown — did we peak and now dropping?
+        """
+        cid = pos.get("condition_id", "")
+        entry_price = pos.get("entry_price", 0.5)
+        size = pos.get("size_usd", 1)
+        profit_pct = (pnl / size) * 100 if size > 0 else 0
+
+        # Not in profit — no take-profit decision needed
+        if profit_pct < 15:
+            return "WAIT"
+
+        # ── HOLD FOR RESOLUTION: blowout + late game ──
+        if game and self._is_late_game(game.get("sport_key", ""), game.get("period", 0), game.get("clock", "")):
+            score_gap = abs(game.get("home_score", 0) - game.get("away_score", 0))
+            sport = game.get("sport_key", "")
+            # Big lead in late game = let it resolve
+            blowout = False
+            if ("nba" in sport or "ncaab" in sport or "basketball" in sport) and score_gap >= 15:
+                blowout = True
+            elif ("nfl" in sport or "football" in sport) and score_gap >= 14:
+                blowout = True
+            elif ("nhl" in sport or "hockey" in sport) and score_gap >= 3:
+                blowout = True
+            elif "soccer" in sport and score_gap >= 2:
+                blowout = True
+
+            if blowout and current_price >= 0.90:
+                log.info("[LIVE] HOLD for resolution: %s blowout %d-%d late game, price %.2f | %s",
+                         sport, game.get("home_score", 0), game.get("away_score", 0),
+                         current_price, pos.get("question", "")[:40])
+                return "HOLD"
+
+        # ── MOMENTUM REVERSAL: price peaked and dropping ──
+        hist = self._price_history.get(cid, [])
+        peak = self._peak_price.get(cid, current_price)
+
+        if len(hist) >= 4 and peak > entry_price:
+            # Check if price dropped from peak
+            peak_drawdown = (peak - current_price) / peak if peak > 0 else 0
+            # Recent trend: compare last 3 prices
+            recent = hist[-3:]
+            dropping = all(recent[i] <= recent[i-1] for i in range(1, len(recent)))
+
+            # Peaked and now dropping — sell before it gets worse
+            if peak_drawdown >= 0.08 and dropping and profit_pct >= 20:
+                log.info("[LIVE] Momentum reversal: peaked at %.2f, now %.2f (-%0.f%%), selling | %s",
+                         peak, current_price, peak_drawdown * 100, pos.get("question", "")[:40])
+                return "SELL"
+
+        # ── STRONG PROFIT: up 40%+ and game is not a guaranteed win ──
+        if profit_pct >= 40:
+            # If game is live and close, sell to lock gains
+            if game:
+                score_gap = abs(game.get("home_score", 0) - game.get("away_score", 0))
+                sport = game.get("sport_key", "")
+                is_close = False
+                if ("nba" in sport or "ncaab" in sport or "basketball" in sport) and score_gap <= 10:
+                    is_close = True
+                elif ("nfl" in sport or "football" in sport) and score_gap <= 7:
+                    is_close = True
+                elif "soccer" in sport and score_gap <= 1:
+                    is_close = True
+
+                if is_close:
+                    return "SELL"
+
+            # No game data but sitting on big profit — sell
+            if not game:
+                return "SELL"
+
+        # ── NEAR CERTAIN: price >= 93% — sell unless holding for resolution
+        if current_price >= 0.93:
+            return "SELL"
+
+        # ── GOOD PROFIT + LATE GAME RISK: up 25%+ in second half ──
+        if profit_pct >= 25 and game:
+            period = game.get("period", 0)
+            sport = game.get("sport_key", "")
+            if ("nba" in sport or "ncaab" in sport) and period >= 3:
+                score_gap = abs(game.get("home_score", 0) - game.get("away_score", 0))
+                if score_gap <= 8:  # Close game in 2nd half, lock profit
+                    return "SELL"
+
+        return "WAIT"
+
+    def _smart_exit_reason(self, pos, game, current_price, entry_price, pnl, profit_pct) -> str:
+        """Generate human-readable reason for the smart exit."""
+        direction = pos.get("direction", "yes")
+        game_info = ""
+        if game:
+            hs = game.get("home_score", 0)
+            as_ = game.get("away_score", 0)
+            p = game.get("period", 0)
+            game_info = f" | game {as_}-{hs} P{p}"
+
+        peak = self._peak_price.get(pos.get("condition_id", ""), current_price)
+        if peak > current_price * 1.05:
+            return (f"Smart exit (momentum reversal): {direction.upper()} peaked {peak:.2f}→{current_price:.2f} "
+                    f"(entry {entry_price:.2f}, +{profit_pct:.0f}%) — locking ${pnl:.2f}{game_info}")
+        else:
+            return (f"Smart exit: {direction.upper()} @ {current_price:.2f} "
+                    f"(entry {entry_price:.2f}, +{profit_pct:.0f}%) — locking ${pnl:.2f}{game_info}")
+
     def _assess_position(self, pos: dict, game: dict, current_price: float) -> str:
         """Assess if our position is winning, losing, or neutral.
 
@@ -455,6 +560,14 @@ class LivePositionManager:
                     mid = mid.get("mid", pos.get("entry_price", 0.5))
                 price = float(mid) if mid else pos.get("entry_price", 0.5)
                 self._live_prices[cid] = price
+                # Track history for momentum detection
+                hist = self._price_history.setdefault(cid, [])
+                hist.append(price)
+                if len(hist) > 10:
+                    hist.pop(0)
+                # Track peak
+                if price > self._peak_price.get(cid, 0):
+                    self._peak_price[cid] = price
                 return price
         except Exception:
             log.debug("[LIVE] CLOB midpoint failed for %s", cid[:8])
