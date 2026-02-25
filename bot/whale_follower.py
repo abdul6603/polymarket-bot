@@ -360,46 +360,56 @@ class WhaleScorer:
 
     @staticmethod
     def score_wallet(trades: list[dict], pnl: float, volume: float) -> dict:
-        """Compute composite score (0-100) from trade history."""
-        total = len(trades)
-        if total < 10:
-            return {"composite_score": 0, "reason": "insufficient_trades"}
+        """Compute composite score (0-100) from trade history + leaderboard PnL.
 
-        wins = [t for t in trades if t.get("pnl", 0) > 0]
-        losses = [t for t in trades if t.get("pnl", 0) < 0]
+        The Data API /trades endpoint doesn't provide per-trade PnL, so we
+        use the leaderboard-provided total PnL + volume for scoring, and
+        trade count from the API for sample size.
+        """
+        total = len(trades) if trades else 0
 
-        # 1. EV per trade (0-30 pts)
-        ev = pnl / total if total > 0 else 0
-        ev_score = min(max(ev * 100, 0), SCORE_WEIGHTS["ev_per_trade"])
+        # Use leaderboard data when per-trade PnL is unavailable
+        # Minimum: need either trades or leaderboard volume to score
+        if total < 5 and volume < 1000:
+            return {"composite_score": 0, "reason": "insufficient_data"}
 
-        # 2. Sharpe ratio (0-25 pts)
-        returns = []
-        for t in trades:
-            cost = t.get("usdc_size", 0) or (t.get("size", 0) * t.get("price", 1))
-            if cost > 0:
-                returns.append(t.get("pnl", 0) / cost)
-        if len(returns) > 1:
-            mean_r = sum(returns) / len(returns)
-            std_r = (sum((r - mean_r) ** 2 for r in returns) / (len(returns) - 1)) ** 0.5
-            sharpe = mean_r / std_r if std_r > 0 else 0
-            sharpe_score = min(max(sharpe * 10, 0), SCORE_WEIGHTS["sharpe_ratio"])
+        # For sample size, prefer API trade count, fall back to volume estimate
+        effective_trades = total if total >= 5 else max(int(volume / 500), 5)
+
+        # 1. EV per trade (0-30 pts) — from leaderboard PnL
+        ev = pnl / effective_trades if effective_trades > 0 else 0
+        # Scale: $10 EV/trade = max score
+        ev_score = min(max(ev / 10, 0), SCORE_WEIGHTS["ev_per_trade"])
+
+        # 2. ROI as Sharpe proxy (0-25 pts) — PnL / volume
+        roi = pnl / volume if volume > 0 else 0
+        # Scale: 20% ROI = max score
+        sharpe_score = min(max(roi * 125, 0), SCORE_WEIGHTS["sharpe_ratio"])
+
+        # 3. Profit factor proxy (0-15 pts) — positive PnL = profitable
+        if pnl > 0 and volume > 0:
+            # Estimate: if ROI > 5%, strong profit factor
+            pf_proxy = 1 + (roi * 10)
+            pf_score = min(max((pf_proxy - 1) * 5, 0), SCORE_WEIGHTS["profit_factor"])
         else:
-            sharpe = 0
-            sharpe_score = 0
+            pf_proxy = 0
+            pf_score = 0
 
-        # 3. Profit factor (0-15 pts)
-        gross_wins = sum(t.get("pnl", 0) for t in trades if t.get("pnl", 0) > 0)
-        gross_losses = abs(sum(t.get("pnl", 0) for t in trades if t.get("pnl", 0) < 0))
-        pf = gross_wins / gross_losses if gross_losses > 0 else 10
-        pf_score = min(max((pf - 1) * 10, 0), SCORE_WEIGHTS["profit_factor"])
-
-        # 4. Consistency — return / max drawdown (0-15 pts)
-        max_dd = _max_drawdown(trades)
-        consistency = abs(pnl / max_dd) if max_dd != 0 else 0
-        consistency_score = min(max(consistency * 5, 0), SCORE_WEIGHTS["consistency"])
+        # 4. Consistency (0-15 pts) — positive PnL relative to volume
+        consistency_score = 0
+        if pnl > 0 and volume > 0:
+            # Higher volume with profit = more consistent
+            consistency_score = min(
+                math.log(max(volume, 1)) * roi * 10,
+                SCORE_WEIGHTS["consistency"],
+            )
+            consistency_score = max(consistency_score, 0)
 
         # 5. Sample size confidence (0-10 pts, logarithmic)
-        size_score = min(math.log(max(total, 1)) * 3, SCORE_WEIGHTS["sample_size"])
+        size_score = min(
+            math.log(max(effective_trades, 1)) * 3,
+            SCORE_WEIGHTS["sample_size"],
+        )
 
         # 6. Recency (0-5 pts)
         recency_score = SCORE_WEIGHTS["recency"]
@@ -413,23 +423,24 @@ class WhaleScorer:
                 except (ValueError, TypeError):
                     pass
 
-        composite = ev_score + sharpe_score + pf_score + consistency_score + size_score + recency_score
+        composite = (ev_score + sharpe_score + pf_score
+                     + consistency_score + size_score + recency_score)
 
         return {
             "composite_score": round(min(composite, 100), 1),
             "ev_per_trade": round(ev, 4),
             "ev_score": round(ev_score, 1),
-            "sharpe_ratio": round(sharpe, 3),
+            "sharpe_ratio": round(roi, 4),
             "sharpe_score": round(sharpe_score, 1),
-            "profit_factor": round(pf, 2),
+            "profit_factor": round(pf_proxy, 2),
             "pf_score": round(pf_score, 1),
-            "max_drawdown": round(max_dd, 2),
+            "max_drawdown": 0,
             "consistency_score": round(consistency_score, 1),
-            "sample_size": total,
+            "sample_size": effective_trades,
             "size_score": round(size_score, 1),
             "recency_score": round(recency_score, 1),
-            "win_count": len(wins),
-            "loss_count": len(losses),
+            "win_count": 0,
+            "loss_count": 0,
         }
 
 
@@ -975,7 +986,7 @@ class WhaleTracker:
         return len(wallets_found)
 
     def score_wallets(self) -> None:
-        """Score all wallets by fetching their trade history."""
+        """Score all wallets using leaderboard PnL + trade history."""
         wallets = self.db.get_all_wallets()
         scored = 0
 
@@ -984,6 +995,14 @@ class WhaleTracker:
             if w.get("is_blacklisted"):
                 continue
 
+            pnl = float(w.get("total_pnl", 0))
+            volume = float(w.get("total_volume", 0))
+
+            # Skip wallets with no leaderboard data
+            if pnl <= 0 and volume < 1000:
+                continue
+
+            trades = []
             try:
                 resp = requests.get(
                     f"{DATA_API}/trades",
@@ -993,59 +1012,53 @@ class WhaleTracker:
                 )
                 time.sleep(0.5)  # Rate limit
 
-                if resp.status_code != 200:
-                    continue
-                raw_trades = resp.json()
-                if not isinstance(raw_trades, list):
-                    continue
+                if resp.status_code == 200:
+                    raw_trades = resp.json()
+                    if isinstance(raw_trades, list):
+                        for t in raw_trades:
+                            price = float(t.get("price", 0))
+                            size = float(t.get("size", 0))
+                            trades.append({
+                                "price": price,
+                                "size": size,
+                                "usdc_size": round(size * price, 2),
+                                "pnl": 0,
+                                "timestamp": t.get("timestamp", ""),
+                                "side": t.get("side", ""),
+                            })
 
-                trades = []
-                for t in raw_trades:
-                    price = float(t.get("price", 0))
-                    size = float(t.get("size", 0))
-                    trades.append({
-                        "price": price,
-                        "size": size,
-                        "usdc_size": round(size * price, 2),
-                        "pnl": 0,
-                        "timestamp": t.get("timestamp", ""),
-                        "side": t.get("side", ""),
-                    })
-
-                    # Store for backtesting
-                    self.db.record_whale_trade({
-                        "proxy_wallet": wallet,
-                        "condition_id": t.get("conditionId", t.get("asset", "")),
-                        "token_id": t.get("asset", ""),
-                        "side": t.get("side", ""),
-                        "size": size,
-                        "price": price,
-                        "usdc_size": round(size * price, 2),
-                        "timestamp": t.get("timestamp", _now_iso()),
-                        "market_title": t.get("title", ""),
-                        "outcome": t.get("outcome", ""),
-                    })
-
-                pnl = float(w.get("total_pnl", 0))
-                volume = float(w.get("total_volume", 0))
-                scores = self.scorer.score_wallet(trades, pnl, volume)
-
-                self.db.upsert_wallet(
-                    wallet,
-                    composite_score=scores["composite_score"],
-                    ev_per_trade=scores.get("ev_per_trade", 0),
-                    sharpe_ratio=scores.get("sharpe_ratio", 0),
-                    profit_factor=scores.get("profit_factor", 0),
-                    max_drawdown=scores.get("max_drawdown", 0),
-                    total_trades=scores.get("sample_size", 0),
-                    win_count=scores.get("win_count", 0),
-                    loss_count=scores.get("loss_count", 0),
-                    last_active=_now_iso(),
-                )
-                scored += 1
-
+                            # Store for backtesting
+                            self.db.record_whale_trade({
+                                "proxy_wallet": wallet,
+                                "condition_id": t.get("conditionId", t.get("asset", "")),
+                                "token_id": t.get("asset", ""),
+                                "side": t.get("side", ""),
+                                "size": size,
+                                "price": price,
+                                "usdc_size": round(size * price, 2),
+                                "timestamp": t.get("timestamp", _now_iso()),
+                                "market_title": t.get("title", ""),
+                                "outcome": t.get("outcome", ""),
+                            })
             except Exception as e:
-                log.debug("[WHALE] Score error for %s: %s", wallet[:12], str(e)[:100])
+                log.debug("[WHALE] Trade fetch error for %s: %s", wallet[:12], str(e)[:80])
+
+            # Score using leaderboard PnL + whatever trade data we got
+            scores = self.scorer.score_wallet(trades, pnl, volume)
+
+            self.db.upsert_wallet(
+                wallet,
+                composite_score=scores["composite_score"],
+                ev_per_trade=scores.get("ev_per_trade", 0),
+                sharpe_ratio=scores.get("sharpe_ratio", 0),
+                profit_factor=scores.get("profit_factor", 0),
+                max_drawdown=scores.get("max_drawdown", 0),
+                total_trades=scores.get("sample_size", 0),
+                win_count=scores.get("win_count", 0),
+                loss_count=scores.get("loss_count", 0),
+                last_active=_now_iso(),
+            )
+            scored += 1
 
         self._last_rescore = time.time()
         log.info("[WHALE] Scored %d wallets", scored)
