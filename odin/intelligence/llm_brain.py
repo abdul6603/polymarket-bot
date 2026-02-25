@@ -266,15 +266,19 @@ class OdinBrain:
             log.warning("[LLM_BRAIN] Failed to parse JSON from response")
             return None
 
-        # Required fields
+        # Required fields — handle multiple naming conventions from LLM
         action = data.get("action", "").upper()
-        conviction = data.get("conviction", 0)
+        conviction = data.get("conviction", 0) or data.get("confidence", 0)
         stop_loss = data.get("stop_loss", 0)
-        tp1 = data.get("take_profit_1", 0)
+        tp1 = data.get("take_profit_1", 0) or data.get("take_profit", 0)
         tp2 = data.get("take_profit_2", 0)
-        entry = data.get("entry_price", current_price)
+        entry = data.get("entry_price", 0) or data.get("entry", 0) or current_price
         rr = data.get("risk_reward", 0)
         reasoning = data.get("reasoning", [])
+        # If reasoning is a dict (structured), flatten to list of strings
+        if isinstance(reasoning, dict):
+            reasoning = [f"{k}: {v}" if isinstance(v, str) else f"{k}: {json.dumps(v)}"
+                         for k, v in reasoning.items()]
 
         # Validate action
         if action not in ("LONG", "SHORT", "FLAT"):
