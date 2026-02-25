@@ -4655,6 +4655,7 @@ async function refresh() {
       loadSignalCycle();
       loadGarvesV2Metrics();
       loadMakerStatus();
+      loadPortfolioAllocation();
     } else if (currentTab === 'soren') {
       var resp = await fetch('/api/soren');
       renderSoren(await resp.json());
@@ -12482,6 +12483,44 @@ function loadGarvesV2Metrics() {
 }
 
 // ── Maker Engine Status ──────────────────────────────────────────
+function loadPortfolioAllocation() {
+  fetch('/api/portfolio-allocation').then(function(r){ return r.json(); }).then(function(d) {
+    var card = document.getElementById('portfolio-alloc-card');
+    if (!card || d.error) return;
+    card.style.display = '';
+
+    var el = function(id) { return document.getElementById(id); };
+    el('pa-deployable').textContent = '$' + (d.deployable || 0).toFixed(0);
+    el('pa-total-exposure').textContent = '$' + (d.total_exposure || 0).toFixed(0);
+    el('pa-reserve').textContent = '$' + (d.reserve || 0).toFixed(0);
+    el('pa-total-util').textContent = (d.total_utilization_pct || 0).toFixed(0) + '%';
+
+    var walletAge = (d.wallet && d.wallet.age_s) ? d.wallet.age_s : 0;
+    var ageLabel = walletAge < 60 ? Math.round(walletAge) + 's ago' : Math.round(walletAge/60) + 'm ago';
+    el('pa-wallet-age').textContent = 'Wallet: ' + ageLabel;
+    if (walletAge > 300) el('pa-wallet-age').style.color = '#ef4444';
+
+    var agentColors = {garves:'#f7931a', hawk:'#22c55e', oracle:'#06b6d4', maker:'#8b5cf6'};
+    var barsEl = el('pa-agent-bars');
+    if (!barsEl) return;
+    var html = '';
+    (d.agents || []).forEach(function(a) {
+      var col = agentColors[a.name] || '#888';
+      var pct = Math.min(100, a.utilization_pct || 0);
+      var alive = a.alive ? '' : ' (stale)';
+      html += '<div style="display:flex;align-items:center;gap:8px;font-size:0.72rem;">' +
+        '<span style="width:52px;font-weight:600;text-transform:capitalize;color:' + col + ';">' + a.name + '</span>' +
+        '<div style="flex:1;height:8px;background:rgba(255,255,255,0.06);border-radius:4px;overflow:hidden;">' +
+          '<div style="width:' + pct + '%;height:100%;background:' + col + ';border-radius:4px;transition:width 0.5s;"></div>' +
+        '</div>' +
+        '<span style="width:100px;font-family:var(--font-mono);font-size:0.68rem;text-align:right;color:var(--text-muted);">$' +
+          (a.exposure || 0).toFixed(0) + ' / $' + (a.allocation || 0).toFixed(0) + alive + '</span>' +
+      '</div>';
+    });
+    barsEl.innerHTML = html;
+  }).catch(function(){});
+}
+
 function loadMakerStatus() {
   fetch('/api/garves/maker-status').then(function(r){ return r.json(); }).then(function(d) {
     var badge = document.getElementById('maker-status-badge');

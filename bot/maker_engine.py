@@ -95,6 +95,17 @@ class MakerEngine:
         self._market_remaining: dict[str, float] = {}  # token_id -> remaining_s
         self.max_shares_per_side = 15.0  # hard cap: max shares on one side
 
+        # Shared balance manager — cross-agent wallet coordination
+        self._balance_mgr = None
+        try:
+            import sys as _bm_sys
+            _bm_sys.path.insert(0, str(Path.home() / "shared"))
+            from balance_manager import BalanceManager
+            self._balance_mgr = BalanceManager("maker")
+            self._balance_mgr.register(float(os.getenv("MAKER_ALLOCATION_WEIGHT", "1")))
+        except Exception:
+            pass
+
     def compute_fair_value(self, asset: str, implied_price: float | None) -> float | None:
         """Blend Binance spot momentum with Polymarket implied price.
 
@@ -646,6 +657,22 @@ class MakerEngine:
 
         # Check fills on existing quotes before placing new ones
         fills = self.check_fills()
+
+        # Shared balance manager: report exposure + allocation check
+        if self._balance_mgr:
+            try:
+                total_inv_usd = sum(
+                    abs(iv.net_shares) * (iv.cost_basis / max(abs(iv.net_shares), 0.01))
+                    for iv in self._inventory.values() if iv.net_shares != 0
+                )
+                self._balance_mgr.report_exposure(total_inv_usd)
+                bm_ok, _ = self._balance_mgr.can_trade(self.quote_size_usd * 2)
+                if not bm_ok:
+                    log.info("[MAKER] Balance manager: allocation exhausted, skipping quotes")
+                    self._write_state()
+                    return
+            except Exception:
+                pass
 
         quotes_placed = 0
         for mkt in markets:

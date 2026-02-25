@@ -371,6 +371,7 @@ def check_risk(
     market_id: str,
     trade_size_usd: float | None = None,
     drawdown_breaker: DrawdownBreaker | None = None,
+    balance_manager=None,
 ) -> tuple[bool, str]:
     """Gate a trade on risk limits.
 
@@ -430,6 +431,15 @@ def check_risk(
 
     # Check 5: Duplicate market guard moved to main.py _market_trade_count
     # (smart stacking allows up to MAX_TRADES_PER_MARKET per market)
+
+    # Check 6: Shared balance manager (cross-agent wallet coordination)
+    if balance_manager is not None:
+        try:
+            bm_ok, bm_reason = balance_manager.can_trade(size)
+            if not bm_ok:
+                return False, f"Balance manager: {bm_reason}"
+        except Exception:
+            pass  # Fail open
 
     log.info(
         "Risk check passed: edge=%.3f, size=$%.2f, positions=%d/%d, "

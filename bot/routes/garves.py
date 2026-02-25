@@ -1792,6 +1792,18 @@ def api_garves_diagnostics():
         return jsonify({"error": str(e)[:200]}), 500
 
 
+@garves_bp.route("/api/portfolio-allocation")
+def api_portfolio_allocation():
+    """Shared balance manager: portfolio allocation across all agents."""
+    try:
+        sys.path.insert(0, str(Path.home() / "shared"))
+        from balance_manager import BalanceManager
+        bm = BalanceManager("dashboard")
+        return jsonify(bm.get_portfolio_summary())
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
 @garves_bp.route("/api/garves/edge-report")
 def api_garves_edge_report():
     """Garves V2 edge decay + competitive check."""

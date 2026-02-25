@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 from datetime import datetime
+from pathlib import Path
 
 from hawk.config import HawkConfig
 from hawk.edge import TradeOpportunity
@@ -86,6 +88,17 @@ class HawkRiskManager:
         self._daily_reset_date: str = ""
         self._shutdown: bool = False
         self._consecutive_losses: int = 0
+
+        # Shared balance manager — cross-agent wallet coordination
+        self._balance_mgr = None
+        try:
+            import sys as _bm_sys
+            _bm_sys.path.insert(0, str(Path.home() / "shared"))
+            from balance_manager import BalanceManager
+            self._balance_mgr = BalanceManager("hawk")
+            self._balance_mgr.register(float(os.environ.get("HAWK_ALLOCATION_WEIGHT", "3")))
+        except Exception:
+            pass
 
     def daily_reset(self) -> None:
         """Reset daily P&L tracking at midnight ET."""
@@ -185,6 +198,16 @@ class HawkRiskManager:
 
         if opp.position_size_usd > self.cfg.max_bet_usd:
             return False, f"Position size ${opp.position_size_usd:.2f} exceeds max bet ${self.cfg.max_bet_usd:.2f}"
+
+        # Shared balance manager (cross-agent wallet coordination)
+        if self._balance_mgr:
+            try:
+                self._balance_mgr.report_exposure(self.tracker.total_exposure)
+                bm_ok, bm_reason = self._balance_mgr.can_trade(opp.position_size_usd)
+                if not bm_ok:
+                    return False, f"Balance manager: {bm_reason}"
+            except Exception:
+                pass
 
         log.info(
             "Hawk risk check passed: edge=%.3f, risk=%d/10, positions=%d/%d, exposure=$%.2f/$%.2f",

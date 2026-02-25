@@ -131,6 +131,17 @@ class TradingBot:
         self.quality_scorer = MarketQualityScorer(cfg.clob_host, self.price_cache)
         self.perf_monitor = PerformanceMonitor()
         self.bankroll_manager = BankrollManager()
+
+        # Shared balance manager — cross-agent wallet coordination
+        self._balance_mgr = None
+        try:
+            sys.path.insert(0, str(Path.home() / "shared"))
+            from balance_manager import BalanceManager
+            self._balance_mgr = BalanceManager("garves")
+            self._balance_mgr.register(float(os.environ.get("GARVES_ALLOCATION_WEIGHT", "5")))
+        except Exception as e:
+            log.info("[BALANCE] Shared balance manager not available: %s", str(e)[:100])
+
         self._shutdown_event = asyncio.Event()
         self._subscribed_tokens: set[str] = set()
         # Track when tokens were first subscribed (for warmup)
@@ -245,6 +256,12 @@ class TradingBot:
             self._balance_cache_file.write_text(_json.dumps(cache, indent=2))
             log.info("[BALANCE] Cash=$%.2f Positions=$%.2f Portfolio=$%.2f",
                      cash, pos_val, portfolio)
+            # Sync to shared balance manager
+            if self._balance_mgr:
+                try:
+                    self._balance_mgr.update_wallet(cash, pos_val)
+                except Exception:
+                    pass
         except Exception as e:
             log.debug("Balance sync failed: %s", str(e)[:100])
 
@@ -883,7 +900,8 @@ class TradingBot:
             # Risk check (pass actual conviction size, not default $10)
             allowed, reason = check_risk(self.cfg, sig, self.tracker, market_id,
                                          trade_size_usd=conviction.position_size_usd,
-                                         drawdown_breaker=self.drawdown_breaker)
+                                         drawdown_breaker=self.drawdown_breaker,
+                                         balance_manager=self._balance_mgr)
             if not allowed:
                 log.info("  -> Blocked: %s", reason)
                 continue
@@ -995,6 +1013,13 @@ class TradingBot:
                     ml_win_prob=conviction.ml_win_prob or 0.0,
                     fill_price_estimate=ob_analysis.best_ask if ob_analysis else 0.0,
                 )
+
+        # Report current exposure to shared balance manager
+        if self._balance_mgr:
+            try:
+                self._balance_mgr.report_exposure(self.tracker.total_exposure)
+            except Exception:
+                pass
 
         # ── Straddle Engine: if no directional trades and regime is fear ──
         if trades_this_tick == 0 and regime.label in ("extreme_fear", "fear"):

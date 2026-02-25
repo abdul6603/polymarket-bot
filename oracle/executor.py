@@ -100,6 +100,18 @@ def _execute_polymarket(cfg: OracleConfig, trades: list[TradeSignal]) -> list[Or
         log.error("Failed to initialize CLOB client: %s", e)
         return [OrderResult(signal=t, success=False, error=str(e)) for t in trades]
 
+    # Shared balance manager — cross-agent wallet coordination
+    _balance_mgr = None
+    try:
+        import sys as _bm_sys
+        import os as _bm_os
+        _bm_sys.path.insert(0, str(Path.home() / "shared"))
+        from balance_manager import BalanceManager
+        _balance_mgr = BalanceManager("oracle")
+        _balance_mgr.register(float(_bm_os.environ.get("ORACLE_ALLOCATION_WEIGHT", "2")))
+    except Exception:
+        pass
+
     for trade in trades:
         try:
             tokens = trade.market.tokens
@@ -118,6 +130,18 @@ def _execute_polymarket(cfg: OracleConfig, trades: list[TradeSignal]) -> list[Or
             if price <= 0 or price >= 1:
                 results.append(OrderResult(signal=trade, success=False, error="invalid price"))
                 continue
+
+            # Balance manager gate
+            if _balance_mgr:
+                try:
+                    bm_ok, bm_reason = _balance_mgr.can_trade(trade.size)
+                    if not bm_ok:
+                        log.warning("[BALANCE] Oracle blocked: %s", bm_reason)
+                        results.append(OrderResult(signal=trade, success=False, error=bm_reason))
+                        continue
+                except Exception:
+                    pass
+
             shares = trade.size / price
 
             order_args = OrderArgs(
