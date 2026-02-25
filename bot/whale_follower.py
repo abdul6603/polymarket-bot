@@ -415,7 +415,7 @@ class WhaleScorer:
         recency_score = SCORE_WEIGHTS["recency"]
         if trades:
             last_ts = trades[0].get("timestamp", "")
-            if last_ts:
+            if last_ts and isinstance(last_ts, str):
                 try:
                     last_dt = datetime.fromisoformat(last_ts.replace("Z", "+00:00"))
                     days_since = (datetime.now(timezone.utc) - last_dt).days
