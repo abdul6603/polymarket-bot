@@ -45,12 +45,20 @@ trader on Hyperliquid, $200 capital.
 6. Learn from mistakes. Your past lessons are provided — apply them.
 
 ## Decision Framework (Step by Step)
-1. MACRO: SPX/NASDAQ bullish? VIX calm? Base bias.
-2. REGIME: CoinGlass? Funding? OI? L/S ratio?
-3. STRUCTURE: Daily trend? 4H BOS/CHOCH? Key OBs? 15m trigger?
-4. CONFLUENCE: 2/3 macro+regime+structure agree = tradeable. 1/3 = flat.
-5. ENTRY: Nearest OB/FVG? Logical SL below structure?
-6. CONVICTION: 0-100 honest. 70+ = high. 50-69 = moderate. <50 = don't trade.
+1. NEWS: Read headlines first. Tariffs, Fed, geopolitical = MASSIVE impact on crypto. \
+A 7% bounce during tariff fears could be a dead cat bounce. News overrides technicals.
+2. MACRO: SPX/NASDAQ bullish? VIX calm? Gold/silver ripping = flight to safety = bearish crypto.
+3. REGIME: CoinGlass? Funding? OI? L/S ratio?
+4. STRUCTURE: Daily trend? 4H BOS/CHOCH? Key OBs? 15m trigger?
+5. CONFLUENCE: 2/3 macro+regime+structure agree = tradeable. 1/3 = flat.
+6. ENTRY: Nearest OB/FVG? Logical SL below structure?
+7. CONVICTION: 0-100 honest. 70+ = high. 50-69 = moderate. <50 = don't trade.
+
+## News Rules
+- If negative macro news (tariffs, rate hikes, sanctions): reduce conviction by 15-25 points
+- If market is bouncing on BAD news: be skeptical — dead cat bounces are traps
+- If positive news (rate cuts, stimulus, regulatory clarity): boost confidence in LONGs
+- No news = rely on technicals. Bad news + bullish technicals = FLAT or reduced size.
 
 Respond with ONLY a JSON object. No other text."""
 
@@ -241,6 +249,9 @@ class OdinBrain:
 
         # Garves alignment
         parts.append(_format_garves(brotherhood, symbol))
+
+        # Atlas news sentiment (what's driving the market)
+        parts.append(_format_news(brotherhood, symbol))
 
         # Lessons
         if self._lessons:
@@ -525,6 +536,63 @@ def _format_garves(brotherhood: object, symbol: str) -> str:
         return "\n".join(lines)
     except Exception:
         return "=== Garves ===\nNo data\n"
+
+
+def _format_news(brotherhood: object, symbol: str) -> str:
+    """Format Atlas news sentiment + headlines for context."""
+    if not brotherhood:
+        return "=== News / Sentiment ===\nNo data\n"
+
+    try:
+        sentiment = brotherhood.get_atlas_sentiment(symbol)
+        direction = sentiment.get("direction", "NEUTRAL")
+        score = sentiment.get("score", 0)
+        headlines = sentiment.get("headlines", [])
+
+        # Also read the full news file for broader market context
+        import json
+        from pathlib import Path
+        news_file = Path.home() / "atlas" / "data" / "news_sentiment.json"
+        all_headlines: list[str] = []
+        if news_file.exists():
+            try:
+                data = json.loads(news_file.read_text())
+                # Get headlines from all assets for macro context
+                for asset, info in data.items():
+                    for h in info.get("headlines", [])[:2]:
+                        title = h if isinstance(h, str) else h.get("title", "")
+                        if title:
+                            all_headlines.append(f"[{asset}] {title}")
+            except Exception:
+                pass
+
+        lines = ["=== News & Sentiment (Atlas Intelligence) ==="]
+        bare = symbol.replace("USDT", "")
+        lines.append(f"{bare} sentiment: {direction} (score={score:+.2f})")
+
+        if headlines:
+            lines.append(f"{bare} headlines:")
+            for h in headlines[:3]:
+                title = h if isinstance(h, str) else h.get("title", "")
+                if title:
+                    lines.append(f"  - {title}")
+
+        # Broader market headlines (tariffs, Fed, geopolitical)
+        if all_headlines:
+            lines.append("Market-wide headlines:")
+            seen = set()
+            for h in all_headlines[:6]:
+                if h not in seen:
+                    seen.add(h)
+                    lines.append(f"  - {h}")
+
+        if not headlines and not all_headlines:
+            lines.append("No recent news available")
+
+        lines.append("")
+        return "\n".join(lines)
+    except Exception:
+        return "=== News / Sentiment ===\nNo data\n"
 
 
 def _format_lessons(lessons: list[str]) -> str:
