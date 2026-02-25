@@ -208,7 +208,7 @@ class MakerEngine:
 
         Returns list of newly placed quotes.
         """
-        if not self.client or self.cfg.dry_run:
+        if not self.client or self.cfg.maker_dry_run:
             return self._dry_run_quotes(
                 token_id, asset, fair_value, half_spread,
                 quote_size_override, skip_buy, skip_sell,
@@ -257,9 +257,11 @@ class MakerEngine:
         new_quotes = []
         now = time.time()
 
-        # BUY side
+        # BUY side — CLOB minimum is 5 tokens per order
         if not skip_buy:
             buy_size = size_usd / buy_price
+            if buy_size < 5.0:
+                buy_size = 5.0
             try:
                 buy_args = OrderArgs(
                     price=buy_price, size=buy_size,
@@ -279,11 +281,13 @@ class MakerEngine:
                     log.info("[MAKER] BUY  %s @ $%.3f  (%.1f tokens, $%.1f)",
                              asset.upper(), buy_price, buy_size, size_usd)
             except Exception as e:
-                log.debug("[MAKER] BUY order failed: %s", str(e)[:100])
+                log.warning("[MAKER] BUY order failed: %s", str(e)[:200])
 
-        # SELL side
+        # SELL side — CLOB minimum is 5 tokens per order
         if not skip_sell:
             sell_size = size_usd / sell_price
+            if sell_size < 5.0:
+                sell_size = 5.0
             try:
                 sell_args = OrderArgs(
                     price=sell_price, size=sell_size,
@@ -303,7 +307,7 @@ class MakerEngine:
                     log.info("[MAKER] SELL %s @ $%.3f  (%.1f tokens, $%.1f)",
                              asset.upper(), sell_price, sell_size, size_usd)
             except Exception as e:
-                log.debug("[MAKER] SELL order failed: %s", str(e)[:100])
+                log.warning("[MAKER] SELL order failed: %s", str(e)[:200])
 
         return new_quotes
 
@@ -408,7 +412,7 @@ class MakerEngine:
         now = time.time()
 
         for q in self._active_quotes:
-            if self.cfg.dry_run:
+            if self.cfg.maker_dry_run:
                 # Dry-run: simulate random fills (~20% chance per tick)
                 if random.random() < 0.20:
                     fair = self._last_fair.get(q.token_id, q.price)
@@ -556,7 +560,7 @@ class MakerEngine:
         log.info("[MAKER] Reducing %s inventory: %.1f -> %.1f shares",
                  asset.upper(), inv.net_shares, target_shares)
 
-        if self.cfg.dry_run:
+        if self.cfg.maker_dry_run:
             # Simulate selling at fair value (small slippage)
             fair = self._last_fair.get(token_id, 0.5)
             slippage = 0.02  # 2 cent slippage on aggressive exit
@@ -658,19 +662,14 @@ class MakerEngine:
         # Check fills on existing quotes before placing new ones
         fills = self.check_fills()
 
-        # Shared balance manager: report exposure + allocation check (live only)
-        if self._balance_mgr and not self.cfg.dry_run:
+        # Maker uses its own MAKER_MAX_TOTAL_EXPOSURE cap instead of shared balance manager
+        if self._balance_mgr and not self.cfg.maker_dry_run:
             try:
                 total_inv_usd = sum(
                     abs(iv.net_shares) * (iv.cost_basis / max(abs(iv.net_shares), 0.01))
                     for iv in self._inventory.values() if iv.net_shares != 0
                 )
                 self._balance_mgr.report_exposure(total_inv_usd)
-                bm_ok, _ = self._balance_mgr.can_trade(self.quote_size_usd * 2)
-                if not bm_ok:
-                    log.info("[MAKER] Balance manager: allocation exhausted, skipping quotes")
-                    self._write_state()
-                    return
             except Exception:
                 pass
 

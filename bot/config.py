@@ -48,6 +48,7 @@ class Config:
     snipe_delta_threshold: float = float(_env("SNIPE_DELTA_THRESHOLD", "0.08"))
 
     # Maker engine (disabled by default)
+    maker_dry_run: bool = _env("MAKER_DRY_RUN", _env("DRY_RUN", "true")).lower() in ("true", "1", "yes")
     maker_enabled: bool = _env("MAKER_ENABLED", "false").lower() in ("true", "1", "yes")
     maker_quote_size_usd: float = float(_env("MAKER_QUOTE_SIZE_USD", "8.0"))
     maker_max_inventory_usd: float = float(_env("MAKER_MAX_INVENTORY_USD", "30.0"))
