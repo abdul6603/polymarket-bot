@@ -35,6 +35,7 @@ class MakerQuote:
     """A live maker order on one side of the book."""
     order_id: str
     token_id: str
+    asset: str         # e.g. "bitcoin", "ethereum"
     side: str          # "BUY" or "SELL"
     price: float
     size: float        # in tokens
@@ -89,8 +90,10 @@ class MakerEngine:
         self._fills_log: list[dict] = []
         self._kill_reason: str | None = None
 
-        # Per-market fair values for P&L calculation
+        # Per-market fair values and time-to-resolution
         self._last_fair: dict[str, float] = {}  # token_id -> fair_value
+        self._market_remaining: dict[str, float] = {}  # token_id -> remaining_s
+        self.max_shares_per_side = 15.0  # hard cap: max shares on one side
 
     def compute_fair_value(self, asset: str, implied_price: float | None) -> float | None:
         """Blend Binance spot momentum with Polymarket implied price.
@@ -170,28 +173,52 @@ class MakerEngine:
         skew = 0.01 * skew_frac
         return skew if inv.net_shares > 0 else -skew
 
+    def _inventory_sides_allowed(self, token_id: str) -> tuple[bool, bool]:
+        """Check hard inventory cap. Returns (allow_buy, allow_sell)."""
+        inv = self._inventory.get(token_id)
+        if not inv:
+            return True, True
+        # Hard cap: 15 shares max on one side
+        allow_buy = inv.net_shares < self.max_shares_per_side
+        allow_sell = inv.net_shares > -self.max_shares_per_side
+        return allow_buy, allow_sell
+
     def refresh_quotes(
         self,
         token_id: str,
         asset: str,
         fair_value: float,
         half_spread: float,
+        quote_size_override: float | None = None,
+        skip_buy: bool = False,
+        skip_sell: bool = False,
     ) -> list[MakerQuote]:
         """Cancel stale quotes and post new two-sided GTC limit orders.
 
         Returns list of newly placed quotes.
         """
         if not self.client or self.cfg.dry_run:
-            return self._dry_run_quotes(token_id, asset, fair_value, half_spread)
+            return self._dry_run_quotes(
+                token_id, asset, fair_value, half_spread,
+                quote_size_override, skip_buy, skip_sell,
+            )
 
         # Cancel existing quotes for this token
         self._cancel_quotes_for_token(token_id)
+
+        # Hard inventory cap
+        cap_buy, cap_sell = self._inventory_sides_allowed(token_id)
+        if not cap_buy:
+            skip_buy = True
+        if not cap_sell:
+            skip_sell = True
+
+        size_usd = quote_size_override or self.quote_size_usd
 
         skew = self._inventory_skew(token_id)
         buy_price = round(max(0.01, fair_value - half_spread - skew), 2)
         sell_price = round(min(0.99, fair_value + half_spread - skew), 2)
 
-        # Don't quote if spread is too tight (would cross)
         if buy_price >= sell_price:
             log.debug("[MAKER] Quotes would cross (buy=%.2f sell=%.2f), skipping", buy_price, sell_price)
             return []
@@ -217,63 +244,73 @@ class MakerEngine:
                 return []
 
         new_quotes = []
+        now = time.time()
 
         # BUY side
-        buy_size = self.quote_size_usd / buy_price
-        try:
-            buy_args = OrderArgs(
-                price=buy_price,
-                size=buy_size,
-                side=BUY,
-                token_id=token_id,
-            )
-            signed = self.client.create_order(buy_args)
-            resp = self.client.post_order(signed, OrderType.GTC, post_only=True)
-            oid = resp.get("orderID") or resp.get("id", "")
-            if oid:
-                q = MakerQuote(
-                    order_id=oid, token_id=token_id, side="BUY",
+        if not skip_buy:
+            buy_size = size_usd / buy_price
+            try:
+                buy_args = OrderArgs(
                     price=buy_price, size=buy_size,
-                    size_usd=self.quote_size_usd, placed_at=time.time(),
+                    side=BUY, token_id=token_id,
                 )
-                self._active_quotes.append(q)
-                new_quotes.append(q)
-                log.info("[MAKER] BUY  %s @ $%.3f  (%.1f tokens, $%.1f)",
-                         asset.upper(), buy_price, buy_size, self.quote_size_usd)
-        except Exception as e:
-            log.debug("[MAKER] BUY order failed: %s", str(e)[:100])
+                signed = self.client.create_order(buy_args)
+                resp = self.client.post_order(signed, OrderType.GTC, post_only=True)
+                oid = resp.get("orderID") or resp.get("id", "")
+                if oid:
+                    q = MakerQuote(
+                        order_id=oid, token_id=token_id, asset=asset,
+                        side="BUY", price=buy_price, size=buy_size,
+                        size_usd=size_usd, placed_at=now,
+                    )
+                    self._active_quotes.append(q)
+                    new_quotes.append(q)
+                    log.info("[MAKER] BUY  %s @ $%.3f  (%.1f tokens, $%.1f)",
+                             asset.upper(), buy_price, buy_size, size_usd)
+            except Exception as e:
+                log.debug("[MAKER] BUY order failed: %s", str(e)[:100])
 
         # SELL side
-        sell_size = self.quote_size_usd / sell_price
-        try:
-            sell_args = OrderArgs(
-                price=sell_price,
-                size=sell_size,
-                side=SELL,
-                token_id=token_id,
-            )
-            signed = self.client.create_order(sell_args)
-            resp = self.client.post_order(signed, OrderType.GTC, post_only=True)
-            oid = resp.get("orderID") or resp.get("id", "")
-            if oid:
-                q = MakerQuote(
-                    order_id=oid, token_id=token_id, side="SELL",
+        if not skip_sell:
+            sell_size = size_usd / sell_price
+            try:
+                sell_args = OrderArgs(
                     price=sell_price, size=sell_size,
-                    size_usd=self.quote_size_usd, placed_at=time.time(),
+                    side=SELL, token_id=token_id,
                 )
-                self._active_quotes.append(q)
-                new_quotes.append(q)
-                log.info("[MAKER] SELL %s @ $%.3f  (%.1f tokens, $%.1f)",
-                         asset.upper(), sell_price, sell_size, self.quote_size_usd)
-        except Exception as e:
-            log.debug("[MAKER] SELL order failed: %s", str(e)[:100])
+                signed = self.client.create_order(sell_args)
+                resp = self.client.post_order(signed, OrderType.GTC, post_only=True)
+                oid = resp.get("orderID") or resp.get("id", "")
+                if oid:
+                    q = MakerQuote(
+                        order_id=oid, token_id=token_id, asset=asset,
+                        side="SELL", price=sell_price, size=sell_size,
+                        size_usd=size_usd, placed_at=now,
+                    )
+                    self._active_quotes.append(q)
+                    new_quotes.append(q)
+                    log.info("[MAKER] SELL %s @ $%.3f  (%.1f tokens, $%.1f)",
+                             asset.upper(), sell_price, sell_size, size_usd)
+            except Exception as e:
+                log.debug("[MAKER] SELL order failed: %s", str(e)[:100])
 
         return new_quotes
 
     def _dry_run_quotes(
-        self, token_id: str, asset: str, fair_value: float, half_spread: float
+        self, token_id: str, asset: str, fair_value: float, half_spread: float,
+        quote_size_override: float | None = None,
+        skip_buy: bool = False, skip_sell: bool = False,
     ) -> list[MakerQuote]:
         """Simulated quote placement for DRY_RUN mode."""
+        # Hard inventory cap
+        cap_buy, cap_sell = self._inventory_sides_allowed(token_id)
+        if not cap_buy:
+            skip_buy = True
+        if not cap_sell:
+            skip_sell = True
+
+        size_usd = quote_size_override or self.quote_size_usd
+
         skew = self._inventory_skew(token_id)
         buy_price = round(max(0.01, fair_value - half_spread - skew), 2)
         sell_price = round(min(0.99, fair_value + half_spread - skew), 2)
@@ -283,18 +320,27 @@ class MakerEngine:
 
         now = time.time()
         quotes = []
-        for side, price in [("BUY", buy_price), ("SELL", sell_price)]:
-            size = self.quote_size_usd / price
+        sides = []
+        if not skip_buy:
+            sides.append(("BUY", buy_price))
+        if not skip_sell:
+            sides.append(("SELL", sell_price))
+
+        for side, price in sides:
+            size = size_usd / price
             q = MakerQuote(
-                order_id=f"dry-maker-{side.lower()}-{int(now)}",
-                token_id=token_id, side=side,
+                order_id="dry-maker-%s-%d" % (side.lower(), int(now)),
+                token_id=token_id, asset=asset, side=side,
                 price=price, size=size,
-                size_usd=self.quote_size_usd, placed_at=now,
+                size_usd=size_usd, placed_at=now,
             )
             quotes.append(q)
 
-        log.info("[MAKER-DRY] %s BUY@%.3f / SELL@%.3f (fair=%.3f spread=%.3f skew=%.4f)",
-                 asset.upper(), buy_price, sell_price, fair_value, half_spread * 2, skew)
+        if sides:
+            log.info("[MAKER-DRY] %s %s (fair=%.3f spread=%.3f skew=%.4f sz=$%.0f)",
+                     asset.upper(),
+                     " / ".join("%s@%.3f" % (s, p) for s, p in sides),
+                     fair_value, half_spread * 2, skew, size_usd)
         # Replace active quotes for this token
         self._active_quotes = [
             q for q in self._active_quotes if q.token_id != token_id
@@ -402,9 +448,11 @@ class MakerEngine:
         token_id = quote.token_id
         if token_id not in self._inventory:
             self._inventory[token_id] = InventoryPosition(
-                token_id=token_id, asset="unknown",
+                token_id=token_id, asset=quote.asset,
             )
         inv = self._inventory[token_id]
+        if inv.asset == "unknown":
+            inv.asset = quote.asset
 
         if quote.side == "BUY":
             inv.net_shares += quote.size
@@ -431,6 +479,7 @@ class MakerEngine:
         self._fills_log.append({
             "ts": time.time(),
             "side": quote.side,
+            "asset": quote.asset,
             "price": fill_price,
             "fair": fair_value,
             "size_usd": quote.size_usd,
@@ -445,51 +494,105 @@ class MakerEngine:
         """Don't quote if market resolves within 90 seconds."""
         return remaining_s > 90
 
-    def _flatten_inventory(self, token_id: str, asset: str) -> None:
-        """Emergency flatten: cancel quotes + dump inventory for a token near resolution."""
-        self._cancel_quotes_for_token(token_id)
+    def _ttr_quote_params(self, token_id: str, remaining_s: float) -> dict:
+        """Time-to-resolution based quoting adjustments.
+
+        Returns dict with: quote_size_override, skip_buy, skip_sell, force_flat.
+        """
         inv = self._inventory.get(token_id)
-        if not inv or abs(inv.net_shares) < 0.1:
+        net = inv.net_shares if inv else 0.0
+        abs_net = abs(net)
+
+        # >60 min: full quoting, no restrictions
+        if remaining_s > 3600:
+            return {}
+
+        # 30-60 min: reduce quote size to 50%
+        if remaining_s > 1800:
+            return {"quote_size_override": self.quote_size_usd * 0.5}
+
+        # 10-30 min: only quote the side that REDUCES inventory
+        if remaining_s > 600:
+            params = {"quote_size_override": self.quote_size_usd * 0.3}
+            if net > 2:
+                params["skip_buy"] = True  # stop buying, only sell to reduce long
+            elif net < -2:
+                params["skip_sell"] = True  # stop selling, only buy to reduce short
+            return params
+
+        # <10 min: force flat if inventory > 10 shares on one side
+        if abs_net > 10:
+            return {"force_flat": True}
+
+        # <10 min with small inventory: tiny quotes, reducing side only
+        params = {"quote_size_override": self.quote_size_usd * 0.2}
+        if net > 0.5:
+            params["skip_buy"] = True
+        elif net < -0.5:
+            params["skip_sell"] = True
+        return params
+
+    def _reduce_inventory(self, token_id: str, asset: str, target_shares: float = 0.0) -> None:
+        """Gradually reduce inventory toward target. Used for TTR flattening."""
+        inv = self._inventory.get(token_id)
+        if not inv or abs(inv.net_shares) < 0.5:
             return
 
-        log.warning("[MAKER] Flattening %s inventory: %.1f shares (resolution imminent)",
-                    asset.upper(), inv.net_shares)
+        reduce_shares = abs(inv.net_shares) - abs(target_shares)
+        if reduce_shares <= 0:
+            return
+
+        log.info("[MAKER] Reducing %s inventory: %.1f -> %.1f shares",
+                 asset.upper(), inv.net_shares, target_shares)
 
         if self.cfg.dry_run:
-            # Simulate resolution: 50% chance correct side
+            # Simulate selling at fair value (small slippage)
             fair = self._last_fair.get(token_id, 0.5)
-            if random.random() < fair and inv.net_shares > 0:
-                # We're long and market resolves UP = win
-                pnl = inv.net_shares * (1.0 - inv.cost_basis / max(inv.net_shares, 0.01))
-            elif random.random() >= fair and inv.net_shares < 0:
-                # We're short and market resolves DOWN = win
-                pnl = abs(inv.net_shares) * (inv.cost_basis / max(abs(inv.net_shares), 0.01))
+            slippage = 0.02  # 2 cent slippage on aggressive exit
+            if inv.net_shares > 0:
+                exit_price = max(0.01, fair - slippage)
+                cost_per_share = inv.cost_basis / max(inv.net_shares, 0.01)
+                pnl = reduce_shares * (exit_price - cost_per_share)
             else:
-                # Wrong side = lose cost basis
-                pnl = -abs(inv.cost_basis)
-            self._resolution_losses += max(0, -pnl)
+                exit_price = min(0.99, fair + slippage)
+                cost_per_share = abs(inv.cost_basis) / max(abs(inv.net_shares), 0.01)
+                pnl = reduce_shares * (cost_per_share - exit_price)
+
+            if pnl < 0:
+                self._resolution_losses += abs(pnl)
             self._session_pnl += pnl
-            log.info("[MAKER-DRY] Resolution P&L for %s: $%.2f", asset.upper(), pnl)
+            log.info("[MAKER-DRY] Reduce %s: sold %.1f shares @ $%.3f, P&L $%.2f",
+                     asset.upper(), reduce_shares, exit_price, pnl)
         else:
-            # Live: place aggressive market order to exit
+            # Live: aggressive exit order
             try:
                 side = SELL if inv.net_shares > 0 else BUY
-                exit_price = 0.01 if side == SELL else 0.99  # aggressive exit
-                exit_size = abs(inv.net_shares)
+                exit_price = 0.01 if side == SELL else 0.99
                 args = OrderArgs(
-                    price=exit_price, size=exit_size,
+                    price=exit_price, size=reduce_shares,
                     side=side, token_id=token_id,
                 )
                 signed = self.client.create_order(args)
                 self.client.post_order(signed, OrderType.GTC)
-                log.info("[MAKER] Exit order placed: %s %.1f @ $%.2f",
-                         "SELL" if side == SELL else "BUY", exit_size, exit_price)
+                log.info("[MAKER] Exit order: %s %.1f @ $%.2f",
+                         "SELL" if side == SELL else "BUY", reduce_shares, exit_price)
             except Exception as e:
-                log.warning("[MAKER] Flatten failed for %s: %s", asset.upper(), str(e)[:100])
+                log.warning("[MAKER] Reduce failed for %s: %s", asset.upper(), str(e)[:100])
+                return
 
-        # Reset inventory for this token
-        inv.net_shares = 0.0
-        inv.cost_basis = 0.0
+        # Update inventory proportionally
+        if abs(inv.net_shares) > 0.01:
+            ratio = reduce_shares / abs(inv.net_shares)
+            if inv.net_shares > 0:
+                inv.net_shares -= reduce_shares
+            else:
+                inv.net_shares += reduce_shares
+            inv.cost_basis *= (1.0 - ratio)
+
+    def _flatten_inventory(self, token_id: str, asset: str) -> None:
+        """Emergency flatten: cancel quotes + dump ALL inventory for a token."""
+        self._cancel_quotes_for_token(token_id)
+        self._reduce_inventory(token_id, asset, target_shares=0.0)
 
     def _persist_daily_pnl(self) -> None:
         """Append daily P&L summary to maker_pnl.jsonl."""
@@ -560,6 +663,9 @@ class MakerEngine:
             if not up_token:
                 continue
 
+            # Track TTR for dashboard
+            self._market_remaining[up_token] = remaining_s
+
             # Resolution guard: flatten inventory if <60s remaining
             if remaining_s <= 60:
                 self._flatten_inventory(up_token, asset)
@@ -592,7 +698,22 @@ class MakerEngine:
 
             half_spread = self.compute_spread(asset, up_token, regime_label)
 
-            new = self.refresh_quotes(up_token, asset, fair, half_spread)
+            # Time-to-resolution graduated inventory control
+            ttr_params = self._ttr_quote_params(up_token, remaining_s)
+
+            if ttr_params.get("force_flat"):
+                log.warning("[MAKER] %s TTR<10min with %.0f shares — force flattening",
+                            asset.upper(),
+                            abs(self._inventory[up_token].net_shares) if up_token in self._inventory else 0)
+                self._reduce_inventory(up_token, asset, target_shares=0.0)
+                continue
+
+            new = self.refresh_quotes(
+                up_token, asset, fair, half_spread,
+                quote_size_override=ttr_params.get("quote_size_override"),
+                skip_buy=ttr_params.get("skip_buy", False),
+                skip_sell=ttr_params.get("skip_sell", False),
+            )
             quotes_placed += len(new)
 
         if quotes_placed > 0:
@@ -600,6 +721,24 @@ class MakerEngine:
 
         # Write state for dashboard
         self._write_state()
+
+    def _get_warnings(self) -> list[str]:
+        """Generate inventory risk warnings for dashboard."""
+        warnings = []
+        for tid, inv in self._inventory.items():
+            abs_net = abs(inv.net_shares)
+            if abs_net < 2:
+                continue
+            remaining = self._market_remaining.get(tid, 9999)
+            asset = inv.asset.upper()
+            direction = "LONG" if inv.net_shares > 0 else "SHORT"
+            if abs_net >= self.max_shares_per_side:
+                warnings.append("%s: %s %.0f shares — HARD CAP HIT" % (asset, direction, abs_net))
+            elif abs_net > 10 and remaining < 600:
+                warnings.append("%s: %s %.0f shares with <10min TTR — WILL FORCE FLAT" % (asset, direction, abs_net))
+            elif abs_net > 10 and remaining < 1800:
+                warnings.append("%s: %s %.0f shares with <30min TTR — reducing only" % (asset, direction, abs_net))
+        return warnings
 
     def _write_state(self) -> None:
         """Write current maker state to JSON for dashboard consumption."""
@@ -615,6 +754,7 @@ class MakerEngine:
                 {
                     "order_id": q.order_id,
                     "token_id": q.token_id[:16],
+                    "asset": q.asset,
                     "side": q.side,
                     "price": q.price,
                     "size_usd": round(q.size_usd, 2),
@@ -628,9 +768,11 @@ class MakerEngine:
                     "net_shares": round(inv.net_shares, 2),
                     "fills_today": inv.fills_today,
                     "estimated_rebate": round(inv.estimated_rebate, 4),
+                    "remaining_s": round(self._market_remaining.get(tid, 9999)),
                 }
                 for tid, inv in self._inventory.items()
             },
+            "warnings": self._get_warnings(),
             "config": {
                 "quote_size_usd": self.quote_size_usd,
                 "max_inventory_usd": self.max_inventory_usd,

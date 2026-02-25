@@ -273,10 +273,16 @@
           <div id="maker-rebate-label" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div>
         </div>
       </div>
+      <!-- Warnings -->
+      <div id="maker-warnings-card" style="display:none;margin-bottom:10px;padding:10px 14px;border-radius:8px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:#ef4444;font-weight:700;margin-bottom:4px;">Inventory Risk Warnings</div>
+        <div id="maker-warnings-list" style="font-family:var(--font-mono);font-size:0.72rem;color:#ef4444;"></div>
+      </div>
       <!-- Inventory -->
       <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;">
         <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Inventory</div>
-        <div id="maker-inventory" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">No inventory</span></div>
+        <table class="data-table"><thead><tr><th>Asset</th><th>Direction</th><th>Shares</th><th>Fills</th><th>TTR</th><th>Risk</th></tr></thead>
+        <tbody id="maker-inventory-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">No inventory</td></tr></tbody></table>
       </div>
       <!-- Active Quotes -->
       <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;">
@@ -284,13 +290,13 @@
           <span style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);">Active Quotes</span>
           <span id="maker-quote-count" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;font-weight:600;">0</span>
         </div>
-        <table class="data-table"><thead><tr><th>Side</th><th>Price</th><th>Size</th><th>Age</th></tr></thead>
-        <tbody id="maker-quotes-tbody"><tr><td colspan="4" class="text-muted" style="text-align:center;">No active quotes</td></tr></tbody></table>
+        <table class="data-table"><thead><tr><th>Asset</th><th>Side</th><th>Price</th><th>Size</th><th>Age</th></tr></thead>
+        <tbody id="maker-quotes-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;">No active quotes</td></tr></tbody></table>
       </div>
       <!-- Recent Fills -->
       <div class="glass-card" style="padding:10px 14px;">
         <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Recent Fills</div>
-        <table class="data-table"><thead><tr><th>Time</th><th>Side</th><th>Price</th><th>Fair</th><th>Spread</th><th>Rebate</th></tr></thead>
+        <table class="data-table"><thead><tr><th>Time</th><th>Asset</th><th>Side</th><th>Price</th><th>Fair</th><th>Spread</th></tr></thead>
         <tbody id="maker-fills-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">No fills yet</td></tr></tbody></table>
       </div>
       <!-- Config -->

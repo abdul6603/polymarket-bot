@@ -12525,27 +12525,60 @@ function loadMakerStatus() {
       rebateEl.textContent = reb > 0 ? ('~$' + reb.toFixed(3) + ' rebates') : '';
     }
 
-    // Inventory
-    var invEl = document.getElementById('maker-inventory');
-    if (invEl) {
+    // Warnings
+    var warnCard = document.getElementById('maker-warnings-card');
+    var warnList = document.getElementById('maker-warnings-list');
+    var warnings = d.warnings || [];
+    if (warnCard && warnList) {
+      if (warnings.length > 0) {
+        warnCard.style.display = 'block';
+        warnList.innerHTML = warnings.map(function(w) {
+          return '<div style="margin-bottom:2px;">' + esc(w) + '</div>';
+        }).join('');
+      } else {
+        warnCard.style.display = 'none';
+      }
+    }
+
+    // Inventory table with TTR
+    var invBody = document.getElementById('maker-inventory-tbody');
+    if (invBody) {
       var inv = d.inventory || {};
-      var invKeys = Object.keys(inv);
+      var invKeys = Object.keys(inv).filter(function(k) {
+        var v = inv[k];
+        return Math.abs(v.net_shares || 0) >= 0.1 || (v.fills_today || 0) > 0;
+      });
       if (invKeys.length === 0) {
-        invEl.innerHTML = '<span class="text-muted">No inventory</span>';
+        invBody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;">No inventory</td></tr>';
       } else {
         var html = '';
         for (var i = 0; i < invKeys.length; i++) {
           var k = invKeys[i];
           var v = inv[k];
           var ns = v.net_shares || 0;
-          var clr = ns > 0 ? 'var(--success)' : ns < 0 ? 'var(--error)' : 'var(--text-muted)';
-          html += '<div style="display:flex;justify-content:space-between;padding:2px 0;">';
-          html += '<span>' + esc(v.asset || k).toUpperCase() + '</span>';
-          html += '<span style="color:' + clr + ';">' + ns.toFixed(1) + ' shares</span>';
-          html += '<span style="color:var(--text-muted);">' + (v.fills_today || 0) + ' fills</span>';
-          html += '</div>';
+          var absNs = Math.abs(ns);
+          var dir = ns > 0.1 ? 'LONG' : ns < -0.1 ? 'SHORT' : 'FLAT';
+          var dirClr = dir === 'LONG' ? 'var(--success)' : dir === 'SHORT' ? 'var(--error)' : 'var(--text-muted)';
+          var rem = v.remaining_s || 9999;
+          var ttrLabel = rem > 3600 ? Math.floor(rem/60) + 'm' : rem > 60 ? Math.floor(rem/60) + 'm' : rem + 's';
+          var ttrClr = rem < 600 ? '#ef4444' : rem < 1800 ? '#eab308' : 'var(--text-muted)';
+          var risk = '';
+          var riskClr = 'var(--text-muted)';
+          if (absNs >= 15) { risk = 'CAP HIT'; riskClr = '#ef4444'; }
+          else if (absNs > 10 && rem < 600) { risk = 'FORCE FLAT'; riskClr = '#ef4444'; }
+          else if (absNs > 10 && rem < 1800) { risk = 'REDUCING'; riskClr = '#eab308'; }
+          else if (absNs > 5) { risk = 'MODERATE'; riskClr = '#eab308'; }
+          else { risk = 'OK'; riskClr = 'var(--success)'; }
+          html += '<tr>';
+          html += '<td>' + esc(v.asset || '?').toUpperCase() + '</td>';
+          html += '<td style="color:' + dirClr + ';font-weight:600;">' + dir + '</td>';
+          html += '<td>' + absNs.toFixed(1) + '</td>';
+          html += '<td>' + (v.fills_today || 0) + '</td>';
+          html += '<td style="color:' + ttrClr + ';">' + ttrLabel + '</td>';
+          html += '<td style="color:' + riskClr + ';font-weight:600;">' + risk + '</td>';
+          html += '</tr>';
         }
-        invEl.innerHTML = html;
+        invBody.innerHTML = html;
       }
     }
 
@@ -12556,13 +12589,14 @@ function loadMakerStatus() {
     if (qCount) qCount.textContent = quotes.length;
     if (qBody) {
       if (quotes.length === 0) {
-        qBody.innerHTML = '<tr><td colspan="4" class="text-muted" style="text-align:center;">No active quotes</td></tr>';
+        qBody.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;">No active quotes</td></tr>';
       } else {
         var html = '';
         for (var i = 0; i < quotes.length; i++) {
           var q = quotes[i];
           var sideClr = q.side === 'BUY' ? 'var(--success)' : 'var(--error)';
           html += '<tr>';
+          html += '<td>' + esc(q.asset || '?').toUpperCase() + '</td>';
           html += '<td style="color:' + sideClr + ';font-weight:600;">' + q.side + '</td>';
           html += '<td>$' + (q.price || 0).toFixed(3) + '</td>';
           html += '<td>$' + (q.size_usd || 0).toFixed(1) + '</td>';
@@ -12587,11 +12621,11 @@ function loadMakerStatus() {
           var ts = f.ts ? new Date(f.ts * 1000).toLocaleTimeString() : '--';
           html += '<tr>';
           html += '<td style="font-size:0.66rem;">' + ts + '</td>';
+          html += '<td>' + esc(f.asset || '?').toUpperCase() + '</td>';
           html += '<td style="color:' + sideClr + ';font-weight:600;">' + f.side + '</td>';
           html += '<td>$' + (f.price || 0).toFixed(3) + '</td>';
           html += '<td>$' + (f.fair || 0).toFixed(3) + '</td>';
           html += '<td style="color:var(--success);">$' + (f.spread_captured || 0).toFixed(4) + '</td>';
-          html += '<td style="color:var(--text-muted);">$' + (f.rebate || 0).toFixed(4) + '</td>';
           html += '</tr>';
         }
         fBody.innerHTML = html;
