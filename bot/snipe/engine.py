@@ -72,7 +72,7 @@ BINANCE_SYMBOLS = {
     "bitcoin": "BTCUSDT",
 }
 ASSET_CONFIG = {
-    "bitcoin": {"base_threshold": 75, "budget": 25.0},
+    "bitcoin": {"base_threshold": 60, "budget": 25.0},
 }
 
 # Default execution timeframe — 5m scanner signals execute on 15m/1h markets
@@ -500,7 +500,7 @@ class SnipeEngine:
             # Data-quality-aware threshold
             dynamic_thresh = self._compute_dynamic_threshold(asset, target_book, slot)
             if asset == "bitcoin":
-                dynamic_thresh = max(dynamic_thresh, 80)
+                dynamic_thresh = max(dynamic_thresh, 65)
             slot.scorer.threshold = dynamic_thresh
 
             # Score all 9 components with flow data

@@ -215,24 +215,24 @@ NY_OPEN_AVOID_END = (10, 15)    # 10:15 AM ET
 # Timeframe-specific minimum edge — must exceed estimated fees
 # Data: 0-8% edge = 20% WR, 8-11% = 62.5% WR — 8% is the breakeven floor
 MIN_EDGE_BY_TF = {
-    "5m": 0.08,     # 8% — raised from 6% (below 8% = 20% WR)
-    "15m": 0.08,    # 8% — data-backed breakeven floor
-    "1h": 0.10,     # Re-enabled: was 0.99 (disabled). Weight learner fixed bad indicators. 10% edge = conservative re-entry.
-    "4h": 0.99,     # Disabled: 35.1% WR on 94 trades = anti-signal. Set to 0.99 to block all 4h trades.
+    "5m": 0.04,     # 4% — lowered from 8%. Old floor caused paralysis during 11% rallies.
+    "15m": 0.04,    # 4% — fees are ~2.8%, 4% gives 1.2% real edge minimum.
+    "1h": 0.05,     # 5% — slightly higher for longer hold. Fees ~3.6%.
+    "4h": 0.06,     # 6% — RE-ENABLED. Old 35% WR was pre-weight-learner. Fresh epoch starts now.
     "weekly": 0.03, # 3% — lowest edge floor for longest timeframe
 }
 
-# Dynamic edge floor — regime-aware. Extreme regimes naturally compress edges; rigid 12% = paralysis.
-# Normal: 12% (Quant validated). Extreme: 8% (still selective). Hard floor: 7% (never below).
-MIN_EDGE_ABSOLUTE = 0.12  # default for normal regime
+# Dynamic edge floor — regime-aware. Previous 12% caused total paralysis (0 trades during 11% ETH rally).
+# Fees are 2.3-3.6%, so 4% edge = real profit. Position sizing + confidence are the risk guards.
+MIN_EDGE_ABSOLUTE = 0.04  # default — lowered from 12% which blocked ALL trades
 MIN_EDGE_BY_REGIME = {
-    "extreme_fear": 0.08,
-    "fear": 0.10,
-    "neutral": 0.12,
-    "greed": 0.10,
-    "extreme_greed": 0.08,
+    "extreme_fear": 0.03,
+    "fear": 0.04,
+    "neutral": 0.04,
+    "greed": 0.04,
+    "extreme_greed": 0.03,
 }
-MIN_EDGE_HARD_FLOOR = 0.07  # absolute minimum — never trade below 7% edge
+MIN_EDGE_HARD_FLOOR = 0.02  # absolute minimum — 2% after fees still profitable
 
 # Reward-to-Risk ratio filter
 # R:R = ((1-P) * 0.98) / P  where P = token price, 0.98 = payout after 2% winner fee
@@ -252,10 +252,10 @@ REVERSAL_SENTINEL_PENALTY = 0.15  # +15% confidence floor when triggered (penalt
 
 # Asset-specific edge premium — weaker assets need higher edge to trade
 ASSET_EDGE_PREMIUM = {
-    "bitcoin": 1.0,    # Lowered 1.5→1.0: old WR was pre-weight-learner. Need volume to test new indicator weights.
-    "ethereum": 1.0,   # Lowered 1.3→1.0: best asset at 54% WR per brain notes. No penalty needed.
-    "solana": 1.3,     # Lowered 2.0→1.3: weakest asset (46% WR), slight caution but not impossible.
-    "xrp": 0.9,        # Keep 0.9: best performer, give room.
+    "bitcoin": 1.0,
+    "ethereum": 1.0,
+    "solana": 1.0,     # Lowered 1.3→1.0: old WR was pre-weight-learner. Fresh epoch, no penalty.
+    "xrp": 0.9,        # Best performer, give room.
 }
 
 
@@ -1182,7 +1182,7 @@ class SignalEngine:
                      asset.upper(), timeframe, min_edge * 100,
                      _gate_decision.win_rate * 100, _gate_decision.sample_size)
         elif _gate_decision.edge_adjustment < 0:
-            min_edge = max(0.05, min_edge + _gate_decision.edge_adjustment)  # Never below 5%
+            min_edge = max(0.02, min_edge + _gate_decision.edge_adjustment)  # Never below 2%
         if consensus_edge < min_edge:
             log.info(
                 "[%s/%s] Edge too low: %.3f < %.3f (asset_premium=%.1fx)",
