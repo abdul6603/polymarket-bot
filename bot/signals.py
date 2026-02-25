@@ -1074,7 +1074,9 @@ class SignalEngine:
             return None
 
         # ── Subtract Fees from Edge ──
-        fees = _estimate_fees(timeframe, implied_up_price)
+        # Garves places GTC limit orders (maker) so only winner_fee applies (2%).
+        # Taker fee (1.56% at p=0.50) was inflating costs and killing edge.
+        fees = _estimate_fees(timeframe, implied_up_price, is_maker=True)
         edge_up -= fees
         edge_down -= fees
 
