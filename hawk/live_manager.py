@@ -161,11 +161,8 @@ class LivePositionManager:
             current_price = pos.get("cur_price", current_price)
         threshold = self.cfg.live_take_profit_threshold
 
-        should_sell = False
-        if direction == "yes" and current_price >= threshold:
-            should_sell = True
-        elif direction == "no" and current_price <= (1 - threshold):
-            should_sell = True
+        # Our token hitting high price = we won (both YES and NO tokens)
+        should_sell = current_price >= threshold
 
         if not should_sell:
             return None
@@ -291,7 +288,8 @@ class LivePositionManager:
 
         # Calculate unrealized P&L
         shares = pos.get("size_usd", 0) / entry_price if entry_price > 0 else 0
-        pnl_estimate = (current_price - entry_price) * shares if direction == "yes" else (entry_price - current_price) * shares
+        # Our token price up = profit, down = loss (same for YES and NO tokens)
+        pnl_estimate = (current_price - entry_price) * shares
 
         # Score differential analysis
         score_diff = home_score - away_score
@@ -302,9 +300,8 @@ class LivePositionManager:
         # 0. TAKE PROFIT: Position essentially won — sell now, free capital
         take_profit_thresh = self.cfg.live_take_profit_threshold
         should_take_profit = False
-        if direction == "yes" and current_price >= take_profit_thresh:
-            should_take_profit = True
-        elif direction == "no" and current_price <= (1 - take_profit_thresh):
+        # Our token hitting high price = we won (both YES and NO tokens)
+        if current_price >= take_profit_thresh:
             should_take_profit = True
 
         if should_take_profit:
@@ -322,9 +319,8 @@ class LivePositionManager:
             )
 
         # 1. STOP-LOSS: Market price dropped significantly
+        # current_price is OUR token's price (YES or NO) — drop = losing for both
         price_drop_pct = (entry_price - current_price) / entry_price if entry_price > 0 else 0
-        if direction == "no":
-            price_drop_pct = (current_price - entry_price) / (1 - entry_price) if entry_price < 1 else 0
 
         if price_drop_pct >= self.cfg.live_stop_loss_pct:
             reason = f"Stop-loss hit: price moved {price_drop_pct:.0%} against us ({entry_price:.2f}→{current_price:.2f})"
@@ -394,10 +390,8 @@ class LivePositionManager:
         direction = pos.get("direction", "yes")
 
         # Price-based assessment (most reliable)
-        if direction == "yes":
-            price_change = (current_price - entry_price) / entry_price if entry_price > 0 else 0
-        else:
-            price_change = (entry_price - current_price) / entry_price if entry_price > 0 else 0
+        # current_price is OUR token — up = winning, down = losing, for both YES and NO
+        price_change = (current_price - entry_price) / entry_price if entry_price > 0 else 0
 
         if price_change > 0.20:
             return "winning_big"
