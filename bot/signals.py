@@ -248,7 +248,7 @@ MIN_VOTE_CONFIDENCE = 0.15  # 15% — below this, vote doesn't count for consens
 # When 2+ disabled indicators disagree with majority, raise the bar
 REVERSAL_SENTINEL_INDICATORS = {"rsi", "bollinger", "heikin_ashi", "funding_rate", "lstm"}
 REVERSAL_SENTINEL_THRESHOLD = 2   # how many dissenters needed to trigger
-REVERSAL_SENTINEL_PENALTY = 0.15  # +15% confidence floor when triggered (penalty only, never hard blocks)
+REVERSAL_SENTINEL_PENALTY = 0.03  # Lowered 0.15→0.03: RSI+Bollinger are ALWAYS disabled & always disagree with UP during rallies. 15% penalty was blocking every UP signal systematically.
 
 # Asset-specific edge premium — weaker assets need higher edge to trade
 ASSET_EDGE_PREMIUM = {
@@ -1199,12 +1199,7 @@ class SignalEngine:
             if regime and regime.label in ("extreme_fear", "fear"):
                 up_premium *= 0.5
             effective_conf_floor += up_premium
-        # ETH confidence premium: weakest asset (72% WR vs BTC 79%, XRP 100%)
-        if asset == "ethereum":
-            eth_penalty = 0.03
-            if regime and regime.label in ("extreme_fear", "fear"):
-                eth_penalty *= 0.5  # Halve ETH penalty in fear — contrarian buying shouldn't be penalized per-asset
-            effective_conf_floor += eth_penalty
+        # ETH confidence premium removed — old WR data was pre-weight-learner. Fresh epoch, no per-asset penalty.
         # Reversal sentinel penalty: raise floor when disabled indicators signal reversal
         effective_conf_floor += reversal_penalty
         if confidence < effective_conf_floor:

@@ -38,33 +38,32 @@ _DEFAULT_REGIME = RegimeAdjustment(
 )
 
 REGIME_TABLE = {
-    # FIXED: extreme_fear was making trading EASIER (lower edge, lower consensus)
-    # but data shows 35.7% WR in extreme_fear — indicators are unreliable in panics.
-    # Now: trade LESS and require STRONGER signals during extreme fear.
+    # Confidence floors lowered — edge floors + consensus are the real gates.
+    # Let Garves trade and learn. Position sizing controls risk.
     "extreme_fear": lambda fng: RegimeAdjustment(
         label="extreme_fear", fng_value=fng,
-        size_multiplier=0.9, edge_multiplier=1.05,  # 0.7→0.9: R:R 1.2+ filter now guards quality, bet bigger
-        consensus_offset=0, confidence_floor=0.55,
+        size_multiplier=0.9, edge_multiplier=1.05,
+        consensus_offset=0, confidence_floor=0.35,  # Lowered 0.55→0.35: let him trade in fear, size limits risk
     ),
     "fear": lambda fng: RegimeAdjustment(
         label="fear", fng_value=fng,
-        size_multiplier=0.95, edge_multiplier=1.05,  # 0.9→0.95: slight caution, not crippling
-        consensus_offset=0, confidence_floor=0.55,
+        size_multiplier=0.95, edge_multiplier=1.05,
+        consensus_offset=0, confidence_floor=0.35,  # Lowered 0.55→0.35
     ),
     "neutral": lambda fng: RegimeAdjustment(
         label="neutral", fng_value=fng,
         size_multiplier=1.0, edge_multiplier=1.0,
-        consensus_offset=0, confidence_floor=0.55,  # match MIN_CONFIDENCE baseline
+        consensus_offset=0, confidence_floor=0.35,  # Lowered 0.55→0.35
     ),
     "greed": lambda fng: RegimeAdjustment(
         label="greed", fng_value=fng,
         size_multiplier=0.8, edge_multiplier=1.2,
-        consensus_offset=1, confidence_floor=0.60,  # require stronger conviction in greed
+        consensus_offset=0, confidence_floor=0.40,  # Lowered 0.60→0.40
     ),
     "extreme_greed": lambda fng: RegimeAdjustment(
         label="extreme_greed", fng_value=fng,
         size_multiplier=0.5, edge_multiplier=1.5,
-        consensus_offset=1, confidence_floor=0.65,  # highest bar — most unreliable regime
+        consensus_offset=0, confidence_floor=0.45,  # Lowered 0.65→0.45
     ),
 }
 
