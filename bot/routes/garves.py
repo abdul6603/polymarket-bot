@@ -1898,7 +1898,7 @@ def engine_comparison():
     snipe_size = sum(t.get("total_size_usd", 0) for t in snipe_resolved)
 
     # --- Maker stats ---
-    maker_data = {"fills": 0, "rebate": 0.0, "pnl": 0.0, "active_quotes": 0}
+    maker_data = {"fills": 0, "rebate": 0.0, "pnl": 0.0, "active_quotes": 0, "spread_captured": 0.0}
     maker_state_file = data_dir / "maker_state.json"
     if maker_state_file.exists():
         try:
@@ -1906,7 +1906,9 @@ def engine_comparison():
             maker_data["fills"] = ms.get("stats", {}).get("fills_today", 0)
             maker_data["rebate"] = ms.get("stats", {}).get("estimated_rebate_today", 0.0)
             maker_data["active_quotes"] = len(ms.get("active_quotes", []))
-            maker_data["pnl"] = ms.get("session_pnl", 0.0)
+            pnl_data = ms.get("pnl", {})
+            maker_data["pnl"] = pnl_data.get("session_pnl", 0.0)
+            maker_data["spread_captured"] = pnl_data.get("spread_captured", 0.0)
         except Exception:
             pass
 
@@ -1970,11 +1972,12 @@ def engine_comparison():
             "pending": maker_data["active_quotes"],
             "wins": maker_data["fills"],
             "losses": 0,
-            "win_rate": 0.0,
-            "pnl": round(maker_data["pnl"], 2),
+            "win_rate": None,
+            "pnl": round(maker_data["pnl"] + maker_data["rebate"] + maker_data["spread_captured"], 2),
             "total_invested": 0,
             "avg_size": 0,
             "rebate": round(maker_data["rebate"], 4),
+            "spread_captured": round(maker_data["spread_captured"], 4),
             "status": "active",
         },
         "whale": {

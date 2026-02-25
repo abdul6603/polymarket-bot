@@ -1022,22 +1022,71 @@ function loadGarvesIntelligence() {
 
   fetch('/api/garves/engine-comparison').then(function(r) { return r.json(); }).then(function(d) {
     var engines = d.engines || {};
+    var totals = d.totals || {};
     var snipe = engines.snipe || {};
+    var whale = engines.whale || {};
+    var maker = engines.maker || {};
+    var taker = engines.taker || {};
+
+    /* --- Populate engine comparison table --- */
+    var tbody = document.getElementById('engine-comp-body');
+    if (tbody) {
+      var order = [
+        {key:'snipe', label:'Snipe v10', color:'#f59e0b'},
+        {key:'maker', label:'Maker', color:'#8b5cf6'},
+        {key:'whale', label:'Whale Follower', color:'#06b6d4'},
+        {key:'taker', label:'Main Taker', color:'#22c55e'}
+      ];
+      var html = '';
+      order.forEach(function(item) {
+        var e = engines[item.key] || {};
+        var wr = e.win_rate != null ? e.win_rate.toFixed(1) + '%' : 'N/A';
+        var wrColor = e.win_rate != null && e.win_rate >= 55 ? '#22c55e' : e.win_rate != null && e.win_rate < 50 && e.win_rate > 0 ? '#ef4444' : '';
+        var pnlVal = e.pnl || 0;
+        var pnlColor = pnlVal > 0 ? '#22c55e' : pnlVal < 0 ? '#ef4444' : '';
+        var pnlStr = (pnlVal >= 0 ? '$' : '-$') + Math.abs(pnlVal).toFixed(2);
+        var statusColor = e.status === 'active' ? '#22c55e' : '#6b7280';
+        html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
+        html += '<td style="padding:6px 10px;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:' + item.color + ';margin-right:6px;"></span>' + item.label + '</td>';
+        html += '<td style="padding:6px 8px;text-align:center;">' + (e.allocation_pct || 0) + '%</td>';
+        html += '<td style="padding:6px 8px;text-align:center;">' + (e.trades || 0) + (e.pending ? ' <span style="color:var(--text-muted);font-size:0.6rem;">(' + e.pending + ' pending)</span>' : '') + '</td>';
+        html += '<td style="padding:6px 8px;text-align:center;">' + (e.wins || 0) + '</td>';
+        html += '<td style="padding:6px 8px;text-align:center;">' + (e.losses || 0) + '</td>';
+        html += '<td style="padding:6px 8px;text-align:center;color:' + wrColor + ';">' + wr + '</td>';
+        html += '<td style="padding:6px 8px;text-align:right;color:' + pnlColor + ';font-weight:600;">' + pnlStr + '</td>';
+        html += '<td style="padding:6px 8px;text-align:right;">$' + (e.avg_size || 0).toFixed(2) + '</td>';
+        html += '<td style="padding:6px 8px;text-align:center;"><span style="font-size:0.58rem;padding:1px 6px;border-radius:6px;background:rgba(' + (e.status === 'active' ? '34,197,94' : '107,114,128') + ',0.15);color:' + statusColor + ';font-weight:600;text-transform:uppercase;">' + (e.status || 'off') + '</span></td>';
+        html += '</tr>';
+      });
+      tbody.innerHTML = html;
+    }
+    var tfoot = document.getElementById('engine-comp-totals');
+    if (tfoot) {
+      var tp = totals.pnl || 0;
+      var tpColor = tp > 0 ? '#22c55e' : tp < 0 ? '#ef4444' : '';
+      var tpStr = (tp >= 0 ? '$' : '-$') + Math.abs(tp).toFixed(2);
+      tfoot.innerHTML = '<td style="padding:6px 10px;">TOTAL</td><td></td><td style="text-align:center;">' + (totals.trades || 0) + '</td><td style="text-align:center;">' + (totals.wins || 0) + '</td><td style="text-align:center;">' + (totals.losses || 0) + '</td><td style="text-align:center;">' + (totals.win_rate || 0).toFixed(1) + '%</td><td style="text-align:right;color:' + tpColor + ';font-weight:700;">' + tpStr + '</td><td></td><td></td>';
+    }
+    var modeEl = document.getElementById('engine-comp-mode');
+    if (modeEl) { var dry = d.dry_run; modeEl.textContent = dry ? 'PAPER' : 'LIVE'; modeEl.style.background = dry ? 'rgba(234,179,8,0.15)' : 'rgba(239,68,68,0.15)'; modeEl.style.color = dry ? '#eab308' : '#ef4444'; }
+    var bankEl = document.getElementById('engine-comp-bankroll');
+    if (bankEl) bankEl.textContent = '$' + (d.bankroll || 0).toFixed(0) + ' bankroll';
+
+    /* --- Intelligence panel cards --- */
     var snipeWrEl = document.getElementById('gi-snipe-wr'); var snipeDetailEl = document.getElementById('gi-snipe-detail');
     if (snipeWrEl) { snipeWrEl.textContent = snipe.trades > 0 ? snipe.win_rate.toFixed(1) + '%' : '--'; snipeWrEl.style.color = snipe.win_rate >= 55 ? '#22c55e' : snipe.win_rate > 0 && snipe.win_rate < 50 ? '#ef4444' : ''; }
     if (snipeDetailEl) snipeDetailEl.textContent = snipe.wins + 'W-' + snipe.losses + 'L / ' + snipe.trades + ' trades';
-    var whale = engines.whale || {};
     var whaleWrEl = document.getElementById('gi-whale-wr'); var whaleDetailEl = document.getElementById('gi-whale-detail');
     if (whaleWrEl) { whaleWrEl.textContent = whale.trades > 0 ? whale.win_rate.toFixed(1) + '%' : '--'; whaleWrEl.style.color = whale.win_rate >= 55 ? '#22c55e' : whale.win_rate > 0 && whale.win_rate < 50 ? '#ef4444' : ''; }
     if (whaleDetailEl) whaleDetailEl.textContent = whale.wins + 'W-' + whale.losses + 'L / ' + whale.trades + ' trades';
-    var maker = engines.maker || {};
     var makerEl = document.getElementById('gi-maker-eff'); var makerDetailEl = document.getElementById('gi-maker-detail');
-    if (makerEl) { var rebate = maker.rebate || 0; var pnl = maker.pnl || 0; makerEl.textContent = rebate > 0 ? '$' + rebate.toFixed(2) : pnl > 0 ? '$' + pnl.toFixed(2) : '--'; makerEl.style.color = (rebate + pnl) > 0 ? '#22c55e' : ''; }
+    if (makerEl) { var pnl = maker.pnl || 0; makerEl.textContent = pnl > 0 ? '$' + pnl.toFixed(2) : '--'; makerEl.style.color = pnl > 0 ? '#22c55e' : ''; }
     if (makerDetailEl) makerDetailEl.textContent = maker.trades + ' fills today';
     var flowEl = document.getElementById('gi-flow-acc'); var flowDetailEl = document.getElementById('gi-flow-detail');
     if (flowEl && snipe.trades > 0) { flowEl.textContent = snipe.win_rate >= 55 ? 'STRONG' : snipe.win_rate >= 45 ? 'MODERATE' : 'WEAK'; flowEl.style.color = snipe.win_rate >= 55 ? '#22c55e' : snipe.win_rate >= 45 ? '#eab308' : '#ef4444'; }
     if (flowDetailEl) flowDetailEl.textContent = 'Based on ' + snipe.trades + ' snipe trades';
-    /* Update overview cards */
+
+    /* --- Overview cards --- */
     var ovSnipeWr = document.getElementById('ov-snipe-wr');
     if (ovSnipeWr && snipe.trades > 0) ovSnipeWr.textContent = snipe.win_rate.toFixed(1) + '%';
     var ovSnipeTrades = document.getElementById('ov-snipe-trades');
@@ -1048,7 +1097,6 @@ function loadGarvesIntelligence() {
     if (ovMakerPnl) { var mp = maker.pnl || 0; ovMakerPnl.textContent = '$' + mp.toFixed(2); }
     var ovMakerFills = document.getElementById('ov-maker-fills');
     if (ovMakerFills) ovMakerFills.textContent = maker.trades + ' fills';
-    var taker = engines.taker || {};
     var ovTakerWr = document.getElementById('ov-taker-wr');
     if (ovTakerWr && taker.trades > 0) ovTakerWr.textContent = taker.win_rate.toFixed(1) + '%';
     var ovTakerTrades = document.getElementById('ov-taker-trades');
