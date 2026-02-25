@@ -149,6 +149,37 @@
     </div>
   </div>
 
+  <!-- F1.3: Health Monitor + Edge Tracker (Discipline Layer) -->
+  <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #f59e0b;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <h3 class="section-title" style="font-size:0.72rem;margin:0;text-transform:uppercase;letter-spacing:0.06em;color:#f59e0b;">Discipline Layer</h3>
+      <span id="odin-health-dot" style="width:10px;height:10px;border-radius:50%;background:#6b7280;"></span>
+      <span id="odin-health-label" style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">--</span>
+      <span style="color:rgba(255,255,255,0.15);">|</span>
+      <span id="odin-edge-label" style="font-size:0.72rem;font-weight:600;color:var(--text-muted);">Edge: --</span>
+      <span id="odin-edge-recommendation" style="font-size:0.64rem;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.05);color:var(--text-muted);margin-left:auto;">--</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+      <div class="stat-card" data-accent="odin" style="flex:1;min-width:100px;">
+        <div class="stat-value" id="odin-d-sharpe" style="font-size:0.9rem;">--</div>
+        <div class="stat-label">Sharpe</div>
+      </div>
+      <div class="stat-card" data-accent="odin" style="flex:1;min-width:100px;">
+        <div class="stat-value" id="odin-d-edge-scalar" style="font-size:0.9rem;">1.0x</div>
+        <div class="stat-label">Edge Scalar</div>
+      </div>
+      <div class="stat-card" data-accent="odin" style="flex:1;min-width:100px;">
+        <div class="stat-value" id="odin-d-flags" style="font-size:0.9rem;">0</div>
+        <div class="stat-label">Red Flags</div>
+      </div>
+      <div class="stat-card" data-accent="odin" style="flex:1;min-width:100px;">
+        <div class="stat-value" id="odin-d-rolling-wr" style="font-size:0.9rem;">--</div>
+        <div class="stat-label">Rolling WR</div>
+      </div>
+    </div>
+    <div id="odin-health-issues" style="font-size:0.7rem;color:var(--text-secondary);"></div>
+  </div>
+
   <!-- F1.5: Portfolio Risk Guard (Phase 2) -->
   <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #00d4ff;">
     <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:#00d4ff;">Portfolio Guard</h3>
@@ -343,6 +374,63 @@ function odinRefresh() {
       } else {
         blEl.innerHTML = '<span style="color:var(--success);">No blacklisted coins</span>';
       }
+    }
+
+    // Discipline Layer (Health + Edge)
+    var health = d.health || {};
+    var edge = d.edge || {};
+    var rolling = d.rolling_stats || {};
+    var healthOverall = health.overall || 'UNKNOWN';
+    var healthColors = {GREEN:'#22c55e', YELLOW:'#f59e0b', RED:'#ef4444', UNKNOWN:'#6b7280'};
+    var hDot = document.getElementById('odin-health-dot');
+    if (hDot) hDot.style.background = healthColors[healthOverall] || '#6b7280';
+    odinSetVal('odin-health-label', healthOverall);
+    var hLabel = document.getElementById('odin-health-label');
+    if (hLabel) hLabel.style.color = healthColors[healthOverall] || 'var(--text-muted)';
+
+    var edgeStatus = edge.status || 'UNKNOWN';
+    var edgeColors = {STRONG:'var(--success)', WEAKENING:'var(--warning)', DECAYED:'var(--error)'};
+    odinSetVal('odin-edge-label', 'Edge: ' + edgeStatus);
+    var eLbl = document.getElementById('odin-edge-label');
+    if (eLbl) eLbl.style.color = edgeColors[edgeStatus] || 'var(--text-muted)';
+
+    odinSetVal('odin-d-sharpe', (edge.sharpe || 0).toFixed(2));
+    odinSetVal('odin-d-edge-scalar', (edge.risk_scalar || 1).toFixed(1) + 'x');
+    var esEl = document.getElementById('odin-d-edge-scalar');
+    if (esEl) esEl.style.color = (edge.risk_scalar || 1) < 1 ? 'var(--warning)' : 'var(--success)';
+    odinSetVal('odin-d-flags', health.red_flags || 0);
+    var flagsEl = document.getElementById('odin-d-flags');
+    if (flagsEl) flagsEl.style.color = (health.red_flags || 0) >= 3 ? 'var(--error)' : (health.red_flags || 0) >= 1 ? 'var(--warning)' : 'var(--success)';
+    var rWr = rolling.win_rate;
+    if (rWr != null) {
+      odinSetVal('odin-d-rolling-wr', rWr.toFixed(1) + '%');
+      var rwEl = document.getElementById('odin-d-rolling-wr');
+      if (rwEl) rwEl.style.color = rWr >= 50 ? 'var(--success)' : rWr >= 35 ? 'var(--warning)' : 'var(--error)';
+    }
+
+    var issuesEl = document.getElementById('odin-health-issues');
+    if (issuesEl) {
+      var recs = health.recommendations || [];
+      var dqIssues = (health.data_quality || {}).issues || [];
+      var allIssues = dqIssues.concat(recs);
+      if (allIssues.length > 0) {
+        issuesEl.innerHTML = allIssues.map(function(i) { return '<span style="color:var(--warning);margin-right:8px;">&#9888; ' + i + '</span>'; }).join('');
+      } else {
+        issuesEl.innerHTML = '<span style="color:var(--success);">All systems healthy</span>';
+      }
+    }
+
+    var recEl = document.getElementById('odin-edge-recommendation');
+    if (recEl) {
+      var eRec = '';
+      if (edgeStatus === 'DECAYED') eRec = 'PAUSE';
+      else if (edgeStatus === 'WEAKENING') eRec = 'REDUCE';
+      else if (edgeStatus === 'STRONG') eRec = 'MAINTAIN';
+      recEl.textContent = eRec || '--';
+      var recColors = {MAINTAIN:'var(--success)',REDUCE:'var(--warning)',PAUSE:'var(--error)'};
+      recEl.style.color = recColors[eRec] || 'var(--text-muted)';
+      recEl.style.borderColor = recColors[eRec] || 'transparent';
+      recEl.style.border = eRec ? '1px solid ' + (recColors[eRec] || 'transparent') : 'none';
     }
 
     // WebSocket Status + Pending Orders (Phase 3)

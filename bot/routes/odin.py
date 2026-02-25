@@ -259,6 +259,40 @@ def api_odin_ws_status():
     })
 
 
+@odin_bp.route("/api/odin/health")
+def api_odin_health():
+    """Health monitor diagnostic report."""
+    # Try fresh health report file first
+    health_file = DATA_DIR / "health_report.json"
+    if health_file.exists():
+        try:
+            data = json.loads(health_file.read_text())
+            data["age_s"] = round(time.time() - data.get("timestamp", 0), 1)
+            return jsonify(data)
+        except Exception:
+            pass
+    # Fallback to status file
+    status = _load_status()
+    return jsonify(status.get("health", {"overall": "UNKNOWN"}))
+
+
+@odin_bp.route("/api/odin/edge")
+def api_odin_edge():
+    """Edge decay detection and weekly report."""
+    # Try fresh edge report file first
+    edge_file = DATA_DIR / "edge_report.json"
+    if edge_file.exists():
+        try:
+            data = json.loads(edge_file.read_text())
+            data["age_s"] = round(time.time() - data.get("timestamp", 0), 1)
+            return jsonify(data)
+        except Exception:
+            pass
+    # Fallback to status file
+    status = _load_status()
+    return jsonify(status.get("edge", {"status": "UNKNOWN"}))
+
+
 @odin_bp.route("/api/odin/toggle-mode", methods=["POST"])
 def api_odin_toggle_mode():
     """Toggle Odin between live and paper trading."""
