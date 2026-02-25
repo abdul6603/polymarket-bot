@@ -69,6 +69,16 @@ app = Flask(
     static_folder=str(Path(__file__).parent / "static"),
     template_folder=str(Path(__file__).parent / "templates"),
 )
+app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
+
+
+@app.after_request
+def _no_cache(response):
+    """Prevent browser from caching HTML, CSS, and JS."""
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
 
 # ── SocketIO for real-time push (optional — falls back to polling if unavailable) ──
 socketio = None
