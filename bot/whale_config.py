@@ -11,8 +11,8 @@ GAMMA_API = "https://gamma-api.polymarket.com"
 LEADERBOARD_CATEGORIES = ["CRYPTO"]
 LEADERBOARD_PERIODS = ["WEEK", "MONTH", "ALL"]
 LEADERBOARD_TOP_N = 75                # Wide funnel — score & filter to top 20
-MAX_TRACKED_WALLETS = 20
-MIN_WALLET_SCORE = 60
+MAX_TRACKED_WALLETS = 40
+MIN_WALLET_SCORE = 50
 
 # ── Polling ──
 POLL_INTERVAL_S = 4

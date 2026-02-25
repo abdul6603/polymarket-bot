@@ -22,6 +22,7 @@ import time
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
 from threading import Lock
 
 import os
@@ -473,28 +474,34 @@ class WhaleMonitor:
         self._entry_counts: dict[str, int] = {}
 
     def poll_wallets(self) -> list[dict]:
-        """Poll all tracked wallets and return new copy signals."""
+        """Poll all tracked wallets in parallel and return new copy signals."""
         wallets = self._db.get_tracked_wallets()
         if not wallets:
             return []
 
         signals = []
-        for w in wallets:
+
+        def _poll_one(w: dict) -> list[dict]:
             wallet = w["proxy_wallet"]
             try:
                 positions = self._fetch_positions(wallet)
                 if positions is None:
-                    continue
-
+                    return []
                 new_signals = self._detect_changes(wallet, positions, w)
-                signals.extend(new_signals)
-
                 # Update cache
                 self._position_cache[wallet] = {
                     p.get("conditionId", ""): p for p in positions
                 }
+                return new_signals
             except Exception as e:
                 log.debug("[WHALE] Poll error for %s: %s", wallet[:12], str(e)[:100])
+                return []
+
+        # Parallel polling — 8 threads, respects rate limiter in _fetch_positions
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            results = pool.map(_poll_one, wallets)
+            for sigs in results:
+                signals.extend(sigs)
 
         # Consensus check: group signals by condition_id + outcome
         if signals:
