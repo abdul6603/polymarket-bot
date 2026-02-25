@@ -10,3 +10,7 @@ build/
 # Kalshi private key — NEVER commit
 data/kalshi_private.pem
 *.pem
+# SQLite DBs — live data, never overwrite via git
+data/*.db
+data/*.db-wal
+data/*.db-shm
