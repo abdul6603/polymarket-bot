@@ -240,3 +240,15 @@ def api_oracle_toggle_mode():
     }, indent=2))
     mode_label = "PAPER" if new_dry else "LIVE"
     return jsonify({"success": True, "dry_run": new_dry, "mode": mode_label})
+
+
+@oracle_bp.route("/api/oracle/scorecard")
+def api_oracle_scorecard():
+    """Live resolution scorecard — current win/loss status of all predictions."""
+    try:
+        from oracle.resolution_tracker import get_scorecard
+        data = get_scorecard(force_resolve=True)
+        return jsonify(data)
+    except Exception as e:
+        log.exception("Scorecard error")
+        return jsonify({"error": str(e)}), 500
