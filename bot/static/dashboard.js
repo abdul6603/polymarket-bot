@@ -4654,6 +4654,7 @@ async function refresh() {
       refreshSnipeAssist();
       loadSignalCycle();
       loadGarvesV2Metrics();
+      loadMakerStatus();
     } else if (currentTab === 'soren') {
       var resp = await fetch('/api/soren');
       renderSoren(await resp.json());
@@ -12462,5 +12463,132 @@ function loadGarvesV2Metrics() {
       var scolor = f.status === 'normal' || f.status === 'healthy' ? 'var(--success)' : 'var(--warning)';
       return '<div style="margin-bottom:4px;"><span style="color:' + scolor + ';font-weight:600;">' + f.check + '</span>: ' + f.fix + '</div>';
     }).join('');
+  }).catch(function(){});
+}
+
+// ── Maker Engine Status ──────────────────────────────────────────
+function loadMakerStatus() {
+  fetch('/api/garves/maker-status').then(function(r){ return r.json(); }).then(function(d) {
+    var badge = document.getElementById('maker-status-badge');
+    if (badge) {
+      if (d.pnl && d.pnl.kill_reason) {
+        badge.textContent = 'KILLED';
+        badge.style.background = 'rgba(239,68,68,0.2)';
+        badge.style.color = '#ef4444';
+      } else if (d.enabled) {
+        badge.textContent = 'ACTIVE';
+        badge.style.background = 'rgba(34,197,94,0.2)';
+        badge.style.color = '#22c55e';
+      } else {
+        badge.textContent = 'OFF';
+        badge.style.background = 'rgba(255,255,255,0.06)';
+        badge.style.color = 'var(--text-muted)';
+      }
+    }
+
+    // P&L cards
+    var pnl = d.pnl || {};
+    var sessionEl = document.getElementById('maker-session-pnl');
+    if (sessionEl) {
+      var sp = pnl.session_pnl || 0;
+      sessionEl.textContent = '$' + sp.toFixed(2);
+      sessionEl.style.color = sp >= 0 ? 'var(--success)' : 'var(--error)';
+    }
+    var spreadEl = document.getElementById('maker-spread-captured');
+    if (spreadEl) spreadEl.textContent = '$' + (pnl.spread_captured || 0).toFixed(2);
+    var resEl = document.getElementById('maker-resolution-losses');
+    if (resEl) {
+      var rl = pnl.resolution_losses || 0;
+      resEl.textContent = '-$' + rl.toFixed(2);
+      resEl.style.color = rl > 0 ? 'var(--error)' : 'var(--text-muted)';
+    }
+    var fillsEl = document.getElementById('maker-fills-today');
+    if (fillsEl) fillsEl.textContent = (d.stats || {}).fills_today || 0;
+    var rebateEl = document.getElementById('maker-rebate-label');
+    if (rebateEl) {
+      var reb = (d.stats || {}).estimated_rebate_today || 0;
+      rebateEl.textContent = reb > 0 ? ('~$' + reb.toFixed(3) + ' rebates') : '';
+    }
+
+    // Inventory
+    var invEl = document.getElementById('maker-inventory');
+    if (invEl) {
+      var inv = d.inventory || {};
+      var invKeys = Object.keys(inv);
+      if (invKeys.length === 0) {
+        invEl.innerHTML = '<span class="text-muted">No inventory</span>';
+      } else {
+        var html = '';
+        for (var i = 0; i < invKeys.length; i++) {
+          var k = invKeys[i];
+          var v = inv[k];
+          var ns = v.net_shares || 0;
+          var clr = ns > 0 ? 'var(--success)' : ns < 0 ? 'var(--error)' : 'var(--text-muted)';
+          html += '<div style="display:flex;justify-content:space-between;padding:2px 0;">';
+          html += '<span>' + esc(v.asset || k).toUpperCase() + '</span>';
+          html += '<span style="color:' + clr + ';">' + ns.toFixed(1) + ' shares</span>';
+          html += '<span style="color:var(--text-muted);">' + (v.fills_today || 0) + ' fills</span>';
+          html += '</div>';
+        }
+        invEl.innerHTML = html;
+      }
+    }
+
+    // Active Quotes table
+    var qCount = document.getElementById('maker-quote-count');
+    var qBody = document.getElementById('maker-quotes-tbody');
+    var quotes = d.active_quotes || [];
+    if (qCount) qCount.textContent = quotes.length;
+    if (qBody) {
+      if (quotes.length === 0) {
+        qBody.innerHTML = '<tr><td colspan="4" class="text-muted" style="text-align:center;">No active quotes</td></tr>';
+      } else {
+        var html = '';
+        for (var i = 0; i < quotes.length; i++) {
+          var q = quotes[i];
+          var sideClr = q.side === 'BUY' ? 'var(--success)' : 'var(--error)';
+          html += '<tr>';
+          html += '<td style="color:' + sideClr + ';font-weight:600;">' + q.side + '</td>';
+          html += '<td>$' + (q.price || 0).toFixed(3) + '</td>';
+          html += '<td>$' + (q.size_usd || 0).toFixed(1) + '</td>';
+          html += '<td>' + (q.age_s || 0) + 's</td>';
+          html += '</tr>';
+        }
+        qBody.innerHTML = html;
+      }
+    }
+
+    // Recent Fills table
+    var fBody = document.getElementById('maker-fills-tbody');
+    var fills = d.recent_fills || [];
+    if (fBody) {
+      if (fills.length === 0) {
+        fBody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;">No fills yet</td></tr>';
+      } else {
+        var html = '';
+        for (var i = fills.length - 1; i >= 0 && i >= fills.length - 10; i--) {
+          var f = fills[i];
+          var sideClr = f.side === 'BUY' ? 'var(--success)' : 'var(--error)';
+          var ts = f.ts ? new Date(f.ts * 1000).toLocaleTimeString() : '--';
+          html += '<tr>';
+          html += '<td style="font-size:0.66rem;">' + ts + '</td>';
+          html += '<td style="color:' + sideClr + ';font-weight:600;">' + f.side + '</td>';
+          html += '<td>$' + (f.price || 0).toFixed(3) + '</td>';
+          html += '<td>$' + (f.fair || 0).toFixed(3) + '</td>';
+          html += '<td style="color:var(--success);">$' + (f.spread_captured || 0).toFixed(4) + '</td>';
+          html += '<td style="color:var(--text-muted);">$' + (f.rebate || 0).toFixed(4) + '</td>';
+          html += '</tr>';
+        }
+        fBody.innerHTML = html;
+      }
+    }
+
+    // Config label
+    var cfgEl = document.getElementById('maker-config-label');
+    if (cfgEl && d.config) {
+      var c = d.config;
+      cfgEl.textContent = 'Quote: $' + c.quote_size_usd + ' | Max inv: $' + c.max_inventory_usd
+        + ' | Max exp: $' + c.max_total_exposure + ' | Tick: ' + c.tick_interval_s + 's';
+    }
   }).catch(function(){});
 }

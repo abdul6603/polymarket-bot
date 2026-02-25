@@ -244,6 +244,60 @@
     <div id="sa-learner-footer" style="font-size:0.62rem;color:var(--text-muted);"></div>
   </div>
 
+  <!-- ═══ Maker Engine ═══ -->
+  <div class="collapse-section" style="margin-bottom:12px;">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">Maker Engine
+        <span id="maker-status-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;margin-left:8px;
+          background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;">OFF</span>
+      </h2>
+    </div>
+    <div class="collapse-body">
+      <!-- P&L Cards -->
+      <div class="grid-4" style="margin-bottom:10px;">
+        <div class="stat-card" style="border-left:3px solid #22c55e;">
+          <div class="stat-value" id="maker-session-pnl" style="font-size:1.3rem;">$0.00</div>
+          <div class="stat-label">Session P&L</div>
+        </div>
+        <div class="stat-card" style="border-left:3px solid #8b5cf6;">
+          <div class="stat-value" id="maker-spread-captured" style="font-size:1.3rem;">$0.00</div>
+          <div class="stat-label">Spread Captured</div>
+        </div>
+        <div class="stat-card" style="border-left:3px solid #ef4444;">
+          <div class="stat-value" id="maker-resolution-losses" style="font-size:1.3rem;">$0.00</div>
+          <div class="stat-label">Resolution Losses</div>
+        </div>
+        <div class="stat-card" style="border-left:3px solid #eab308;">
+          <div class="stat-value" id="maker-fills-today" style="font-size:1.3rem;">0</div>
+          <div class="stat-label">Fills Today</div>
+          <div id="maker-rebate-label" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div>
+        </div>
+      </div>
+      <!-- Inventory -->
+      <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Inventory</div>
+        <div id="maker-inventory" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">No inventory</span></div>
+      </div>
+      <!-- Active Quotes -->
+      <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <span style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);">Active Quotes</span>
+          <span id="maker-quote-count" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;font-weight:600;">0</span>
+        </div>
+        <table class="data-table"><thead><tr><th>Side</th><th>Price</th><th>Size</th><th>Age</th></tr></thead>
+        <tbody id="maker-quotes-tbody"><tr><td colspan="4" class="text-muted" style="text-align:center;">No active quotes</td></tr></tbody></table>
+      </div>
+      <!-- Recent Fills -->
+      <div class="glass-card" style="padding:10px 14px;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Recent Fills</div>
+        <table class="data-table"><thead><tr><th>Time</th><th>Side</th><th>Price</th><th>Fair</th><th>Spread</th><th>Rebate</th></tr></thead>
+        <tbody id="maker-fills-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">No fills yet</td></tr></tbody></table>
+      </div>
+      <!-- Config -->
+      <div style="margin-top:8px;font-size:0.62rem;color:var(--text-muted);font-family:var(--font-mono);" id="maker-config-label"></div>
+    </div>
+  </div>
+
   <!-- Hero cards: Portfolio, Cash, Real PnL -->
   <div class="grid-3" style="margin-bottom:12px;">
     <div class="stat-card" data-accent="success" style="border-left:3px solid var(--success);">

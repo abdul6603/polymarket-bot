@@ -1685,6 +1685,23 @@ def api_garves_snipe():
         return jsonify({"error": str(e)[:200]}), 500
 
 
+# ── Maker Engine ─────────────────────────────────────────
+
+MAKER_STATE_FILE = DATA_DIR / "maker_state.json"
+
+
+@garves_bp.route("/api/garves/maker-status")
+def api_garves_maker_status():
+    """Maker engine status: quotes, inventory, P&L."""
+    try:
+        if not MAKER_STATE_FILE.exists():
+            return jsonify({"enabled": False, "detail": "Maker not active"})
+        data = json.loads(MAKER_STATE_FILE.read_text())
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
 # ── Garves V2 Intelligence Endpoints ──────────────────────────────
 
 @garves_bp.route("/api/garves/v2-metrics")

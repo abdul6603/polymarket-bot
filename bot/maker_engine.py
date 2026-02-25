@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+import random
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -60,12 +62,12 @@ class MakerEngine:
         self._cache = price_cache
 
         # Config (all from env vars with safe defaults)
-        import os
         self.enabled = os.getenv("MAKER_ENABLED", "false").lower() in ("true", "1", "yes")
-        self.quote_size_usd = float(os.getenv("MAKER_QUOTE_SIZE_USD", "8.0"))
-        self.max_inventory_usd = float(os.getenv("MAKER_MAX_INVENTORY_USD", "30.0"))
-        self.max_total_exposure = float(os.getenv("MAKER_MAX_TOTAL_EXPOSURE", "60.0"))
+        self.quote_size_usd = float(os.getenv("MAKER_QUOTE_SIZE_USD", "5.0"))
+        self.max_inventory_usd = float(os.getenv("MAKER_MAX_INVENTORY_USD", "15.0"))
+        self.max_total_exposure = float(os.getenv("MAKER_MAX_TOTAL_EXPOSURE", "30.0"))
         self.tick_interval_s = float(os.getenv("MAKER_TICK_INTERVAL_S", "5.0"))
+        self.max_session_loss = float(os.getenv("MAKER_MAX_SESSION_LOSS", "20.0"))
 
         # Spread params
         self.min_half_spread = 0.005    # 0.5 cent minimum half-spread
@@ -79,6 +81,16 @@ class MakerEngine:
         self._fills_today = 0
         self._estimated_rebate_today = 0.0
         self._last_state_write = 0.0
+
+        # P&L tracking
+        self._session_pnl = 0.0
+        self._total_spread_captured = 0.0
+        self._resolution_losses = 0.0
+        self._fills_log: list[dict] = []
+        self._kill_reason: str | None = None
+
+        # Per-market fair values for P&L calculation
+        self._last_fair: dict[str, float] = {}  # token_id -> fair_value
 
     def compute_fair_value(self, asset: str, implied_price: float | None) -> float | None:
         """Blend Binance spot momentum with Polymarket implied price.
@@ -330,11 +342,182 @@ class MakerEngine:
                 log.warning("[MAKER] Bulk cancel failed: %s", str(e)[:100])
         self._active_quotes.clear()
 
+    # ── Fill Detection ─────────────────────────────────────────
+
+    def check_fills(self) -> list[dict]:
+        """Poll active quotes for fills. Update inventory on filled orders."""
+        fills = []
+        still_active = []
+        now = time.time()
+
+        for q in self._active_quotes:
+            # Stale quote check: cancel if older than 30s
+            if now - q.placed_at > 30:
+                if self.client and not self.cfg.dry_run:
+                    try:
+                        self.client.cancel(q.order_id)
+                    except Exception:
+                        pass
+                continue  # drop from active
+
+            if self.cfg.dry_run:
+                # Dry-run: simulate random fills (~20% chance per tick)
+                if random.random() < 0.20:
+                    fair = self._last_fair.get(q.token_id, q.price)
+                    self._record_fill(q, q.price, fair)
+                    fills.append({
+                        "side": q.side, "price": q.price,
+                        "size_usd": q.size_usd, "simulated": True,
+                    })
+                    log.info("[MAKER-DRY] Simulated fill: %s @ $%.3f ($%.1f)",
+                             q.side, q.price, q.size_usd)
+                else:
+                    still_active.append(q)
+                continue
+
+            try:
+                order = self.client.get_order(q.order_id)
+                status = (order.get("status") or "").lower()
+                if status in ("matched", "filled"):
+                    fill_price = float(order.get("price", q.price))
+                    fair = self._last_fair.get(q.token_id, fill_price)
+                    self._record_fill(q, fill_price, fair)
+                    fills.append({
+                        "side": q.side, "price": fill_price,
+                        "size_usd": q.size_usd,
+                    })
+                    log.info("[MAKER] Fill: %s @ $%.3f ($%.1f)",
+                             q.side, fill_price, q.size_usd)
+                elif status in ("canceled", "expired"):
+                    pass  # drop from active
+                else:
+                    still_active.append(q)
+            except Exception:
+                still_active.append(q)  # keep if API fails
+
+        self._active_quotes = still_active
+        return fills
+
+    def _record_fill(self, quote: MakerQuote, fill_price: float, fair_value: float) -> None:
+        """Update inventory and P&L on a confirmed fill."""
+        token_id = quote.token_id
+        if token_id not in self._inventory:
+            self._inventory[token_id] = InventoryPosition(
+                token_id=token_id, asset="unknown",
+            )
+        inv = self._inventory[token_id]
+
+        if quote.side == "BUY":
+            inv.net_shares += quote.size
+            inv.cost_basis += fill_price * quote.size
+            spread_captured = max(0, fair_value - fill_price)
+        else:
+            inv.net_shares -= quote.size
+            inv.cost_basis -= fill_price * quote.size
+            spread_captured = max(0, fill_price - fair_value)
+
+        inv.fills_today += 1
+        self._fills_today += 1
+
+        # Estimate maker rebate: ~20% of taker fee (0.5%) on fill value
+        rebate = 0.005 * 0.20 * quote.size_usd
+        inv.estimated_rebate += rebate
+        self._estimated_rebate_today += rebate
+
+        # P&L tracking
+        spread_usd = spread_captured * quote.size
+        self._total_spread_captured += spread_usd
+        self._session_pnl += spread_usd + rebate
+
+        self._fills_log.append({
+            "ts": time.time(),
+            "side": quote.side,
+            "price": fill_price,
+            "fair": fair_value,
+            "size_usd": quote.size_usd,
+            "spread_captured": round(spread_usd, 4),
+            "rebate": round(rebate, 4),
+            "token_id": token_id[:16],
+        })
+
+    # ── Resolution Guard ─────────────────────────────────────
+
+    def _resolution_safe(self, remaining_s: float) -> bool:
+        """Don't quote if market resolves within 90 seconds."""
+        return remaining_s > 90
+
+    def _flatten_inventory(self, token_id: str, asset: str) -> None:
+        """Emergency flatten: cancel quotes + dump inventory for a token near resolution."""
+        self._cancel_quotes_for_token(token_id)
+        inv = self._inventory.get(token_id)
+        if not inv or abs(inv.net_shares) < 0.1:
+            return
+
+        log.warning("[MAKER] Flattening %s inventory: %.1f shares (resolution imminent)",
+                    asset.upper(), inv.net_shares)
+
+        if self.cfg.dry_run:
+            # Simulate resolution: 50% chance correct side
+            fair = self._last_fair.get(token_id, 0.5)
+            if random.random() < fair and inv.net_shares > 0:
+                # We're long and market resolves UP = win
+                pnl = inv.net_shares * (1.0 - inv.cost_basis / max(inv.net_shares, 0.01))
+            elif random.random() >= fair and inv.net_shares < 0:
+                # We're short and market resolves DOWN = win
+                pnl = abs(inv.net_shares) * (inv.cost_basis / max(abs(inv.net_shares), 0.01))
+            else:
+                # Wrong side = lose cost basis
+                pnl = -abs(inv.cost_basis)
+            self._resolution_losses += max(0, -pnl)
+            self._session_pnl += pnl
+            log.info("[MAKER-DRY] Resolution P&L for %s: $%.2f", asset.upper(), pnl)
+        else:
+            # Live: place aggressive market order to exit
+            try:
+                side = SELL if inv.net_shares > 0 else BUY
+                exit_price = 0.01 if side == SELL else 0.99  # aggressive exit
+                exit_size = abs(inv.net_shares)
+                args = OrderArgs(
+                    price=exit_price, size=exit_size,
+                    side=side, token_id=token_id,
+                )
+                signed = self.client.create_order(args)
+                self.client.post_order(signed, OrderType.GTC)
+                log.info("[MAKER] Exit order placed: %s %.1f @ $%.2f",
+                         "SELL" if side == SELL else "BUY", exit_size, exit_price)
+            except Exception as e:
+                log.warning("[MAKER] Flatten failed for %s: %s", asset.upper(), str(e)[:100])
+
+        # Reset inventory for this token
+        inv.net_shares = 0.0
+        inv.cost_basis = 0.0
+
+    def _persist_daily_pnl(self) -> None:
+        """Append daily P&L summary to maker_pnl.jsonl."""
+        pnl_file = DATA_DIR / "maker_pnl.jsonl"
+        try:
+            DATA_DIR.mkdir(parents=True, exist_ok=True)
+            entry = {
+                "date": time.strftime("%Y-%m-%d"),
+                "session_pnl": round(self._session_pnl, 4),
+                "spread_captured": round(self._total_spread_captured, 4),
+                "resolution_losses": round(self._resolution_losses, 4),
+                "fills": self._fills_today,
+                "rebates": round(self._estimated_rebate_today, 4),
+            }
+            with open(pnl_file, "a") as f:
+                f.write(json.dumps(entry) + "\n")
+        except Exception:
+            pass
+
+    # ── Main Tick ────────────────────────────────────────────
+
     def tick(self, markets: list[dict], regime_label: str = "neutral") -> None:
         """Main maker tick: refresh quotes for all eligible markets.
 
         Args:
-            markets: List of market dicts with tokens, asset, timeframe info.
+            markets: List of market dicts with tokens, asset, timeframe,
+                     and remaining_s info.
             regime_label: Current market regime for spread computation.
         """
         if not self.enabled:
@@ -345,13 +528,28 @@ class MakerEngine:
             self.cancel_all()
             return
 
+        # Kill switch: disable if session P&L drops below threshold
+        if self._session_pnl < -self.max_session_loss:
+            log.critical("[MAKER] Session loss $%.2f exceeds -$%.0f — DISABLING",
+                         self._session_pnl, self.max_session_loss)
+            self._kill_reason = f"Session loss ${self._session_pnl:.2f}"
+            self.cancel_all()
+            self.enabled = False
+            self._persist_daily_pnl()
+            self._write_state()
+            return
+
         # Heartbeat for auto-cancellation safety net
         self.send_heartbeat()
+
+        # Check fills on existing quotes before placing new ones
+        fills = self.check_fills()
 
         quotes_placed = 0
         for mkt in markets:
             tokens = mkt.get("tokens", [])
             asset = mkt.get("asset", "bitcoin")
+            remaining_s = mkt.get("remaining_s", 9999)
             up_token = ""
 
             for t in tokens:
@@ -361,6 +559,15 @@ class MakerEngine:
                     break
 
             if not up_token:
+                continue
+
+            # Resolution guard: flatten inventory if <60s remaining
+            if remaining_s <= 60:
+                self._flatten_inventory(up_token, asset)
+                continue
+
+            # Resolution guard: don't quote if <90s remaining
+            if not self._resolution_safe(remaining_s):
                 continue
 
             # Get implied price from market data
@@ -375,6 +582,14 @@ class MakerEngine:
             fair = self.compute_fair_value(asset, implied_price)
             if fair is None:
                 continue
+
+            # Cache fair value for P&L calculation
+            self._last_fair[up_token] = fair
+
+            # Set asset on inventory if exists
+            inv = self._inventory.get(up_token)
+            if inv:
+                inv.asset = asset
 
             half_spread = self.compute_spread(asset, up_token, regime_label)
 
@@ -428,6 +643,13 @@ class MakerEngine:
                 "estimated_rebate_today": round(self._estimated_rebate_today, 4),
                 "active_quote_count": len(self._active_quotes),
             },
+            "pnl": {
+                "session_pnl": round(self._session_pnl, 4),
+                "spread_captured": round(self._total_spread_captured, 4),
+                "resolution_losses": round(self._resolution_losses, 4),
+                "kill_reason": self._kill_reason,
+            },
+            "recent_fills": self._fills_log[-20:],
         }
 
         try:
@@ -453,4 +675,8 @@ class MakerEngine:
             "quote_size_usd": self.quote_size_usd,
             "max_inventory_usd": self.max_inventory_usd,
             "max_total_exposure": self.max_total_exposure,
+            "session_pnl": round(self._session_pnl, 4),
+            "spread_captured": round(self._total_spread_captured, 4),
+            "resolution_losses": round(self._resolution_losses, 4),
+            "kill_reason": self._kill_reason,
         }

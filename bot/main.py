@@ -340,6 +340,7 @@ class TradingBot:
                                 "tokens": dm.raw.get("tokens", []),
                                 "asset": dm.asset,
                                 "timeframe": dm.timeframe.name,
+                                "remaining_s": dm.remaining_s,
                             })
                         _last_discovery = now
                     except Exception as e:
