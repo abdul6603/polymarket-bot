@@ -1211,12 +1211,15 @@ def api_garves_positions():
         holdings = []
         totals = result["totals"]
 
-        # Group by condition_id
+        # Group by condition_id — only crypto Up/Down markets (Hawk handles the rest)
         grouped: dict[str, list] = {}
         if isinstance(pos_data, list):
             for pos in pos_data:
                 size = float(pos.get("size", 0))
                 if size <= 0:
+                    continue
+                title = pos.get("title", pos.get("slug", ""))
+                if not any(kw in title.lower() for kw in ("up or down", "updown", "up/down")):
                     continue
                 cid = pos.get("conditionId", pos.get("asset", ""))
                 grouped.setdefault(cid, []).append(pos)
@@ -1325,6 +1328,9 @@ def api_garves_positions():
         if isinstance(activity, list):
             for e in activity:
                 title = e.get("title", "?")
+                # Only crypto Up/Down markets — Hawk handles the rest
+                if not any(kw in title.lower() for kw in ("up or down", "updown", "up/down")):
+                    continue
                 if e.get("type") == "TRADE":
                     sz = float(e.get("size", 0))
                     px = float(e.get("price", 0))

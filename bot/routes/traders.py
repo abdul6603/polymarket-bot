@@ -84,8 +84,8 @@ def _normalize_garves(data: dict | None) -> list[dict]:
         cost = _safe_float(h.get("cost"))
         value = _safe_float(h.get("value"))
         pnl = _safe_float(h.get("pnl"))
-        outcome = (h.get("outcome") or "Yes").upper()
-        direction = "UP" if outcome == "YES" else "DOWN"
+        outcome = (h.get("outcome") or "Up").upper()
+        direction = outcome if outcome in ("UP", "DOWN") else "UP"
         positions.append({
             "id": f"garves_{h.get('market', '')[:20]}",
             "agent": "garves",
