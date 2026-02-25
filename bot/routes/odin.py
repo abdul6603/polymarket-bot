@@ -94,9 +94,24 @@ def api_odin_signals():
 
 @odin_bp.route("/api/odin/positions")
 def api_odin_positions():
-    """Open paper positions."""
+    """Open paper positions — reads from dedicated file if status is empty."""
     status = _load_status()
-    return jsonify(status.get("paper_positions", []))
+    positions = status.get("paper_positions", [])
+
+    # Fallback: dedicated paper positions file has the live state
+    if not positions:
+        pp_file = DATA_DIR / "odin_paper_positions.json"
+        if pp_file.exists():
+            try:
+                raw = json.loads(pp_file.read_text())
+                if isinstance(raw, dict):
+                    positions = list(raw.values())
+                elif isinstance(raw, list):
+                    positions = raw
+            except Exception:
+                pass
+
+    return jsonify(positions)
 
 
 @odin_bp.route("/api/odin/macro")
