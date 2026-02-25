@@ -14,92 +14,46 @@
 <nav class="sidebar">
   <div class="sidebar-header">
     <div class="sidebar-brand-text">Command Center</div>
-    <div class="sidebar-online"><span class="dot-online"></span> <span id="sidebar-agents-online">15</span> Agents Online</div>
+    <div class="sidebar-online"><span class="dot-online"></span><span id="sidebar-agents-online">15</span> Agents Online</div>
   </div>
 
   <div class="sidebar-scroll">
-    <div class="sidebar-section-label">COMMAND</div>
-    <button class="sidebar-btn active" data-tab="overview" style="--accent:var(--text-secondary);" onclick="switchTab('overview')">
-      <span class="sb-accent"></span>Overview
-    </button>
+    <div class="sidebar-section-label">OVERVIEW</div>
+    <button class="sidebar-btn active" data-tab="overview" style="--accent:var(--text-secondary);" onclick="switchTab('overview')">Dashboard</button>
 
-    <div class="sidebar-divider"></div>
-    <div class="sidebar-section-label">TRADERS</div>
-    <button class="sidebar-btn sidebar-btn-traders" data-tab="traders" style="--accent:#10B981;" onclick="switchTab('traders')">
-      <span class="sb-accent"></span>Traders
-    </button>
+    <div class="sidebar-section-label sidebar-section-traders">TRADERS</div>
+    <button class="sidebar-btn sidebar-btn-traders" data-tab="traders" style="--accent:#10B981;" onclick="switchTab('traders')">Traders</button>
 
-    <div class="sidebar-divider"></div>
     <div class="sidebar-section-label">EDGE</div>
-    <button class="sidebar-btn" data-tab="pnl" style="--accent:#10B981;" onclick="switchTab('pnl')">
-      <span class="sb-accent"></span>P&L Overview
-    </button>
-    <button class="sidebar-btn" data-tab="performance" style="--accent:#10B981;" onclick="switchTab('performance')">
-      <span class="sb-accent"></span>Performance
-    </button>
+    <button class="sidebar-btn" data-tab="pnl" style="--accent:#10B981;" onclick="switchTab('pnl')">P&L Overview</button>
 
-    <div class="sidebar-divider"></div>
-    <div class="sidebar-section-label">TRADING</div>
-    <button class="sidebar-btn" data-tab="garves-live" style="--accent:var(--agent-garves);" onclick="switchTab('garves-live')">
-      <span class="sb-accent"></span>Garves
-    </button>
-    <button class="sidebar-btn" data-tab="odin" style="--accent:var(--agent-odin);" onclick="switchTab('odin')">
-      <span class="sb-accent"></span>Odin
-    </button>
-    <button class="sidebar-btn" data-tab="hawk" style="--accent:var(--agent-hawk);" onclick="switchTab('hawk')">
-      <span class="sb-accent"></span>Hawk
-    </button>
-    <button class="sidebar-btn" data-tab="oracle" style="--accent:var(--agent-oracle);" onclick="switchTab('oracle')">
-      <span class="sb-accent"></span>Oracle
-    </button>
-    <button class="sidebar-btn" data-tab="quant" style="--accent:var(--agent-quant);" onclick="switchTab('quant')">
-      <span class="sb-accent"></span>Quant
-    </button>
+    <div class="sidebar-section-label">TRADING AGENTS</div>
+    <button class="sidebar-btn" data-tab="garves-live" style="--accent:var(--agent-garves);" onclick="switchTab('garves-live')">Garves</button>
+    <button class="sidebar-btn" data-tab="odin" style="--accent:var(--agent-odin);" onclick="switchTab('odin')">Odin</button>
+    <button class="sidebar-btn" data-tab="hawk" style="--accent:var(--agent-hawk);" onclick="switchTab('hawk')">Hawk</button>
+    <button class="sidebar-btn" data-tab="oracle" style="--accent:var(--agent-oracle);" onclick="switchTab('oracle')">Oracle</button>
+    <button class="sidebar-btn" data-tab="quant" style="--accent:var(--agent-quant);" onclick="switchTab('quant')">Quant</button>
 
-    <div class="sidebar-divider"></div>
     <div class="sidebar-section-label">INTELLIGENCE</div>
-    <button class="sidebar-btn" data-tab="atlas" style="--accent:var(--agent-atlas);" onclick="switchTab('atlas')">
-      <span class="sb-accent"></span>Atlas
-    </button>
-    <button class="sidebar-btn" data-tab="discord" style="--accent:#5865F2;" onclick="switchTab('discord')">
-      <span class="sb-accent"></span>Discord
-    </button>
-    <button class="sidebar-btn" data-tab="soren" style="--accent:var(--agent-soren);" onclick="switchTab('soren')">
-      <span class="sb-accent"></span>Soren
-    </button>
-    <button class="sidebar-btn" data-tab="lisa" style="--accent:var(--agent-lisa);" onclick="switchTab('lisa')">
-      <span class="sb-accent"></span>Lisa
-    </button>
+    <button class="sidebar-btn" data-tab="atlas" style="--accent:var(--agent-atlas);" onclick="switchTab('atlas')">Atlas</button>
+    <button class="sidebar-btn" data-tab="soren" style="--accent:var(--agent-soren);" onclick="switchTab('soren')">Soren</button>
+    <button class="sidebar-btn" data-tab="lisa" style="--accent:var(--agent-lisa);" onclick="switchTab('lisa')">Lisa</button>
 
-    <div class="sidebar-divider"></div>
-    <div class="sidebar-section-label">OPS</div>
-    <button class="sidebar-btn" data-tab="shelby" style="--accent:var(--agent-shelby);" onclick="switchTab('shelby')">
-      <span class="sb-accent"></span>Shelby
-    </button>
-    <button class="sidebar-btn" data-tab="sentinel" style="--accent:var(--agent-sentinel);" onclick="switchTab('sentinel')">
-      <span class="sb-accent"></span>Robotox
-    </button>
-    <button class="sidebar-btn" data-tab="thor" style="--accent:var(--agent-thor);" onclick="switchTab('thor')">
-      <span class="sb-accent"></span>Thor
-    </button>
-    <button class="sidebar-btn" data-tab="viper" style="--accent:var(--agent-viper);" onclick="switchTab('viper')">
-      <span class="sb-accent"></span>Viper
-    </button>
+    <div class="sidebar-section-label">OPERATIONS</div>
+    <button class="sidebar-btn" data-tab="shelby" style="--accent:var(--agent-shelby);" onclick="switchTab('shelby')">Shelby</button>
+    <button class="sidebar-btn" data-tab="sentinel" style="--accent:var(--agent-sentinel);" onclick="switchTab('sentinel')">Robotox</button>
+    <button class="sidebar-btn" data-tab="thor" style="--accent:var(--agent-thor);" onclick="switchTab('thor')">Thor</button>
+    <button class="sidebar-btn" data-tab="viper" style="--accent:var(--agent-viper);" onclick="switchTab('viper')">Viper</button>
 
-    <div class="sidebar-divider"></div>
-    <div class="sidebar-section-label">INFRA</div>
-    <button class="sidebar-btn" data-tab="intelligence" style="--accent:#9B59B6;" onclick="switchTab('intelligence')">
-      <span class="sb-accent"></span>Intelligence
-    </button>
-    <button class="sidebar-btn" data-tab="system" style="--accent:#aaaaaa;" onclick="switchTab('system')">
-      <span class="sb-accent"></span>Monitoring
-    </button>
+    <div class="sidebar-section-label">INFRASTRUCTURE</div>
+    <button class="sidebar-btn" data-tab="intelligence" style="--accent:#9B59B6;" onclick="switchTab('intelligence')">Intelligence</button>
+    <button class="sidebar-btn" data-tab="system" style="--accent:#aaaaaa;" onclick="switchTab('system')">Monitoring</button>
   </div>
 
   <div class="sidebar-footer">
-    <input type="text" class="sidebar-search" id="sidebar-search" placeholder="Search agent..." autocomplete="off" oninput="sidebarSearch(this.value)">
+    <input type="text" class="sidebar-search" id="sidebar-search" placeholder="Search..." autocomplete="off" oninput="sidebarSearch(this.value)">
     <div class="sidebar-global-status" id="sidebar-global-status">
-      <span class="dot-online" style="width:5px;height:5px;box-shadow:0 0 4px var(--success);"></span>All Systems Nominal
+      <span class="sidebar-status-dot"></span>All Systems Nominal
     </div>
   </div>
 </nav>

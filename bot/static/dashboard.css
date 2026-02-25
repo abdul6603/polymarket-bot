@@ -87,111 +87,152 @@
   .header-right { font-family:var(--font-mono); font-size:0.72rem; color:var(--text-muted); text-align:right; }
   .header-right span { color:var(--text-secondary); }
 
-  /* Sidebar Navigation */
+  /* ═══════════════════════════════════════════════════════════
+     Sidebar Navigation — Premium Dark Theme
+     ═══════════════════════════════════════════════════════════ */
   .sidebar {
     position:fixed; top:0; left:0; width:var(--sidebar-width); height:100vh;
-    background:var(--surface); border-right:1px solid var(--border);
+    background:linear-gradient(180deg, var(--surface) 0%, rgba(4,4,10,1) 100%);
+    border-right:1px solid var(--border);
     display:flex; flex-direction:column;
     z-index:100;
   }
+
+  /* — Header — */
   .sidebar-header {
-    padding:16px 16px 12px;
+    padding:20px 20px 16px;
     border-bottom:1px solid var(--border);
     flex-shrink:0;
   }
   .sidebar-brand-text {
-    font-family:var(--font-heading); font-size:0.82rem; font-weight:700;
-    color:var(--text); letter-spacing:0.08em; text-transform:uppercase;
-    margin-bottom:4px;
+    font-family:var(--font-heading); font-size:0.88rem; font-weight:700;
+    color:var(--text); letter-spacing:0.06em;
+    margin-bottom:6px;
   }
   .sidebar-online {
-    font-family:var(--font-mono); font-size:0.66rem; color:var(--text-secondary);
-    display:flex; align-items:center; gap:6px;
+    font-family:var(--font-ui); font-size:0.7rem; font-weight:500;
+    color:var(--text-secondary);
+    display:flex; align-items:center; gap:7px;
   }
+
+  /* — Scrollable area — */
   .sidebar-scroll {
     flex:1; overflow-y:auto; overflow-x:hidden;
-    padding:6px 0;
+    padding:4px 0 8px;
   }
   .sidebar-scroll::-webkit-scrollbar { width:3px; }
+  .sidebar-scroll::-webkit-scrollbar-track { background:transparent; }
   .sidebar-scroll::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  /* — Section labels — */
+  .sidebar-section-label {
+    font-family:var(--font-ui); font-size:0.6rem; font-weight:700;
+    color:var(--text-muted); letter-spacing:0.14em; text-transform:uppercase;
+    padding:16px 20px 6px;
+    opacity:0.45;
+  }
+  .sidebar-section-label:first-child { padding-top:10px; }
+  .sidebar-section-traders {
+    padding-top:12px;
+    padding-bottom:4px;
+  }
+
+  /* — Nav buttons — */
   .sidebar-btn {
-    width:calc(100% - 16px); height:34px; border:none; background:none;
+    width:calc(100% - 20px); height:36px; border:none; background:none;
     color:var(--text-muted); font-family:var(--font-ui);
-    font-size:0.76rem; font-weight:500; letter-spacing:0.01em;
+    font-size:0.8rem; font-weight:500; letter-spacing:0.005em;
     cursor:pointer; border-radius:var(--radius-sm);
-    transition:all var(--transition-base);
+    transition:all 0.18s ease;
     display:flex; align-items:center;
-    padding:0 12px 0 16px;
-    margin:1px 8px; position:relative;
+    padding:0 14px 0 20px;
+    margin:1px 10px; position:relative;
   }
   .sidebar-btn:hover {
-    background:rgba(255,255,255,0.04);
-    color:var(--text-secondary);
-    box-shadow:0 0 24px rgba(255,255,255,0.015);
+    background:rgba(255,255,255,0.035);
+    color:var(--text);
+    box-shadow:0 0 30px rgba(255,255,255,0.012);
   }
   .sidebar-btn.active {
-    background:rgba(255,255,255,0.06);
+    background:rgba(255,255,255,0.055);
     color:var(--accent, var(--text));
     font-weight:600;
   }
-  .sb-accent {
+  /* Active accent bar — rendered via pseudo-element, no markup needed */
+  .sidebar-btn::before {
+    content:'';
     position:absolute; left:0; top:50%; transform:translateY(-50%);
-    width:2px; height:12px;
+    width:0; height:0;
     background:var(--accent, var(--text-muted));
-    border-radius:0 2px 2px 0;
-    opacity:0.3;
-    transition:all var(--transition-base);
+    border-radius:0 3px 3px 0;
+    opacity:0;
+    transition:all 0.22s ease;
   }
-  .sidebar-btn:hover .sb-accent { opacity:0.6; height:16px; }
-  .sidebar-btn.active .sb-accent { opacity:1; height:20px; width:3px; }
-  /* Prominent Traders button */
+  .sidebar-btn:hover::before {
+    width:2px; height:14px; opacity:0.35;
+  }
+  .sidebar-btn.active::before {
+    width:3px; height:20px; opacity:1;
+  }
+
+  /* — Prominent Traders button — */
   .sidebar-btn-traders {
-    height:38px; font-size:0.8rem; font-weight:600;
-    background:rgba(16,185,129,0.05);
-    border:1px solid rgba(16,185,129,0.1);
-    margin:4px 8px 2px;
+    height:40px; font-size:0.86rem; font-weight:600;
+    color:var(--text-secondary);
+    background:rgba(16,185,129,0.04);
+    border:1px solid rgba(16,185,129,0.08);
+    border-radius:var(--radius);
+    margin:2px 10px 4px;
+    letter-spacing:0.01em;
   }
   .sidebar-btn-traders:hover {
-    background:rgba(16,185,129,0.1);
-    border-color:rgba(16,185,129,0.2);
+    background:rgba(16,185,129,0.09);
+    border-color:rgba(16,185,129,0.18);
     color:#10B981;
+    box-shadow:0 0 28px rgba(16,185,129,0.06);
   }
   .sidebar-btn-traders.active {
-    background:rgba(16,185,129,0.12);
-    border-color:rgba(16,185,129,0.3);
+    background:rgba(16,185,129,0.11);
+    border-color:rgba(16,185,129,0.28);
     color:#10B981;
+    box-shadow:0 0 20px rgba(16,185,129,0.04);
   }
-  .sidebar-divider {
-    width:calc(100% - 32px); height:1px; background:var(--border);
-    margin:6px 16px;
+  .sidebar-btn-traders::before {
+    background:#10B981;
   }
-  .sidebar-section-label {
-    font-family:var(--font-mono); font-size:0.56rem; font-weight:700;
-    color:var(--text-muted); letter-spacing:0.12em; text-transform:uppercase;
-    padding:10px 16px 4px; opacity:0.5;
-  }
-  .sidebar-section-label:first-child { padding-top:4px; }
-  /* Sidebar footer */
+
+  /* — Footer — */
   .sidebar-footer {
-    padding:10px 12px;
+    padding:12px 14px 14px;
     border-top:1px solid var(--border);
     flex-shrink:0;
   }
   .sidebar-search {
-    width:100%; height:30px;
-    background:var(--surface-elevated);
-    border:1px solid var(--border); border-radius:var(--radius-sm);
-    color:var(--text); font-family:var(--font-mono); font-size:0.68rem;
-    padding:0 10px; outline:none;
-    transition:border-color var(--transition-base);
+    width:100%; height:32px;
+    background:rgba(255,255,255,0.025);
+    border:1px solid var(--border); border-radius:var(--radius);
+    color:var(--text); font-family:var(--font-ui); font-size:0.74rem;
+    padding:0 12px; outline:none;
+    transition:all 0.18s ease;
   }
-  .sidebar-search:focus { border-color:var(--text-muted); }
-  .sidebar-search::placeholder { color:var(--text-muted); opacity:0.6; }
+  .sidebar-search:focus {
+    border-color:rgba(255,255,255,0.12);
+    background:rgba(255,255,255,0.04);
+    box-shadow:0 0 16px rgba(255,255,255,0.02);
+  }
+  .sidebar-search::placeholder { color:var(--text-muted); opacity:0.5; }
   .sidebar-global-status {
-    font-family:var(--font-mono); font-size:0.6rem;
+    font-family:var(--font-ui); font-size:0.64rem; font-weight:500;
     color:var(--text-muted);
-    display:flex; align-items:center; gap:5px;
-    padding:6px 2px 0;
+    display:flex; align-items:center; gap:6px;
+    padding:8px 4px 0;
+    opacity:0.7;
+  }
+  .sidebar-status-dot {
+    width:5px; height:5px; border-radius:50%;
+    background:var(--success);
+    box-shadow:0 0 6px var(--success);
+    flex-shrink:0;
   }
 
   /* Tab Content */
