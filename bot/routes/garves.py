@@ -1907,8 +1907,9 @@ def engine_comparison():
             maker_data["rebate"] = ms.get("stats", {}).get("estimated_rebate_today", 0.0)
             maker_data["active_quotes"] = len(ms.get("active_quotes", []))
             pnl_data = ms.get("pnl", {})
-            maker_data["pnl"] = pnl_data.get("session_pnl", 0.0)
+            maker_data["pnl"] = pnl_data.get("session_pnl", 0.0)  # already includes spread + rebate + resolution
             maker_data["spread_captured"] = pnl_data.get("spread_captured", 0.0)
+            maker_data["resolution_losses"] = pnl_data.get("resolution_losses", 0.0)
         except Exception:
             pass
 
@@ -1973,7 +1974,7 @@ def engine_comparison():
             "wins": maker_data["fills"],
             "losses": 0,
             "win_rate": None,
-            "pnl": round(maker_data["pnl"] + maker_data["rebate"] + maker_data["spread_captured"], 2),
+            "pnl": round(maker_data["pnl"], 2),  # session_pnl is the master total
             "total_invested": 0,
             "avg_size": 0,
             "rebate": round(maker_data["rebate"], 4),
