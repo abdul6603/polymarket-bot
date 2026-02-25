@@ -29,6 +29,21 @@ class RegimeAdjustment:
     consensus_offset: int   # Consensus requirement adjustment
     confidence_floor: float # Minimum confidence override
 
+    @classmethod
+    def momentum_override(cls, base: "RegimeAdjustment") -> "RegimeAdjustment":
+        """Override regime parameters during Momentum Capture Mode.
+
+        Loosens fear/greed paralysis while keeping the regime label for logging.
+        """
+        return cls(
+            label=f"momentum_{base.label}",
+            fng_value=base.fng_value,
+            size_multiplier=1.5,
+            edge_multiplier=0.5,
+            consensus_offset=0,
+            confidence_floor=0.25,
+        )
+
 
 # Default regime when API is unavailable
 _DEFAULT_REGIME = RegimeAdjustment(

@@ -90,8 +90,20 @@ def build_questions(
     return questions
 
 
-def _build_system_prompt(context: MarketContext) -> str:
+def _build_system_prompt(context: MarketContext, agent_signals: dict | None = None) -> str:
     """Build the system prompt for all models."""
+    # Momentum context injection
+    momentum_ctx = ""
+    if agent_signals:
+        m = agent_signals.get("momentum", "")
+        if isinstance(m, str) and m.startswith("ACTIVE"):
+            momentum_ctx = f"""
+MOMENTUM CAPTURE MODE ACTIVE: {m}
+The brotherhood's momentum detector has identified a significant price move in an extreme
+sentiment regime. Weight your estimates toward continuation of this move — big moves in
+fear/greed tend to persist. Do NOT anchor to mean-reversion assumptions during momentum.
+"""
+
     return f"""You are Oracle, a calm, wise crypto analyst with 10 years of experience.
 You speak in probabilities, never certainties. You are risk-aware and never hype.
 
@@ -129,7 +141,7 @@ CRITICAL — DISTRIBUTION CONSTRAINT:
 - Similarly, "above $X" questions are related — if P(above $60k) = 0.90,
   then P(above $65k) must be LOWER, not higher.
 
-RESPOND WITH STRICT JSON ONLY. No text before or after. Format:
+{momentum_ctx}RESPOND WITH STRICT JSON ONLY. No text before or after. Format:
 {{"predictions": {{"question_id": probability, ...}}, "overall_regime": "regime_name", "model_confidence": 0.0_to_1.0}}"""
 
 
@@ -198,13 +210,14 @@ def run_ensemble(
     cfg: OracleConfig,
     markets: list[WeeklyMarket],
     context: MarketContext,
+    agent_signals: dict | None = None,
 ) -> EnsembleResult:
     """Run the full ensemble: build questions → query models → average."""
     questions = build_questions(markets, current_prices=context.prices)
     if not questions:
         return EnsembleResult({}, {}, "unknown", 0.0, [])
 
-    system_prompt = _build_system_prompt(context)
+    system_prompt = _build_system_prompt(context, agent_signals=agent_signals)
     user_prompt = _build_user_prompt(questions)
     question_ids = [q["id"] for q in questions]
 

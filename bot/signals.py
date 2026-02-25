@@ -473,6 +473,7 @@ class SignalEngine:
         derivatives_data: dict | None = None,
         spot_depth: dict | None = None,
         external_data: dict | None = None,
+        momentum=None,
     ) -> Signal | None:
         """Generate a signal from the weighted ensemble of all indicators."""
 
@@ -994,6 +995,12 @@ class SignalEngine:
             log.info("[%s/%s] HIGH-VOLUME OVERRIDE: consensus lowered by 1 to %d",
                      asset.upper(), timeframe, effective_consensus)
 
+        # Momentum override: lower consensus by 1 when aligned with momentum
+        if _momentum_aligned and effective_consensus > safe_floor:
+            effective_consensus = max(safe_floor - 1, effective_consensus - 1)
+            log.info("[%s/%s] MOMENTUM consensus override: lowered to %d",
+                     asset.upper(), timeframe, effective_consensus)
+
         if agree_count < effective_consensus:
             log.info(
                 "[%s/%s] Consensus filter: %d/%d agree on %s (need %d of %d active%s), skipping",
@@ -1014,15 +1021,18 @@ class SignalEngine:
                 sentinel_dissenters.append(ind_name)
 
         if len(sentinel_dissenters) >= REVERSAL_SENTINEL_THRESHOLD:
-            # Penalty only — never hard block. Raises confidence floor to make trade harder, not impossible.
-            reversal_penalty = REVERSAL_SENTINEL_PENALTY
-            log.info(
-                "[%s/%s] REVERSAL SENTINEL: %d disabled indicators (%s) disagree with %s — "
-                "confidence penalty +%.0f%% applied (agree %d/%d)",
-                asset.upper(), timeframe, len(sentinel_dissenters),
-                "+".join(sentinel_dissenters), majority_dir.upper(),
-                reversal_penalty * 100, agree_count, effective_consensus,
-            )
+            if _momentum_aligned:
+                log.info("[%s/%s] REVERSAL SENTINEL: skipped (momentum-aligned)", asset.upper(), timeframe)
+            else:
+                # Penalty only — never hard block. Raises confidence floor to make trade harder, not impossible.
+                reversal_penalty = REVERSAL_SENTINEL_PENALTY
+                log.info(
+                    "[%s/%s] REVERSAL SENTINEL: %d disabled indicators (%s) disagree with %s — "
+                    "confidence penalty +%.0f%% applied (agree %d/%d)",
+                    asset.upper(), timeframe, len(sentinel_dissenters),
+                    "+".join(sentinel_dissenters), majority_dir.upper(),
+                    reversal_penalty * 100, agree_count, effective_consensus,
+                )
 
         # ── Trend Filter — anti-trend signals need stronger consensus ──
         if len(closes) >= 50:
@@ -1031,15 +1041,19 @@ class SignalEngine:
             trend_dir = "up" if short_trend > long_trend else "down"
 
             if majority_dir != trend_dir:
-                # Going against the trend — require 70% of active indicators to agree
-                anti_trend_min = max(effective_consensus + 1, int(active_count * 0.70))
-                if agree_count < anti_trend_min:
-                    log.info(
-                        "[%s/%s] Anti-trend filter: signal=%s but trend=%s, need %d/%d (have %d)",
-                        asset.upper(), timeframe, majority_dir.upper(), trend_dir.upper(),
-                        anti_trend_min, total_indicators, agree_count,
-                    )
-                    return None
+                if _momentum_aligned:
+                    log.info("[%s/%s] Anti-trend filter: SKIPPED (momentum-aligned %s)",
+                             asset.upper(), timeframe, momentum.direction.upper())
+                else:
+                    # Going against the trend — require 70% of active indicators to agree
+                    anti_trend_min = max(effective_consensus + 1, int(active_count * 0.70))
+                    if agree_count < anti_trend_min:
+                        log.info(
+                            "[%s/%s] Anti-trend filter: signal=%s but trend=%s, need %d/%d (have %d)",
+                            asset.upper(), timeframe, majority_dir.upper(), trend_dir.upper(),
+                            anti_trend_min, total_indicators, agree_count,
+                        )
+                        return None
 
         # ── Map Score → Probability (blended with market) ──
         lo, hi = PROB_CLAMP.get(timeframe, (0.30, 0.70))
@@ -1110,6 +1124,12 @@ class SignalEngine:
         consensus_edge = edge_up if consensus_dir == "up" else edge_down
         consensus_prob = prob_up if consensus_dir == "up" else (1 - prob_up)
         consensus_token = up_token_id if consensus_dir == "up" else down_token_id
+
+        # Momentum alignment flags
+        _momentum_aligned = (momentum is not None and momentum.active
+                             and consensus_dir == momentum.direction)
+        _momentum_opposed = (momentum is not None and momentum.active
+                             and consensus_dir != momentum.direction)
 
         # ── Safety: graduated filter for contrarian signals ──
         # When betting against the market, require progressively stronger consensus.
@@ -1185,6 +1205,15 @@ class SignalEngine:
                      _gate_decision.win_rate * 100, _gate_decision.sample_size)
         elif _gate_decision.edge_adjustment < 0:
             min_edge = max(0.02, min_edge + _gate_decision.edge_adjustment)  # Never below 2%
+        # Momentum override: 0.5% flat floor when aligned, 2× when opposed
+        if _momentum_aligned:
+            min_edge = 0.005  # 0.5% flat
+            log.info("[%s/%s] MOMENTUM edge override: floor=0.5%% (was %.1f%%)",
+                     asset.upper(), timeframe, min_edge * 100)
+        elif _momentum_opposed:
+            min_edge *= 2.0
+            log.info("[%s/%s] MOMENTUM opposed: edge floor doubled to %.1f%%",
+                     asset.upper(), timeframe, min_edge * 100)
         if consensus_edge < min_edge:
             log.info(
                 "[%s/%s] Edge too low: %.3f < %.3f (asset_premium=%.1fx)",
@@ -1204,6 +1233,12 @@ class SignalEngine:
         # ETH confidence premium removed — old WR data was pre-weight-learner. Fresh epoch, no per-asset penalty.
         # Reversal sentinel penalty: raise floor when disabled indicators signal reversal
         effective_conf_floor += reversal_penalty
+        # Momentum override: 0.15 floor when aligned, +10% penalty when opposed
+        if _momentum_aligned:
+            effective_conf_floor = 0.15
+            log.info("[%s/%s] MOMENTUM confidence override: floor=0.15", asset.upper(), timeframe)
+        elif _momentum_opposed:
+            effective_conf_floor += 0.10
         if confidence < effective_conf_floor:
             log.info(
                 "[%s/%s] Confidence too low for %s: %.3f < %.3f (UP premium applied: %s)",
@@ -1249,40 +1284,44 @@ class SignalEngine:
             # ── ML Veto Gate ──
             # RF model can't cause a trade, but CAN prevent one.
             # If ML predicts <40% win probability, block the trade.
-            try:
-                from bot.ml_predictor import GarvesV2MLPredictor
-                _ml = getattr(self, "_ml_veto", None)
-                if _ml is None:
-                    _ml = GarvesV2MLPredictor()
-                    self._ml_veto = _ml
-                if _ml._model is not None:
-                    # Build a minimal signal-like object for prediction
-                    _temp_signal = Signal(
-                        direction=consensus_dir, edge=consensus_edge,
-                        probability=consensus_prob, token_id=consensus_token,
-                        confidence=confidence, timeframe=timeframe, asset=asset,
-                        indicator_votes=ind_votes, atr_value=atr_val,
-                        reward_risk_ratio=rr_ratio,
-                    )
-                    from bot.conviction import AssetSignalSnapshot
-                    _temp_snap = AssetSignalSnapshot(
-                        asset=asset, direction=consensus_dir,
-                        consensus_count=agree_count, total_indicators=active_count,
-                        edge=consensus_edge, confidence=confidence,
-                        has_volume_spike=False, has_temporal_arb=False,
-                        indicator_votes=ind_votes,
-                    )
-                    _ml_prob = _ml.predict(_temp_signal, _temp_snap)
-                    if _ml_prob is not None and _ml_prob < 0.35:
-                        log.info(
-                            "[%s/%s] ML VETO: win_prob=%.3f < 0.35, blocking trade",
-                            asset.upper(), timeframe, _ml_prob,
+            # Skipped entirely when momentum-aligned — new regime, no ML data.
+            if _momentum_aligned:
+                log.info("[%s/%s] ML VETO: skipped (momentum-aligned)", asset.upper(), timeframe)
+            else:
+                try:
+                    from bot.ml_predictor import GarvesV2MLPredictor
+                    _ml = getattr(self, "_ml_veto", None)
+                    if _ml is None:
+                        _ml = GarvesV2MLPredictor()
+                        self._ml_veto = _ml
+                    if _ml._model is not None:
+                        # Build a minimal signal-like object for prediction
+                        _temp_signal = Signal(
+                            direction=consensus_dir, edge=consensus_edge,
+                            probability=consensus_prob, token_id=consensus_token,
+                            confidence=confidence, timeframe=timeframe, asset=asset,
+                            indicator_votes=ind_votes, atr_value=atr_val,
+                            reward_risk_ratio=rr_ratio,
                         )
-                        return None
-                    if _ml_prob is not None:
-                        log.info("[%s/%s] ML gate passed: win_prob=%.3f", asset.upper(), timeframe, _ml_prob)
-            except Exception:
-                pass  # ML failure never blocks trading
+                        from bot.conviction import AssetSignalSnapshot
+                        _temp_snap = AssetSignalSnapshot(
+                            asset=asset, direction=consensus_dir,
+                            consensus_count=agree_count, total_indicators=active_count,
+                            edge=consensus_edge, confidence=confidence,
+                            has_volume_spike=False, has_temporal_arb=False,
+                            indicator_votes=ind_votes,
+                        )
+                        _ml_prob = _ml.predict(_temp_signal, _temp_snap)
+                        if _ml_prob is not None and _ml_prob < 0.35:
+                            log.info(
+                                "[%s/%s] ML VETO: win_prob=%.3f < 0.35, blocking trade",
+                                asset.upper(), timeframe, _ml_prob,
+                            )
+                            return None
+                        if _ml_prob is not None:
+                            log.info("[%s/%s] ML gate passed: win_prob=%.3f", asset.upper(), timeframe, _ml_prob)
+                except Exception:
+                    pass  # ML failure never blocks trading
 
             # Cache this signal direction for cross-TF lookups
             self._signal_history[(asset, timeframe)] = (consensus_dir, now_ts)

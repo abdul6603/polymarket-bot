@@ -16,6 +16,7 @@ from bot.auth import build_client
 from bot.execution import Executor
 from bot.market_discovery import fetch_markets, rank_markets
 from bot.price_cache import PriceCache
+from bot.momentum import detect_momentum, MomentumState
 from bot.regime import RegimeAdjustment, detect_regime
 from bot.risk import PositionTracker, DrawdownBreaker, check_risk
 from bot.signals import SignalEngine
@@ -545,6 +546,16 @@ class TradingBot:
                  regime.label.upper(), regime.fng_value,
                  regime.size_multiplier, regime.edge_multiplier)
 
+        # 0b. Momentum Capture Mode — detect large moves in extreme regimes
+        momentum = detect_momentum(self.price_cache, regime)
+        self._momentum = momentum
+        if momentum and momentum.active:
+            regime = RegimeAdjustment.momentum_override(regime)
+            log.info("[MOMENTUM] ACTIVE %s — %s %+.1f%% strength=%d expires_in=%.1fh",
+                     momentum.direction.upper(), momentum.trigger_asset.upper(),
+                     momentum.trigger_pct, momentum.strength,
+                     (momentum.expires_at - time.time()) / 3600)
+
         # Sync balance cache for dashboard (every 2 min)
         self._sync_balance_cache()
 
@@ -746,6 +757,7 @@ class TradingBot:
                 derivatives_data=deriv_data,
                 spot_depth=spot_depth,
                 external_data=external_data_cache.get(asset.lower()),
+                momentum=getattr(self, "_momentum", None),
             )
             if not sig:
                 continue
@@ -889,6 +901,7 @@ class TradingBot:
                 asset_snapshot=snapshot,
                 regime=regime,
                 atr_value=sig.atr_value,
+                momentum=getattr(self, "_momentum", None),
             )
 
             if conviction.ml_win_prob is not None:

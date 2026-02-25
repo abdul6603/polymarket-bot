@@ -211,6 +211,7 @@ class ConvictionEngine:
         asset_snapshot: AssetSignalSnapshot,
         regime=None,  # RegimeAdjustment from regime.py
         atr_value: float | None = None,
+        momentum=None,  # MomentumState from momentum.py
     ) -> ConvictionResult:
         """Score conviction from 0-100 and map to position size.
 
@@ -423,32 +424,63 @@ class ConvictionEngine:
         # ── Sum Raw Score ──
         raw_score = sum(components.values())
 
+        # ── Momentum alignment ──
+        _momentum_aligned = (momentum is not None and momentum.active
+                             and signal.direction == momentum.direction)
+        _momentum_opposed = (momentum is not None and momentum.active
+                             and signal.direction != momentum.direction)
+
+        # Momentum bonus: +15 points when aligned (before safety rails)
+        if _momentum_aligned:
+            raw_score += 15.0
+            safety_adjustments.append("momentum_bonus=+15pts")
+
         # ── Apply Safety Rails (multiply conviction down) ──
         multiplier = 1.0
 
-        # Safety 1: Losing streak penalty
+        # Safety 1: Losing streak penalty — skipped when momentum-aligned
         if streak <= -LOSING_STREAK_THRESHOLD:
-            multiplier *= LOSING_STREAK_PENALTY
-            safety_adjustments.append(
-                f"losing_streak={streak} (penalty {LOSING_STREAK_PENALTY}x)"
-            )
+            if _momentum_aligned:
+                safety_adjustments.append(
+                    f"losing_streak={streak} (SKIPPED — momentum-aligned)"
+                )
+            else:
+                multiplier *= LOSING_STREAK_PENALTY
+                safety_adjustments.append(
+                    f"losing_streak={streak} (penalty {LOSING_STREAK_PENALTY}x)"
+                )
 
-        # Safety 2: Low rolling win rate
+        # Safety 2: Low rolling win rate — skipped when momentum-aligned
         rolling_wr = perf.get("rolling_wr")
         if rolling_wr is not None and rolling_wr < MIN_ROLLING_WR_THRESHOLD:
-            multiplier *= LOW_WR_PENALTY
-            safety_adjustments.append(
-                f"low_WR={rolling_wr:.1%} < {MIN_ROLLING_WR_THRESHOLD:.0%} "
-                f"(penalty {LOW_WR_PENALTY}x)"
-            )
+            if _momentum_aligned:
+                safety_adjustments.append(
+                    f"low_WR={rolling_wr:.1%} (SKIPPED — momentum-aligned)"
+                )
+            else:
+                multiplier *= LOW_WR_PENALTY
+                safety_adjustments.append(
+                    f"low_WR={rolling_wr:.1%} < {MIN_ROLLING_WR_THRESHOLD:.0%} "
+                    f"(penalty {LOW_WR_PENALTY}x)"
+                )
 
-        # Safety 3: Extreme fear regime — indicators unreliable in panics
+        # Safety 3: Extreme fear regime — skipped when momentum-aligned
         if regime is not None and regime.label == "extreme_fear":
-            multiplier *= EXTREME_FEAR_PENALTY
-            safety_adjustments.append(
-                f"extreme_fear_regime FnG={regime.fng_value} "
-                f"(penalty {EXTREME_FEAR_PENALTY}x)"
-            )
+            if _momentum_aligned:
+                safety_adjustments.append(
+                    f"extreme_fear FnG={regime.fng_value} (SKIPPED — momentum-aligned)"
+                )
+            else:
+                multiplier *= EXTREME_FEAR_PENALTY
+                safety_adjustments.append(
+                    f"extreme_fear_regime FnG={regime.fng_value} "
+                    f"(penalty {EXTREME_FEAR_PENALTY}x)"
+                )
+
+        # Safety: Momentum-opposed penalty (0.5× conviction)
+        if _momentum_opposed:
+            multiplier *= 0.5
+            safety_adjustments.append("momentum_opposed (0.5x penalty)")
 
         # Safety 4: Daily loss limit check
         daily_loss = perf.get("daily_pnl", 0.0)
@@ -495,6 +527,11 @@ class ConvictionEngine:
                 safety_adjustments.append(
                     f"regime_size_mult={regime.size_multiplier:.1f}x ({regime.label})"
                 )
+
+        # Momentum-aligned minimum: enforce $10 floor
+        if _momentum_aligned and position_size > 0 and position_size < 10.0:
+            position_size = 10.0
+            safety_adjustments.append("momentum_min_size=$10")
 
         # Hard cap — NEVER exceed absolute max
         position_size = min(position_size, ABSOLUTE_MAX_PER_TRADE)

@@ -2015,3 +2015,60 @@ def engine_comparison():
         "bankroll": float(os.getenv("BANKROLL_USD", "250")),
         "dry_run": os.getenv("DRY_RUN", "true").lower() in ("true", "1", "yes"),
     })
+
+
+# ── Momentum Capture Mode endpoints ──
+
+MOMENTUM_FILE = DATA_DIR / "momentum_mode.json"
+
+
+@garves_bp.route("/api/garves/momentum-mode")
+def api_momentum_mode():
+    """Read current momentum mode state."""
+    try:
+        if not MOMENTUM_FILE.exists():
+            return jsonify({"active": False})
+        data = json.loads(MOMENTUM_FILE.read_text())
+        if data.get("active") and data.get("expires_at", 0) > time.time():
+            data["remaining_s"] = int(data["expires_at"] - time.time())
+        else:
+            data["active"] = False
+            data["remaining_s"] = 0
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"active": False, "error": str(e)[:100]})
+
+
+@garves_bp.route("/api/garves/momentum-force", methods=["POST"])
+def api_momentum_force():
+    """Force-activate momentum mode from dashboard."""
+    try:
+        from bot.momentum import force_momentum
+        body = request.get_json(force=True) if request.is_json else {}
+        direction = body.get("direction", "up").lower()
+        duration_h = float(body.get("duration_h", 6.0))
+        if direction not in ("up", "down"):
+            return jsonify({"ok": False, "error": "direction must be up or down"}), 400
+        if not (1.0 <= duration_h <= 24.0):
+            return jsonify({"ok": False, "error": "duration_h must be 1-24"}), 400
+        state = force_momentum(direction, duration_h)
+        _broadcast("momentum_update", {"active": True, "direction": direction})
+        return jsonify({"ok": True, "state": {
+            "direction": state.direction,
+            "strength": state.strength,
+            "expires_at": state.expires_at,
+        }})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)[:200]}), 500
+
+
+@garves_bp.route("/api/garves/momentum-end", methods=["POST"])
+def api_momentum_end():
+    """End momentum mode from dashboard."""
+    try:
+        from bot.momentum import end_momentum
+        end_momentum()
+        _broadcast("momentum_update", {"active": False})
+        return jsonify({"ok": True})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)[:200]}), 500

@@ -241,7 +241,7 @@ class OracleBot:
 
         # Step 4: Run ensemble
         log.info("Step 4: Running LLM ensemble (%d models)...", len(self.cfg.ensemble_weights))
-        ensemble = run_ensemble(self.cfg, tradeable, context)
+        ensemble = run_ensemble(self.cfg, tradeable, context, agent_signals=context.agent_signals)
 
         if not ensemble.predictions:
             log.warning("Ensemble returned no predictions, skipping cycle")

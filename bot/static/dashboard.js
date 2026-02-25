@@ -4693,6 +4693,7 @@ async function refresh() {
       loadPortfolioAllocation();
       loadWhaleFollower();
       loadGarvesIntelligence();
+      loadMomentumMode();
     } else if (currentTab === 'soren') {
       var resp = await fetch('/api/soren');
       renderSoren(await resp.json());
@@ -10190,6 +10191,76 @@ async function loadGarvesMode() {
     var d = await resp.json();
     updateGarvesModeBadge(d.dry_run);
   } catch(e) {}
+}
+
+async function loadMomentumMode() {
+  try {
+    var resp = await fetch('/api/garves/momentum-mode');
+    var d = await resp.json();
+    var pill = document.getElementById('momentum-pill');
+    var dot = document.getElementById('momentum-dot');
+    var label = document.getElementById('momentum-label');
+    var countdown = document.getElementById('momentum-countdown');
+    var forceBtn = document.getElementById('momentum-force-btn');
+    var endBtn = document.getElementById('momentum-end-btn');
+    if (!pill) return;
+    if (d.active) {
+      var isUp = d.direction === 'up';
+      var color = isUp ? '#22c55e' : '#ef4444';
+      pill.style.background = isUp ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)';
+      pill.style.borderColor = color;
+      pill.style.boxShadow = '0 0 12px ' + (isUp ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)');
+      dot.style.background = color;
+      dot.style.animation = 'gep-pulse 1.5s infinite';
+      var arrow = isUp ? ' \u25B2' : ' \u25BC';
+      label.textContent = 'MOMENTUM: ' + (isUp ? 'LONG' : 'SHORT') + arrow;
+      label.style.color = color;
+      var rem = d.remaining_s || 0;
+      var h = Math.floor(rem / 3600);
+      var m = Math.floor((rem % 3600) / 60);
+      countdown.textContent = h + 'h ' + m + 'm remaining';
+      if (forceBtn) forceBtn.style.display = 'none';
+      if (endBtn) endBtn.style.display = '';
+    } else {
+      pill.style.background = 'rgba(255,255,255,0.06)';
+      pill.style.borderColor = 'rgba(255,255,255,0.1)';
+      pill.style.boxShadow = 'none';
+      dot.style.background = '#6b7280';
+      dot.style.animation = 'none';
+      label.textContent = 'Momentum: OFF';
+      label.style.color = '';
+      countdown.textContent = '';
+      if (forceBtn) forceBtn.style.display = '';
+      if (endBtn) endBtn.style.display = 'none';
+    }
+  } catch(e) {}
+}
+
+function toggleMomentumForce() {
+  var dir = prompt('Force momentum direction:\n\nEnter "up" or "down":', 'up');
+  if (!dir || (dir !== 'up' && dir !== 'down')) return;
+  var hours = prompt('Duration in hours (1-24):', '6');
+  if (!hours) return;
+  var h = parseFloat(hours);
+  if (isNaN(h) || h < 1 || h > 24) { alert('Invalid duration'); return; }
+  fetch('/api/garves/momentum-force', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({direction: dir, duration_h: h})
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.ok) { loadMomentumMode(); } else { alert('Error: ' + (d.error || 'unknown')); }
+  });
+}
+
+function endMomentumMode() {
+  if (!confirm('End Momentum Capture Mode?')) return;
+  fetch('/api/garves/momentum-end', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: '{}'
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.ok) { loadMomentumMode(); } else { alert('Error: ' + (d.error || 'unknown')); }
+  });
 }
 
 async function loadGarvesHealthWarnings() {

@@ -26,7 +26,7 @@ class Candle:
 class PriceCache:
     """Stores 1-minute OHLCV candles built from raw trade ticks."""
 
-    def __init__(self, maxlen: int = 200):
+    def __init__(self, maxlen: int = 500):
         self._maxlen = maxlen
         # asset -> deque of completed 1m candles
         self._candles: dict[str, deque[Candle]] = {}

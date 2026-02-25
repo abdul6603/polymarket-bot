@@ -45,6 +45,9 @@ def gather_agent_signals() -> dict[str, Any]:
     signals["odin_memory"] = _read_odin_memory()
     signals["recent_events"] = _read_recent_bus_events()
 
+    # Momentum Capture Mode (Garves writes, all agents read)
+    signals["momentum"] = _read_momentum_mode()
+
     return signals
 
 
@@ -164,6 +167,22 @@ def _read_odin_memory() -> str:
         return "; ".join(summaries)
     except Exception:
         return "memory_error"
+
+
+def _read_momentum_mode() -> str:
+    """Read Garves's Momentum Capture Mode state."""
+    import time as _time
+    data = _read_json(DATA_DIR / "momentum_mode.json")
+    if not data or not data.get("active"):
+        return "inactive"
+    if _time.time() >= data.get("expires_at", 0):
+        return "expired"
+    direction = data.get("direction", "?")
+    asset = data.get("trigger_asset", "?")
+    pct = data.get("trigger_pct", 0)
+    strength = data.get("strength", 0)
+    remaining_h = (data["expires_at"] - _time.time()) / 3600
+    return f"ACTIVE {direction} {asset} +{pct}% strength={strength} remaining={remaining_h:.1f}h"
 
 
 def _read_recent_bus_events() -> str:
