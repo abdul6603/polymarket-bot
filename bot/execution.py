@@ -18,6 +18,7 @@ from bot.signals import Signal
 log = logging.getLogger(__name__)
 
 TRADES_FILE = Path(__file__).parent.parent / "data" / "trades.jsonl"
+EXEC_METRICS_FILE = Path(__file__).parent.parent / "data" / "execution_metrics.jsonl"
 
 # Kelly Criterion constants
 KELLY_MIN_RESOLVED = 10      # Need at least this many resolved trades
@@ -112,8 +113,93 @@ class Executor:
         )
         return size
 
+    def _optimize_order_price(self, signal: Signal, ob_analysis=None) -> float:
+        """V2: Optimize order price using orderbook intelligence.
+
+        If spread > 3c, place between mid and best offer for price improvement.
+        If spread <= 3c, use best_ask (taker) for guaranteed fill.
+        """
+        base_price = round(signal.probability, 2)
+
+        if ob_analysis is None:
+            return max(0.01, min(0.99, base_price))
+
+        best_bid = getattr(ob_analysis, "best_bid", 0)
+        best_ask = getattr(ob_analysis, "best_ask", 0)
+        spread = getattr(ob_analysis, "spread", 0)
+
+        if best_bid <= 0 or best_ask <= 0:
+            return max(0.01, min(0.99, base_price))
+
+        if spread > 0.03:
+            # Wide spread — place at mid + 0.5c for price improvement
+            mid = (best_bid + best_ask) / 2
+            improved = mid + 0.005
+            improved = round(improved, 2)
+            log.info("  [EXEC V2] Price improvement: $%.2f -> $%.2f (mid=$%.3f, spread=$%.3f)",
+                     base_price, improved, mid, spread)
+            return max(0.01, min(0.99, improved))
+
+        # Tight spread — use best_ask for guaranteed fill
+        return max(0.01, min(0.99, round(best_ask, 2)))
+
+    def _should_split_order(self, size_usd: float, ob_analysis=None) -> list[tuple[float, float]]:
+        """V2: Determine if order should be split to reduce market impact.
+
+        Split if order > 20% of visible book depth.
+        Returns list of (size_usd, delay_seconds) tuples.
+        """
+        if ob_analysis is None:
+            return [(size_usd, 0.0)]
+
+        total_liq = getattr(ob_analysis, "total_liquidity_usd", 0)
+        if total_liq <= 0:
+            return [(size_usd, 0.0)]
+
+        impact_pct = size_usd / total_liq
+        if impact_pct <= 0.20:
+            return [(size_usd, 0.0)]  # Small enough — single order
+
+        # Split into chunks of 20% of book depth
+        chunk_size = max(TRADE_MIN_USD, total_liq * 0.20)
+        chunks = []
+        remaining = size_usd
+        delay = 0.0
+        while remaining > 0:
+            chunk = min(remaining, chunk_size)
+            chunks.append((chunk, delay))
+            remaining -= chunk
+            delay += 2.0  # 2s between chunks
+
+        log.info("  [EXEC V2] Order split: $%.2f -> %d chunks (%.0f%% of book)",
+                 size_usd, len(chunks), impact_pct * 100)
+        return chunks
+
+    def record_execution_quality(self, order_id: str, fill_price: float,
+                                  intended_price: float, fill_time_s: float = 0.0) -> None:
+        """V2: Record execution quality metrics for analysis."""
+        slippage = 0.0
+        if intended_price > 0:
+            slippage = (fill_price - intended_price) / intended_price
+
+        entry = {
+            "timestamp": time.time(),
+            "order_id": order_id,
+            "fill_price": fill_price,
+            "intended_price": intended_price,
+            "slippage_pct": round(slippage, 6),
+            "fill_time_s": round(fill_time_s, 1),
+        }
+
+        try:
+            with open(EXEC_METRICS_FILE, "a") as f:
+                f.write(json.dumps(entry) + "\n")
+        except Exception:
+            log.debug("Failed to record execution quality")
+
     def place_order(
-        self, signal: Signal, market_id: str, conviction_size: float | None = None
+        self, signal: Signal, market_id: str, conviction_size: float | None = None,
+        ob_analysis=None,
     ) -> str | None:
         """Place a GTC limit order for the given signal.
 
@@ -122,6 +208,7 @@ class Executor:
             market_id: Polymarket market ID.
             conviction_size: If provided, use this position size (from ConvictionEngine)
                 instead of the legacy _dynamic_position_size() calculation.
+            ob_analysis: Orderbook analysis for V2 price optimization.
 
         Returns:
             Order ID if placed, None otherwise.
@@ -135,10 +222,10 @@ class Executor:
             if self.regime:
                 order_size_usd *= self.regime.size_multiplier
             order_size_usd = max(TRADE_MIN_USD, min(TRADE_MAX_USD, order_size_usd))
-        size = order_size_usd / signal.probability
-        price = round(signal.probability, 2)
-        # Clamp price to valid range
-        price = max(0.01, min(0.99, price))
+
+        # V2: Optimize order price using orderbook intelligence
+        price = self._optimize_order_price(signal, ob_analysis)
+        size = order_size_usd / price if price > 0 else order_size_usd / signal.probability
 
         log.info(
             "Order: %s %s | size=%.2f tokens @ $%.2f | edge=%.1f%% | market=%s",
@@ -237,6 +324,12 @@ class Executor:
                     # Order filled — position is ACTIVE. Keep in tracker for risk management.
                     log.info("Order %s FILLED — position active, keeping in tracker ($%.2f)",
                              pos.order_id, pos.size_usd)
+                    # V2: Record execution quality
+                    fill_time_s = now - pos.opened_at
+                    fill_price = float(order.get("price", pos.entry_price))
+                    self.record_execution_quality(
+                        pos.order_id, fill_price, pos.entry_price, fill_time_s,
+                    )
                 elif status in ("live", "open", "active", ""):
                     # Still open — check if stale and should be cancelled
                     tf = getattr(pos, "timeframe", "")

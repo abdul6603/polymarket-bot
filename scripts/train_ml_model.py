@@ -1,4 +1,4 @@
-"""Standalone training script for Garves ML Win Predictor.
+"""Standalone training script for Garves V2 ML Win Predictor.
 
 Usage:
     cd ~/polymarket-bot && .venv/bin/python scripts/train_ml_model.py
@@ -9,15 +9,15 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from bot.ml_predictor import GarvesMLPredictor
+from bot.ml_predictor import GarvesV2MLPredictor
 
 
 def main():
     print("=" * 60)
-    print("GARVES ML WIN PREDICTOR — Training")
+    print("GARVES V2 ML WIN PREDICTOR — Training")
     print("=" * 60)
 
-    metrics = GarvesMLPredictor.train()
+    metrics = GarvesV2MLPredictor.train()
 
     status = metrics.get("status", "unknown")
     print(f"\nStatus: {status}")

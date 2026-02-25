@@ -1,4 +1,4 @@
-"""Live Parameter Push — safely push validated params to Garves and Odin.
+"""Live Parameter Push — safely push validated params to Garves V2 and Odin.
 
 Validates through three gates before any live parameter change:
   1. Walk-Forward V2 must PASS (overfit gap < threshold)
@@ -10,7 +10,7 @@ Includes:
   - Dry-run mode (shows what would change without applying)
   - Human approval flag (configurable)
   - PNL impact estimation for every recommendation
-  - Push to both Garves (quant_live_params.json) and Odin (odin data dir)
+  - Push to both Garves V2 (quant_live_params.json) and Odin (odin data dir)
 """
 from __future__ import annotations
 
@@ -213,7 +213,7 @@ def _push_to_garves(
     best_wr: float,
     version: int,
 ) -> bool:
-    """Write validated params to quant_live_params.json for Garves to pick up."""
+    """Write validated params to quant_live_params.json for Garves V2 to pick up."""
     output = {
         "params": params,
         "validation": {
@@ -235,10 +235,10 @@ def _push_to_garves(
         with open(tmp, "w") as f:
             json.dump(output, indent=2, fp=f)
         os.replace(str(tmp), str(GARVES_PARAMS_FILE))
-        log.info("Garves params updated: v%d, %s", version, list(params.keys()))
+        log.info("Garves V2 params updated: v%d, %s", version, list(params.keys()))
         return True
     except Exception:
-        log.exception("Failed to push params to Garves")
+        log.exception("Failed to push params to Garves V2")
         return False
 
 

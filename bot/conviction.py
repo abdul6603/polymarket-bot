@@ -1,8 +1,7 @@
-"""Garves — Conviction-Based Dynamic Position Sizing Engine.
+"""Garves V2 — Conviction-Based Dynamic Position Sizing Engine.
 
-Scores conviction from 0-100 based on multiple evidence layers, then maps
-conviction to position size. When conditions are exceptionally favorable
-(all assets aligned, strong confirmations), sizes up. When uncertain, sizes down.
+The Directional Sniper's conviction scorer: scores 0-100 based on multiple
+evidence layers, then maps conviction to position size. Trade less, trade better.
 
 Research basis:
 - Adaptive Kelly Criterion (fractional Kelly with Bayesian updating)
@@ -166,8 +165,8 @@ class ConvictionEngine:
         # ML Win Predictor (loaded once, never blocks if unavailable)
         self._ml_predictor = None
         try:
-            from bot.ml_predictor import GarvesMLPredictor
-            self._ml_predictor = GarvesMLPredictor()
+            from bot.ml_predictor import GarvesV2MLPredictor
+            self._ml_predictor = GarvesV2MLPredictor()
             if self._ml_predictor._model is not None:
                 log.info("ML Win Predictor loaded successfully")
             else:

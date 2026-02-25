@@ -12,7 +12,7 @@ from bot.http_session import get_session
 
 log = logging.getLogger(__name__)
 
-# Keywords that indicate Garves's territory — exclude these
+# Keywords that indicate Garves V2's territory — exclude these
 _UPDOWN_RE = re.compile(r"(bitcoin|ethereum|solana|btc|eth|sol|xrp)\s+(up or down)", re.IGNORECASE)
 
 # Broader crypto price market filter — blocks ALL "price of X above/below/between $Y" markets
@@ -132,7 +132,7 @@ def _categorize_market(question: str) -> str:
 def _is_updown_price_market(question: str) -> bool:
     """Return True if this is ANY crypto price prediction market.
 
-    Blocks: Up/Down (Garves territory), price above/below/between $X,
+    Blocks: Up/Down (Garves V2 territory), price above/below/between $X,
     and crypto + price target patterns. GPT-4o has no real data for these.
     """
     if _UPDOWN_RE.search(question):

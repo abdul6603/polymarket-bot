@@ -4653,6 +4653,7 @@ async function refresh() {
       refreshSnipeV7();
       refreshSnipeAssist();
       loadSignalCycle();
+      loadGarvesV2Metrics();
     } else if (currentTab === 'soren') {
       var resp = await fetch('/api/soren');
       renderSoren(await resp.json());
@@ -12317,4 +12318,100 @@ function toggleBinancePopover() {
   if (!pop) return;
   _binancePopoverOpen = !_binancePopoverOpen;
   pop.style.display = _binancePopoverOpen ? 'block' : 'none';
+}
+
+// ── Garves V2 Intelligence ──────────────────────────────────────
+function loadGarvesV2Metrics() {
+  // Fetch V2 metrics
+  fetch('/api/garves/v2-metrics').then(function(r){return r.json();}).then(function(d) {
+    // Kill switch badge
+    var badge = document.getElementById('v2-kill-switch-badge');
+    var reasonEl = document.getElementById('v2-kill-switch-reason');
+    if (badge) {
+      if (d.kill_switch_active) {
+        badge.textContent = 'KILLED';
+        badge.style.background = 'var(--danger)';
+        badge.style.color = '#fff';
+        if (reasonEl) { reasonEl.textContent = d.kill_switch_reason || ''; reasonEl.style.display = 'block'; }
+      } else {
+        badge.textContent = 'SAFE';
+        badge.style.background = 'var(--success)';
+        badge.style.color = '#000';
+        if (reasonEl) reasonEl.style.display = 'none';
+      }
+    }
+
+    // Core metrics
+    var cm = d.core_metrics || {};
+    var wr20El = document.getElementById('v2-wr-20');
+    var wr50El = document.getElementById('v2-wr-50');
+    var evEl = document.getElementById('v2-ev-capture');
+    var ddEl = document.getElementById('v2-drawdown');
+    if (wr20El) { wr20El.textContent = cm.wr_20 != null ? (cm.wr_20 * 100).toFixed(0) + '%' : '--'; wr20El.style.color = cm.wr_20 != null && cm.wr_20 >= 0.55 ? 'var(--success)' : cm.wr_20 != null && cm.wr_20 < 0.50 ? 'var(--danger)' : 'var(--text)'; }
+    if (wr50El) { wr50El.textContent = cm.wr_50 != null ? (cm.wr_50 * 100).toFixed(0) + '%' : '--'; wr50El.style.color = cm.wr_50 != null && cm.wr_50 >= 0.55 ? 'var(--success)' : cm.wr_50 != null && cm.wr_50 < 0.52 ? 'var(--danger)' : 'var(--text)'; }
+    if (evEl) { evEl.textContent = cm.ev_capture_pct != null ? (cm.ev_capture_pct * 100).toFixed(0) + '%' : '--'; evEl.style.color = cm.ev_capture_pct > 0.5 ? 'var(--success)' : cm.ev_capture_pct < 0.3 ? 'var(--danger)' : 'var(--text)'; }
+    if (ddEl) { ddEl.textContent = cm.current_drawdown_pct != null ? cm.current_drawdown_pct.toFixed(0) + '%' : '--'; ddEl.style.color = cm.current_drawdown_pct > 20 ? 'var(--danger)' : cm.current_drawdown_pct > 10 ? 'var(--warning)' : 'var(--text)'; }
+
+    // Warnings
+    var warningsCard = document.getElementById('v2-warnings-card');
+    var warningsList = document.getElementById('v2-warnings-list');
+    if (warningsCard && warningsList) {
+      if (d.warnings && d.warnings.length > 0) {
+        warningsCard.style.display = 'block';
+        warningsList.innerHTML = d.warnings.map(function(w){ return '<div style="margin-bottom:3px;color:var(--danger);">' + w + '</div>'; }).join('');
+      } else {
+        warningsCard.style.display = 'none';
+      }
+    }
+  }).catch(function(){});
+
+  // Fetch post-trade analysis
+  fetch('/api/garves/post-trade-analysis').then(function(r){return r.json();}).then(function(d) {
+    var feed = document.getElementById('v2-post-trade-feed');
+    if (!feed) return;
+    if (!d.recent || d.recent.length === 0) {
+      feed.innerHTML = '<span class="text-muted">No analyses yet</span>';
+      return;
+    }
+    var html = d.recent.slice(-10).reverse().map(function(a) {
+      var icon = a.mistake_type === 'none' ? '<span style="color:var(--success);">OK</span>' : '<span style="color:var(--danger);">' + a.mistake_type.toUpperCase() + '</span>';
+      return '<div style="margin-bottom:3px;">' + icon + ' ' + (a.trade_id || '').slice(0,12) + ' | EV capture: ' + ((a.ev_capture_pct || 0) * 100).toFixed(0) + '% | Exec: ' + (a.execution_quality || 'n/a') + '</div>';
+    }).join('');
+    feed.innerHTML = '<div style="margin-bottom:4px;color:var(--text-muted);">Total: ' + d.total + ' | Mistakes: ' + d.mistakes + ' | Avg EV: ' + (d.avg_ev_capture_pct || 0).toFixed(0) + '%</div>' + html;
+  }).catch(function(){});
+
+  // Fetch auto-rules
+  fetch('/api/garves/auto-rules').then(function(r){return r.json();}).then(function(d) {
+    var el = document.getElementById('v2-auto-rules');
+    if (!el) return;
+    if (!d.active_rules || d.active_rules.length === 0) {
+      el.innerHTML = '<span class="text-muted">No active rules</span>';
+      return;
+    }
+    el.innerHTML = d.active_rules.map(function(r) {
+      var action = r.action || {};
+      return '<div style="margin-bottom:3px;">' + (action.type || 'unknown') + ' on ' + (action.asset || '?') + '/' + (action.timeframe || '?') + ' <span class="text-muted">(x' + (r.count || 0) + ')</span></div>';
+    }).join('');
+  }).catch(function(){});
+
+  // Fetch edge report
+  fetch('/api/garves/edge-report').then(function(r){return r.json();}).then(function(d) {
+    var el = document.getElementById('v2-edge-decay');
+    if (!el) return;
+    var decay = d.edge_decay || [];
+    if (decay.length === 0) {
+      var cc = d.competitive_check || {};
+      if (cc.status === 'improving') {
+        el.innerHTML = '<span style="color:var(--success);">Edges improving (' + (cc.wr_trend_pp || 0).toFixed(1) + 'pp)</span>';
+      } else if (cc.status === 'declining') {
+        el.innerHTML = '<span style="color:var(--danger);">Edges declining (' + (cc.wr_trend_pp || 0).toFixed(1) + 'pp)</span>';
+      } else {
+        el.innerHTML = '<span class="text-muted">Edges stable</span>';
+      }
+      return;
+    }
+    el.innerHTML = decay.map(function(d) {
+      return '<div style="margin-bottom:3px;color:var(--danger);">' + d.indicator + ': ' + (d.alltime_accuracy * 100).toFixed(0) + '% -> ' + (d.recent_accuracy * 100).toFixed(0) + '% (-' + d.drop_pp.toFixed(0) + 'pp)</div>';
+    }).join('');
+  }).catch(function(){});
 }

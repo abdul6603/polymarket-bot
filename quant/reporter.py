@@ -122,7 +122,7 @@ def write_results(baseline: BacktestResult,
 
 def write_recommendations(baseline: BacktestResult,
                           scored: list[tuple[float, BacktestResult]]) -> None:
-    """Write data/quant_recommendations.json — specific parameter changes for Garves."""
+    """Write data/quant_recommendations.json — specific parameter changes for Garves V2."""
     recommendations = []
     baseline_wr = baseline.win_rate
     baseline_score = score_result(baseline)
@@ -273,7 +273,7 @@ def write_live_params(
     wf_test_wr: float,
     wf_overfit_drop: float,
 ) -> bool:
-    """Write validated optimal params to quant_live_params.json for Garves to pick up.
+    """Write validated optimal params to quant_live_params.json for Garves V2 to pick up.
 
     Safety rails — only writes if ALL conditions pass:
     1. Best WR > baseline WR + 2pp (meaningful improvement)

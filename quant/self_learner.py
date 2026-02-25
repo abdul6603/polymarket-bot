@@ -1,10 +1,10 @@
-"""Self-Learning Module — Quant learns from actual Garves/Odin live performance.
+"""Self-Learning Module — Quant learns from actual Garves V2/Odin live performance.
 
 Instead of only learning from backtests, this module:
   1. Tracks which Quant recommendations were actually applied
   2. Measures their real-world outcomes (did WR improve?)
   3. Adjusts confidence in future recommendations based on track record
-  4. Loads and analyzes Odin trade data (not just Garves)
+  4. Loads and analyzes Odin trade data (not just Garves V2)
 
 Feedback loop: Quant recommends → params applied → trades happen →
 outcomes measured → Quant adjusts future recommendations.
@@ -101,7 +101,7 @@ def load_odin_trades(since_timestamp: float = 0) -> list[dict]:
                 # Normalize Odin trade format → Quant-compatible
                 symbol = t.get("symbol", "")
                 asset = symbol.replace("USDT", "").lower()
-                # Map to Garves-style asset names
+                # Map to Garves V2-style asset names
                 asset_map = {
                     "btc": "bitcoin", "eth": "ethereum", "sol": "solana",
                     "xrp": "xrp", "ltc": "litecoin", "bch": "bitcoin_cash",
@@ -298,7 +298,7 @@ def analyze_odin_performance(
 ) -> dict:
     """Analyze Odin's trading performance for cross-learning.
 
-    Returns insights that can help Garves (and vice versa).
+    Returns insights that can help Garves V2 (and vice versa).
     """
     if odin_trades is None:
         odin_trades = load_odin_trades()
@@ -363,12 +363,12 @@ def analyze_odin_performance(
         if a_wr > 65:
             insights.append(
                 f"Odin strong on {asset}: {a_wr:.0f}% WR ({a_total} trades) — "
-                f"Garves could increase {asset} conviction"
+                f"Garves V2 could increase {asset} conviction"
             )
         elif a_wr < 35:
             insights.append(
                 f"Odin weak on {asset}: {a_wr:.0f}% WR — "
-                f"Garves should reduce {asset} exposure or add caution"
+                f"Garves V2 should reduce {asset} exposure or add caution"
             )
 
     # Regime insights
@@ -380,7 +380,7 @@ def analyze_odin_performance(
         if r_wr > 65:
             insights.append(
                 f"Odin performs well in '{regime}' regime ({r_wr:.0f}% WR) — "
-                f"Garves can be more aggressive in this regime"
+                f"Garves V2 can be more aggressive in this regime"
             )
         elif r_wr < 35:
             insights.append(
@@ -441,7 +441,7 @@ def run_learning_cycle(
 
     1. Measure outcomes of past recommendations
     2. Analyze Odin performance for cross-learning
-    3. Compute combined Garves+Odin intelligence
+    3. Compute combined Garves V2+Odin intelligence
     4. Return summary for logging/dashboard
 
     Called during each Quant main cycle.
@@ -457,7 +457,7 @@ def run_learning_cycle(
         odin_trades = load_odin_trades()
     odin_analysis = analyze_odin_performance(odin_trades)
 
-    # 3. Combined Garves + Odin WR
+    # 3. Combined Garves V2 + Odin WR
     garves_resolved = [t for t in garves_trades if t.get("resolved") and t.get("won") is not None]
     garves_wins = sum(1 for t in garves_resolved if t.get("won"))
     garves_total = len(garves_resolved)
@@ -503,7 +503,7 @@ def run_learning_cycle(
     }
 
     log.info("Learning cycle: %d outcomes measured (accuracy=%.0f%%), "
-             "Garves WR=%.1f%% (%d), Odin WR=%.1f%% (%d), Combined=%.1f%%",
+             "Garves V2 WR=%.1f%% (%d), Odin WR=%.1f%% (%d), Combined=%.1f%%",
              len(outcomes), state.accuracy,
              summary["garves_wr"], garves_total,
              summary["odin_wr"], odin_total,

@@ -1,4 +1,4 @@
-"""Garves ML Win Predictor — Random Forest classifier for trade outcome prediction.
+"""Garves V2 ML Win Predictor — Random Forest classifier for trade outcome prediction.
 
 Trains on historical resolved trades to predict win probability.
 Features: indicator votes (one-hot), asset, timeframe, edge, confidence,
@@ -183,7 +183,7 @@ def _extract_features_from_signal(signal, snapshot) -> np.ndarray:
     return np.array(features, dtype=np.float64)
 
 
-class GarvesMLPredictor:
+class GarvesV2MLPredictor:
     """Random Forest win predictor — loaded once at bot startup."""
 
     def __init__(self):

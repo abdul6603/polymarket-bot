@@ -69,6 +69,9 @@ class TradeRecord:
     fill_price_estimate: float = 0.0   # best_ask at execution time
     slippage_adjusted_pnl: float = 0.0 # P&L after deducting spread
 
+    # V2: Expected value prediction (edge * size)
+    ev_predicted: float = 0.0
+
     # ML prediction at trade time
     ml_win_prob: float = 0.0
 
@@ -175,6 +178,9 @@ class PerformanceTracker:
             implied_up_price=implied_up_price,
         )
 
+        # V2: Expected value prediction (edge * size)
+        ev_pred = abs(signal.edge) * size_usd if size_usd > 0 else 0.0
+
         rec = TradeRecord(
             trade_id=trade_id,
             timestamp=time.time(),
@@ -201,6 +207,7 @@ class PerformanceTracker:
             size_usd=size_usd,
             entry_price=entry_price,
             fill_price_estimate=fill_price_estimate,
+            ev_predicted=ev_pred,
             ml_win_prob=ml_win_prob,
             dry_run=self.cfg.dry_run,
         )
@@ -275,6 +282,15 @@ class PerformanceTracker:
                 result, rec.direction.upper(), outcome.upper(),
                 rec.question[:50],
             )
+
+            # V2: Post-trade analysis — detect mistakes, auto-create rules
+            try:
+                from bot.post_trade_analyzer import PostTradeAnalyzer
+                _analyzer = PostTradeAnalyzer()
+                _analysis = _analyzer.analyze(asdict(rec))
+                _analyzer.maybe_create_rule(_analysis)
+            except Exception as e:
+                log.debug("Post-trade analysis failed: %s", str(e)[:100])
 
             # Clean up resolved position from PositionTracker
             if self._position_tracker:
@@ -352,7 +368,7 @@ class PerformanceTracker:
                 subprocess.run(
                     [
                         "osascript", "-e",
-                        f'display notification "{result}: {rec.asset.upper()}/{rec.timeframe} {rec.direction}" with title "GARVES" sound name "Glass"',
+                        f'display notification "{result}: {rec.asset.upper()}/{rec.timeframe} {rec.direction}" with title "GARVES V2" sound name "Glass"',
                     ],
                     capture_output=True,
                 )

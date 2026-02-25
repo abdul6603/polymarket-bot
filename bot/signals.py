@@ -1145,6 +1145,29 @@ class SignalEngine:
             )
             return None
 
+        # ── V2: Auto-rules from post-trade analysis ──
+        try:
+            from bot.post_trade_analyzer import PostTradeAnalyzer
+            _auto_rules = PostTradeAnalyzer.get_active_rules()
+            for _rule in _auto_rules:
+                _action = _rule.get("action", {})
+                _rule_asset = _action.get("asset", "")
+                _rule_tf = _action.get("timeframe", "")
+                if _rule_asset and _rule_asset != asset:
+                    continue
+                if _rule_tf and _rule_tf != timeframe:
+                    continue
+                _atype = _action.get("type", "")
+                if _atype == "raise_edge_floor":
+                    _boost = _action.get("edge_floor_boost", 0.03)
+                    _min_edge_absolute = max(_min_edge_absolute, _min_edge_absolute + _boost)
+                    log.info("[AUTO-RULE] Raised edge floor by +%.0f%% for %s/%s", _boost * 100, asset, timeframe)
+                elif _atype == "flag_indicators":
+                    log.info("[AUTO-RULE] WARNING: indicators unreliable for %s/%s — %s",
+                             asset, timeframe, _action.get("description", ""))
+        except Exception:
+            pass  # Auto-rules never block trading on errors
+
         # ── Timeframe-Specific Minimum Edge (regime-adjusted + asset premium) ──
         asset_premium = ASSET_EDGE_PREMIUM.get(asset, 1.0)
         min_edge = MIN_EDGE_BY_TF.get(timeframe, 0.05) * (regime.edge_multiplier if regime else 1.0) * asset_premium
@@ -1230,10 +1253,10 @@ class SignalEngine:
             # RF model can't cause a trade, but CAN prevent one.
             # If ML predicts <40% win probability, block the trade.
             try:
-                from bot.ml_predictor import GarvesMLPredictor
+                from bot.ml_predictor import GarvesV2MLPredictor
                 _ml = getattr(self, "_ml_veto", None)
                 if _ml is None:
-                    _ml = GarvesMLPredictor()
+                    _ml = GarvesV2MLPredictor()
                     self._ml_veto = _ml
                 if _ml._model is not None:
                     # Build a minimal signal-like object for prediction

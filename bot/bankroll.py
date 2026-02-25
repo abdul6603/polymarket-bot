@@ -1,4 +1,4 @@
-"""Garves — Auto-Compounding Bankroll Manager.
+"""Garves V2 — Auto-Compounding Bankroll Manager.
 
 Tracks running bankroll from resolved trades in trades.jsonl.
 Scales position sizes proportionally to current bankroll vs initial.

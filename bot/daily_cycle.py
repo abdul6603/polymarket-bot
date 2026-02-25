@@ -1,4 +1,4 @@
-"""Garves — Daily Cycle Manager.
+"""Garves V2 — Daily Cycle Manager.
 
 Every 24 hours (at midnight ET), archives the day's trading stats into a
 daily report with performance analysis, strategy notes, and mistake tracking.
@@ -342,6 +342,30 @@ def generate_daily_report(date_str: str | None = None) -> dict:
         "mistakes": mistakes,
     }
 
+    # V2: Add post-trade analysis and self-improvement metrics
+    try:
+        from bot.post_trade_analyzer import PostTradeAnalyzer
+        report["post_trade_analysis"] = PostTradeAnalyzer.get_analysis_summary(limit=20)
+        report["auto_rules_active"] = len(PostTradeAnalyzer.get_active_rules())
+    except Exception:
+        pass
+    try:
+        from bot.self_improvement import SelfImprovementEngine
+        si = SelfImprovementEngine()
+        metrics = si.calculate_metrics()
+        report["core_metrics"] = {
+            "wr_20": metrics.wr_20,
+            "wr_50": metrics.wr_50,
+            "wr_100": metrics.wr_100,
+            "ev_capture_pct": metrics.ev_capture_pct,
+            "avg_slippage_pct": metrics.avg_slippage_pct,
+            "current_drawdown_pct": metrics.current_drawdown_pct,
+            "max_drawdown_pct": metrics.max_drawdown_pct,
+        }
+        report["improvement_suggestions"] = si.suggest_improvements(metrics)
+    except Exception:
+        pass
+
     return report
 
 
@@ -402,8 +426,8 @@ def archive_and_reset() -> dict:
 
     # Auto-retrain ML model with accumulated data
     try:
-        from bot.ml_predictor import GarvesMLPredictor
-        metrics = GarvesMLPredictor.train()
+        from bot.ml_predictor import GarvesV2MLPredictor
+        metrics = GarvesV2MLPredictor.train()
         if metrics.get("status") == "trained":
             log.info("[ML] Model retrained: %d samples, CV=%.1f%%",
                      metrics["num_samples"], (metrics.get("cv_accuracy", 0) or 0) * 100)
@@ -411,6 +435,28 @@ def archive_and_reset() -> dict:
             log.info("[ML] Retrain skipped: %s", metrics.get("status", "unknown"))
     except Exception as e:
         log.warning("[ML] Retrain failed (non-fatal): %s", str(e)[:100])
+
+    # V2: Save daily performance metrics snapshot
+    try:
+        from bot.self_improvement import SelfImprovementEngine
+        si = SelfImprovementEngine()
+        metrics = si.calculate_metrics()
+        metrics_file = DATA_DIR / "performance_metrics.json"
+        import json as _json
+        metrics_file.write_text(_json.dumps({
+            "date": date_str,
+            "wr_20": metrics.wr_20,
+            "wr_50": metrics.wr_50,
+            "wr_100": metrics.wr_100,
+            "ev_capture_pct": metrics.ev_capture_pct,
+            "avg_slippage_pct": metrics.avg_slippage_pct,
+            "current_drawdown_pct": metrics.current_drawdown_pct,
+            "max_drawdown_pct": metrics.max_drawdown_pct,
+        }, indent=2))
+        log.info("[V2] Performance metrics saved: WR20=%.1f%% WR50=%.1f%%",
+                 (metrics.wr_20 or 0) * 100, (metrics.wr_50 or 0) * 100)
+    except Exception as e:
+        log.debug("Performance metrics save failed: %s", str(e)[:100])
 
     return report
 

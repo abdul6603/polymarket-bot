@@ -25,10 +25,10 @@ ODIN_DIR = Path.home() / "odin" / "data"
 
 
 def gather_agent_signals() -> dict[str, Any]:
-    """Read latest status from Garves, Hawk, Odin, and Atlas to build agent signals."""
+    """Read latest status from Garves V2, Hawk, Odin, and Atlas to build agent signals."""
     signals: dict[str, Any] = {}
 
-    # Garves — crypto Up/Down trader
+    # Garves V2 — crypto Up/Down trader
     signals["garves"] = _read_garves()
 
     # Hawk — non-crypto Polymarket scanner
@@ -58,7 +58,7 @@ def _read_json(path: Path) -> dict:
 
 
 def _read_garves() -> str:
-    """Garves's current view: regime, recent win rate, indicator signals."""
+    """Garves V2's current view: regime, recent win rate, indicator signals."""
     status = _read_json(DATA_DIR / "garves_status.json")
     if not status:
         return "offline"
@@ -131,7 +131,7 @@ def _read_atlas() -> str:
 
 
 def _read_garves_memory() -> str:
-    """Query Garves's AgentMemory for active high-confidence patterns."""
+    """Query Garves V2's AgentMemory for active high-confidence patterns."""
     if AgentMemory is None:
         return "memory_unavailable"
     try:

@@ -388,6 +388,78 @@
   </div>
 
   <!-- ═══════════════════════════════════════════ -->
+  <!-- COLLAPSIBLE: V2 Intelligence                -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="collapse-section">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="garves" style="margin-bottom:0;">V2 Intelligence</h2>
+    </div>
+    <div class="collapse-body">
+      <!-- Kill Switch Status -->
+      <div class="glass-card" style="margin-bottom:10px;" id="v2-kill-switch-card">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <span style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);">Kill Switch</span>
+          <span id="v2-kill-switch-badge" style="padding:2px 8px;border-radius:10px;font-size:0.68rem;font-weight:700;background:var(--success);color:#000;">SAFE</span>
+        </div>
+        <div id="v2-kill-switch-reason" style="font-size:0.72rem;color:var(--text-muted);display:none;"></div>
+      </div>
+
+      <!-- Core Metrics -->
+      <div class="glass-card" style="margin-bottom:10px;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Core Metrics</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;" id="v2-core-metrics">
+          <div style="text-align:center;">
+            <div style="font-size:0.68rem;color:var(--text-muted);">WR 20</div>
+            <div id="v2-wr-20" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">--</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:0.68rem;color:var(--text-muted);">WR 50</div>
+            <div id="v2-wr-50" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">--</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:0.68rem;color:var(--text-muted);">EV Capture</div>
+            <div id="v2-ev-capture" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">--</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-size:0.68rem;color:var(--text-muted);">Drawdown</div>
+            <div id="v2-drawdown" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">--</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Post-Trade Analysis Feed -->
+      <div class="glass-card" style="margin-bottom:10px;border-left:3px solid var(--info);">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--info);margin-bottom:4px;">Post-Trade Analysis</div>
+        <div id="v2-post-trade-feed" style="font-family:var(--font-mono);font-size:0.72rem;max-height:120px;overflow-y:auto;">
+          <span class="text-muted">Loading...</span>
+        </div>
+      </div>
+
+      <!-- Auto-Rules + Edge Decay side by side -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="glass-card" style="border-left:3px solid var(--warning);">
+          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--warning);margin-bottom:4px;">Active Auto-Rules</div>
+          <div id="v2-auto-rules" style="font-family:var(--font-mono);font-size:0.72rem;">
+            <span class="text-muted">None</span>
+          </div>
+        </div>
+        <div class="glass-card" style="border-left:3px solid var(--danger);">
+          <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--danger);margin-bottom:4px;">Edge Decay Warnings</div>
+          <div id="v2-edge-decay" style="font-family:var(--font-mono);font-size:0.72rem;">
+            <span class="text-muted">None</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Performance Warnings -->
+      <div id="v2-warnings-card" class="glass-card" style="margin-top:10px;border-left:3px solid var(--danger);display:none;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--danger);margin-bottom:4px;">Performance Warnings</div>
+        <div id="v2-warnings-list" style="font-family:var(--font-mono);font-size:0.72rem;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
   <!-- COLLAPSIBLE: Trade Details (default open)   -->
   <!-- ═══════════════════════════════════════════ -->
   <div class="collapse-section default-open">

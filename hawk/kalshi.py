@@ -293,7 +293,7 @@ _KALSHI_CATEGORY_MAP = {
     "Science": "culture",
 }
 
-# Crypto-related categories/tickers — Garves territory, Hawk must skip
+# Crypto-related categories/tickers — Garves V2 territory, Hawk must skip
 _CRYPTO_TICKERS = {"KXBTC", "KXETH", "KXSOL", "KXDOGE", "KXADA", "KXLINK"}
 _CRYPTO_KEYWORDS = {"bitcoin", "ethereum", "crypto", "btc", "eth", "solana", "blockchain"}
 
@@ -301,7 +301,7 @@ _CRYPTO_KEYWORDS = {"bitcoin", "ethereum", "crypto", "btc", "eth", "solana", "bl
 def scan_kalshi_markets(cfg) -> list:
     """Scan Kalshi markets directly — returns HawkMarket objects for Hawk's pipeline.
 
-    Filters: open, has volume, not crypto (Garves territory), not esports.
+    Filters: open, has volume, not crypto (Garves V2 territory), not esports.
     Converts Kalshi cents (0-100) to Polymarket-compatible prices (0.00-1.00).
     Prefixes condition_id with 'kalshi_' for exchange routing.
     """
@@ -334,7 +334,7 @@ def scan_kalshi_markets(cfg) -> list:
         if volume < min_volume:
             continue
 
-        # Skip crypto — Garves territory
+        # Skip crypto — Garves V2 territory
         ticker_prefix = ticker.split("-")[0] if "-" in ticker else ticker
         if ticker_prefix in _CRYPTO_TICKERS:
             continue

@@ -161,6 +161,11 @@ class PatternGate:
         if wr < BLOCK_WR and total >= BLOCK_MIN_TRADES:
             log.info("[PATTERN_GATE] BLOCKED %s: %.0f%% WR over %d trades",
                      key, wr * 100, total)
+            try:
+                from bot.self_improvement import SelfImprovementEngine
+                SelfImprovementEngine.log_improvement("pattern_gate", key, wr, 0.0, f"blocked: {wr:.0%} WR over {total} trades")
+            except Exception:
+                pass
             return GateDecision(
                 allowed=False,
                 reason=f"blocked_low_wr_{wr:.0%}_over_{total}",

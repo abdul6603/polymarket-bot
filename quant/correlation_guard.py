@@ -1,4 +1,4 @@
-"""Cross-Trader Correlation Guard — detect when Garves + Odin have correlated positions.
+"""Cross-Trader Correlation Guard — detect when Garves V2 + Odin have correlated positions.
 
 Both traders can bet on the same asset (e.g., BTC up) simultaneously,
 creating 2x risk exposure. This module detects and alerts on correlated positions.
@@ -33,7 +33,7 @@ ASSET_CORRELATIONS = {
     ("solana", "xrp"): 0.60,
 }
 
-# Map Odin symbols to Garves asset names
+# Map Odin symbols to Garves V2 asset names
 ODIN_TO_GARVES = {
     "BTCUSDT": "bitcoin",
     "ETHUSDT": "ethereum",
@@ -62,7 +62,7 @@ class PositionOverlap:
 
 @dataclass
 class CorrelationReport:
-    """Full correlation analysis between Garves and Odin."""
+    """Full correlation analysis between Garves V2 and Odin."""
     timestamp: float = 0.0
     # Positions
     garves_positions: list[dict] = field(default_factory=list)
@@ -86,7 +86,7 @@ class CorrelationReport:
 
 
 def _load_garves_positions() -> list[dict]:
-    """Load current Garves open positions from polymarket_positions.json."""
+    """Load current Garves V2 open positions from polymarket_positions.json."""
     pos_file = DATA_DIR / "polymarket_positions.json"
     if not pos_file.exists():
         return []
@@ -105,7 +105,7 @@ def _load_garves_positions() -> list[dict]:
             if p.get("asset") and p.get("direction")
         ]
     except Exception:
-        log.exception("Failed to load Garves positions")
+        log.exception("Failed to load Garves V2 positions")
         return []
 
 
@@ -159,7 +159,7 @@ def _compute_trade_correlation(
     odin_trades: list[dict],
     window_hours: float = 24.0,
 ) -> float:
-    """Compute directional correlation between Garves and Odin recent trades.
+    """Compute directional correlation between Garves V2 and Odin recent trades.
 
     Looks at overlapping time windows where both traders had positions.
     Returns correlation coefficient (-1 to 1).
@@ -214,7 +214,7 @@ def check_correlation(
     garves_trades: list[dict] | None = None,
     odin_trades: list[dict] | None = None,
 ) -> CorrelationReport:
-    """Run full correlation check between Garves and Odin positions.
+    """Run full correlation check between Garves V2 and Odin positions.
 
     Returns a CorrelationReport with overlaps, risk level, and recommendations.
     """
@@ -310,12 +310,12 @@ def check_correlation(
     if report.overall_risk in ("high", "critical"):
         assets = set(o.garves_asset for o in high_risk_overlaps)
         report.alert_message = (
-            f"HIGH CORRELATION: Garves + Odin both betting {', '.join(assets)} "
+            f"HIGH CORRELATION: Garves V2 + Odin both betting {', '.join(assets)} "
             f"same direction. Combined exposure: ${report.combined_exposure:.0f}"
         )
         for o in high_risk_overlaps:
             report.recommendations.append(
-                f"Reduce {o.garves_asset}: Garves ${o.garves_size_usd:.0f} + "
+                f"Reduce {o.garves_asset}: Garves V2 ${o.garves_size_usd:.0f} + "
                 f"Odin ${o.odin_notional_usd:.0f} = ${o.combined_exposure_usd:.0f} "
                 f"(corr={o.correlation:.0%})"
             )
@@ -325,7 +325,7 @@ def check_correlation(
             f"Monitor closely."
         )
     else:
-        report.alert_message = "No significant position correlation between Garves and Odin."
+        report.alert_message = "No significant position correlation between Garves V2 and Odin."
 
     # Publish to event bus if high risk
     if report.overall_risk in ("high", "critical"):
@@ -365,7 +365,7 @@ def _publish_correlation_alert(report: CorrelationReport):
 
 
 def write_correlation_report(report: CorrelationReport):
-    """Write correlation report to disk for dashboard display."""
+    """Write Garves V2/Odin correlation report to disk for dashboard display."""
     from datetime import datetime
     from zoneinfo import ZoneInfo
     ET = ZoneInfo("America/New_York")

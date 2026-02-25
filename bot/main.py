@@ -28,6 +28,8 @@ from bot.daily_cycle import should_reset, archive_and_reset
 from bot.orderbook_check import check_orderbook_depth
 from bot.macro import get_context as get_macro_context
 from bot.maker_engine import MakerEngine
+from bot.market_quality import MarketQualityScorer
+from bot.performance_monitor import PerformanceMonitor
 from bot.snipe.engine import SnipeEngine
 
 log = logging.getLogger("bot")
@@ -126,6 +128,8 @@ class TradingBot:
         from bot.snipe import clob_book
         clob_book.init(cfg.clob_host)
         self.perf_tracker = PerformanceTracker(cfg, position_tracker=self.tracker)
+        self.quality_scorer = MarketQualityScorer(cfg.clob_host, self.price_cache)
+        self.perf_monitor = PerformanceMonitor()
         self.bankroll_manager = BankrollManager()
         self._shutdown_event = asyncio.Event()
         self._subscribed_tokens: set[str] = set()
@@ -154,7 +158,7 @@ class TradingBot:
             _sys2.path.insert(0, str(Path.home()))
             from agent_brain import AgentBrain
             from llm_client import llm_call as _garves_llm
-            self._brain = AgentBrain("garves", system_prompt="You are Garves, a crypto prediction market trader on Polymarket. You analyze BTC/ETH/SOL up-or-down markets.", task_type="analysis")
+            self._brain = AgentBrain("garves", system_prompt="You are Garves V2, The Directional Sniper. You trade probabilities on Polymarket crypto up-or-down markets. You measure everything, trade less but better, and never assume bad luck.", task_type="analysis")
             self._shared_llm_call = _garves_llm
         except Exception:
             pass
@@ -254,10 +258,10 @@ class TradingBot:
     async def run(self) -> None:
         """Main async loop: discover → evaluate all markets → trade best signals."""
         log.info("=" * 60)
-        log.info("Garves V2 — Multi-Timeframe Trading Bot")
-        log.info("Signal -> Probability -> Edge -> Action -> Confidence -> P&L")
+        log.info("Garves V2 — The Directional Sniper")
+        log.info("Trade probabilities, not narratives. Measure everything. Scale only what is proven.")
         log.info("Assets: BTC, ETH, SOL, XRP | Timeframes: 5m(snipe), 15m, 1h, 4h, weekly")
-        log.info("Ensemble: 11 indicators + Temporal Arb + ATR Filter + Fee Awareness + ConvictionEngine")
+        log.info("Pipeline: Quality Gate -> Signal -> Conviction -> Execute -> Analyze -> Learn")
         log.info("Risk: max %d concurrent, $%.2f cap, 5min cooldown",
                  self.cfg.max_concurrent_positions, self.cfg.max_position_usd)
         log.info("Dry run: %s | Tick: %ds", self.cfg.dry_run, self.cfg.tick_interval_s)
@@ -265,7 +269,7 @@ class TradingBot:
         log.info("Bankroll: $%.2f (PnL: $%+.2f, mult: %.2fx)",
                  bankroll_status["bankroll_usd"], bankroll_status["pnl_usd"],
                  bankroll_status["multiplier"])
-        log.info("V2: emergency_stop, trade_journal, shelby_commands, trade_alerts")
+        log.info("V2: kill_switch, post_trade_analysis, market_quality, self_improvement, edge_monitor")
         if self.snipe_engine.enabled:
             log.info("SnipeEngine: ENABLED (budget=$%.0f/window, delta=%.2f%%, 3-wave pyramid)",
                      self.cfg.snipe_budget_per_window, self.cfg.snipe_delta_threshold)
@@ -440,6 +444,17 @@ class TradingBot:
                         stop_info.get("reason", "unknown"))
             return
 
+        # V2: Performance monitor check (rolling WR, EV capture, kill switch)
+        try:
+            perf_state = self.perf_monitor.check()
+            if perf_state.kill_switch_active:
+                log.critical("[V2 KILL SWITCH] %s — halting all trading", perf_state.kill_switch_reason)
+                return
+            for w in perf_state.warnings:
+                log.warning("[V2 PERF] %s", w)
+        except Exception as e:
+            log.debug("Performance monitor check failed: %s", str(e)[:100])
+
         # V2: Process Shelby commands
         commands = accept_commands()
         for cmd in commands:
@@ -608,6 +623,21 @@ class TradingBot:
             if self._market_trade_count.get(market_id, 0) >= self.MAX_TRADES_PER_MARKET:
                 continue
 
+            # V2: Market quality gate — score before spending time on signals
+            try:
+                # Use first token for orderbook lookup (resolved later if needed)
+                _qtoken = None
+                for t in dm.raw.get("tokens", []):
+                    _qtoken = t.get("token_id", "")
+                    if _qtoken:
+                        break
+                quality = self.quality_scorer.score(market_id, _qtoken, dm.remaining_s, timeframe, asset)
+                if not quality.passed:
+                    log.debug("[QUALITY] %s/%s SKIP: %.0f/60 — %s", asset, timeframe, quality.total_score, quality.reason)
+                    continue
+            except Exception as e:
+                log.debug("Quality scoring failed: %s", str(e)[:80])
+
             # Extract token IDs
             tokens = market.get("tokens", [])
             if len(tokens) < 2:
@@ -681,9 +711,10 @@ class TradingBot:
 
             rr_str = f"R:R={sig.reward_risk_ratio:.2f}" if sig.reward_risk_ratio else "R:R=N/A"
             log.info(
-                "[%s/%s] SIGNAL: %s (prob=%.3f, edge=%.1f%%, conf=%.2f, %s) | Implied: %s | %s",
+                "[%s/%s] SIGNAL: %s (prob=%.3f, edge=%.1f%%, conf=%.2f, %s, Q=%.0f) | Implied: %s | %s",
                 asset.upper(), timeframe, sig.direction.upper(),
                 sig.probability, sig.edge * 100, sig.confidence, rr_str,
+                quality.total_score if quality else 0,
                 f"${implied_up:.3f}" if implied_up else "N/A",
                 dm.question[:50],
             )
@@ -874,9 +905,10 @@ class TradingBot:
                     ob_analysis.estimated_slippage_pct * 100,
                 )
 
-            # Execute with conviction-based sizing
+            # Execute with conviction-based sizing + V2 orderbook intelligence
             order_id = self.executor.place_order(
-                sig, market_id, conviction_size=conviction.position_size_usd
+                sig, market_id, conviction_size=conviction.position_size_usd,
+                ob_analysis=ob_analysis,
             )
             if order_id:
                 trades_this_tick += 1
@@ -931,7 +963,7 @@ class TradingBot:
                         if ob_analysis:
                             ob_tg = f"\nBook: ${ob_analysis.total_liquidity_usd:.0f} liq | ${ob_analysis.spread:.3f} spread | {ob_analysis.estimated_slippage_pct*100:.1f}% slip"
                         msg = (
-                            f"*GARVES TRADE*\n\n"
+                            f"*GARVES V2 — SNIPER TRADE*\n\n"
                             f"*{sig.direction.upper()}* on {asset.upper()}/{timeframe}\n"
                             f"Market: _{dm.question[:80]}_\n"
                             f"Size: *${conviction.position_size_usd:.2f}*\n"

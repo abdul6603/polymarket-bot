@@ -1,4 +1,4 @@
-"""Garves (trading) routes: /api/trades, /api/logs, /api/garves/*"""
+"""Garves V2 — The Directional Sniper: /api/trades, /api/logs, /api/garves/*"""
 from __future__ import annotations
 
 import json
@@ -62,7 +62,7 @@ def api_garves_health_warnings():
         warnings.append({
             "level": "critical",
             "message": f"Consensus floor is {consensus_floor} — requires near-unanimous agreement. "
-                       f"Garves is likely paralyzed. Max safe value is 4.",
+                       f"Garves V2 is likely paralyzed. Max safe value is 4.",
             "action": "Lower consensus_floor in quant_live_params.json",
         })
     elif consensus_floor > 3:
@@ -110,7 +110,7 @@ def api_garves_health_warnings():
         warnings.append({
             "level": "critical",
             "message": f"0 trades in 24h. Last trade was {hours_since_trade:.0f}h ago. "
-                       f"Garves may be paralyzed or market conditions are extreme.",
+                       f"Garves V2 may be paralyzed or market conditions are extreme.",
             "hours_since_trade": round(hours_since_trade, 1),
         })
 
@@ -213,7 +213,7 @@ def api_garves_signal_cycle():
 
 @garves_bp.route("/api/garves/mode")
 def api_garves_mode():
-    """Current Garves trading mode."""
+    """Current Garves V2 trading mode."""
     if MODE_FILE.exists():
         try:
             data = json.loads(MODE_FILE.read_text())
@@ -227,7 +227,7 @@ def api_garves_mode():
 
 @garves_bp.route("/api/garves/toggle-mode", methods=["POST"])
 def api_garves_toggle_mode():
-    """Toggle Garves between live and paper trading."""
+    """Toggle Garves V2 between live and paper trading."""
     from datetime import datetime as dt, timezone as tz
     current_dry = True
     if MODE_FILE.exists():
@@ -853,7 +853,7 @@ def api_garves_derivatives():
 
 @garves_bp.route("/api/garves/broadcasts")
 def api_garves_broadcasts():
-    """Process and acknowledge broadcasts for Garves."""
+    """Process and acknowledge broadcasts for Garves V2."""
     try:
         # Path already added via bot.shared.ensure_path
         from core.broadcast import get_unread_broadcasts, acknowledge_broadcast
@@ -870,7 +870,7 @@ def api_garves_broadcasts():
 
 @garves_bp.route("/api/garves/trade-event", methods=["POST"])
 def api_garves_trade_event():
-    """Webhook for Garves bot to push trade events via Socket.IO."""
+    """Webhook for Garves V2 bot to push trade events via Socket.IO."""
     try:
         data = request.get_json(force=True) or {}
         event_type = data.get("event", "")
@@ -953,7 +953,7 @@ def _fetch_usdc_balance(wallet: str) -> float:
 
 
 def _fetch_cash_from_pro() -> float | None:
-    """Read USDC cash balance from Pro M3 via SSH (Garves bot writes this file)."""
+    """Read USDC cash balance from Pro M3 via SSH (Garves V2 bot writes this file)."""
     import subprocess
     try:
         result = subprocess.run(
@@ -975,7 +975,7 @@ def _fetch_position_value(wallet: str) -> float:
     """Get open position value from Polymarket data API."""
     import urllib.request
     url = f"https://data-api.polymarket.com/value?user={wallet.lower()}"
-    req = urllib.request.Request(url, headers={"User-Agent": "Garves/1.0"})
+    req = urllib.request.Request(url, headers={"User-Agent": "GarvesV2/2.0"})
     with urllib.request.urlopen(req, timeout=10) as resp:
         data = json.loads(resp.read().decode())
     if isinstance(data, list) and data:
@@ -988,7 +988,7 @@ def api_garves_balance():
     """Live Polymarket portfolio balance.
 
     Priority chain:
-    1. Fresh cache from Garves bot on Pro (< 5 min old)
+    1. Fresh cache from Garves V2 bot on Pro (< 5 min old)
     2. Public data-api for position value (always works, no VPN)
        + CLOB API for USDC cash (needs VPN, best-effort)
     3. Stale cache as last resort
@@ -1200,7 +1200,7 @@ def api_garves_positions():
 
     try:
         import urllib.request
-        headers = {"User-Agent": "Garves/1.0"}
+        headers = {"User-Agent": "GarvesV2/2.0"}
 
         # ── 1. Fetch current positions (open holdings) ──
         pos_url = f"https://data-api.polymarket.com/positions?user={wallet.lower()}"
@@ -1634,7 +1634,7 @@ def api_garves_binance_status():
 def api_garves_clob_status():
     """Connection status for Polymarket CLOB WebSocket feed.
 
-    Reads from a shared status file written by Garves (separate process).
+    Reads from a shared status file written by Garves V2 (separate process).
     Recalculates time-sensitive fields (silence_s, uptime_s) from timestamps.
     """
     try:
@@ -1681,5 +1681,106 @@ def api_garves_snipe():
             return jsonify({"enabled": False, "detail": "No snipe status file"})
         data = json.loads(SNIPE_STATUS_FILE.read_text())
         return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+# ── Garves V2 Intelligence Endpoints ──────────────────────────────
+
+@garves_bp.route("/api/garves/v2-metrics")
+def api_garves_v2_metrics():
+    """Garves V2 core performance metrics + kill switch status."""
+    try:
+        from bot.performance_monitor import PerformanceMonitor
+        from bot.self_improvement import SelfImprovementEngine
+        pm = PerformanceMonitor()
+        perf = pm.check()
+        si = SelfImprovementEngine()
+        metrics = si.calculate_metrics()
+        return jsonify({
+            "kill_switch_active": perf.kill_switch_active,
+            "kill_switch_reason": perf.kill_switch_reason,
+            "rolling_wr_30": perf.rolling_wr_30,
+            "rolling_wr_50": perf.rolling_wr_50,
+            "ev_capture_pct": perf.ev_capture_pct,
+            "avg_slippage_pct": perf.avg_slippage_pct,
+            "drawdown_pct": perf.current_drawdown_pct,
+            "model_drift": perf.model_drift_score,
+            "warnings": perf.warnings,
+            "total_resolved": perf.total_resolved,
+            "core_metrics": {
+                "wr_20": metrics.wr_20,
+                "wr_50": metrics.wr_50,
+                "wr_100": metrics.wr_100,
+                "ev_capture_pct": metrics.ev_capture_pct,
+                "avg_slippage_pct": metrics.avg_slippage_pct,
+                "total_slippage_cost": metrics.total_slippage_cost,
+                "current_drawdown_pct": metrics.current_drawdown_pct,
+                "max_drawdown_pct": metrics.max_drawdown_pct,
+                "total_pnl": metrics.total_pnl,
+            },
+            "improvement_suggestions": si.suggest_improvements(metrics),
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@garves_bp.route("/api/garves/quality-scores")
+def api_garves_quality_scores():
+    """Garves V2 market quality scorer cache stats."""
+    try:
+        cache_file = DATA_DIR / "quality_cache.json"
+        if cache_file.exists():
+            data = json.loads(cache_file.read_text())
+            return jsonify(data)
+        return jsonify({"cached": 0, "active": 0, "passed": 0, "quality_floor": 25})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@garves_bp.route("/api/garves/post-trade-analysis")
+def api_garves_post_trade():
+    """Garves V2 post-trade analysis summary."""
+    try:
+        from bot.post_trade_analyzer import PostTradeAnalyzer
+        summary = PostTradeAnalyzer.get_analysis_summary(limit=20)
+        return jsonify(summary)
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@garves_bp.route("/api/garves/auto-rules")
+def api_garves_auto_rules():
+    """Garves V2 active auto-generated trading rules."""
+    try:
+        from bot.post_trade_analyzer import PostTradeAnalyzer
+        rules = PostTradeAnalyzer.get_active_rules()
+        return jsonify({"active_rules": rules, "count": len(rules)})
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@garves_bp.route("/api/garves/diagnostics")
+def api_garves_diagnostics():
+    """Garves V2 performance diagnostics (6-point check)."""
+    try:
+        from bot.performance_monitor import PerformanceMonitor
+        pm = PerformanceMonitor()
+        diag = pm.run_diagnostics()
+        return jsonify(diag)
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@garves_bp.route("/api/garves/edge-report")
+def api_garves_edge_report():
+    """Garves V2 edge decay + competitive check."""
+    try:
+        from bot.edge_monitor import EdgeMonitor
+        em = EdgeMonitor()
+        return jsonify({
+            "edge_decay": em.check_edge_decay(),
+            "competitive_check": em.weekly_competitive_check(),
+        })
     except Exception as e:
         return jsonify({"error": str(e)[:200]}), 500

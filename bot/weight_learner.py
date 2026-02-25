@@ -266,18 +266,33 @@ def get_dynamic_weights(base_weights: dict) -> dict:
                 "Weight DISABLED: %s cw_accuracy=%.1f%% (%d samples) — anti-signal, weight zeroed",
                 name, accuracy * 100, total,
             )
+            try:
+                from bot.self_improvement import SelfImprovementEngine
+                SelfImprovementEngine.log_improvement("weight_learner", name, base_w, 0.0, f"anti-signal {accuracy:.0%} accuracy over {total} samples")
+            except Exception:
+                pass
         elif total >= 30 and accuracy < 0.45:
             new_w = base_w * 0.40
             log.info(
                 "Weight reduced: %s cw_accuracy=%.1f%% (%d samples) -> %.2f -> %.2f (-60%%)",
                 name, accuracy * 100, total, base_w, new_w,
             )
+            try:
+                from bot.self_improvement import SelfImprovementEngine
+                SelfImprovementEngine.log_improvement("weight_learner", name, base_w, new_w, f"low accuracy {accuracy:.0%} over {total} samples")
+            except Exception:
+                pass
         elif total >= 30 and accuracy > 0.55:
             new_w = base_w * 1.30
             log.info(
                 "Weight boosted: %s cw_accuracy=%.1f%% (%d samples) -> %.2f -> %.2f (+30%%)",
                 name, accuracy * 100, total, base_w, new_w,
             )
+            try:
+                from bot.self_improvement import SelfImprovementEngine
+                SelfImprovementEngine.log_improvement("weight_learner", name, base_w, new_w, f"high accuracy {accuracy:.0%} over {total} samples")
+            except Exception:
+                pass
 
         max_w = base_w * 2.5
         new_w = max(0.0, min(max_w, new_w))
