@@ -31,6 +31,12 @@
   </div>
   <div class="health-inline" id="odin-health-result"></div>
 
+  <!-- WARNING BANNER — conviction=0, consecutive shorts, loss streaks -->
+  <div id="odin-warning-banner" style="display:none;margin-bottom:12px;padding:10px 16px;border-radius:8px;background:rgba(239,68,68,0.15);border:2px solid var(--error);color:var(--error);font-weight:700;font-size:0.82rem;line-height:1.5;">
+    <span style="font-size:1rem;margin-right:6px;">&#9888;</span>
+    <span id="odin-warning-text"></span>
+  </div>
+
   <!-- B2: OmniCoin Analyzer Results -->
   <div id="odin-omnicoin-section" class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-odin);display:none;">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
@@ -433,6 +439,9 @@ function odinRefresh() {
       recEl.style.border = eRec ? '1px solid ' + (recColors[eRec] || 'transparent') : 'none';
     }
 
+    // Warning banner — conviction=0, consecutive losses, consecutive shorts during uptrend
+    odinCheckWarnings(d);
+
     // WebSocket Status + Pending Orders (Phase 3)
     var ws = d.ws_status || {};
     var wsConnected = ws.connected || false;
@@ -757,6 +766,54 @@ function odinRefresh() {
       alertEl.style.color = b.robotox_alert ? 'var(--error)' : 'var(--success)';
     }
   }).catch(function(){});
+}
+
+function odinCheckWarnings(d) {
+  var banner = document.getElementById('odin-warning-banner');
+  var textEl = document.getElementById('odin-warning-text');
+  if (!banner || !textEl) return;
+  var warnings = [];
+
+  // Check conviction state
+  var conv = d.conviction || {};
+  if (conv.active === false || conv.total_score === 0) {
+    warnings.push('Conviction engine inactive (score=0) — trades unfiltered');
+  }
+
+  // Check consecutive losses
+  var consecLosses = d.consecutive_losses || 0;
+  if (consecLosses >= 4) {
+    warnings.push(consecLosses + ' consecutive losses — circuit breaker may engage');
+  }
+
+  // Fetch recent trades to detect consecutive shorts during uptrend
+  fetch('/api/odin/trades').then(function(r) { return r.json(); }).then(function(trades) {
+    if (trades.length >= 4) {
+      var last4 = trades.slice(-4);
+      var allShorts = last4.every(function(t) { return t.side === 'SHORT'; });
+      if (allShorts) {
+        // Check if regime suggests uptrend
+        var regimeScore = d.regime ? d.regime.global_score : (d.global_score || 50);
+        if (regimeScore > 50) {
+          warnings.push('4+ consecutive SHORTs while regime score=' + regimeScore + ' (bullish) — possible directional bias');
+        } else {
+          warnings.push('4+ consecutive SHORTs — check regime alignment');
+        }
+      }
+    }
+    odinShowWarnings(banner, textEl, warnings);
+  }).catch(function() {
+    odinShowWarnings(banner, textEl, warnings);
+  });
+}
+
+function odinShowWarnings(banner, textEl, warnings) {
+  if (warnings.length > 0) {
+    textEl.innerHTML = warnings.join(' &nbsp;|&nbsp; ');
+    banner.style.display = 'block';
+  } else {
+    banner.style.display = 'none';
+  }
 }
 
 function odinSetVal(id, val) {
