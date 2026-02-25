@@ -351,15 +351,6 @@ class MakerEngine:
         now = time.time()
 
         for q in self._active_quotes:
-            # Stale quote check: cancel if older than 30s
-            if now - q.placed_at > 30:
-                if self.client and not self.cfg.dry_run:
-                    try:
-                        self.client.cancel(q.order_id)
-                    except Exception:
-                        pass
-                continue  # drop from active
-
             if self.cfg.dry_run:
                 # Dry-run: simulate random fills (~20% chance per tick)
                 if random.random() < 0.20:
@@ -374,6 +365,14 @@ class MakerEngine:
                 else:
                     still_active.append(q)
                 continue
+
+            # Stale quote check (live only): cancel if older than 30s
+            if now - q.placed_at > 30:
+                try:
+                    self.client.cancel(q.order_id)
+                except Exception:
+                    pass
+                continue  # drop from active
 
             try:
                 order = self.client.get_order(q.order_id)
