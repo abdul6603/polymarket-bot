@@ -810,6 +810,11 @@ class Backtester:
             if len(trades) < 3:
                 continue
 
+            # Whale's leaderboard ROI — used as PnL proxy when per-trade PnL unavailable
+            whale_pnl = float(w.get("total_pnl", 0))
+            whale_vol = float(w.get("total_volume", 0))
+            whale_roi = whale_pnl / whale_vol if whale_vol > 0 else 0
+
             sim_trades = []
             daily_exposure: dict[str, float] = defaultdict(float)
 
@@ -830,13 +835,14 @@ class Backtester:
                     whale_cost = size
                     pnl_scaled = pnl * (copy_size / whale_cost) if whale_cost > 0 else 0
                 else:
-                    pnl_scaled = 0
+                    # Estimate PnL from whale's aggregate ROI
+                    pnl_scaled = copy_size * whale_roi if whale_roi != 0 else 0
 
                 sim_trades.append({
                     "wallet": wallet,
                     "size": copy_size,
                     "price": price,
-                    "pnl": round(pnl_scaled, 2),
+                    "pnl": round(pnl_scaled, 4),
                     "won": pnl_scaled > 0,
                 })
 
