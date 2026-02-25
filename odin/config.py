@@ -101,6 +101,8 @@ class OdinConfig:
     llm_temperature: float = float(os.getenv("ODIN_LLM_TEMPERATURE", "0.15"))
     reflection_every_n: int = int(os.getenv("ODIN_REFLECT_EVERY_N", "5"))
     max_active_lessons: int = int(os.getenv("ODIN_MAX_LESSONS", "20"))
+    llm_max_risk_usd: float = float(os.getenv("ODIN_LLM_MAX_RISK", "50"))
+    llm_min_risk_usd: float = float(os.getenv("ODIN_LLM_MIN_RISK", "5"))
     screen_regime_threshold: float = float(os.getenv("ODIN_SCREEN_REGIME_THRESH", "45"))
     screen_volume_mult: float = float(os.getenv("ODIN_SCREEN_VOL_MULT", "2.0"))
     screen_move_pct: float = float(os.getenv("ODIN_SCREEN_MOVE_PCT", "1.5"))

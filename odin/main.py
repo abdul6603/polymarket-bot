@@ -702,10 +702,13 @@ class OdinBot:
         )
         tier = coin_tier(symbol)
         tier_cap = notional_cap_for_tier(tier, self._cfg)
+        # Use LLM-decided risk if available, otherwise config default
+        trade_risk = trade_signal.llm_risk_usd if trade_signal.llm_risk_usd > 0 \
+            else self._cfg.risk_per_trade_usd
         guard_decision = self._portfolio_guard.check_trade(
             symbol=symbol,
             direction=direction,
-            risk_usd=self._cfg.risk_per_trade_usd,
+            risk_usd=trade_risk,
             notional_usd=tier_cap,
         )
         if not guard_decision.allowed:
@@ -732,7 +735,9 @@ class OdinBot:
         )
         edge_scalar = self._edge_tracker.get_risk_scalar()
 
-        # ── Position Sizing (KEPT UNCHANGED) ──
+        # ── Position Sizing (LLM-driven risk) ──
+        # Priority: PortfolioGuard cap > LLM risk > config default
+        effective_risk = guard_decision.adjusted_risk_usd or trade_risk
         size = self._sizer.calculate(
             balance=balance,
             entry_price=current_price,
@@ -744,7 +749,7 @@ class OdinBot:
             structure_zones=structure_zones,
             direction=direction,
             notional_cap_override=guard_decision.notional_cap or tier_cap,
-            risk_override=guard_decision.adjusted_risk_usd or 0.0,
+            risk_override=effective_risk,
             volatility_scalar=vol_scalar,
             drawdown_scalar=dd_scalar,
             edge_scalar=edge_scalar,

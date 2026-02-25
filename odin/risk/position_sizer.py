@@ -1,12 +1,12 @@
 """Structure-based position sizing with OB memory integration.
 
-Sizing logic (Jordan's formula):
+Sizing logic (V7 — LLM-driven risk):
   Step 1: Find nearest structure zone behind entry (OB/FVG/S&R)
   Step 2: Place SL behind structure + 0.1-0.2% buffer
   Step 3: Clamp SL distance: 2-4% genuine trades, 0.5-1% risky trades
-  Step 4: Risk = $10 per trade (5% of $200, scaled by conviction 0.25x-1.0x)
+  Step 4: Risk = LLM-decided ($5-50, based on conviction + setup quality)
   Step 5: Position size = risk / SL_distance
-  Step 6: Cap notional (tiered: $200→$2K, $300→$3K, $1K→$10K)
+  Step 6: Cap notional (tiered: $200→$2K, $500→$5K, $1K→$10K)
   Step 7: Leverage = notional / allocated_margin (cross margin, auto-calc)
 """
 from __future__ import annotations
@@ -22,18 +22,18 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 # Hard limits
-MIN_RISK_USD = 2.00           # Don't trade below $2 risk
+MIN_RISK_USD = 3.00           # Don't trade below $3 risk
 MAX_LEVERAGE = 50             # Exchange hard cap
-DEFAULT_RISK_USD = 10.0       # Target risk per trade (5% of $200)
+DEFAULT_RISK_USD = 25.0       # Default risk per trade (LLM overrides this)
 
 # ── Dynamic Max Notional Tiers (10x capital) ──
-# $200 → $2K, $300 → $3K, $1K → $10K per position
 _NOTIONAL_TIERS = [
     (1000, 10000),
+    (500, 5000),
     (300, 3000),
     (200, 2000),
 ]
-_DEFAULT_MAX_NOTIONAL = 2000
+_DEFAULT_MAX_NOTIONAL = 5000
 
 
 def get_max_notional(balance: float) -> float:
@@ -171,13 +171,13 @@ class PositionSizer:
         else:
             final_sl = round(entry_price + sl_dist_abs, 2)
 
-        # ── Step 3: Calculate risk (target $150-180, scaled) ──
+        # ── Step 3: Calculate risk (LLM-driven or config default) ──
         if risk_override > 0:
-            # PortfolioGuard already scaled the risk — use it as ceiling
-            base_risk = min(risk_override, self._risk_usd)
-            adjustments.append(f"portfolio_risk_cap_${risk_override:.0f}")
+            # LLM brain or PortfolioGuard set the risk — use it directly
+            base_risk = risk_override
+            adjustments.append(f"llm_risk_${risk_override:.0f}")
         else:
-            # Base risk: min($150, 3.25% of balance)
+            # Fallback: min(config_risk, pct of balance)
             pct_risk = balance * self._risk_pct / 100
             base_risk = min(self._risk_usd, pct_risk)
             if base_risk < self._risk_usd:

@@ -43,6 +43,7 @@ class TradeSignal:
     conviction_score: float = 0.0                          # 0-100
     conviction_breakdown: dict = field(default_factory=dict)
     risk_multiplier: float = 1.0                           # 0.0-1.0
+    llm_risk_usd: float = 0.0                              # LLM-decided risk (0 = use default)
     decision_id: str = ""                                  # journal tracking ID
 
     # Exit management context

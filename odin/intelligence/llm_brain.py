@@ -27,7 +27,7 @@ log = logging.getLogger("odin.llm_brain")
 
 SYSTEM_PROMPT = """\
 You are ODIN — the All-Seeing Regime God. Professional crypto futures swing \
-trader on Hyperliquid, $200 capital.
+trader on Hyperliquid.
 
 ## Identity
 - Smart Money Concepts: structure (BOS, CHOCH), order blocks, FVGs, liquidity
@@ -53,6 +53,11 @@ A 7% bounce during tariff fears could be a dead cat bounce. News overrides techn
 5. CONFLUENCE: 2/3 macro+regime+structure agree = tradeable. 1/3 = flat.
 6. ENTRY: Nearest OB/FVG? Logical SL below structure?
 7. CONVICTION: 0-100 honest. 70+ = high. 50-69 = moderate. <50 = don't trade.
+8. RISK SIZING: Decide risk_usd ($5-$50) based on conviction + setup quality:
+   - A+ setup (80+ conviction, 3/3 alignment, clean structure): $35-50
+   - Good setup (65-79, 2/3 alignment): $20-35
+   - Moderate setup (50-64, mixed signals): $5-15
+   - Every trade is different. Size to match your confidence. No fixed bets.
 
 ## News Rules
 - If negative macro news (tariffs, rate hikes, sanctions): reduce conviction by 15-25 points
@@ -285,6 +290,7 @@ class OdinBrain:
         tp2 = data.get("take_profit_2", 0)
         entry = data.get("entry_price", 0) or data.get("entry", 0) or current_price
         rr = data.get("risk_reward", 0)
+        llm_risk = data.get("risk_usd", 0) or data.get("risk_amount", 0) or data.get("position_size_usd", 0)
         reasoning = data.get("reasoning", [])
         # If reasoning is a dict (structured), flatten to list of strings
         if isinstance(reasoning, dict):
@@ -349,6 +355,13 @@ class OdinBrain:
             log.info("[LLM_BRAIN] %s R:R=%.1f too low", symbol, rr)
             return None
 
+        # Clamp LLM risk to valid range ($5-$50)
+        if isinstance(llm_risk, (int, float)) and llm_risk > 0:
+            llm_risk = float(min(max(llm_risk, 5), 50))
+        else:
+            # Default: scale from conviction ($5 at 50, $50 at 100)
+            llm_risk = max(5, min(50, conviction * 0.5))
+
         # Compute ATR from mtf if available (not passed directly, use entry context)
         atr_value = abs(entry - stop_loss)  # Rough proxy
 
@@ -384,13 +397,14 @@ class OdinBrain:
                 "volume_confirms": data.get("volume_confirms", False),
             },
             risk_multiplier=conviction / 100.0,
+            llm_risk_usd=llm_risk,
             atr=atr_value,
-            entry_reason=f"LLM Brain: {action} conv={conviction}",
+            entry_reason=f"LLM Brain: {action} conv={conviction} risk=${llm_risk:.0f}",
             reasons=reasoning if isinstance(reasoning, list) else [str(reasoning)],
         )
 
-        log.info("[LLM_BRAIN] %s → %s conv=%d SL=$%.2f TP=$%.2f R:R=%.1f",
-                 symbol, action, conviction, stop_loss, tp1, rr)
+        log.info("[LLM_BRAIN] %s → %s conv=%d risk=$%.0f SL=$%.2f TP=$%.2f R:R=%.1f",
+                 symbol, action, conviction, llm_risk, stop_loss, tp1, rr)
         return signal
 
     @property
