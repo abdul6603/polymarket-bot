@@ -190,6 +190,14 @@ class OdinBrain:
         log.info("[LLM_BRAIN] %s raw response (%d chars): %.200s...",
                  symbol, len(raw), raw)
 
+        # Write full response for debugging
+        try:
+            from pathlib import Path
+            debug_file = Path(self._cfg.data_dir) / "llm_last_response.json"
+            debug_file.write_text(raw)
+        except Exception:
+            pass
+
         # Parse and validate
         signal = self._parse_decision(raw, symbol, current_price, macro)
         if signal:
