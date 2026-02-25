@@ -7880,11 +7880,26 @@ async function loadHawkLiveMonitor() {
       html += '<span style="font-size:0.65rem;color:var(--text-muted);">' + (p.category || '').toUpperCase() + '</span>';
       html += '</div>';
       html += '<div style="font-weight:600;margin-bottom:4px;line-height:1.3;">' + (p.question || '').substring(0, 80) + '</div>';
-      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:6px;">';
+      var hasCurPrice = p.current_price !== null && p.current_price !== undefined && p.current_price > 0;
+      var pnlVal = p.pnl || 0;
+      var pnlPctVal = p.pnl_pct || 0;
+      var priceColor = pnlVal >= 0 ? 'var(--success)' : 'var(--error)';
+
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:6px;">';
       html += '<div><span style="color:var(--text-muted);font-size:0.65rem;">Direction</span><br><span style="color:' + (p.direction === 'yes' ? 'var(--success)' : 'var(--error)') + ';font-weight:600;">' + (p.direction || '').toUpperCase() + '</span></div>';
       html += '<div><span style="color:var(--text-muted);font-size:0.65rem;">Entry</span><br><span style="font-weight:600;">$' + (p.entry_price || 0).toFixed(2) + '</span></div>';
+      if (hasCurPrice) {
+        html += '<div><span style="color:var(--text-muted);font-size:0.65rem;">Now</span><br><span style="font-weight:600;color:' + priceColor + ';">$' + p.current_price.toFixed(2) + '</span></div>';
+      } else {
+        html += '<div><span style="color:var(--text-muted);font-size:0.65rem;">Now</span><br><span style="color:var(--text-muted);">--</span></div>';
+      }
       html += '<div><span style="color:var(--text-muted);font-size:0.65rem;">Size</span><br><span style="font-weight:600;">$' + (p.size_usd || 0).toFixed(2) + '</span></div>';
       html += '<div><span style="color:var(--text-muted);font-size:0.65rem;">Edge</span><br><span style="font-weight:600;color:' + edgeColor + ';">' + (p.edge || 0).toFixed(1) + '%</span></div>';
+      if (hasCurPrice) {
+        html += '<div><span style="color:var(--text-muted);font-size:0.65rem;">PnL</span><br><span style="font-weight:700;color:' + priceColor + ';">' + (pnlVal >= 0 ? '+' : '') + '$' + pnlVal.toFixed(2) + ' (' + (pnlPctVal >= 0 ? '+' : '') + pnlPctVal.toFixed(1) + '%)</span></div>';
+      } else {
+        html += '<div><span style="color:var(--text-muted);font-size:0.65rem;">PnL</span><br><span style="color:var(--text-muted);">--</span></div>';
+      }
       html += '</div>';
 
       if (isLive && p.game) {

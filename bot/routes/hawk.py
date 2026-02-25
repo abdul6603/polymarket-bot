@@ -1348,6 +1348,17 @@ def api_hawk_live_positions():
         tracker = HawkTracker()
         live_games = get_live_games()
 
+        # Load on-chain data for current prices
+        onchain_prices = {}
+        onchain_file = DATA_DIR / "hawk_positions_onchain.json"
+        if onchain_file.exists():
+            try:
+                oc = json.loads(onchain_file.read_text())
+                for p in oc.get("positions", []):
+                    onchain_prices[p.get("condition_id", "")] = p.get("cur_price", 0)
+            except Exception:
+                pass
+
         positions = []
         for pos in tracker.open_positions:
             if pos.get("resolved"):
@@ -1374,20 +1385,26 @@ def api_hawk_live_positions():
                 elif has_versus:
                     conf = 35  # Only one team in a "X vs Y" question
                 else:
-                    conf = 75  # Single-team question (spread)
+                    conf = 85  # Single-team question (spread)
                 if conf > match_confidence:
                     match_confidence = conf
                     game_match = g
 
             entry_price = pos.get("entry_price", 0.5)
+            cur_price = onchain_prices.get(cid, pos.get("cur_price", 0))
             size_usd = pos.get("size_usd", 0)
             shares = size_usd / entry_price if entry_price > 0 else 0
+            pnl = round((cur_price - entry_price) * shares, 2) if cur_price else 0
+            pnl_pct = round((cur_price / entry_price - 1) * 100, 1) if cur_price and entry_price else 0
 
             p_data = {
                 "condition_id": cid[:12],
                 "question": pos.get("question", "")[:120],
                 "direction": pos.get("direction", ""),
                 "entry_price": round(entry_price, 3),
+                "current_price": round(cur_price, 3) if cur_price else None,
+                "pnl": pnl,
+                "pnl_pct": pnl_pct,
                 "size_usd": round(size_usd, 2),
                 "shares": round(shares, 1),
                 "category": pos.get("category", ""),
