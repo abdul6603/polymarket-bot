@@ -21,17 +21,42 @@ function renderLossCapBar(containerId, dailyPnl, cap, period) {
     + '<div style="font-size:0.56rem;margin-top:1px;color:' + color + ';font-weight:600;">' + label + '</div>';
 }
 
+var TAB_ALIASES = {'performance': 'traders'};
+
 function switchTab(tab) {
-  currentTab = tab;
+  var contentTab = TAB_ALIASES[tab] || tab;
+  currentTab = contentTab;
   var tabs = document.querySelectorAll('.tab-content');
   for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
   var btns = document.querySelectorAll('.sidebar-btn');
   for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
-  var el = document.getElementById('tab-' + tab);
+  var el = document.getElementById('tab-' + contentTab);
   if (el) el.classList.add('active');
   var btn = document.querySelector('.sidebar-btn[data-tab="' + tab + '"]');
   if (btn) btn.classList.add('active');
   refresh();
+  if (tab === 'performance' && typeof tradersSwitchSub === 'function') {
+    setTimeout(function() { tradersSwitchSub('performance'); }, 250);
+  }
+}
+
+function sidebarSearch(q) {
+  q = (q || '').toLowerCase().trim();
+  var btns = document.querySelectorAll('.sidebar-scroll .sidebar-btn');
+  var labels = document.querySelectorAll('.sidebar-scroll .sidebar-section-label');
+  var dividers = document.querySelectorAll('.sidebar-scroll .sidebar-divider');
+  if (!q) {
+    for (var i = 0; i < btns.length; i++) btns[i].style.display = '';
+    for (var i = 0; i < labels.length; i++) labels[i].style.display = '';
+    for (var i = 0; i < dividers.length; i++) dividers[i].style.display = '';
+    return;
+  }
+  for (var i = 0; i < btns.length; i++) {
+    var text = btns[i].textContent.toLowerCase();
+    btns[i].style.display = text.indexOf(q) !== -1 ? '' : 'none';
+  }
+  for (var i = 0; i < labels.length; i++) labels[i].style.display = 'none';
+  for (var i = 0; i < dividers.length; i++) dividers[i].style.display = 'none';
 }
 
 function wrColor(wr) { return wr >= 50 ? 'var(--success)' : wr >= 40 ? 'var(--warning)' : 'var(--error)'; }

@@ -12,74 +12,96 @@
 </head>
 <body>
 <nav class="sidebar">
-  <div class="sidebar-brand">CC</div>
-  <div class="sidebar-divider"></div>
-  <div class="sidebar-section-label">COMMAND</div>
-  <button class="sidebar-btn active" data-tab="overview" onclick="switchTab('overview')" title="Overview">
-    <span class="sidebar-icon" style="background:var(--text-secondary);">OV</span><span class="sidebar-label">Overview</span>
-  </button>
-  <button class="sidebar-btn" data-tab="system" onclick="switchTab('system')" title="System">
-    <span class="sidebar-icon" style="background:#aaaaaa;">SY</span><span class="sidebar-label">System</span>
-  </button>
-  <div class="sidebar-divider"></div>
-  <div class="sidebar-section-label">EDGE</div>
-  <button class="sidebar-btn" data-tab="pnl" onclick="switchTab('pnl')" title="P&L">
-    <span class="sidebar-icon" style="background:#10B981;">PL</span><span class="sidebar-label">P&L</span>
-  </button>
-  <button class="sidebar-btn" data-tab="traders" onclick="switchTab('traders')" title="Traders">
-    <span class="sidebar-icon" style="background:#10B981;">TR</span><span class="sidebar-label">Traders</span>
-  </button>
-  <div class="sidebar-divider"></div>
-  <div class="sidebar-section-label">TRADING</div>
-  <button class="sidebar-btn" data-tab="garves-live" onclick="switchTab('garves-live')" title="Garves">
-    <span class="sidebar-icon" style="background:var(--agent-garves);">GA</span><span class="sidebar-label">Garves $</span>
-  </button>
-  <button class="sidebar-btn" data-tab="hawk" onclick="switchTab('hawk')" title="Hawk">
-    <span class="sidebar-icon" style="background:var(--agent-hawk);">HK</span><span class="sidebar-label">Hawk $</span>
-  </button>
-  <button class="sidebar-btn" data-tab="quant" onclick="switchTab('quant')" title="Quant">
-    <span class="sidebar-icon" style="background:var(--agent-quant);">QT</span><span class="sidebar-label">Quant</span>
-  </button>
-  <button class="sidebar-btn" data-tab="odin" onclick="switchTab('odin')" title="Odin">
-    <span class="sidebar-icon" style="background:var(--agent-odin);">OD</span><span class="sidebar-label">Odin $</span>
-  </button>
-  <button class="sidebar-btn" data-tab="oracle" onclick="switchTab('oracle')" title="Oracle">
-    <span class="sidebar-icon" style="background:var(--agent-oracle);">OR</span><span class="sidebar-label">Oracle $</span>
-  </button>
-  <button class="sidebar-btn" data-tab="discord" onclick="switchTab('discord')" title="Discord Intel">
-    <span class="sidebar-icon" style="background:#5865F2;">DI</span><span class="sidebar-label">Discord</span>
-  </button>
-  <div class="sidebar-divider"></div>
-  <div class="sidebar-section-label">CONTENT</div>
-  <button class="sidebar-btn" data-tab="soren" onclick="switchTab('soren')" title="Soren">
-    <span class="sidebar-icon" style="background:var(--agent-soren);">SO</span><span class="sidebar-label">Soren</span>
-  </button>
-  <button class="sidebar-btn" data-tab="lisa" onclick="switchTab('lisa')" title="Lisa">
-    <span class="sidebar-icon" style="background:var(--agent-lisa);">LI</span><span class="sidebar-label">Lisa</span>
-  </button>
-  <div class="sidebar-divider"></div>
-  <div class="sidebar-section-label">OPS</div>
-  <button class="sidebar-btn" data-tab="shelby" onclick="switchTab('shelby')" title="Shelby">
-    <span class="sidebar-icon" style="background:var(--agent-shelby);">SH</span><span class="sidebar-label">Shelby</span>
-  </button>
-  <button class="sidebar-btn" data-tab="atlas" onclick="switchTab('atlas')" title="Atlas">
-    <span class="sidebar-icon" style="background:var(--agent-atlas);">AT</span><span class="sidebar-label">Atlas</span>
-  </button>
-  <button class="sidebar-btn" data-tab="sentinel" onclick="switchTab('sentinel')" title="Robotox">
-    <span class="sidebar-icon" style="background:var(--agent-sentinel);">RO</span><span class="sidebar-label">Robotox</span>
-  </button>
-  <button class="sidebar-btn" data-tab="thor" onclick="switchTab('thor')" title="Thor">
-    <span class="sidebar-icon" style="background:var(--agent-thor);">TH</span><span class="sidebar-label">Thor</span>
-  </button>
-  <button class="sidebar-btn" data-tab="viper" onclick="switchTab('viper')" title="Viper">
-    <span class="sidebar-icon" style="background:var(--agent-viper);">VP</span><span class="sidebar-label">Viper</span>
-  </button>
-  <div class="sidebar-divider"></div>
-  <div class="sidebar-section-label">INFRA</div>
-  <button class="sidebar-btn" data-tab="intelligence" onclick="switchTab('intelligence')" title="Intelligence">
-    <span class="sidebar-icon" style="background:#9B59B6;">AI</span><span class="sidebar-label">Intelligence</span>
-  </button>
-  <div class="sidebar-spacer"></div>
+  <div class="sidebar-header">
+    <div class="sidebar-brand-text">Command Center</div>
+    <div class="sidebar-online"><span class="dot-online"></span> <span id="sidebar-agents-online">15</span> Agents Online</div>
+  </div>
+
+  <div class="sidebar-scroll">
+    <div class="sidebar-section-label">COMMAND</div>
+    <button class="sidebar-btn active" data-tab="overview" style="--accent:var(--text-secondary);" onclick="switchTab('overview')">
+      <span class="sb-accent"></span>Overview
+    </button>
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section-label">TRADERS</div>
+    <button class="sidebar-btn sidebar-btn-traders" data-tab="traders" style="--accent:#10B981;" onclick="switchTab('traders')">
+      <span class="sb-accent"></span>Traders
+    </button>
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section-label">EDGE</div>
+    <button class="sidebar-btn" data-tab="pnl" style="--accent:#10B981;" onclick="switchTab('pnl')">
+      <span class="sb-accent"></span>P&L Overview
+    </button>
+    <button class="sidebar-btn" data-tab="performance" style="--accent:#10B981;" onclick="switchTab('performance')">
+      <span class="sb-accent"></span>Performance
+    </button>
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section-label">TRADING</div>
+    <button class="sidebar-btn" data-tab="garves-live" style="--accent:var(--agent-garves);" onclick="switchTab('garves-live')">
+      <span class="sb-accent"></span>Garves
+    </button>
+    <button class="sidebar-btn" data-tab="odin" style="--accent:var(--agent-odin);" onclick="switchTab('odin')">
+      <span class="sb-accent"></span>Odin
+    </button>
+    <button class="sidebar-btn" data-tab="hawk" style="--accent:var(--agent-hawk);" onclick="switchTab('hawk')">
+      <span class="sb-accent"></span>Hawk
+    </button>
+    <button class="sidebar-btn" data-tab="oracle" style="--accent:var(--agent-oracle);" onclick="switchTab('oracle')">
+      <span class="sb-accent"></span>Oracle
+    </button>
+    <button class="sidebar-btn" data-tab="quant" style="--accent:var(--agent-quant);" onclick="switchTab('quant')">
+      <span class="sb-accent"></span>Quant
+    </button>
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section-label">INTELLIGENCE</div>
+    <button class="sidebar-btn" data-tab="atlas" style="--accent:var(--agent-atlas);" onclick="switchTab('atlas')">
+      <span class="sb-accent"></span>Atlas
+    </button>
+    <button class="sidebar-btn" data-tab="discord" style="--accent:#5865F2;" onclick="switchTab('discord')">
+      <span class="sb-accent"></span>Discord
+    </button>
+    <button class="sidebar-btn" data-tab="soren" style="--accent:var(--agent-soren);" onclick="switchTab('soren')">
+      <span class="sb-accent"></span>Soren
+    </button>
+    <button class="sidebar-btn" data-tab="lisa" style="--accent:var(--agent-lisa);" onclick="switchTab('lisa')">
+      <span class="sb-accent"></span>Lisa
+    </button>
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section-label">OPS</div>
+    <button class="sidebar-btn" data-tab="shelby" style="--accent:var(--agent-shelby);" onclick="switchTab('shelby')">
+      <span class="sb-accent"></span>Shelby
+    </button>
+    <button class="sidebar-btn" data-tab="sentinel" style="--accent:var(--agent-sentinel);" onclick="switchTab('sentinel')">
+      <span class="sb-accent"></span>Robotox
+    </button>
+    <button class="sidebar-btn" data-tab="thor" style="--accent:var(--agent-thor);" onclick="switchTab('thor')">
+      <span class="sb-accent"></span>Thor
+    </button>
+    <button class="sidebar-btn" data-tab="viper" style="--accent:var(--agent-viper);" onclick="switchTab('viper')">
+      <span class="sb-accent"></span>Viper
+    </button>
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section-label">INFRA</div>
+    <button class="sidebar-btn" data-tab="intelligence" style="--accent:#9B59B6;" onclick="switchTab('intelligence')">
+      <span class="sb-accent"></span>Intelligence
+    </button>
+    <button class="sidebar-btn" data-tab="system" style="--accent:#aaaaaa;" onclick="switchTab('system')">
+      <span class="sb-accent"></span>Monitoring
+    </button>
+  </div>
+
+  <div class="sidebar-footer">
+    <input type="text" class="sidebar-search" id="sidebar-search" placeholder="Search agent..." autocomplete="off" oninput="sidebarSearch(this.value)">
+    <div class="sidebar-global-status" id="sidebar-global-status">
+      <span class="dot-online" style="width:5px;height:5px;box-shadow:0 0 4px var(--success);"></span>All Systems Nominal
+    </div>
+  </div>
 </nav>
 
 <main class="main">
@@ -136,7 +158,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="/static/js/components.js?v=20260220b"></script>
 <script src="/static/js/charts.js?v=20260220b"></script>
-<script src="/static/dashboard.js?v=20260223g"></script>
+<script src="/static/dashboard.js?v=20260225a"></script>
 <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
 <script>
 // SocketIO real-time connection (optional — degrades gracefully)
@@ -181,6 +203,14 @@
     console.log('[SocketIO] Not available, using polling');
   }
 })();
+// Cmd/Ctrl+K focuses sidebar search
+document.addEventListener('keydown', function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    var s = document.getElementById('sidebar-search');
+    if (s) s.focus();
+  }
+});
 </script>
 </body>
 </html>

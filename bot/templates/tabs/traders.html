@@ -30,10 +30,10 @@
 
   <!-- Sub-tab Navigation -->
   <div class="traders-subtabs" style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
-    <button class="traders-subtab active" onclick="tradersSwitchSub('overview')">Overview</button>
-    <button class="traders-subtab" onclick="tradersSwitchSub('positions')">Open Positions</button>
-    <button class="traders-subtab" onclick="tradersSwitchSub('performance')">Performance</button>
-    <button class="traders-subtab" onclick="tradersSwitchSub('risk')">Risk Overview</button>
+    <button class="traders-subtab active" data-sub="overview" onclick="tradersSwitchSub('overview')">Overview</button>
+    <button class="traders-subtab" data-sub="positions" onclick="tradersSwitchSub('positions')">Open Positions</button>
+    <button class="traders-subtab" data-sub="performance" onclick="tradersSwitchSub('performance')">Performance</button>
+    <button class="traders-subtab" data-sub="risk" onclick="tradersSwitchSub('risk')">Risk Overview</button>
   </div>
 
   <!-- SUB-TAB: Overview -->
@@ -212,29 +212,17 @@ var AGENT_BADGES = {
   oracle: 'OR'
 };
 
-/* --- Auto-refresh wiring (same pattern as other tabs) --- */
-(function() {
-  var orig = window.switchTab;
-  if (orig) {
-    window.switchTab = function(tab) {
-      if (tab !== 'traders' && _tradersInterval) {
-        clearInterval(_tradersInterval); _tradersInterval = null;
-      }
-      if (tab !== 'traders' && _tradersCountdownInterval) {
-        clearInterval(_tradersCountdownInterval); _tradersCountdownInterval = null;
-      }
-      orig(tab);
-      if (tab === 'traders') {
-        tradersRefresh();
-        if (_tradersInterval) clearInterval(_tradersInterval);
-        _tradersInterval = setInterval(tradersRefresh, 30000);
-        if (!_tradersCountdownInterval) {
-          _tradersCountdownInterval = setInterval(tradersUpdateCountdowns, 1000);
-        }
-      }
-    };
+/* --- Auto-refresh: runs only when traders tab is active --- */
+setInterval(function() {
+  if (typeof currentTab !== 'undefined' && currentTab === 'traders') {
+    tradersRefresh();
   }
-})();
+}, 30000);
+setInterval(function() {
+  if (typeof currentTab !== 'undefined' && currentTab === 'traders') {
+    tradersUpdateCountdowns();
+  }
+}, 1000);
 
 /* --- Master refresh --- */
 async function tradersRefresh() {
@@ -262,8 +250,10 @@ function tradersSwitchSub(name) {
   if (target) target.style.display = '';
 
   var btns = document.querySelectorAll('.traders-subtab');
-  for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
-  event.target.classList.add('active');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.remove('active');
+    if (btns[i].getAttribute('data-sub') === name) btns[i].classList.add('active');
+  }
 
   if (name === 'performance') tradersLoadPerformance();
   if (name === 'risk') tradersLoadRisk();
