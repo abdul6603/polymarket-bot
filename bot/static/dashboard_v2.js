@@ -500,7 +500,7 @@ function renderOnChainPositions(data) {
         var gReturn = gPayout - (p.cost || 0);
         var gReturnPct = (p.cost || 0) > 0 ? (gReturn / p.cost * 100) : 0;
         var engName = (p.engine || 'snipe').toLowerCase().replace(/[^a-z_]/g, '');
-        var engLabel = engName === 'res_scalp' ? 'RES' : engName === 'maker' ? 'MKR' : engName === 'whale' ? 'WHALE' : engName === 'taker' ? 'TAKER' : 'SNIPE';
+        var engLabel = engName === 'res_scalp' ? 'SCLP' : engName === 'maker' ? 'MKR' : engName === 'whale' ? 'WHALE' : engName === 'taker' ? 'TAKER' : 'SNIPE';
         var engClass = engName === 'res_scalp' ? 'res_scalp' : engName;
         html += '<tr>';
         html += '<td><span class="gv-engine-pill ' + esc(engClass) + '">' + engLabel + '</span></td>';
@@ -554,7 +554,7 @@ function renderOnChainPositions(data) {
         var rc = rp >= 0 ? 'var(--success)' : 'var(--error)';
         var rs = (rp >= 0 ? '+$' : '-$') + Math.abs(rp).toFixed(2);
         var hEngName = (p.engine || 'snipe').toLowerCase().replace(/[^a-z_]/g, '');
-        var hEngLabel = hEngName === 'res_scalp' ? 'RES' : hEngName === 'maker' ? 'MKR' : hEngName === 'whale' ? 'WHALE' : hEngName === 'taker' ? 'TAKER' : 'SNIPE';
+        var hEngLabel = hEngName === 'res_scalp' ? 'SCLP' : hEngName === 'maker' ? 'MKR' : hEngName === 'whale' ? 'WHALE' : hEngName === 'taker' ? 'TAKER' : 'SNIPE';
         var hEngClass = hEngName === 'res_scalp' ? 'res_scalp' : hEngName;
         html += '<tr>';
         html += '<td><span class="gv-engine-pill ' + esc(hEngClass) + '">' + hEngLabel + '</span></td>';
