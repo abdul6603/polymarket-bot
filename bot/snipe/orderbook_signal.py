@@ -100,7 +100,7 @@ class OrderBookSignal:
         self._running = True
         self._thread = threading.Thread(target=self._run_loop, daemon=True, name="orderbook-ws")
         self._thread.start()
-        log.info("[ORDERBOOK] Started Binance.US multi-asset order book stream (4 assets)")
+        log.info("[ORDERBOOK] Started Binance order book stream (4 assets)")
 
     def stop(self) -> None:
         """Stop the WebSocket thread."""
@@ -203,7 +203,7 @@ class OrderBookSignal:
         ws = websocket.create_connection(WS_URL, timeout=10)
         self._connected = True
         self._reconnect_delay = RECONNECT_DELAY_BASE
-        log.info("[ORDERBOOK] Connected to Binance.US combined WebSocket (4 assets)")
+        log.info("[ORDERBOOK] Connected to Binance combined WebSocket (4 assets)")
 
         last_sample: dict[str, float] = {a: 0.0 for a in ASSETS}
         try:
