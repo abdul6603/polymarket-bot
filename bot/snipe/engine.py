@@ -79,7 +79,7 @@ BINANCE_SYMBOLS = {
 # All assets that need live prices (flow scanner + resolution scalper)
 PRICE_ASSETS = ("bitcoin", "ethereum", "solana", "xrp")
 ASSET_CONFIG = {
-    "bitcoin": {"base_threshold": 60},
+    "bitcoin": {"base_threshold": 75},
 }
 
 # Default execution timeframe — 5m scanner signals execute on 15m/1h markets
