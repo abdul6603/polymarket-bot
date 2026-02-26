@@ -675,7 +675,7 @@ def _normalize_hawk_trades(trades: list[dict]) -> list[dict]:
 
 
 def _read_garves_engine_trades() -> list[dict]:
-    """Read trades from ALL Garves engines directly (snipe, taker, whale)."""
+    """Read trades from ALL Garves engines directly (snipe, taker, whale, res_scalp)."""
     import json as _json
     from pathlib import Path as _Path
 
@@ -750,6 +750,30 @@ def _read_garves_engine_trades() -> list[dict]:
             "won": t.get("won", False),
             "resolved_at": _safe_float(t.get("timestamp", 0)),
             "edge": None,
+        })
+
+    # --- Resolution Scalper trades ---
+    for t in _read_jsonl(data_dir / "resolution_trades.jsonl"):
+        if t.get("won") is None:
+            continue
+        pnl = _safe_float(t.get("pnl", 0))
+        asset = (t.get("asset") or "unknown").upper()[:3]
+        direction = (t.get("direction") or "up").upper()
+        out.append({
+            "agent": "garves",
+            "engine": "res_scalp",
+            "mode": "paper" if t.get("dry_run", True) else "live",
+            "market": f"Res-Scalp {asset} {direction} 5m",
+            "asset": asset,
+            "direction": direction,
+            "category": "crypto",
+            "platform": "polymarket",
+            "cost": round(_safe_float(t.get("bet_size", 0)), 2),
+            "payout": round(_safe_float(t.get("bet_size", 0)) + pnl, 2) if t.get("won") else 0.0,
+            "pnl": round(pnl, 2),
+            "won": t.get("won", False),
+            "resolved_at": _safe_float(t.get("resolved_at", t.get("timestamp", 0))),
+            "edge": _safe_float(t.get("edge")),
         })
 
     # --- Whale copy trades ---
