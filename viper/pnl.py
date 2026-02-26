@@ -120,7 +120,6 @@ def compute_pnl() -> dict:
     infra_daily = round(infra_monthly / 30, 2)
 
     total_daily_cost = daily_api + infra_daily
-
     # === NET ===
     # For revenue, we use total P&L (which is cumulative, not daily)
     # For a fair daily comparison, estimate daily from total

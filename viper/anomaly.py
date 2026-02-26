@@ -205,22 +205,9 @@ def _check_agent_down() -> list[dict]:
 
     return alerts
 
-def _check_agent_down() -> list[dict]:
-    """Check if any agent's status file is older than STALE_MINUTES."""
-    alerts = []
-    now = time.time()
-
-    for agent, status_file in STATUS_FILES.items():
-        if not status_file.exists():
-            continue
-        try:
-            mtime = status_file.stat().st_mtime
-            age_minutes = (now - mtime) / 60
-            if age_minutes > STALE_MINUTES:
                 alerts.append(_make_alert(
                     "critical", agent, "agent_down",
-                    f"{agent} status file is {age_minutes:.0f}m old (threshold: {STALE_MINUTES}m)",
-                    age_minutes=round(age_minutes, 1),
+                    f"{agent} status file is {age_minutes:.0f}m old (threshold: {STALE_MINUTES}m)",                    age_minutes=round(age_minutes, 1),
                 ))
         except Exception:
             pass
