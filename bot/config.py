@@ -62,6 +62,15 @@ class Config:
     whale_enabled: bool = _env("WHALE_ENABLED", "false").lower() in ("true", "1", "yes")
     whale_poll_interval_s: float = float(_env("WHALE_POLL_INTERVAL_S", "4.0"))
 
+    # Resolution Scalper — trades last 15-90s of 5m windows (Engine #2)
+    res_scalp_enabled: bool = _env("RES_SCALP_ENABLED", "true").lower() in ("true", "1", "yes")
+    res_scalp_min_edge: float = float(_env("RES_SCALP_MIN_EDGE", "0.08"))
+    res_scalp_min_prob: float = float(_env("RES_SCALP_MIN_PROB", "0.75"))
+    res_scalp_max_price: float = float(_env("RES_SCALP_MAX_PRICE", "0.88"))
+    res_scalp_max_bet: float = float(_env("RES_SCALP_MAX_BET", "20.0"))
+    res_scalp_kelly_frac: float = float(_env("RES_SCALP_KELLY_FRAC", "0.25"))
+    res_scalp_max_concurrent: int = int(_env("RES_SCALP_MAX_CONCURRENT", "3"))
+
 
 # ── Brotherhood Hierarchy ──
 # Jordan (Owner) → Claude (Godfather) → Shelby (Commander) → Agents

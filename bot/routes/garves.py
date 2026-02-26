@@ -1936,6 +1936,14 @@ def engine_comparison():
     def _avg(total, count):
         return round(total / count, 2) if count > 0 else 0.0
 
+    # --- Resolution Scalper trades ---
+    res_trades = _read_jsonl(data_dir / "resolution_trades.jsonl")
+    res_resolved = [t for t in res_trades if t.get("won") is not None or t.get("resolved")]
+    res_wins = sum(1 for t in res_resolved if t.get("won"))
+    res_losses = len(res_resolved) - res_wins
+    res_pnl = sum(t.get("pnl", 0) for t in res_resolved)
+    res_size = sum(t.get("bet_size", 0) for t in res_resolved)
+
     engines = {
         "taker": {
             "name": "Main Taker",
@@ -1994,6 +2002,20 @@ def engine_comparison():
             "total_invested": round(whale_size, 2),
             "avg_size": _avg(whale_size, len(whale_resolved)),
             "tracked_wallets": whale_tracked,
+            "status": "active",
+        },
+        "res_scalp": {
+            "name": "Res Scalper",
+            "allocation_pct": 0,
+            "max_exposure": 60,
+            "trades": len(res_resolved),
+            "pending": len(res_trades) - len(res_resolved),
+            "wins": res_wins,
+            "losses": res_losses,
+            "win_rate": _wr(res_wins, len(res_resolved)),
+            "pnl": round(res_pnl, 2),
+            "total_invested": round(res_size, 2),
+            "avg_size": _avg(res_size, len(res_resolved)),
             "status": "active",
         },
     }

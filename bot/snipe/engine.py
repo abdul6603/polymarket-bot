@@ -39,6 +39,7 @@ from bot.snipe.timing_learner import TimingLearner
 from bot.snipe.timing_assistant import TimingAssistant
 from bot.snipe.flow_detector import FlowDetector, FlowResult
 from bot.snipe.market_bridge import find_execution_market
+from bot.snipe.resolution_scalper import ResolutionScalper
 
 log = logging.getLogger("garves.snipe")
 
@@ -189,6 +190,15 @@ class SnipeEngine:
         self._timing_learner = TimingLearner()
         self._timing_assistant = TimingAssistant(self._timing_learner)
 
+        # Resolution Scalper — Engine #2 (last 15-90s of 5m windows)
+        self._resolution_scalper = ResolutionScalper(
+            cfg, price_cache, clob_client,
+            window_tracker=self.window_tracker,
+            orderbook_signal=self._orderbook,
+            dry_run=dry_run,
+            bankroll=cfg.bankroll_usd,
+        )
+
         # Warm-up tracking
         self._engine_start_ts = time.time()
         self._last_warmup_log = 0.0
@@ -337,6 +347,12 @@ class SnipeEngine:
                 self._tick_slot(slot)
             except Exception as e:
                 log.warning("[SNIPE] %s tick error: %s", asset.upper(), str(e)[:150])
+
+        # Phase 3: Resolution Scalper — scans windows with 15-90s remaining
+        try:
+            self._resolution_scalper.tick(self._live_prices)
+        except Exception as e:
+            log.warning("[RES-SCALP] tick error: %s", str(e)[:150])
 
         elapsed = time.time() - tick_start
         self._last_tick_elapsed = elapsed
@@ -646,6 +662,7 @@ class SnipeEngine:
                 slot.state = SnipeState.EXECUTING
                 slot.executing_since = time.time()
                 self.window_tracker.mark_traded(window.market_id)
+                self._resolution_scalper.mark_flow_claimed(window.market_id)
                 log.info("[SNIPE] %s: TRACKING -> EXECUTING (flow snipe filled on %s)", asset.upper(), exec_timeframe)
                 try:
                     from shared.events import publish, TRADE_EXECUTED
@@ -677,6 +694,7 @@ class SnipeEngine:
             elif slot.executor.has_pending_order:
                 slot.state = SnipeState.ARMED
                 self.window_tracker.mark_traded(window.market_id)
+                self._resolution_scalper.mark_flow_claimed(window.market_id)
                 log.info("[SNIPE] %s: TRACKING -> ARMED (resting on %s)", asset.upper(), exec_timeframe)
                 return
             else:
@@ -1354,6 +1372,7 @@ class SnipeEngine:
             "avg_latency_ms": avg_latency,
             "performance": performance,
             "timing_assistant": self._timing_assistant.get_status(),
+            "resolution_scalper": self._resolution_scalper.get_status(),
             "timestamp": time.time(),
         }
 

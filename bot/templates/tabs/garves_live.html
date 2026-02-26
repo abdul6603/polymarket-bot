@@ -33,6 +33,7 @@
     <div class="garves-engine-pill"><span class="gep-dot" style="background:#6b7280;"></span> Maker <span id="maker-status-badge" style="font-size:0.58rem;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;margin-left:2px;">OFF</span></div>
     <div class="garves-engine-pill"><span class="gep-dot" style="background:#6b7280;"></span> Whale <span id="whale-status-badge" style="font-size:0.58rem;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;margin-left:2px;">OFF</span> <span id="whale-tracked-count" style="font-size:0.56rem;color:var(--text-muted);margin-left:2px;">0 whales</span></div>
     <div class="garves-engine-pill"><span class="gep-dot" style="background:#6b7280;"></span> Taker <span id="taker-status-badge" style="font-size:0.58rem;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;margin-left:2px;">OFF</span></div>
+    <div class="garves-engine-pill"><span id="res-scalp-dot" class="gep-dot" style="background:#6b7280;"></span> Res-Scalp <span id="res-scalp-badge" style="font-size:0.58rem;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;margin-left:2px;">OFF</span></div>
     <div style="flex:1;"></div>
     <!-- Binance WS -->
     <div id="binance-pill-wrap" style="position:relative;">
@@ -167,6 +168,55 @@
         <div style="font-size:0.62rem;color:var(--text-muted);margin-top:4px;" id="ov-taker-trades">0 trades</div>
       </div>
     </div>
+    <!-- Resolution Scalper Overview Row -->
+    <div class="glass-card" style="margin-bottom:14px;border-left:3px solid #f97316;padding:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <span style="font-weight:700;font-size:0.78rem;">Resolution Scalper (Engine #2)</span>
+        <span id="ov-res-scalp-status" style="font-size:0.6rem;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;">OFF</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;">
+        <div style="text-align:center;">
+          <div style="font-size:1rem;font-weight:800;font-family:var(--font-mono);" id="ov-res-wr">--</div>
+          <div style="font-size:0.58rem;color:var(--text-muted);">Win Rate</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:1rem;font-weight:800;font-family:var(--font-mono);" id="ov-res-trades">0</div>
+          <div style="font-size:0.58rem;color:var(--text-muted);">Trades</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:1rem;font-weight:800;font-family:var(--font-mono);" id="ov-res-pnl">$0.00</div>
+          <div style="font-size:0.58rem;color:var(--text-muted);">P&amp;L</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:1rem;font-weight:800;font-family:var(--font-mono);" id="ov-res-cal">--</div>
+          <div style="font-size:0.58rem;color:var(--text-muted);">Calibration</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:1rem;font-weight:800;font-family:var(--font-mono);" id="ov-res-active">0</div>
+          <div style="font-size:0.58rem;color:var(--text-muted);">Active</div>
+        </div>
+      </div>
+      <!-- Live Opportunities -->
+      <div id="res-scalp-opps" style="margin-top:10px;display:none;">
+        <div style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Live Opportunities</div>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:0.72rem;font-family:var(--font-mono);">
+            <thead><tr style="border-bottom:1px solid rgba(255,255,255,0.08);color:var(--text-muted);"><th style="padding:4px 6px;text-align:left;">Asset</th><th style="padding:4px 6px;">Dir</th><th style="padding:4px 6px;">P%</th><th style="padding:4px 6px;">Mkt</th><th style="padding:4px 6px;">Edge</th><th style="padding:4px 6px;">z</th><th style="padding:4px 6px;">T-s</th><th style="padding:4px 6px;">Bet</th></tr></thead>
+            <tbody id="res-scalp-opps-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Recent Trades -->
+      <div id="res-scalp-recent" style="margin-top:8px;display:none;">
+        <div style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Recent Trades</div>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:0.72rem;font-family:var(--font-mono);">
+            <thead><tr style="border-bottom:1px solid rgba(255,255,255,0.08);color:var(--text-muted);"><th style="padding:4px 6px;text-align:left;">Asset</th><th style="padding:4px 6px;">Dir</th><th style="padding:4px 6px;">P%</th><th style="padding:4px 6px;">Edge</th><th style="padding:4px 6px;">Size</th><th style="padding:4px 6px;">Result</th><th style="padding:4px 6px;text-align:right;">PnL</th></tr></thead>
+            <tbody id="res-scalp-recent-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
     <div class="glass-card" style="margin-bottom:14px;border-left:3px solid var(--agent-garves);">
       <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px;">Agent Activity</div>
       <div id="garves-activity-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:150px;overflow-y:auto;"><span class="text-muted">Waiting for activity...</span></div>
@@ -192,10 +242,10 @@
         </div>
       </div>
       <div style="overflow-x:auto;">
-        <table style="width:100%;border-collapse:collapse;font-size:0.72rem;font-family:var(--font-mono);">
+        <table style="width:100%;border-collapse:collapse;font-size:0.88rem;font-family:var(--font-mono);">
           <thead>
             <tr style="border-bottom:1px solid rgba(255,255,255,0.1);color:var(--text-muted);text-align:left;">
-              <th style="padding:6px 10px;">Engine</th><th style="padding:6px 8px;text-align:center;">Alloc</th><th style="padding:6px 8px;text-align:center;">Trades</th><th style="padding:6px 8px;text-align:center;">W</th><th style="padding:6px 8px;text-align:center;">L</th><th style="padding:6px 8px;text-align:center;">WR%</th><th style="padding:6px 8px;text-align:right;">PnL</th><th style="padding:6px 8px;text-align:right;">Avg Size</th><th style="padding:6px 8px;text-align:center;">Status</th>
+              <th style="padding:8px 12px;">Engine</th><th style="padding:8px 10px;text-align:center;">Alloc</th><th style="padding:8px 10px;text-align:center;">Trades</th><th style="padding:8px 10px;text-align:center;">W</th><th style="padding:8px 10px;text-align:center;">L</th><th style="padding:8px 10px;text-align:center;">WR%</th><th style="padding:8px 10px;text-align:right;">PnL</th><th style="padding:8px 10px;text-align:right;">Avg Size</th><th style="padding:8px 10px;text-align:center;">Status</th>
             </tr>
           </thead>
           <tbody id="engine-comp-body"></tbody>
@@ -210,6 +260,7 @@
       <button class="garves-engine-tab" data-engine="maker" onclick="garvesSelectEngine('maker')">Market Making</button>
       <button class="garves-engine-tab" data-engine="whale" onclick="garvesSelectEngine('whale')">Whale Follower</button>
       <button class="garves-engine-tab" data-engine="taker" onclick="garvesSelectEngine('taker')">Taker Engine</button>
+      <button class="garves-engine-tab" data-engine="res-scalp" onclick="garvesSelectEngine('res-scalp')">Resolution Scalper</button>
     </div>
 
     <!-- SNIPE ENGINE -->
@@ -390,6 +441,41 @@
         <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Recent Taker Trades</div>
         <table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Direction</th><th>Size</th><th>Edge</th><th>Result</th><th>PnL</th></tr></thead>
         <tbody id="taker-trades-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;">No taker trades yet</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- RESOLUTION SCALPER ENGINE -->
+    <div class="garves-engine-panel" id="garves-engine-res-scalp" style="display:none;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span style="font-weight:700;font-size:0.82rem;">Resolution Scalper</span>
+        <span id="res-scalp-engine-mode" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(249,115,22,0.15);color:#f97316;font-weight:600;">DRY RUN</span>
+        <span style="font-size:0.62rem;color:var(--text-muted);">Last 15-90s of 5m windows | Brownian motion probability</span>
+      </div>
+      <div class="grid-4" style="margin-bottom:12px;">
+        <div class="stat-card" style="border-left:3px solid #f97316;"><div class="stat-value" id="res-eng-trades" style="font-size:1.3rem;">0</div><div class="stat-label">Trades</div></div>
+        <div class="stat-card" style="border-left:3px solid #22c55e;"><div class="stat-value" id="res-eng-wr" style="font-size:1.3rem;">--</div><div class="stat-label">Win Rate</div></div>
+        <div class="stat-card" style="border-left:3px solid #8b5cf6;"><div class="stat-value" id="res-eng-pnl" style="font-size:1.3rem;">$0.00</div><div class="stat-label">PnL</div></div>
+        <div class="stat-card" style="border-left:3px solid #eab308;"><div class="stat-value" id="res-eng-cal" style="font-size:1.3rem;">--</div><div class="stat-label">Calibration</div></div>
+      </div>
+      <div class="glass-card" style="padding:10px 14px;margin-bottom:12px;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Thresholds</div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:0.72rem;font-family:var(--font-mono);">
+          <span>Min P: <span id="res-eng-min-p" style="color:#f97316;">75%</span></span>
+          <span>Min Edge: <span id="res-eng-min-edge" style="color:#f97316;">8%</span></span>
+          <span>Max Price: <span id="res-eng-max-price" style="color:#f97316;">$0.88</span></span>
+          <span>Max Bet: <span id="res-eng-max-bet" style="color:#f97316;">$20</span></span>
+          <span>Kelly: <span id="res-eng-kelly" style="color:#f97316;">25%</span></span>
+        </div>
+      </div>
+      <div class="glass-card" style="padding:10px 14px;margin-bottom:12px;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Active Positions</div>
+        <table class="data-table"><thead><tr><th>Asset</th><th>Dir</th><th>Entry</th><th>Size</th><th>Shares</th><th>P%</th><th>Edge</th><th>z</th><th>T-s</th></tr></thead>
+        <tbody id="res-eng-active-tbody"><tr><td colspan="9" class="text-muted" style="text-align:center;">No active positions</td></tr></tbody></table>
+      </div>
+      <div class="glass-card" style="padding:10px 14px;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Recent Resolved Trades</div>
+        <table class="data-table"><thead><tr><th>Asset</th><th>Dir</th><th>Entry</th><th>Size</th><th>P%</th><th>Edge</th><th>Result</th><th>PnL</th></tr></thead>
+        <tbody id="res-eng-trades-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;">No trades yet</td></tr></tbody></table>
       </div>
     </div>
   </div>

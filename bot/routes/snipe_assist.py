@@ -78,6 +78,23 @@ def snipe_assist_override():
         return jsonify({"error": str(e)[:200]}), 500
 
 
+@snipe_assist_bp.route("/api/resolution-scalper/status")
+def resolution_scalper_status():
+    """Resolution Scalper status, calibration, stats, and recent history."""
+    try:
+        from bot.snipe.resolution_learner import ResolutionLearner
+        learner = ResolutionLearner()
+        stats = learner.get_stats()
+        recent = learner.get_recent(20)
+        return jsonify({
+            "engine": "resolution_scalper",
+            "stats": stats,
+            "recent": recent,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
 @snipe_assist_bp.route("/api/snipe-assist/thresholds", methods=["POST"])
 def snipe_assist_thresholds():
     """Adjust auto/conservative thresholds dynamically."""

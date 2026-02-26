@@ -12197,6 +12197,176 @@ function refreshSnipeV7() {
       perfEl.style.display = 'block';
     }
 
+    // ── Resolution Scalper Status ──
+    var rs = d.resolution_scalper || {};
+    var rsEnabled = rs.enabled;
+    var rsDot = document.getElementById('res-scalp-dot');
+    var rsBadge = document.getElementById('res-scalp-badge');
+    if (rsDot && rsBadge) {
+      if (rsEnabled) {
+        rsDot.style.background = '#f97316';
+        rsBadge.textContent = (rs.active_count || 0) + '/' + ((rs.thresholds || {}).max_concurrent || 3);
+        rsBadge.style.background = 'rgba(249,115,22,0.15)';
+        rsBadge.style.color = '#f97316';
+      } else {
+        rsDot.style.background = '#6b7280';
+        rsBadge.textContent = 'OFF';
+      }
+    }
+    // Overview card
+    var rsStats = rs.stats || {};
+    var rsLearner = rs.learner || {};
+    var ovResStatus = document.getElementById('ov-res-scalp-status');
+    if (ovResStatus) {
+      if (rsEnabled) {
+        ovResStatus.textContent = rs.dry_run ? 'DRY RUN' : 'LIVE';
+        ovResStatus.style.background = rs.dry_run ? 'rgba(249,115,22,0.15)' : 'rgba(34,197,94,0.15)';
+        ovResStatus.style.color = rs.dry_run ? '#f97316' : '#22c55e';
+      } else {
+        ovResStatus.textContent = 'OFF';
+      }
+    }
+    var ovResWr = document.getElementById('ov-res-wr');
+    if (ovResWr) ovResWr.textContent = rsLearner.total_trades > 0 ? rsLearner.win_rate.toFixed(1) + '%' : '--';
+    var ovResTrades = document.getElementById('ov-res-trades');
+    if (ovResTrades) ovResTrades.textContent = rsLearner.total_trades || 0;
+    var ovResPnl = document.getElementById('ov-res-pnl');
+    if (ovResPnl) {
+      var rsPnl = rsLearner.total_pnl || 0;
+      ovResPnl.textContent = '$' + rsPnl.toFixed(2);
+      ovResPnl.style.color = rsPnl >= 0 ? '#22c55e' : '#ef4444';
+    }
+    var ovResCal = document.getElementById('ov-res-cal');
+    if (ovResCal) ovResCal.textContent = rsLearner.calibration_score != null ? rsLearner.calibration_score.toFixed(2) : '--';
+    var ovResActive = document.getElementById('ov-res-active');
+    if (ovResActive) ovResActive.textContent = rs.active_count || 0;
+    // Live opportunities table
+    var rsOpps = rs.opportunities || [];
+    var rsOppsWrap = document.getElementById('res-scalp-opps');
+    var rsOppsTbody = document.getElementById('res-scalp-opps-body');
+    if (rsOppsWrap && rsOppsTbody) {
+      if (rsOpps.length > 0) {
+        rsOppsWrap.style.display = '';
+        var oh = '';
+        for (var oi = 0; oi < rsOpps.length; oi++) {
+          var o = rsOpps[oi];
+          var oColor = o.direction === 'up' ? '#22c55e' : '#ef4444';
+          oh += '<tr><td>' + (o.asset || '').toUpperCase() + '</td>' +
+            '<td style="color:' + oColor + ';">' + (o.direction || '').toUpperCase() + '</td>' +
+            '<td>' + (o.probability || 0).toFixed(1) + '%</td>' +
+            '<td>$' + (o.market_price || 0).toFixed(2) + '</td>' +
+            '<td style="color:#f97316;">' + (o.edge || 0).toFixed(1) + '%</td>' +
+            '<td>' + (o.z_score || 0).toFixed(2) + '</td>' +
+            '<td>' + (o.remaining_s || 0) + 's</td>' +
+            '<td>$' + (o.kelly_bet || 0).toFixed(2) + '</td></tr>';
+        }
+        rsOppsTbody.innerHTML = oh;
+      } else {
+        rsOppsWrap.style.display = 'none';
+      }
+    }
+    // Recent resolved trades
+    var rsRecent = rs.recent_trades || [];
+    var rsRecentWrap = document.getElementById('res-scalp-recent');
+    var rsRecentTbody = document.getElementById('res-scalp-recent-body');
+    if (rsRecentWrap && rsRecentTbody) {
+      if (rsRecent.length > 0) {
+        rsRecentWrap.style.display = '';
+        var rh = '';
+        for (var ri = 0; ri < rsRecent.length; ri++) {
+          var rt = rsRecent[ri];
+          var rtColor = rt.direction === 'up' ? '#22c55e' : '#ef4444';
+          var rtResult = rt.won ? 'WIN' : 'LOSS';
+          var rtBadge = rt.won ? 'badge-success' : 'badge-error';
+          rh += '<tr><td>' + (rt.asset || '').toUpperCase() + '</td>' +
+            '<td style="color:' + rtColor + ';">' + (rt.direction || '').toUpperCase() + '</td>' +
+            '<td>' + (rt.probability || 0).toFixed(1) + '%</td>' +
+            '<td>' + (rt.edge || 0).toFixed(1) + '%</td>' +
+            '<td>$' + (rt.size_usd || 0).toFixed(2) + '</td>' +
+            '<td><span class="badge ' + rtBadge + '">' + rtResult + '</span></td>' +
+            '<td style="color:' + (rt.pnl >= 0 ? '#22c55e' : '#ef4444') + ';text-align:right;">$' + (rt.pnl || 0).toFixed(2) + '</td></tr>';
+        }
+        rsRecentTbody.innerHTML = rh;
+      } else {
+        rsRecentWrap.style.display = 'none';
+      }
+    }
+    // Engine panel details
+    var resEngMode = document.getElementById('res-scalp-engine-mode');
+    if (resEngMode) resEngMode.textContent = rs.dry_run ? 'DRY RUN' : 'LIVE';
+    var resEngTrades = document.getElementById('res-eng-trades');
+    if (resEngTrades) resEngTrades.textContent = rsLearner.total_trades || 0;
+    var resEngWr = document.getElementById('res-eng-wr');
+    if (resEngWr) resEngWr.textContent = rsLearner.total_trades > 0 ? rsLearner.win_rate.toFixed(1) + '%' : '--';
+    var resEngPnl = document.getElementById('res-eng-pnl');
+    if (resEngPnl) {
+      var rePnl = rsLearner.total_pnl || 0;
+      resEngPnl.textContent = '$' + rePnl.toFixed(2);
+      resEngPnl.style.color = rePnl >= 0 ? '#22c55e' : '#ef4444';
+    }
+    var resEngCal = document.getElementById('res-eng-cal');
+    if (resEngCal) resEngCal.textContent = rsLearner.calibration_score != null ? rsLearner.calibration_score.toFixed(2) : '--';
+    // Thresholds
+    var rsThresh = rs.thresholds || {};
+    var reMinP = document.getElementById('res-eng-min-p');
+    if (reMinP) reMinP.textContent = ((rsThresh.min_probability || 0.75) * 100).toFixed(0) + '%';
+    var reMinEdge = document.getElementById('res-eng-min-edge');
+    if (reMinEdge) reMinEdge.textContent = ((rsThresh.min_edge || 0.08) * 100).toFixed(0) + '%';
+    var reMaxPrice = document.getElementById('res-eng-max-price');
+    if (reMaxPrice) reMaxPrice.textContent = '$' + (rsThresh.max_market_price || 0.88).toFixed(2);
+    var reMaxBet = document.getElementById('res-eng-max-bet');
+    if (reMaxBet) reMaxBet.textContent = '$' + (rsThresh.max_bet || 20).toFixed(0);
+    var reKelly = document.getElementById('res-eng-kelly');
+    if (reKelly) reKelly.textContent = ((rsThresh.kelly_fraction || 0.25) * 100).toFixed(0) + '%';
+    // Active positions table
+    var rsActive = rs.active_positions || [];
+    var resActiveTbody = document.getElementById('res-eng-active-tbody');
+    if (resActiveTbody) {
+      if (rsActive.length > 0) {
+        var ah = '';
+        for (var ai = 0; ai < rsActive.length; ai++) {
+          var ap = rsActive[ai];
+          var apColor = ap.direction === 'up' ? '#22c55e' : '#ef4444';
+          ah += '<tr><td>' + (ap.asset || '').toUpperCase() + '</td>' +
+            '<td style="color:' + apColor + ';">' + (ap.direction || '').toUpperCase() + '</td>' +
+            '<td>$' + (ap.entry_price || 0).toFixed(3) + '</td>' +
+            '<td>$' + (ap.size_usd || 0).toFixed(2) + '</td>' +
+            '<td>' + (ap.shares || 0).toFixed(1) + '</td>' +
+            '<td>' + (ap.probability || 0).toFixed(1) + '%</td>' +
+            '<td>' + (ap.edge || 0).toFixed(1) + '%</td>' +
+            '<td>' + (ap.z_score || 0).toFixed(2) + '</td>' +
+            '<td>' + (ap.remaining_s || 0) + 's</td></tr>';
+        }
+        resActiveTbody.innerHTML = ah;
+      } else {
+        resActiveTbody.innerHTML = '<tr><td colspan="9" class="text-muted" style="text-align:center;">No active positions</td></tr>';
+      }
+    }
+    // Resolved trades table
+    var resTradesTbody = document.getElementById('res-eng-trades-tbody');
+    if (resTradesTbody) {
+      if (rsRecent.length > 0) {
+        var th = '';
+        for (var ti2 = 0; ti2 < rsRecent.length; ti2++) {
+          var t2 = rsRecent[ti2];
+          var t2Color = t2.direction === 'up' ? '#22c55e' : '#ef4444';
+          var t2Result = t2.won ? 'WIN' : 'LOSS';
+          var t2Badge = t2.won ? 'badge-success' : 'badge-error';
+          th += '<tr><td>' + (t2.asset || '').toUpperCase() + '</td>' +
+            '<td style="color:' + t2Color + ';">' + (t2.direction || '').toUpperCase() + '</td>' +
+            '<td>$' + (t2.entry_price || 0).toFixed(3) + '</td>' +
+            '<td>$' + (t2.size_usd || 0).toFixed(2) + '</td>' +
+            '<td>' + (t2.probability || 0).toFixed(1) + '%</td>' +
+            '<td>' + (t2.edge || 0).toFixed(1) + '%</td>' +
+            '<td><span class="badge ' + t2Badge + '">' + t2Result + '</span></td>' +
+            '<td style="color:' + (t2.pnl >= 0 ? '#22c55e' : '#ef4444') + ';text-align:right;">$' + (t2.pnl || 0).toFixed(2) + '</td></tr>';
+        }
+        resTradesTbody.innerHTML = th;
+      } else {
+        resTradesTbody.innerHTML = '<tr><td colspan="8" class="text-muted" style="text-align:center;">No trades yet</td></tr>';
+      }
+    }
+
     // Auto-refresh while on garves tab
     clearTimeout(_snipeV7Timer);
     if (currentTab === 'garves-live') {
@@ -12943,10 +13113,11 @@ function renderEngineComparison(data) {
     taker: '#ef4444',
     snipe: '#8b5cf6',
     maker: '#22c55e',
-    whale: '#3b82f6'
+    whale: '#3b82f6',
+    res_scalp: '#f97316'
   };
 
-  var order = ['snipe', 'maker', 'whale', 'taker'];
+  var order = ['snipe', 'res_scalp', 'maker', 'whale', 'taker'];
   var rows = '';
 
   for (var i = 0; i < order.length; i++) {
@@ -12964,15 +13135,15 @@ function renderEngineComparison(data) {
     }
 
     rows += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);"' + extra + '>';
-    rows += '<td style="padding:6px 10px;"><span style="color:' + color + ';font-weight:600;">' + e.name + '</span></td>';
-    rows += '<td style="padding:6px 8px;text-align:center;">' + e.allocation_pct + '%</td>';
-    rows += '<td style="padding:6px 8px;text-align:center;">' + e.trades + (e.pending > 0 ? '<span style="color:var(--text-muted);font-size:0.62rem;"> +' + e.pending + '</span>' : '') + '</td>';
-    rows += '<td style="padding:6px 8px;text-align:center;color:#22c55e;">' + e.wins + '</td>';
-    rows += '<td style="padding:6px 8px;text-align:center;color:#ef4444;">' + e.losses + '</td>';
-    rows += '<td style="padding:6px 8px;text-align:center;color:' + wrColor + ';font-weight:600;">' + (e.trades > 0 ? e.win_rate.toFixed(1) + '%' : '--') + '</td>';
-    rows += '<td style="padding:6px 8px;text-align:right;color:' + pnlColor + ';font-weight:600;">$' + (e.pnl >= 0 ? '+' : '') + e.pnl.toFixed(2) + '</td>';
-    rows += '<td style="padding:6px 8px;text-align:right;">$' + e.avg_size.toFixed(0) + '</td>';
-    rows += '<td style="padding:6px 8px;text-align:center;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:' + color + ';"></span></td>';
+    rows += '<td style="padding:8px 12px;"><span style="color:' + color + ';font-weight:600;">' + e.name + '</span></td>';
+    rows += '<td style="padding:8px 10px;text-align:center;">' + e.allocation_pct + '%</td>';
+    rows += '<td style="padding:8px 10px;text-align:center;">' + e.trades + (e.pending > 0 ? '<span style="color:var(--text-muted);font-size:0.75rem;"> (' + e.pending + ' pending)</span>' : '') + '</td>';
+    rows += '<td style="padding:8px 10px;text-align:center;color:#22c55e;">' + e.wins + '</td>';
+    rows += '<td style="padding:8px 10px;text-align:center;color:#ef4444;">' + e.losses + '</td>';
+    rows += '<td style="padding:8px 10px;text-align:center;color:' + wrColor + ';font-weight:600;">' + (e.trades > 0 ? e.win_rate.toFixed(1) + '%' : '--') + '</td>';
+    rows += '<td style="padding:8px 10px;text-align:right;color:' + pnlColor + ';font-weight:600;">$' + (e.pnl >= 0 ? '+' : '') + e.pnl.toFixed(2) + '</td>';
+    rows += '<td style="padding:8px 10px;text-align:right;">$' + e.avg_size.toFixed(0) + '</td>';
+    rows += '<td style="padding:8px 10px;text-align:center;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + color + ';"></span></td>';
     rows += '</tr>';
   }
   body.innerHTML = rows;
