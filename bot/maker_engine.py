@@ -236,6 +236,10 @@ class MakerEngine:
         self._kill_reason: str | None = None
         self._token_session_pnl: dict[str, float] = {}  # per-token PnL for circuit breaker
 
+        # HARD BANKROLL CAP: tracks total USD committed by maker (persists across restarts)
+        self._committed_file = Path(__file__).parent.parent / "data" / "maker_committed.json"
+        self._maker_total_committed = self._load_committed()
+
         # Fair value + TTR caches
         self._last_fair: dict[str, float] = {}
         self._market_remaining: dict[str, float] = {}
@@ -269,6 +273,34 @@ class MakerEngine:
                 cfg.maker_bankroll_usd, cfg.maker_dry_run, self.quote_size_usd,
                 cfg.maker_max_imbalance * 100, cfg.maker_daily_loss_pct * 100,
             )
+
+    def _load_committed(self) -> float:
+        """Load total committed USD from disk (persists across restarts)."""
+        try:
+            if self._committed_file.exists():
+                data = json.loads(self._committed_file.read_text())
+                val = float(data.get("total_committed", 0))
+                log.info("[MAKER] Loaded committed: $%.2f from disk", val)
+                return val
+        except Exception:
+            pass
+        return 0.0
+
+    def _save_committed(self) -> None:
+        """Persist total committed to disk."""
+        try:
+            self._committed_file.write_text(json.dumps({
+                "total_committed": round(self._maker_total_committed, 2),
+                "updated": time.time(),
+            }))
+        except Exception:
+            pass
+
+    def reset_committed(self, amount: float = 0.0) -> None:
+        """Reset committed tracker (call when positions resolve/settle)."""
+        self._maker_total_committed = amount
+        self._save_committed()
+        log.info("[MAKER] Committed reset to $%.2f", amount)
 
     def _sync_open_orders(self) -> None:
         """Sync open orders from CLOB on startup so we track what's already live."""
@@ -367,10 +399,7 @@ class MakerEngine:
         if exposure["total_usd"] < 1.0:
             return 0.0
 
-        cat = self._token_category.get(up_token, "crypto")
-        bankroll = (self.cfg.maker_crypto_bankroll_usd if cat == "crypto"
-                    else self.cfg.maker_general_bankroll_usd)
-        max_per_market = bankroll * 0.15 if bankroll > 0 else 30.0
+        max_per_market = self.quote_size_usd  # $10 per market
 
         # Positive = more YES than NO -> lower BUY YES price, raise BUY NO attractiveness
         imbalance_usd = exposure["up_size"] - exposure["down_size"]
@@ -403,17 +432,19 @@ class MakerEngine:
                     "reason": "auto-convert: no tokens to sell",
                 }
 
-        # 3. Bankroll check (category-specific: $200 crypto, $100 general)
-        cat = self._token_category.get(token_id, "crypto")
-        bankroll = (self.cfg.maker_crypto_bankroll_usd if cat == "crypto"
-                    else self.cfg.maker_general_bankroll_usd)
-        if bankroll <= 0:
+        # 3. HARD BANKROLL CAP — total committed must not exceed bankroll
+        bankroll = self.cfg.maker_bankroll_usd
+        order_cost = size * price if size > 0 else self.quote_size_usd
+        remaining = bankroll - self._maker_total_committed
+        if remaining <= 0 or order_cost > remaining + 1.0:  # $1 tolerance
             return {"action": "block", "side": side, "token_id": token_id,
-                    "size": size, "price": price, "reason": f"no {cat} bankroll configured"}
+                    "size": size, "price": price,
+                    "reason": f"bankroll exhausted (${self._maker_total_committed:.0f}/${bankroll:.0f} used)"}
 
-        # 4. Per-market exposure cap (15% of bankroll)
-        max_per_market = bankroll * 0.15
+        # 4. Per-market exposure cap (max $10 per market = quote_size)
         exposure = self._inv_mgr.get_market_exposure(up_token, down_token)
+        cat = self._token_category.get(token_id, "crypto")
+        max_per_market = self.quote_size_usd
         if exposure["total_usd"] >= max_per_market:
             return {"action": "block", "side": side, "token_id": token_id,
                     "size": size, "price": price,
@@ -842,6 +873,13 @@ class MakerEngine:
             spread_captured = max(0, fill_price - fair_value)
 
         self._fills_today += 1
+
+        # Track committed against hard bankroll cap
+        if not self.cfg.maker_dry_run:
+            self._maker_total_committed += quote.size_usd
+            self._save_committed()
+            log.info("[MAKER] Committed: $%.2f / $%.0f bankroll",
+                     self._maker_total_committed, self.cfg.maker_bankroll_usd)
 
         # Maker rebate estimate: ~20% of taker fee (0.5%) on fill value
         rebate = 0.005 * 0.20 * quote.size_usd
