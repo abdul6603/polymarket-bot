@@ -72,6 +72,7 @@ class Config:
     res_scalp_max_bet: float = float(_env("RES_SCALP_MAX_BET", "20.0"))
     res_scalp_kelly_frac: float = float(_env("RES_SCALP_KELLY_FRAC", "0.25"))
     res_scalp_max_concurrent: int = int(_env("RES_SCALP_MAX_CONCURRENT", "3"))
+    res_scalp_dry_run: bool = _env("RES_SCALP_DRY_RUN", "").lower() not in ("false", "0", "no")  # independent override
 
 
 # ── Brotherhood Hierarchy ──

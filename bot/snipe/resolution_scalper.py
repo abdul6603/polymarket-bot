@@ -115,7 +115,7 @@ class ResolutionScalper:
         self._windows = window_tracker
         self._orderbook = orderbook_signal
         self._client = clob_client
-        self._dry_run = dry_run
+        self._dry_run = getattr(cfg, "res_scalp_dry_run", dry_run)
         self._bankroll = bankroll
 
         # Config overrides
