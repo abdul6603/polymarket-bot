@@ -282,4 +282,4 @@ def detect_anomalies() -> list[dict]:
 
     if alerts:
         log.info("Anomaly scan: %d alerts (%d critical)", len(alerts), len(critical))
-    return alerts    
+    return alerts
