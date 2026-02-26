@@ -292,10 +292,10 @@
       <div class="hk-table-wrap">
         <table class="data-table">
           <thead>
-            <tr><th>Asset</th><th>Dir</th><th>Lev</th><th>Entry</th><th>Now</th><th>SL</th><th>TP</th><th>Qty</th><th>Margin</th><th>P&amp;L</th></tr>
+            <tr><th>Asset</th><th>Dir</th><th>Conv</th><th>Lev</th><th>Entry</th><th>Now</th><th>SL</th><th>TP</th><th>Qty</th><th>Margin</th><th>P&amp;L</th></tr>
           </thead>
           <tbody id="odin-positions-tbody">
-            <tr><td colspan="10" class="text-muted" style="text-align:center;padding:24px;">No open positions</td></tr>
+            <tr><td colspan="11" class="text-muted" style="text-align:center;padding:24px;">No open positions</td></tr>
           </tbody>
         </table>
       </div>
@@ -719,7 +719,7 @@ function odinRenderPositions(positions) {
     var totalPnl = 0;
     positions.forEach(function(p) {
       var dirColor = p.direction === 'LONG' ? 'var(--success)' : 'var(--error)';
-      var curPrice = prices[p.symbol] || 0;
+      var curPrice = prices[p.symbol] || p.current_price || 0;
       var pnl = 0;
       if (curPrice > 0) {
         pnl = p.direction === 'LONG' ? (curPrice - p.entry_price) * p.qty : (p.entry_price - curPrice) * p.qty;
@@ -729,9 +729,12 @@ function odinRenderPositions(positions) {
       var pnlPrefix = pnl >= 0 ? '+$' : '-$';
       var pnlPct = p.margin > 0 ? (pnl / p.margin * 100) : 0;
       var asset = (p.symbol || '').replace('USDT', '');
-      html += '<tr>';
+      var conv = p.conviction_score || p.confidence || 0;
+      var convColor = conv >= 70 ? 'var(--success)' : conv >= 55 ? 'var(--warning)' : 'var(--error)';
+      html += '<tr style="font-size:0.78rem;">';
       html += '<td style="font-weight:600;">' + asset + '</td>';
       html += '<td style="color:' + dirColor + ';font-weight:700;">' + (p.direction || '') + '</td>';
+      html += '<td style="color:' + convColor + ';font-weight:700;">' + Math.round(conv) + '</td>';
       html += '<td>' + (p.leverage || 3) + 'x</td>';
       html += '<td>$' + (p.entry_price || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + '</td>';
       html += '<td style="font-weight:600;">' + (curPrice > 0 ? '$' + curPrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '--') + '</td>';
@@ -739,7 +742,7 @@ function odinRenderPositions(positions) {
       html += '<td style="color:var(--success);">$' + (p.take_profit_1 || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + '</td>';
       html += '<td>' + (p.qty || 0).toFixed(4) + '</td>';
       html += '<td>$' + (p.margin || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + '</td>';
-      html += '<td style="color:' + pnlColor + ';font-weight:700;">' + pnlPrefix + Math.abs(pnl).toFixed(2) + '<div style="font-size:0.58rem;color:' + pnlColor + ';">' + (pnlPct >= 0 ? '+' : '') + pnlPct.toFixed(2) + '%</div></td>';
+      html += '<td style="color:' + pnlColor + ';font-weight:700;">' + pnlPrefix + Math.abs(pnl).toFixed(2) + '<div style="font-size:0.62rem;color:' + pnlColor + ';">' + (pnlPct >= 0 ? '+' : '') + pnlPct.toFixed(2) + '%</div></td>';
       html += '</tr>';
     });
     tbody.innerHTML = html;
@@ -883,7 +886,7 @@ function odinRefresh() {
     var positions = d.paper_positions || [];
     var tbody = document.getElementById('odin-positions-tbody');
     if (tbody) {
-      if (positions.length === 0) { tbody.innerHTML = '<tr><td colspan="10" class="text-muted">No open positions</td></tr>'; }
+      if (positions.length === 0) { tbody.innerHTML = '<tr><td colspan="11" class="text-muted">No open positions</td></tr>'; }
       else { odinRenderPositions(positions); }
     }
 
