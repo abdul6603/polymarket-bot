@@ -286,14 +286,14 @@ class OdinBrain:
             return None
 
         # Required fields — handle multiple naming conventions from LLM
-        action = (data.get("action", "") or data.get("direction", "")).upper()
-        conviction = data.get("conviction", 0) or data.get("confidence", 0)
-        stop_loss = data.get("stop_loss", 0)
-        tp1 = data.get("take_profit_1", 0) or data.get("take_profit", 0)
-        tp2 = data.get("take_profit_2", 0)
-        entry = data.get("entry_price", 0) or data.get("entry", 0) or current_price
-        rr = data.get("risk_reward", 0)
-        llm_risk = data.get("risk_usd", 0) or data.get("risk_amount", 0) or data.get("position_size_usd", 0)
+        action = (data.get("action") or data.get("direction") or "").upper()
+        conviction = data.get("conviction") or data.get("confidence") or 0
+        stop_loss = data.get("stop_loss") or 0
+        tp1 = data.get("take_profit_1") or data.get("take_profit") or 0
+        tp2 = data.get("take_profit_2") or 0
+        entry = data.get("entry_price") or data.get("entry") or current_price
+        rr = data.get("risk_reward") or 0
+        llm_risk = data.get("risk_usd") or data.get("risk_amount") or data.get("position_size_usd") or 0
         reasoning = data.get("reasoning", [])
         # If reasoning is a dict (structured), flatten to list of strings
         if isinstance(reasoning, dict):
