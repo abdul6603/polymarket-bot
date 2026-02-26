@@ -52,8 +52,11 @@ class OrderManager:
         self._trades_file = data_dir / "odin_trades.jsonl"
         self._signals_file = data_dir / "odin_signals.jsonl"
 
-        # Active paper positions
+        # Active paper positions (persisted for restart recovery)
         self._paper_positions: dict[str, dict] = {}
+        self._paper_positions_file = data_dir / "odin_paper_positions.json"
+        if dry_run:
+            self._load_paper_positions()
 
         # Active live positions (tracked locally for restart recovery + close detection)
         self._live_positions: dict[str, dict] = {}
@@ -146,7 +149,35 @@ class OrderManager:
             size.qty, size.notional_usd,
             signal.stop_loss, signal.take_profit_1, signal.risk_reward,
         )
+        self._save_paper_positions()
         return pos_id
+
+    # ── Paper Position Persistence ──
+
+    def _save_paper_positions(self) -> None:
+        """Atomically persist paper positions to disk for restart recovery."""
+        try:
+            tmp = self._paper_positions_file.with_suffix(".tmp")
+            with open(tmp, "w") as f:
+                json.dump(self._paper_positions, f, indent=2, default=str)
+            tmp.replace(self._paper_positions_file)
+        except Exception as e:
+            log.error("[PAPER] Save error: %s", str(e)[:100])
+
+    def _load_paper_positions(self) -> None:
+        """Load paper positions from disk on startup."""
+        if self._paper_positions_file.exists():
+            try:
+                with open(self._paper_positions_file) as f:
+                    self._paper_positions = json.load(f)
+                if self._paper_positions:
+                    log.info("[PAPER] Restored %d positions from disk",
+                             len(self._paper_positions))
+                    for pid, pos in self._paper_positions.items():
+                        self._exit_states[pid] = self._exit_mgr.init_exit_state(pos)
+            except Exception as e:
+                log.error("[PAPER] Load error: %s", str(e)[:100])
+                self._paper_positions = {}
 
     def check_paper_positions(
         self, current_prices: dict[str, float], regime: str = "neutral",
@@ -224,6 +255,8 @@ class OrderManager:
                     log.info("[EXIT-MGR] %s %s: %s",
                              pos["symbol"], pos_id, decision.reason)
 
+        # Persist after any changes (closes, partial fills, trailing SL updates)
+        self._save_paper_positions()
         return closed
 
     def _partial_close_paper(
@@ -268,6 +301,7 @@ class OrderManager:
             "[EXIT-MGR] PARTIAL %s %s: close %.6f @ $%.2f | PnL $%.2f | %s",
             pos["symbol"], pos_id, close_qty, price, partial_pnl, decision.reason,
         )
+        self._save_paper_positions()
 
     def _close_paper_position(
         self,
@@ -924,6 +958,7 @@ class OrderManager:
             "[LIMIT-FILL] %s %s @ $%.2f → position %s",
             order["direction"], order["symbol"], order["limit_price"], pos_id,
         )
+        self._save_paper_positions()
         return pos_id
 
     def on_fill(self, fill_data: dict) -> None:
