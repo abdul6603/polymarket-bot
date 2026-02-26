@@ -969,6 +969,13 @@ class TradingBot:
                 log.info("  -> Blocked: %s", reason)
                 continue
 
+            # Signal pipeline dry-run gate — log but don't execute
+            if os.environ.get("SIGNAL_PIPELINE_DRY_RUN", "").lower() in ("true", "1", "yes"):
+                log.info("  -> [DRY] Signal pipeline dry-run: would place $%.2f %s %s/%s (conviction=%.0f)",
+                         conviction.position_size_usd, sig.direction.upper(), asset.upper(), timeframe,
+                         conviction.total_score)
+                continue
+
             # Orderbook depth check — verify liquidity before placing order
             ob_ok, ob_reason, ob_analysis = check_orderbook_depth(
                 clob_host=self.cfg.clob_host,
