@@ -173,8 +173,9 @@ class PositionSizer:
 
         # ── Step 3: Calculate risk (LLM-driven or config default) ──
         if risk_override > 0:
-            # LLM brain or PortfolioGuard set the risk — use it directly
-            base_risk = risk_override
+            # LLM brain already factored conviction + macro into risk_usd.
+            # Do NOT scale by conviction or macro again (double-dipping).
+            risk = risk_override
             adjustments.append(f"llm_risk_${risk_override:.0f}")
         else:
             # Fallback: min(config_risk, pct of balance)
@@ -183,16 +184,16 @@ class PositionSizer:
             if base_risk < self._risk_usd:
                 adjustments.append(f"balance_cap_{self._risk_pct}%=${pct_risk:.0f}")
 
-        # Scale by conviction risk_multiplier (0-1)
-        risk = base_risk * max(0.0, min(1.0, confidence))
-        if confidence < 1.0:
-            adjustments.append(f"conviction_x{confidence:.2f}")
+            # Scale by conviction risk_multiplier (0-1)
+            risk = base_risk * max(0.0, min(1.0, confidence))
+            if confidence < 1.0:
+                adjustments.append(f"conviction_x{confidence:.2f}")
 
-        # Scale by macro
-        macro_mult = max(0.0, min(1.0, macro_multiplier))
-        risk *= macro_mult
-        if macro_mult < 1.0:
-            adjustments.append(f"macro_x{macro_mult:.2f}")
+            # Scale by macro
+            macro_mult = max(0.0, min(1.0, macro_multiplier))
+            risk *= macro_mult
+            if macro_mult < 1.0:
+                adjustments.append(f"macro_x{macro_mult:.2f}")
 
         # Discipline layer scalars (volatility, drawdown, edge — only reduce)
         vol_scalar = max(0.0, min(1.0, kwargs.get("volatility_scalar", 1.0)))
