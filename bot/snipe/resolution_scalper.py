@@ -499,14 +499,12 @@ class ResolutionScalper:
                 strike = None
 
             if strike is not None:
-                if self._dry_run:
-                    # Dry run: resolve based on final price vs strike
-                    price_above = current_price > strike
-                    won = (pos.direction == "up" and price_above) or \
-                          (pos.direction == "down" and not price_above)
-                else:
-                    # Live: token resolves to $1 (won) or $0 (lost)
-                    won = self._check_clob_resolution(pos)
+                # Resolve based on final Binance price vs strike
+                # (same logic for paper and live — CLOB orderbook is
+                # unreliable for expired 5-minute markets)
+                price_above = current_price > strike
+                won = (pos.direction == "up" and price_above) or \
+                      (pos.direction == "down" and not price_above)
             else:
                 won = False
 
