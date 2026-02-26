@@ -111,6 +111,7 @@ def _normalize_garves(data: dict | None, mode: str = "live") -> list[dict]:
         positions.append({
             "id": f"garves_{h.get('market', '')[:20]}",
             "agent": "garves",
+            "engine": "taker",
             "mode": mode,
             "market": h.get("market", "Unknown"),
             "asset": h.get("asset", "?"),
@@ -193,6 +194,7 @@ def _normalize_maker(data: dict | None, mode: str = "paper") -> list[dict]:
         positions.append({
             "id": f"garves_maker_{asset_lower}",
             "agent": "garves",
+            "engine": "maker",
             "mode": mode,
             "market": f"Maker {asset_upper} ({info['tokens']} mkts, {info['fills']} fills)",
             "asset": asset_upper,
@@ -248,6 +250,7 @@ def _normalize_snipe() -> list[dict]:
         positions.append({
             "id": f"snipe_{asset}_{market_id[:12]}",
             "agent": "garves",
+            "engine": "snipe",
             "mode": "paper" if data.get("dry_run", True) else "live",
             "market": f"Snipe {asset.upper()} {direction} ({exec_tf})",
             "asset": asset.upper()[:3],
@@ -286,6 +289,7 @@ def _normalize_snipe() -> list[dict]:
         positions.append({
             "id": f"res_scalp_{asset}_{int(time.time())}",
             "agent": "garves",
+            "engine": "scalp",
             "mode": "paper" if data.get("dry_run", True) else "live",
             "market": f"Scalp {asset.upper()} {direction} (T-{remaining}s)",
             "asset": asset.upper()[:3],

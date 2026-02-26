@@ -314,6 +314,18 @@ var AGENT_BADGES = {
   odin: 'OD',
   oracle: 'OR'
 };
+var ENGINE_BADGES = {
+  taker: {label: 'TKR', bg: '#F59E0B'},
+  maker: {label: 'MKR', bg: '#A855F7'},
+  snipe: {label: 'SNP', bg: '#10B981'},
+  scalp: {label: 'SCP', bg: '#06B6D4'},
+  whale: {label: 'WHL', bg: '#EC4899'}
+};
+function tradersEngineBadge(engine) {
+  var e = ENGINE_BADGES[engine];
+  if (!e) return '';
+  return ' <span style="display:inline-block;padding:1px 4px;border-radius:3px;font-size:0.54rem;font-weight:700;font-family:var(--font-mono);color:#000;background:' + e.bg + ';margin-left:3px;">' + e.label + '</span>';
+}
 
 /* --- Auto-refresh: runs only when traders tab is active --- */
 setInterval(function() {
@@ -454,7 +466,7 @@ function tradersRenderPositions(data) {
     var expiryHtml = tradersCountdownHtml(p.end_date, p.platform);
 
     rows += '<tr class="tr-agent-' + p.agent + '" data-agent="' + p.agent + '" data-market="' + (p.market || '').toLowerCase() + '">';
-    rows += '<td style="padding:6px 10px;"><span class="traders-badge" style="background:' + agentColor + ';">' + badge + '</span></td>';
+    rows += '<td style="padding:6px 10px;"><span class="traders-badge" style="background:' + agentColor + ';">' + badge + '</span>' + tradersEngineBadge(p.engine) + '</td>';
     rows += '<td style="padding:6px 10px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + tradersEsc(p.market) + '">' + tradersEsc(marketShort) + '</td>';
     rows += '<td style="padding:6px 10px;" class="' + dirClass + '">' + dirArrow + ' ' + p.direction + '</td>';
     rows += '<td style="padding:6px 10px;"><span class="traders-cat-badge">' + p.category + '</span></td>';
@@ -509,7 +521,7 @@ function tradersRenderCards(positions) {
     var pnlSign = p.pnl >= 0 ? '+' : '';
     html += '<div class="pos-card" style="border-left:3px solid ' + agentColor + ';">';
     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
-    html += '<span class="traders-badge" style="background:' + agentColor + ';">' + AGENT_BADGES[p.agent] + '</span>';
+    html += '<span class="traders-badge" style="background:' + agentColor + ';">' + AGENT_BADGES[p.agent] + '</span>' + tradersEngineBadge(p.engine);
     html += '<span class="traders-cat-badge">' + p.category + '</span>';
     html += '</div>';
     html += '<div style="font-size:0.76rem;font-weight:600;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + tradersEsc(p.market) + '">' + tradersEsc(p.market.length > 35 ? p.market.substring(0, 35) + '...' : p.market) + '</div>';
@@ -662,7 +674,7 @@ function tradersRenderPaper(data) {
     var marketShort = (p.market || '').length > 40 ? p.market.substring(0, 40) + '...' : (p.market || '');
 
     rows += '<tr class="tr-agent-' + p.agent + '">';
-    rows += '<td style="padding:6px 10px;"><span class="traders-badge" style="background:' + agentColor + ';">' + badge + '</span></td>';
+    rows += '<td style="padding:6px 10px;"><span class="traders-badge" style="background:' + agentColor + ';">' + badge + '</span>' + tradersEngineBadge(p.engine) + '</td>';
     rows += '<td style="padding:6px 10px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + tradersEsc(p.market) + '">' + tradersEsc(marketShort) + '</td>';
     rows += '<td style="padding:6px 10px;" class="' + dirClass + '">' + dirArrow + ' ' + p.direction + '</td>';
     rows += '<td style="padding:6px 10px;"><span class="traders-cat-badge">' + p.category + '</span></td>';
@@ -756,7 +768,7 @@ function tradersRenderHistory(trades) {
     var marketShort = (t.market || '').length > 38 ? t.market.substring(0, 38) + '...' : (t.market || '');
 
     rows += '<tr class="tr-agent-' + t.agent + '">';
-    rows += '<td style="padding:6px 10px;"><span class="traders-badge" style="background:' + agentColor + ';">' + badge + '</span></td>';
+    rows += '<td style="padding:6px 10px;"><span class="traders-badge" style="background:' + agentColor + ';">' + badge + '</span>' + tradersEngineBadge(t.engine) + '</td>';
     rows += '<td style="padding:6px 10px;"><span class="' + modeClass + '">' + t.mode.toUpperCase() + '</span></td>';
     rows += '<td style="padding:6px 10px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + tradersEsc(t.market) + '">' + tradersEsc(marketShort) + '</td>';
     rows += '<td style="padding:6px 10px;" class="' + dirClass + '">' + dirArrow + ' ' + (t.direction || '') + '</td>';
