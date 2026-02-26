@@ -303,9 +303,9 @@ class TradingBot:
         else:
             log.info("SnipeEngine: disabled (set SNIPE_ENABLED=true to activate)")
         if self.maker_engine.enabled:
-            log.info("MakerEngine: ENABLED (quote=$%.0f, max_inv=$%.0f, exposure=$%.0f, tick=%.0fs)",
-                     self.maker_engine.quote_size_usd, self.maker_engine.max_inventory_usd,
-                     self.maker_engine.max_total_exposure, self.maker_engine.tick_interval_s)
+            log.info("MakerEngine V2: ENABLED (bankroll=$%.0f, quote=$%.0f, dry_run=%s, tick=%.0fs)",
+                     self.cfg.maker_bankroll_usd, self.maker_engine.quote_size_usd,
+                     self.cfg.maker_dry_run, self.maker_engine.tick_interval_s)
         else:
             log.info("MakerEngine: disabled (set MAKER_ENABLED=true to activate)")
         if self.cfg.whale_enabled:
