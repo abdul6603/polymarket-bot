@@ -158,6 +158,7 @@ class ResolutionScalper:
         # Phase 3: Scan all windows with 15-90s remaining
         now = time.time()
         opportunities: list[ScalpOpportunity] = []
+        scan_assets: list[str] = []
 
         for window in self._windows.all_active_windows():
             remaining = window.end_ts - now
@@ -177,9 +178,13 @@ class ResolutionScalper:
             if window.asset not in SCALP_ASSETS:
                 continue
 
+            scan_assets.append(f"{window.asset}:{int(remaining)}s")
             opp = self._evaluate_window(window, live_prices, remaining)
             if opp:
                 opportunities.append(opp)
+
+        if scan_assets:
+            log.info("[RES-SCALP] Scanning %d windows: %s", len(scan_assets), ", ".join(scan_assets))
 
         # Sort by edge descending, execute best
         opportunities.sort(key=lambda o: o.edge, reverse=True)
