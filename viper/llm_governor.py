@@ -46,7 +46,7 @@ DEFAULT_BUDGETS: dict[str, float] = {
 SYSTEM_DAILY_LIMIT = 12.00
 
 # Thresholds
-THROTTLE_PCT = 80   # At 80% → force local_large (free)
+THROTTLE_PCT = 80   # At 80% → force local_small (free, no 14B server blocking)
 BLOCK_PCT = 100     # At 100% → force local_small (cheapest)
 SPIKE_MULTIPLIER = 3.0  # Hourly burn > 3x expected → alert
 
@@ -144,17 +144,17 @@ def _enforce_overrides(budgets: dict[str, dict]) -> list[str]:
                 changed = True
 
         elif budget["status"] == "throttled":
-            if not has_governor or agent_ov.get("default") != "local_large":
+            if not has_governor or agent_ov.get("default") != "local_small":
                 original = {k: v for k, v in agent_ov.items()
                             if not k.startswith("_")}
                 overrides[agent] = {
                     **original,
-                    "default": "local_large",
+                    "default": "local_small",
                     "_governor": True,
                     "_original": original,
                     "_reason": f"throttled at {budget['pct']:.0f}%",
                 }
-                actions.append(f"{agent}→local_large ({budget['pct']:.0f}%)")
+                actions.append(f"{agent}→local_small ({budget['pct']:.0f}%)")
                 changed = True
 
         elif budget["status"] == "normal" and has_governor:
