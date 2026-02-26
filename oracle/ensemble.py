@@ -560,7 +560,7 @@ def _query_local(system: str, user: str) -> dict | None:
         resp = requests.post(
             "http://localhost:11434/v1/chat/completions",
             json={
-                "model": "mlx-community/Qwen2.5-14B-Instruct-4bit",
+                "model": "qwen2.5-14b-instruct",
                 "messages": [
                     {"role": "system", "content": system},
                     {"role": "user", "content": user},

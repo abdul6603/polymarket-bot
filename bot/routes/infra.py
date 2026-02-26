@@ -365,7 +365,7 @@ def api_system_summary():
                     if ts > day_start:
                         llm_today["calls"] += 1
                         llm_today["cost_usd"] += entry.get("cost_usd", 0)
-                        if entry.get("model", "").startswith("mlx"):
+                        if entry.get("model", "").startswith(("mlx", "qwen")):
                             llm_today["local_calls"] += 1
                         else:
                             llm_today["cloud_calls"] += 1
