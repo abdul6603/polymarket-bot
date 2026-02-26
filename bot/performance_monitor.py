@@ -192,6 +192,8 @@ class PerformanceMonitor:
 
     def _trigger_kill_switch(self, state: PerformanceState) -> None:
         """Activate kill switch — create emergency stop flag."""
+        if KILL_SWITCH_WR <= 0:
+            return  # Kill switch disabled
         from bot.v2_tools import emergency_stop
         emergency_stop(reason=f"Kill switch: {state.kill_switch_reason}")
 
