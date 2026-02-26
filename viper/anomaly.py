@@ -205,15 +205,6 @@ def _check_agent_down() -> list[dict]:
 
     return alerts
 
-                alerts.append(_make_alert(
-                    "critical", agent, "agent_down",
-                    f"{agent} status file is {age_minutes:.0f}m old (threshold: {STALE_MINUTES}m)",                    age_minutes=round(age_minutes, 1),
-                ))
-        except Exception:
-            pass
-
-    return alerts
-
 
 def _check_soren_queue() -> list[dict]:
     """Check if Soren's content queue is empty or all items failed."""
