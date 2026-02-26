@@ -211,6 +211,23 @@ class PositionSizer:
             risk *= edge_scalar
             adjustments.append(f"edge_x{edge_scalar:.2f}")
 
+        # Funding rate bonus/penalty
+        funding_rate_8h = kwargs.get("funding_rate_8h", 0.0)
+        funding_collect_side = kwargs.get("funding_collect_side", "NONE")
+        funding_bonus_pct = kwargs.get("funding_bonus_pct", 0.20)
+        funding_penalty_pct = kwargs.get("funding_penalty_pct", 0.15)
+        funding_arb_min = kwargs.get("funding_arb_min_rate", 0.0002)
+
+        if abs(funding_rate_8h) >= funding_arb_min and funding_collect_side != "NONE":
+            if direction == funding_collect_side:
+                # Collecting funding — boost risk
+                risk *= (1 + funding_bonus_pct)
+                adjustments.append(f"funding_bonus_+{funding_bonus_pct:.0%} (collect {funding_rate_8h:+.4%}/8h)")
+            elif abs(funding_rate_8h) >= 0.0005:
+                # Paying heavy funding — reduce risk
+                risk *= (1 - funding_penalty_pct)
+                adjustments.append(f"funding_penalty_-{funding_penalty_pct:.0%} (pay {funding_rate_8h:+.4%}/8h)")
+
         # Scale down if already exposed
         if current_exposure > 0 and balance > 0:
             exposure_ratio = current_exposure / balance

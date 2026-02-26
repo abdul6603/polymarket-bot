@@ -30,7 +30,7 @@ from odin.exchange.ws_manager import OdinWSManager, WSEvent
 from odin.execution.exit_manager import ExitManager
 from odin.execution.order_manager import OrderManager
 from odin.macro.coinglass import CoinGlassClient, MarketSnapshot
-from odin.macro.regime import Direction as RegimeDirection, RegimeBrain, RegimeState
+from odin.macro.regime import Direction as RegimeDirection, FundingArbInfo, RegimeBrain, RegimeState
 from odin.macro.tracker import MacroDominanceTracker, MacroSignal
 from odin.risk.circuit_breaker import CircuitBreaker
 from odin.risk.portfolio_guard import PortfolioGuard, coin_tier, notional_cap_for_tier
@@ -285,6 +285,7 @@ class OdinBot:
             try:
                 self._last_snapshot = self._cg.scan_market(priority)
                 self._last_regime = self._regime_brain.analyze(self._last_snapshot)
+                self._enrich_regime_with_funding()
                 log.info("[INIT] Regime: %s (score=%.0f) | %d opportunities",
                          self._last_regime.regime.value,
                          self._last_regime.global_score,
@@ -389,6 +390,26 @@ class OdinBot:
             if s in self._hl_tradeable
         ]
 
+    # ── Funding Arb Enrichment ──
+
+    def _enrich_regime_with_funding(self) -> None:
+        """Fetch HL native funding rates and inject arb info into regime state."""
+        if not self._last_regime:
+            return
+        symbols = [s.replace("USDT", "") for s in self._cfg.symbols]
+        notional_est = self._cfg.starting_capital * self._cfg.default_leverage
+        for sym in symbols:
+            try:
+                rates = self._client.get_funding_rate(sym)
+                rate_8h = rates.get("rate_8h", 0.0)
+                arb = self._regime_brain.funding_arb_opportunity(
+                    sym, rate_8h, notional_est,
+                    min_rate=self._cfg.funding_arb_min_rate,
+                )
+                self._last_regime.funding_arbs[sym] = arb
+            except Exception as e:
+                log.debug("[FUNDING] Error enriching %s: %s", sym, str(e)[:100])
+
     # ── CoinGlass Loop (Regime Brain) ──
 
     async def _coinglass_loop(self) -> None:
@@ -401,6 +422,7 @@ class OdinBot:
                 priority = self._get_cg_priority()
                 self._last_snapshot = self._cg.scan_market(priority)
                 self._last_regime = self._regime_brain.analyze(self._last_snapshot)
+                self._enrich_regime_with_funding()
                 log.info(
                     "[CG] Regime: %s (%.0f) | bias=%s | opps=%d | calls=%d/30 | priority=%s",
                     self._last_regime.regime.value,
@@ -738,6 +760,14 @@ class OdinBot:
         # ── Position Sizing (LLM-driven risk) ──
         # Priority: PortfolioGuard cap > LLM risk > config default
         effective_risk = guard_decision.adjusted_risk_usd or trade_risk
+        # Funding arb data for sizer bonus/penalty
+        bare = symbol.replace("USDT", "")
+        funding_arb = (
+            self._last_regime.funding_arbs.get(bare)
+            if self._last_regime and self._last_regime.funding_arbs
+            else None
+        )
+
         size = self._sizer.calculate(
             balance=balance,
             entry_price=current_price,
@@ -753,6 +783,11 @@ class OdinBot:
             volatility_scalar=vol_scalar,
             drawdown_scalar=dd_scalar,
             edge_scalar=edge_scalar,
+            funding_rate_8h=funding_arb.rate_8h if funding_arb else 0.0,
+            funding_collect_side=funding_arb.collect_side if funding_arb else "NONE",
+            funding_bonus_pct=self._cfg.funding_bonus_pct,
+            funding_penalty_pct=self._cfg.funding_penalty_pct,
+            funding_arb_min_rate=self._cfg.funding_arb_min_rate,
         )
 
         if size.notional_usd < 5:
@@ -882,7 +917,11 @@ class OdinBot:
                     regime_label = (
                         self._last_regime.regime.value if self._last_regime else "neutral"
                     )
-                    closed = self._order_mgr.check_paper_positions(prices, regime_label)
+                    closed = self._order_mgr.check_paper_positions(
+                        prices, regime_label,
+                        funding_arbs=self._last_regime.funding_arbs if self._last_regime else {},
+                        funding_extension_hours=self._cfg.funding_stale_extension_hours,
+                    )
                     for result in closed:
                         self._handle_closed_position(result)
 
@@ -971,6 +1010,8 @@ class OdinBot:
             try:
                 closed = self._order_mgr.check_paper_positions(
                     self._ws_prices, regime_label,
+                    funding_arbs=self._last_regime.funding_arbs if self._last_regime else {},
+                    funding_extension_hours=self._cfg.funding_stale_extension_hours,
                 )
                 for result in closed:
                     self._handle_closed_position(result)

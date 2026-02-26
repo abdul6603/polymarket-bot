@@ -533,6 +533,51 @@ class HyperliquidClient:
             log.debug("[HL] Open orders error: %s", str(e)[:100])
             return []
 
+    # ── Funding Rates ─────────────────────────────────────────────
+
+    def get_funding_rate(self, symbol: str) -> dict[str, float]:
+        """Current HL funding rate for a symbol.
+
+        Returns {"rate_8h": X, "annualized": Y} or zeros on error.
+        """
+        coin = _strip_usdt(symbol)
+        try:
+            data = self._info.meta_and_asset_ctxs()
+            universe = data[0].get("universe", []) if isinstance(data, (list, tuple)) else []
+            ctxs = data[1] if isinstance(data, (list, tuple)) and len(data) > 1 else []
+            for asset, ctx in zip(universe, ctxs):
+                if asset.get("name", "") == coin:
+                    rate_8h = float(ctx.get("funding", 0))
+                    return {
+                        "rate_8h": rate_8h,
+                        "annualized": rate_8h * 3 * 365,
+                    }
+        except Exception as e:
+            log.debug("[HL] Funding rate error for %s: %s", coin, str(e)[:100])
+        return {"rate_8h": 0.0, "annualized": 0.0}
+
+    def get_funding_history(self, symbol: str, hours: int = 24) -> list[dict]:
+        """Recent funding payments for a symbol.
+
+        Returns list of {"rate": X, "time": T} dicts, newest first.
+        """
+        coin = _strip_usdt(symbol)
+        now_ms = int(time.time() * 1000)
+        start_ms = now_ms - (hours * 3600 * 1000)
+        try:
+            raw = self._info.funding_history(coin, start_ms, now_ms)
+            result = []
+            for entry in raw:
+                result.append({
+                    "rate": float(entry.get("fundingRate", 0)),
+                    "time": entry.get("time", 0),
+                })
+            result.sort(key=lambda x: x["time"], reverse=True)
+            return result
+        except Exception as e:
+            log.debug("[HL] Funding history error for %s: %s", coin, str(e)[:100])
+            return []
+
     # ── Utility ──────────────────────────────────────────────────
 
     def ping(self) -> bool:

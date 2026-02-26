@@ -112,6 +112,9 @@ class ExitManager:
         state: PositionExitState,
         current_price: float,
         regime: str = "neutral",
+        funding_rate_8h: float = 0.0,
+        funding_collect_side: str = "NONE",
+        funding_extension_hours: float = 0.0,
     ) -> list[ExitDecision]:
         """Evaluate all exit conditions. Returns list of actions to take.
 
@@ -227,7 +230,12 @@ class ExitManager:
             decisions.append(trail_decision)
 
         # ── 4. Time-based exit ──
-        time_decision = self._check_time_exit(pos, current_r, r_distance)
+        time_decision = self._check_time_exit(
+            pos, current_r, r_distance,
+            funding_rate_8h=funding_rate_8h,
+            funding_collect_side=funding_collect_side,
+            funding_extension_hours=funding_extension_hours,
+        )
         if time_decision:
             decisions.append(time_decision)
 
@@ -293,23 +301,52 @@ class ExitManager:
 
     def _check_time_exit(
         self, pos: dict, current_r: float, r_distance: float,
+        funding_rate_8h: float = 0.0,
+        funding_collect_side: str = "NONE",
+        funding_extension_hours: float = 0.0,
     ) -> ExitDecision | None:
-        """Close stale trades that haven't moved enough."""
+        """Close stale trades that haven't moved enough.
+
+        Extends stale timer when position is collecting funding income.
+        """
         entry_time = pos.get("entry_time", 0)
         if entry_time <= 0:
             return None
 
         hours_held = (time.time() - entry_time) / 3600
-        if hours_held < self._max_stale_hours:
+
+        # Determine effective stale threshold
+        stale_hours = self._max_stale_hours
+        direction = pos.get("direction", "")
+
+        # Extend hold time when collecting funding
+        if (direction == funding_collect_side
+                and abs(funding_rate_8h) >= 0.0002
+                and funding_extension_hours > 0):
+            # Scale extension: 0.02%→base ext, 0.05%→3x base ext
+            rate_mult = min(3.0, abs(funding_rate_8h) / 0.0002)
+            extension = funding_extension_hours * rate_mult
+            stale_hours += extension
+            log.debug(
+                "[EXIT] Funding hold extension: +%.1fh (rate=%.4f%%/8h, collecting as %s)",
+                extension, funding_rate_8h * 100, funding_collect_side,
+            )
+
+        if hours_held < stale_hours:
             return None
 
         # If trade hasn't moved beyond threshold, close it
         if abs(current_r) < self._stale_r:
+            funding_note = ""
+            if direction == funding_collect_side and abs(funding_rate_8h) >= 0.0002:
+                est_income = abs(funding_rate_8h) * hours_held / 8
+                funding_note = f" (funding earned ~{est_income:.4f}R equiv)"
             return ExitDecision(
                 action=ExitAction.TIME_EXIT,
                 close_pct=1.0,
-                close_price=0,  # Use current market price
-                reason=f"Stale trade: {hours_held:.1f}h held, only {current_r:.2f}R moved",
+                close_price=0,
+                reason=f"Stale trade: {hours_held:.1f}h held (limit={stale_hours:.0f}h), "
+                       f"only {current_r:.2f}R moved{funding_note}",
             )
 
         return None

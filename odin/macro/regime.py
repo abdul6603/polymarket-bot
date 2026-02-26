@@ -61,6 +61,17 @@ class SymbolOpportunity:
 
 
 @dataclass
+class FundingArbInfo:
+    """Funding rate arbitrage opportunity for a symbol."""
+    symbol: str = ""
+    active: bool = False
+    collect_side: str = "NONE"
+    rate_8h: float = 0.0
+    daily_income_est: float = 0.0
+    annualized_pct: float = 0.0
+
+
+@dataclass
 class RegimeState:
     """Current market regime."""
     regime: Regime = Regime.NEUTRAL
@@ -70,6 +81,7 @@ class RegimeState:
     top_short: SymbolOpportunity | None = None
     top_long: SymbolOpportunity | None = None
     timestamp: float = 0.0
+    funding_arbs: dict[str, FundingArbInfo] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return {
@@ -85,6 +97,12 @@ class RegimeState:
             ],
             "top_short": self.top_short.symbol if self.top_short else None,
             "top_long": self.top_long.symbol if self.top_long else None,
+            "funding_arbs": {
+                sym: {"active": fa.active, "collect_side": fa.collect_side,
+                      "rate_8h": fa.rate_8h, "daily_income_est": fa.daily_income_est,
+                      "annualized_pct": fa.annualized_pct}
+                for sym, fa in self.funding_arbs.items()
+            },
         }
 
 
@@ -107,6 +125,35 @@ class RegimeBrain:
     LS_CROWDED_SHORT = 0.60         # 60% short = crowded
     OI_SURGE_THRESH = 5.0           # 5% OI change in 1h = surge
     LIQ_DOMINANCE = 0.70            # 70% of liquidations on one side
+
+    def funding_arb_opportunity(
+        self, symbol: str, rate_8h: float, notional: float, min_rate: float = 0.0002,
+    ) -> FundingArbInfo:
+        """Detect funding arb opportunity for a symbol.
+
+        Args:
+            symbol: Bare symbol (BTC, ETH)
+            rate_8h: Current HL 8-hour funding rate (signed)
+            notional: Estimated position notional for income calc
+            min_rate: Minimum |rate| to flag as arb (default 0.02%)
+        """
+        info = FundingArbInfo(symbol=symbol, rate_8h=rate_8h)
+
+        if abs(rate_8h) < min_rate:
+            return info
+
+        # Negative funding = longs collect; positive = shorts collect
+        info.collect_side = "LONG" if rate_8h < 0 else "SHORT"
+        info.active = True
+        info.daily_income_est = abs(rate_8h) * notional * 3
+        info.annualized_pct = abs(rate_8h) * 3 * 365 * 100
+
+        log.info(
+            "[REGIME] Funding arb: %s COLLECT_%s rate=%.4f%%/8h daily=$%.2f annual=%.1f%%",
+            symbol, info.collect_side, rate_8h * 100,
+            info.daily_income_est, info.annualized_pct,
+        )
+        return info
 
     def analyze(self, snapshot: MarketSnapshot) -> RegimeState:
         """Analyze market snapshot and determine regime + opportunities."""

@@ -131,6 +131,12 @@ class OdinConfig:
     scale_fvg_mid_pct: float = 0.30  # 30% at FVG midpoint
     scale_extreme_pct: float = 0.20  # 20% at extreme
 
+    # ── Funding Arb ──
+    funding_arb_min_rate: float = float(os.getenv("ODIN_FUNDING_ARB_MIN_RATE", "0.0002"))
+    funding_bonus_pct: float = float(os.getenv("ODIN_FUNDING_BONUS_PCT", "0.20"))
+    funding_penalty_pct: float = float(os.getenv("ODIN_FUNDING_PENALTY_PCT", "0.15"))
+    funding_stale_extension_hours: float = float(os.getenv("ODIN_FUNDING_STALE_EXT_H", "12"))
+
     # ── Discipline Layer ──
     slippage_budget_pct: float = float(os.getenv("ODIN_SLIPPAGE_BUDGET", "0.05"))
     min_market_score: int = int(os.getenv("ODIN_MIN_MARKET_SCORE", "50"))

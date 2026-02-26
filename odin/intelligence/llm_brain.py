@@ -252,6 +252,9 @@ class OdinBrain:
         # Structure zones (OBs/FVGs near price)
         parts.append(_format_zones(zones, current_price))
 
+        # Funding income opportunity
+        parts.append(_format_funding(regime, symbol))
+
         # Garves alignment
         parts.append(_format_garves(brotherhood, symbol))
 
@@ -499,6 +502,38 @@ def _format_regime(regime: object, symbol: str) -> str:
                 lines.append(f"  Reasons: {'; '.join(opp.reasons[:3])}")
             break
 
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _format_funding(regime: object, symbol: str) -> str:
+    """Format funding income opportunity for the analyst."""
+    if not regime or not hasattr(regime, "funding_arbs"):
+        return ""
+
+    arbs = getattr(regime, "funding_arbs", {})
+    if not arbs:
+        return ""
+
+    active = [(sym, fa) for sym, fa in arbs.items() if fa.active]
+    if not active:
+        return ""
+
+    bare = symbol.replace("USDT", "")
+    lines = ["=== FUNDING INCOME OPPORTUNITY ==="]
+    for sym, fa in active:
+        side_label = "LONGs collect" if fa.collect_side == "LONG" else "SHORTs collect"
+        lines.append(
+            f"- {sym}: Funding rate {fa.rate_8h:+.4%}/8h -> {side_label} "
+            f"${fa.daily_income_est:.2f}/day (annual {fa.annualized_pct:.1f}%)"
+        )
+
+    this_arb = arbs.get(bare)
+    if this_arb and this_arb.active:
+        lines.append(
+            f"- PREFERENCE: If your analysis is neutral/weak, lean toward "
+            f"{this_arb.collect_side} to collect funding income"
+        )
     lines.append("")
     return "\n".join(lines)
 

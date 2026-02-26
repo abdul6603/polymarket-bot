@@ -150,9 +150,12 @@ class OrderManager:
 
     def check_paper_positions(
         self, current_prices: dict[str, float], regime: str = "neutral",
+        funding_arbs: dict | None = None,
+        funding_extension_hours: float = 0.0,
     ) -> list[TradeResult]:
         """Check paper positions using ExitManager for trailing SL, partial TP, time exits."""
         closed = []
+        funding_arbs = funding_arbs or {}
 
         for pos_id, pos in list(self._paper_positions.items()):
             symbol = pos["symbol"]
@@ -166,8 +169,17 @@ class OrderManager:
                 state = self._exit_mgr.init_exit_state(pos)
                 self._exit_states[pos_id] = state
 
+            # Funding arb data for this symbol
+            bare = symbol.replace("USDT", "")
+            fa = funding_arbs.get(bare)
+
             # Evaluate all exit conditions
-            decisions = self._exit_mgr.update(pos, state, price, regime)
+            decisions = self._exit_mgr.update(
+                pos, state, price, regime,
+                funding_rate_8h=fa.rate_8h if fa else 0.0,
+                funding_collect_side=fa.collect_side if fa else "NONE",
+                funding_extension_hours=funding_extension_hours,
+            )
 
             for decision in decisions:
                 if decision.action == ExitAction.STOP_LOSS:
