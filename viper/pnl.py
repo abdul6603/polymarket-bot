@@ -93,7 +93,7 @@ def compute_pnl() -> dict:
     """Compute Brotherhood P&L and save to data/brotherhood_pnl.json.
 
     Called every 12th cycle (hourly) from main loop.
-    Publishes pnl_computed event to bus.
+    Returns the computed P&L data dictionary.
     """
     today = datetime.now(ET).strftime("%Y-%m-%d")
 
@@ -114,7 +114,7 @@ def compute_pnl() -> dict:
 
     # === COSTS ===
     costs = _read_json(COSTS_FILE)
-    total_monthly = costs.get("total_monthly", 0)
+    total_monthly = costs.get("total_monthly", 0.0)
     daily_api = round(total_monthly / 30, 2)
 
     # Infrastructure costs (Pro M3 server estimate)
@@ -124,7 +124,7 @@ def compute_pnl() -> dict:
     total_daily_cost = daily_api + infra_daily
     
     # For a fair daily comparison, estimate daily from total
-    agent_totals = costs.get("agent_totals", {})
+    agent_totals = costs.get("agent_totals", {}) or {}
     days_tracked = max(costs.get("days_tracked", 1), 1)
     
     garves_daily_pnl = round(garves_pnl["total_pnl"] / days_tracked, 2)
@@ -136,7 +136,7 @@ def compute_pnl() -> dict:
 
     # Best performer
     performers = {
-        "garves": garves_pnl["total_pnl"],
+        "garves": garves_pnl.get("total_pnl", 0.0),
         "hawk": hawk_pnl["total_pnl"],
     }
     best_performer = max(performers, key=performers.get) if performers else "none"
@@ -157,19 +157,18 @@ def compute_pnl() -> dict:
     pnl_data = {
         "date": today,
         "revenue": {
-            "garves": garves_pnl["total_pnl"],
+            "garves": garves_pnl.get("total_pnl", 0.0),
             "garves_daily": garves_daily_pnl,
-            "garves_trades": garves_pnl["resolved_trades"],
-            "garves_win_rate": garves_pnl["win_rate"],
-            "hawk": hawk_pnl["total_pnl"],
+            "garves_trades": garves_pnl.get("resolved_trades", 0),
+            "garves_win_rate": garves_pnl.get("win_rate", 0.0),
+            "hawk": hawk_pnl.get("total_pnl", 0.0),
             "hawk_daily": hawk_daily_pnl,
-            "hawk_trades": hawk_pnl["resolved_trades"],
-            "hawk_win_rate": hawk_pnl["win_rate"],
-            "soren_est": soren_est,
+            "hawk_trades": hawk_pnl.get("resolved_trades", 0),
+            "hawk_win_rate": hawk_pnl.get("win_rate", 0.0),
+            "soren_est": round(soren_est, 2),
         },
         "costs": {
-            "daily_api": daily_api,
-            "infrastructure_daily": infra_daily,
+            "daily_api": daily_api,            "infrastructure_daily": infra_daily,
             "total_monthly": total_monthly,
             "agent_breakdown": agent_totals,
         },
