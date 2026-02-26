@@ -123,7 +123,7 @@ class TradingBot:
             cfg=cfg,
             price_cache=self.price_cache,
             clob_client=self.client,
-            dry_run=cfg.dry_run,  # Uses .env DRY_RUN as single source of truth
+            dry_run=cfg.snipe_dry_run,  # Independent SNIPE_DRY_RUN override
             budget_per_window=cfg.snipe_budget_per_window,
             delta_threshold=cfg.snipe_delta_threshold / 100,
         )

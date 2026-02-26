@@ -44,6 +44,7 @@ class Config:
 
     # Snipe engine — 5m BTC pyramid accumulation
     snipe_enabled: bool = _env("SNIPE_ENABLED", "true").lower() in ("true", "1", "yes")
+    snipe_dry_run: bool = _env("SNIPE_DRY_RUN", _env("DRY_RUN", "true")).lower() in ("true", "1", "yes")
     snipe_budget_per_window: float = float(_env("SNIPE_BUDGET_PER_WINDOW", "50.0"))
     snipe_delta_threshold: float = float(_env("SNIPE_DELTA_THRESHOLD", "0.08"))
 
