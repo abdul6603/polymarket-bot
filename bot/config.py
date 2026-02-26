@@ -54,6 +54,9 @@ class Config:
     maker_max_inventory_usd: float = float(_env("MAKER_MAX_INVENTORY_USD", "30.0"))
     maker_max_total_exposure: float = float(_env("MAKER_MAX_TOTAL_EXPOSURE", "60.0"))
     maker_tick_interval_s: float = float(_env("MAKER_TICK_INTERVAL_S", "5.0"))
+    maker_bankroll_usd: float = float(_env("MAKER_BANKROLL_USD", "0"))  # 0 = disabled
+    maker_max_imbalance: float = float(_env("MAKER_MAX_IMBALANCE", "0.70"))
+    maker_daily_loss_pct: float = float(_env("MAKER_DAILY_LOSS_PCT", "0.05"))
 
     # Whale Follower — Smart Money copy trader (disabled by default)
     whale_enabled: bool = _env("WHALE_ENABLED", "false").lower() in ("true", "1", "yes")

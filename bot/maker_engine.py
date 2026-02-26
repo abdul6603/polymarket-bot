@@ -1,19 +1,18 @@
-"""MakerEngine — Two-sided maker liquidity for Polymarket crypto markets.
+"""MakerEngine V2 — Safe, Inventory-Aware Maker for Polymarket crypto markets.
 
-Posts GTC limit orders with post_only=True on both sides of the spread,
-capturing maker rebates (zero taker fee). Quotes are refreshed every tick
-and inventory is managed to prevent one-sided exposure.
+Two-sided maker quoting: BUY YES + BUY NO (never SELL — avoids balance errors).
+All positions tracked via on-chain sync (InventoryManager is source of truth).
+Safety: per-market exposure caps, imbalance limits, daily loss circuit breaker.
 
-Disabled by default — enable via MAKER_ENABLED=true env var.
+MAKER_DRY_RUN=true by default — only Jordan flips to false.
 """
 from __future__ import annotations
 
 import json
 import logging
 import os
-import random
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 from py_clob_client.client import ClobClient
@@ -36,66 +35,218 @@ class MakerQuote:
     order_id: str
     token_id: str
     asset: str         # e.g. "bitcoin", "ethereum"
-    side: str          # "BUY" or "SELL"
+    side: str          # "BUY_YES" or "BUY_NO"
     price: float
     size: float        # in tokens
     size_usd: float
     placed_at: float
 
 
-@dataclass
-class InventoryPosition:
-    """Net inventory for a single token (asset side)."""
-    token_id: str
-    asset: str
-    net_shares: float = 0.0     # positive = long, negative = short
-    cost_basis: float = 0.0     # total USD cost
-    fills_today: int = 0
-    estimated_rebate: float = 0.0
+# ── InventoryManager ─────────────────────────────────────────
+
+
+class InventoryManager:
+    """On-chain-synced inventory tracker. Source of truth for all position data.
+
+    Positions dict: token_id -> {outcome, size, avg_price, market_title, cur_price}
+    """
+
+    def __init__(self, wallet_address: str):
+        self._wallet = wallet_address
+        self._positions: dict[str, dict] = {}
+        self._last_sync = 0.0
+        self._sync_interval = 30.0
+        self._inventory_file = DATA_DIR / "maker_inventory.json"
+        self._load_from_disk()
+        self.sync()
+
+    def sync(self) -> None:
+        """Fetch positions from Polymarket data API. OVERWRITES local state."""
+        import urllib.request
+        try:
+            if not self._wallet:
+                log.warning("[INVENTORY] No wallet address — cannot sync")
+                return
+            url = (
+                f"https://data-api.polymarket.com/positions"
+                f"?user={self._wallet.lower()}&limit=500&sizeThreshold=0.5"
+            )
+            req = urllib.request.Request(url, headers={"User-Agent": "MakerV2/1.0"})
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                positions = json.loads(resp.read().decode())
+
+            if not isinstance(positions, list):
+                return
+
+            # OVERWRITE — on-chain is the only truth
+            new_positions: dict[str, dict] = {}
+            for pos in positions:
+                size = float(pos.get("size", 0))
+                if size < 0.5:
+                    continue
+                tid = pos.get("asset", "") or pos.get("token_id", "")
+                if not tid:
+                    continue
+                cur_price = float(pos.get("curPrice", 0) or pos.get("cur_price", 0))
+                if cur_price <= 0:
+                    continue  # dead/resolved market
+                avg_price = float(pos.get("avgPrice", 0) or pos.get("avg_price", 0))
+                new_positions[tid] = {
+                    "outcome": (pos.get("outcome") or "unknown").lower(),
+                    "size": size,
+                    "avg_price": avg_price if avg_price > 0 else cur_price,
+                    "market_title": (pos.get("title") or pos.get("market_title") or "unknown")[:30],
+                    "cur_price": cur_price,
+                }
+
+            self._positions = new_positions
+            self._last_sync = time.time()
+            self._save_to_disk()
+
+            if new_positions:
+                total = sum(p["size"] * p["avg_price"] for p in new_positions.values())
+                log.info("[INVENTORY] Synced %d on-chain positions (~$%.2f)", len(new_positions), total)
+            else:
+                log.debug("[INVENTORY] No live on-chain positions")
+        except Exception as e:
+            log.warning("[INVENTORY] Sync failed: %s", str(e)[:150])
+
+    def sync_if_stale(self) -> None:
+        """Re-sync if more than 30s since last sync."""
+        if time.time() - self._last_sync > self._sync_interval:
+            self.sync()
+
+    def update_from_fill(self, token_id: str, size: float, price: float, side: str) -> None:
+        """Fast local update on confirmed fill. Next sync() overwrites with on-chain truth."""
+        pos = self._positions.get(token_id)
+        if side in (BUY, "BUY_YES", "BUY_NO"):
+            if pos:
+                total_cost = pos["avg_price"] * pos["size"] + price * size
+                pos["size"] += size
+                pos["avg_price"] = total_cost / pos["size"] if pos["size"] > 0 else price
+            else:
+                self._positions[token_id] = {
+                    "outcome": "unknown",
+                    "size": size,
+                    "avg_price": price,
+                    "market_title": "fill",
+                    "cur_price": price,
+                }
+        elif side == SELL:
+            if pos:
+                pos["size"] = max(0, pos["size"] - size)
+                if pos["size"] < 0.5:
+                    self._positions.pop(token_id, None)
+        self._save_to_disk()
+
+    def get_position(self, token_id: str) -> dict | None:
+        """Returns {outcome, size, avg_price, market_title, cur_price} or None."""
+        return self._positions.get(token_id)
+
+    def can_sell(self, token_id: str, qty: float) -> bool:
+        """True if we hold >= qty shares of this token on-chain."""
+        pos = self._positions.get(token_id)
+        return pos is not None and pos["size"] >= qty
+
+    def get_market_exposure(self, up_token: str, down_token: str) -> dict:
+        """Returns {up_size, down_size, imbalance_pct, total_usd} for a market pair."""
+        up_pos = self._positions.get(up_token)
+        dn_pos = self._positions.get(down_token)
+        up_usd = up_pos["size"] * up_pos["avg_price"] if up_pos else 0.0
+        dn_usd = dn_pos["size"] * dn_pos["avg_price"] if dn_pos else 0.0
+        total = up_usd + dn_usd
+        imbalance = max(up_usd, dn_usd) / total if total > 0 else 0.0
+        return {
+            "up_size": up_usd,
+            "down_size": dn_usd,
+            "imbalance_pct": imbalance,
+            "total_usd": total,
+        }
+
+    def get_total_exposure(self) -> float:
+        """Sum of all live position values in USD."""
+        return sum(p["size"] * p["avg_price"] for p in self._positions.values())
+
+    def get_all_positions(self) -> dict[str, dict]:
+        """Return copy of all positions."""
+        return dict(self._positions)
+
+    def _load_from_disk(self) -> None:
+        """Load from maker_inventory.json (fallback if API down on startup)."""
+        try:
+            if self._inventory_file.exists():
+                data = json.loads(self._inventory_file.read_text())
+                if isinstance(data, dict) and data:
+                    self._positions = data
+                    log.info("[INVENTORY] Loaded %d positions from disk (fallback)", len(data))
+        except Exception as e:
+            log.warning("[INVENTORY] Disk load failed: %s", str(e)[:100])
+
+    def _save_to_disk(self) -> None:
+        """Persist current state to maker_inventory.json."""
+        try:
+            DATA_DIR.mkdir(parents=True, exist_ok=True)
+            self._inventory_file.write_text(json.dumps(self._positions, indent=2))
+        except Exception:
+            pass
+
+
+# ── MakerEngine ──────────────────────────────────────────────
 
 
 class MakerEngine:
-    """Two-sided GTC maker quoting engine for crypto Up/Down markets."""
+    """Two-sided GTC maker quoting engine for crypto Up/Down markets.
+
+    V2: Inventory-aware, on-chain synced, with per-market exposure caps
+    and automatic SELL->BUY conversion to avoid balance errors.
+    """
 
     def __init__(self, cfg: Config, client: ClobClient | None, price_cache: PriceCache):
         self.cfg = cfg
         self.client = client
         self._cache = price_cache
 
-        # Config (all from env vars with safe defaults)
+        # Config
         self.enabled = os.getenv("MAKER_ENABLED", "false").lower() in ("true", "1", "yes")
         self.quote_size_usd = float(os.getenv("MAKER_QUOTE_SIZE_USD", "5.0"))
-        self.max_inventory_usd = float(os.getenv("MAKER_MAX_INVENTORY_USD", "15.0"))
-        self.max_total_exposure = float(os.getenv("MAKER_MAX_TOTAL_EXPOSURE", "30.0"))
         self.tick_interval_s = float(os.getenv("MAKER_TICK_INTERVAL_S", "5.0"))
-        self.max_session_loss = float(os.getenv("MAKER_MAX_SESSION_LOSS", "20.0"))
 
         # Spread params
-        self.min_half_spread = 0.005    # 0.5 cent minimum half-spread
-        self.max_half_spread = 0.03     # 3 cent max half-spread (extreme vol)
-        self.base_half_spread = 0.01    # 1 cent default half-spread
+        self.min_half_spread = 0.01
+        self.max_half_spread = 0.04
+        self.base_half_spread = 0.02
 
-        # State
+        # Inventory Manager — on-chain synced, source of truth
+        wallet = cfg.funder_address or os.getenv("FUNDER_ADDRESS", "")
+        self._inv_mgr = InventoryManager(wallet)
+
+        # Active quotes on the book
         self._active_quotes: list[MakerQuote] = []
-        self._inventory: dict[str, InventoryPosition] = {}  # token_id -> position
+
+        # Heartbeat
         self._last_heartbeat = 0.0
-        self._fills_today = 0
-        self._estimated_rebate_today = 0.0
-        self._last_state_write = 0.0
 
         # P&L tracking
+        self._fills_today = 0
+        self._estimated_rebate_today = 0.0
         self._session_pnl = 0.0
         self._total_spread_captured = 0.0
         self._resolution_losses = 0.0
         self._fills_log: list[dict] = []
         self._kill_reason: str | None = None
+        self._token_session_pnl: dict[str, float] = {}  # per-token PnL for circuit breaker
 
-        # Per-market fair values and time-to-resolution
-        self._last_fair: dict[str, float] = {}  # token_id -> fair_value
-        self._market_remaining: dict[str, float] = {}  # token_id -> remaining_s
-        self.max_shares_per_side = 15.0  # hard cap: max shares on one side
+        # Fair value + TTR caches
+        self._last_fair: dict[str, float] = {}
+        self._market_remaining: dict[str, float] = {}
+        self._last_state_write = 0.0
 
-        # Shared balance manager — cross-agent wallet coordination
+        # Opposite-token mapping: up_token -> down_token
+        self._opposite_token: dict[str, str] = {}
+        # Token -> asset name mapping (for dashboard: "bitcoin", "ethereum", etc.)
+        self._token_asset: dict[str, str] = {}
+
+        # Shared balance manager
         self._balance_mgr = None
         try:
             import sys as _bm_sys
@@ -106,11 +257,54 @@ class MakerEngine:
         except Exception:
             pass
 
+        # Sync open orders from CLOB
+        self._sync_open_orders()
+
+        if self.enabled:
+            log.info(
+                "[MAKER V2] Initialized: bankroll=$%.0f, dry_run=%s, quote=$%.0f, "
+                "max_imbalance=%.0f%%, daily_loss=%.0f%%",
+                cfg.maker_bankroll_usd, cfg.maker_dry_run, self.quote_size_usd,
+                cfg.maker_max_imbalance * 100, cfg.maker_daily_loss_pct * 100,
+            )
+
+    def _sync_open_orders(self) -> None:
+        """Sync open orders from CLOB on startup so we track what's already live."""
+        if not self.client or self.cfg.maker_dry_run:
+            return
+        try:
+            resp = self.client.get_orders()
+            orders = resp if isinstance(resp, list) else resp.get("data", [])
+            loaded = 0
+            for order in orders:
+                oid = order.get("id") or order.get("orderID", "")
+                status = (order.get("status") or "").lower()
+                if status not in ("live", "open", "active"):
+                    continue
+                tid = order.get("asset_id") or order.get("token_id", "")
+                side = (order.get("side") or "").upper()
+                price = float(order.get("price", 0))
+                size = float(order.get("original_size") or order.get("size", 0))
+                if not tid or not oid:
+                    continue
+                q = MakerQuote(
+                    order_id=oid, token_id=tid, asset="unknown",
+                    side=side, price=price, size=size,
+                    size_usd=round(price * size, 2), placed_at=time.time(),
+                )
+                self._active_quotes.append(q)
+                loaded += 1
+            if loaded:
+                log.info("[MAKER] Synced %d open orders from CLOB", loaded)
+        except Exception as e:
+            log.warning("[MAKER] Open order sync failed: %s", str(e)[:100])
+
+    # ── Fair Value & Spread ──────────────────────────────────
+
     def compute_fair_value(self, asset: str, implied_price: float | None) -> float | None:
         """Blend Binance spot momentum with Polymarket implied price.
 
         Fair value = 60% Polymarket implied + 40% Binance momentum signal.
-        This prevents quoting at stale prices when spot moves fast.
         """
         if implied_price is None or not (0.05 < implied_price < 0.95):
             return None
@@ -119,31 +313,22 @@ class MakerEngine:
         if binance_price is None or binance_price <= 0:
             return implied_price
 
-        # Get 3-min momentum from Binance
         price_3m = self._cache.get_price_ago(asset, 3)
         if price_3m and price_3m > 0:
             momentum = (binance_price - price_3m) / price_3m
-            # Convert momentum to probability shift: +1% move ≈ +0.02 prob shift
             momentum_shift = momentum * 2.0
             momentum_fair = implied_price + momentum_shift
             momentum_fair = max(0.05, min(0.95, momentum_fair))
         else:
             momentum_fair = implied_price
 
-        # Blend: 60% market, 40% momentum
         fair = 0.6 * implied_price + 0.4 * momentum_fair
         return max(0.05, min(0.95, round(fair, 4)))
 
     def compute_spread(self, asset: str, token_id: str, regime_label: str = "neutral") -> float:
-        """Dynamic half-spread based on volatility regime and inventory skew.
-
-        - Calm market: tighter spread (more fills)
-        - High vol / extreme regime: wider spread (protect against adverse selection)
-        - Inventory skew: shift quotes to encourage fills that reduce inventory
-        """
+        """Dynamic half-spread based on volatility regime and inventory skew."""
         half_spread = self.base_half_spread
 
-        # Regime-based widening
         regime_mult = {
             "extreme_fear": 1.8,
             "fear": 1.3,
@@ -153,46 +338,175 @@ class MakerEngine:
         }.get(regime_label, 1.0)
         half_spread *= regime_mult
 
-        # ATR-based widening (if available)
         candles = self._cache.get_candles(asset, 30)
         if len(candles) >= 14:
             try:
                 from bot.indicators import atr
                 atr_val = atr(candles)
                 if atr_val and atr_val > 0.003:
-                    # Scale spread with volatility
                     half_spread *= min(2.0, 1.0 + (atr_val - 0.003) * 50)
             except Exception:
                 pass
 
         return max(self.min_half_spread, min(self.max_half_spread, half_spread))
 
-    def _inventory_skew(self, token_id: str) -> float:
-        """Inventory skew: shift quotes to reduce one-sided exposure.
+    def _inventory_skew(self, up_token: str, down_token: str) -> float:
+        """Inventory imbalance skew. Shifts quotes to reduce one-sided exposure.
 
-        Returns a price offset:
-        - Positive: we're long → lower buy price, raise sell price (encourage sells to us)
-        - Negative: we're short → raise buy price, lower sell price
+        Positive skew = long YES heavy -> lower buy YES, encourage buy NO.
         """
-        inv = self._inventory.get(token_id)
-        if not inv or inv.net_shares == 0:
+        exposure = self._inv_mgr.get_market_exposure(up_token, down_token)
+        if exposure["total_usd"] < 1.0:
             return 0.0
 
-        # Scale skew: max shift of 1 cent per $15 of inventory
-        inv_usd = abs(inv.net_shares * inv.cost_basis / max(abs(inv.net_shares), 1))
-        skew_frac = min(1.0, inv_usd / self.max_inventory_usd)
-        skew = 0.01 * skew_frac
-        return skew if inv.net_shares > 0 else -skew
+        bankroll = self.cfg.maker_bankroll_usd
+        max_per_market = bankroll * 0.15 if bankroll > 0 else 30.0
 
-    def _inventory_sides_allowed(self, token_id: str) -> tuple[bool, bool]:
-        """Check hard inventory cap. Returns (allow_buy, allow_sell)."""
-        inv = self._inventory.get(token_id)
-        if not inv:
-            return True, True
-        # Hard cap: 15 shares max on one side
-        allow_buy = inv.net_shares < self.max_shares_per_side
-        allow_sell = inv.net_shares > -self.max_shares_per_side
-        return allow_buy, allow_sell
+        # Positive = more YES than NO -> lower BUY YES price, raise BUY NO attractiveness
+        imbalance_usd = exposure["up_size"] - exposure["down_size"]
+        skew_frac = min(1.0, abs(imbalance_usd) / max_per_market)
+        skew = 0.01 * skew_frac
+
+        return skew if imbalance_usd > 0 else -skew
+
+    # ── Order Validation ─────────────────────────────────────
+
+    def validate_order(self, market_id: str, up_token: str, down_token: str,
+                       side: str, token_id: str, size: float, price: float) -> dict:
+        """Validate an order against all safety rules.
+
+        Returns: {"action": "place"|"convert"|"block", "side": str, "token_id": str,
+                  "size": float, "price": float, "reason": str}
+        """
+        # 1. Sync inventory if stale
+        self._inv_mgr.sync_if_stale()
+
+        # 2. If SELL and can't sell -> convert to BUY opposite token
+        if side == SELL:
+            if not self._inv_mgr.can_sell(token_id, size):
+                opp_token = down_token if token_id == up_token else up_token
+                converted_price = round(1.0 - price, 4)
+                log.info("[MAKER] SELL->BUY converted: no %s tokens, buying opposite", token_id[:12])
+                return {
+                    "action": "convert", "side": BUY, "token_id": opp_token,
+                    "size": size, "price": converted_price,
+                    "reason": "auto-convert: no tokens to sell",
+                }
+
+        # 3. Bankroll check
+        bankroll = self.cfg.maker_bankroll_usd
+        if bankroll <= 0:
+            return {"action": "block", "side": side, "token_id": token_id,
+                    "size": size, "price": price, "reason": "no MAKER_BANKROLL_USD configured"}
+
+        # 4. Per-market exposure cap (15% of bankroll)
+        max_per_market = bankroll * 0.15
+        exposure = self._inv_mgr.get_market_exposure(up_token, down_token)
+        if exposure["total_usd"] >= max_per_market:
+            return {"action": "block", "side": side, "token_id": token_id,
+                    "size": size, "price": price,
+                    "reason": f"market cap ${max_per_market:.0f} hit (${exposure['total_usd']:.0f})"}
+
+        # 5. Imbalance check (max 70% one-sided)
+        max_imbalance = self.cfg.maker_max_imbalance
+        if exposure["total_usd"] > 1.0 and exposure["imbalance_pct"] > max_imbalance:
+            dominant = "up" if exposure["up_size"] > exposure["down_size"] else "down"
+            if dominant == "up" and token_id == up_token and side == BUY:
+                return {"action": "block", "side": side, "token_id": token_id,
+                        "size": size, "price": price,
+                        "reason": f"imbalance {exposure['imbalance_pct']:.0%}, would worsen (up-heavy)"}
+            if dominant == "down" and token_id == down_token and side == BUY:
+                return {"action": "block", "side": side, "token_id": token_id,
+                        "size": size, "price": price,
+                        "reason": f"imbalance {exposure['imbalance_pct']:.0%}, would worsen (down-heavy)"}
+
+        # 6. Per-market daily loss circuit breaker
+        market_pnl = (
+            self._token_session_pnl.get(up_token, 0)
+            + self._token_session_pnl.get(down_token, 0)
+        )
+        loss_cap = bankroll * self.cfg.maker_daily_loss_pct
+        if market_pnl < -loss_cap:
+            return {"action": "block", "side": side, "token_id": token_id,
+                    "size": size, "price": price,
+                    "reason": f"market daily loss ${market_pnl:.2f} > -${loss_cap:.0f}"}
+
+        return {
+            "action": "place", "side": side, "token_id": token_id,
+            "size": size, "price": price, "reason": "ok",
+        }
+
+    # ── Safe Pricing ─────────────────────────────────────────
+
+    def get_safe_buy_price(self, token_id: str, desired_price: float | None = None) -> tuple[float, float, int]:
+        """Safe non-crossing BUY price. Returns (price, tick_size, decimals).
+
+        Rules:
+        - safe = best_ask - (3 * tick_size)
+        - Never exceed best_ask * 0.99 (1% hard cap)
+        - If desired_price is safer (lower), use it
+        """
+        book = self.client.get_order_book(token_id)
+        tick = float(book.tick_size) if book.tick_size else 0.01
+        decimals = len(book.tick_size.split(".")[-1]) if book.tick_size and "." in book.tick_size else 2
+
+        best_ask = float(book.asks[0].price) if book.asks else 0.99
+        safe = round(best_ask - 3 * tick, decimals)
+        hard_cap = round(best_ask * 0.99, decimals)  # never within 1% of best ask
+        safe = min(safe, hard_cap)
+        safe = max(tick, safe)
+
+        if desired_price is not None and desired_price < safe:
+            safe = round(desired_price, decimals)
+
+        return safe, tick, decimals
+
+    # ── Order Placement ──────────────────────────────────────
+
+    def place_buy_order(self, token_id: str, price: float, size: float,
+                        asset: str, label: str = "BUY") -> MakerQuote | None:
+        """Place a BUY order with 3-attempt retry on 'crosses book'.
+
+        Re-fetches book on each retry and backs off by 1 extra tick.
+        """
+        tick = 0.01
+        decimals = 2
+
+        for attempt in range(3):
+            try:
+                # Re-fetch safe price on retries
+                if attempt > 0:
+                    safe, tick, decimals = self.get_safe_buy_price(token_id, price)
+                    price = safe
+                    if price < tick:
+                        log.warning("[MAKER] %s price below minimum tick, aborting", label)
+                        return None
+
+                args = OrderArgs(price=price, size=size, side=BUY, token_id=token_id)
+                signed = self.client.create_order(args)
+                resp = self.client.post_order(signed, OrderType.GTC, post_only=True)
+                oid = resp.get("orderID") or resp.get("id", "")
+                if oid:
+                    q = MakerQuote(
+                        order_id=oid, token_id=token_id, asset=asset,
+                        side=label, price=price, size=size,
+                        size_usd=round(price * size, 2), placed_at=time.time(),
+                    )
+                    self._active_quotes.append(q)
+                    log.info("[MAKER] %s %s @ $%.4f (%.1f tokens)", label, asset.upper(), price, size)
+                    return q
+                break
+            except Exception as e:
+                err = str(e)
+                if "crosses book" in err and attempt < 2:
+                    log.debug("[MAKER] %s crosses book (attempt %d), backing off", label, attempt + 1)
+                    time.sleep(0.15 * (attempt + 1))
+                    continue
+                log.warning("[MAKER] %s failed: %s", label, err[:200])
+                break
+        return None
+
+    # ── Quote Refresh ────────────────────────────────────────
 
     def refresh_quotes(
         self,
@@ -203,111 +517,70 @@ class MakerEngine:
         quote_size_override: float | None = None,
         skip_buy: bool = False,
         skip_sell: bool = False,
+        down_token_id: str = "",
+        market_id: str = "",
     ) -> list[MakerQuote]:
-        """Cancel stale quotes and post new two-sided GTC limit orders.
+        """Cancel stale quotes and post new two-sided GTC orders.
 
-        Returns list of newly placed quotes.
+        BUY YES + BUY NO (never SELL — avoids "not enough balance" errors).
+        All orders go through validate_order() -> get_safe_buy_price() -> place_buy_order().
         """
         if not self.client or self.cfg.maker_dry_run:
             return self._dry_run_quotes(
                 token_id, asset, fair_value, half_spread,
                 quote_size_override, skip_buy, skip_sell,
+                down_token_id=down_token_id, market_id=market_id,
             )
 
-        # Cancel existing quotes for this token
+        # Cancel existing quotes for this market
         self._cancel_quotes_for_token(token_id)
+        if down_token_id:
+            self._cancel_quotes_for_token(down_token_id)
 
-        # Hard inventory cap
-        cap_buy, cap_sell = self._inventory_sides_allowed(token_id)
-        if not cap_buy:
-            skip_buy = True
-        if not cap_sell:
-            skip_sell = True
-
-        size_usd = quote_size_override or self.quote_size_usd
-
-        skew = self._inventory_skew(token_id)
-        buy_price = round(max(0.01, fair_value - half_spread - skew), 2)
-        sell_price = round(min(0.99, fair_value + half_spread - skew), 2)
+        # Compute prices with skew
+        skew = self._inventory_skew(token_id, down_token_id) if down_token_id else 0.0
+        buy_price = round(max(0.01, fair_value - half_spread - skew), 4)
+        sell_price = round(min(0.99, fair_value + half_spread - skew), 4)
 
         if buy_price >= sell_price:
-            log.debug("[MAKER] Quotes would cross (buy=%.2f sell=%.2f), skipping", buy_price, sell_price)
+            log.debug("[MAKER] Quotes would cross (buy=%.4f sell=%.4f), skipping", buy_price, sell_price)
             return []
 
-        # Check total exposure
-        total_exposure = sum(
-            abs(inv.net_shares * inv.cost_basis / max(abs(inv.net_shares), 1))
-            for inv in self._inventory.values()
-            if inv.net_shares != 0
-        )
-        if total_exposure >= self.max_total_exposure:
-            log.info("[MAKER] Total exposure $%.2f >= $%.2f cap, skipping new quotes",
-                     total_exposure, self.max_total_exposure)
-            return []
-
-        # Per-asset inventory check
-        inv = self._inventory.get(token_id)
-        if inv:
-            inv_usd = abs(inv.net_shares * inv.cost_basis / max(abs(inv.net_shares), 1))
-            if inv_usd >= self.max_inventory_usd:
-                log.info("[MAKER] %s inventory $%.2f >= $%.2f cap, skipping",
-                         asset.upper(), inv_usd, self.max_inventory_usd)
-                return []
-
+        size_usd = quote_size_override or self.quote_size_usd
         new_quotes = []
-        now = time.time()
 
-        # BUY side — CLOB minimum is 5 tokens per order
+        # ── BUY YES side ──
         if not skip_buy:
-            buy_size = size_usd / buy_price
-            if buy_size < 5.0:
-                buy_size = 5.0
-            try:
-                buy_args = OrderArgs(
-                    price=buy_price, size=buy_size,
-                    side=BUY, token_id=token_id,
-                )
-                signed = self.client.create_order(buy_args)
-                resp = self.client.post_order(signed, OrderType.GTC, post_only=True)
-                oid = resp.get("orderID") or resp.get("id", "")
-                if oid:
-                    q = MakerQuote(
-                        order_id=oid, token_id=token_id, asset=asset,
-                        side="BUY", price=buy_price, size=buy_size,
-                        size_usd=size_usd, placed_at=now,
-                    )
-                    self._active_quotes.append(q)
-                    new_quotes.append(q)
-                    log.info("[MAKER] BUY  %s @ $%.3f  (%.1f tokens, $%.1f)",
-                             asset.upper(), buy_price, buy_size, size_usd)
-            except Exception as e:
-                log.warning("[MAKER] BUY order failed: %s", str(e)[:200])
+            v = self.validate_order(market_id, token_id, down_token_id, BUY, token_id, 0, buy_price)
+            if v["action"] == "block":
+                log.info("[MAKER] BUY YES %s blocked: %s", asset.upper(), v["reason"])
+            else:
+                try:
+                    safe_price, tick, decimals = self.get_safe_buy_price(token_id, buy_price)
+                    buy_size = max(5.0, size_usd / safe_price)
+                    q = self.place_buy_order(token_id, safe_price, buy_size, asset, "BUY_YES")
+                    if q:
+                        new_quotes.append(q)
+                except Exception as e:
+                    log.warning("[MAKER] BUY YES %s setup failed: %s", asset.upper(), str(e)[:200])
 
-        # SELL side — CLOB minimum is 5 tokens per order
-        if not skip_sell:
-            sell_size = size_usd / sell_price
-            if sell_size < 5.0:
-                sell_size = 5.0
-            try:
-                sell_args = OrderArgs(
-                    price=sell_price, size=sell_size,
-                    side=SELL, token_id=token_id,
-                )
-                signed = self.client.create_order(sell_args)
-                resp = self.client.post_order(signed, OrderType.GTC, post_only=True)
-                oid = resp.get("orderID") or resp.get("id", "")
-                if oid:
-                    q = MakerQuote(
-                        order_id=oid, token_id=token_id, asset=asset,
-                        side="SELL", price=sell_price, size=sell_size,
-                        size_usd=size_usd, placed_at=now,
-                    )
-                    self._active_quotes.append(q)
-                    new_quotes.append(q)
-                    log.info("[MAKER] SELL %s @ $%.3f  (%.1f tokens, $%.1f)",
-                             asset.upper(), sell_price, sell_size, size_usd)
-            except Exception as e:
-                log.warning("[MAKER] SELL order failed: %s", str(e)[:200])
+        # ── BUY NO side (replaces SELL YES) ──
+        if not skip_sell and down_token_id:
+            no_buy_price = round(1.0 - sell_price, 4)
+            v = self.validate_order(market_id, token_id, down_token_id, BUY, down_token_id, 0, no_buy_price)
+            if v["action"] == "block":
+                log.info("[MAKER] BUY NO %s blocked: %s", asset.upper(), v["reason"])
+            else:
+                try:
+                    safe_no, no_tick, no_dec = self.get_safe_buy_price(down_token_id, no_buy_price)
+                    no_size = max(5.0, size_usd / safe_no)
+                    q = self.place_buy_order(down_token_id, safe_no, no_size, asset, "BUY_NO")
+                    if q:
+                        new_quotes.append(q)
+                except Exception as e:
+                    log.warning("[MAKER] BUY NO %s setup failed: %s", asset.upper(), str(e)[:200])
+        elif not skip_sell and not down_token_id:
+            log.debug("[MAKER] %s: no DOWN token available, skipping sell side", asset.upper())
 
         return new_quotes
 
@@ -315,50 +588,86 @@ class MakerEngine:
         self, token_id: str, asset: str, fair_value: float, half_spread: float,
         quote_size_override: float | None = None,
         skip_buy: bool = False, skip_sell: bool = False,
+        down_token_id: str = "", market_id: str = "",
     ) -> list[MakerQuote]:
-        """Simulated quote placement for DRY_RUN mode."""
-        # Hard inventory cap
-        cap_buy, cap_sell = self._inventory_sides_allowed(token_id)
-        if not cap_buy:
-            skip_buy = True
-        if not cap_sell:
-            skip_sell = True
+        """Enhanced dry-run: reads real order books, validates all safety rules, never submits.
 
+        Logs every decision with reason and would-have-filled price from real book.
+        """
         size_usd = quote_size_override or self.quote_size_usd
 
-        skew = self._inventory_skew(token_id)
-        buy_price = round(max(0.01, fair_value - half_spread - skew), 2)
-        sell_price = round(min(0.99, fair_value + half_spread - skew), 2)
+        skew = self._inventory_skew(token_id, down_token_id) if down_token_id else 0.0
+        buy_price = round(max(0.01, fair_value - half_spread - skew), 4)
+        sell_price = round(min(0.99, fair_value + half_spread - skew), 4)
 
         if buy_price >= sell_price:
             return []
 
         now = time.time()
         quotes = []
+
+        # Read real order books for safe pricing (if client available)
+        real_buy_price = buy_price
+        real_no_price = round(1.0 - sell_price, 4)
+        book_info = ""
+
+        if self.client:
+            try:
+                safe, _, dec = self.get_safe_buy_price(token_id, buy_price)
+                real_buy_price = safe
+                book = self.client.get_order_book(token_id)
+                best_ask = float(book.asks[0].price) if book.asks else 0.0
+                book_info += f"YES:ask=${best_ask:.4f} "
+            except Exception:
+                pass
+            if down_token_id:
+                try:
+                    safe_no, _, _ = self.get_safe_buy_price(down_token_id, real_no_price)
+                    real_no_price = safe_no
+                    book = self.client.get_order_book(down_token_id)
+                    best_ask = float(book.asks[0].price) if book.asks else 0.0
+                    book_info += f"NO:ask=${best_ask:.4f}"
+                except Exception:
+                    pass
+
+        # Validate both sides through safety rules
         sides = []
         if not skip_buy:
-            sides.append(("BUY", buy_price))
-        if not skip_sell:
-            sides.append(("SELL", sell_price))
+            v = self.validate_order(market_id, token_id, down_token_id, BUY, token_id, 0, real_buy_price)
+            if v["action"] != "block":
+                sides.append(("BUY_YES", real_buy_price, token_id))
+            else:
+                log.info("[MAKER-DRY] BUY YES %s blocked: %s", asset.upper(), v["reason"])
 
-        for side, price in sides:
-            size = size_usd / price
+        if not skip_sell and down_token_id:
+            v = self.validate_order(market_id, token_id, down_token_id, BUY, down_token_id, 0, real_no_price)
+            if v["action"] != "block":
+                sides.append(("BUY_NO", real_no_price, down_token_id))
+            else:
+                log.info("[MAKER-DRY] BUY NO %s blocked: %s", asset.upper(), v["reason"])
+
+        for side, price, tid in sides:
+            size = max(5.0, size_usd / price) if price > 0 else 5.0
             q = MakerQuote(
-                order_id="dry-maker-%s-%d" % (side.lower(), int(now)),
-                token_id=token_id, asset=asset, side=side,
+                order_id="dry-v2-%s-%d" % (side.lower(), int(now)),
+                token_id=tid, asset=asset, side=side,
                 price=price, size=size,
-                size_usd=size_usd, placed_at=now,
+                size_usd=round(price * size, 2), placed_at=now,
             )
             quotes.append(q)
 
         if sides:
-            log.info("[MAKER-DRY] %s %s (fair=%.3f spread=%.3f skew=%.4f sz=$%.0f)",
-                     asset.upper(),
-                     " / ".join("%s@%.3f" % (s, p) for s, p in sides),
-                     fair_value, half_spread * 2, skew, size_usd)
-        # Replace active quotes for this token
+            log.info(
+                "[MAKER-DRY] %s %s (fair=%.3f spread=%.3f skew=%.4f sz=$%.0f) [%s]",
+                asset.upper(),
+                " / ".join("%s@%.4f" % (s, p) for s, p, _ in sides),
+                fair_value, half_spread * 2, skew, size_usd, book_info.strip(),
+            )
+
+        # Replace active quotes for this market
+        keep_tids = {token_id, down_token_id} if down_token_id else {token_id}
         self._active_quotes = [
-            q for q in self._active_quotes if q.token_id != token_id
+            q for q in self._active_quotes if q.token_id not in keep_tids
         ] + quotes
         return quotes
 
@@ -403,7 +712,7 @@ class MakerEngine:
                 log.warning("[MAKER] Bulk cancel failed: %s", str(e)[:100])
         self._active_quotes.clear()
 
-    # ── Fill Detection ─────────────────────────────────────────
+    # ── Fill Detection ─────────────────────────────────────
 
     def check_fills(self) -> list[dict]:
         """Poll active quotes for fills. Update inventory on filled orders."""
@@ -413,27 +722,57 @@ class MakerEngine:
 
         for q in self._active_quotes:
             if self.cfg.maker_dry_run:
-                # Dry-run: simulate random fills (~20% chance per tick)
-                if random.random() < 0.20:
+                # Enhanced dry-run: check real book for would-fill
+                would_fill = False
+                fill_info = ""
+
+                if self.client:
+                    try:
+                        book = self.client.get_order_book(q.token_id)
+                        if q.side in ("BUY", "BUY_YES", "BUY_NO"):
+                            best_ask = float(book.asks[0].price) if book.asks else 99.0
+                            # Fill if market moved through our level (and quote is >5s old)
+                            would_fill = best_ask <= q.price and now - q.placed_at > 5
+                            fill_info = f"ask=${best_ask:.4f} vs bid=${q.price:.4f}"
+                        else:
+                            best_bid = float(book.bids[0].price) if book.bids else 0.0
+                            would_fill = best_bid >= q.price and now - q.placed_at > 5
+                            fill_info = f"bid=${best_bid:.4f} vs ask=${q.price:.4f}"
+                    except Exception:
+                        # Fallback: fill after 20s
+                        would_fill = now - q.placed_at > 20
+                        fill_info = "book-read-failed, time-based"
+                else:
+                    # No client: time-based simulation
+                    would_fill = now - q.placed_at > 20
+                    fill_info = "no-client, time-based"
+
+                if would_fill:
                     fair = self._last_fair.get(q.token_id, q.price)
                     self._record_fill(q, q.price, fair)
                     fills.append({
                         "side": q.side, "price": q.price,
                         "size_usd": q.size_usd, "simulated": True,
                     })
-                    log.info("[MAKER-DRY] Simulated fill: %s @ $%.3f ($%.1f)",
-                             q.side, q.price, q.size_usd)
+                    log.info("[MAKER-DRY] Would-fill: %s %s @ $%.3f ($%.1f) [%s]",
+                             q.side, q.asset.upper(), q.price, q.size_usd, fill_info)
                 else:
-                    still_active.append(q)
+                    # Expire quotes after 60s in dry-run
+                    if now - q.placed_at > 60:
+                        log.debug("[MAKER-DRY] Expired: %s %s @ $%.4f [%s]",
+                                  q.side, q.asset.upper(), q.price, fill_info)
+                    else:
+                        still_active.append(q)
                 continue
 
-            # Stale quote check (live only): cancel if older than 30s
+            # ── Live mode ──
+            # Stale quote check: cancel if older than 30s
             if now - q.placed_at > 30:
                 try:
                     self.client.cancel(q.order_id)
                 except Exception:
                     pass
-                continue  # drop from active
+                continue
 
             try:
                 order = self.client.get_order(q.order_id)
@@ -446,14 +785,14 @@ class MakerEngine:
                         "side": q.side, "price": fill_price,
                         "size_usd": q.size_usd,
                     })
-                    log.info("[MAKER] Fill: %s @ $%.3f ($%.1f)",
-                             q.side, fill_price, q.size_usd)
+                    log.info("[MAKER] Fill: %s %s @ $%.3f ($%.1f)",
+                             q.side, q.asset.upper(), fill_price, q.size_usd)
                 elif status in ("canceled", "expired"):
                     pass  # drop from active
                 else:
                     still_active.append(q)
             except Exception:
-                still_active.append(q)  # keep if API fails
+                still_active.append(q)
 
         self._active_quotes = still_active
         return fills
@@ -461,35 +800,34 @@ class MakerEngine:
     def _record_fill(self, quote: MakerQuote, fill_price: float, fair_value: float) -> None:
         """Update inventory and P&L on a confirmed fill."""
         token_id = quote.token_id
-        if token_id not in self._inventory:
-            self._inventory[token_id] = InventoryPosition(
-                token_id=token_id, asset=quote.asset,
-            )
-        inv = self._inventory[token_id]
-        if inv.asset == "unknown":
-            inv.asset = quote.asset
 
-        if quote.side == "BUY":
-            inv.net_shares += quote.size
-            inv.cost_basis += fill_price * quote.size
+        # Update InventoryManager (fast local, next sync overwrites)
+        self._inv_mgr.update_from_fill(token_id, quote.size, fill_price, quote.side)
+
+        # Spread capture calculation
+        if quote.side in ("BUY", "BUY_YES"):
             spread_captured = max(0, fair_value - fill_price)
+        elif quote.side == "BUY_NO":
+            no_fair = 1.0 - fair_value if fair_value < 1.0 else 0.0
+            spread_captured = max(0, no_fair - fill_price)
         else:
-            inv.net_shares -= quote.size
-            inv.cost_basis -= fill_price * quote.size
             spread_captured = max(0, fill_price - fair_value)
 
-        inv.fills_today += 1
         self._fills_today += 1
 
-        # Estimate maker rebate: ~20% of taker fee (0.5%) on fill value
+        # Maker rebate estimate: ~20% of taker fee (0.5%) on fill value
         rebate = 0.005 * 0.20 * quote.size_usd
-        inv.estimated_rebate += rebate
         self._estimated_rebate_today += rebate
 
         # P&L tracking
         spread_usd = spread_captured * quote.size
         self._total_spread_captured += spread_usd
         self._session_pnl += spread_usd + rebate
+
+        # Per-token PnL tracking (for daily loss circuit breaker)
+        self._token_session_pnl[token_id] = (
+            self._token_session_pnl.get(token_id, 0) + spread_usd + rebate
+        )
 
         self._fills_log.append({
             "ts": time.time(),
@@ -509,16 +847,18 @@ class MakerEngine:
         """Don't quote if market resolves within 90 seconds."""
         return remaining_s > 90
 
-    def _ttr_quote_params(self, token_id: str, remaining_s: float) -> dict:
+    def _ttr_quote_params(self, up_token: str, down_token: str, remaining_s: float) -> dict:
         """Time-to-resolution based quoting adjustments.
 
         Returns dict with: quote_size_override, skip_buy, skip_sell, force_flat.
         """
-        inv = self._inventory.get(token_id)
-        net = inv.net_shares if inv else 0.0
-        abs_net = abs(net)
+        up_pos = self._inv_mgr.get_position(up_token)
+        dn_pos = self._inv_mgr.get_position(down_token)
+        up_net = up_pos["size"] if up_pos else 0.0
+        dn_net = dn_pos["size"] if dn_pos else 0.0
+        total_net = up_net + dn_net
 
-        # >60 min: full quoting, no restrictions
+        # >60 min: full quoting
         if remaining_s > 3600:
             return {}
 
@@ -526,88 +866,79 @@ class MakerEngine:
         if remaining_s > 1800:
             return {"quote_size_override": self.quote_size_usd * 0.5}
 
-        # 10-30 min: only quote the side that REDUCES inventory
+        # 10-30 min: only quote the side that REDUCES imbalance
         if remaining_s > 600:
-            params = {"quote_size_override": self.quote_size_usd * 0.3}
-            if net > 2:
-                params["skip_buy"] = True  # stop buying, only sell to reduce long
-            elif net < -2:
-                params["skip_sell"] = True  # stop selling, only buy to reduce short
+            params: dict = {"quote_size_override": self.quote_size_usd * 0.3}
+            if up_net > dn_net + 2:
+                params["skip_buy"] = True  # stop buying YES, only buy NO
+            elif dn_net > up_net + 2:
+                params["skip_sell"] = True  # stop buying NO, only buy YES
             return params
 
-        # <10 min: force flat if inventory > 10 shares on one side
-        if abs_net > 10:
+        # <10 min: force flat if large position
+        if total_net > 10:
             return {"force_flat": True}
 
-        # <10 min with small inventory: tiny quotes, reducing side only
+        # <10 min with small positions: tiny quotes, reducing side only
         params = {"quote_size_override": self.quote_size_usd * 0.2}
-        if net > 0.5:
+        if up_net > 0.5:
             params["skip_buy"] = True
-        elif net < -0.5:
+        elif dn_net > 0.5:
             params["skip_sell"] = True
         return params
 
     def _reduce_inventory(self, token_id: str, asset: str, target_shares: float = 0.0) -> None:
-        """Gradually reduce inventory toward target. Used for TTR flattening."""
-        inv = self._inventory.get(token_id)
-        if not inv or abs(inv.net_shares) < 0.5:
+        """Reduce inventory toward target. Used for TTR flattening."""
+        pos = self._inv_mgr.get_position(token_id)
+        if not pos or pos["size"] < 0.5:
             return
 
-        reduce_shares = abs(inv.net_shares) - abs(target_shares)
+        reduce_shares = pos["size"] - target_shares
         if reduce_shares <= 0:
             return
 
         log.info("[MAKER] Reducing %s inventory: %.1f -> %.1f shares",
-                 asset.upper(), inv.net_shares, target_shares)
+                 asset.upper(), pos["size"], target_shares)
 
         if self.cfg.maker_dry_run:
-            # Simulate selling at fair value (small slippage)
             fair = self._last_fair.get(token_id, 0.5)
-            slippage = 0.02  # 2 cent slippage on aggressive exit
-            if inv.net_shares > 0:
-                exit_price = max(0.01, fair - slippage)
-                cost_per_share = inv.cost_basis / max(inv.net_shares, 0.01)
-                pnl = reduce_shares * (exit_price - cost_per_share)
-            else:
-                exit_price = min(0.99, fair + slippage)
-                cost_per_share = abs(inv.cost_basis) / max(abs(inv.net_shares), 0.01)
-                pnl = reduce_shares * (cost_per_share - exit_price)
+            slippage = 0.02
+            exit_price = max(0.01, fair - slippage)
+            cost_per = pos["avg_price"]
+            pnl = reduce_shares * (exit_price - cost_per)
 
             if pnl < 0:
                 self._resolution_losses += abs(pnl)
             self._session_pnl += pnl
-            log.info("[MAKER-DRY] Reduce %s: sold %.1f shares @ $%.3f, P&L $%.2f",
+            log.info("[MAKER-DRY] Reduce %s: sold %.1f @ $%.3f, PnL $%.2f",
                      asset.upper(), reduce_shares, exit_price, pnl)
+            # Update local inventory
+            self._inv_mgr.update_from_fill(token_id, reduce_shares, exit_price, SELL)
         else:
-            # Live: aggressive exit order
+            # Live: BUY opposite token to hedge/exit
+            opp_token = self._opposite_token.get(token_id, "")
+            if not opp_token:
+                log.warning("[MAKER] No opposite token for %s, can't reduce", asset.upper())
+                return
             try:
-                side = SELL if inv.net_shares > 0 else BUY
-                exit_price = 0.01 if side == SELL else 0.99
-                args = OrderArgs(
-                    price=exit_price, size=reduce_shares,
-                    side=side, token_id=token_id,
-                )
+                args = OrderArgs(price=0.99, size=reduce_shares, side=BUY, token_id=opp_token)
                 signed = self.client.create_order(args)
                 self.client.post_order(signed, OrderType.GTC)
-                log.info("[MAKER] Exit order: %s %.1f @ $%.2f",
-                         "SELL" if side == SELL else "BUY", reduce_shares, exit_price)
+                log.info("[MAKER] Exit: BUY opposite %.1f @ $0.99 for %s",
+                         reduce_shares, asset.upper())
+                # Update local inventory for the hedge
+                self._inv_mgr.update_from_fill(opp_token, reduce_shares, 0.99, BUY)
             except Exception as e:
                 log.warning("[MAKER] Reduce failed for %s: %s", asset.upper(), str(e)[:100])
-                return
 
-        # Update inventory proportionally
-        if abs(inv.net_shares) > 0.01:
-            ratio = reduce_shares / abs(inv.net_shares)
-            if inv.net_shares > 0:
-                inv.net_shares -= reduce_shares
-            else:
-                inv.net_shares += reduce_shares
-            inv.cost_basis *= (1.0 - ratio)
-
-    def _flatten_inventory(self, token_id: str, asset: str) -> None:
-        """Emergency flatten: cancel quotes + dump ALL inventory for a token."""
-        self._cancel_quotes_for_token(token_id)
-        self._reduce_inventory(token_id, asset, target_shares=0.0)
+    def _flatten_inventory(self, up_token: str, down_token: str, asset: str) -> None:
+        """Emergency flatten: cancel quotes + dump ALL inventory for a market."""
+        self._cancel_quotes_for_token(up_token)
+        if down_token:
+            self._cancel_quotes_for_token(down_token)
+        self._reduce_inventory(up_token, asset, target_shares=0.0)
+        if down_token:
+            self._reduce_inventory(down_token, asset, target_shares=0.0)
 
     def _persist_daily_pnl(self) -> None:
         """Append daily P&L summary to maker_pnl.jsonl."""
@@ -630,13 +961,7 @@ class MakerEngine:
     # ── Main Tick ────────────────────────────────────────────
 
     def tick(self, markets: list[dict], regime_label: str = "neutral") -> None:
-        """Main maker tick: refresh quotes for all eligible markets.
-
-        Args:
-            markets: List of market dicts with tokens, asset, timeframe,
-                     and remaining_s info.
-            regime_label: Current market regime for spread computation.
-        """
+        """Main maker tick: refresh quotes for all eligible markets."""
         if not self.enabled:
             return
 
@@ -645,10 +970,17 @@ class MakerEngine:
             self.cancel_all()
             return
 
+        # On-chain inventory sync (every 30s)
+        self._inv_mgr.sync_if_stale()
+
         # Kill switch: disable if session P&L drops below threshold
-        if self._session_pnl < -self.max_session_loss:
+        bankroll = self.cfg.maker_bankroll_usd
+        max_session_loss = float(os.getenv("MAKER_MAX_SESSION_LOSS", "0"))
+        if max_session_loss <= 0 and bankroll > 0:
+            max_session_loss = bankroll * 0.15  # 15% of bankroll
+        if max_session_loss > 0 and self._session_pnl < -max_session_loss:
             log.critical("[MAKER] Session loss $%.2f exceeds -$%.0f — DISABLING",
-                         self._session_pnl, self.max_session_loss)
+                         self._session_pnl, max_session_loss)
             self._kill_reason = f"Session loss ${self._session_pnl:.2f}"
             self.cancel_all()
             self.enabled = False
@@ -662,14 +994,10 @@ class MakerEngine:
         # Check fills on existing quotes before placing new ones
         fills = self.check_fills()
 
-        # Maker uses its own MAKER_MAX_TOTAL_EXPOSURE cap instead of shared balance manager
+        # Report exposure to shared balance manager
         if self._balance_mgr and not self.cfg.maker_dry_run:
             try:
-                total_inv_usd = sum(
-                    abs(iv.net_shares) * (iv.cost_basis / max(abs(iv.net_shares), 0.01))
-                    for iv in self._inventory.values() if iv.net_shares != 0
-                )
-                self._balance_mgr.report_exposure(total_inv_usd)
+                self._balance_mgr.report_exposure(self._inv_mgr.get_total_exposure())
             except Exception:
                 pass
 
@@ -678,23 +1006,37 @@ class MakerEngine:
             tokens = mkt.get("tokens", [])
             asset = mkt.get("asset", "bitcoin")
             remaining_s = mkt.get("remaining_s", 9999)
+            market_id = mkt.get("market_id", "")
             up_token = ""
+            down_token = ""
 
             for t in tokens:
                 outcome = (t.get("outcome") or "").lower()
+                tid = t.get("token_id", "")
                 if outcome in ("up", "yes"):
-                    up_token = t.get("token_id", "")
-                    break
+                    up_token = tid
+                elif outcome in ("down", "no"):
+                    down_token = tid
 
             if not up_token:
                 continue
 
+            # Cache opposite-token mapping + asset name
+            if down_token:
+                self._opposite_token[up_token] = down_token
+                self._opposite_token[down_token] = up_token
+            self._token_asset[up_token] = asset
+            if down_token:
+                self._token_asset[down_token] = asset
+
             # Track TTR for dashboard
             self._market_remaining[up_token] = remaining_s
+            if down_token:
+                self._market_remaining[down_token] = remaining_s
 
             # Resolution guard: flatten inventory if <60s remaining
             if remaining_s <= 60:
-                self._flatten_inventory(up_token, asset)
+                self._flatten_inventory(up_token, down_token, asset)
                 continue
 
             # Resolution guard: don't quote if <90s remaining
@@ -716,22 +1058,19 @@ class MakerEngine:
 
             # Cache fair value for P&L calculation
             self._last_fair[up_token] = fair
-
-            # Set asset on inventory if exists
-            inv = self._inventory.get(up_token)
-            if inv:
-                inv.asset = asset
+            if down_token:
+                self._last_fair[down_token] = 1.0 - fair
 
             half_spread = self.compute_spread(asset, up_token, regime_label)
 
             # Time-to-resolution graduated inventory control
-            ttr_params = self._ttr_quote_params(up_token, remaining_s)
+            ttr_params = self._ttr_quote_params(up_token, down_token, remaining_s)
 
             if ttr_params.get("force_flat"):
-                log.warning("[MAKER] %s TTR<10min with %.0f shares — force flattening",
-                            asset.upper(),
-                            abs(self._inventory[up_token].net_shares) if up_token in self._inventory else 0)
-                self._reduce_inventory(up_token, asset, target_shares=0.0)
+                exposure = self._inv_mgr.get_market_exposure(up_token, down_token)
+                log.warning("[MAKER] %s TTR<10min with $%.0f exposure — force flattening",
+                            asset.upper(), exposure["total_usd"])
+                self._flatten_inventory(up_token, down_token, asset)
                 continue
 
             new = self.refresh_quotes(
@@ -739,6 +1078,8 @@ class MakerEngine:
                 quote_size_override=ttr_params.get("quote_size_override"),
                 skip_buy=ttr_params.get("skip_buy", False),
                 skip_sell=ttr_params.get("skip_sell", False),
+                down_token_id=down_token,
+                market_id=market_id,
             )
             quotes_placed += len(new)
 
@@ -751,19 +1092,36 @@ class MakerEngine:
     def _get_warnings(self) -> list[str]:
         """Generate inventory risk warnings for dashboard."""
         warnings = []
-        for tid, inv in self._inventory.items():
-            abs_net = abs(inv.net_shares)
-            if abs_net < 2:
+        positions = self._inv_mgr.get_all_positions()
+
+        for tid, pos in positions.items():
+            size = pos["size"]
+            if size < 2:
                 continue
             remaining = self._market_remaining.get(tid, 9999)
-            asset = inv.asset.upper()
-            direction = "LONG" if inv.net_shares > 0 else "SHORT"
-            if abs_net >= self.max_shares_per_side:
-                warnings.append("%s: %s %.0f shares — HARD CAP HIT" % (asset, direction, abs_net))
-            elif abs_net > 10 and remaining < 600:
-                warnings.append("%s: %s %.0f shares with <10min TTR — WILL FORCE FLAT" % (asset, direction, abs_net))
-            elif abs_net > 10 and remaining < 1800:
-                warnings.append("%s: %s %.0f shares with <30min TTR — reducing only" % (asset, direction, abs_net))
+            title = pos.get("market_title", "unknown")[:15]
+
+            if size >= 15:
+                warnings.append(f"{title}: {size:.0f} shares — EXPOSURE HIGH")
+            elif size > 10 and remaining < 600:
+                warnings.append(f"{title}: {size:.0f} shares <10min TTR — WILL FLAT")
+            elif size > 10 and remaining < 1800:
+                warnings.append(f"{title}: {size:.0f} shares <30min TTR — reducing")
+
+        # Check per-market imbalances
+        checked_pairs: set[tuple[str, str]] = set()
+        for tid in positions:
+            opp = self._opposite_token.get(tid, "")
+            if not opp or (tid, opp) in checked_pairs or (opp, tid) in checked_pairs:
+                continue
+            checked_pairs.add((tid, opp))
+            exposure = self._inv_mgr.get_market_exposure(tid, opp)
+            if exposure["total_usd"] > 5 and exposure["imbalance_pct"] > self.cfg.maker_max_imbalance:
+                warnings.append(
+                    f"Imbalance {exposure['imbalance_pct']:.0%}: "
+                    f"UP=${exposure['up_size']:.0f} DN=${exposure['down_size']:.0f}"
+                )
+
         return warnings
 
     def _write_state(self) -> None:
@@ -773,9 +1131,12 @@ class MakerEngine:
             return
         self._last_state_write = now
 
+        positions = self._inv_mgr.get_all_positions()
+
         state = {
             "enabled": self.enabled,
             "timestamp": now,
+            "version": 2,
             "active_quotes": [
                 {
                     "order_id": q.order_id,
@@ -790,25 +1151,30 @@ class MakerEngine:
             ],
             "inventory": {
                 tid: {
-                    "asset": inv.asset,
-                    "net_shares": round(inv.net_shares, 2),
-                    "fills_today": inv.fills_today,
-                    "estimated_rebate": round(inv.estimated_rebate, 4),
+                    "asset": self._token_asset.get(tid, pos.get("market_title", "unknown")),
+                    "outcome": pos.get("outcome", "unknown"),
+                    "net_shares": round(pos["size"], 2),
+                    "avg_price": round(pos["avg_price"], 4),
+                    "value_usd": round(pos["size"] * pos["avg_price"], 2),
+                    "fills_today": 0,  # per-token fill count not tracked in V2
+                    "estimated_rebate": 0.0,
                     "remaining_s": round(self._market_remaining.get(tid, 9999)),
                 }
-                for tid, inv in self._inventory.items()
+                for tid, pos in positions.items()
             },
             "warnings": self._get_warnings(),
             "config": {
+                "bankroll_usd": self.cfg.maker_bankroll_usd,
                 "quote_size_usd": self.quote_size_usd,
-                "max_inventory_usd": self.max_inventory_usd,
-                "max_total_exposure": self.max_total_exposure,
+                "max_imbalance": self.cfg.maker_max_imbalance,
+                "daily_loss_pct": self.cfg.maker_daily_loss_pct,
                 "tick_interval_s": self.tick_interval_s,
             },
             "stats": {
                 "fills_today": self._fills_today,
                 "estimated_rebate_today": round(self._estimated_rebate_today, 4),
                 "active_quote_count": len(self._active_quotes),
+                "total_exposure_usd": round(self._inv_mgr.get_total_exposure(), 2),
             },
             "pnl": {
                 "session_pnl": round(self._session_pnl, 4),
@@ -827,21 +1193,18 @@ class MakerEngine:
 
     def get_status(self) -> dict:
         """Return current maker engine status for API/dashboard."""
-        now = time.time()
-        total_inv_usd = 0.0
-        for inv in self._inventory.values():
-            if inv.net_shares != 0:
-                total_inv_usd += abs(inv.net_shares * inv.cost_basis / max(abs(inv.net_shares), 1))
+        total_exposure = self._inv_mgr.get_total_exposure()
 
         return {
             "enabled": self.enabled,
+            "version": 2,
             "active_quotes": len(self._active_quotes),
-            "total_inventory_usd": round(total_inv_usd, 2),
+            "total_inventory_usd": round(total_exposure, 2),
             "fills_today": self._fills_today,
             "estimated_rebate_today": round(self._estimated_rebate_today, 4),
+            "bankroll_usd": self.cfg.maker_bankroll_usd,
             "quote_size_usd": self.quote_size_usd,
-            "max_inventory_usd": self.max_inventory_usd,
-            "max_total_exposure": self.max_total_exposure,
+            "max_imbalance": self.cfg.maker_max_imbalance,
             "session_pnl": round(self._session_pnl, 4),
             "spread_captured": round(self._total_spread_captured, 4),
             "resolution_losses": round(self._resolution_losses, 4),
