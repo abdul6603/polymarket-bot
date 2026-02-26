@@ -41,7 +41,8 @@ def get_max_notional(balance: float) -> float:
     for threshold, cap in _NOTIONAL_TIERS:
         if balance >= threshold:
             return cap
-    return _DEFAULT_MAX_NOTIONAL
+    # Sub-$200 accounts: cap at 10x balance (not flat $5K)
+    return max(100, balance * 10)
 
 # SL distance bounds (% of entry price)
 SL_MIN_GENUINE = 2.0          # Genuine trades: min 2% SL

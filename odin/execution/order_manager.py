@@ -274,7 +274,7 @@ class OrderManager:
             pnl_pct = (exit_price / entry - 1) * 100
         else:
             pnl = (entry - exit_price) * qty
-            pnl_pct = (entry / exit_price - 1) * 100
+            pnl_pct = (1 - exit_price / entry) * 100
 
         # Realistic fees: taker + slippage (configurable via paper_fee_rate)
         fees = pos["notional"] * self._paper_fee_rate
@@ -509,7 +509,7 @@ class OrderManager:
                 pnl_pct = (exit_price / entry_price - 1) * 100
             else:
                 pnl_raw = (entry_price - exit_price) * qty
-                pnl_pct = (entry_price / exit_price - 1) * 100
+                pnl_pct = (1 - exit_price / entry_price) * 100
 
             # Estimate fees (taker close)
             fees = (exit_price * qty) * 0.00035
@@ -709,6 +709,7 @@ class OrderManager:
                 margin_usd=round(tranche_notional / size.leverage, 2),
                 leverage=size.leverage,
                 risk_usd=round(size.risk_usd * weight, 2),
+                risk_pct=round(size.risk_pct * weight, 3),
                 sl_price=size.sl_price,
                 sl_source=size.sl_source,
                 sl_distance_pct=size.sl_distance_pct,

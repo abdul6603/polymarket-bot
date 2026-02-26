@@ -344,6 +344,11 @@ class OdinBrain:
             log.warning("[LLM_BRAIN] SL distance %.2f%% outside 0.5-5.0%% range", sl_dist_pct)
             return None
 
+        # Compute TP fallback BEFORE R:R check (so R:R can use fallback TP)
+        if tp1 <= 0:
+            sl_dist = abs(entry - stop_loss)
+            tp1 = entry + sl_dist * 2 * (1 if action == "LONG" else -1)
+
         # Calculate R:R if not provided
         if rr <= 0 and tp1 > 0:
             sl_dist = abs(entry - stop_loss)
@@ -381,7 +386,7 @@ class OdinBrain:
             entry_zone_top=entry,
             entry_zone_bottom=entry,
             stop_loss=stop_loss,
-            take_profit_1=tp1 if tp1 > 0 else entry + (entry - stop_loss) * 2 * (1 if action == "LONG" else -1),
+            take_profit_1=tp1,
             take_profit_2=tp2 if tp2 > 0 else 0,
             risk_reward=rr,
             macro_multiplier=1.0,

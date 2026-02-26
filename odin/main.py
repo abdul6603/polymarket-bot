@@ -535,8 +535,8 @@ class OdinBot:
                 try:
                     cg_metrics = {}
                     if self._last_snapshot:
-                        cg_metrics = self._last_snapshot.coin_data.get(opp.symbol, {}) \
-                            if hasattr(self._last_snapshot, "coin_data") else {}
+                        cg_metrics = self._last_snapshot.coins.get(opp.symbol, {}) \
+                            if hasattr(self._last_snapshot, "coins") else {}
                     journal_fitness = self._journal.get_journal_fitness(
                         f"{opp.symbol}USDT", opp.direction.value,
                         self._last_regime.regime.value if self._last_regime else "neutral",

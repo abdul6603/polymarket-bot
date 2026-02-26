@@ -153,57 +153,25 @@ class ExitManager:
             ))
             return decisions  # SL closes everything
 
-        # ── 2. Check partial TPs (in order: TP3, TP2, TP1, Early) ──
-        # Check highest first so we don't miss levels on big moves
-        if not state.tp3_hit and current_r >= self._tp3_r:
-            # Close remaining runner
-            decisions.append(ExitDecision(
-                action=ExitAction.PARTIAL_TP3,
-                close_pct=1.0,  # All remaining
-                close_price=current_price,
-                reason=f"TP3 runner closed at {current_r:.1f}R",
-            ))
-            state.tp3_hit = True
+        # ── 2. Check partial TPs (sequential — handles price gaps) ──
+        # Use 'if' not 'elif' so multiple levels can fire in one tick
+        # close_pct = fraction of ORIGINAL qty, converted to fraction of remaining
+        orig_qty = state.original_qty
 
-        elif not state.tp2_hit and current_r >= self._tp2_r:
-            # Close 30% of original (proportion of what's remaining)
-            if state.remaining_qty > 0:
-                # Already closed: early(25%) + TP1(25%) = 50%. Remaining = 50%.
-                # TP2 = 30% of original = 60% of remaining 50%
-                already_closed = self._early_pct + self._tp1_pct
-                remaining_frac = max(1.0 - already_closed, 0.1)
-                close_frac = min(self._tp2_pct / remaining_frac, 0.95)
-                decisions.append(ExitDecision(
-                    action=ExitAction.PARTIAL_TP2,
-                    close_pct=close_frac,
-                    close_price=current_price,
-                    reason=f"TP2 partial close ({close_frac:.0%}) at {current_r:.1f}R",
-                ))
-                state.tp2_hit = True
-
-        elif not state.tp1_hit and current_r >= self._tp1_r:
-            # Close 25% of original at TP1
-            decisions.append(ExitDecision(
-                action=ExitAction.PARTIAL_TP1,
-                close_pct=self._tp1_pct,
-                close_price=current_price,
-                reason=f"TP1 partial close ({self._tp1_pct:.0%}) at {current_r:.1f}R",
-            ))
-            state.tp1_hit = True
-            # Also mark early as hit if it wasn't already
-            state.early_hit = True
-
-        elif not state.early_hit and current_r >= self._early_r:
-            # Early partial: 25% at 1R — "pay for the trade", then SL to breakeven
+        if not state.early_hit and current_r >= self._early_r:
+            # Early partial: 25% at 1R — "pay for the trade"
+            frac = self._early_pct * orig_qty / max(state.remaining_qty, 1e-12)
+            frac = min(frac, 0.95)
             decisions.append(ExitDecision(
                 action=ExitAction.PARTIAL_EARLY,
-                close_pct=self._early_pct,
+                close_pct=frac,
                 close_price=current_price,
-                reason=f"Early partial ({self._early_pct:.0%}) at {current_r:.1f}R — trade is free",
+                reason=f"Early partial ({self._early_pct:.0%} of orig) at {current_r:.1f}R — trade is free",
             ))
             state.early_hit = True
+            state.remaining_qty -= self._early_pct * orig_qty
 
-            # Move SL to breakeven — worst case is now $0 loss on remaining 75%
+            # Move SL to breakeven
             new_sl = entry
             if self._sl_is_improvement(direction, new_sl, state.current_sl):
                 state.current_sl = new_sl
@@ -212,6 +180,43 @@ class ExitManager:
                     new_sl=new_sl,
                     reason="SL → breakeven after early partial",
                 ))
+
+        if not state.tp1_hit and current_r >= self._tp1_r:
+            # TP1: 25% of original
+            frac = self._tp1_pct * orig_qty / max(state.remaining_qty, 1e-12)
+            frac = min(frac, 0.95)
+            decisions.append(ExitDecision(
+                action=ExitAction.PARTIAL_TP1,
+                close_pct=frac,
+                close_price=current_price,
+                reason=f"TP1 partial ({self._tp1_pct:.0%} of orig) at {current_r:.1f}R",
+            ))
+            state.tp1_hit = True
+            state.early_hit = True  # skip early if price gapped past it
+            state.remaining_qty -= self._tp1_pct * orig_qty
+
+        if not state.tp2_hit and current_r >= self._tp2_r:
+            # TP2: 30% of original
+            frac = self._tp2_pct * orig_qty / max(state.remaining_qty, 1e-12)
+            frac = min(frac, 0.95)
+            decisions.append(ExitDecision(
+                action=ExitAction.PARTIAL_TP2,
+                close_pct=frac,
+                close_price=current_price,
+                reason=f"TP2 partial ({self._tp2_pct:.0%} of orig) at {current_r:.1f}R",
+            ))
+            state.tp2_hit = True
+            state.remaining_qty -= self._tp2_pct * orig_qty
+
+        if not state.tp3_hit and current_r >= self._tp3_r:
+            # TP3: close all remaining (the runner)
+            decisions.append(ExitDecision(
+                action=ExitAction.PARTIAL_TP3,
+                close_pct=1.0,
+                close_price=current_price,
+                reason=f"TP3 runner closed at {current_r:.1f}R",
+            ))
+            state.tp3_hit = True
 
         # ── 3. Trailing stop logic ──
         trail_decision = self._calc_trailing_sl(
