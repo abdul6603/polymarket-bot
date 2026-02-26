@@ -385,12 +385,15 @@ class ResolutionScalper:
 
         # Notify
         dry_tag = "[DRY] " if self._dry_run else ""
+        _dir_icon = "\U0001f7e2" if opp.direction.upper() == "UP" else "\U0001f534"
+        _countdown = int(opp.remaining_s)
         self._notify(
-            f"RES-SCALP {dry_tag}ENTRY\n\n"
-            f"{opp.direction.upper()} {opp.asset.upper()} 5m\n"
-            f"P={opp.probability:.0%} | Edge={opp.edge:.0%} | z={opp.z_score:.2f}\n"
-            f"${opp.kelly_bet:.2f} → {shares:.1f} shares @ ${opp.market_price:.3f}\n"
-            f"T-{int(opp.remaining_s)}s",
+            f"\u23f1 *GARVES RES-SCALP* {dry_tag}ENTRY\n"
+            f"\n"
+            f"{_dir_icon} {opp.direction.upper()} {opp.asset.upper()} / 5m\n"
+            f"\U0001f4ca Prob: {opp.probability:.0%} | Edge: *{opp.edge:.0%}* | z: {opp.z_score:.2f}\n"
+            f"\U0001f4b0 ${opp.kelly_bet:.2f} \u2192 {shares:.1f} shares @ ${opp.market_price:.3f}\n"
+            f"\u23f3 Resolves in *{_countdown}s*",
             event_data={
                 "engine": "resolution_scalper", "type": "entry",
                 "asset": opp.asset.upper(), "direction": opp.direction.upper(),
@@ -495,15 +498,20 @@ class ResolutionScalper:
                 pos.probability_at_entry * 100, pos.edge_at_entry * 100,
             )
 
-            emoji = "W" if won else "L"
+            _icon = "\U0001f7e2" if won else "\U0001f534"
+            _result = "WIN" if won else "LOSS"
             dry_tag = "[DRY] " if self._dry_run else ""
+            _total = self._stats['wins'] + self._stats['losses']
+            _wr = (self._stats['wins'] / _total * 100) if _total > 0 else 0
             self._notify(
-                f"RES-SCALP {dry_tag}[{emoji}]\n\n"
-                f"{pos.direction.upper()} {pos.asset.upper()} 5m\n"
-                f"Entry: ${pos.entry_price:.3f} | Size: ${pos.size_usd:.2f}\n"
-                f"PnL: ${pos.pnl:+.2f}\n"
-                f"Running: {self._stats['wins']}W-{self._stats['losses']}L "
-                f"(${self._stats['pnl']:+.2f})",
+                f"\u23f1 *GARVES RES-SCALP* {dry_tag}\u2014 {_icon} *{_result}*\n"
+                f"\n"
+                f"{pos.direction.upper()} {pos.asset.upper()} / 5m\n"
+                f"\U0001f4c9 Entry: ${pos.entry_price:.3f} | Size: ${pos.size_usd:.2f}\n"
+                f"\U0001f4b0 P&L: *${pos.pnl:+.2f}*\n"
+                f"\n"
+                f"\U0001f4ca Season: {self._stats['wins']}W-{self._stats['losses']}L "
+                f"({_wr:.0f}%) | Net: ${self._stats['pnl']:+.2f}",
                 event_data={
                     "engine": "resolution_scalper", "type": "resolution",
                     "asset": pos.asset.upper(), "direction": pos.direction.upper(),
@@ -594,7 +602,7 @@ class ResolutionScalper:
             if tg_token and tg_chat:
                 _requests.post(
                     f"https://api.telegram.org/bot{tg_token}/sendMessage",
-                    json={"chat_id": tg_chat, "text": msg},
+                    json={"chat_id": tg_chat, "text": msg, "parse_mode": "Markdown"},
                     timeout=10,
                 )
         except Exception:

@@ -186,12 +186,22 @@ def resolve_paper_trades() -> dict:
                 # Telegram notification — skip stale trades (>48h old)
                 trade_age_h = (time.time() - t.get("timestamp", 0)) / 3600
                 if trade_age_h < 48:
-                    emoji = "\U0001f7e2" if won else "\U0001f534"
-                    pnl_str = f"+${pnl:.2f}" if pnl >= 0 else f"-${abs(pnl):.2f}"
+                    _result_icon = "\U0001f7e2" if won else "\U0001f534"
+                    _result_text = "WON" if won else "LOST"
+                    _pnl_str = f"+${pnl:.2f}" if pnl >= 0 else f"-${abs(pnl):.2f}"
+                    _roi = (pnl / size_usd * 100) if size_usd else 0
+                    # Running record from stats
+                    _wr = (stats["wins"] / (stats["wins"] + stats["losses"]) * 100) if (stats["wins"] + stats["losses"]) > 0 else 0
                     _notify_tg(
-                        f"{emoji} <b>Hawk {'WON' if won else 'LOST'}</b>\n"
-                        f"{t.get('question', '')[:100]}\n"
-                        f"P&L: <b>{pnl_str}</b> | {t.get('direction', '').upper()} @ ${entry_price:.2f}"
+                        f"{_result_icon} <b>HAWK {_result_text}</b>\n"
+                        f"\n"
+                        f"\U0001f4cb {t.get('question', '')[:100]}\n"
+                        f"\n"
+                        f"\U0001f4b5 P&L: <b>{_pnl_str}</b> ({_roi:+.0f}%)\n"
+                        f"\U0001f4c9 {t.get('direction', '').upper()} @ ${entry_price:.2f} | Risked: ${size_usd:.2f}\n"
+                        f"\n"
+                        f"\U0001f4ca Session: {stats['wins']}W-{stats['losses']}L ({_wr:.0f}%) | "
+                        f"Net: ${stats['total_pnl']:+.2f}"
                     )
                 else:
                     log.info("Skipped TG for stale trade (%.0fh old): %s", trade_age_h, t.get("question", "")[:50])

@@ -29,6 +29,23 @@ from odin.strategy.signals import TradeSignal
 
 log = logging.getLogger(__name__)
 
+# ── Telegram notification (fire-and-forget) ──
+_TG_TOKEN = os.environ.get("TG_BOT_TOKEN", "")
+_TG_CHAT = os.environ.get("TG_CHAT_ID", "")
+
+def _odin_tg(text: str) -> None:
+    if not _TG_TOKEN or not _TG_CHAT:
+        return
+    try:
+        import requests
+        requests.post(
+            f"https://api.telegram.org/bot{_TG_TOKEN}/sendMessage",
+            json={"chat_id": _TG_CHAT, "text": text, "parse_mode": "Markdown"},
+            timeout=8,
+        )
+    except Exception:
+        pass
+
 
 class OrderManager:
     """
@@ -150,6 +167,24 @@ class OrderManager:
             signal.stop_loss, signal.take_profit_1, signal.risk_reward,
         )
         self._save_paper_positions()
+
+        # Telegram notification
+        _dir_icon = "\U0001f7e2" if signal.direction == "LONG" else "\U0001f534"
+        _mode = "PAPER" if self._dry_run else "LIVE"
+        _macro = signal.macro_regime or "?"
+        _smc = ", ".join(signal.smc_patterns[:3]) if signal.smc_patterns else "none"
+        _odin_tg(
+            f"\u26a1 *ODIN {_mode} ENTRY*\n"
+            f"\n"
+            f"{_dir_icon} *{signal.direction} {signal.symbol}* @ ${entry_price:,.2f}\n"
+            f"\U0001f4b0 Size: ${size.notional_usd:,.0f} | Risk: ${size.risk_usd:.0f} | {size.leverage:.0f}x lev\n"
+            f"\U0001f6e1 SL: ${signal.stop_loss:,.2f} | TP: ${signal.take_profit_1:,.2f}\n"
+            f"\U0001f4ca R:R *{signal.risk_reward:.1f}x* | Conf: {signal.confidence:.0%}\n"
+            f"\n"
+            f"\U0001f30d Macro: {_macro} | SMC: {_smc}\n"
+            f"\U0001f4dd {signal.entry_reason[:80] if signal.entry_reason else 'Signal-based entry'}"
+        )
+
         return pos_id
 
     # ── Paper Position Persistence ──
@@ -379,6 +414,34 @@ class OrderManager:
             result.pnl_usd, result.pnl_pct, reason, hold_hours,
             f" | Partials: {len(partial_closes)}" if partial_closes else "",
         )
+
+        # Telegram notification
+        _win = result.pnl_usd >= 0
+        _result_icon = "\U0001f7e2" if _win else "\U0001f534"
+        _result_text = "WIN" if _win else "LOSS"
+        _mode = "PAPER" if self._dry_run else "LIVE"
+        _hold_str = f"{hold_hours:.1f}h" if hold_hours >= 1 else f"{hold_hours*60:.0f}m"
+        _rr_str = f"{rr_val:.1f}R" if rr_val else "?"
+        # Map exit reasons to readable text
+        _reason_map = {
+            "stop_loss": "\U0001f6d1 Stop Loss",
+            "take_profit": "\U0001f3af Take Profit",
+            "trailing_stop": "\U0001f4c9 Trailing Stop",
+            "time_exit": "\u23f0 Time Exit",
+            "manual": "\u270b Manual",
+        }
+        _reason_label = _reason_map.get(reason, reason)
+        _odin_tg(
+            f"{_result_icon} *ODIN {_mode} EXIT* \u2014 *{_result_text}*\n"
+            f"\n"
+            f"{result.side} {result.symbol}\n"
+            f"\U0001f4c9 ${entry:,.2f} \u2192 ${exit_price:,.2f} ({result.pnl_pct:+.2f}%)\n"
+            f"\U0001f4b5 P&L: *${result.pnl_usd:+.2f}* | {_rr_str}\n"
+            f"\u23f1 Held: {_hold_str} | Fees: ${result.fees:.2f}\n"
+            f"\n"
+            f"{_reason_label}"
+        )
+
         return result
 
     # ── Live Trading ──
@@ -445,6 +508,20 @@ class OrderManager:
                 self._save_live_positions()
 
                 log.info("[LIVE] Position opened: %s", pos_id)
+
+                # Telegram notification for live entry
+                _dir_icon = "\U0001f7e2" if signal.direction == "LONG" else "\U0001f534"
+                _macro = signal.macro_regime or "?"
+                _odin_tg(
+                    f"\u26a1 *ODIN LIVE ENTRY*\n"
+                    f"\n"
+                    f"{_dir_icon} *{signal.direction} {signal.symbol}* @ ${fill_price:,.2f}\n"
+                    f"\U0001f4b0 Size: ${fill_qty * fill_price:,.0f} | {size.leverage:.0f}x lev\n"
+                    f"\U0001f6e1 SL: ${signal.stop_loss:,.2f} | TP: ${signal.take_profit_1:,.2f}\n"
+                    f"\U0001f4ca R:R *{signal.risk_reward:.1f}x* | Conf: {signal.confidence:.0%}\n"
+                    f"\U0001f30d Macro: {_macro}"
+                )
+
                 return pos_id
             else:
                 log.error("[LIVE] Order rejected: %s", result)

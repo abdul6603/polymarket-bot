@@ -1132,20 +1132,35 @@ class SnipeEngine:
             tg_chat = os.environ.get("TG_CHAT_ID", "")
             if tg_token and tg_chat:
                 won = result.get("won")
-                emoji = "W" if won else "L" if won is False else "?"
                 asset_name = result.get("asset", slot.asset).upper()
+                pnl = result['pnl_usd']
+                _tf = slot.exec_timeframe or '5m'
+                _dir = result['direction'].upper()
+                _total_trades = self._stats['wins'] + self._stats['losses']
+                _wr = (self._stats['wins'] / _total_trades * 100) if _total_trades > 0 else 0
+                if won:
+                    _icon = "\U0001f7e2"  # green
+                    _result = "WIN"
+                elif won is False:
+                    _icon = "\U0001f534"  # red
+                    _result = "LOSS"
+                else:
+                    _icon = "\u2753"
+                    _result = "PENDING"
                 msg = (
-                    f"GARVES SNIPE [{emoji}]\n\n"
-                    f"{result['direction'].upper()} {asset_name} {slot.exec_timeframe or '5m'}\n"
-                    f"Waves: {result['waves']} | Invested: ${result['total_size_usd']:.2f}\n"
-                    f"Avg Entry: ${result['avg_entry']:.3f}\n"
-                    f"PnL: ${result['pnl_usd']:+.2f}\n"
-                    f"Running: {self._stats['wins']}W-{self._stats['losses']}L "
-                    f"(${self._stats['pnl']:+.2f})"
+                    f"\U0001f3af *GARVES FLOW SNIPE* \u2014 {_icon} *{_result}*\n"
+                    f"\n"
+                    f"{_dir} {asset_name} / {_tf}\n"
+                    f"\U0001f30a Waves: {result['waves']} | Invested: ${result['total_size_usd']:.2f}\n"
+                    f"\U0001f4c9 Avg Entry: ${result['avg_entry']:.3f}\n"
+                    f"\U0001f4b0 P&L: *${pnl:+.2f}*\n"
+                    f"\n"
+                    f"\U0001f4ca Season: {self._stats['wins']}W-{self._stats['losses']}L "
+                    f"({_wr:.0f}%) | Net: ${self._stats['pnl']:+.2f}"
                 )
                 requests.post(
                     f"https://api.telegram.org/bot{tg_token}/sendMessage",
-                    json={"chat_id": tg_chat, "text": msg},
+                    json={"chat_id": tg_chat, "text": msg, "parse_mode": "Markdown"},
                     timeout=10,
                 )
         except Exception:

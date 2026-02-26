@@ -43,6 +43,24 @@ except ImportError:
 
 log = logging.getLogger(__name__)
 
+# ── Telegram notification (fire-and-forget) ──
+import os as _os
+_TG_TOKEN = _os.environ.get("TG_BOT_TOKEN", "")
+_TG_CHAT = _os.environ.get("TG_CHAT_ID", "")
+
+def _oracle_tg(text: str) -> None:
+    if not _TG_TOKEN or not _TG_CHAT:
+        return
+    try:
+        import requests
+        requests.post(
+            f"https://api.telegram.org/bot{_TG_TOKEN}/sendMessage",
+            json={"chat_id": _TG_CHAT, "text": text, "parse_mode": "Markdown"},
+            timeout=8,
+        )
+    except Exception:
+        pass
+
 DATA_DIR = Path.home() / "polymarket-bot" / "data"
 
 
@@ -197,6 +215,17 @@ class OracleBot:
                     "week": last_week,
                 })
                 log.info("Published resolution to event bus")
+
+                # Telegram notification for resolutions
+                _res_pnl = resolution.get("pnl", 0)
+                _res_icon = "\U0001f7e2" if _res_pnl >= 0 else "\U0001f534"
+                _oracle_tg(
+                    f"\U0001f52e *ORACLE WEEKLY RESOLUTION*\n"
+                    f"\n"
+                    f"{_res_icon} Week: {last_week}\n"
+                    f"\U0001f4ca Resolved: *{resolution['resolved']}* predictions\n"
+                    f"\U0001f4b5 P&L: *${_res_pnl:+.2f}*"
+                )
 
         # Step 2: Scan weekly markets (Polymarket + Kalshi)
         log.info("Step 2: Scanning weekly markets...")
@@ -364,6 +393,26 @@ class OracleBot:
             "week": week_start,
         })
         log.info("Published weekly predictions to event bus")
+
+        # Telegram notification for weekly predictions
+        _regime_icons = {"bull": "\U0001f7e2", "bear": "\U0001f534", "neutral": "\U0001f7e1", "volatile": "\u26a1"}
+        _regime_icon = _regime_icons.get(ensemble.regime, "\U0001f7e1")
+        _wagered = sum(t.size for t in selected)
+        _trade_lines = ""
+        for t in selected[:5]:
+            _t_dir_icon = "\U0001f7e2" if t.direction == "YES" else "\U0001f534"
+            _trade_lines += f"  {_t_dir_icon} {t.question[:50]} — ${t.size:.0f} ({t.edge*100:.0f}% edge)\n"
+        if not _trade_lines:
+            _trade_lines = "  No trades this cycle\n"
+        _oracle_tg(
+            f"\U0001f52e *ORACLE {cycle_type.upper()}*\n"
+            f"\n"
+            f"{_regime_icon} Regime: *{ensemble.regime.upper()}* ({ensemble.confidence:.0%} conf)\n"
+            f"\U0001f4ca Scanned: {len(all_markets)} mkts \u2192 {len(tradeable)} tradeable\n"
+            f"\U0001f4b0 Placed: *{len(selected)}* trades | ${_wagered:,.0f} wagered\n"
+            f"\n"
+            f"*Trades:*\n{_trade_lines}"
+        )
 
         # Record brain decision for learning
         if self.brain:

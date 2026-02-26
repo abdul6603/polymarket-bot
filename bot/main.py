@@ -1040,19 +1040,38 @@ class TradingBot:
                 # Telegram alert for live trades
                 if not self.cfg.dry_run:
                     try:
-                        rr_tg = f"R:R: {sig.reward_risk_ratio:.2f}" if sig.reward_risk_ratio else "R:R: N/A"
-                        ob_tg = ""
-                        if ob_analysis:
-                            ob_tg = f"\nBook: ${ob_analysis.total_liquidity_usd:.0f} liq | ${ob_analysis.spread:.3f} spread | {ob_analysis.estimated_slippage_pct*100:.1f}% slip"
+                        # Determine engine type
+                        _tf_label = timeframe or "15m"
+                        if _tf_label == "5m":
+                            _engine_tag = "FLOW SNIPE"
+                            _engine_icon = "\U0001f3af"  # dart
+                        else:
+                            _engine_tag = "TAKER"
+                            _engine_icon = "\U0001f4a5"  # boom
+                        _dir_icon = "\U0001f7e2" if sig.direction.upper() == "UP" else "\U0001f534"
+                        _tier = conviction.tier_label.upper() if conviction.tier_label else "?"
+                        _conv_bar = "\u2588" * min(int(conviction.total_score / 10), 10) + "\u2591" * max(0, 10 - int(conviction.total_score / 10))
                         msg = (
-                            f"*GARVES V2 — SNIPER TRADE*\n\n"
-                            f"*{sig.direction.upper()}* on {asset.upper()}/{timeframe}\n"
-                            f"Market: _{dm.question[:80]}_\n"
-                            f"Size: *${conviction.position_size_usd:.2f}*\n"
-                            f"Price: ${sig.probability:.3f} | Edge: {sig.edge*100:.1f}% | {rr_tg}\n"
-                            f"Conviction: {conviction.total_score:.0f}/100 [{conviction.tier_label}]{ob_tg}\n"
-                            f"Order: `{order_id}`"
+                            f"{_engine_icon} *GARVES {_engine_tag}*\n"
+                            f"\n"
+                            f"{_dir_icon} *{sig.direction.upper()}* {asset.upper()} / {_tf_label}\n"
+                            f"\U0001f4cb _{dm.question[:80]}_\n"
+                            f"\n"
+                            f"\U0001f4b0 Size: *${conviction.position_size_usd:.2f}* @ ${sig.probability:.3f}\n"
+                            f"\U0001f4c8 Edge: *{sig.edge*100:.1f}%*"
                         )
+                        if sig.reward_risk_ratio:
+                            msg += f" | R:R *{sig.reward_risk_ratio:.1f}x*"
+                        msg += (
+                            f"\n\U0001f9e0 Conviction: *{conviction.total_score:.0f}*/100 [{_tier}]\n"
+                            f"`{_conv_bar}`"
+                        )
+                        if ob_analysis:
+                            msg += (
+                                f"\n\U0001f4d6 Book: ${ob_analysis.total_liquidity_usd:,.0f} liq | "
+                                f"{ob_analysis.estimated_slippage_pct*100:.1f}% slip"
+                            )
+                        msg += f"\n\n\U0001f194 `{order_id}`"
                         _send_telegram(msg)
                     except Exception:
                         pass
@@ -1114,11 +1133,15 @@ class TradingBot:
             log.info("Stop-loss exited %d position(s) this tick", stopped)
             sl = getattr(self.executor, '_last_stop_loss', None)
             if sl:
+                _loss_pct = (1 - sl['bid'] / sl['entry_price']) * 100 if sl['entry_price'] else 0
                 _send_telegram(
-                    f"*STOP-LOSS* {sl['direction'].upper()}\n"
-                    f"Entry: ${sl['entry_price']:.3f} -> Bid: ${sl['bid']:.3f}\n"
-                    f"Recovered: *${sl['recovery']:.2f}* of ${sl['size_usd']:.2f}\n"
-                    f"Saved vs full loss: *${sl['loss_saved']:.2f}*"
+                    f"\U0001f6d1 *GARVES STOP-LOSS*\n"
+                    f"\n"
+                    f"\U0001f534 {sl['direction'].upper()} exited at -{_loss_pct:.1f}%\n"
+                    f"\U0001f4c9 ${sl['entry_price']:.3f} \u2192 ${sl['bid']:.3f}\n"
+                    f"\n"
+                    f"\U0001f4b0 Recovered: *${sl['recovery']:.2f}* of ${sl['size_usd']:.2f}\n"
+                    f"\U0001f6e1 Saved vs full loss: *${sl['loss_saved']:.2f}*"
                 )
                 self.executor._last_stop_loss = None
 

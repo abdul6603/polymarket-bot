@@ -169,12 +169,17 @@ class HawkExecutor:
 
             # Notify TG
             pnl_est = (sell_price - entry_price) * shares
+            pnl_icon = "\U0001f7e2" if pnl_est >= 0 else "\U0001f534"
+            pnl_pct = ((sell_price - entry_price) / entry_price * 100) if entry_price else 0
             _notify_tg(
-                f"\U0001f6a8 <b>Hawk LIVE EXIT</b>\n"
-                f"{pos.get('question', '')[:100]}\n"
-                f"<b>SOLD</b> {shares:.1f} shares @ ${sell_price:.2f} "
-                f"(entry ${entry_price:.2f})\n"
-                f"Est P&L: ${pnl_est:+.2f} | Reason: {reason}"
+                f"\U0001f6a8 <b>HAWK EXIT</b> {pnl_icon}\n"
+                f"\n"
+                f"\U0001f4cb {pos.get('question', '')[:100]}\n"
+                f"\n"
+                f"\U0001f4b0 <b>SOLD</b> {shares:.1f} shares @ ${sell_price:.2f}\n"
+                f"\U0001f4c9 Entry: ${entry_price:.2f} \u2192 Exit: ${sell_price:.2f} ({pnl_pct:+.1f}%)\n"
+                f"\U0001f4b5 P&L: <b>${pnl_est:+.2f}</b>\n"
+                f"\U0001f4dd Reason: {reason}"
             )
 
             # Publish to event bus
@@ -253,10 +258,12 @@ class HawkExecutor:
                      add_id, extra_usd, buy_price, reason)
 
             _notify_tg(
-                f"\U0001f4c8 <b>Hawk LIVE SCALE-UP</b>\n"
-                f"{pos.get('question', '')[:100]}\n"
-                f"<b>ADDED</b> ${extra_usd:.2f} @ ${buy_price:.2f}\n"
-                f"Reason: {reason}"
+                f"\U0001f4c8 <b>HAWK SCALE-UP</b>\n"
+                f"\n"
+                f"\U0001f4cb {pos.get('question', '')[:100]}\n"
+                f"\n"
+                f"\U0001f4b0 <b>+${extra_usd:.2f}</b> @ ${buy_price:.2f}\n"
+                f"\U0001f4dd Reason: {reason}"
             )
 
             try:
@@ -357,10 +364,11 @@ class HawkExecutor:
                         except Exception:
                             pass
                         _notify_tg(
-                            f"\u26a0\ufe0f <b>Hawk STALE SELL</b>\n"
-                            f"Sell order {sell_id[:12]} unfilled after {age_min:.0f}min\n"
-                            f"Condition: {sell_info.get('condition_id', '')[:12]}\n"
-                            f"Reason: {sell_info.get('reason', '')}"
+                            f"\u26a0\ufe0f <b>HAWK STALE ORDER</b>\n"
+                            f"\n"
+                            f"Sell unfilled for <b>{age_min:.0f}min</b> \u2014 re-pricing\n"
+                            f"\U0001f194 <code>{sell_id[:12]}</code>\n"
+                            f"\U0001f4dd {sell_info.get('reason', 'exit')}"
                         )
                         del self._pending_sells[sell_id]
             except Exception:
@@ -566,12 +574,17 @@ def _record_fill_metric(pos: dict, outcome: str) -> None:
 def _notify_trade_placed(opp: TradeOpportunity, cfg: HawkConfig | None = None) -> None:
     """Send Telegram notification when Hawk places a trade."""
     price = _get_entry_price(opp, cfg)
-    mode = "LIMIT" if (cfg and not cfg.aggressive_fallback) else "TAKER"
+    mode = "LIMIT" if (cfg and not cfg.aggressive_fallback) else "MARKET"
+    dir_icon = "\U0001f7e2" if opp.direction.upper() == "YES" else "\U0001f534"
+    risk_bar = "\U0001f7e9" * min(opp.risk_score, 10) + "\u2b1c" * max(0, 10 - opp.risk_score)
     _notify_tg(
-        f"\U0001f985 <b>Hawk Trade Placed [{mode}]</b>\n"
-        f"{opp.market.question[:100]}\n"
-        f"<b>{opp.direction.upper()}</b> ${opp.position_size_usd:.2f} @ ${price:.2f} | "
-        f"Edge: {opp.edge*100:.1f}% | Risk: {opp.risk_score}/10"
+        f"\U0001f985 <b>HAWK NEW TRADE</b> [{mode}]\n"
+        f"\n"
+        f"\U0001f4cb {opp.market.question[:100]}\n"
+        f"\n"
+        f"{dir_icon} <b>{opp.direction.upper()}</b> ${opp.position_size_usd:.2f} @ ${price:.2f}\n"
+        f"\U0001f4c8 Edge: <b>{opp.edge*100:.1f}%</b> | Conf: {opp.confidence*100:.0f}%\n"
+        f"\u26a0\ufe0f Risk: {opp.risk_score}/10 {risk_bar}"
     )
 
 

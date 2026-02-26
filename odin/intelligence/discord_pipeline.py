@@ -757,23 +757,28 @@ class DiscordPipeline:
         if not tg:
             return
         try:
-            tier_emoji = "TRUSTED" if signal.tier == TraderTier.TRUSTED else "VOTED"
+            tier_tag = "\U0001f31f TRUSTED" if signal.tier == TraderTier.TRUSTED else "\U0001f4ca VOTED"
             pos = self._discord_positions.get(signal.execution_id, {})
+            _dir_icon = "\U0001f7e2" if signal.direction == "LONG" else "\U0001f534"
+            _score_bar = "\u2588" * min(int(signal.decision_score / 10), 10) + "\u2591" * max(0, 10 - int(signal.decision_score / 10))
             msg = (
-                f"*DISCORD AUTO-TAKE [{tier_emoji}]*\n"
-                f"Trader: `{signal.trader}` | #{signal.channel}\n"
-                f"Signal: *{signal.direction} {signal.ticker}*\n"
+                f"\u26a1 *ODIN DISCORD — AUTO-TAKE*\n"
+                f"\n"
+                f"{_dir_icon} *{signal.direction} {signal.ticker}*\n"
+                f"\U0001f464 {signal.trader} ({tier_tag}) | #{signal.channel}\n"
+                f"\n"
             )
             if signal.entry_price:
-                msg += f"Entry: `${signal.entry_price:,.2f}`\n"
-            if signal.stop_loss:
-                msg += f"SL: `${signal.stop_loss:,.2f}`\n"
+                msg += f"\U0001f4b0 Entry: `${signal.entry_price:,.2f}`"
+                if signal.stop_loss:
+                    _risk_pct = abs(signal.entry_price - signal.stop_loss) / signal.entry_price * 100
+                    msg += f" | SL: `${signal.stop_loss:,.2f}` (-{_risk_pct:.1f}%)"
+                msg += "\n"
             if signal.take_profit:
-                msg += f"TP: `${signal.take_profit:,.2f}`\n"
-            msg += f"Score: `{signal.decision_score:.0f}/100`\n"
+                msg += f"\U0001f3af TP: `${signal.take_profit:,.2f}`\n"
+            msg += f"\U0001f9e0 Score: *{signal.decision_score:.0f}*/100\n`{_score_bar}`\n"
             if pos:
-                msg += f"Risk: `${pos.get('risk_usd', 0):.0f}` | Size: `${pos.get('notional_usd', 0):.0f}`\n"
-            msg += f"Position: `{signal.execution_id}`"
+                msg += f"\U0001f4b5 Risk: ${pos.get('risk_usd', 0):.0f} | Size: ${pos.get('notional_usd', 0):,.0f}\n"
             tg.send(msg, parse_mode="Markdown")
         except Exception as e:
             log.debug("[DISCORD] TG auto-take error: %s", str(e)[:80])
@@ -783,28 +788,28 @@ class DiscordPipeline:
         if not tg:
             return
         try:
+            _dir_icon = "\U0001f7e2" if signal.direction == "LONG" else "\U0001f534"
             votes_str = ""
             if signal.vote_result:
                 for agent, v in signal.vote_result.items():
-                    emoji = "Y" if v["vote"] == "YES" else "N" if v["vote"] == "NO" else "?"
-                    votes_str += f"  {agent}: {emoji} ({v['confidence']}%) {v.get('reason', '')[:40]}\n"
+                    emoji = "\u2705" if v["vote"] == "YES" else "\u274c" if v["vote"] == "NO" else "\u2753"
+                    votes_str += f"  {emoji} {agent}: {v['confidence']}% — {v.get('reason', '')[:40]}\n"
 
             msg = (
-                f"*DISCORD REVIEW NEEDED*\n"
-                f"Trader: `{signal.trader}` | #{signal.channel}\n"
-                f"Signal: *{signal.direction} {signal.ticker}*\n"
+                f"\U0001f514 *ODIN DISCORD — REVIEW NEEDED*\n"
+                f"\n"
+                f"{_dir_icon} *{signal.direction} {signal.ticker}*\n"
+                f"\U0001f464 {signal.trader} | #{signal.channel}\n"
+                f"\n"
             )
             if signal.entry_price:
-                msg += f"Entry: `${signal.entry_price:,.2f}`\n"
+                msg += f"\U0001f4b0 Entry: `${signal.entry_price:,.2f}`\n"
             if signal.stop_loss:
-                msg += f"SL: `${signal.stop_loss:,.2f}`\n"
-            msg += f"Score: `{signal.decision_score:.0f}/100` (needs {SCORE_AUTO_TAKE}+)\n"
+                msg += f"\U0001f6e1 SL: `${signal.stop_loss:,.2f}`\n"
+            msg += f"\U0001f9e0 Score: *{signal.decision_score:.0f}*/100 (need {SCORE_AUTO_TAKE}+ for auto)\n"
             if votes_str:
-                msg += f"\n*Votes:*\n```\n{votes_str}```\n"
-            msg += (
-                f"\nApprove on dashboard: "
-                f"`localhost:8877` > Discord tab"
-            )
+                msg += f"\n*Agent Votes:*\n```\n{votes_str}```\n"
+            msg += f"\n\U0001f449 Approve: `localhost:8877` > Discord tab"
             tg.send(msg, parse_mode="Markdown")
         except Exception as e:
             log.debug("[DISCORD] TG review error: %s", str(e)[:80])
@@ -815,10 +820,11 @@ class DiscordPipeline:
             return
         try:
             msg = (
-                f"*DISCORD BLOCKED*\n"
-                f"Trader: `{signal.trader}` ({signal.tier.value})\n"
-                f"Signal: {signal.direction} {signal.ticker}\n"
-                f"Reason: _{signal.blocked_reason}_"
+                f"\U0001f6ab *ODIN DISCORD — BLOCKED*\n"
+                f"\n"
+                f"{signal.direction} {signal.ticker}\n"
+                f"\U0001f464 {signal.trader} ({signal.tier.value})\n"
+                f"\U0001f4dd _{signal.blocked_reason}_"
             )
             tg.send(msg, parse_mode="Markdown")
         except Exception as e:
