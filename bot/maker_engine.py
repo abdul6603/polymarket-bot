@@ -432,14 +432,17 @@ class MakerEngine:
                     "reason": "auto-convert: no tokens to sell",
                 }
 
-        # 3. HARD BANKROLL CAP — total committed must not exceed bankroll
+        # 3. HARD BANKROLL CAP — committed + pending orders must not exceed bankroll
         bankroll = self.cfg.maker_bankroll_usd
         order_cost = size * price if size > 0 else self.quote_size_usd
-        remaining = bankroll - self._maker_total_committed
+        # Count pending GTC orders as reserved (they lock USDC on the CLOB)
+        pending_usd = sum(q.size_usd for q in self._active_quotes)
+        total_used = self._maker_total_committed + pending_usd
+        remaining = bankroll - total_used
         if remaining <= 0 or order_cost > remaining + 1.0:  # $1 tolerance
             return {"action": "block", "side": side, "token_id": token_id,
                     "size": size, "price": price,
-                    "reason": f"bankroll exhausted (${self._maker_total_committed:.0f}/${bankroll:.0f} used)"}
+                    "reason": f"bankroll exhausted (${self._maker_total_committed:.0f} filled + ${pending_usd:.0f} pending = ${total_used:.0f}/${bankroll:.0f})"}
 
         # 4. Per-market exposure cap (max $10 per market = quote_size)
         exposure = self._inv_mgr.get_market_exposure(up_token, down_token)
