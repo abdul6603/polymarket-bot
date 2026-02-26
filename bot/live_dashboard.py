@@ -109,7 +109,8 @@ def add_cache_headers(response):
 
 @app.route("/")
 def index():
-    return render_template("dashboard.html")
+    import time as _t
+    return render_template("dashboard.html", cache_bust=int(_t.time()))
 
 
 # ── Register all route blueprints ──
