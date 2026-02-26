@@ -148,7 +148,7 @@ def _check_garves_performance() -> list[dict]:
     resolved = [t for t in trades if t.get("resolved") or t.get("status") == "resolved"]
     if len(resolved) < MIN_TRADES_FOR_WINRATE:
         return alerts
-
+    
     wins = sum(1 for t in resolved if t.get("profit", t.get("pnl", 0)) > 0)
     win_rate = wins / len(resolved)
 
