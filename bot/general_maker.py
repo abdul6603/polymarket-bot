@@ -73,7 +73,7 @@ _CATEGORY_KEYWORDS = {
     ],
 }
 
-ALLOWED_CATEGORIES = {"sports", "politics"}
+ALLOWED_CATEGORIES = {"sports", "politics", "crypto"}
 
 
 def _categorize(question: str) -> str:
@@ -178,12 +178,16 @@ def scan_maker_markets(
                     continue
                 seen_ids.add(cid)
 
-                # Category filter: sports + politics only
-                if _is_crypto(question) or _ESPORTS_RE.search(question):
+                # Category filter
+                if _ESPORTS_RE.search(question):
                     continue
-                cat = _categorize(question)
-                if cat not in ALLOWED_CATEGORIES:
-                    continue
+                is_crypto_mkt = _is_crypto(question)
+                if is_crypto_mkt:
+                    cat = "crypto"
+                else:
+                    cat = _categorize(question)
+                    if cat not in ALLOWED_CATEGORIES:
+                        continue
 
                 # Volume + liquidity filter
                 vol = float(m.get("volume", 0) or 0)
@@ -206,7 +210,9 @@ def scan_maker_markets(
                     remaining = (end_dt - now).total_seconds()
                 except (ValueError, TypeError):
                     continue
-                if remaining < min_hours * 3600 or remaining > max_days * 86400:
+                # Crypto Up/Down have short TTR (5min-24h); general need 2h+
+                min_remaining_s = 180 if is_crypto_mkt else min_hours * 3600
+                if remaining < min_remaining_s or remaining > max_days * 86400:
                     continue
 
                 # Parse tokens
@@ -329,8 +335,9 @@ def scan_maker_markets(
     maker_ready.sort(key=lambda m: m.spread)
 
     log.info(
-        "[GMAKER] Book check: %d maker-ready markets (sports=%d, politics=%d)",
+        "[GMAKER] Book check: %d maker-ready (crypto=%d, sports=%d, politics=%d)",
         len(maker_ready),
+        sum(1 for m in maker_ready if m.category == "crypto"),
         sum(1 for m in maker_ready if m.category == "sports"),
         sum(1 for m in maker_ready if m.category == "politics"),
     )

@@ -245,6 +245,8 @@ class MakerEngine:
         self._opposite_token: dict[str, str] = {}
         # Token -> asset name mapping (for dashboard: "bitcoin", "ethereum", etc.)
         self._token_asset: dict[str, str] = {}
+        # Token -> market category (for category-specific bankroll)
+        self._token_category: dict[str, str] = {}
 
         # Shared balance manager
         self._balance_mgr = None
@@ -365,7 +367,9 @@ class MakerEngine:
         if exposure["total_usd"] < 1.0:
             return 0.0
 
-        bankroll = self.cfg.maker_bankroll_usd
+        cat = self._token_category.get(up_token, "crypto")
+        bankroll = (self.cfg.maker_crypto_bankroll_usd if cat == "crypto"
+                    else self.cfg.maker_general_bankroll_usd)
         max_per_market = bankroll * 0.15 if bankroll > 0 else 30.0
 
         # Positive = more YES than NO -> lower BUY YES price, raise BUY NO attractiveness
@@ -399,11 +403,13 @@ class MakerEngine:
                     "reason": "auto-convert: no tokens to sell",
                 }
 
-        # 3. Bankroll check
-        bankroll = self.cfg.maker_bankroll_usd
+        # 3. Bankroll check (category-specific: $200 crypto, $100 general)
+        cat = self._token_category.get(token_id, "crypto")
+        bankroll = (self.cfg.maker_crypto_bankroll_usd if cat == "crypto"
+                    else self.cfg.maker_general_bankroll_usd)
         if bankroll <= 0:
             return {"action": "block", "side": side, "token_id": token_id,
-                    "size": size, "price": price, "reason": "no MAKER_BANKROLL_USD configured"}
+                    "size": size, "price": price, "reason": f"no {cat} bankroll configured"}
 
         # 4. Per-market exposure cap (15% of bankroll)
         max_per_market = bankroll * 0.15
@@ -445,26 +451,27 @@ class MakerEngine:
     # ── Safe Pricing ─────────────────────────────────────────
 
     def get_safe_buy_price(self, token_id: str, desired_price: float | None = None) -> tuple[float, float, int]:
-        """Safe non-crossing BUY price. Returns (price, tick_size, decimals).
+        """Competitive BUY price near top of book. Returns (price, tick_size, decimals).
 
-        Rules:
-        - safe = best_ask - (3 * tick_size)
-        - Never exceed best_ask * 0.99 (1% hard cap)
-        - If desired_price is safer (lower), use it
+        Strategy: Use desired_price capped at best_ask - 1 tick (don't cross book).
+        Falls back to best_bid if no desired_price given.
         """
         book = self.client.get_order_book(token_id)
         tick = float(book.tick_size) if book.tick_size else 0.01
         decimals = len(book.tick_size.split(".")[-1]) if book.tick_size and "." in book.tick_size else 2
 
         best_ask = float(book.asks[-1].price) if book.asks else 0.99  # CLOB sorts desc, best=last
-        safe = round(best_ask - 3 * tick, decimals)
-        hard_cap = round(best_ask * 0.99, decimals)  # never within 1% of best ask
-        safe = min(safe, hard_cap)
+        best_bid = float(book.bids[-1].price) if book.bids else 0.01  # CLOB sorts asc, best=last
+
+        # Safety ceiling: 1 tick below best ask (never cross the book)
+        max_safe = round(best_ask - tick, decimals)
+
+        if desired_price is not None:
+            safe = min(round(desired_price, decimals), max_safe)
+        else:
+            safe = min(best_bid, max_safe)
+
         safe = max(tick, safe)
-
-        if desired_price is not None and desired_price < safe:
-            safe = round(desired_price, decimals)
-
         return safe, tick, decimals
 
     # ── Order Placement ──────────────────────────────────────
@@ -652,17 +659,31 @@ class MakerEngine:
             else:
                 log.info("[MAKER-DRY] BUY NO %s blocked: %s", asset.upper(), v["reason"])
 
-        for side, price, tid in sides:
-            size = max(5.0, size_usd / price) if price > 0 else 5.0
-            q = MakerQuote(
-                order_id="dry-v2-%s-%d" % (side.lower(), int(now)),
-                token_id=tid, asset=asset, side=side,
-                price=price, size=size,
-                size_usd=round(price * size, 2), placed_at=now,
-            )
-            quotes.append(q)
+        # Preserve competitive existing quotes (avoids resetting placed_at timer)
+        keep_tids = {token_id, down_token_id} if down_token_id else {token_id}
+        existing = [q for q in self._active_quotes if q.token_id in keep_tids]
 
-        if sides:
+        for side, price, tid in sides:
+            # Reuse existing quote if price still within 2 cents (competitive)
+            old = next(
+                (q for q in existing
+                 if q.side == side and q.token_id == tid and abs(q.price - price) <= 0.02),
+                None,
+            )
+            if old:
+                quotes.append(old)
+            else:
+                size = max(5.0, size_usd / price) if price > 0 else 5.0
+                q = MakerQuote(
+                    order_id="dry-v2-%s-%d" % (side.lower(), int(now)),
+                    token_id=tid, asset=asset, side=side,
+                    price=price, size=size,
+                    size_usd=round(price * size, 2), placed_at=now,
+                )
+                quotes.append(q)
+
+        new_count = sum(1 for q in quotes if q.placed_at == now)
+        if new_count > 0 and sides:
             log.info(
                 "[MAKER-DRY] %s %s (fair=%.3f spread=%.3f skew=%.4f sz=$%.0f) [%s]",
                 asset.upper(),
@@ -671,7 +692,6 @@ class MakerEngine:
             )
 
         # Replace active quotes for this market
-        keep_tids = {token_id, down_token_id} if down_token_id else {token_id}
         self._active_quotes = [
             q for q in self._active_quotes if q.token_id not in keep_tids
         ] + quotes
@@ -736,10 +756,12 @@ class MakerEngine:
                     try:
                         book = self.client.get_order_book(q.token_id)
                         if q.side in ("BUY", "BUY_YES", "BUY_NO"):
+                            best_bid = float(book.bids[-1].price) if book.bids else 0.0
                             best_ask = float(book.asks[-1].price) if book.asks else 99.0
-                            # Fill if market moved through our level (and quote is >5s old)
-                            would_fill = best_ask <= q.price and now - q.placed_at > 5
-                            fill_info = f"ask=${best_ask:.4f} vs bid=${q.price:.4f}"
+                            # Fill if bid is competitive (at/above best bid) and rested 20s
+                            competitive = q.price >= best_bid
+                            would_fill = competitive and now - q.placed_at > 20
+                            fill_info = f"our=${q.price:.4f} bid=${best_bid:.4f} ask=${best_ask:.4f}"
                         else:
                             best_bid = float(book.bids[-1].price) if book.bids else 0.0
                             would_fill = best_bid >= q.price and now - q.placed_at > 5
@@ -763,8 +785,8 @@ class MakerEngine:
                     log.info("[MAKER-DRY] Would-fill: %s %s @ $%.3f ($%.1f) [%s]",
                              q.side, q.asset.upper(), q.price, q.size_usd, fill_info)
                 else:
-                    # Expire quotes after 60s in dry-run
-                    if now - q.placed_at > 60:
+                    # Expire quotes after 120s in dry-run (gives time to fill)
+                    if now - q.placed_at > 120:
                         log.debug("[MAKER-DRY] Expired: %s %s @ $%.4f [%s]",
                                   q.side, q.asset.upper(), q.price, fill_info)
                     else:
@@ -1035,6 +1057,12 @@ class MakerEngine:
             if down_token:
                 self._token_asset[down_token] = asset
 
+            # Track category for bankroll routing
+            category = mkt.get("category", "crypto")
+            self._token_category[up_token] = category
+            if down_token:
+                self._token_category[down_token] = category
+
             # Track TTR for dashboard
             self._market_remaining[up_token] = remaining_s
             if down_token:
@@ -1176,6 +1204,8 @@ class MakerEngine:
             "warnings": self._get_warnings(),
             "config": {
                 "bankroll_usd": self.cfg.maker_bankroll_usd,
+                "crypto_bankroll_usd": self.cfg.maker_crypto_bankroll_usd,
+                "general_bankroll_usd": self.cfg.maker_general_bankroll_usd,
                 "quote_size_usd": self.quote_size_usd,
                 "max_imbalance": self.cfg.maker_max_imbalance,
                 "daily_loss_pct": self.cfg.maker_daily_loss_pct,

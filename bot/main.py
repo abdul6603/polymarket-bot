@@ -378,7 +378,7 @@ class TradingBot:
                         save_scan_results(maker_mkts)
                         _last_discovery = now
                         if _maker_markets:
-                            log.info("[MAKER] Found %d maker markets (sports+politics)", len(_maker_markets))
+                            log.info("[MAKER] Found %d maker markets (crypto+sports+politics)", len(_maker_markets))
                     except Exception as e:
                         log.warning("[MAKER] Market scan failed: %s", str(e)[:200])
 
