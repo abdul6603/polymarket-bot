@@ -150,8 +150,7 @@ def _generate_hawk_digest() -> dict:
             if vol > 50000:
                 items.append(_make_digest_item(
                     f"Volume spike: {opp.get('headline', '')}",
-                    f"24h Volume: ${vol:,.0f} | Price: {raw.get('yes_price', 0.5):.2f}",
-                    "polymarket_activity",
+                    f"24h Volume: ${vol:,.0f} | Price: {raw.get('yes_price', 0.5):.2f}",                    "polymarket_activity",
                     85,
                     category="volume_spike",
                     condition_id=raw.get("condition_id", ""),

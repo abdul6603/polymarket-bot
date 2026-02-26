@@ -179,10 +179,11 @@ def _check_hawk_performance() -> list[dict]:
     win_rate = wins / len(resolved)
 
     if win_rate < WIN_RATE_FLOOR:        alerts.append(_make_alert(
+    if win_rate < WIN_RATE_FLOOR:
+        alerts.append(_make_alert(
             "warning", "hawk", "win_rate_drop",
             f"Hawk win rate {win_rate:.1%} over last {len(resolved)} trades (floor: {WIN_RATE_FLOOR:.0%})",
-            win_rate=round(win_rate, 3),
-            sample_size=len(resolved),
+            win_rate=round(win_rate, 3),            sample_size=len(resolved),
         ))
 
     return alerts

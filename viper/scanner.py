@@ -162,8 +162,7 @@ def scan_tavily(api_key: str, queries: list[str] | None = None, use_briefing: bo
     if use_briefing:
         hawk_queries = _load_hawk_queries()
         # Take top 4 targeted queries (highest priority markets)
-        seen_cids: set[str] = set()
-        for hq in hawk_queries:
+        seen_cids: set[str] = set()        for hq in hawk_queries:
             if len(query_plan) >= max_queries:
                 break
             # One query per market to maximize coverage

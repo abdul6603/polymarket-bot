@@ -169,10 +169,10 @@ def compute_pnl() -> dict:
         },
         "costs": {
             "daily_api": daily_api,            "infrastructure_daily": infra_daily,
+            "infrastructure_daily": infra_daily,
             "total_monthly": total_monthly,
             "agent_breakdown": agent_totals,
-        },
-        "net_daily": net_daily,
+        },        "net_daily": net_daily,
         "net_monthly_est": net_monthly_est,
         "best_performer": best_performer,
         "biggest_cost": biggest_cost,
