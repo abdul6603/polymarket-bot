@@ -192,9 +192,11 @@ class SnipeEngine:
 
         # Resolution Scalper — Engine #2 (last 15-90s of 5m windows)
         self._resolution_scalper = ResolutionScalper(
-            cfg, price_cache, clob_client,
+            cfg=cfg,
+            price_cache=price_cache,
             window_tracker=self.window_tracker,
             orderbook_signal=self._orderbook,
+            clob_client=clob_client,
             dry_run=dry_run,
             bankroll=cfg.bankroll_usd,
         )
