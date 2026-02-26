@@ -143,7 +143,8 @@ def run_single_scan(cfg: ViperConfig, cycle: int = 0) -> dict:
         for item in scan_reddit_predictions():
             if item.id not in seen_ids:
                 seen_ids.add(item.id)
-                intel_items.append(item)        log.info("Tavily skipped this cycle (cycle %d, runs every 3rd)", cycle)
+                intel_items.append(item)
+        log.info("Tavily skipped this cycle (cycle %d, runs every 3rd)", cycle)
 
     result["intel_count"] = len(intel_items)
     result["tavily_ran"] = run_tavily
