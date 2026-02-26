@@ -79,7 +79,7 @@ BINANCE_SYMBOLS = {
 # All assets that need live prices (flow scanner + resolution scalper)
 PRICE_ASSETS = ("bitcoin", "ethereum", "solana", "xrp")
 ASSET_CONFIG = {
-    "bitcoin": {"base_threshold": 60, "budget": 25.0},
+    "bitcoin": {"base_threshold": 60},
 }
 
 # Default execution timeframe — 5m scanner signals execute on 15m/1h markets
@@ -151,13 +151,14 @@ class SnipeEngine:
         self._delta_signals: dict[str, DeltaSignal] = {}
 
         # BTC-only slot with executor + scorer
+        self._snipe_budget = cfg.order_size_usd  # from .env ORDER_SIZE_USD
         self._slots: dict[str, AssetSlot] = {}
         for asset in ASSETS:
-            ac = ASSET_CONFIG.get(asset, {"base_threshold": 75, "budget": 25.0})
+            ac = ASSET_CONFIG.get(asset, {"base_threshold": 75})
             slot = AssetSlot(asset=asset)
             slot.executor = PyramidExecutor(
                 cfg, clob_client, dry_run=dry_run,
-                budget_per_window=ac["budget"],
+                budget_per_window=self._snipe_budget,
             )
             slot.scorer = SignalScorer(threshold=ac["base_threshold"])
             self._slots[asset] = slot
@@ -181,8 +182,8 @@ class SnipeEngine:
         # Flow detector — core of v9 strategy
         self._flow_detector = FlowDetector()
 
-        self._base_budget = 25.0
-        self._escalated_budget = 40.0
+        self._base_budget = self._snipe_budget
+        self._escalated_budget = self._snipe_budget * 1.5
         self._consecutive_wins = 0
         self._stats = {
             "signals": 0, "trades": 0, "wins": 0,
@@ -645,7 +646,7 @@ class SnipeEngine:
                 size_mult *= 0.50
                 log.info("[SNIPE] %s: Overnight sizing (2-6AM) — 50%% budget", asset.upper())
 
-            slot.executor._budget = ASSET_CONFIG.get(asset, {}).get("budget", 25.0) * size_mult
+            slot.executor._budget = self._snipe_budget * size_mult
 
             slot.executor.start_position(
                 exec_market_id, direction, window.open_price, asset,
@@ -1106,8 +1107,7 @@ class SnipeEngine:
                 s.executor._budget = self._escalated_budget
         else:
             for s in self._slots.values():
-                ac = ASSET_CONFIG.get(s.asset, {"budget": 25.0})
-                s.executor._budget = ac["budget"]
+                s.executor._budget = self._snipe_budget
 
         # Event bus
         try:
