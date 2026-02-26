@@ -258,7 +258,7 @@
     <div style="display:flex;gap:6px;margin-bottom:14px;">
       <button class="garves-engine-tab active" data-engine="snipe" onclick="garvesSelectEngine('snipe')">Snipe Engine</button>
       <button class="garves-engine-tab" data-engine="maker" onclick="garvesSelectEngine('maker')">Market Making</button>
-      <button class="garves-engine-tab" data-engine="whale" onclick="garvesSelectEngine('whale')">Whale Follower</button>
+      <button class="garves-engine-tab" data-engine="whale" onclick="garvesSelectEngine('whale')">Smart Money</button>
       <button class="garves-engine-tab" data-engine="taker" onclick="garvesSelectEngine('taker')">Taker Engine</button>
       <button class="garves-engine-tab" data-engine="res-scalp" onclick="garvesSelectEngine('res-scalp')">Resolution Scalper</button>
     </div>
@@ -356,75 +356,163 @@
 
     <!-- MARKET MAKING ENGINE -->
     <div class="garves-engine-panel" id="garves-engine-maker" style="display:none;">
-      <div style="font-weight:700;font-size:0.82rem;margin-bottom:12px;">Market Making Engine</div>
-      <div class="grid-4" style="margin-bottom:10px;">
-        <div class="stat-card" style="border-left:3px solid #22c55e;"><div class="stat-value" id="maker-session-pnl" style="font-size:1.3rem;">$0.00</div><div class="stat-label">Session P&amp;L</div></div>
-        <div class="stat-card" style="border-left:3px solid #8b5cf6;"><div class="stat-value" id="maker-spread-captured" style="font-size:1.3rem;">$0.00</div><div class="stat-label">Spread Captured</div></div>
-        <div class="stat-card" style="border-left:3px solid #ef4444;"><div class="stat-value" id="maker-resolution-losses" style="font-size:1.3rem;">$0.00</div><div class="stat-label">Resolution Losses</div></div>
-        <div class="stat-card" style="border-left:3px solid #eab308;"><div class="stat-value" id="maker-fills-today" style="font-size:1.3rem;">0</div><div class="stat-label">Fills Today</div><div id="maker-rebate-label" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div></div>
+      <div class="gv-engine-header">
+        <div>
+          <div class="gv-engine-header-title">Market Making Engine</div>
+          <div class="gv-engine-subtitle">Passive liquidity provision &bull; Spread capture</div>
+        </div>
+        <span id="maker-engine-status-badge" class="gv-mode-badge off">OFF</span>
       </div>
-      <div id="maker-warnings-card" style="display:none;margin-bottom:10px;padding:10px 14px;border-radius:8px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);">
-        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:#ef4444;font-weight:700;margin-bottom:4px;">Inventory Risk Warnings</div>
-        <div id="maker-warnings-list" style="font-family:var(--font-mono);font-size:0.72rem;color:#ef4444;"></div>
+
+      <div class="gv-metrics">
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(34,197,94,0.12);color:#22c55e;">$</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="maker-session-pnl">$0.00</div>
+            <div class="gv-metric-lbl">Session P&amp;L</div>
+          </div>
+        </div>
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(139,92,246,0.12);color:#8b5cf6;">&harr;</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="maker-spread-captured">$0.00</div>
+            <div class="gv-metric-lbl">Spread Captured</div>
+          </div>
+        </div>
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(239,68,68,0.12);color:#ef4444;">&times;</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="maker-resolution-losses">$0.00</div>
+            <div class="gv-metric-lbl">Res. Losses</div>
+          </div>
+        </div>
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(234,179,8,0.12);color:#eab308;">&olarr;</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="maker-fills-today">0</div>
+            <div class="gv-metric-lbl">Fills Today</div>
+            <div class="gv-metric-sub" id="maker-rebate-label"></div>
+          </div>
+        </div>
       </div>
-      <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-          <span style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);">Active Quotes</span>
-          <span id="maker-quote-count" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;font-weight:600;">0</span>
+
+      <!-- Exposure Heat Bar -->
+      <div class="glass-card" style="padding:10px 14px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div class="gv-section-title" style="margin-bottom:0;">Exposure</div>
+          <span id="maker-exposure-label" class="gv-exposure-label">0%</span>
+        </div>
+        <div class="gv-exposure-bar">
+          <div id="maker-exposure-fill" class="gv-exposure-fill" style="width:0%;background:var(--success);"></div>
+        </div>
+        <div id="maker-warnings-card" style="display:none;margin-top:8px;">
+          <div id="maker-warnings-list" style="font-family:var(--font-mono);font-size:0.68rem;color:#ef4444;"></div>
+        </div>
+      </div>
+
+      <!-- Inventory Grid -->
+      <div class="glass-card" style="padding:10px 14px;margin-bottom:14px;">
+        <div class="gv-section-title" style="margin-bottom:10px;">Inventory</div>
+        <div id="maker-inventory-grid" class="gv-inventory-grid">
+          <div style="text-align:center;color:var(--text-muted);font-size:0.72rem;grid-column:1/-1;">No inventory</div>
+        </div>
+        <table class="data-table" style="display:none;"><thead><tr><th>Asset</th><th>Direction</th><th>Shares</th><th>Fills</th><th>TTR</th><th>Risk</th></tr></thead>
+        <tbody id="maker-inventory-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">No inventory</td></tr></tbody></table>
+      </div>
+
+      <!-- Active Quotes -->
+      <div class="glass-card" style="margin-bottom:14px;padding:10px 14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div class="gv-section-title" style="margin-bottom:0;">Active Quotes</div>
+          <span id="maker-quote-count" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(0,212,255,0.1);color:var(--agent-garves);font-weight:600;">0</span>
         </div>
         <table class="data-table"><thead><tr><th>Asset</th><th>Side</th><th>Price</th><th>Size</th><th>Age</th></tr></thead>
         <tbody id="maker-quotes-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;">No active quotes</td></tr></tbody></table>
       </div>
-      <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;">
-        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Inventory</div>
-        <table class="data-table"><thead><tr><th>Asset</th><th>Direction</th><th>Shares</th><th>Fills</th><th>TTR</th><th>Risk</th></tr></thead>
-        <tbody id="maker-inventory-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">No inventory</td></tr></tbody></table>
-      </div>
+
+      <!-- Recent Fills -->
       <div class="glass-card" style="padding:10px 14px;">
-        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Recent Fills</div>
+        <div class="gv-section-title" style="margin-bottom:8px;">Recent Fills</div>
         <table class="data-table"><thead><tr><th>Time</th><th>Asset</th><th>Side</th><th>Price</th><th>Fair</th><th>Spread</th></tr></thead>
         <tbody id="maker-fills-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">No fills yet</td></tr></tbody></table>
       </div>
       <div style="margin-top:8px;font-size:0.62rem;color:var(--text-muted);font-family:var(--font-mono);" id="maker-config-label"></div>
     </div>
 
-    <!-- WHALE FOLLOWER ENGINE -->
+    <!-- SMART MONEY TRACKER ENGINE -->
     <div class="garves-engine-panel" id="garves-whale-section" style="display:none;">
-      <div style="font-weight:700;font-size:0.82rem;margin-bottom:12px;">Smart Money Follower</div>
-      <div class="grid-4" style="margin-bottom:12px;">
-        <div class="stat-card" style="border-left:3px solid #FFD700;"><div class="stat-value" id="whale-tracked-wallets" style="font-size:1.3rem;">0</div><div class="stat-label">Tracked Whales</div></div>
-        <div class="stat-card" style="border-left:3px solid #8b5cf6;"><div class="stat-value" id="whale-copy-count" style="font-size:1.3rem;">0</div><div class="stat-label">Copy Trades</div></div>
-        <div class="stat-card" style="border-left:3px solid #22c55e;"><div class="stat-value" id="whale-win-rate" style="font-size:1.3rem;">--</div><div class="stat-label">Win Rate</div></div>
-        <div class="stat-card" style="border-left:3px solid #ef4444;"><div class="stat-value" id="whale-total-pnl" style="font-size:1.3rem;">$0.00</div><div class="stat-label">Copy P&amp;L</div></div>
-      </div>
-      <div style="display:flex;gap:12px;margin-bottom:10px;flex-wrap:wrap;">
-        <div style="flex:1;min-width:200px;">
-          <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px;">Quick View</div>
-          <table style="width:100%;border-collapse:collapse;font-family:var(--font-mono);"><thead><tr style="color:var(--text-muted);font-size:0.62rem;"><th style="padding:2px 8px;text-align:left;">Whale</th><th style="padding:2px 6px;text-align:center;">Score</th><th style="padding:2px 6px;text-align:center;">Trades</th><th style="padding:2px 6px;text-align:right;">PnL</th></tr></thead><tbody id="whale-top-wallets-body"></tbody></table>
+      <div class="gv-engine-header" style="border-bottom-color:rgba(255,215,0,0.15);">
+        <div>
+          <div class="gv-engine-header-title">Smart Money Tracker</div>
+          <div class="gv-engine-subtitle">Whale wallet monitoring &bull; Copy trade signals</div>
         </div>
-        <div style="flex:0 0 200px;">
-          <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:4px;">Status</div>
-          <div style="font-size:0.68rem;margin-bottom:3px;">Signals: <span id="whale-signals-count" style="font-weight:600;">0</span></div>
-          <div style="font-size:0.68rem;margin-bottom:3px;">Poll cycles: <span id="whale-ticks" style="font-weight:600;">0</span></div>
-          <div style="font-size:0.68rem;">Backtest: <span id="whale-backtest-status">--</span></div>
+        <span id="whale-engine-count-badge" style="font-family:var(--font-mono);font-size:0.68rem;color:#FFD700;font-weight:600;">0 whales</span>
+      </div>
+
+      <div class="gv-metrics">
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(255,215,0,0.12);color:#FFD700;">&#128051;</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="whale-tracked-wallets">0</div>
+            <div class="gv-metric-lbl">Tracked</div>
+          </div>
+        </div>
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(139,92,246,0.12);color:#8b5cf6;">&#128203;</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="whale-copy-count">0</div>
+            <div class="gv-metric-lbl">Copies</div>
+          </div>
+        </div>
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(34,197,94,0.12);color:#22c55e;">%</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="whale-win-rate">--</div>
+            <div class="gv-metric-lbl">Win Rate</div>
+          </div>
+        </div>
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(239,68,68,0.12);color:#ef4444;">$</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="whale-total-pnl">$0.00</div>
+            <div class="gv-metric-lbl">Copy P&amp;L</div>
+          </div>
         </div>
       </div>
-      <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;">
-        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Top Tracked Whales</div>
-        <table class="data-table"><thead><tr><th>Wallet</th><th>Username</th><th>Score</th><th>Trades</th><th>Win Rate</th><th>P&amp;L</th></tr></thead>
-        <tbody id="whale-wallets-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">No tracked whales</td></tr></tbody></table>
+
+      <!-- Top Tracked Whales -->
+      <div class="glass-card" style="margin-bottom:14px;padding:10px 14px;">
+        <div class="gv-section-title gold" style="margin-bottom:8px;">Top Tracked Whales</div>
+        <table class="data-table"><thead><tr><th>#</th><th>Wallet</th><th>Username</th><th>Score</th><th>Trades</th><th>WR%</th><th>P&amp;L</th></tr></thead>
+        <tbody id="whale-wallets-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;">No tracked whales</td></tr></tbody></table>
+        <table style="display:none;"><tbody id="whale-top-wallets-body"></tbody></table>
       </div>
-      <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-          <span style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);">Active Whale Signals</span>
-          <span id="whale-signal-count" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;font-weight:600;">0</span>
+
+      <!-- Active Signals -->
+      <div class="gv-signals-wrap">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div class="gv-section-title gold" style="margin-bottom:0;">Active Signals</div>
+          <span id="whale-signal-count" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(255,215,0,0.12);color:#FFD700;font-weight:600;">0</span>
         </div>
         <div id="whale-signals-list" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">No active signals</span></div>
       </div>
-      <div class="glass-card" style="padding:10px 14px;">
-        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Recent Copy Trades</div>
+
+      <!-- Recent Copy Trades -->
+      <div class="glass-card" style="margin-bottom:14px;padding:10px 14px;">
+        <div class="gv-section-title gold" style="margin-bottom:8px;">Recent Copy Trades</div>
         <table class="data-table"><thead><tr><th>Time</th><th>Whale</th><th>Market</th><th>Dir</th><th>Size</th><th>Status</th><th>P&amp;L</th></tr></thead>
         <tbody id="whale-trades-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;">No copy trades</td></tr></tbody></table>
+      </div>
+
+      <!-- Backtest Status -->
+      <div class="glass-card" style="padding:10px 14px;">
+        <div style="display:flex;align-items:center;gap:12px;font-size:0.72rem;">
+          <span style="font-weight:600;">Backtest:</span> <span id="whale-backtest-status">--</span>
+          <span class="dot-sep" style="width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,0.15);"></span>
+          <span>Signals: <span id="whale-signals-count" style="font-weight:600;">0</span></span>
+          <span class="dot-sep" style="width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,0.15);"></span>
+          <span>Cycles: <span id="whale-ticks" style="font-weight:600;">0</span></span>
+        </div>
       </div>
     </div>
 
@@ -446,34 +534,77 @@
 
     <!-- RESOLUTION SCALPER ENGINE -->
     <div class="garves-engine-panel" id="garves-engine-res-scalp" style="display:none;">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-        <span style="font-weight:700;font-size:0.82rem;">Resolution Scalper</span>
-        <span id="res-scalp-engine-mode" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(249,115,22,0.15);color:#f97316;font-weight:600;">DRY RUN</span>
-        <span style="font-size:0.62rem;color:var(--text-muted);">Last 15-90s of 5m windows | Brownian motion probability</span>
-      </div>
-      <div class="grid-4" style="margin-bottom:12px;">
-        <div class="stat-card" style="border-left:3px solid #f97316;"><div class="stat-value" id="res-eng-trades" style="font-size:1.3rem;">0</div><div class="stat-label">Trades</div></div>
-        <div class="stat-card" style="border-left:3px solid #22c55e;"><div class="stat-value" id="res-eng-wr" style="font-size:1.3rem;">--</div><div class="stat-label">Win Rate</div></div>
-        <div class="stat-card" style="border-left:3px solid #8b5cf6;"><div class="stat-value" id="res-eng-pnl" style="font-size:1.3rem;">$0.00</div><div class="stat-label">PnL</div></div>
-        <div class="stat-card" style="border-left:3px solid #eab308;"><div class="stat-value" id="res-eng-cal" style="font-size:1.3rem;">--</div><div class="stat-label">Calibration</div></div>
-      </div>
-      <div class="glass-card" style="padding:10px 14px;margin-bottom:12px;">
-        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Thresholds</div>
-        <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:0.72rem;font-family:var(--font-mono);">
-          <span>Min P: <span id="res-eng-min-p" style="color:#f97316;">75%</span></span>
-          <span>Min Edge: <span id="res-eng-min-edge" style="color:#f97316;">8%</span></span>
-          <span>Max Price: <span id="res-eng-max-price" style="color:#f97316;">$0.88</span></span>
-          <span>Max Bet: <span id="res-eng-max-bet" style="color:#f97316;">$20</span></span>
-          <span>Kelly: <span id="res-eng-kelly" style="color:#f97316;">25%</span></span>
+      <div class="gv-engine-header" style="border-bottom-color:rgba(249,115,22,0.15);">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="gv-pulse-dot-orange"></span>
+            <span class="gv-engine-header-title">Resolution Scalper</span>
+            <span id="res-scalp-engine-mode" class="gv-mode-badge dry">DRY RUN</span>
+          </div>
+          <div class="gv-engine-subtitle">Brownian Motion &bull; Last 90s of 5m Windows</div>
         </div>
       </div>
-      <div class="glass-card" style="padding:10px 14px;margin-bottom:12px;">
-        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Active Positions</div>
+
+      <div class="gv-metrics">
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(249,115,22,0.12);color:#f97316;">#</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="res-eng-trades">0</div>
+            <div class="gv-metric-lbl">Trades</div>
+          </div>
+        </div>
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(34,197,94,0.12);color:#22c55e;">%</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="res-eng-wr">--</div>
+            <div class="gv-metric-lbl">Win Rate</div>
+          </div>
+        </div>
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(139,92,246,0.12);color:#8b5cf6;">$</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="res-eng-pnl">$0.00</div>
+            <div class="gv-metric-lbl">P&amp;L</div>
+          </div>
+        </div>
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(234,179,8,0.12);color:#eab308;">&#9678;</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="res-eng-cal">--</div>
+            <div class="gv-metric-lbl">Calibration</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Windows Scanner -->
+      <div id="res-eng-scanner-wrap" class="gv-scanner-wrap" style="display:none;">
+        <div class="gv-section-title orange" style="margin-bottom:10px;">Active Windows Scanner</div>
+        <div id="res-eng-scanner-grid" class="gv-scanner-grid"></div>
+      </div>
+
+      <!-- Open Positions -->
+      <div class="glass-card" style="padding:10px 14px;margin-bottom:14px;">
+        <div class="gv-section-title orange" style="margin-bottom:8px;">Open Positions</div>
         <table class="data-table"><thead><tr><th>Asset</th><th>Dir</th><th>Entry</th><th>Size</th><th>Shares</th><th>P%</th><th>Edge</th><th>z</th><th>T-s</th></tr></thead>
         <tbody id="res-eng-active-tbody"><tr><td colspan="9" class="text-muted" style="text-align:center;">No active positions</td></tr></tbody></table>
       </div>
+
+      <!-- Thresholds Bar -->
+      <div class="gv-thresholds-bar">
+        <div class="gv-threshold-item">Min P: <span id="res-eng-min-p">75%</span></div>
+        <div class="dot-sep"></div>
+        <div class="gv-threshold-item">Min Edge: <span id="res-eng-min-edge">8%</span></div>
+        <div class="dot-sep"></div>
+        <div class="gv-threshold-item">Max Price: <span id="res-eng-max-price">$0.88</span></div>
+        <div class="dot-sep"></div>
+        <div class="gv-threshold-item">Max Bet: <span id="res-eng-max-bet">$20</span></div>
+        <div class="dot-sep"></div>
+        <div class="gv-threshold-item">Kelly: <span id="res-eng-kelly">25%</span></div>
+      </div>
+
+      <!-- Recent Trades -->
       <div class="glass-card" style="padding:10px 14px;">
-        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Recent Resolved Trades</div>
+        <div class="gv-section-title orange" style="margin-bottom:8px;">Recent Trades</div>
         <table class="data-table"><thead><tr><th>Asset</th><th>Dir</th><th>Entry</th><th>Size</th><th>P%</th><th>Edge</th><th>Result</th><th>PnL</th></tr></thead>
         <tbody id="res-eng-trades-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;">No trades yet</td></tr></tbody></table>
       </div>
@@ -482,183 +613,408 @@
 
   <!-- ═══ OPEN POSITIONS PANEL ═══ -->
   <div class="garves-panel" id="garves-panel-positions" style="display:none;">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-      <span style="font-weight:700;font-size:0.82rem;">Open Positions</span>
-      <span id="positions-live-dot" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;animation:pulse-glow 2s ease-in-out infinite;"></span>
-      <span style="font-size:0.64rem;color:var(--success);">LIVE</span>
+    <div class="gv-engine-header">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="gv-engine-header-title" style="font-size:0.92rem;">Open Positions</span>
+        <span id="positions-live-dot" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;animation:pulse-glow 2s ease-in-out infinite;"></span>
+        <span style="font-size:0.64rem;color:var(--success);font-weight:600;">LIVE</span>
+      </div>
     </div>
-    <div class="glass-card" style="margin-bottom:12px;overflow-x:auto;padding:0;">
-      <table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Bet</th><th>Shares</th><th>Entry</th><th>Now</th><th>Margin</th><th>Value</th><th>Resolves</th><th>P&amp;L</th><th>Payout</th><th>Return</th></tr></thead>
-      <tbody id="oc-holdings-tbody"><tr><td colspan="12" class="text-muted" style="text-align:center;padding:16px;">No open positions</td></tr></tbody></table>
+
+    <!-- Holdings Table -->
+    <div class="glass-card" style="margin-bottom:14px;overflow-x:auto;padding:0;">
+      <table class="data-table"><thead><tr><th>Engine</th><th>Asset</th><th>Market</th><th>Bet</th><th>Shares</th><th>Entry</th><th>Now</th><th>Margin</th><th>Value</th><th>Resolves</th><th>P&amp;L</th><th>Payout</th><th>Return</th></tr></thead>
+      <tbody id="oc-holdings-tbody"><tr><td colspan="13" class="text-muted" style="text-align:center;padding:16px;">No open positions</td></tr></tbody></table>
     </div>
-    <div id="portfolio-alloc-card" class="glass-card" style="padding:12px 16px;margin-bottom:12px;border-left:3px solid #8b5cf6;display:none;">
+
+    <!-- Portfolio Allocation -->
+    <div id="portfolio-alloc-card" class="glass-card" style="padding:12px 16px;margin-bottom:14px;border-left:3px solid #8b5cf6;display:none;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-        <div style="font-weight:700;font-size:0.78rem;">Portfolio Allocation</div>
+        <div class="gv-section-title" style="margin-bottom:0;">Portfolio Allocation</div>
         <div style="display:flex;align-items:center;gap:8px;">
           <span id="pa-wallet-age" style="font-size:0.62rem;color:var(--text-muted);"></span>
-          <span id="pa-total-util" style="font-size:0.68rem;font-weight:700;font-family:var(--font-mono);padding:2px 8px;border-radius:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;">0%</span>
+          <span id="pa-total-util" style="font-size:0.68rem;font-weight:700;font-family:var(--font-mono);padding:2px 8px;border-radius:10px;background:rgba(0,212,255,0.1);color:var(--agent-garves);">0%</span>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
-        <div style="text-align:center;"><div style="font-size:0.62rem;color:var(--text-muted);">Deployable</div><div id="pa-deployable" style="font-size:1rem;font-weight:700;font-family:var(--font-mono);">--</div></div>
-        <div style="text-align:center;"><div style="font-size:0.62rem;color:var(--text-muted);">Total Exposure</div><div id="pa-total-exposure" style="font-size:1rem;font-weight:700;font-family:var(--font-mono);">--</div></div>
-        <div style="text-align:center;"><div style="font-size:0.62rem;color:var(--text-muted);">Reserve (20%)</div><div id="pa-reserve" style="font-size:1rem;font-weight:700;font-family:var(--font-mono);color:var(--warning);">--</div></div>
+      <div class="gv-metrics" style="grid-template-columns:repeat(3,1fr);margin-bottom:10px;">
+        <div class="gv-metric-card" style="padding:10px;justify-content:center;">
+          <div class="gv-metric-body" style="text-align:center;">
+            <div class="gv-metric-val" id="pa-deployable" style="font-size:1rem;">--</div>
+            <div class="gv-metric-lbl">Deployable</div>
+          </div>
+        </div>
+        <div class="gv-metric-card" style="padding:10px;justify-content:center;">
+          <div class="gv-metric-body" style="text-align:center;">
+            <div class="gv-metric-val" id="pa-total-exposure" style="font-size:1rem;">--</div>
+            <div class="gv-metric-lbl">Total Exposure</div>
+          </div>
+        </div>
+        <div class="gv-metric-card" style="padding:10px;justify-content:center;">
+          <div class="gv-metric-body" style="text-align:center;">
+            <div class="gv-metric-val" id="pa-reserve" style="font-size:1rem;color:var(--warning);">--</div>
+            <div class="gv-metric-lbl">Reserve (20%)</div>
+          </div>
+        </div>
       </div>
       <div id="pa-agent-bars" style="display:flex;flex-direction:column;gap:6px;"></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
-      <div class="stat-card" style="border-left:3px solid var(--success);"><div class="stat-value" id="live-portfolio" style="font-size:1.4rem;">--</div><div class="stat-label">Portfolio</div></div>
-      <div class="stat-card" style="border-left:3px solid var(--agent-garves);"><div class="stat-value" id="live-cash" style="font-size:1.4rem;">--</div><div class="stat-label">Cash</div></div>
-      <div class="stat-card" style="border-left:3px solid var(--warning);"><div class="stat-value" id="live-real-pnl" style="font-size:1.4rem;">--</div><div class="stat-label">Real PnL</div><div id="garves-loss-cap-bar" style="margin-top:6px;"></div></div>
+
+    <!-- Portfolio Summary -->
+    <div class="gv-metrics" style="grid-template-columns:repeat(3,1fr);">
+      <div class="gv-metric-card">
+        <div class="gv-metric-icon" style="background:rgba(0,255,136,0.12);color:var(--success);">&#9650;</div>
+        <div class="gv-metric-body">
+          <div class="gv-metric-val" id="live-portfolio" style="font-size:1.4rem;">--</div>
+          <div class="gv-metric-lbl">Portfolio</div>
+        </div>
+      </div>
+      <div class="gv-metric-card">
+        <div class="gv-metric-icon" style="background:rgba(0,212,255,0.12);color:var(--agent-garves);">&#9670;</div>
+        <div class="gv-metric-body">
+          <div class="gv-metric-val" id="live-cash" style="font-size:1.4rem;">--</div>
+          <div class="gv-metric-lbl">Cash</div>
+        </div>
+      </div>
+      <div class="gv-metric-card">
+        <div class="gv-metric-icon" style="background:rgba(255,170,0,0.12);color:var(--warning);">&#9660;</div>
+        <div class="gv-metric-body">
+          <div class="gv-metric-val" id="live-real-pnl" style="font-size:1.4rem;">--</div>
+          <div class="gv-metric-lbl">Real PnL</div>
+          <div id="garves-loss-cap-bar" style="margin-top:6px;"></div>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- ═══ TRADE HISTORY PANEL ═══ -->
   <div class="garves-panel" id="garves-panel-history" style="display:none;">
     <!-- Filter Bar -->
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
-      <select id="garves-hist-engine" onchange="garvesFilterHistory()" style="background:var(--surface-elevated);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 8px;font-size:0.72rem;font-family:var(--font-mono);">
-        <option value="all">All Engines</option>
-        <option value="snipe">Snipe</option>
-        <option value="maker">Maker</option>
-        <option value="whale">Whale</option>
-        <option value="taker">Taker</option>
-        <option value="res_scalp">Res Scalper</option>
-      </select>
-      <span style="font-weight:700;font-size:0.82rem;">Trade History</span>
+    <div class="gv-filter-bar">
+      <span class="gv-engine-header-title" style="font-size:0.92rem;">Trade History</span>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+        <select id="garves-hist-engine" onchange="garvesFilterHistory()" class="gv-filter-select">
+          <option value="all">All Engines</option>
+          <option value="snipe">Snipe</option>
+          <option value="maker">Maker</option>
+          <option value="whale">Whale</option>
+          <option value="taker">Taker</option>
+          <option value="res_scalp">Res Scalper</option>
+        </select>
+      </div>
     </div>
-    <div class="grid-6" id="live-stats-grid" style="margin-bottom:12px;">
-      <div class="stat-card" data-accent="success"><div class="stat-value" id="live-winrate">--</div><div class="stat-label">Win Rate</div></div>
-      <div class="stat-card" data-accent="success"><div class="stat-value" id="live-pnl">--</div><div class="stat-label">Trade P&amp;L</div></div>
-      <div class="stat-card" data-accent="garves"><div class="stat-value" id="live-wins-losses">--</div><div class="stat-label">Wins / Losses</div></div>
-      <div class="stat-card" data-accent="garves"><div class="stat-value" id="live-total">--</div><div class="stat-label">Total</div></div>
-      <div class="stat-card" data-accent="garves"><div class="stat-value" id="live-resolved">--</div><div class="stat-label">Resolved</div></div>
-      <div class="stat-card" data-accent="warning"><div class="stat-value" id="live-pending">--</div><div class="stat-label">Pending</div></div>
+
+    <!-- Stats Cards -->
+    <div class="gv-metrics" style="grid-template-columns:repeat(6,1fr);margin-bottom:14px;">
+      <div class="gv-metric-card" style="padding:12px;">
+        <div class="gv-metric-body">
+          <div class="gv-metric-val" id="live-winrate" style="font-size:1.2rem;">--</div>
+          <div class="gv-metric-lbl">Win Rate</div>
+        </div>
+      </div>
+      <div class="gv-metric-card" style="padding:12px;">
+        <div class="gv-metric-body">
+          <div class="gv-metric-val" id="live-pnl" style="font-size:1.2rem;">--</div>
+          <div class="gv-metric-lbl">Trade P&amp;L</div>
+        </div>
+      </div>
+      <div class="gv-metric-card" style="padding:12px;">
+        <div class="gv-metric-body">
+          <div class="gv-metric-val" id="live-wins-losses" style="font-size:1.2rem;">--</div>
+          <div class="gv-metric-lbl">W / L</div>
+        </div>
+      </div>
+      <div class="gv-metric-card" style="padding:12px;">
+        <div class="gv-metric-body">
+          <div class="gv-metric-val" id="live-total" style="font-size:1.2rem;">--</div>
+          <div class="gv-metric-lbl">Total</div>
+        </div>
+      </div>
+      <div class="gv-metric-card" style="padding:12px;">
+        <div class="gv-metric-body">
+          <div class="gv-metric-val" id="live-resolved" style="font-size:1.2rem;">--</div>
+          <div class="gv-metric-lbl">Resolved</div>
+        </div>
+      </div>
+      <div class="gv-metric-card" style="padding:12px;">
+        <div class="gv-metric-body">
+          <div class="gv-metric-val" id="live-pending" style="font-size:1.2rem;">--</div>
+          <div class="gv-metric-lbl">Pending</div>
+        </div>
+      </div>
     </div>
-    <div class="grid-2" style="margin-bottom:12px;">
-      <div class="glass-card"><h3 class="section-title" style="font-size:0.72rem;margin-bottom:8px;">Equity Curve</h3><div class="chart-container chart-sm"><canvas id="garves-pnl-chart"></canvas></div></div>
-      <div class="glass-card"><h3 class="section-title" style="font-size:0.72rem;margin-bottom:8px;">Win Rate</h3><div class="chart-container chart-sm"><canvas id="garves-wr-donut"></canvas></div></div>
+
+    <!-- Charts -->
+    <div class="grid-2" style="margin-bottom:14px;">
+      <div class="glass-card"><h3 class="gv-section-title" style="font-size:0.72rem;margin-bottom:8px;">Equity Curve</h3><div class="chart-container chart-sm"><canvas id="garves-pnl-chart"></canvas></div></div>
+      <div class="glass-card"><h3 class="gv-section-title" style="font-size:0.72rem;margin-bottom:8px;">Win Rate</h3><div class="chart-container chart-sm"><canvas id="garves-wr-donut"></canvas></div></div>
     </div>
-    <div id="garves-regime-badge" style="margin-bottom:12px;"><span class="badge badge-info">Regime: --</span></div>
+    <div id="garves-regime-badge" style="margin-bottom:14px;"><span class="badge badge-info">Regime: --</span></div>
+
+    <!-- Trade History Table -->
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-      <span style="font-size:0.76rem;font-weight:700;">Trade History</span>
+      <div class="gv-section-title" style="margin-bottom:0;">Trade History</div>
       <span id="oc-record" class="text-muted" style="font-size:0.72rem;">--</span>
       <span id="oc-realized-pnl" class="text-muted" style="font-size:0.72rem;margin-left:auto;">--</span>
     </div>
-    <div class="glass-card" style="margin-bottom:12px;overflow-x:auto;padding:0;"><table class="data-table"><thead><tr><th>Asset</th><th>Market</th><th>Bet</th><th>Cost</th><th>Result</th><th>P&amp;L</th></tr></thead>
-    <tbody id="oc-history-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:16px;">No trade history</td></tr></tbody></table></div>
+    <div class="glass-card" style="margin-bottom:14px;overflow-x:auto;padding:0;"><table class="data-table"><thead><tr><th>Engine</th><th>Asset</th><th>Market</th><th>Bet</th><th>Cost</th><th>Result</th><th>P&amp;L</th></tr></thead>
+    <tbody id="oc-history-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;padding:16px;">No trade history</td></tr></tbody></table></div>
+
+    <!-- Pending Trades -->
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-      <span style="font-size:0.76rem;font-weight:700;">Pending Trades</span>
+      <div class="gv-section-title" style="margin-bottom:0;">Pending Trades</div>
       <span id="pending-count-badge" style="background:var(--warning);color:#000;font-weight:700;padding:2px 8px;border-radius:10px;font-size:0.72rem;">0</span>
-      <span id="pending-exposure" class="text-muted" style="font-size:0.76rem;margin-left:auto;">Exposure: --</span>
+      <span id="pending-exposure" class="text-muted" style="font-size:0.72rem;margin-left:auto;">Exposure: --</span>
     </div>
-    <div class="glass-card" id="live-positions-table-wrap" style="margin-bottom:12px;overflow-x:auto;padding:0;">
+    <div class="glass-card" id="live-positions-table-wrap" style="margin-bottom:14px;overflow-x:auto;padding:0;">
       <table class="data-table"><thead><tr><th>Placed</th><th>Market</th><th>Direction</th><th>Stake</th><th>Edge</th><th style="min-width:100px;">Countdown</th><th>Pot. Profit</th><th>Pot. Loss</th></tr></thead>
       <tbody id="live-pending-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No pending trades</td></tr></tbody></table>
     </div>
+
+    <!-- Resolved Trades -->
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-      <span style="font-size:0.76rem;font-weight:700;">Resolved Trades</span>
-      <span id="resolved-summary" class="text-muted" style="font-size:0.76rem;margin-left:auto;">--</span>
+      <div class="gv-section-title" style="margin-bottom:0;">Resolved Trades</div>
+      <span id="resolved-summary" class="text-muted" style="font-size:0.72rem;margin-left:auto;">--</span>
     </div>
-    <div class="glass-card" style="margin-bottom:12px;overflow-x:auto;padding:0;"><table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Direction</th><th>Stake</th><th>Edge</th><th>Result</th><th>PnL</th></tr></thead><tbody id="live-resolved-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;padding:24px;">No resolved trades yet</td></tr></tbody></table></div>
-    <div style="font-size:0.76rem;font-weight:700;margin-bottom:8px;">Breakdowns</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px;" id="live-breakdowns">
-      <div class="glass-card"><div style="font-size:0.72rem;font-weight:600;margin-bottom:8px;">By Asset</div><table class="data-table"><thead><tr><th>Asset</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-asset"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
-      <div class="glass-card"><div style="font-size:0.72rem;font-weight:600;margin-bottom:8px;">By Timeframe</div><table class="data-table"><thead><tr><th>TF</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-tf"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
-      <div class="glass-card"><div style="font-size:0.72rem;font-weight:600;margin-bottom:8px;">By Direction</div><table class="data-table"><thead><tr><th>Dir</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-dir"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+    <div class="glass-card" style="margin-bottom:14px;overflow-x:auto;padding:0;"><table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Direction</th><th>Stake</th><th>Edge</th><th>Result</th><th>PnL</th></tr></thead><tbody id="live-resolved-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;padding:24px;">No resolved trades yet</td></tr></tbody></table></div>
+
+    <!-- Breakdowns -->
+    <div class="gv-section-title" style="margin-bottom:10px;">Breakdowns</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;" id="live-breakdowns">
+      <div class="glass-card"><div class="gv-section-title" style="font-size:0.68rem;margin-bottom:8px;">By Asset</div><table class="data-table"><thead><tr><th>Asset</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-asset"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+      <div class="glass-card"><div class="gv-section-title" style="font-size:0.68rem;margin-bottom:8px;">By Timeframe</div><table class="data-table"><thead><tr><th>TF</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-tf"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+      <div class="glass-card"><div class="gv-section-title" style="font-size:0.68rem;margin-bottom:8px;">By Direction</div><table class="data-table"><thead><tr><th>Dir</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-dir"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
     </div>
-    <div style="font-size:0.76rem;font-weight:700;margin-bottom:8px;">Daily Performance History</div>
+
+    <!-- Daily Performance -->
+    <div class="gv-section-title" style="margin-bottom:10px;">Daily Performance History</div>
     <div class="glass-card" style="overflow-x:auto;padding:0;"><table class="data-table"><thead><tr><th>Date</th><th>Trades</th><th>W-L</th><th>Win Rate</th><th>PnL</th><th>Avg Edge</th><th>Regime</th><th>Issues</th></tr></thead><tbody id="daily-history-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No daily reports yet</td></tr></tbody></table></div>
   </div>
 
-  <!-- ═══ PERFORMANCE INSIGHTS PANEL ═══ -->
+  <!-- ═══ PERFORMANCE INSIGHTS PANEL (Redesigned) ═══ -->
   <div class="garves-panel" id="garves-panel-performance" style="display:none;">
-    <!-- ML & Strategy -->
-    <div style="font-size:0.82rem;font-weight:700;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.06);">ML &amp; Strategy</div>
-    <div class="grid-3" id="ml-models-grid" style="margin-bottom:12px;">
-      <div class="glass-card" style="border-left:3px solid #ff6600;"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px;">LSTM Neural Predictor</div><div id="ml-lstm-status" style="font-size:0.76rem;">Loading...</div></div>
-      <div class="glass-card" style="border-left:3px solid #00BFFF;"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px;">XGBoost Trade Predictor</div><div id="ml-xgb-status" style="font-size:0.76rem;">Loading...</div></div>
-      <div class="glass-card" style="border-left:3px solid #00ff88;"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px;">FinBERT Sentiment</div><div id="ml-finbert-status" style="font-size:0.76rem;">Loading...</div></div>
-    </div>
-    <div style="font-size:0.76rem;font-weight:700;margin-bottom:8px;">ML Win Predictor</div>
-    <div class="grid-4" id="ml-summary-cards" style="margin-bottom:10px;">
-      <div class="stat-card" data-accent="garves"><div class="stat-value" id="ml-status">--</div><div class="stat-label">Model Status</div></div>
-      <div class="stat-card" data-accent="success"><div class="stat-value" id="ml-accuracy">--</div><div class="stat-label">CV Accuracy</div></div>
-      <div class="stat-card" data-accent="garves"><div class="stat-value" id="ml-samples">--</div><div class="stat-label">Training Samples</div></div>
-      <div class="stat-card" data-accent="garves"><div class="stat-value" id="ml-f1">--</div><div class="stat-label">F1 Score</div></div>
-    </div>
-    <div class="glass-card" style="margin-bottom:12px;"><div style="font-size:0.72rem;font-weight:600;margin-bottom:8px;">Top Feature Importances</div><div id="ml-feature-bars" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">Loading...</span></div></div>
-    <div style="font-size:0.76rem;font-weight:700;margin-bottom:8px;">Indicator Weights</div>
-    <div class="glass-card" style="margin-bottom:10px;padding:10px 14px;border-left:3px solid var(--agent-garves);">
-      <div style="font-size:0.68rem;color:var(--text-muted);line-height:1.5;"><strong>Base</strong> = starting weight from Quant backtesting. <strong>Dynamic</strong> = auto-adjusted by the weight learner based on each indicator's live accuracy. Indicators with accuracy above 55% get boosted +30%. Below 45% accuracy = disabled (0 weight). <strong>Samples</strong> = total votes cast by this indicator across all trades.</div>
-    </div>
-    <div class="glass-card" style="margin-bottom:12px;overflow-x:auto;padding:0;"><table class="data-table"><thead><tr><th>Indicator</th><th>Base</th><th>Dynamic</th><th>Accuracy</th><th>Samples</th><th>Status</th></tr></thead><tbody id="conv-weights-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody></table></div>
-    <div style="font-size:0.76rem;font-weight:700;margin-bottom:8px;">Trade Journal</div>
-    <div class="grid-3" id="journal-summary-cards" style="margin-bottom:10px;">
-      <div class="stat-card" data-accent="garves"><div class="stat-value" id="journal-streak">--</div><div class="stat-label">Current Streak</div></div>
-      <div class="stat-card" data-accent="success"><div class="stat-value" id="journal-best-combo">--</div><div class="stat-label">Best Combo</div></div>
-      <div class="stat-card" data-accent="warning"><div class="stat-value" id="journal-worst-combo">--</div><div class="stat-label">Worst Combo</div></div>
-    </div>
-    <div class="glass-card" style="margin-bottom:10px;"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Hour Heatmap (ET)</div><div id="journal-hour-heatmap" style="display:grid;grid-template-columns:repeat(12,1fr);gap:3px;font-family:var(--font-mono);font-size:0.64rem;"><span class="text-muted" style="grid-column:1/-1;text-align:center;">Loading...</span></div></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px;">
-      <div class="glass-card" style="border-left:3px solid var(--success);"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--success);margin-bottom:4px;">Best Combos</div><table class="data-table"><thead><tr><th>Combo</th><th>W-L</th><th>WR</th></tr></thead><tbody id="journal-best-tbody"><tr><td colspan="3" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody></table></div>
-      <div class="glass-card" style="border-left:3px solid var(--danger);"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--danger);margin-bottom:4px;">Worst Combos</div><table class="data-table"><thead><tr><th>Combo</th><th>W-L</th><th>WR</th></tr></thead><tbody id="journal-worst-tbody"><tr><td colspan="3" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody></table></div>
-    </div>
-    <div class="glass-card" style="margin-bottom:10px;border-left:3px solid var(--warning);"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--warning);margin-bottom:4px;">Mistake Patterns</div><div id="journal-mistakes" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">Loading...</span></div></div>
-    <div class="glass-card" style="margin-bottom:16px;border-left:3px solid var(--agent-garves);"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:4px;">Recommendations</div><div id="journal-recommendations" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">Loading...</span></div></div>
 
-    <!-- V2 Intelligence -->
-    <div style="font-size:0.82rem;font-weight:700;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.06);">V2 Intelligence</div>
-    <div class="glass-card" style="margin-bottom:10px;" id="v2-kill-switch-card">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);">Kill Switch</span><span id="v2-kill-switch-badge" style="padding:2px 8px;border-radius:10px;font-size:0.68rem;font-weight:700;background:var(--success);color:#000;">SAFE</span></div>
-      <div id="v2-kill-switch-reason" style="font-size:0.72rem;color:var(--text-muted);display:none;"></div>
-    </div>
-    <div class="glass-card" style="margin-bottom:10px;">
-      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Core Metrics</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;" id="v2-core-metrics">
-        <div style="text-align:center;"><div style="font-size:0.68rem;color:var(--text-muted);">WR 20</div><div id="v2-wr-20" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">--</div></div>
-        <div style="text-align:center;"><div style="font-size:0.68rem;color:var(--text-muted);">WR 50</div><div id="v2-wr-50" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">--</div></div>
-        <div style="text-align:center;"><div style="font-size:0.68rem;color:var(--text-muted);">EV Capture</div><div id="v2-ev-capture" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">--</div></div>
-        <div style="text-align:center;"><div style="font-size:0.68rem;color:var(--text-muted);">Drawdown</div><div id="v2-drawdown" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">--</div></div>
+    <!-- ── 1. TOP PERFORMANCE SUMMARY ── -->
+    <div class="perf-section">
+      <div class="perf-hero-row">
+        <div class="perf-hero-card">
+          <div class="perf-hero-icon" style="background:rgba(0,255,136,0.1);color:var(--success);">$</div>
+          <div class="perf-hero-body">
+            <div class="perf-hero-value" id="perf-win-rate">--</div>
+            <div class="perf-hero-label">Win Rate <span id="perf-wr-trend" class="perf-trend"></span></div>
+            <div class="perf-hero-sub" id="perf-wr-detail">L20: -- | Overall: --</div>
+          </div>
+        </div>
+        <div class="perf-hero-card">
+          <div class="perf-hero-icon" style="background:rgba(0,212,255,0.1);color:var(--agent-garves);">%</div>
+          <div class="perf-hero-body">
+            <div class="perf-hero-value" id="perf-ev-capture">--</div>
+            <div class="perf-hero-label">Edge Captured</div>
+            <div class="perf-hero-sub" id="perf-ev-detail">EV L20: -- | Slippage: --</div>
+          </div>
+        </div>
+        <div class="perf-hero-card">
+          <div class="perf-hero-icon" style="background:rgba(255,170,0,0.1);color:var(--warning);">&#9660;</div>
+          <div class="perf-hero-body">
+            <div class="perf-hero-value" id="perf-drawdown">--</div>
+            <div class="perf-hero-label">Max Drawdown</div>
+            <div class="perf-hero-sub" id="perf-dd-detail">Timing cost: --</div>
+          </div>
+        </div>
+        <div class="perf-hero-card">
+          <div class="perf-hero-icon perf-streak-icon" id="perf-streak-icon" style="background:rgba(128,128,128,0.1);color:var(--text-muted);">-</div>
+          <div class="perf-hero-body">
+            <div class="perf-hero-value" id="perf-streak-val">--</div>
+            <div class="perf-hero-label">Current Streak</div>
+            <div class="perf-hero-sub" id="perf-streak-detail">No trades yet</div>
+          </div>
+        </div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px;border-top:1px solid rgba(255,255,255,0.05);padding-top:6px;">
-        <div style="text-align:center;"><div style="font-size:0.62rem;color:var(--text-muted);">EV 20</div><div id="v2-ev-20" style="font-size:0.88rem;font-weight:600;font-family:var(--font-mono);">--</div></div>
-        <div style="text-align:center;"><div style="font-size:0.62rem;color:var(--text-muted);">EV 50</div><div id="v2-ev-50" style="font-size:0.88rem;font-weight:600;font-family:var(--font-mono);">--</div></div>
-        <div style="text-align:center;"><div style="font-size:0.62rem;color:var(--text-muted);">Slippage</div><div id="v2-slippage" style="font-size:0.88rem;font-weight:600;font-family:var(--font-mono);">--</div></div>
-        <div style="text-align:center;"><div style="font-size:0.62rem;color:var(--text-muted);">Timing Cost</div><div id="v2-timing" style="font-size:0.88rem;font-weight:600;font-family:var(--font-mono);">--</div></div>
+      <!-- Kill Switch Banner (only shows when triggered) -->
+      <div id="perf-kill-banner" class="perf-kill-banner" style="display:none;">
+        <span id="v2-kill-switch-badge" style="padding:2px 10px;border-radius:10px;font-size:0.7rem;font-weight:700;background:var(--error);color:#fff;">KILLED</span>
+        <span id="v2-kill-switch-reason" style="font-size:0.72rem;color:var(--error);margin-left:8px;"></span>
       </div>
     </div>
-    <div id="v2-weekly-card" class="glass-card" style="margin-bottom:10px;border-left:3px solid var(--agent-garves);display:none;"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--agent-garves);margin-bottom:4px;">Weekly Competitive Check</div><div id="v2-weekly-content" style="font-family:var(--font-mono);font-size:0.72rem;"></div></div>
-    <div id="v2-debug-card" class="glass-card" style="margin-bottom:10px;border-left:3px solid var(--warning);display:none;"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--warning);margin-bottom:4px;">Auto-Debug Suggestions</div><div id="v2-debug-fixes" style="font-family:var(--font-mono);font-size:0.72rem;"></div></div>
-    <div class="glass-card" style="margin-bottom:10px;border-left:3px solid var(--info);"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--info);margin-bottom:4px;">Post-Trade Analysis</div><div id="v2-post-trade-feed" style="font-family:var(--font-mono);font-size:0.72rem;max-height:120px;overflow-y:auto;"><span class="text-muted">Loading...</span></div></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-      <div class="glass-card" style="border-left:3px solid var(--warning);"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--warning);margin-bottom:4px;">Active Auto-Rules</div><div id="v2-auto-rules" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">None</span></div></div>
-      <div class="glass-card" style="border-left:3px solid var(--danger);"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--danger);margin-bottom:4px;">Edge Decay Warnings</div><div id="v2-edge-decay" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">None</span></div></div>
-    </div>
-    <div id="v2-warnings-card" class="glass-card" style="margin-bottom:16px;border-left:3px solid var(--danger);display:none;"><div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--danger);margin-bottom:4px;">Performance Warnings</div><div id="v2-warnings-list" style="font-family:var(--font-mono);font-size:0.72rem;"></div></div>
 
-    <!-- Market Data -->
-    <div style="font-size:0.82rem;font-weight:700;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,0.06);">Market Data</div>
-    <div style="font-size:0.76rem;font-weight:700;margin-bottom:8px;">Derivatives Intelligence</div>
-    <div class="grid-3" id="deriv-cards" style="margin-bottom:12px;">
-      <div class="glass-card" id="deriv-funding"><div class="stat-label">Funding Rates</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-      <div class="glass-card" id="deriv-liquidations"><div class="stat-label">Liquidations (5m)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-      <div class="glass-card" id="deriv-depth"><div class="stat-label">Spot Depth (Top 5)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+    <!-- ── 2. MODEL INTELLIGENCE ── -->
+    <div class="perf-section">
+      <div class="perf-section-header">Model Intelligence</div>
+      <div class="perf-grid-3">
+        <!-- Active Models -->
+        <div class="glass-card perf-card-tight">
+          <div class="perf-card-title">Active Models</div>
+          <div id="perf-models-list" class="perf-models-list">
+            <div class="perf-model-row"><span class="perf-model-name">XGBoost</span><span class="perf-model-acc" id="ml-xgb-status">--</span><span class="perf-model-badge" id="ml-xgb-badge">--</span></div>
+            <div class="perf-model-row"><span class="perf-model-name">LSTM Neural</span><span class="perf-model-acc" id="ml-lstm-status">--</span><span class="perf-model-badge" id="ml-lstm-badge">--</span></div>
+            <div class="perf-model-row"><span class="perf-model-name">FinBERT Sentiment</span><span class="perf-model-acc" id="ml-finbert-status">--</span><span class="perf-model-badge" id="ml-finbert-badge">--</span></div>
+          </div>
+        </div>
+        <!-- Model Health Gauge -->
+        <div class="glass-card perf-card-tight" style="text-align:center;">
+          <div class="perf-card-title">Overall Model Health</div>
+          <div class="perf-gauge-wrap">
+            <svg viewBox="0 0 120 80" class="perf-gauge-svg">
+              <path d="M 15 70 A 50 50 0 0 1 105 70" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10" stroke-linecap="round"/>
+              <path id="perf-gauge-arc" d="M 15 70 A 50 50 0 0 1 105 70" fill="none" stroke="var(--agent-garves)" stroke-width="10" stroke-linecap="round" stroke-dasharray="0 157"/>
+            </svg>
+            <div class="perf-gauge-value" id="perf-gauge-pct">--</div>
+            <div class="perf-gauge-label">CV Accuracy</div>
+          </div>
+          <div style="font-size:0.66rem;color:var(--text-muted);margin-top:4px;" id="perf-gauge-samples">-- samples trained</div>
+        </div>
+        <!-- Feature Importances -->
+        <div class="glass-card perf-card-tight">
+          <div class="perf-card-title">Top Signal Drivers</div>
+          <div id="ml-feature-bars" class="perf-feature-bars"><span class="text-muted" style="font-size:0.72rem;">Awaiting model training</span></div>
+        </div>
+      </div>
     </div>
-    <div style="font-size:0.76rem;font-weight:700;margin-bottom:8px;">External Data Intelligence</div>
-    <div class="grid-3" id="ext-data-cards" style="margin-bottom:8px;">
-      <div class="glass-card" id="ext-macro"><div class="stat-label">Macro (FRED)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-      <div class="glass-card" id="ext-defi"><div class="stat-label">DeFi (DeFiLlama)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-      <div class="glass-card" id="ext-mempool"><div class="stat-label">Mempool (BTC)</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+
+    <!-- ── 3. INDICATOR HEALTH ── -->
+    <div class="perf-section">
+      <div class="perf-section-header">Indicator Health
+        <span class="perf-section-hint">Base = Quant backtest weight | Dynamic = live-adjusted | Accuracy = real-time hit rate</span>
+      </div>
+      <div class="glass-card" style="overflow-x:auto;padding:0;">
+        <table class="data-table perf-table-sortable">
+          <thead><tr><th>Indicator</th><th>Base Wt</th><th>Dynamic Wt</th><th>Accuracy</th><th>Samples</th><th>Status</th></tr></thead>
+          <tbody id="conv-weights-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:20px;">Awaiting indicator data</td></tr></tbody>
+        </table>
+      </div>
     </div>
-    <div class="grid-4" id="ext-asset-cards" style="margin-bottom:12px;">
-      <div class="glass-card" id="ext-btc"><div class="stat-label">BTC External</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-      <div class="glass-card" id="ext-eth"><div class="stat-label">ETH External</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-      <div class="glass-card" id="ext-sol"><div class="stat-label">SOL External</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
-      <div class="glass-card" id="ext-xrp"><div class="stat-label">XRP External</div><div class="text-muted" style="padding:8px;">Loading...</div></div>
+
+    <!-- ── 4. TRADE JOURNAL ── -->
+    <div class="perf-section">
+      <div class="perf-section-header">Trade Journal</div>
+      <!-- Hour Heatmap -->
+      <div class="glass-card" style="margin-bottom:12px;">
+        <div class="perf-card-title" style="margin-bottom:8px;">Performance by Hour (ET)</div>
+        <div id="journal-hour-heatmap" class="perf-heatmap-grid"><span class="text-muted" style="grid-column:1/-1;text-align:center;font-size:0.72rem;">Awaiting trade data</span></div>
+        <div class="perf-heatmap-legend">
+          <span><span class="perf-legend-dot" style="background:rgba(0,255,136,0.4);"></span>65%+ WR</span>
+          <span><span class="perf-legend-dot" style="background:rgba(0,255,136,0.15);"></span>50-65% WR</span>
+          <span><span class="perf-legend-dot" style="background:rgba(255,68,68,0.3);"></span>&lt;50% WR</span>
+          <span><span class="perf-legend-dot" style="background:rgba(128,128,128,0.2);"></span>Low data</span>
+        </div>
+      </div>
+      <!-- Best/Worst Combos Side by Side -->
+      <div id="perf-combos-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div class="glass-card" id="perf-best-combos-card" style="border-left:3px solid var(--success);display:none;">
+          <div class="perf-card-title" style="color:var(--success);">Winning Combinations</div>
+          <table class="data-table"><thead><tr><th>Strategy</th><th>Record</th><th>Win Rate</th></tr></thead>
+          <tbody id="journal-best-tbody"></tbody></table>
+        </div>
+        <div class="glass-card" id="perf-worst-combos-card" style="border-left:3px solid var(--error);display:none;">
+          <div class="perf-card-title" style="color:var(--error);">Losing Combinations</div>
+          <table class="data-table"><thead><tr><th>Strategy</th><th>Record</th><th>Win Rate</th></tr></thead>
+          <tbody id="journal-worst-tbody"></tbody></table>
+        </div>
+      </div>
+      <!-- Mistake Patterns + Lessons -->
+      <div id="perf-mistakes-card" class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--warning);display:none;">
+        <div class="perf-card-title" style="color:var(--warning);">Detected Patterns</div>
+        <div id="journal-mistakes" style="font-size:0.74rem;"></div>
+      </div>
     </div>
-    <div style="font-size:0.76rem;font-weight:700;margin-bottom:8px;">News Sentiment</div>
-    <div class="grid-3" id="garves-sentiment-grid"><div class="text-muted" style="padding:16px;grid-column:1/-1;text-align:center;">Loading sentiment data...</div></div>
+
+    <!-- ── 5. ACTIONABLE INTELLIGENCE ── -->
+    <div class="perf-section">
+      <div class="perf-section-header" style="color:var(--agent-garves);">Actionable Intelligence</div>
+      <!-- Recommendations -->
+      <div class="glass-card perf-action-card" style="margin-bottom:12px;border-left:3px solid var(--agent-garves);">
+        <div class="perf-card-title">Recommendations</div>
+        <div id="journal-recommendations" style="font-size:0.74rem;"><span class="text-muted">System analyzing — recommendations will appear after sufficient trades</span></div>
+      </div>
+      <!-- Auto-Debug -->
+      <div id="v2-debug-card" class="glass-card perf-action-card" style="margin-bottom:12px;border-left:3px solid var(--warning);display:none;">
+        <div class="perf-card-title" style="color:var(--warning);">Auto-Debug Suggestions</div>
+        <div id="v2-debug-fixes" style="font-size:0.74rem;"></div>
+      </div>
+      <!-- Post-Trade + Auto-Rules + Edge Decay in 3-col -->
+      <div class="perf-grid-3" style="margin-bottom:12px;">
+        <div class="glass-card perf-card-tight" style="border-left:3px solid var(--agent-garves);">
+          <div class="perf-card-title">Post-Trade Analysis</div>
+          <div id="v2-post-trade-feed" style="font-size:0.72rem;max-height:140px;overflow-y:auto;"><span class="text-muted">No analyses yet</span></div>
+        </div>
+        <div class="glass-card perf-card-tight" style="border-left:3px solid var(--warning);">
+          <div class="perf-card-title">Active Auto-Rules</div>
+          <div id="v2-auto-rules" style="font-size:0.72rem;"><span class="text-muted">No active rules</span></div>
+        </div>
+        <div class="glass-card perf-card-tight" style="border-left:3px solid var(--error);">
+          <div class="perf-card-title">Edge Health</div>
+          <div id="v2-edge-decay" style="font-size:0.72rem;"><span class="text-muted">Edges stable</span></div>
+        </div>
+      </div>
+      <!-- Weekly Competitive Check (hidden until data) -->
+      <div id="v2-weekly-card" class="glass-card perf-action-card" style="margin-bottom:12px;border-left:3px solid var(--agent-garves);display:none;">
+        <div class="perf-card-title" style="color:var(--agent-garves);">Weekly Competitive Check</div>
+        <div id="v2-weekly-content" style="font-size:0.74rem;"></div>
+      </div>
+      <!-- Performance Warnings (hidden until triggered) -->
+      <div id="v2-warnings-card" class="glass-card perf-action-card" style="margin-bottom:12px;border-left:3px solid var(--error);display:none;">
+        <div class="perf-card-title" style="color:var(--error);">Performance Warnings</div>
+        <div id="v2-warnings-list" style="font-size:0.74rem;"></div>
+      </div>
+    </div>
+
+    <!-- ── 6. MARKET CONTEXT ── -->
+    <div class="perf-section">
+      <div class="perf-section-header">Market Context</div>
+      <div class="perf-grid-4" style="margin-bottom:8px;">
+        <div class="glass-card perf-card-compact" id="deriv-funding"><div class="perf-card-title-sm">Funding Rates</div><div class="text-muted" style="font-size:0.72rem;">Awaiting data</div></div>
+        <div class="glass-card perf-card-compact" id="deriv-liquidations"><div class="perf-card-title-sm">Liquidations</div><div class="text-muted" style="font-size:0.72rem;">Awaiting data</div></div>
+        <div class="glass-card perf-card-compact" id="deriv-depth"><div class="perf-card-title-sm">Order Book Depth</div><div class="text-muted" style="font-size:0.72rem;">Awaiting data</div></div>
+        <div class="glass-card perf-card-compact" id="ext-macro"><div class="perf-card-title-sm">Macro (FRED)</div><div class="text-muted" style="font-size:0.72rem;">Awaiting data</div></div>
+      </div>
+      <div class="perf-grid-4">
+        <div class="glass-card perf-card-compact" id="ext-btc"><div class="perf-card-title-sm">BTC Intel</div><div class="text-muted" style="font-size:0.72rem;">Awaiting data</div></div>
+        <div class="glass-card perf-card-compact" id="ext-eth"><div class="perf-card-title-sm">ETH Intel</div><div class="text-muted" style="font-size:0.72rem;">Awaiting data</div></div>
+        <div class="glass-card perf-card-compact" id="ext-sol"><div class="perf-card-title-sm">SOL Intel</div><div class="text-muted" style="font-size:0.72rem;">Awaiting data</div></div>
+        <div class="glass-card perf-card-compact" id="ext-xrp"><div class="perf-card-title-sm">XRP Intel</div><div class="text-muted" style="font-size:0.72rem;">Awaiting data</div></div>
+      </div>
+      <div style="margin-top:10px;">
+        <div class="perf-card-title-sm" style="margin-bottom:6px;">News Sentiment</div>
+        <div class="grid-3" id="garves-sentiment-grid"><span class="text-muted" style="font-size:0.72rem;grid-column:1/-1;text-align:center;">Awaiting sentiment data</span></div>
+      </div>
+    </div>
+
+    <!-- ── 7. ADVANCED ANALYTICS (Collapsible) ── -->
+    <div class="perf-section">
+      <div class="perf-collapse-header" onclick="togglePerfAdvanced()">
+        <span>Advanced Analytics</span>
+        <span id="perf-collapse-arrow" class="perf-collapse-arrow">&#9660;</span>
+      </div>
+      <div id="perf-advanced-panel" style="display:none;margin-top:10px;">
+        <div class="perf-grid-3" style="margin-bottom:12px;">
+          <div class="glass-card perf-card-compact" id="ext-defi"><div class="perf-card-title-sm">DeFi (DeFiLlama)</div><div class="text-muted" style="font-size:0.72rem;">Awaiting data</div></div>
+          <div class="glass-card perf-card-compact" id="ext-mempool"><div class="perf-card-title-sm">Mempool (BTC)</div><div class="text-muted" style="font-size:0.72rem;">Awaiting data</div></div>
+          <div class="glass-card perf-card-compact">
+            <div class="perf-card-title-sm">Model Details</div>
+            <div style="font-size:0.72rem;">
+              <div style="display:flex;justify-content:space-between;margin-bottom:2px;"><span class="text-muted">Status</span><span id="ml-status">--</span></div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:2px;"><span class="text-muted">F1 Score</span><span id="ml-f1">--</span></div>
+              <div style="display:flex;justify-content:space-between;"><span class="text-muted">Samples</span><span id="ml-samples">--</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="glass-card perf-card-compact">
+          <div class="perf-card-title-sm">Raw Metric Grid</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px;font-family:var(--font-mono);font-size:0.72rem;">
+            <div style="text-align:center;"><div class="text-muted" style="font-size:0.62rem;">WR L20</div><div id="v2-wr-20" style="font-weight:700;">--</div></div>
+            <div style="text-align:center;"><div class="text-muted" style="font-size:0.62rem;">WR L50</div><div id="v2-wr-50" style="font-weight:700;">--</div></div>
+            <div style="text-align:center;"><div class="text-muted" style="font-size:0.62rem;">EV L20</div><div id="v2-ev-20" style="font-weight:700;">--</div></div>
+            <div style="text-align:center;"><div class="text-muted" style="font-size:0.62rem;">EV L50</div><div id="v2-ev-50" style="font-weight:700;">--</div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px;font-family:var(--font-mono);font-size:0.72rem;border-top:1px solid rgba(255,255,255,0.04);padding-top:6px;">
+            <div style="text-align:center;"><div class="text-muted" style="font-size:0.62rem;">EV All</div><div id="v2-ev-capture" style="font-weight:700;">--</div></div>
+            <div style="text-align:center;"><div class="text-muted" style="font-size:0.62rem;">Drawdown</div><div id="v2-drawdown" style="font-weight:700;">--</div></div>
+            <div style="text-align:center;"><div class="text-muted" style="font-size:0.62rem;">Slippage</div><div id="v2-slippage" style="font-weight:700;">--</div></div>
+            <div style="text-align:center;"><div class="text-muted" style="font-size:0.62rem;">Timing</div><div id="v2-timing" style="font-weight:700;">--</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- ═══ INTELLIGENCE & SELF-IMPROVEMENT PANEL ═══ -->
@@ -835,7 +1191,7 @@ function garvesSwitchSub(name) {
 
 /* Engine selector within Engines tab */
 function garvesSelectEngine(name) {
-  var panels = {snipe:'garves-engine-snipe', maker:'garves-engine-maker', whale:'garves-whale-section', taker:'garves-engine-taker'};
+  var panels = {snipe:'garves-engine-snipe', maker:'garves-engine-maker', whale:'garves-whale-section', taker:'garves-engine-taker', 'res-scalp':'garves-engine-res-scalp'};
   Object.keys(panels).forEach(function(k) {
     var el = document.getElementById(panels[k]);
     if (el) el.style.display = k === name ? '' : 'none';

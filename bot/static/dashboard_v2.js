@@ -488,7 +488,7 @@ function renderOnChainPositions(data) {
   _onChainHoldingsData = holdings;
   if (holdEl) {
     if (holdings.length === 0) {
-      holdEl.innerHTML = '<tr><td colspan="12" class="text-muted" style="text-align:center;padding:16px;">No open positions — scanning for opportunities</td></tr>';
+      holdEl.innerHTML = '<tr><td colspan="13" class="text-muted" style="text-align:center;padding:16px;">No open positions — scanning for opportunities</td></tr>';
     } else {
       var html = '';
       for (var i = 0; i < holdings.length; i++) {
@@ -499,7 +499,11 @@ function renderOnChainPositions(data) {
         var gPayout = (p.size || 0) * 1.0;
         var gReturn = gPayout - (p.cost || 0);
         var gReturnPct = (p.cost || 0) > 0 ? (gReturn / p.cost * 100) : 0;
+        var engName = (p.engine || 'snipe').toLowerCase().replace(/[^a-z_]/g, '');
+        var engLabel = engName === 'res_scalp' ? 'RES' : engName === 'maker' ? 'MKR' : engName === 'whale' ? 'WHALE' : engName === 'taker' ? 'TAKER' : 'SNIPE';
+        var engClass = engName === 'res_scalp' ? 'res_scalp' : engName;
         html += '<tr>';
+        html += '<td><span class="gv-engine-pill ' + esc(engClass) + '">' + engLabel + '</span></td>';
         html += '<td style="font-weight:600;">' + esc(p.asset) + '</td>';
         html += '<td style="font-size:0.72rem;">' + esc(p.market) + '</td>';
         html += '<td style="color:' + (p.outcome === 'Up' ? 'var(--success)' : 'var(--error)') + ';font-weight:600;">' + esc(p.outcome) + '</td>';
@@ -540,7 +544,7 @@ function renderOnChainPositions(data) {
   }
   if (histEl) {
     if (history.length === 0) {
-      histEl.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:12px;">No trade history</td></tr>';
+      histEl.innerHTML = '<tr><td colspan="7" class="text-muted" style="text-align:center;padding:12px;">No trade history</td></tr>';
     } else {
       var html = '';
       for (var i = 0; i < history.length; i++) {
@@ -549,7 +553,11 @@ function renderOnChainPositions(data) {
         var rp = p.result_pnl || 0;
         var rc = rp >= 0 ? 'var(--success)' : 'var(--error)';
         var rs = (rp >= 0 ? '+$' : '-$') + Math.abs(rp).toFixed(2);
+        var hEngName = (p.engine || 'snipe').toLowerCase().replace(/[^a-z_]/g, '');
+        var hEngLabel = hEngName === 'res_scalp' ? 'RES' : hEngName === 'maker' ? 'MKR' : hEngName === 'whale' ? 'WHALE' : hEngName === 'taker' ? 'TAKER' : 'SNIPE';
+        var hEngClass = hEngName === 'res_scalp' ? 'res_scalp' : hEngName;
         html += '<tr>';
+        html += '<td><span class="gv-engine-pill ' + esc(hEngClass) + '">' + hEngLabel + '</span></td>';
         html += '<td style="font-weight:600;">' + esc(p.asset) + '</td>';
         html += '<td style="font-size:0.72rem;">' + esc(p.market) + '</td>';
         html += '<td>' + esc(p.outcome) + '</td>';
@@ -12336,6 +12344,55 @@ function refreshSnipeV7() {
     if (reMaxBet) reMaxBet.textContent = '$' + (rsThresh.max_bet || 20).toFixed(0);
     var reKelly = document.getElementById('res-eng-kelly');
     if (reKelly) reKelly.textContent = ((rsThresh.kelly_fraction || 0.25) * 100).toFixed(0) + '%';
+
+    // Mode badge gv- style
+    if (resEngMode) {
+      if (rs.dry_run) {
+        resEngMode.className = 'gv-mode-badge dry';
+        resEngMode.textContent = 'DRY RUN';
+      } else {
+        resEngMode.className = 'gv-mode-badge live';
+        resEngMode.textContent = 'LIVE';
+      }
+    }
+
+    // Active Windows Scanner grid
+    var scanWrap = document.getElementById('res-eng-scanner-wrap');
+    var scanGrid = document.getElementById('res-eng-scanner-grid');
+    if (scanWrap && scanGrid) {
+      if (rsOpps.length > 0) {
+        scanWrap.style.display = '';
+        var shtml = '';
+        for (var si = 0; si < rsOpps.length; si++) {
+          var so = rsOpps[si];
+          var soActive = so.state === 'EXECUTING';
+          var soDir = (so.direction || '--').toUpperCase();
+          var soDirClr = soDir === 'UP' ? '#22c55e' : soDir === 'DOWN' ? '#ef4444' : 'var(--text-muted)';
+          var soState = (so.state || 'WATCHING').toUpperCase();
+          var soStateBg = soState === 'EXECUTING' ? 'rgba(34,197,94,0.15)' : soState === 'WATCHING' ? 'rgba(249,115,22,0.1)' : 'rgba(255,255,255,0.06)';
+          var soStateClr = soState === 'EXECUTING' ? '#22c55e' : soState === 'WATCHING' ? '#f97316' : 'var(--text-muted)';
+          var soRemPct = so.remaining_s ? Math.min(100, Math.round((300 - so.remaining_s) / 300 * 100)) : 0;
+          shtml += '<div class="gv-scanner-card' + (soActive ? ' active' : '') + '">';
+          shtml += '<div class="asset-name">' + (so.asset || '?').toUpperCase() + '</div>';
+          shtml += '<div style="color:' + soDirClr + ';font-weight:700;font-size:0.78rem;margin-bottom:4px;">' + soDir + '</div>';
+          shtml += '<div style="font-family:var(--font-mono);font-size:0.66rem;color:var(--text-secondary);">';
+          shtml += 'P:' + ((so.probability || 0) * 100).toFixed(1) + '% &bull; E:' + ((so.edge || 0) * 100).toFixed(1) + '%';
+          shtml += '</div>';
+          shtml += '<div style="margin:6px 0 4px;background:rgba(255,255,255,0.06);height:4px;border-radius:2px;overflow:hidden;">';
+          shtml += '<div style="width:' + soRemPct + '%;height:100%;background:#f97316;border-radius:2px;transition:width 1s;"></div>';
+          shtml += '</div>';
+          shtml += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+          shtml += '<span class="gv-countdown">' + (so.remaining_s || 0) + 's</span>';
+          shtml += '<span class="gv-scanner-status" style="background:' + soStateBg + ';color:' + soStateClr + ';">' + soState + '</span>';
+          shtml += '</div>';
+          shtml += '</div>';
+        }
+        scanGrid.innerHTML = shtml;
+      } else {
+        scanWrap.style.display = 'none';
+      }
+    }
+
     // Active positions table
     var rsActive = rs.active_positions || [];
     var resActiveTbody = document.getElementById('res-eng-active-tbody');
@@ -13082,6 +13139,79 @@ function loadMakerStatus() {
       }
     }
 
+    // Status badge (new gv- style)
+    var statusBadge = document.getElementById('maker-engine-status-badge');
+    if (statusBadge) {
+      if (d.pnl && d.pnl.kill_reason) {
+        statusBadge.textContent = 'KILLED';
+        statusBadge.className = 'gv-mode-badge';
+        statusBadge.style.background = 'rgba(239,68,68,0.15)';
+        statusBadge.style.borderColor = 'rgba(239,68,68,0.3)';
+        statusBadge.style.color = '#ef4444';
+      } else if (d.enabled) {
+        statusBadge.textContent = 'ACTIVE';
+        statusBadge.className = 'gv-mode-badge live';
+      } else {
+        statusBadge.textContent = 'OFF';
+        statusBadge.className = 'gv-mode-badge off';
+      }
+    }
+
+    // Exposure heat bar
+    var expFill = document.getElementById('maker-exposure-fill');
+    var expLabel = document.getElementById('maker-exposure-label');
+    if (expFill && expLabel) {
+      var inv = d.inventory || {};
+      var invKeys = Object.keys(inv);
+      var totalVal = 0;
+      for (var ei = 0; ei < invKeys.length; ei++) {
+        var iv = inv[invKeys[ei]];
+        totalVal += Math.abs(iv.net_shares || 0) * (iv.avg_price || 0.5);
+      }
+      var maxExp = (d.config || {}).max_total_exposure || 100;
+      var expPct = Math.min(100, Math.round(totalVal / maxExp * 100));
+      expFill.style.width = expPct + '%';
+      expFill.style.background = expPct > 75 ? '#ef4444' : expPct > 50 ? '#eab308' : 'var(--success)';
+      expLabel.textContent = expPct + '% ($' + totalVal.toFixed(1) + ' / $' + maxExp + ')';
+      expLabel.style.color = expPct > 75 ? '#ef4444' : expPct > 50 ? '#eab308' : 'var(--success)';
+    }
+
+    // Inventory grid (card view)
+    var invGrid = document.getElementById('maker-inventory-grid');
+    if (invGrid) {
+      var inv2 = d.inventory || {};
+      var invKeys2 = Object.keys(inv2).filter(function(k) {
+        var v2 = inv2[k];
+        return Math.abs(v2.net_shares || 0) >= 0.1 || (v2.fills_today || 0) > 0;
+      });
+      if (invKeys2.length === 0) {
+        invGrid.innerHTML = '<div style="text-align:center;color:var(--text-muted);font-size:0.72rem;grid-column:1/-1;">No inventory</div>';
+      } else {
+        var ghtml = '';
+        for (var gi = 0; gi < invKeys2.length; gi++) {
+          var gk = invKeys2[gi];
+          var gv = inv2[gk];
+          var gns = Math.abs(gv.net_shares || 0);
+          var gdir = (gv.net_shares || 0) > 0.1 ? 'LONG' : (gv.net_shares || 0) < -0.1 ? 'SHORT' : 'FLAT';
+          var gdirClr = gdir === 'LONG' ? '#22c55e' : gdir === 'SHORT' ? '#ef4444' : 'var(--text-muted)';
+          var gval = gns * (gv.avg_price || 0.5);
+          var grem = gv.remaining_s || 9999;
+          var gttr = grem > 3600 ? Math.floor(grem/60) + 'm' : grem > 60 ? Math.floor(grem/60) + 'm' : grem + 's';
+          var griskPct = Math.min(100, Math.round(gns / 15 * 100));
+          var griskClr = griskPct > 75 ? '#ef4444' : griskPct > 50 ? '#eab308' : '#22c55e';
+          ghtml += '<div class="gv-inventory-card">';
+          ghtml += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
+          ghtml += '<span style="font-family:var(--font-heading);font-size:0.82rem;font-weight:700;">' + esc(gv.asset || gk).toUpperCase() + ' <span style="color:' + gdirClr + ';font-size:0.72rem;">' + gdir + '</span></span>';
+          ghtml += '</div>';
+          ghtml += '<div style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-secondary);">' + gns.toFixed(1) + ' shares &bull; $' + gval.toFixed(2) + '</div>';
+          ghtml += '<div style="font-family:var(--font-mono);font-size:0.68rem;color:var(--text-muted);margin-top:2px;">' + (gv.fills_today || 0) + ' fills &bull; TTR: ' + gttr + '</div>';
+          ghtml += '<div class="gv-risk-gauge"><div class="gv-risk-gauge-fill" style="width:' + griskPct + '%;background:' + griskClr + ';"></div></div>';
+          ghtml += '</div>';
+        }
+        invGrid.innerHTML = ghtml;
+      }
+    }
+
     // Config label
     var cfgEl = document.getElementById('maker-config-label');
     if (cfgEl && d.config) {
@@ -13218,6 +13348,8 @@ function loadWhaleFollower() {
       el = document.getElementById('whale-tracked-wallets');
       if (el) el.textContent = d.tracked_wallets || 0;
       el = document.getElementById('whale-tracked-count');
+      if (el) el.textContent = (d.tracked_wallets || 0) + ' whales';
+      el = document.getElementById('whale-engine-count-badge');
       if (el) el.textContent = (d.tracked_wallets || 0) + ' whales';
       el = document.getElementById('whale-copy-count');
       if (el) el.textContent = (d.performance || {}).total_copies || 0;
