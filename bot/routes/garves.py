@@ -1380,6 +1380,40 @@ def api_garves_positions():
                 totals["record_losses"] += 1
                 totals["realized_pnl"] += row["result_pnl"]
 
+        # ── 3. Include Resolution Scalper trades from JSONL ──
+        res_file = data_dir / "resolution_trades.jsonl"
+        if res_file.exists():
+            try:
+                for line in res_file.read_text().strip().split("\n"):
+                    if not line.strip():
+                        continue
+                    rt = json.loads(line)
+                    if rt.get("won") is None:
+                        continue  # Not resolved yet
+                    won = bool(rt["won"])
+                    pnl_val = rt.get("pnl", 0)
+                    asset_name = (rt.get("asset", "unknown")).upper()
+                    direction = (rt.get("direction", "?")).upper()
+                    row = {
+                        "market": f"Res-Scalp: {asset_name} {direction} 5m",
+                        "asset": asset_name,
+                        "outcome": direction,
+                        "size": 0,
+                        "cost": round(rt.get("bet_size", 0), 2),
+                        "won": won,
+                        "result_pnl": round(pnl_val, 2),
+                        "engine": "res_scalp",
+                    }
+                    history.append(row)
+                    if won:
+                        totals["record_wins"] += 1
+                        totals["realized_pnl"] += pnl_val
+                    else:
+                        totals["record_losses"] += 1
+                        totals["realized_pnl"] += pnl_val
+            except Exception:
+                pass
+
         # Sort: wins first (by pnl desc), then losses
         history.sort(key=lambda x: (-int(x["won"]), -x.get("result_pnl", 0)))
 

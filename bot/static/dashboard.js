@@ -13141,7 +13141,8 @@ function renderEngineComparison(data) {
   for (var i = 0; i < order.length; i++) {
     var key = order[i];
     var e = data.engines[key];
-    var color = colors[key];
+    if (!e) continue;
+    var color = colors[key] || '#888';
     var pnlColor = e.pnl > 0 ? '#22c55e' : (e.pnl < 0 ? '#ef4444' : 'var(--text-muted)');
     var wrColor = e.win_rate >= 55 ? '#22c55e' : (e.win_rate >= 45 ? '#eab308' : '#ef4444');
     var extra = '';
