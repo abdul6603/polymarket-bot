@@ -1127,50 +1127,7 @@ function loadGarvesIntelligence() {
     var maker = engines.maker || {};
     var taker = engines.taker || {};
 
-    /* --- Populate engine comparison table --- */
-    var tbody = document.getElementById('engine-comp-body');
-    if (tbody) {
-      var order = [
-        {key:'snipe', label:'Snipe v10', color:'#f59e0b'},
-        {key:'res_scalp', label:'Res Scalper', color:'#f97316'},
-        {key:'maker', label:'Maker', color:'#8b5cf6'},
-        {key:'whale', label:'Whale Follower', color:'#06b6d4'},
-        {key:'taker', label:'Main Taker', color:'#22c55e'}
-      ];
-      var html = '';
-      order.forEach(function(item) {
-        var e = engines[item.key] || {};
-        var wr = e.win_rate != null ? e.win_rate.toFixed(1) + '%' : 'N/A';
-        var wrColor = e.win_rate != null && e.win_rate >= 55 ? '#22c55e' : e.win_rate != null && e.win_rate < 50 && e.win_rate > 0 ? '#ef4444' : '';
-        var pnlVal = e.pnl || 0;
-        var pnlColor = pnlVal > 0 ? '#22c55e' : pnlVal < 0 ? '#ef4444' : '';
-        var pnlStr = (pnlVal >= 0 ? '$' : '-$') + Math.abs(pnlVal).toFixed(2);
-        var statusColor = e.status === 'active' ? '#22c55e' : '#6b7280';
-        html += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
-        html += '<td style="padding:6px 10px;"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:' + item.color + ';margin-right:6px;"></span>' + item.label + '</td>';
-        html += '<td style="padding:6px 8px;text-align:center;">' + (e.allocation_pct || 0) + '%</td>';
-        html += '<td style="padding:6px 8px;text-align:center;">' + (e.trades || 0) + (e.pending ? ' <span style="color:var(--text-muted);font-size:0.6rem;">(' + e.pending + ' pending)</span>' : '') + '</td>';
-        html += '<td style="padding:6px 8px;text-align:center;">' + (e.wins || 0) + '</td>';
-        html += '<td style="padding:6px 8px;text-align:center;">' + (e.losses || 0) + '</td>';
-        html += '<td style="padding:6px 8px;text-align:center;color:' + wrColor + ';">' + wr + '</td>';
-        html += '<td style="padding:6px 8px;text-align:right;color:' + pnlColor + ';font-weight:600;">' + pnlStr + '</td>';
-        html += '<td style="padding:6px 8px;text-align:right;">$' + (e.avg_size || 0).toFixed(2) + '</td>';
-        html += '<td style="padding:6px 8px;text-align:center;"><span style="font-size:0.58rem;padding:1px 6px;border-radius:6px;background:rgba(' + (e.status === 'active' ? '34,197,94' : '107,114,128') + ',0.15);color:' + statusColor + ';font-weight:600;text-transform:uppercase;">' + (e.status || 'off') + '</span></td>';
-        html += '</tr>';
-      });
-      tbody.innerHTML = html;
-    }
-    var tfoot = document.getElementById('engine-comp-totals');
-    if (tfoot) {
-      var tp = totals.pnl || 0;
-      var tpColor = tp > 0 ? '#22c55e' : tp < 0 ? '#ef4444' : '';
-      var tpStr = (tp >= 0 ? '$' : '-$') + Math.abs(tp).toFixed(2);
-      tfoot.innerHTML = '<td style="padding:6px 10px;">TOTAL</td><td></td><td style="text-align:center;">' + (totals.trades || 0) + '</td><td style="text-align:center;">' + (totals.wins || 0) + '</td><td style="text-align:center;">' + (totals.losses || 0) + '</td><td style="text-align:center;">' + (totals.win_rate || 0).toFixed(1) + '%</td><td style="text-align:right;color:' + tpColor + ';font-weight:700;">' + tpStr + '</td><td></td><td></td>';
-    }
-    var modeEl = document.getElementById('engine-comp-mode');
-    if (modeEl) { var dry = d.dry_run; modeEl.textContent = dry ? 'PAPER' : 'LIVE'; modeEl.style.background = dry ? 'rgba(234,179,8,0.15)' : 'rgba(239,68,68,0.15)'; modeEl.style.color = dry ? '#eab308' : '#ef4444'; }
-    var bankEl = document.getElementById('engine-comp-bankroll');
-    if (bankEl) bankEl.textContent = '$' + (d.bankroll || 0).toFixed(0) + ' bankroll';
+    /* Engine comparison table rendered by loadEngineComparison() in dashboard_v2.js */
 
     /* --- Intelligence panel cards --- */
     var snipeWrEl = document.getElementById('gi-snipe-wr'); var snipeDetailEl = document.getElementById('gi-snipe-detail');
