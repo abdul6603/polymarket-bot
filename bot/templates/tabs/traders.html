@@ -486,12 +486,11 @@ function tradersRenderPositions(data) {
   }
   tbody.innerHTML = rows;
 
-  // Footer totals — live positions only
-  var livePos = data.positions.filter(function(p) { return p.mode === 'live'; });
+  // Footer totals — filtered positions only (respects agent + search filter)
   var totals = {
-    count: livePos.length,
-    exposure: livePos.reduce(function(s, p) { return s + p.size_usd; }, 0),
-    pnl: livePos.reduce(function(s, p) { return s + p.pnl; }, 0),
+    count: filtered.length,
+    exposure: filtered.reduce(function(s, p) { return s + p.size_usd; }, 0),
+    pnl: filtered.reduce(function(s, p) { return s + p.pnl; }, 0),
   };
   tfoot.innerHTML = '<tr style="font-size:0.72rem;font-weight:600;background:var(--surface-elevated);">'
     + '<td colspan="4" style="padding:8px 10px;">' + (totals.count || 0) + ' positions</td>'

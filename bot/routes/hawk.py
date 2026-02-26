@@ -375,8 +375,17 @@ def api_hawk_positions():
                 if size <= 0:
                     continue
                 title = pos.get("title", pos.get("slug", ""))
-                # Skip crypto Up/Down — that's Garves territory
-                if any(kw in title.lower() for kw in ("up or down", "updown", "up/down")):
+                title_lower = title.lower()
+                # Skip ALL crypto positions — that is Garves territory
+                crypto_kw = (
+                    "up or down", "updown", "up/down",
+                    "bitcoin", "ethereum", "solana", "xrp", "cardano",
+                    "dogecoin", "bnb", "avalanche", "polkadot", "chainlink",
+                    "price of btc", "price of eth", "price of sol",
+                    "btc reach", "eth reach", "sol reach",
+                    "btc be above", "btc be below",
+                )
+                if any(kw in title_lower for kw in crypto_kw):
                     continue
                 cid = pos.get("conditionId", pos.get("asset", ""))
                 grouped.setdefault(cid, []).append(pos)
