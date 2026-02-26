@@ -1898,7 +1898,7 @@ def engine_comparison():
     snipe_size = sum(t.get("total_size_usd", 0) for t in snipe_resolved)
 
     # --- Maker stats ---
-    maker_data = {"fills": 0, "rebate": 0.0, "pnl": 0.0, "active_quotes": 0, "spread_captured": 0.0}
+    maker_data = {"fills": 0, "rebate": 0.0, "pnl": 0.0, "active_quotes": 0, "spread_captured": 0.0, "exposure_usd": 0.0, "inventory_count": 0, "inventory_value": 0.0}
     maker_state_file = data_dir / "maker_state.json"
     if maker_state_file.exists():
         try:
@@ -1910,6 +1910,10 @@ def engine_comparison():
             maker_data["pnl"] = pnl_data.get("session_pnl", 0.0)  # already includes spread + rebate + resolution
             maker_data["spread_captured"] = pnl_data.get("spread_captured", 0.0)
             maker_data["resolution_losses"] = pnl_data.get("resolution_losses", 0.0)
+            maker_data["exposure_usd"] = ms.get("stats", {}).get("total_exposure_usd", 0.0)
+            inv = ms.get("inventory", {})
+            maker_data["inventory_count"] = len(inv)
+            maker_data["inventory_value"] = sum(v.get("value_usd", 0) for v in inv.values())
         except Exception:
             pass
 
@@ -1987,6 +1991,9 @@ def engine_comparison():
             "avg_size": 0,
             "rebate": round(maker_data["rebate"], 4),
             "spread_captured": round(maker_data["spread_captured"], 4),
+            "exposure_usd": round(maker_data["exposure_usd"], 2),
+            "inventory_count": maker_data["inventory_count"],
+            "inventory_value": round(maker_data["inventory_value"], 2),
             "status": "active",
         },
         "whale": {

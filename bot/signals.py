@@ -473,7 +473,7 @@ class SignalEngine:
         derivatives_data: dict | None = None,
         spot_depth: dict | None = None,
         external_data: dict | None = None,
-        momentum=None,
+        momentum_state=None,
     ) -> Signal | None:
         """Generate a signal from the weighted ensemble of all indicators."""
 
@@ -951,6 +951,12 @@ class SignalEngine:
         active_count = up_count + down_count  # non-disabled indicators only
         total_indicators = len(active)
 
+        # Momentum alignment flags (used by consensus overrides + safety filters)
+        _momentum_aligned = (momentum_state is not None and momentum_state.active
+                             and majority_dir == momentum_state.direction)
+        _momentum_opposed = (momentum_state is not None and momentum_state.active
+                             and majority_dir != momentum_state.direction)
+
         # Clamp consensus_floor to MAX_VIABLE_CONSENSUS — prevents paralysis
         safe_floor = min(_consensus_floor, MAX_VIABLE_CONSENSUS)
 
@@ -1043,7 +1049,7 @@ class SignalEngine:
             if majority_dir != trend_dir:
                 if _momentum_aligned:
                     log.info("[%s/%s] Anti-trend filter: SKIPPED (momentum-aligned %s)",
-                             asset.upper(), timeframe, momentum.direction.upper())
+                             asset.upper(), timeframe, momentum_state.direction.upper())
                 else:
                     # Going against the trend — require 70% of active indicators to agree
                     anti_trend_min = max(effective_consensus + 1, int(active_count * 0.70))
@@ -1125,11 +1131,7 @@ class SignalEngine:
         consensus_prob = prob_up if consensus_dir == "up" else (1 - prob_up)
         consensus_token = up_token_id if consensus_dir == "up" else down_token_id
 
-        # Momentum alignment flags
-        _momentum_aligned = (momentum is not None and momentum.active
-                             and consensus_dir == momentum.direction)
-        _momentum_opposed = (momentum is not None and momentum.active
-                             and consensus_dir != momentum.direction)
+        # (momentum flags already computed above with majority_dir)
 
         # ── Safety: graduated filter for contrarian signals ──
         # When betting against the market, require progressively stronger consensus.

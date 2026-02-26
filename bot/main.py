@@ -337,7 +337,10 @@ class TradingBot:
     async def _taker_loop(self) -> None:
         """Taker strategy loop: evaluate markets every tick_interval_s."""
         while not self._shutdown_event.is_set():
-            await self._tick()
+            try:
+                await self._tick()
+            except Exception as e:
+                log.warning("[TAKER] Tick error (continuing): %s", str(e)[:200])
             try:
                 await asyncio.wait_for(
                     self._shutdown_event.wait(),
@@ -757,7 +760,7 @@ class TradingBot:
                 derivatives_data=deriv_data,
                 spot_depth=spot_depth,
                 external_data=external_data_cache.get(asset.lower()),
-                momentum=getattr(self, "_momentum", None),
+                momentum_state=getattr(self, "_momentum", None),
             )
             if not sig:
                 continue

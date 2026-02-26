@@ -13137,12 +13137,21 @@ function renderEngineComparison(data) {
     rows += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);"' + extra + '>';
     rows += '<td style="padding:8px 12px;"><span style="color:' + color + ';font-weight:600;">' + e.name + '</span></td>';
     rows += '<td style="padding:8px 10px;text-align:center;">' + e.allocation_pct + '%</td>';
-    rows += '<td style="padding:8px 10px;text-align:center;">' + e.trades + (e.pending > 0 ? '<span style="color:var(--text-muted);font-size:0.75rem;"> (' + e.pending + ' pending)</span>' : '') + '</td>';
-    rows += '<td style="padding:8px 10px;text-align:center;color:#22c55e;">' + e.wins + '</td>';
-    rows += '<td style="padding:8px 10px;text-align:center;color:#ef4444;">' + e.losses + '</td>';
-    rows += '<td style="padding:8px 10px;text-align:center;color:' + wrColor + ';font-weight:600;">' + (e.trades > 0 ? e.win_rate.toFixed(1) + '%' : '--') + '</td>';
-    rows += '<td style="padding:8px 10px;text-align:right;color:' + pnlColor + ';font-weight:600;">$' + (e.pnl >= 0 ? '+' : '') + e.pnl.toFixed(2) + '</td>';
-    rows += '<td style="padding:8px 10px;text-align:right;">$' + e.avg_size.toFixed(0) + '</td>';
+    if (key === 'maker') {
+      rows += '<td style="padding:8px 10px;text-align:center;">' + (e.trades > 0 ? e.trades + ' fills' : '') + '<span style="color:#8b5cf6;font-weight:600;">' + (e.trades > 0 ? ' / ' : '') + e.pending + ' quoting</span></td>';
+      rows += '<td style="padding:8px 10px;text-align:center;color:#06b6d4;font-weight:600;">' + (e.inventory_count || 0) + ' pos</td>';
+      rows += '<td style="padding:8px 10px;text-align:center;color:#eab308;font-weight:600;">$' + (e.exposure_usd || 0).toFixed(0) + '</td>';
+      rows += '<td style="padding:8px 10px;text-align:center;color:var(--text-muted);">' + (e.trades > 0 ? e.win_rate.toFixed(1) + '%' : 'PAPER') + '</td>';
+      rows += '<td style="padding:8px 10px;text-align:right;color:' + pnlColor + ';font-weight:600;">$' + (e.pnl >= 0 ? '+' : '') + e.pnl.toFixed(2) + '</td>';
+      rows += '<td style="padding:8px 10px;text-align:right;color:#eab308;">$' + (e.inventory_value || 0).toFixed(0) + ' inv</td>';
+    } else {
+      rows += '<td style="padding:8px 10px;text-align:center;">' + e.trades + (e.pending > 0 ? '<span style="color:var(--text-muted);font-size:0.75rem;"> (' + e.pending + ' pending)</span>' : '') + '</td>';
+      rows += '<td style="padding:8px 10px;text-align:center;color:#22c55e;">' + e.wins + '</td>';
+      rows += '<td style="padding:8px 10px;text-align:center;color:#ef4444;">' + e.losses + '</td>';
+      rows += '<td style="padding:8px 10px;text-align:center;color:' + wrColor + ';font-weight:600;">' + (e.trades > 0 ? e.win_rate.toFixed(1) + '%' : '--') + '</td>';
+      rows += '<td style="padding:8px 10px;text-align:right;color:' + pnlColor + ';font-weight:600;">$' + (e.pnl >= 0 ? '+' : '') + e.pnl.toFixed(2) + '</td>';
+      rows += '<td style="padding:8px 10px;text-align:right;">$' + e.avg_size.toFixed(0) + '</td>';
+    }
     rows += '<td style="padding:8px 10px;text-align:center;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + color + ';"></span></td>';
     rows += '</tr>';
   }
