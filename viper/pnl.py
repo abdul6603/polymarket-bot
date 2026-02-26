@@ -125,7 +125,7 @@ def compute_pnl() -> dict:
     # For a fair daily comparison, estimate daily from total
     agent_totals = costs.get("agent_totals", {})
     days_tracked = max(costs.get("days_tracked", 1), 1)
-
+    
     garves_daily_pnl = round(garves_pnl["total_pnl"] / days_tracked, 2)
     hawk_daily_pnl = round(hawk_pnl["total_pnl"] / days_tracked, 2)
     daily_revenue = garves_daily_pnl + hawk_daily_pnl + soren_est
