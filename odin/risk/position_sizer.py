@@ -1,13 +1,15 @@
 """Structure-based position sizing with OB memory integration.
 
-Sizing logic (V7 — LLM-driven risk):
+Sizing logic (V8 — Scalp/Swing dual mode):
   Step 1: Find nearest structure zone behind entry (OB/FVG/S&R)
   Step 2: Place SL behind structure + 0.1-0.2% buffer
-  Step 3: Clamp SL distance: 2-4% genuine trades, 0.5-1% risky trades
-  Step 4: Risk = LLM-decided ($5-50, based on conviction + setup quality)
-  Step 5: Position size = risk / SL_distance
-  Step 6: Cap notional (tiered: $200→$2K, $500→$5K, $1K→$10K)
-  Step 7: Leverage = notional / allocated_margin (cross margin, auto-calc)
+  Step 3: Clamp SL distance based on trade_type:
+          - Scalp: 0.3-1.5% (tight SL, big notional, fast exit)
+          - Swing: 1.0-5.0% (wider SL, smaller notional, hold longer)
+  Step 4: Risk = LLM-decided ($5-100, based on conviction + setup quality)
+  Step 5: Position size = risk / SL_distance (leverage is consequence, not input)
+  Step 6: Cap notional (major=$6K, mid=$4K, alt=$3K)
+  Step 7: Leverage = notional / balance (cross margin, auto-calc, max 30)
 """
 from __future__ import annotations
 
@@ -26,18 +28,18 @@ MIN_RISK_USD = 3.00           # Don't trade below $3 risk
 MAX_LEVERAGE = 50             # Exchange hard cap
 DEFAULT_RISK_USD = 25.0       # Default risk per trade (LLM overrides this)
 
-# ── Dynamic Max Notional Tiers (10x capital) ──
+# ── Dynamic Max Notional Tiers (20x capital for cross margin) ──
 _NOTIONAL_TIERS = [
-    (1000, 10000),
-    (500, 5000),
-    (300, 3000),
-    (200, 2000),
+    (1000, 20000),
+    (500, 10000),
+    (300, 6000),
+    (200, 4000),
 ]
-_DEFAULT_MAX_NOTIONAL = 5000
+_DEFAULT_MAX_NOTIONAL = 10000
 
 
 def get_max_notional(balance: float) -> float:
-    """Max single-position notional scaled to account balance."""
+    """Max single-position notional scaled to account balance (20x cross margin)."""
     for threshold, cap in _NOTIONAL_TIERS:
         if balance >= threshold:
             return cap
@@ -45,10 +47,12 @@ def get_max_notional(balance: float) -> float:
     return max(100, balance * 10)
 
 # SL distance bounds (% of entry price)
-SL_MIN_GENUINE = 2.0          # Genuine trades: min 2% SL
-SL_MAX_GENUINE = 4.0          # Genuine trades: max 4% SL
-SL_MIN_RISKY = 0.5            # Low-conviction: min 0.5% SL
-SL_MAX_RISKY = 1.5            # Low-conviction: max 1.5% SL
+SL_MIN_GENUINE = 2.0          # Swing genuine: min 2% SL
+SL_MAX_GENUINE = 5.0          # Swing genuine: max 5% SL
+SL_MIN_RISKY = 0.5            # Swing low-conviction: min 0.5% SL
+SL_MAX_RISKY = 1.5            # Swing low-conviction: max 1.5% SL
+SL_MIN_SCALP = 0.3            # Scalp: min 0.3% SL (tight)
+SL_MAX_SCALP = 1.5            # Scalp: max 1.5% SL
 SL_STRUCTURE_BUFFER = 0.15    # 0.15% buffer beyond structure zone
 
 # Conviction threshold for "genuine" vs "risky"
@@ -106,6 +110,7 @@ class PositionSizer:
         direction: str = "LONG",
         notional_cap_override: float = 0.0,
         risk_override: float = 0.0,
+        trade_type: str = "swing",
         **kwargs,
     ) -> PositionSize:
         """Calculate position size using structure-based SL placement.
@@ -152,8 +157,11 @@ class PositionSizer:
         sl_dist_abs = abs(entry_price - final_sl)
         sl_dist_pct = sl_dist_abs / entry_price * 100
 
-        is_genuine = conviction_score >= GENUINE_CONVICTION
-        if is_genuine:
+        # SL bounds depend on trade type
+        if trade_type == "scalp":
+            sl_min, sl_max = SL_MIN_SCALP, SL_MAX_SCALP
+            adjustments.append("scalp_sl_bounds")
+        elif conviction_score >= GENUINE_CONVICTION:
             sl_min, sl_max = SL_MIN_GENUINE, SL_MAX_GENUINE
         else:
             sl_min, sl_max = SL_MIN_RISKY, SL_MAX_RISKY
@@ -290,9 +298,9 @@ class PositionSizer:
         )
 
         log.info(
-            "[SIZER] %s $%.0f entry | SL=$%.2f (%.1f%% %s) | risk=$%.0f → "
+            "[SIZER] %s %s $%.0f entry | SL=$%.2f (%.1f%% %s) | risk=$%.0f → "
             "notional=$%.0f qty=%.6f lev=%dx | %s",
-            direction, entry_price, final_sl, sl_dist_pct, sl_source,
+            trade_type.upper(), direction, entry_price, final_sl, sl_dist_pct, sl_source,
             risk, notional, qty, lev,
             ", ".join(adjustments) if adjustments else "clean",
         )

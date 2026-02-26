@@ -124,6 +124,7 @@ class PortfolioGuard:
         direction: str,
         risk_usd: float,
         notional_usd: float,
+        trade_type: str = "swing",
     ) -> GuardDecision:
         """Check if a proposed trade passes portfolio constraints.
 
@@ -131,7 +132,7 @@ class PortfolioGuard:
         Fail-open: any exception returns allowed=True with a warning.
         """
         try:
-            return self._check(symbol, direction, risk_usd, notional_usd)
+            return self._check(symbol, direction, risk_usd, notional_usd, trade_type)
         except Exception as e:
             log.warning("[PORTFOLIO-GUARD] Error in check, fail-open: %s", e)
             return GuardDecision(allowed=True, reasons=[f"guard_error: {e}"])
@@ -199,12 +200,17 @@ class PortfolioGuard:
             },
             "open_positions": s.long_count + s.short_count,
             "max_positions": self.cfg.max_open_positions,
+            "scalp_count": sum(1 for p in s.positions if p.get("trade_type") == "scalp"),
+            "swing_count": sum(1 for p in s.positions if p.get("trade_type", "swing") == "swing"),
+            "scalp_max": self.cfg.scalp_max_positions,
+            "swing_max": self.cfg.swing_max_positions,
         }
 
     # ── Internal ──
 
     def _check(
-        self, symbol: str, direction: str, risk_usd: float, notional_usd: float
+        self, symbol: str, direction: str, risk_usd: float, notional_usd: float,
+        trade_type: str = "swing",
     ) -> GuardDecision:
         s = self._state
         decision = GuardDecision()
@@ -221,12 +227,28 @@ class PortfolioGuard:
             )
             return decision
 
-        # 2. Max open positions
+        # 2. Max open positions (scalp/swing separate limits)
         total_open = s.long_count + s.short_count
         if total_open >= self.cfg.max_open_positions:
             decision.allowed = False
             decision.reasons.append(
-                f"max positions reached ({total_open}/{self.cfg.max_open_positions})"
+                f"max total positions reached ({total_open}/{self.cfg.max_open_positions})"
+            )
+            return decision
+
+        # Count scalp vs swing from position metadata
+        scalp_count = sum(1 for p in s.positions if p.get("trade_type") == "scalp")
+        swing_count = total_open - scalp_count
+        if trade_type == "scalp" and scalp_count >= self.cfg.scalp_max_positions:
+            decision.allowed = False
+            decision.reasons.append(
+                f"max scalp positions reached ({scalp_count}/{self.cfg.scalp_max_positions})"
+            )
+            return decision
+        if trade_type == "swing" and swing_count >= self.cfg.swing_max_positions:
+            decision.allowed = False
+            decision.reasons.append(
+                f"max swing positions reached ({swing_count}/{self.cfg.swing_max_positions})"
             )
             return decision
 
@@ -293,9 +315,8 @@ class PortfolioGuard:
                 f"notional capped to ${allowed_notional:.0f} ({tier} tier cap ${cap:.0f})"
             )
 
-        # 7. Risk scaling by open position count
-        if total_open >= 3 and decision.adjusted_risk_usd is None:
-            # Scale down: 1st-2nd = 100%, 3rd = 75%, 4th = 60%, 5th = 50%
+        # 7. Risk scaling by open position count (swing only, scalps are fast)
+        if trade_type == "swing" and total_open >= 3 and decision.adjusted_risk_usd is None:
             scale = max(0.50, 1.0 - (total_open - 2) * 0.15)
             scaled = risk_usd * scale
             decision.adjusted_risk_usd = scaled

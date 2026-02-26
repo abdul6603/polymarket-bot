@@ -1,13 +1,20 @@
 """Dynamic exit manager — trailing stops, partial TPs, time/regime exits.
 
-Manages the full lifecycle of position exits:
-  1. Early partial: 25% at 1.0R — "pay for the trade", SL → breakeven
-  2. TP1: 25% at 1.5R — half the position banked
-  3. TP2: 30% at 2.5R — 80% total banked
-  4. TP3: 20% runner at 4.0R — the home run
-  5. Trailing stops (ATR-based, activates at 2R, follows best price)
-  6. Time-based exits (close stale trades after 12h)
-  7. Regime-aware trailing (tighter in chop, wider in trends)
+Dual mode exit profiles:
+  SCALP (2-20 min hold, quick profit):
+    1. 50% at 0.7R — lock in quick profit
+    2. 50% at 1.2R — full close, move to next trade
+    3. Time exit: 20 min max hold
+    4. No trailing — just take profit and go
+
+  SWING (hours/days hold, bigger R:R):
+    1. Early partial: 25% at 1.0R — "pay for the trade", SL → breakeven
+    2. TP1: 25% at 1.5R — half the position banked
+    3. TP2: 30% at 2.5R — 80% total banked
+    4. TP3: 20% runner at 4.0R — the home run
+    5. Trailing stops (ATR-based, activates at 2R, follows best price)
+    6. Time-based exits (close stale trades after 12h)
+    7. Regime-aware trailing (tighter in chop, wider in trends)
 """
 from __future__ import annotations
 
@@ -55,6 +62,13 @@ class PositionExitState:
     tp2_hit: bool = False
     tp3_hit: bool = False
     partial_closes: list = field(default_factory=list)
+
+
+# Scalp exit profile constants
+SCALP_TP1_R = 0.7        # First partial at 0.7R (quick profit)
+SCALP_TP1_PCT = 0.50     # Close 50% of position
+SCALP_TP2_R = 1.2        # Full close at 1.2R
+SCALP_MAX_HOLD_MIN = 20  # Max 20 minutes
 
 
 class ExitManager:
@@ -118,8 +132,11 @@ class ExitManager:
     ) -> list[ExitDecision]:
         """Evaluate all exit conditions. Returns list of actions to take.
 
-        Called every monitor tick (~60s) for each open position.
+        Called every monitor tick (~2s for scalp, ~60s for swing).
+        Routes to scalp or swing exit profile based on trade_type.
         """
+        trade_type = pos.get("trade_type", "swing")
+
         decisions: list[ExitDecision] = []
         direction = pos["direction"]
         entry = state.entry_price
@@ -142,7 +159,11 @@ class ExitManager:
         else:
             current_r = (entry - current_price) / r_distance
 
-        # Regime modifier for trailing distance
+        # ── Route to scalp or swing profile ──
+        if trade_type == "scalp":
+            return self._scalp_exits(pos, state, current_price, current_r, r_distance, direction)
+
+        # Regime modifier for trailing distance (swing only)
         regime_mult = self._get_regime_multiplier(regime)
 
         # ── 1. Check stop loss hit ──
@@ -238,6 +259,69 @@ class ExitManager:
         )
         if time_decision:
             decisions.append(time_decision)
+
+        return decisions
+
+    def _scalp_exits(
+        self,
+        pos: dict,
+        state: PositionExitState,
+        current_price: float,
+        current_r: float,
+        r_distance: float,
+        direction: str,
+    ) -> list[ExitDecision]:
+        """Scalp exit profile — fast, aggressive profit taking."""
+        decisions: list[ExitDecision] = []
+
+        # SL check first
+        if self._check_sl_hit(direction, current_price, state.current_sl):
+            decisions.append(ExitDecision(
+                action=ExitAction.STOP_LOSS,
+                close_pct=1.0,
+                close_price=state.current_sl,
+                reason=f"SCALP SL hit at ${state.current_sl:.2f} (R={current_r:.1f})",
+            ))
+            return decisions
+
+        orig_qty = state.original_qty
+
+        # TP1: 50% at 0.7R — lock quick profit
+        if not state.early_hit and current_r >= SCALP_TP1_R:
+            frac = SCALP_TP1_PCT * orig_qty / max(state.remaining_qty, 1e-12)
+            frac = min(frac, 0.95)
+            decisions.append(ExitDecision(
+                action=ExitAction.PARTIAL_EARLY,
+                close_pct=frac,
+                close_price=current_price,
+                reason=f"SCALP TP1 ({SCALP_TP1_PCT:.0%}) at {current_r:.1f}R — quick profit",
+            ))
+            state.early_hit = True
+            state.remaining_qty -= SCALP_TP1_PCT * orig_qty
+            # Move SL to breakeven
+            state.current_sl = state.entry_price
+
+        # TP2: close all remaining at 1.2R
+        if not state.tp1_hit and current_r >= SCALP_TP2_R:
+            decisions.append(ExitDecision(
+                action=ExitAction.PARTIAL_TP1,
+                close_pct=1.0,
+                close_price=current_price,
+                reason=f"SCALP TP2 full close at {current_r:.1f}R — booked",
+            ))
+            state.tp1_hit = True
+
+        # Time exit: max 20 min hold for scalps
+        entry_time = pos.get("entry_time", 0)
+        if entry_time > 0:
+            minutes_held = (time.time() - entry_time) / 60
+            if minutes_held >= SCALP_MAX_HOLD_MIN:
+                decisions.append(ExitDecision(
+                    action=ExitAction.TIME_EXIT,
+                    close_pct=1.0,
+                    close_price=0,
+                    reason=f"SCALP time exit: {minutes_held:.0f}min held (max={SCALP_MAX_HOLD_MIN}min)",
+                ))
 
         return decisions
 

@@ -22,6 +22,7 @@ class TradeSignal:
     entry_price: float = 0.0       # Ideal entry (OB/FVG midpoint)
     entry_zone_top: float = 0.0
     entry_zone_bottom: float = 0.0
+    trade_type: str = "swing"       # "scalp" or "swing"
 
     # Risk levels
     stop_loss: float = 0.0
@@ -81,6 +82,7 @@ class TradeSignal:
         return {
             "symbol": self.symbol,
             "direction": self.direction,
+            "trade_type": self.trade_type,
             "confidence": self.confidence,
             "effective_confidence": self.effective_confidence,
             "entry_price": self.entry_price,

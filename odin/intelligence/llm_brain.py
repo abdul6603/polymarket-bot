@@ -35,6 +35,7 @@ trader on Hyperliquid.
 - Liquidity hunter: trade the direction smart money moves AFTER sweeping stops
 - High-conviction only: structure + regime + macro must align
 - Multi-TF: Daily = bias, 4H = structure, 15m = entry timing
+- Dual mode: SCALP (2-20 min, tight SL, quick profit) + SWING (hours/days, wider SL)
 
 ## Critical Rules
 1. NEVER flip on one 15m candle after clear 4H breakout. Pullbacks are retests.
@@ -53,11 +54,16 @@ A 7% bounce during tariff fears could be a dead cat bounce. News overrides techn
 5. CONFLUENCE: 2/3 macro+regime+structure agree = tradeable. 1/3 = flat.
 6. ENTRY: Nearest OB/FVG? Logical SL below structure?
 7. CONVICTION: 0-100 honest. 70+ = high. 50-69 = moderate. <50 = don't trade.
-8. RISK SIZING: Decide risk_usd ($5-$50) based on conviction + setup quality:
-   - A+ setup (80+ conviction, 3/3 alignment, clean structure): $35-50
-   - Good setup (65-79, 2/3 alignment): $20-35
-   - Moderate setup (50-64, mixed signals): $5-15
-   - Every trade is different. Size to match your confidence. No fixed bets.
+8. TRADE TYPE: Decide if this is a SCALP or SWING:
+   - SCALP: Price at OB/FVG zone, clear 15m trigger, quick 0.3-1% move expected.
+     Tight SL (0.3-1.5%), TP at 0.5-1.5%. Hold 2-20 minutes. Big notional, fast profit.
+   - SWING: Multi-TF alignment, regime confirms, hold for hours/days.
+     Wider SL (1-5%), TP at 2-5%+. Smaller notional, bigger R:R.
+9. RISK SIZING: Decide risk_usd ($5-$100) based on conviction + setup quality:
+   - A+ setup (80+ conviction, 3/3 alignment, clean structure): $60-100
+   - Good setup (65-79, 2/3 alignment): $30-60
+   - Moderate setup (50-64, mixed signals): $5-25
+   - Scalps: higher risk (quick resolution). Swings: moderate risk (longer exposure).
 
 ## News Rules
 - If negative macro news (tariffs, rate hikes, sanctions): reduce conviction by 15-25 points
@@ -341,10 +347,20 @@ class OdinBrain:
                 log.warning("[LLM_BRAIN] SHORT but TP1(%.2f) >= entry(%.2f)", tp1, entry)
                 return None
 
-        # SL distance: 0.5% to 5% from entry
+        # Determine trade type from LLM output
+        trade_type = (data.get("trade_type") or data.get("type") or "swing").lower()
+        if trade_type not in ("scalp", "swing"):
+            trade_type = "swing"
+
+        # SL distance bounds depend on trade type
         sl_dist_pct = abs(stop_loss - entry) / entry * 100
-        if sl_dist_pct < 0.5 or sl_dist_pct > 5.0:
-            log.warning("[LLM_BRAIN] SL distance %.2f%% outside 0.5-5.0%% range", sl_dist_pct)
+        if trade_type == "scalp":
+            sl_min, sl_max = 0.2, 2.0
+        else:
+            sl_min, sl_max = 0.5, 5.0
+        if sl_dist_pct < sl_min or sl_dist_pct > sl_max:
+            log.warning("[LLM_BRAIN] SL distance %.2f%% outside %.1f-%.1f%% range (%s)",
+                        sl_dist_pct, sl_min, sl_max, trade_type)
             return None
 
         # Compute TP fallback BEFORE R:R check (so R:R can use fallback TP)
@@ -358,17 +374,21 @@ class OdinBrain:
             tp_dist = abs(tp1 - entry)
             rr = round(tp_dist / sl_dist, 2) if sl_dist > 0 else 0
 
-        # Minimum R:R
-        if rr < 1.5:
-            log.info("[LLM_BRAIN] %s R:R=%.1f too low", symbol, rr)
+        # Minimum R:R (scalps can be lower since they're fast)
+        min_rr = 1.0 if trade_type == "scalp" else 1.5
+        if rr < min_rr:
+            log.info("[LLM_BRAIN] %s R:R=%.1f too low (min=%.1f for %s)",
+                     symbol, rr, min_rr, trade_type)
             return None
 
-        # Clamp LLM risk to valid range ($5-$50)
+        # Clamp LLM risk to valid range ($5-$100)
+        max_risk = self._cfg.llm_max_risk_usd
+        min_risk = self._cfg.llm_min_risk_usd
         if isinstance(llm_risk, (int, float)) and llm_risk > 0:
-            llm_risk = float(min(max(llm_risk, 5), 50))
+            llm_risk = float(min(max(llm_risk, min_risk), max_risk))
         else:
-            # Default: scale from conviction ($5 at 50, $50 at 100)
-            llm_risk = max(5, min(50, conviction * 0.5))
+            # Default: scale from conviction
+            llm_risk = max(min_risk, min(max_risk, conviction * 1.0))
 
         # Compute ATR from mtf if available (not passed directly, use entry context)
         atr_value = abs(entry - stop_loss)  # Rough proxy
@@ -384,6 +404,7 @@ class OdinBrain:
         signal = TradeSignal(
             symbol=symbol,
             direction=action,
+            trade_type=trade_type,
             confidence=conviction / 100.0,
             entry_price=entry,
             entry_zone_top=entry,
@@ -411,8 +432,8 @@ class OdinBrain:
             reasons=reasoning if isinstance(reasoning, list) else [str(reasoning)],
         )
 
-        log.info("[LLM_BRAIN] %s → %s conv=%d risk=$%.0f SL=$%.2f TP=$%.2f R:R=%.1f",
-                 symbol, action, conviction, llm_risk, stop_loss, tp1, rr)
+        log.info("[LLM_BRAIN] %s → %s %s conv=%d risk=$%.0f SL=$%.2f TP=$%.2f R:R=%.1f",
+                 symbol, action, trade_type.upper(), conviction, llm_risk, stop_loss, tp1, rr)
         return signal
 
     @property

@@ -1,14 +1,15 @@
-"""OdinBot — LLM-powered crypto futures swing trader (V7).
+"""OdinBot — LLM-powered crypto futures trader (V8 — scalp + swing).
 
 Architecture:
   1. CoinGlass scan  (every 3 min)  — regime detection, opportunity scoring
-  2. Trading cycle   (every 5 min)  — data filter → Claude Opus 4.6 analysis
+  2. Trading cycle   (adaptive)     — 30s when scalps open, 5min otherwise
   3. Macro polling   (every 10 min) — SPY/VIX/USDT.D/BTC.D context
   4. Monitor loop    (every 60s)    — paper positions + status JSON
 
 Flow: CoinGlass → Regime → Data Filter → LLM Brain → Safety Rails → Execute
   5. Brotherhood   (every 60s)    — poll event bus for brother intelligence
   6. Reflection    (every 5 trades) — extract lessons from outcomes
+  7. Dual mode: SCALP (2-20min, quick TP) + SWING (hours/days, bigger R:R)
 """
 from __future__ import annotations
 
@@ -76,7 +77,7 @@ SYMBOLS_PER_CYCLE = 8
 
 
 class OdinBot:
-    """Odin — regime-adaptive crypto futures swing trader."""
+    """Odin — regime-adaptive crypto futures trader (scalp + swing)."""
 
     def __init__(self, cfg: Optional[OdinConfig] = None):
         self._cfg = cfg or OdinConfig()
@@ -251,14 +252,15 @@ class OdinBot:
         log.info("[INIT] Hyperliquid: %d tradeable pairs", len(self._hl_tradeable))
 
         log.info("=" * 60)
-        log.info("  ODIN V7 — LLM BRAIN TRADER — %s MODE", mode)
+        log.info("  ODIN V8 — SCALP + SWING TRADER — %s MODE", mode)
         log.info("  Exchange: Hyperliquid (%d pairs) | CoinGlass: %s",
                  len(self._hl_tradeable), "ON" if self._cg else "OFF")
         log.info("  Capital: $%.0f | Risk: 1R cap ($%.0f)",
                  self._cfg.starting_capital, self._cfg.risk_per_trade_usd)
-        log.info("  Max positions: %d | Cycle: %ds | Universe: %d coins",
-                 self._cfg.max_open_positions, self._cfg.cycle_seconds,
-                 self._cfg.max_priority_coins)
+        log.info("  Max positions: %d (scalp=%d, swing=%d) | Cycle: %ds | Universe: %d coins",
+                 self._cfg.max_open_positions,
+                 self._cfg.scalp_max_positions, self._cfg.swing_max_positions,
+                 self._cfg.cycle_seconds, self._cfg.max_priority_coins)
         log.info("  Portfolio Guard: heat=%g%% | same-dir=%d | tiers: $%g/$%g/$%g",
                  self._cfg.portfolio_max_heat_pct, self._cfg.max_same_direction,
                  self._cfg.notional_cap_major, self._cfg.notional_cap_mid,
@@ -472,7 +474,7 @@ class OdinBot:
                 open_count = self._order_mgr.get_open_positions_count()
                 if open_count >= self._cfg.max_open_positions:
                     log.info("[CYCLE] Max positions (%d) reached", open_count)
-                    await asyncio.sleep(self._cfg.cycle_seconds)
+                    await asyncio.sleep(cycle_time if 'cycle_time' in dir() else self._cfg.cycle_seconds)
                     continue
 
                 # Get symbols to trade from regime brain
@@ -498,8 +500,22 @@ class OdinBot:
                         continue
                     await self._analyze_and_trade(symbol)
 
-                log.info("[CYCLE %d] Complete. Next in %ds.",
-                         self._cycle_count, self._cfg.cycle_seconds)
+                # Adaptive cycle time: faster when scalps might be needed
+                has_scalp = any(
+                    p.get("trade_type") == "scalp"
+                    for p in (
+                        self._order_mgr.get_paper_positions()
+                        if self._cfg.dry_run
+                        else self._order_mgr.get_live_positions()
+                    )
+                )
+                cycle_time = (
+                    self._cfg.scalp_cycle_seconds if has_scalp
+                    else self._cfg.cycle_seconds
+                )
+                log.info("[CYCLE %d] Complete. Next in %ds. (mode=%s)",
+                         self._cycle_count, cycle_time,
+                         "scalp" if has_scalp else "swing")
 
                 # Signal cycle status for dashboard badge
                 try:
@@ -512,6 +528,7 @@ class OdinBot:
                         "symbols_scanned": len(symbols_to_trade),
                         "open_positions": self._order_mgr.get_open_positions_count(),
                         "regime": self._last_regime.regime.value if self._last_regime else "unknown",
+                        "mode": "scalp" if has_scalp else "swing",
                     }))
                 except Exception:
                     pass
@@ -727,11 +744,13 @@ class OdinBot:
         # Use LLM-decided risk if available, otherwise config default
         trade_risk = trade_signal.llm_risk_usd if trade_signal.llm_risk_usd > 0 \
             else self._cfg.risk_per_trade_usd
+        trade_type = getattr(trade_signal, "trade_type", "swing")
         guard_decision = self._portfolio_guard.check_trade(
             symbol=symbol,
             direction=direction,
             risk_usd=trade_risk,
             notional_usd=tier_cap,
+            trade_type=trade_type,
         )
         if not guard_decision.allowed:
             log.info("[%s] Portfolio Guard BLOCKED: %s",
@@ -773,6 +792,7 @@ class OdinBot:
             entry_price=current_price,
             stop_loss=sl,
             confidence=trade_signal.risk_multiplier,
+            trade_type=trade_type,
             macro_multiplier=1.0,
             current_exposure=self._order_mgr.get_total_exposure(),
             conviction_score=trade_signal.conviction_score,
@@ -810,9 +830,9 @@ class OdinBot:
             rr = self._cfg.target_rr
 
         log.info(
-            "[%s] TRADE: %s $%.2f | SL=$%.2f (%s, %.1f%%) TP=$%.2f (R:R %.1f) "
+            "[%s] TRADE: %s %s $%.2f | SL=$%.2f (%s, %.1f%%) TP=$%.2f (R:R %.1f) "
             "| risk=$%.0f notional=$%.0f lev=%dx conv=%.0f/100 | LLM Brain",
-            symbol, direction, current_price, sl, size.sl_source,
+            symbol, direction, trade_type.upper(), current_price, sl, size.sl_source,
             size.sl_distance_pct, tp1, rr,
             size.risk_usd, size.notional_usd, size.leverage,
             trade_signal.conviction_score,
@@ -1070,11 +1090,21 @@ class OdinBot:
                     zone = strong_zones[0]
                     log.info(
                         "[ZONE-ALERT] %s @ $%.2f near %s %s zone "
-                        "(strength=%.0f, level=$%.2f, dist=%.2f%%)",
+                        "(strength=%.0f, level=$%.2f, dist=%.2f%%) → auto-trigger",
                         symbol, price, zone.direction, zone.zone_type,
                         zone.strength, zone.price_level,
                         abs(price - zone.price_level) / price * 100,
                     )
+                    # Auto-trigger scalp analysis for high-strength zone hits
+                    if (
+                        zone.strength >= 75
+                        and self._order_mgr.get_open_positions_count()
+                        < self._cfg.max_open_positions
+                    ):
+                        asyncio.create_task(
+                            self._analyze_and_trade(symbol),
+                            name=f"zone_scalp_{symbol}",
+                        )
             except Exception:
                 pass
 
@@ -1355,7 +1385,7 @@ class OdinBot:
 
             status = {
                 "agent": "odin",
-                "version": "6.0.0",
+                "version": "8.0.0",
                 "mode": "paper" if self._cfg.dry_run else "live",
                 "running": self._running,
                 "uptime_hours": round((time.time() - self._start_time) / 3600, 2)

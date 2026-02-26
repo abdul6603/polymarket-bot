@@ -72,21 +72,23 @@ class OrderManager:
         # Active paper positions (persisted for restart recovery)
         self._paper_positions: dict[str, dict] = {}
         self._paper_positions_file = data_dir / "odin_paper_positions.json"
-        if dry_run:
-            self._load_paper_positions()
 
         # Active live positions (tracked locally for restart recovery + close detection)
         self._live_positions: dict[str, dict] = {}
         self._live_positions_file = data_dir / "odin_live_positions.json"
-        if not dry_run:
-            self._load_live_positions()
 
         # Pending limit orders (paper + live)
         self._pending_orders: dict[str, dict] = {}
 
-        # Exit management
+        # Exit management (must be set before loading positions)
         self._exit_mgr = exit_manager or ExitManager()
         self._exit_states: dict[str, PositionExitState] = {}
+
+        # Load persisted positions (after exit_mgr is set)
+        if dry_run:
+            self._load_paper_positions()
+        else:
+            self._load_live_positions()
 
     def execute_signal(
         self,
@@ -151,6 +153,7 @@ class OrderManager:
             "entry_reason": signal.entry_reason,
             "smc_patterns": signal.smc_patterns,
             "atr": getattr(signal, "atr", 0),
+            "trade_type": getattr(signal, "trade_type", "swing"),
             "signal_timestamp": time.time(),
         }
 
@@ -504,6 +507,7 @@ class OrderManager:
                     "entry_reason": signal.entry_reason,
                     "conviction_score": getattr(signal, "conviction_score", 0),
                     "macro_regime": signal.macro_regime,
+                    "trade_type": getattr(signal, "trade_type", "swing"),
                 }
                 self._save_live_positions()
 

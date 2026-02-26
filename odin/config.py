@@ -165,6 +165,12 @@ class OdinConfig:
     exit_regime_chop_mult: float = 0.7     # Tighter trailing in chop
     exit_regime_trend_mult: float = 1.5    # Wider trailing in strong trends
 
+    # ── Scalp/Swing Dual Mode (V8) ──
+    scalp_max_hold_min: int = int(os.getenv("ODIN_SCALP_MAX_HOLD_MIN", "20"))
+    scalp_cycle_seconds: int = int(os.getenv("ODIN_SCALP_CYCLE_SECONDS", "30"))
+    scalp_max_positions: int = int(os.getenv("ODIN_SCALP_MAX_POSITIONS", "2"))
+    swing_max_positions: int = int(os.getenv("ODIN_SWING_MAX_POSITIONS", "3"))
+
     def __post_init__(self) -> None:
         # Ensure data dir exists
         self.data_dir.mkdir(parents=True, exist_ok=True)
