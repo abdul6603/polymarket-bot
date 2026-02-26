@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import time
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone, timedelta
@@ -60,11 +61,12 @@ class HawkTracker:
 
     @property
     def total_exposure(self) -> float:
-        return sum(p.get("size_usd", 0) for p in self._positions)
+        return sum(p.get("size_usd", 0) for p in self._positions
+                   if p.get("filled", True))
 
     @property
     def count(self) -> int:
-        return len(self._positions)
+        return sum(1 for p in self._positions if p.get("filled", True))
 
     def has_position_for_market(self, condition_id: str, question: str = "") -> bool:
         """Check by condition_id + question similarity (blocks near-duplicate bets)."""
@@ -89,21 +91,25 @@ class HawkTracker:
 
     def record_trade(self, opp: TradeOpportunity, order_id: str,
                      order_placed_at: float = 0.0,
-                     market_price_at_entry: float = 0.0) -> None:
+                     market_price_at_entry: float = 0.0,
+                     filled: bool = True) -> None:
         """Append trade to JSONL and track in memory.
 
         V8: Accepts order_placed_at and market_price_at_entry for fill tracking.
         V8: Checks BOTH in-memory positions AND full JSONL history for duplicates.
+        V10: filled=False for live orders until fill confirmed by check_fills().
         """
         if self.has_position_for_market(opp.market.condition_id, opp.market.question):
             log.warning("Duplicate trade blocked: already have position for %s", opp.market.condition_id[:12])
             return
 
-        # V8: Also check full JSONL history — prevents dupes even after restarts
+        # V8: Also check full JSONL history — but only UNRESOLVED trades
+        # Fix 7: Resolved trades must not block re-entry into a market
         all_trades = self._load_all_trades()
         for t in all_trades:
-            if t.get("condition_id") == opp.market.condition_id:
-                log.warning("Duplicate trade blocked (JSONL history): %s already exists", opp.market.condition_id[:12])
+            if (t.get("condition_id") == opp.market.condition_id
+                    and not t.get("resolved")):
+                log.warning("Duplicate trade blocked (JSONL history): %s already exists (unresolved)", opp.market.condition_id[:12])
                 return
         rec = {
             "trade_id": f"hawk_{opp.market.condition_id[:8]}_{int(time.time())}",
@@ -141,6 +147,9 @@ class HawkTracker:
             "time_str": datetime.now(ET).strftime("%Y-%m-%d %I:%M%p"),
             # Brain tracking
             "decision_id": "",
+            # Fill tracking
+            "filled": filled,
+            "original_size_usd": opp.position_size_usd,
             # Resolution fields
             "resolved": False,
             "outcome": "",
@@ -188,6 +197,16 @@ class HawkTracker:
             if (now - v) < 1800
         }
         log.info("Cooldown set for %s (30 min)", condition_id[:12])
+
+    def mark_filled(self, order_id: str) -> None:
+        """Mark an order as filled (confirmed by CLOB API)."""
+        for p in self._positions:
+            if p.get("order_id") == order_id:
+                p["filled"] = True
+                self._update_trade_field(
+                    p.get("condition_id", ""), "filled", True)
+                log.info("Marked order %s as FILLED", order_id)
+                return
 
     def remove_position(self, order_id: str) -> None:
         """Remove a position by order ID."""
@@ -278,9 +297,11 @@ class HawkTracker:
                         updated = True
                     trades.append(rec)
             if updated:
-                with open(TRADES_FILE, "w") as f:
+                tmp = TRADES_FILE.with_suffix(".tmp")
+                with open(tmp, "w") as f:
                     for t in trades:
                         f.write(json.dumps(t) + "\n")
+                os.replace(tmp, TRADES_FILE)
         except Exception:
             log.exception("Failed to update trade field %s for %s", field, condition_id[:12])
 
@@ -311,6 +332,68 @@ class HawkTracker:
             except Exception:
                 log.warning("Failed to backfill end_date for %s", cid[:12])
         return updated
+
+    def sync_with_onchain(self) -> int:
+        """Reconcile internal tracker with on-chain positions.
+
+        Fix 6: Prevents tracker drift — adds missing on-chain positions,
+        removes phantom positions that don't exist on-chain.
+        Returns number of corrections made.
+        """
+        onchain_file = Path(__file__).parent.parent / "data" / "hawk_positions_onchain.json"
+        if not onchain_file.exists():
+            return 0
+
+        corrections = 0
+        try:
+            data = json.loads(onchain_file.read_text())
+            onchain_pos = data if isinstance(data, list) else data.get("positions", [])
+            onchain_cids = {p.get("condition_id", "") for p in onchain_pos if p.get("condition_id")}
+            tracker_cids = {p.get("condition_id", "") for p in self._positions}
+
+            # Remove phantom positions (in tracker but not on-chain)
+            phantoms = tracker_cids - onchain_cids
+            if phantoms:
+                before = len(self._positions)
+                self._positions = [
+                    p for p in self._positions
+                    if p.get("condition_id", "") not in phantoms
+                ]
+                removed = before - len(self._positions)
+                if removed:
+                    corrections += removed
+                    log.warning("[SYNC] Removed %d phantom positions not found on-chain: %s",
+                                removed, ", ".join(c[:12] for c in phantoms))
+
+            # Add missing on-chain positions (on-chain but not in tracker)
+            missing = onchain_cids - tracker_cids
+            for op in onchain_pos:
+                cid = op.get("condition_id", "")
+                if cid in missing and not op.get("resolved"):
+                    self._positions.append({
+                        "condition_id": cid,
+                        "question": op.get("question", op.get("title", "")),
+                        "direction": op.get("direction", "yes"),
+                        "entry_price": op.get("entry_price", 0.5),
+                        "size_usd": op.get("size_usd", op.get("value", 0)),
+                        "token_id": op.get("token_id", ""),
+                        "category": op.get("category", "unknown"),
+                        "filled": True,
+                        "original_size_usd": op.get("size_usd", op.get("value", 0)),
+                        "timestamp": time.time(),
+                        "opened_at": time.time(),
+                        "_from_onchain_sync": True,
+                    })
+                    corrections += 1
+                    log.info("[SYNC] Added missing on-chain position: %s", cid[:12])
+
+            if corrections:
+                log.info("[SYNC] Made %d corrections (tracker now has %d positions)",
+                         corrections, len(self._positions))
+        except Exception:
+            log.warning("[SYNC] On-chain sync failed (non-fatal)")
+
+        return corrections
 
     def _append_to_file(self, rec: dict) -> None:
         """Append a single trade record to the JSONL file."""

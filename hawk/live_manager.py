@@ -163,6 +163,12 @@ class LivePositionManager:
         cid = pos.get("condition_id", "")
         if cid in self._sold:
             return None  # Already sold, skip
+
+        # Fix 8: Respect min hold time before any exit (matches _evaluate() logic)
+        opened_at = pos.get("opened_at", pos.get("order_placed_at", 0))
+        if opened_at and (time.time() - opened_at) < self.cfg.live_min_hold_minutes * 60:
+            return None
+
         direction = pos.get("direction", "yes")
         entry_price = pos.get("entry_price", 0.5)
 
@@ -631,9 +637,13 @@ class LivePositionManager:
         return self._live_prices.get(cid, pos.get("entry_price", 0.5))
 
     def _can_scale_up(self, pos: dict) -> bool:
-        """Check if we can add to this position (max scale not exceeded)."""
+        """Check if we can add to this position (max scale not exceeded).
+
+        Fix 4: Uses original_size_usd (recorded at trade creation) instead of
+        current size_usd, which grows with each add and allows infinite scaling.
+        """
         current_size = pos.get("size_usd", 0)
-        original_size = pos.get("size_usd", 0)  # TODO: track original vs current
+        original_size = pos.get("original_size_usd", pos.get("size_usd", 0))
         max_total = original_size * self.cfg.live_max_scale
         return current_size < max_total
 

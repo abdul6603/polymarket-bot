@@ -45,6 +45,7 @@ class HawkExecutor:
         self.cfg = cfg
         self.client = client
         self.tracker = tracker
+        self._pending_sells: dict[str, dict] = {}  # sell_order_id -> {condition_id, placed_at, ...}
 
     def place_order(self, opp: TradeOpportunity) -> str | None:
         """Place a GTC limit buy via py_clob_client, dry-run mode support.
@@ -92,7 +93,8 @@ class HawkExecutor:
             log.info("Order placed: %s", order_id)
             self.tracker.record_trade(opp, order_id,
                                       order_placed_at=time.time(),
-                                      market_price_at_entry=raw_price)
+                                      market_price_at_entry=raw_price,
+                                      filled=False)
             _bus_trade_placed(opp, order_id)
             _notify_trade_placed(opp, self.cfg)
             return order_id
@@ -152,6 +154,16 @@ class HawkExecutor:
             sell_id = resp.get("orderID") or resp.get("id", "unknown")
             log.info("[LIVE] Sell order placed: %s @ $%.2f (%d shares) | reason: %s",
                      sell_id, sell_price, shares, reason)
+
+            # Track pending sell for fill monitoring
+            self._pending_sells[sell_id] = {
+                "condition_id": pos.get("condition_id", ""),
+                "order_id": pos.get("order_id", ""),
+                "placed_at": time.time(),
+                "sell_price": sell_price,
+                "shares": round(shares, 2),
+                "reason": reason,
+            }
 
             # Notify TG
             pnl_est = (sell_price - entry_price) * shares
@@ -219,6 +231,8 @@ class HawkExecutor:
 
         try:
             mid = self.client.get_midpoint(token_id)
+            if isinstance(mid, dict):
+                mid = mid.get("mid", pos.get("entry_price", 0.5))
             buy_price = float(mid) if mid else pos.get("entry_price", 0.5)
             size = extra_usd / buy_price if buy_price > 0 else 0
             if size <= 0:
@@ -310,9 +324,45 @@ class HawkExecutor:
                         except Exception:
                             log.warning("Cancel failed for %s — keeping in tracker to prevent ghost", pos["order_id"])
                 elif status == "matched":
+                    if not pos.get("filled"):
+                        pos["filled"] = True
+                        self.tracker.mark_filled(pos["order_id"])
+                        log.info("Order %s confirmed FILLED", pos["order_id"])
                     _record_fill_metric(pos, "filled")
             except Exception:
                 log.debug("Could not check order %s", pos.get("order_id", "?"))
+
+        # Fix 2: Monitor pending sell orders
+        for sell_id in list(self._pending_sells):
+            sell_info = self._pending_sells[sell_id]
+            try:
+                order = self.client.get_order(sell_id)
+                sell_status = order.get("status", "").lower()
+                if sell_status == "matched":
+                    log.info("[SELL] Confirmed fill: %s | %s",
+                             sell_id, sell_info.get("condition_id", "")[:12])
+                    del self._pending_sells[sell_id]
+                elif sell_status in ("canceled", "expired"):
+                    log.warning("[SELL] Order %s is %s — sell failed", sell_id, sell_status)
+                    del self._pending_sells[sell_id]
+                elif sell_status == "live":
+                    age_min = (now - sell_info["placed_at"]) / 60
+                    if age_min >= 30:
+                        log.warning("[SELL] Stale sell %s (%.0fmin) — re-pricing aggressively",
+                                    sell_id, age_min)
+                        try:
+                            self.client.cancel(sell_id)
+                        except Exception:
+                            pass
+                        _notify_tg(
+                            f"\u26a0\ufe0f <b>Hawk STALE SELL</b>\n"
+                            f"Sell order {sell_id[:12]} unfilled after {age_min:.0f}min\n"
+                            f"Condition: {sell_info.get('condition_id', '')[:12]}\n"
+                            f"Reason: {sell_info.get('reason', '')}"
+                        )
+                        del self._pending_sells[sell_id]
+            except Exception:
+                log.debug("[SELL] Could not check sell order %s", sell_id)
 
     def cancel_all(self) -> None:
         """Cleanup on shutdown."""

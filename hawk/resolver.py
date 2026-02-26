@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import tempfile
 import time
 from pathlib import Path
 
@@ -74,7 +75,8 @@ def resolve_paper_trades() -> dict:
         trades = clean_trades
         _rewrite_trades(trades)  # Persist dedup immediately
 
-    unresolved = [t for t in trades if not t.get("resolved")]
+    # Fix 1: Skip unfilled orders — they haven't been confirmed on CLOB yet
+    unresolved = [t for t in trades if not t.get("resolved") and t.get("filled", True)]
     if not unresolved:
         return {"checked": 0, "resolved": 0, "wins": 0, "losses": 0, "skipped": 0, "total_pnl": 0.0, "resolved_trades": []}
 
@@ -226,11 +228,16 @@ def resolve_paper_trades() -> dict:
 
 
 def _rewrite_trades(trades: list[dict]) -> None:
-    """Rewrite the full trades JSONL file."""
+    """Rewrite the full trades JSONL file using atomic write (temp + rename).
+
+    Fix 9: Prevents JSONL corruption if process crashes during write.
+    """
     try:
-        with open(TRADES_FILE, "w") as f:
+        tmp = TRADES_FILE.with_suffix(".tmp")
+        with open(tmp, "w") as f:
             for t in trades:
                 f.write(json.dumps(t) + "\n")
+        os.replace(tmp, TRADES_FILE)
         log.info("Rewrote trades file with %d resolved updates", sum(1 for t in trades if t.get("resolved")))
     except Exception:
         log.exception("Failed to rewrite trades file")

@@ -282,6 +282,7 @@ class HawkBot:
         self.kalshi_executor: KalshiExecutor | None = None
         self.live_manager = None  # V9: Live in-play position manager
         self.cycle = 0
+        self._consecutive_failures = 0  # Fix 10: Track consecutive cycle failures
 
         # Agent Brain — learning memory
         self._brain = None
@@ -441,6 +442,12 @@ class HawkBot:
             self.cycle += 1
             log.info("=== Hawk V8 Cycle %d ===", self.cycle)
 
+            # Fix 5: Initialize vars before try block so exception path can reference them
+            _regime = None
+            _regime_mult = 1.0
+            _scan_stats = {}
+            target_markets = []
+
             try:
                 self._check_mode_toggle()
 
@@ -456,6 +463,14 @@ class HawkBot:
                     log.info("[ATLAS] %d actionable insights for Hawk:", len(atlas_insights))
                     for insight in atlas_insights[:3]:
                         log.info("[ATLAS] → %s", insight[:150])
+
+                # Fix 6: Sync tracker with on-chain positions at start of each cycle
+                try:
+                    corrections = self.tracker.sync_with_onchain()
+                    if corrections:
+                        log.info("[SYNC] Reconciled %d position(s) with on-chain data", corrections)
+                except Exception:
+                    log.debug("[SYNC] On-chain sync failed (non-fatal)")
 
                 self.risk.daily_reset()
 
@@ -1316,6 +1331,9 @@ class HawkBot:
                 _save_status(self.tracker, self.risk, running=True, cycle=self.cycle,
                              scan_stats=_scan_stats, regime=_regime_info)
 
+                # Fix 10: Reset consecutive failure counter on successful cycle
+                self._consecutive_failures = 0
+
                 # Signal cycle status for dashboard badge
                 try:
                     _sc_file = Path(__file__).parent.parent / "data" / "hawk_signal_cycle.json"
@@ -1332,6 +1350,19 @@ class HawkBot:
 
             except Exception:
                 log.exception("Hawk V8 cycle %d failed", self.cycle)
+                self._consecutive_failures += 1
+                if self._consecutive_failures >= 5:
+                    log.critical("Hawk has failed %d consecutive cycles — sending alert",
+                                 self._consecutive_failures)
+                    try:
+                        from hawk.executor import _notify_tg
+                        _notify_tg(
+                            f"\U0001f6a8 <b>HAWK CRITICAL: {self._consecutive_failures} consecutive cycle failures</b>\n"
+                            f"Cycle {self.cycle} — Hawk may be broken.\n"
+                            f"Check /tmp/hawk.log for details."
+                        )
+                    except Exception:
+                        pass
                 _save_status(self.tracker, self.risk, running=True, cycle=self.cycle)
 
             # V6: Dynamic cycle timing
