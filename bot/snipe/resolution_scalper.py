@@ -163,7 +163,7 @@ class ResolutionScalper:
                     window_id=t.get("window_id", ""),
                     asset=t.get("asset", ""),
                     direction=t.get("direction", ""),
-                    token_id="",
+                    token_id=t.get("token_id", ""),
                     entry_price=t.get("market_price", 0),
                     shares=t.get("shares", 0),
                     size_usd=t.get("bet_size", 0),
@@ -540,6 +540,37 @@ class ResolutionScalper:
             log.error("[RES-SCALP] Order error: %s", str(e)[:200])
             return None
 
+    def _get_polymarket_resolution(self, condition_id: str, our_token_id: str) -> bool | None:
+        """Query Polymarket CLOB API for official market resolution.
+        Returns True (won), False (lost), or None (not yet resolved).
+        """
+        try:
+            resp = _requests.get(
+                f"{self._cfg.clob_host}/markets/{condition_id}",
+                timeout=10,
+            )
+            if resp.status_code != 200:
+                return None
+            data = resp.json()
+            tokens = data.get("tokens", [])
+            official_winner_tid = ""
+            for tk in tokens:
+                if tk.get("winner"):
+                    official_winner_tid = tk.get("token_id", "")
+                    break
+            if not data.get("closed") and not official_winner_tid:
+                return None  # Not resolved yet
+            if official_winner_tid:
+                return our_token_id == official_winner_tid
+            # Closed but no winner — fallback: check token prices
+            for tk in tokens:
+                if tk.get("token_id") == our_token_id:
+                    return float(tk.get("price", 0)) > 0.95
+            return None
+        except Exception as e:
+            log.warning("[RES-SCALP] Polymarket resolution query failed: %s", str(e)[:200])
+            return None
+
     def _check_resolutions(self, live_prices: dict[str, float]) -> None:
         """Check if any active positions have resolved."""
         now = time.time()
@@ -547,35 +578,48 @@ class ResolutionScalper:
             if pos.resolved:
                 continue
 
-            # Wait 30s past window end for resolution
-            if now < pos.window_end_ts + 30:
-                continue
-
-            # Resolve
-            current_price = live_prices.get(pos.asset)
-            if not current_price:
-                continue
-
-            # Find the window to get strike price
-            window = self._windows.get_window(pos.window_id)
-            if window:
-                strike = window.open_price
-            elif pos.strike_price > 0:
-                strike = pos.strike_price
-            else:
-                log.warning("[RES-SCALP] Window %s expired, no strike — can't resolve", pos.window_id)
-                strike = None
-
-            if strike is not None:
-                # Resolve based on final Binance price vs strike
-                # (same logic for paper and live — CLOB orderbook is
-                # unreliable for expired 5-minute markets)
+            if self._dry_run:
+                # Paper: wait 30s, use Binance price vs strike
+                if now < pos.window_end_ts + 30:
+                    continue
+                current_price = live_prices.get(pos.asset)
+                if not current_price:
+                    continue
+                window = self._windows.get_window(pos.window_id)
+                strike = window.open_price if window else pos.strike_price
+                if not strike:
+                    continue
                 price_above = current_price > strike
                 won = (pos.direction == "up" and price_above) or \
                       (pos.direction == "down" and not price_above)
             else:
-                won = False
+                # LIVE: wait 60s, query Polymarket official resolution
+                if now < pos.window_end_ts + 60:
+                    continue
+                # 5-min timeout: give up after 5 min past window end
+                if now > pos.window_end_ts + 300:
+                    log.warning("[RES-SCALP] %s %s: no Polymarket resolution after 5min, marking unresolved",
+                                pos.asset.upper(), pos.direction.upper())
+                    pos.resolved = True
+                    pos.won = False
+                    pos.pnl = -pos.size_usd  # Assume loss (conservative)
+                    self._stats["losses"] += 1
+                    self._stats["pnl"] += pos.pnl
+                    self._update_trade_log(pos)
+                    continue
+                result = self._get_polymarket_resolution(pos.window_id, pos.token_id)
+                if result is None:
+                    continue  # Not resolved yet, retry next tick
+                won = result
+                # Debug: log Binance vs Polymarket
+                binance_price = live_prices.get(pos.asset, 0)
+                window = self._windows.get_window(pos.window_id)
+                strike = window.open_price if window else pos.strike_price
+                binance_dir = "UP" if binance_price > strike else "DOWN" if strike else "?"
+                log.info("[RES-SCALP] Polymarket: %s | Binance says %s (%.2f vs %.2f strike)",
+                         "WON" if won else "LOST", binance_dir, binance_price, strike or 0)
 
+            # Common resolution path
             pos.resolved = True
             pos.won = won
             if won:
@@ -623,17 +667,6 @@ class ResolutionScalper:
                 },
             )
 
-    def _check_clob_resolution(self, pos: ScalpPosition) -> bool:
-        """Check CLOB API for token resolution status."""
-        try:
-            book = clob_book.get_orderbook(pos.token_id)
-            if book:
-                mid = (book.get("best_bid", 0) + book.get("best_ask", 0)) / 2
-                return mid > 0.90  # Resolved to YES if trading near $1
-        except Exception:
-            pass
-        return False
-
     def _log_trade(self, opp: ScalpOpportunity, pos: ScalpPosition) -> None:
         """Append trade to JSONL log."""
         entry = {
@@ -652,6 +685,7 @@ class ResolutionScalper:
             "remaining_s": round(opp.remaining_s, 1),
             "bet_size": round(opp.kelly_bet, 2),
             "shares": pos.shares,
+            "token_id": opp.token_id,
             "order_id": pos.order_id,
             "dry_run": self._dry_run,
         }
