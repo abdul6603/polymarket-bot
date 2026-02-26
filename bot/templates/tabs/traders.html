@@ -459,8 +459,8 @@ function tradersRenderPositions(data) {
     rows += '<td style="padding:6px 10px;" class="' + dirClass + '">' + dirArrow + ' ' + p.direction + '</td>';
     rows += '<td style="padding:6px 10px;"><span class="traders-cat-badge">' + p.category + '</span></td>';
     rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);">$' + p.size_usd.toFixed(2) + '</td>';
-    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);">' + p.entry_price.toFixed(4) + '</td>';
-    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);">' + p.current_price.toFixed(4) + '</td>';
+    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);">' + (p.entry_price != null ? p.entry_price.toFixed(4) : '--') + '</td>';
+    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);">' + (p.current_price != null ? p.current_price.toFixed(4) : '--') + '</td>';
     rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);color:' + pnlColor + ';">' + pnlSign + '$' + Math.abs(p.pnl).toFixed(2) + '</td>';
     rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);color:' + pnlColor + ';">' + pctSign + p.pnl_pct.toFixed(1) + '%</td>';
     rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);font-size:0.66rem;">' + levText + '</td>';
@@ -643,34 +643,37 @@ function tradersRenderPaper(data) {
 
   var rows = '';
   for (var i = 0; i < paperPos.length; i++) {
+    try {
     var p = paperPos[i];
     var agentColor = AGENT_COLORS[p.agent] || 'var(--text-muted)';
     var badge = AGENT_BADGES[p.agent] || '??';
     var dirArrow = p.direction_class === 'long' ? '&#9650;' : '&#9660;';
     var dirClass = p.direction_class === 'long' ? 'dir-long' : 'dir-short';
-    var pnlColor = p.pnl >= 0 ? 'var(--success)' : 'var(--error)';
-    var pnlSign = p.pnl >= 0 ? '+' : '';
+    var pnlVal = p.pnl || 0;
+    var pnlColor = pnlVal >= 0 ? 'var(--success)' : 'var(--error)';
+    var pnlSign = pnlVal >= 0 ? '+' : '';
     var levText = p.leverage ? p.leverage + 'x' : '--';
     var tpslText = '--';
-    if (p.tp_distance_pct !== null && p.sl_distance_pct !== null) {
+    if (p.tp_distance_pct != null && p.sl_distance_pct != null) {
       tpslText = '<span style="color:var(--success);font-size:0.64rem;">TP ' + (p.tp_distance_pct >= 0 ? '+' : '') + p.tp_distance_pct.toFixed(1) + '%</span>'
         + ' / <span style="color:var(--error);font-size:0.64rem;">SL ' + (p.sl_distance_pct >= 0 ? '+' : '') + p.sl_distance_pct.toFixed(1) + '%</span>';
     }
-    var convText = p.conviction !== null && p.conviction !== undefined ? p.conviction : '--';
-    var marketShort = p.market.length > 40 ? p.market.substring(0, 40) + '...' : p.market;
+    var convText = p.conviction != null ? p.conviction : '--';
+    var marketShort = (p.market || '').length > 40 ? p.market.substring(0, 40) + '...' : (p.market || '');
 
     rows += '<tr class="tr-agent-' + p.agent + '">';
     rows += '<td style="padding:6px 10px;"><span class="traders-badge" style="background:' + agentColor + ';">' + badge + '</span></td>';
     rows += '<td style="padding:6px 10px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + tradersEsc(p.market) + '">' + tradersEsc(marketShort) + '</td>';
     rows += '<td style="padding:6px 10px;" class="' + dirClass + '">' + dirArrow + ' ' + p.direction + '</td>';
     rows += '<td style="padding:6px 10px;"><span class="traders-cat-badge">' + p.category + '</span></td>';
-    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);">$' + p.size_usd.toFixed(2) + '</td>';
-    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);">' + p.entry_price.toFixed(4) + '</td>';
-    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);color:' + pnlColor + ';">' + pnlSign + '$' + Math.abs(p.pnl).toFixed(2) + '</td>';
+    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);">$' + (p.size_usd != null ? p.size_usd.toFixed(2) : '0.00') + '</td>';
+    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);">' + (p.entry_price != null ? p.entry_price.toFixed(4) : '--') + '</td>';
+    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);color:' + pnlColor + ';">' + pnlSign + '$' + (p.pnl != null ? Math.abs(p.pnl).toFixed(2) : '0.00') + '</td>';
     rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);font-size:0.66rem;">' + levText + '</td>';
     rows += '<td style="padding:6px 10px;font-family:var(--font-mono);font-size:0.64rem;">' + tpslText + '</td>';
     rows += '<td style="padding:6px 10px;font-size:0.66rem;">' + convText + '</td>';
     rows += '</tr>';
+    } catch(e) { console.error('[Paper] render error for position', i, e); }
   }
 
   if (paperPos.length === 0) {
