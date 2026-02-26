@@ -178,16 +178,15 @@ def _check_hawk_performance() -> list[dict]:
     wins = sum(1 for t in resolved if (t.get("profit", 0) or t.get("pnl", 0) or 0) > 0)
     win_rate = wins / len(resolved)
 
-    if win_rate < WIN_RATE_FLOOR:        alerts.append(_make_alert(
     if win_rate < WIN_RATE_FLOOR:
         alerts.append(_make_alert(
             "warning", "hawk", "win_rate_drop",
             f"Hawk win rate {win_rate:.1%} over last {len(resolved)} trades (floor: {WIN_RATE_FLOOR:.0%})",
-            win_rate=round(win_rate, 3),            sample_size=len(resolved),
+            win_rate=round(win_rate, 3),
+            sample_size=len(resolved),
         ))
 
     return alerts
-
 
 def _check_agent_down() -> list[dict]:
     """Check if any agent's status file is older than STALE_MINUTES."""

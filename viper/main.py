@@ -138,10 +138,10 @@ def run_single_scan(cfg: ViperConfig, cycle: int = 0) -> dict:
         seen_ids = set()
         for item in scan_polymarket_activity(cfg.clob_host):
             if item.id not in seen_ids:
-                seen_ids.add(item.id)                intel_items.append(item)
-        for item in scan_reddit_predictions():
-            if item.id not in seen_ids:
                 seen_ids.add(item.id)
+                intel_items.append(item)
+        for item in scan_reddit_predictions():
+            if item.id not in seen_ids:                seen_ids.add(item.id)
                 intel_items.append(item)
         log.info("Tavily skipped this cycle (cycle %d, runs every 3rd)", cycle)
 
