@@ -635,6 +635,26 @@ class ResolutionScalper:
             # Write resolution back to JSONL so dashboard API can read it
             self._update_trade_log(pos)
 
+            # Cross-write to central trades.jsonl for learning systems
+            try:
+                from bot.trade_logger import append_normalized_trade
+                append_normalized_trade(
+                    asset=pos.asset,
+                    direction=pos.direction,
+                    won=pos.won,
+                    pnl=pos.pnl,
+                    size_usd=pos.size_usd,
+                    entry_price=pos.entry_price,
+                    probability=pos.probability_at_entry,
+                    edge=pos.edge_at_entry,
+                    timeframe="5m",
+                    engine="resolution_scalper",
+                    trade_id=f"res-{pos.order_id}",
+                    dry_run=self._dry_run,
+                )
+            except Exception:
+                pass
+
             outcome = "WIN" if won else "LOSS"
             log.info(
                 "[RES-SCALP] %s %s %s: $%.2f -> $%.2f (P=%.0f%% edge=%.0f%%)",

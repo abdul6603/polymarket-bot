@@ -1085,6 +1085,24 @@ class SnipeEngine:
             self._consecutive_wins = 0
         self._stats["pnl"] += result.get("pnl_usd", 0)
 
+        # Cross-write to central trades.jsonl for learning systems
+        try:
+            from bot.trade_logger import append_normalized_trade
+            append_normalized_trade(
+                asset=result.get("asset", slot.asset),
+                direction=result.get("direction", ""),
+                won=result.get("won", False),
+                pnl=result.get("pnl_usd", 0),
+                size_usd=result.get("total_size_usd", 0),
+                entry_price=result.get("avg_entry", 0),
+                timeframe="5m",
+                engine="snipe",
+                trade_id=f"snipe-{result.get('market_id', '')[:12]}_{int(result.get('timestamp', 0))}",
+                dry_run=getattr(self, '_dry_run', True),
+            )
+        except Exception:
+            pass
+
         # Timing Assistant
         try:
             last_rec = self._timing_assistant.get_last_recommendation()

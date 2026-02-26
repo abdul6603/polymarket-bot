@@ -907,6 +907,58 @@ class SignalEngine:
                     if n not in disabled
                 )[:500]
                 _regime_str = f"{regime.label} (FnG={regime.fng_value})" if regime else "unknown"
+
+                # Build historical context lines for the LLM
+                _hist_lines = []
+                _majority = "up" if up_count >= down_count else "down"
+                try:
+                    _gate = get_pattern_gate().evaluate(asset, timeframe, _majority)
+                    if _gate.sample_size >= 10:
+                        _hist_lines.append(
+                            f"Historical WR: {_gate.win_rate:.0%} over {_gate.sample_size} trades "
+                            f"({asset}:{timeframe}:{_majority})"
+                        )
+                except Exception:
+                    pass
+                try:
+                    from bot.weight_learner import _load_accuracy
+                    _acc = _load_accuracy()
+                    _top = sorted(
+                        ((k, v) for k, v in _acc.items() if v.get("total_votes", 0) >= 20),
+                        key=lambda x: x[1].get("accuracy", 0), reverse=True,
+                    )[:5]
+                    if _top:
+                        _parts = [f"{k}={v['accuracy']:.0%}({v['total_votes']})" for k, v in _top]
+                        _hist_lines.append(f"Top accuracies: {', '.join(_parts)}")
+                except Exception:
+                    pass
+                try:
+                    _tf = Path(__file__).resolve().parent.parent / "data" / "trades.jsonl"
+                    if _tf.exists():
+                        _recent = _tf.read_text().strip().split("\n")[-10:]
+                        _streak = 0
+                        _streak_type = None
+                        for _ln in reversed(_recent):
+                            try:
+                                _r = __import__("json").loads(_ln)
+                                _w = _r.get("won")
+                                if _streak_type is None:
+                                    _streak_type = _w
+                                    _streak = 1
+                                elif _w == _streak_type:
+                                    _streak += 1
+                                else:
+                                    break
+                            except Exception:
+                                break
+                        if _streak >= 2:
+                            _hist_lines.append(
+                                f"Recent: {_streak} consecutive {'wins' if _streak_type else 'losses'}"
+                            )
+                except Exception:
+                    pass
+                _hist_ctx = ("\n" + "\n".join(_hist_lines)) if _hist_lines else ""
+
                 _result = _shared_llm_call(
                     system=(
                         "You analyze conflicting trading indicator signals. "
@@ -917,6 +969,7 @@ class SignalEngine:
                         f"Asset: {asset.upper()}/{timeframe}, Regime: {_regime_str}, Score: {score:.3f}\n"
                         f"Votes UP: {up_count}, DOWN: {down_count} (margin: {vote_margin})\n"
                         f"Indicators: {_vote_summary}"
+                        f"{_hist_ctx}"
                     ),
                     agent="garves",
                     task_type="analysis",
