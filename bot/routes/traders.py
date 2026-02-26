@@ -752,10 +752,12 @@ def _read_garves_engine_trades() -> list[dict]:
             "edge": None,
         })
 
-    # --- Resolution Scalper trades ---
+    # --- Resolution Scalper trades (skip penny entries < $0.20) ---
     for t in _read_jsonl(data_dir / "resolution_trades.jsonl"):
         if t.get("won") is None:
             continue
+        if _safe_float(t.get("market_price", 1.0)) < 0.20:
+            continue  # Penny trade — would never fill live
         pnl = _safe_float(t.get("pnl", 0))
         asset = (t.get("asset") or "unknown").upper()[:3]
         direction = (t.get("direction") or "up").upper()

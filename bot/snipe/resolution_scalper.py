@@ -41,6 +41,7 @@ TRADES_FILE = Path(__file__).parent.parent.parent / "data" / "resolution_trades.
 MIN_PROBABILITY = 0.75      # Don't trade below 75%
 MIN_EDGE = 0.08             # 8% minimum edge
 MAX_MARKET_PRICE = 0.88     # Never buy above $0.88
+MIN_MARKET_PRICE = 0.20     # Never buy below $0.20 (no liquidity, fake PnL)
 MIN_TIME_REMAINING = 15     # Need time to fill
 MAX_TIME_REMAINING = 90     # Too much uncertainty beyond 90s
 MAX_SPREAD = 0.08           # Skip illiquid books
@@ -268,6 +269,15 @@ class ResolutionScalper:
             log.debug(
                 "[RES-SCALP] %s %s SKIP spread=%.2f>%.2f | P=%.0f%% T-%ds",
                 asset.upper(), est.direction.upper(), spread, MAX_SPREAD,
+                est.probability * 100, int(remaining),
+            )
+            return None
+
+        # Gate: price too low (no real liquidity, inflated PnL)
+        if best_ask < MIN_MARKET_PRICE:
+            log.info(
+                "[RES-SCALP] %s %s SKIP ask=$%.3f<$%.2f (penny) | P=%.0f%% T-%ds",
+                asset.upper(), est.direction.upper(), best_ask, MIN_MARKET_PRICE,
                 est.probability * 100, int(remaining),
             )
             return None

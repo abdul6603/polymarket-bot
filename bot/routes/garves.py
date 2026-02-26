@@ -1382,6 +1382,8 @@ def api_garves_positions():
                 totals["realized_pnl"] += row["result_pnl"]
 
         # ── 3. Include Resolution Scalper trades from JSONL ──
+        # Skip penny trades (entry < $0.20) — no real liquidity, inflated PnL
+        _RS_MIN_REALISTIC_PRICE = 0.20
         res_file = DATA_DIR / "resolution_trades.jsonl"
         if res_file.exists():
             try:
@@ -1391,6 +1393,9 @@ def api_garves_positions():
                     rt = json.loads(line)
                     if rt.get("won") is None:
                         continue  # Not resolved yet
+                    entry_price = rt.get("market_price", 1.0)
+                    if entry_price < _RS_MIN_REALISTIC_PRICE:
+                        continue  # Penny trade — would never fill live
                     won = bool(rt["won"])
                     pnl_val = rt.get("pnl", 0)
                     asset_name = (rt.get("asset", "unknown")).upper()
@@ -2047,9 +2052,9 @@ def engine_comparison():
     def _avg(total, count):
         return round(total / count, 2) if count > 0 else 0.0
 
-    # --- Resolution Scalper trades ---
+    # --- Resolution Scalper trades (skip penny entries < $0.20) ---
     res_trades = _read_jsonl(data_dir / "resolution_trades.jsonl")
-    res_resolved = [t for t in res_trades if t.get("won") is not None or t.get("resolved")]
+    res_resolved = [t for t in res_trades if (t.get("won") is not None or t.get("resolved")) and t.get("market_price", 1.0) >= 0.20]
     res_wins = sum(1 for t in res_resolved if t.get("won"))
     res_losses = len(res_resolved) - res_wins
     res_pnl = sum(t.get("pnl", 0) for t in res_resolved)
