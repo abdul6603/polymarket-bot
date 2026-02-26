@@ -1361,6 +1361,7 @@ def api_garves_positions():
                 "size": 0, "cost": round(m["spent"], 2),
                 "won": won,
                 "result_pnl": round(pnl, 2),
+                "engine": "snipe",
             }
             # Skip markets still open (no redeem yet and position still active)
             if m["redeemed"] == 0:
@@ -1403,6 +1404,7 @@ def api_garves_positions():
                         "won": won,
                         "result_pnl": round(pnl_val, 2),
                         "engine": "res_scalp",
+                        "timestamp": rt.get("timestamp", 0),
                     }
                     history.append(row)
                     if won:
@@ -1414,8 +1416,79 @@ def api_garves_positions():
             except Exception:
                 pass
 
-        # Sort: wins first (by pnl desc), then losses
-        history.sort(key=lambda x: (-int(x["won"]), -x.get("result_pnl", 0)))
+        # ── 4. Include Snipe Engine trades from JSONL ──
+        snipe_file = data_dir / "snipe_trades.jsonl"
+        if snipe_file.exists():
+            try:
+                for line in snipe_file.read_text().strip().split("\n"):
+                    if not line.strip():
+                        continue
+                    st = json.loads(line)
+                    if st.get("won") is None:
+                        continue
+                    won = bool(st["won"])
+                    pnl_val = st.get("pnl_usd", 0)
+                    asset_name = (st.get("asset", "unknown")).upper()
+                    direction = (st.get("direction", "?")).upper()
+                    row = {
+                        "market": f"Snipe: {asset_name} {direction} 5m",
+                        "asset": asset_name,
+                        "outcome": direction,
+                        "size": 0,
+                        "cost": round(st.get("total_size_usd", 0), 2),
+                        "won": won,
+                        "result_pnl": round(pnl_val, 2),
+                        "engine": "snipe",
+                        "timestamp": st.get("timestamp", 0),
+                    }
+                    history.append(row)
+                    if won:
+                        totals["record_wins"] += 1
+                        totals["realized_pnl"] += pnl_val
+                    else:
+                        totals["record_losses"] += 1
+                        totals["realized_pnl"] += pnl_val
+            except Exception:
+                pass
+
+        # ── 5. Include main trades.jsonl (taker/other engines) ──
+        main_trades_file = data_dir / "trades.jsonl"
+        if main_trades_file.exists():
+            try:
+                for line in main_trades_file.read_text().strip().split("\n"):
+                    if not line.strip():
+                        continue
+                    mt = json.loads(line)
+                    if mt.get("won") is None:
+                        continue
+                    won = bool(mt["won"])
+                    pnl_val = mt.get("pnl", mt.get("pnl_usd", 0))
+                    asset_name = (mt.get("asset", "unknown")).upper()
+                    direction = (mt.get("direction", mt.get("outcome", "?"))).upper()
+                    eng = mt.get("engine", "taker")
+                    row = {
+                        "market": f"{eng.title()}: {asset_name} {direction}",
+                        "asset": asset_name,
+                        "outcome": direction,
+                        "size": 0,
+                        "cost": round(mt.get("total_size_usd", mt.get("cost", mt.get("stake", 0))), 2),
+                        "won": won,
+                        "result_pnl": round(pnl_val, 2),
+                        "engine": eng,
+                        "timestamp": mt.get("timestamp", 0),
+                    }
+                    history.append(row)
+                    if won:
+                        totals["record_wins"] += 1
+                        totals["realized_pnl"] += pnl_val
+                    else:
+                        totals["record_losses"] += 1
+                        totals["realized_pnl"] += pnl_val
+            except Exception:
+                pass
+
+        # Sort by timestamp (newest first), fallback to wins-first for on-chain trades
+        history.sort(key=lambda x: (-x.get("timestamp", 0), -int(x["won"]), -x.get("result_pnl", 0)))
 
         for k in ("open_margin", "open_value", "open_pnl", "realized_pnl"):
             totals[k] = round(totals[k], 2)
