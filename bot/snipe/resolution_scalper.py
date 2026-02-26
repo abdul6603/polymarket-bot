@@ -91,6 +91,7 @@ class ScalpPosition:
     order_id: str
     entry_time: float = field(default_factory=time.time)
     window_end_ts: float = 0.0
+    strike_price: float = 0.0   # Window open price for resolution
     resolved: bool = False
     won: bool = False
     pnl: float = 0.0
@@ -172,6 +173,7 @@ class ResolutionScalper:
                     order_id=t.get("order_id", ""),
                     entry_time=t.get("timestamp", 0),
                     window_end_ts=t.get("timestamp", 0) + t.get("remaining_s", 88),
+                    strike_price=t.get("strike_price", 0),
                 )
                 self._positions.append(pos)
                 self._stats["trades"] += 1
@@ -467,6 +469,7 @@ class ResolutionScalper:
             z_score_at_entry=opp.z_score,
             order_id=order_id,
             window_end_ts=window_end,
+            strike_price=opp.strike_price,
             learner_id=learner_id,
         )
         self._positions.append(pos)
@@ -557,10 +560,10 @@ class ResolutionScalper:
             window = self._windows.get_window(pos.window_id)
             if window:
                 strike = window.open_price
+            elif pos.strike_price > 0:
+                strike = pos.strike_price
             else:
-                # Window may have been cleaned up — use position data
-                # Can't determine winner without strike, mark as loss
-                log.warning("[RES-SCALP] Window %s expired, can't resolve", pos.window_id)
+                log.warning("[RES-SCALP] Window %s expired, no strike — can't resolve", pos.window_id)
                 strike = None
 
             if strike is not None:
@@ -639,6 +642,7 @@ class ResolutionScalper:
             "asset": opp.asset,
             "direction": opp.direction,
             "window_id": opp.window_id,
+            "strike_price": opp.strike_price,
             "probability": round(opp.probability, 4),
             "market_price": opp.market_price,
             "edge": round(opp.edge, 4),
