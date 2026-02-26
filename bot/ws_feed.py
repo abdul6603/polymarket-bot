@@ -39,8 +39,8 @@ log = logging.getLogger(__name__)
 # ── Proactive reconnect ─────────────────────────────────────
 # CDN kills connections at ~60-120s. threading.Timer closes at 48s.
 
-LIFETIME_TARGET_S = 48     # threading.Timer fires at 48 seconds
-LIFETIME_HARD_CAP_S = 58   # Asyncio fallback if timer somehow fails
+LIFETIME_TARGET_S = 42     # threading.Timer fires at 42 seconds (more margin before CDN kill)
+LIFETIME_HARD_CAP_S = 52   # Asyncio fallback if timer somehow fails
 
 # ── Reconnection tuning (aggressive with jitter) ─────────────
 
@@ -52,7 +52,7 @@ JITTER_MAX_S = 2.0         # Random 0-2s added to each delay
 
 WS_PING_INTERVAL_S = 15    # Protocol ping every 15 seconds
 WS_PING_TIMEOUT_S = 30     # Close if no pong within 30 seconds
-WS_OPEN_TIMEOUT_S = 60     # Wait up to 60s for connection open (VPN latency)
+WS_OPEN_TIMEOUT_S = 90     # Wait up to 90s for connection open (VPN latency)
 APP_KEEPALIVE_S = 15.0     # Send JSON ping if silent for 15 seconds
 
 # ── Stale-data detection ─────────────────────────────────────
