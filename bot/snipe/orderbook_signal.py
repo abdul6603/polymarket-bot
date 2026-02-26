@@ -29,7 +29,7 @@ STREAM_NAMES = [
     "solusdt@depth20@100ms",
     "xrpusdt@depth20@100ms",
 ]
-WS_URL = "wss://stream.binance.us:9443/stream?streams=" + "/".join(STREAM_NAMES)
+WS_URL = "wss://stream.binance.com:9443/stream?streams=" + "/".join(STREAM_NAMES)
 
 # Map stream symbol prefix to asset name
 SYMBOL_TO_ASSET = {
