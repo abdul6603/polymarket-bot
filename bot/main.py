@@ -277,13 +277,12 @@ class TradingBot:
             log.debug("Balance sync failed: %s", str(e)[:100])
 
     def _setup_logging(self) -> None:
-        # Clear existing handlers to prevent duplicate log lines
-        for handler in logging.root.handlers[:]:
-            logging.root.removeHandler(handler)
+        # force=True removes ALL existing handlers and sets exactly one
         logging.basicConfig(
             level=getattr(logging, self.cfg.log_level.upper(), logging.INFO),
-            format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+            format="%(asctime)s.%(msecs)03d [%(levelname)s] %(name)s: %(message)s",
             datefmt="%H:%M:%S",
+            force=True,
         )
 
     async def run(self) -> None:
