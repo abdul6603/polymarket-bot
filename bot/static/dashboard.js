@@ -834,12 +834,39 @@ async function loadExternalData() {
   }
 }
 
+// Feature name mapping: raw ML feature names → trader-friendly labels
+var _perfFeatureLabels = {
+  'hour_sin': 'Hour of Day', 'hour_cos': 'Hour Cycle', 'hour': 'Trading Hour',
+  'prob': 'Price Probability', 'probability': 'Price Probability',
+  'volume_spike': 'Volume Spike', 'volume': 'Volume',
+  'order_flow': 'Order Flow', 'order_imbalance': 'Order Imbalance',
+  'spread': 'Bid-Ask Spread', 'rsi': 'RSI Momentum', 'rsi_14': 'RSI (14)',
+  'macd': 'MACD Signal', 'macd_signal': 'MACD Signal',
+  'bb_position': 'Bollinger Position', 'bb_width': 'Volatility Width',
+  'ema_cross': 'EMA Crossover', 'sma_cross': 'SMA Crossover',
+  'atr': 'Volatility (ATR)', 'atr_14': 'Volatility (ATR)',
+  'sentiment_score': 'Market Sentiment', 'sentiment': 'Market Sentiment',
+  'fng': 'Fear & Greed', 'fear_greed': 'Fear & Greed',
+  'funding_rate': 'Funding Rate', 'oi_change': 'Open Interest Change',
+  'liquidations': 'Liquidation Pressure', 'whale_activity': 'Whale Activity',
+  'edge': 'Edge Score', 'conviction': 'Conviction Score',
+  'consensus_count': 'Signal Consensus', 'indicator_agreement': 'Indicator Agreement',
+  'price_momentum': 'Price Momentum', 'trend_strength': 'Trend Strength',
+  'volatility': 'Volatility', 'market_cap_rank': 'Market Cap Rank',
+  'day_of_week': 'Day of Week', 'is_weekend': 'Weekend Effect',
+  'time_since_last': 'Trade Spacing', 'drawdown': 'Drawdown Level'
+};
+function perfFeatureLabel(raw) {
+  if (_perfFeatureLabels[raw]) return _perfFeatureLabels[raw];
+  return raw.replace(/_/g, ' ').replace(/\b\w/g, function(c){ return c.toUpperCase(); });
+}
+
 async function loadMLWinPredictor() {
   try {
     var resp = await fetch('/api/garves/ml-status');
     var d = await resp.json();
+    // Advanced panel: status, f1, samples
     var statusEl = document.getElementById('ml-status');
-    var accEl = document.getElementById('ml-accuracy');
     var samplesEl = document.getElementById('ml-samples');
     var f1El = document.getElementById('ml-f1');
     if (statusEl) {
@@ -847,26 +874,52 @@ async function loadMLWinPredictor() {
       statusEl.style.color = d.model_loaded ? 'var(--success)' : 'var(--warning)';
     }
     var m = d.metrics || {};
-    if (accEl) accEl.textContent = m.cv_accuracy ? (m.cv_accuracy * 100).toFixed(1) + '%' : '--';
     if (samplesEl) samplesEl.textContent = m.num_samples || '--';
     if (f1El) f1El.textContent = m.f1 ? m.f1.toFixed(3) : '--';
+    // Gauge: CV Accuracy
+    var gaugePct = document.getElementById('perf-gauge-pct');
+    var gaugeArc = document.getElementById('perf-gauge-arc');
+    var gaugeSamples = document.getElementById('perf-gauge-samples');
+    if (gaugePct && m.cv_accuracy) {
+      var acc = (m.cv_accuracy * 100).toFixed(1);
+      gaugePct.textContent = acc + '%';
+      gaugePct.style.color = m.cv_accuracy >= 0.60 ? 'var(--success)' : m.cv_accuracy >= 0.50 ? 'var(--text)' : 'var(--error)';
+      if (gaugeArc) {
+        var arcLen = Math.min(m.cv_accuracy, 1) * 157;
+        gaugeArc.setAttribute('stroke-dasharray', arcLen + ' 157');
+        gaugeArc.setAttribute('stroke', m.cv_accuracy >= 0.60 ? 'var(--success)' : m.cv_accuracy >= 0.50 ? 'var(--agent-garves)' : 'var(--error)');
+      }
+    }
+    if (gaugeSamples) gaugeSamples.textContent = (m.num_samples || 0) + ' samples trained';
+    // Feature importances — beautiful horizontal bars with trader-friendly labels
     var barsEl = document.getElementById('ml-feature-bars');
     if (barsEl && m.top_features && m.top_features.length > 0) {
       var maxImp = m.top_features[0][1];
       var html = '';
-      for (var i = 0; i < Math.min(m.top_features.length, 15); i++) {
+      for (var i = 0; i < Math.min(m.top_features.length, 8); i++) {
         var f = m.top_features[i];
         var pct = (f[1] / maxImp * 100).toFixed(0);
-        html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">';
-        html += '<span style="min-width:180px;text-align:right;color:var(--text-muted);">' + f[0] + '</span>';
-        html += '<div style="flex:1;background:rgba(255,255,255,0.05);border-radius:3px;height:14px;overflow:hidden;">';
-        html += '<div style="width:' + pct + '%;height:100%;background:var(--agent-garves);border-radius:3px;"></div></div>';
-        html += '<span style="min-width:50px;color:var(--text-muted);">' + (f[1] * 100).toFixed(1) + '%</span>';
+        var label = perfFeatureLabel(f[0]);
+        html += '<div class="perf-feat-row">';
+        html += '<span class="perf-feat-name" title="' + f[0] + '">' + label + '</span>';
+        html += '<div class="perf-feat-bar-bg"><div class="perf-feat-bar" style="width:' + pct + '%;"></div></div>';
+        html += '<span class="perf-feat-pct">' + (f[1] * 100).toFixed(1) + '%</span>';
         html += '</div>';
       }
       barsEl.innerHTML = html;
+    } else if (barsEl) {
+      barsEl.innerHTML = '<span class="text-muted" style="font-size:0.72rem;">Awaiting model training</span>';
     }
   } catch(e) { console.error('ML status:', e); }
+}
+
+function togglePerfAdvanced() {
+  var panel = document.getElementById('perf-advanced-panel');
+  var arrow = document.getElementById('perf-collapse-arrow');
+  if (!panel) return;
+  var open = panel.style.display !== 'none';
+  panel.style.display = open ? 'none' : 'block';
+  if (arrow) arrow.classList.toggle('open', !open);
 }
 
 async function loadConvictionData() {
@@ -874,7 +927,6 @@ async function loadConvictionData() {
     var resp = await fetch('/api/garves/conviction');
     var data = await resp.json();
     if (data.error) return;
-    // Indicator weights table only (asset signals removed — were always "no signal")
     var weights = data.indicator_weights || {};
     var wKeys = Object.keys(weights);
     if (wKeys.length > 0) {
@@ -884,16 +936,27 @@ async function loadConvictionData() {
         var wk = wKeys[j];
         var w = weights[wk];
         var statusBadge = '';
-        if (w.disabled) statusBadge = '<span class="badge badge-error" style="font-size:0.6rem;">DISABLED</span>';
-        else if (w.dynamic_weight > w.base_weight) statusBadge = '<span class="badge badge-success" style="font-size:0.6rem;">BOOSTED</span>';
-        else if (w.dynamic_weight < w.base_weight) statusBadge = '<span class="badge badge-warning" style="font-size:0.6rem;">REDUCED</span>';
-        else statusBadge = '<span class="badge badge-info" style="font-size:0.6rem;">BASE</span>';
+        if (w.disabled) statusBadge = '<span class="badge badge-error" style="font-size:0.6rem;">Disabled</span>';
+        else if (w.dynamic_weight > w.base_weight) statusBadge = '<span class="badge badge-success" style="font-size:0.6rem;">Boosted</span>';
+        else if (w.dynamic_weight < w.base_weight) statusBadge = '<span class="badge badge-warning" style="font-size:0.6rem;">Reduced</span>';
+        else statusBadge = '<span class="badge badge-info" style="font-size:0.6rem;">Base</span>';
         var accText = w.accuracy !== null ? w.accuracy + '%' : '--';
-        var accColor = w.accuracy !== null ? (w.accuracy >= 55 ? 'var(--success)' : w.accuracy < 45 ? 'var(--error)' : 'var(--text-primary)') : 'var(--text-secondary)';
-        wHtml += '<tr><td style="font-weight:600;">' + esc(wk) + '</td><td>' + w.base_weight + '</td><td>' + w.dynamic_weight + '</td>';
-        wHtml += '<td style="color:' + accColor + ';">' + accText + '</td><td>' + (w.total_votes || 0) + '</td><td>' + statusBadge + '</td></tr>';
+        var accColor = w.accuracy !== null ? (w.accuracy >= 55 ? 'var(--success)' : w.accuracy < 45 ? 'var(--error)' : 'var(--text)') : 'var(--text-secondary)';
+        // Dynamic weight bar visualization
+        var maxDyn = 3;
+        var barPct = Math.min((w.dynamic_weight || 0) / maxDyn * 100, 100).toFixed(0);
+        var barColor = w.disabled ? 'var(--error)' : w.dynamic_weight > w.base_weight ? 'var(--success)' : 'var(--agent-garves)';
+        wHtml += '<tr><td style="font-weight:600;">' + esc(wk) + '</td>';
+        wHtml += '<td style="font-family:var(--font-mono);">' + w.base_weight + '</td>';
+        wHtml += '<td><div style="display:flex;align-items:center;gap:6px;"><span style="font-family:var(--font-mono);min-width:24px;">' + w.dynamic_weight + '</span>';
+        wHtml += '<div style="flex:1;height:6px;background:rgba(255,255,255,0.04);border-radius:3px;overflow:hidden;min-width:40px;"><div style="width:' + barPct + '%;height:100%;background:' + barColor + ';border-radius:3px;"></div></div></div></td>';
+        wHtml += '<td style="color:' + accColor + ';font-weight:600;">' + accText + '</td>';
+        wHtml += '<td style="font-family:var(--font-mono);">' + (w.total_votes || 0) + '</td>';
+        wHtml += '<td>' + statusBadge + '</td></tr>';
       }
       document.getElementById('conv-weights-tbody').innerHTML = wHtml;
+    } else {
+      document.getElementById('conv-weights-tbody').innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:20px;">Awaiting indicator data</td></tr>';
     }
   } catch (e) {}
 }
@@ -916,41 +979,47 @@ async function loadMLStatus() {
   try {
     var r = await fetch('/api/ml/status');
     var d = await r.json();
-    // LSTM
-    var lstmEl = document.getElementById('ml-lstm-status');
-    if (lstmEl && d.lstm) {
+    // LSTM — compact row: accuracy + badge
+    var lstmAcc = document.getElementById('ml-lstm-status');
+    var lstmBadge = document.getElementById('ml-lstm-badge');
+    if (d.lstm) {
       var assets = Object.keys(d.lstm);
       if (assets.length > 0) {
-        var html = assets.map(function(a) {
-          var m = d.lstm[a];
-          var accPct = (m.val_acc * 100).toFixed(1);
-          var color = m.val_acc >= 0.55 ? 'var(--success)' : 'var(--text-muted)';
-          return '<div style="display:flex;justify-content:space-between;"><span>' + a.charAt(0).toUpperCase() + a.slice(1) + '</span><span style="color:' + color + '">' + accPct + '% acc</span><span style="color:var(--text-muted)">' + m.candles + ' candles</span></div>';
-        }).join('');
-        lstmEl.innerHTML = html;
+        var bestAcc = 0;
+        assets.forEach(function(a){ if (d.lstm[a].val_acc > bestAcc) bestAcc = d.lstm[a].val_acc; });
+        if (lstmAcc) lstmAcc.textContent = (bestAcc * 100).toFixed(1) + '%';
+        if (lstmBadge) { lstmBadge.textContent = 'Active'; lstmBadge.className = 'perf-model-badge online'; }
       } else {
-        lstmEl.innerHTML = '<span style="color:var(--text-muted)">No models trained yet</span>';
+        if (lstmAcc) lstmAcc.textContent = '--';
+        if (lstmBadge) { lstmBadge.textContent = 'No Data'; lstmBadge.className = 'perf-model-badge offline'; }
       }
     }
     // XGBoost
-    var xgbEl = document.getElementById('ml-xgb-status');
-    if (xgbEl && d.xgboost) {
+    var xgbAcc = document.getElementById('ml-xgb-status');
+    var xgbBadge = document.getElementById('ml-xgb-badge');
+    if (d.xgboost) {
       if (d.xgboost.status === 'trained') {
-        xgbEl.innerHTML = '<div style="color:var(--success)">Active</div><div>Accuracy: ' + (d.xgboost.accuracy * 100).toFixed(1) + '%</div><div>F1: ' + (d.xgboost.f1 * 100).toFixed(1) + '%</div><div>' + d.xgboost.num_samples + ' trades</div>';
+        if (xgbAcc) xgbAcc.textContent = (d.xgboost.accuracy * 100).toFixed(1) + '%';
+        if (xgbBadge) { xgbBadge.textContent = 'Active'; xgbBadge.className = 'perf-model-badge online'; }
       } else {
         var resolved = d.xgboost.resolved_trades || d.xgboost.num_samples || 0;
-        xgbEl.innerHTML = '<div style="color:var(--warning)">Waiting for data</div><div>' + resolved + '/30 resolved trades</div>';
+        if (xgbAcc) xgbAcc.textContent = resolved + '/30';
+        if (xgbBadge) { xgbBadge.textContent = 'Training'; xgbBadge.className = 'perf-model-badge waiting'; }
       }
     }
     // FinBERT
-    var fbEl = document.getElementById('ml-finbert-status');
-    if (fbEl && d.finbert) {
+    var fbAcc = document.getElementById('ml-finbert-status');
+    var fbBadge = document.getElementById('ml-finbert-badge');
+    if (d.finbert) {
       if (d.finbert.status === 'loaded') {
-        fbEl.innerHTML = '<div style="color:var(--success)">Active</div><div>ProsusAI/finbert</div><div>MPS accelerated</div>';
+        if (fbAcc) fbAcc.textContent = 'MPS';
+        if (fbBadge) { fbBadge.textContent = 'Active'; fbBadge.className = 'perf-model-badge online'; }
       } else if (d.finbert.status === 'not_loaded') {
-        fbEl.innerHTML = '<div style="color:var(--text-muted)">Idle (loads on first use)</div>';
+        if (fbAcc) fbAcc.textContent = 'Idle';
+        if (fbBadge) { fbBadge.textContent = 'Standby'; fbBadge.className = 'perf-model-badge offline'; }
       } else {
-        fbEl.innerHTML = '<div style="color:var(--text-muted)">' + d.finbert.status + '</div>';
+        if (fbAcc) fbAcc.textContent = '--';
+        if (fbBadge) { fbBadge.textContent = d.finbert.status === 'failed' ? 'Error' : 'Offline'; fbBadge.className = 'perf-model-badge offline'; }
       }
     }
   } catch (e) {}
@@ -962,90 +1031,125 @@ async function loadJournal() {
     var d = await r.json();
     if (d.error) return;
 
-    // Streak card
-    var streakEl = document.getElementById('journal-streak');
-    if (streakEl && d.streak_status) {
+    // Hero card: streak
+    var streakVal = document.getElementById('perf-streak-val');
+    var streakIcon = document.getElementById('perf-streak-icon');
+    var streakDetail = document.getElementById('perf-streak-detail');
+    if (d.streak_status) {
       var s = d.streak_status;
-      var color = s.current > 0 ? 'var(--success)' : s.current < 0 ? 'var(--danger)' : 'var(--text-muted)';
-      var icon = s.current > 0 ? '+' : '';
-      streakEl.innerHTML = '<span style="color:' + color + '">' + icon + s.current + '</span>';
+      var streakNum = Math.abs(s.current);
+      if (streakVal) {
+        if (s.current > 0) {
+          streakVal.textContent = '+' + s.current;
+          streakVal.style.color = 'var(--success)';
+        } else if (s.current < 0) {
+          streakVal.textContent = s.current;
+          streakVal.style.color = 'var(--error)';
+        } else {
+          streakVal.textContent = '0';
+          streakVal.style.color = 'var(--text-muted)';
+        }
+      }
+      if (streakIcon) {
+        if (s.current >= 3) {
+          streakIcon.innerHTML = '&#128293;';
+          streakIcon.style.background = 'rgba(0,255,136,0.12)';
+          streakIcon.style.color = 'var(--success)';
+          streakIcon.classList.add('fire');
+        } else if (s.current <= -3) {
+          streakIcon.innerHTML = '&#10052;';
+          streakIcon.style.background = 'rgba(255,68,68,0.12)';
+          streakIcon.style.color = 'var(--error)';
+          streakIcon.classList.remove('fire');
+        } else {
+          streakIcon.textContent = s.current > 0 ? 'W' : s.current < 0 ? 'L' : '-';
+          streakIcon.style.background = s.current > 0 ? 'rgba(0,255,136,0.1)' : s.current < 0 ? 'rgba(255,68,68,0.1)' : 'rgba(128,128,128,0.1)';
+          streakIcon.style.color = s.current > 0 ? 'var(--success)' : s.current < 0 ? 'var(--error)' : 'var(--text-muted)';
+          streakIcon.classList.remove('fire');
+        }
+      }
+      if (streakDetail) {
+        var streakType = s.current > 0 ? 'winning' : s.current < 0 ? 'losing' : 'even';
+        streakDetail.textContent = streakNum + ' ' + streakType + (streakNum !== 1 ? '' : '') + ' in a row';
+      }
     }
 
-    // Best combo card
-    var bestEl = document.getElementById('journal-best-combo');
-    if (bestEl && d.best_combos && d.best_combos.length > 0) {
-      var b = d.best_combos[0];
-      bestEl.innerHTML = '<span style="color:var(--success);font-size:0.72rem;">' + b.combo + '</span><br><span style="font-size:0.64rem;">' + b.win_rate + '% (' + b.total + ')</span>';
-    }
-
-    // Worst combo card
-    var worstEl = document.getElementById('journal-worst-combo');
-    if (worstEl && d.worst_combos && d.worst_combos.length > 0) {
-      var w = d.worst_combos[0];
-      worstEl.innerHTML = '<span style="color:var(--danger);font-size:0.72rem;">' + w.combo + '</span><br><span style="font-size:0.64rem;">' + w.win_rate + '% (' + w.total + ')</span>';
-    }
-
-    // Hour heatmap
+    // Hour heatmap — beautiful cells
     var hmEl = document.getElementById('journal-hour-heatmap');
     if (hmEl && d.hour_heatmap) {
       var cells = '';
       for (var h = 0; h < 24; h++) {
         var hd = d.hour_heatmap[String(h)] || {wins:0,losses:0,total:0,win_rate:0};
-        var bg = 'rgba(128,128,128,0.2)';
+        var bg = 'rgba(128,128,128,0.12)';
         if (hd.total >= 3) {
-          if (hd.win_rate >= 65) bg = 'rgba(0,255,136,0.35)';
+          if (hd.win_rate >= 65) bg = 'rgba(0,255,136,0.4)';
           else if (hd.win_rate >= 50) bg = 'rgba(0,255,136,0.15)';
-          else bg = 'rgba(255,68,68,0.25)';
+          else bg = 'rgba(255,68,68,0.3)';
         }
-        cells += '<div style="background:' + bg + ';padding:3px 2px;border-radius:3px;text-align:center;" title="' + h + ':00 ET — ' + hd.wins + 'W/' + hd.losses + 'L (' + hd.win_rate + '%)">' + h + '<br><span style="font-size:0.56rem;">' + (hd.total > 0 ? hd.win_rate + '%' : '-') + '</span></div>';
+        var ampm = h === 0 ? '12a' : h < 12 ? h + 'a' : h === 12 ? '12p' : (h-12) + 'p';
+        cells += '<div class="perf-hm-cell" style="background:' + bg + ';" title="' + h + ':00 ET — ' + hd.wins + 'W / ' + hd.losses + 'L (' + hd.win_rate + '% WR)">';
+        cells += '<div class="perf-hm-hour">' + ampm + '</div>';
+        cells += '<div class="perf-hm-wr">' + (hd.total > 0 ? hd.win_rate + '%' : '--') + '</div>';
+        cells += '</div>';
       }
       hmEl.innerHTML = cells;
     }
 
-    // Best combos table
+    // Best combos — only show card if data exists
+    var bestCard = document.getElementById('perf-best-combos-card');
     var bestTbody = document.getElementById('journal-best-tbody');
-    if (bestTbody && d.best_combos) {
-      if (d.best_combos.length === 0) {
-        bestTbody.innerHTML = '<tr><td colspan="3" class="text-muted" style="text-align:center;">No data</td></tr>';
-      } else {
+    if (d.best_combos && d.best_combos.length > 0) {
+      if (bestCard) bestCard.style.display = '';
+      if (bestTbody) {
         bestTbody.innerHTML = d.best_combos.map(function(c) {
-          return '<tr><td>' + c.combo + '</td><td>' + c.wins + '-' + c.losses + '</td><td style="color:var(--success)">' + c.win_rate + '%</td></tr>';
+          return '<tr><td>' + c.combo + '</td><td>' + c.wins + '-' + c.losses + '</td><td style="color:var(--success);font-weight:600;">' + c.win_rate + '%</td></tr>';
         }).join('');
       }
+    } else {
+      if (bestCard) bestCard.style.display = 'none';
     }
 
-    // Worst combos table
+    // Worst combos — only show card if data exists
+    var worstCard = document.getElementById('perf-worst-combos-card');
     var worstTbody = document.getElementById('journal-worst-tbody');
-    if (worstTbody && d.worst_combos) {
-      if (d.worst_combos.length === 0) {
-        worstTbody.innerHTML = '<tr><td colspan="3" class="text-muted" style="text-align:center;">No data</td></tr>';
-      } else {
+    if (d.worst_combos && d.worst_combos.length > 0) {
+      if (worstCard) worstCard.style.display = '';
+      if (worstTbody) {
         worstTbody.innerHTML = d.worst_combos.map(function(c) {
-          return '<tr><td>' + c.combo + '</td><td>' + c.wins + '-' + c.losses + '</td><td style="color:var(--danger)">' + c.win_rate + '%</td></tr>';
+          return '<tr><td>' + c.combo + '</td><td>' + c.wins + '-' + c.losses + '</td><td style="color:var(--error);font-weight:600;">' + c.win_rate + '%</td></tr>';
         }).join('');
       }
+    } else {
+      if (worstCard) worstCard.style.display = 'none';
     }
 
-    // Mistake patterns
+    // Mistake patterns — only show if patterns exist
+    var mistakesCard = document.getElementById('perf-mistakes-card');
     var mistakesEl = document.getElementById('journal-mistakes');
-    if (mistakesEl && d.mistake_patterns) {
-      if (d.mistake_patterns.length === 0) {
-        mistakesEl.innerHTML = '<span style="color:var(--success)">No mistake patterns detected</span>';
-      } else {
+    if (d.mistake_patterns && d.mistake_patterns.length > 0) {
+      if (mistakesCard) mistakesCard.style.display = '';
+      if (mistakesEl) {
         mistakesEl.innerHTML = d.mistake_patterns.map(function(m) {
-          return '<div style="margin-bottom:4px;"><span style="color:var(--warning);">' + m.pattern + '</span> <span class="text-muted">(' + m.count + 'x)</span> — ' + m.description + '</div>';
+          return '<div style="margin-bottom:5px;display:flex;align-items:baseline;gap:8px;">' +
+            '<span style="color:var(--warning);font-weight:600;white-space:nowrap;">' + m.pattern + '</span>' +
+            '<span class="text-muted" style="font-size:0.66rem;">(' + m.count + 'x)</span>' +
+            '<span style="color:var(--text-secondary);">' + m.description + '</span></div>';
         }).join('');
       }
+    } else {
+      if (mistakesCard) mistakesCard.style.display = 'none';
     }
 
     // Recommendations
     var recsEl = document.getElementById('journal-recommendations');
     if (recsEl && d.recommendations) {
       if (d.recommendations.length === 0) {
-        recsEl.innerHTML = '<span class="text-muted">No recommendations at this time</span>';
+        recsEl.innerHTML = '<span class="text-muted">System analyzing — recommendations will appear after sufficient trades</span>';
       } else {
         recsEl.innerHTML = d.recommendations.map(function(r) {
-          return '<div style="margin-bottom:3px;">&#8226; ' + r + '</div>';
+          return '<div style="margin-bottom:4px;display:flex;align-items:baseline;gap:6px;">' +
+            '<span style="color:var(--agent-garves);font-size:0.78rem;">&#9654;</span>' +
+            '<span>' + r + '</span></div>';
         }).join('');
       }
     }
@@ -12745,56 +12849,95 @@ function toggleBinancePopover() {
 
 // ── Garves V2 Intelligence ──────────────────────────────────────
 function loadGarvesV2Metrics() {
-  // Fetch V2 metrics
+  // Fetch V2 metrics → populate hero cards + advanced raw metrics
   fetch('/api/garves/v2-metrics').then(function(r){return r.json();}).then(function(d) {
-    // Kill switch badge
+    // Kill switch banner
+    var banner = document.getElementById('perf-kill-banner');
     var badge = document.getElementById('v2-kill-switch-badge');
     var reasonEl = document.getElementById('v2-kill-switch-reason');
-    if (badge) {
+    if (banner) {
       if (d.kill_switch_active) {
-        badge.textContent = 'KILLED';
-        badge.style.background = 'var(--danger)';
-        badge.style.color = '#fff';
-        if (reasonEl) { reasonEl.textContent = d.kill_switch_reason || ''; reasonEl.style.display = 'block'; }
+        banner.style.display = 'flex';
+        if (badge) { badge.textContent = 'KILLED'; badge.style.background = 'var(--error)'; }
+        if (reasonEl) reasonEl.textContent = d.kill_switch_reason || '';
       } else {
-        badge.textContent = 'SAFE';
-        badge.style.background = 'var(--success)';
-        badge.style.color = '#000';
-        if (reasonEl) reasonEl.style.display = 'none';
+        banner.style.display = 'none';
       }
     }
 
-    // Core metrics
     var cm = d.core_metrics || {};
-    var wr20El = document.getElementById('v2-wr-20');
-    var wr50El = document.getElementById('v2-wr-50');
-    var evEl = document.getElementById('v2-ev-capture');
-    var ddEl = document.getElementById('v2-drawdown');
-    if (wr20El) { wr20El.textContent = cm.wr_20 != null ? (cm.wr_20 * 100).toFixed(0) + '%' : '--'; wr20El.style.color = cm.wr_20 != null && cm.wr_20 >= 0.55 ? 'var(--success)' : cm.wr_20 != null && cm.wr_20 < 0.50 ? 'var(--danger)' : 'var(--text)'; }
-    if (wr50El) { wr50El.textContent = cm.wr_50 != null ? (cm.wr_50 * 100).toFixed(0) + '%' : '--'; wr50El.style.color = cm.wr_50 != null && cm.wr_50 >= 0.55 ? 'var(--success)' : cm.wr_50 != null && cm.wr_50 < 0.52 ? 'var(--danger)' : 'var(--text)'; }
-    if (evEl) { evEl.textContent = cm.ev_capture_pct != null ? (cm.ev_capture_pct * 100).toFixed(0) + '%' : '--'; evEl.style.color = cm.ev_capture_pct > 0.5 ? 'var(--success)' : cm.ev_capture_pct < 0.3 ? 'var(--danger)' : 'var(--text)'; }
-    if (ddEl) { ddEl.textContent = cm.current_drawdown_pct != null ? cm.current_drawdown_pct.toFixed(0) + '%' : '--'; ddEl.style.color = cm.current_drawdown_pct > 20 ? 'var(--danger)' : cm.current_drawdown_pct > 10 ? 'var(--warning)' : 'var(--text)'; }
 
-    // Hero card population from V2 metrics
+    // ── HERO CARD 1: Win Rate ──
+    var wrEl = document.getElementById('perf-win-rate');
+    var wrTrend = document.getElementById('perf-wr-trend');
+    var wrDetail = document.getElementById('perf-wr-detail');
+    if (wrEl) {
+      var wr20 = cm.wr_20 != null ? (cm.wr_20 * 100).toFixed(0) : null;
+      var wr50 = cm.wr_50 != null ? (cm.wr_50 * 100).toFixed(0) : null;
+      wrEl.textContent = wr20 != null ? wr20 + '%' : '--';
+      wrEl.style.color = cm.wr_20 != null && cm.wr_20 >= 0.55 ? 'var(--success)' : cm.wr_20 != null && cm.wr_20 < 0.50 ? 'var(--error)' : 'var(--text)';
+      if (wrTrend && cm.wr_20 != null && cm.wr_50 != null) {
+        if (cm.wr_20 > cm.wr_50 + 0.02) { wrTrend.textContent = '\u2191'; wrTrend.className = 'perf-trend up'; }
+        else if (cm.wr_20 < cm.wr_50 - 0.02) { wrTrend.textContent = '\u2193'; wrTrend.className = 'perf-trend down'; }
+        else { wrTrend.textContent = '\u2192'; wrTrend.className = 'perf-trend'; }
+      }
+      if (wrDetail) wrDetail.textContent = 'L20: ' + (wr20 || '--') + '% | L50: ' + (wr50 || '--') + '%';
+    }
+
+    // ── HERO CARD 2: Edge Captured ──
+    var evEl = document.getElementById('perf-ev-capture');
+    var evDetail = document.getElementById('perf-ev-detail');
+    if (evEl) {
+      evEl.textContent = cm.ev_capture_pct != null ? (cm.ev_capture_pct * 100).toFixed(0) + '%' : '--';
+      evEl.style.color = cm.ev_capture_pct > 0.5 ? 'var(--success)' : cm.ev_capture_pct != null && cm.ev_capture_pct < 0.3 ? 'var(--error)' : 'var(--text)';
+    }
+    if (evDetail) {
+      var ev20 = cm.ev_capture_20 != null ? (cm.ev_capture_20 * 100).toFixed(0) + '%' : '--';
+      var slip = cm.avg_slippage_pct != null ? (cm.avg_slippage_pct * 100).toFixed(1) + '%' : '--';
+      evDetail.textContent = 'EV L20: ' + ev20 + ' | Slippage: ' + slip;
+    }
+
+    // ── HERO CARD 3: Drawdown ──
+    var ddEl = document.getElementById('perf-drawdown');
+    var ddDetail = document.getElementById('perf-dd-detail');
+    if (ddEl) {
+      ddEl.textContent = cm.current_drawdown_pct != null ? cm.current_drawdown_pct.toFixed(1) + '%' : '--';
+      ddEl.style.color = cm.current_drawdown_pct > 20 ? 'var(--error)' : cm.current_drawdown_pct > 10 ? 'var(--warning)' : 'var(--text)';
+    }
+    if (ddDetail) {
+      var timing = cm.avg_timing_impact != null ? (cm.avg_timing_impact * 100).toFixed(2) + '%' : '--';
+      ddDetail.textContent = 'Timing cost: ' + timing;
+    }
+
+    // ── Overview hero cards (existing IDs on other tabs) ──
     var heroWr20 = document.getElementById('garves-hero-wr-20');
     var heroWr50 = document.getElementById('garves-hero-wr-50');
     var heroWr100 = document.getElementById('garves-hero-wr-100');
     var heroEv = document.getElementById('garves-hero-ev-capture');
     var heroEdge = document.getElementById('garves-hero-edge-quality');
-    if (heroWr20 && cm.wr_20 != null) { heroWr20.textContent = (cm.wr_20 * 100).toFixed(0) + '%'; heroWr20.style.color = cm.wr_20 >= 0.55 ? 'var(--success)' : cm.wr_20 < 0.50 ? 'var(--danger)' : 'var(--text)'; }
+    if (heroWr20 && cm.wr_20 != null) { heroWr20.textContent = (cm.wr_20 * 100).toFixed(0) + '%'; heroWr20.style.color = cm.wr_20 >= 0.55 ? 'var(--success)' : cm.wr_20 < 0.50 ? 'var(--error)' : 'var(--text)'; }
     if (heroWr50 && cm.wr_50 != null) heroWr50.textContent = (cm.wr_50 * 100).toFixed(0) + '%';
     if (heroWr100 && cm.wr_100 != null) heroWr100.textContent = (cm.wr_100 * 100).toFixed(0) + '%';
-    if (heroEv && cm.ev_capture_pct != null) { heroEv.textContent = (cm.ev_capture_pct * 100).toFixed(0) + '%'; heroEv.style.color = cm.ev_capture_pct > 0.5 ? 'var(--success)' : cm.ev_capture_pct < 0.3 ? 'var(--danger)' : 'var(--text)'; }
+    if (heroEv && cm.ev_capture_pct != null) { heroEv.textContent = (cm.ev_capture_pct * 100).toFixed(0) + '%'; heroEv.style.color = cm.ev_capture_pct > 0.5 ? 'var(--success)' : cm.ev_capture_pct < 0.3 ? 'var(--error)' : 'var(--text)'; }
     if (heroEdge && cm.ev_capture_20 != null) heroEdge.textContent = (cm.ev_capture_20 * 100).toFixed(0) + '%';
 
-    // Second row: rolling EV capture + slippage + timing
+    // ── Advanced panel: raw metrics ──
+    var wr20RawEl = document.getElementById('v2-wr-20');
+    var wr50RawEl = document.getElementById('v2-wr-50');
+    var evRawEl = document.getElementById('v2-ev-capture');
+    var ddRawEl = document.getElementById('v2-drawdown');
+    if (wr20RawEl) { wr20RawEl.textContent = cm.wr_20 != null ? (cm.wr_20 * 100).toFixed(0) + '%' : '--'; wr20RawEl.style.color = cm.wr_20 != null && cm.wr_20 >= 0.55 ? 'var(--success)' : cm.wr_20 != null && cm.wr_20 < 0.50 ? 'var(--error)' : 'var(--text)'; }
+    if (wr50RawEl) { wr50RawEl.textContent = cm.wr_50 != null ? (cm.wr_50 * 100).toFixed(0) + '%' : '--'; wr50RawEl.style.color = cm.wr_50 != null && cm.wr_50 >= 0.55 ? 'var(--success)' : cm.wr_50 != null && cm.wr_50 < 0.52 ? 'var(--error)' : 'var(--text)'; }
+    if (evRawEl) { evRawEl.textContent = cm.ev_capture_pct != null ? (cm.ev_capture_pct * 100).toFixed(0) + '%' : '--'; evRawEl.style.color = cm.ev_capture_pct > 0.5 ? 'var(--success)' : cm.ev_capture_pct < 0.3 ? 'var(--error)' : 'var(--text)'; }
+    if (ddRawEl) { ddRawEl.textContent = cm.current_drawdown_pct != null ? cm.current_drawdown_pct.toFixed(1) + '%' : '--'; ddRawEl.style.color = cm.current_drawdown_pct > 20 ? 'var(--error)' : cm.current_drawdown_pct > 10 ? 'var(--warning)' : 'var(--text)'; }
+
     var ev20El = document.getElementById('v2-ev-20');
     var ev50El = document.getElementById('v2-ev-50');
     var slipEl = document.getElementById('v2-slippage');
     var timingEl = document.getElementById('v2-timing');
-    if (ev20El) { ev20El.textContent = cm.ev_capture_20 != null ? (cm.ev_capture_20 * 100).toFixed(0) + '%' : '--'; ev20El.style.color = cm.ev_capture_20 != null && cm.ev_capture_20 > 0.5 ? 'var(--success)' : cm.ev_capture_20 != null && cm.ev_capture_20 < 0.2 ? 'var(--danger)' : 'var(--text)'; }
-    if (ev50El) { ev50El.textContent = cm.ev_capture_50 != null ? (cm.ev_capture_50 * 100).toFixed(0) + '%' : '--'; ev50El.style.color = cm.ev_capture_50 != null && cm.ev_capture_50 > 0.5 ? 'var(--success)' : cm.ev_capture_50 != null && cm.ev_capture_50 < 0.2 ? 'var(--danger)' : 'var(--text)'; }
-    if (slipEl) { slipEl.textContent = cm.avg_slippage_pct != null ? (cm.avg_slippage_pct * 100).toFixed(1) + '%' : '--'; slipEl.style.color = cm.avg_slippage_pct > 0.03 ? 'var(--danger)' : 'var(--text)'; }
+    if (ev20El) { ev20El.textContent = cm.ev_capture_20 != null ? (cm.ev_capture_20 * 100).toFixed(0) + '%' : '--'; ev20El.style.color = cm.ev_capture_20 != null && cm.ev_capture_20 > 0.5 ? 'var(--success)' : cm.ev_capture_20 != null && cm.ev_capture_20 < 0.2 ? 'var(--error)' : 'var(--text)'; }
+    if (ev50El) { ev50El.textContent = cm.ev_capture_50 != null ? (cm.ev_capture_50 * 100).toFixed(0) + '%' : '--'; ev50El.style.color = cm.ev_capture_50 != null && cm.ev_capture_50 > 0.5 ? 'var(--success)' : cm.ev_capture_50 != null && cm.ev_capture_50 < 0.2 ? 'var(--error)' : 'var(--text)'; }
+    if (slipEl) { slipEl.textContent = cm.avg_slippage_pct != null ? (cm.avg_slippage_pct * 100).toFixed(1) + '%' : '--'; slipEl.style.color = cm.avg_slippage_pct > 0.03 ? 'var(--error)' : 'var(--text)'; }
     if (timingEl) { timingEl.textContent = cm.avg_timing_impact != null ? (cm.avg_timing_impact * 100).toFixed(2) + '%' : '--'; timingEl.style.color = cm.avg_timing_impact > 0.02 ? 'var(--warning)' : 'var(--text)'; }
 
     // Warnings
@@ -12802,15 +12945,15 @@ function loadGarvesV2Metrics() {
     var warningsList = document.getElementById('v2-warnings-list');
     if (warningsCard && warningsList) {
       if (d.warnings && d.warnings.length > 0) {
-        warningsCard.style.display = 'block';
-        warningsList.innerHTML = d.warnings.map(function(w){ return '<div style="margin-bottom:3px;color:var(--danger);">' + w + '</div>'; }).join('');
+        warningsCard.style.display = '';
+        warningsList.innerHTML = d.warnings.map(function(w){ return '<div style="margin-bottom:4px;color:var(--error);display:flex;align-items:baseline;gap:6px;"><span style="font-size:0.78rem;">&#9888;</span><span>' + w + '</span></div>'; }).join('');
       } else {
         warningsCard.style.display = 'none';
       }
     }
   }).catch(function(){});
 
-  // Fetch post-trade analysis
+  // Post-trade analysis
   fetch('/api/garves/post-trade-analysis').then(function(r){return r.json();}).then(function(d) {
     var feed = document.getElementById('v2-post-trade-feed');
     if (!feed) return;
@@ -12818,14 +12961,20 @@ function loadGarvesV2Metrics() {
       feed.innerHTML = '<span class="text-muted">No analyses yet</span>';
       return;
     }
-    var html = d.recent.slice(-10).reverse().map(function(a) {
-      var icon = a.mistake_type === 'none' ? '<span style="color:var(--success);">OK</span>' : '<span style="color:var(--danger);">' + a.mistake_type.toUpperCase() + '</span>';
-      return '<div style="margin-bottom:3px;">' + icon + ' ' + (a.trade_id || '').slice(0,12) + ' | EV capture: ' + ((a.ev_capture_pct || 0) * 100).toFixed(0) + '% | Exec: ' + (a.execution_quality || 'n/a') + '</div>';
+    var summary = '<div style="margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.04);color:var(--text-secondary);font-size:0.68rem;">' +
+      'Analyzed: ' + d.total + ' | Mistakes: <span style="color:' + (d.mistakes > 0 ? 'var(--error)' : 'var(--success)') + ';">' + d.mistakes + '</span> | Avg EV: ' + (d.avg_ev_capture_pct || 0).toFixed(0) + '%</div>';
+    var rows = d.recent.slice(-8).reverse().map(function(a) {
+      var ok = a.mistake_type === 'none';
+      var icon = ok ? '<span style="color:var(--success);font-weight:600;">OK</span>' : '<span style="color:var(--error);font-weight:600;">' + (a.mistake_type || '?').toUpperCase() + '</span>';
+      return '<div style="margin-bottom:3px;display:flex;gap:6px;align-items:baseline;">' + icon +
+        '<span class="text-muted">' + (a.trade_id || '').slice(0,10) + '</span>' +
+        '<span>EV ' + ((a.ev_capture_pct || 0) * 100).toFixed(0) + '%</span>' +
+        '<span class="text-muted">' + (a.execution_quality || 'n/a') + '</span></div>';
     }).join('');
-    feed.innerHTML = '<div style="margin-bottom:4px;color:var(--text-muted);">Total: ' + d.total + ' | Mistakes: ' + d.mistakes + ' | Avg EV: ' + (d.avg_ev_capture_pct || 0).toFixed(0) + '%</div>' + html;
+    feed.innerHTML = summary + rows;
   }).catch(function(){});
 
-  // Fetch auto-rules
+  // Auto-rules
   fetch('/api/garves/auto-rules').then(function(r){return r.json();}).then(function(d) {
     var el = document.getElementById('v2-auto-rules');
     if (!el) return;
@@ -12833,62 +12982,66 @@ function loadGarvesV2Metrics() {
       el.innerHTML = '<span class="text-muted">No active rules</span>';
       return;
     }
-    el.innerHTML = d.active_rules.map(function(r) {
-      var action = r.action || {};
-      return '<div style="margin-bottom:3px;">' + (action.type || 'unknown') + ' on ' + (action.asset || '?') + '/' + (action.timeframe || '?') + ' <span class="text-muted">(x' + (r.count || 0) + ')</span></div>';
-    }).join('');
+    el.innerHTML = '<div style="margin-bottom:4px;font-size:0.66rem;color:var(--text-muted);">' + d.count + ' rule' + (d.count !== 1 ? 's' : '') + ' active</div>' +
+      d.active_rules.map(function(r) {
+        var action = r.action || {};
+        return '<div style="margin-bottom:3px;display:flex;gap:4px;align-items:baseline;">' +
+          '<span style="color:var(--warning);font-size:0.72rem;">&#9654;</span>' +
+          '<span>' + (action.type || 'unknown') + '</span>' +
+          '<span class="text-muted">' + (action.asset || '?') + '/' + (action.timeframe || '?') + '</span>' +
+          '<span class="text-muted" style="font-size:0.66rem;">(x' + (r.count || 0) + ')</span></div>';
+      }).join('');
   }).catch(function(){});
 
-  // Fetch edge report
+  // Edge report
   fetch('/api/garves/edge-report').then(function(r){return r.json();}).then(function(d) {
     var el = document.getElementById('v2-edge-decay');
     if (!el) return;
     var decay = d.edge_decay || [];
+    var cc = d.competitive_check || {};
     if (decay.length === 0) {
-      var cc = d.competitive_check || {};
       if (cc.status === 'improving') {
-        el.innerHTML = '<span style="color:var(--success);">Edges improving (' + (cc.wr_trend_pp || 0).toFixed(1) + 'pp)</span>';
+        el.innerHTML = '<div style="color:var(--success);font-weight:600;">Edges improving</div><div class="text-muted" style="font-size:0.66rem;">WR trend +' + (cc.wr_trend_pp || 0).toFixed(1) + 'pp</div>';
       } else if (cc.status === 'declining') {
-        el.innerHTML = '<span style="color:var(--danger);">Edges declining (' + (cc.wr_trend_pp || 0).toFixed(1) + 'pp)</span>';
+        el.innerHTML = '<div style="color:var(--error);font-weight:600;">Edges declining</div><div class="text-muted" style="font-size:0.66rem;">WR trend ' + (cc.wr_trend_pp || 0).toFixed(1) + 'pp</div>';
       } else {
-        el.innerHTML = '<span class="text-muted">Edges stable</span>';
+        el.innerHTML = '<div style="color:var(--success);">All edges stable</div>';
       }
-      return;
+    } else {
+      el.innerHTML = decay.map(function(dd) {
+        return '<div style="margin-bottom:4px;"><span style="color:var(--error);font-weight:600;">' + dd.indicator + '</span> ' +
+          '<span class="text-muted">' + (dd.alltime_accuracy * 100).toFixed(0) + '% &#8594; ' + (dd.recent_accuracy * 100).toFixed(0) + '%</span> ' +
+          '<span style="color:var(--error);font-size:0.66rem;">(-' + dd.drop_pp.toFixed(0) + 'pp)</span></div>';
+      }).join('');
     }
-    el.innerHTML = decay.map(function(d) {
-      return '<div style="margin-bottom:3px;color:var(--danger);">' + d.indicator + ': ' + (d.alltime_accuracy * 100).toFixed(0) + '% -> ' + (d.recent_accuracy * 100).toFixed(0) + '% (-' + d.drop_pp.toFixed(0) + 'pp)</div>';
-    }).join('');
 
-    // Weekly competitive check recommendations
+    // Weekly competitive check
     var weeklyCard = document.getElementById('v2-weekly-card');
     var weeklyContent = document.getElementById('v2-weekly-content');
-    var cc = d.competitive_check || {};
     if (weeklyCard && weeklyContent && cc.recommendations && cc.recommendations.length > 0) {
-      weeklyCard.style.display = 'block';
-      var statusColor = cc.status === 'improving' ? 'var(--success)' : cc.status === 'declining' ? 'var(--danger)' : 'var(--text-muted)';
-      var header = '<div style="margin-bottom:4px;">Status: <span style="color:' + statusColor + ';font-weight:700;">' + (cc.status || 'unknown').toUpperCase() + '</span> | WR trend: ' + (cc.wr_trend_pp || 0).toFixed(1) + 'pp | Edge trend: ' + (cc.edge_trend_pp || 0).toFixed(2) + 'pp</div>';
+      weeklyCard.style.display = '';
+      var statusColor = cc.status === 'improving' ? 'var(--success)' : cc.status === 'declining' ? 'var(--error)' : 'var(--text-muted)';
+      var header = '<div style="margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid rgba(255,255,255,0.04);"><span style="color:' + statusColor + ';font-weight:700;">' + (cc.status || 'unknown').toUpperCase() + '</span> <span class="text-muted">| WR ' + (cc.wr_trend_pp || 0).toFixed(1) + 'pp | Edge ' + (cc.edge_trend_pp || 0).toFixed(2) + 'pp</span></div>';
       var recs = cc.recommendations.map(function(r) {
-        var pcolor = r.priority === 'high' ? 'var(--danger)' : r.priority === 'medium' ? 'var(--warning)' : 'var(--text-muted)';
-        return '<div style="margin-bottom:2px;"><span style="color:' + pcolor + ';font-weight:600;">[' + r.priority.toUpperCase() + ']</span> ' + r.action + '</div>';
+        var pcolor = r.priority === 'high' ? 'var(--error)' : r.priority === 'medium' ? 'var(--warning)' : 'var(--text-muted)';
+        return '<div style="margin-bottom:3px;display:flex;gap:6px;align-items:baseline;"><span style="color:' + pcolor + ';font-weight:600;font-size:0.66rem;">[' + r.priority.toUpperCase() + ']</span><span>' + r.action + '</span></div>';
       }).join('');
       weeklyContent.innerHTML = header + recs;
     }
   }).catch(function(){});
 
-  // Fetch diagnostics for auto-debug suggestions
+  // Diagnostics
   fetch('/api/garves/diagnostics').then(function(r){return r.json();}).then(function(d) {
     var debugCard = document.getElementById('v2-debug-card');
     var debugFixes = document.getElementById('v2-debug-fixes');
     if (!debugCard || !debugFixes) return;
     var fixes = d.suggested_fixes || [];
-    if (fixes.length === 0) {
-      debugCard.style.display = 'none';
-      return;
-    }
-    debugCard.style.display = 'block';
+    if (fixes.length === 0) { debugCard.style.display = 'none'; return; }
+    debugCard.style.display = '';
     debugFixes.innerHTML = fixes.map(function(f) {
-      var scolor = f.status === 'normal' || f.status === 'healthy' ? 'var(--success)' : 'var(--warning)';
-      return '<div style="margin-bottom:4px;"><span style="color:' + scolor + ';font-weight:600;">' + f.check + '</span>: ' + f.fix + '</div>';
+      var healthy = f.status === 'normal' || f.status === 'healthy';
+      var icon = healthy ? '<span style="color:var(--success);">&#10003;</span>' : '<span style="color:var(--warning);">&#9888;</span>';
+      return '<div style="margin-bottom:4px;display:flex;gap:6px;align-items:baseline;">' + icon + '<span style="font-weight:600;">' + f.check + '</span><span class="text-muted">' + f.fix + '</span></div>';
     }).join('');
   }).catch(function(){});
 }
