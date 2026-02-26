@@ -115,8 +115,10 @@ class HawkExecutor:
             log.warning("[LIVE] Cannot sell — missing token_id or size")
             return None
 
-        # Calculate shares held (size_usd / entry_price)
-        shares = size_usd / entry_price if entry_price > 0 else 0
+        # Use actual on-chain shares if available, else calculate from cost
+        shares = pos.get("shares", 0)
+        if not shares or shares <= 0:
+            shares = size_usd / entry_price if entry_price > 0 else 0
         if shares <= 0:
             return None
 

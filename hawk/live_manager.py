@@ -56,6 +56,7 @@ class LivePositionManager:
         self._last_odds_check: float = 0.0             # global odds check timestamp
         self._paused: set[str] = set()                 # condition_ids paused by user
         self._sold: set[str] = set()                   # condition_ids already sold (prevent repeats)
+        self._sell_failures: dict[str, int] = {}       # condition_id -> consecutive sell failure count
         self._live_prices: dict[str, float] = {}       # condition_id -> last CLOB midpoint
         self._price_history: dict[str, list[float]] = {}  # condition_id -> last 10 midpoints
         self._peak_price: dict[str, float] = {}           # condition_id -> highest price seen
@@ -650,6 +651,14 @@ class LivePositionManager:
     def _execute_exit(self, pos: dict, reason: str) -> None:
         """Execute a position exit."""
         cid = pos.get("condition_id", "")
+
+        # Skip if too many consecutive failures (likely phantom or resolved)
+        if self._sell_failures.get(cid, 0) >= 3:
+            if cid not in self._sold:
+                log.warning("[LIVE] Giving up on %s after 3 failed sells — likely phantom/resolved", cid[:12])
+                self._sold.add(cid)
+            return
+
         sell_id = self.executor.sell_position(pos, reason)
 
         # Market closed / no orderbook — force-remove to stop retry spam
@@ -661,6 +670,11 @@ class LivePositionManager:
                     self.tracker._positions.remove(p)
                     break
             self.tracker.add_cooldown(cid)
+            return
+
+        if not sell_id:
+            self._sell_failures[cid] = self._sell_failures.get(cid, 0) + 1
+            log.warning("[LIVE] Sell failed for %s (attempt %d/3)", cid[:12], self._sell_failures[cid])
             return
 
         if sell_id:
