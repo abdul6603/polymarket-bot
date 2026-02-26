@@ -15,6 +15,7 @@ from bot.http_session import get_session
 from bot.auth import build_client
 from bot.execution import Executor
 from bot.market_discovery import fetch_markets, rank_markets
+from bot.general_maker import scan_maker_markets, markets_for_engine, save_scan_results
 from bot.price_cache import PriceCache
 from bot.momentum import detect_momentum, MomentumState
 from bot.regime import RegimeAdjustment, detect_regime
@@ -364,23 +365,20 @@ class TradingBot:
             try:
                 now = time.time()
 
-                # Re-discover markets every 60s (don't spam Gamma API)
-                if now - _last_discovery > 60:
+                # Re-discover maker markets every 120s (includes book checks)
+                if now - _last_discovery > 120:
                     try:
-                        all_markets = fetch_markets(self.cfg)
-                        ranked = rank_markets(all_markets)
-                        _maker_markets = []
-                        for dm in ranked:
-                            _maker_markets.append({
-                                "market_id": dm.market_id,
-                                "tokens": dm.raw.get("tokens", []),
-                                "asset": dm.asset,
-                                "timeframe": dm.timeframe.name,
-                                "remaining_s": dm.remaining_s,
-                            })
+                        maker_mkts = scan_maker_markets(
+                            gamma_host=self.cfg.gamma_host,
+                            clob_host=self.cfg.clob_host,
+                        )
+                        _maker_markets = markets_for_engine(maker_mkts)
+                        save_scan_results(maker_mkts)
                         _last_discovery = now
+                        if _maker_markets:
+                            log.info("[MAKER] Found %d maker markets (sports+politics)", len(_maker_markets))
                     except Exception as e:
-                        log.debug("[MAKER] Market discovery failed: %s", str(e)[:100])
+                        log.warning("[MAKER] Market scan failed: %s", str(e)[:200])
 
                 # Get current regime for spread computation
                 regime_label = "neutral"

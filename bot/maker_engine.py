@@ -325,9 +325,15 @@ class MakerEngine:
         fair = 0.6 * implied_price + 0.4 * momentum_fair
         return max(0.05, min(0.95, round(fair, 4)))
 
-    def compute_spread(self, asset: str, token_id: str, regime_label: str = "neutral") -> float:
+    def compute_spread(self, asset: str, token_id: str, regime_label: str = "neutral", book_spread: float | None = None) -> float:
         """Dynamic half-spread based on volatility regime and inventory skew."""
         half_spread = self.base_half_spread
+
+        # For non-crypto markets with real book spreads, use 35% of book spread
+        if book_spread is not None and book_spread > 0.01:
+            half_spread = book_spread * 0.35
+            half_spread = max(0.005, min(0.04, half_spread))  # 0.5-4 cent range
+            return half_spread  # skip ATR-based calculation (no candle data for non-crypto)
 
         regime_mult = {
             "extreme_fear": 1.8,
@@ -450,7 +456,7 @@ class MakerEngine:
         tick = float(book.tick_size) if book.tick_size else 0.01
         decimals = len(book.tick_size.split(".")[-1]) if book.tick_size and "." in book.tick_size else 2
 
-        best_ask = float(book.asks[0].price) if book.asks else 0.99
+        best_ask = float(book.asks[-1].price) if book.asks else 0.99  # CLOB sorts desc, best=last
         safe = round(best_ask - 3 * tick, decimals)
         hard_cap = round(best_ask * 0.99, decimals)  # never within 1% of best ask
         safe = min(safe, hard_cap)
@@ -616,7 +622,7 @@ class MakerEngine:
                 safe, _, dec = self.get_safe_buy_price(token_id, buy_price)
                 real_buy_price = safe
                 book = self.client.get_order_book(token_id)
-                best_ask = float(book.asks[0].price) if book.asks else 0.0
+                best_ask = float(book.asks[-1].price) if book.asks else 0.0
                 book_info += f"YES:ask=${best_ask:.4f} "
             except Exception:
                 pass
@@ -625,7 +631,7 @@ class MakerEngine:
                     safe_no, _, _ = self.get_safe_buy_price(down_token_id, real_no_price)
                     real_no_price = safe_no
                     book = self.client.get_order_book(down_token_id)
-                    best_ask = float(book.asks[0].price) if book.asks else 0.0
+                    best_ask = float(book.asks[-1].price) if book.asks else 0.0
                     book_info += f"NO:ask=${best_ask:.4f}"
                 except Exception:
                     pass
@@ -730,12 +736,12 @@ class MakerEngine:
                     try:
                         book = self.client.get_order_book(q.token_id)
                         if q.side in ("BUY", "BUY_YES", "BUY_NO"):
-                            best_ask = float(book.asks[0].price) if book.asks else 99.0
+                            best_ask = float(book.asks[-1].price) if book.asks else 99.0
                             # Fill if market moved through our level (and quote is >5s old)
                             would_fill = best_ask <= q.price and now - q.placed_at > 5
                             fill_info = f"ask=${best_ask:.4f} vs bid=${q.price:.4f}"
                         else:
-                            best_bid = float(book.bids[0].price) if book.bids else 0.0
+                            best_bid = float(book.bids[-1].price) if book.bids else 0.0
                             would_fill = best_bid >= q.price and now - q.placed_at > 5
                             fill_info = f"bid=${best_bid:.4f} vs ask=${q.price:.4f}"
                     except Exception:
@@ -1043,14 +1049,18 @@ class MakerEngine:
             if not self._resolution_safe(remaining_s):
                 continue
 
-            # Get implied price from market data
+            # Get implied price from market data (prefer book mid_price for non-crypto)
             implied_price = None
-            for t in tokens:
-                if t.get("token_id") == up_token:
-                    p = t.get("price")
-                    if p:
-                        implied_price = float(p)
-                    break
+            book_mid = mkt.get("mid_price")
+            if book_mid and book_mid > 0:
+                implied_price = float(book_mid)
+            else:
+                for t in tokens:
+                    if t.get("token_id") == up_token:
+                        p = t.get("price")
+                        if p:
+                            implied_price = float(p)
+                        break
 
             fair = self.compute_fair_value(asset, implied_price)
             if fair is None:
@@ -1061,7 +1071,8 @@ class MakerEngine:
             if down_token:
                 self._last_fair[down_token] = 1.0 - fair
 
-            half_spread = self.compute_spread(asset, up_token, regime_label)
+            book_spread = mkt.get("book_spread")
+            half_spread = self.compute_spread(asset, up_token, regime_label, book_spread=book_spread)
 
             # Time-to-resolution graduated inventory control
             ttr_params = self._ttr_quote_params(up_token, down_token, remaining_s)
