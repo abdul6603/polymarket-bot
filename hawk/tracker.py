@@ -336,64 +336,161 @@ class HawkTracker:
     def sync_with_onchain(self) -> int:
         """Reconcile internal tracker with on-chain positions.
 
-        Fix 6: Prevents tracker drift — adds missing on-chain positions,
-        removes phantom positions that don't exist on-chain.
+        Queries the Polymarket data API directly (blockchain = truth).
+        Writes fresh data to hawk_positions_onchain.json so dashboard stays current.
         Returns number of corrections made.
         """
-        onchain_file = Path(__file__).parent.parent / "data" / "hawk_positions_onchain.json"
-        if not onchain_file.exists():
-            return 0
+        onchain_file = DATA_DIR / "hawk_positions_onchain.json"
+        onchain_pos = self._fetch_onchain_positions()
+
+        if onchain_pos is None:
+            # API failed — fall back to cache file
+            if onchain_file.exists():
+                try:
+                    data = json.loads(onchain_file.read_text())
+                    onchain_pos = data.get("positions", []) if isinstance(data, dict) else data
+                    log.info("[SYNC] API unreachable, using cached file (%d positions)", len(onchain_pos))
+                except Exception:
+                    return 0
+            else:
+                return 0
+
+        # Write fresh data to cache file (dashboard + live_manager read this)
+        try:
+            cache_data = {"positions": onchain_pos, "live": True, "fetched_at": time.time()}
+            onchain_file.write_text(json.dumps(cache_data, indent=2))
+        except Exception:
+            log.debug("[SYNC] Failed to write cache file (non-fatal)")
 
         corrections = 0
-        try:
-            data = json.loads(onchain_file.read_text())
-            onchain_pos = data if isinstance(data, list) else data.get("positions", [])
-            onchain_cids = {p.get("condition_id", "") for p in onchain_pos if p.get("condition_id")}
-            tracker_cids = {p.get("condition_id", "") for p in self._positions}
+        onchain_cids = {p.get("condition_id", "") for p in onchain_pos if p.get("condition_id")}
+        tracker_cids = {p.get("condition_id", "") for p in self._positions}
 
-            # Remove phantom positions (in tracker but not on-chain)
-            phantoms = tracker_cids - onchain_cids
-            if phantoms:
-                before = len(self._positions)
-                self._positions = [
-                    p for p in self._positions
-                    if p.get("condition_id", "") not in phantoms
-                ]
-                removed = before - len(self._positions)
-                if removed:
-                    corrections += removed
-                    log.warning("[SYNC] Removed %d phantom positions not found on-chain: %s",
-                                removed, ", ".join(c[:12] for c in phantoms))
+        # Remove phantom positions (in tracker but not on-chain)
+        phantoms = tracker_cids - onchain_cids
+        if phantoms:
+            before = len(self._positions)
+            self._positions = [
+                p for p in self._positions
+                if p.get("condition_id", "") not in phantoms
+            ]
+            removed = before - len(self._positions)
+            if removed:
+                corrections += removed
+                log.warning("[SYNC] Removed %d phantom positions not found on-chain: %s",
+                            removed, ", ".join(c[:12] for c in phantoms))
 
-            # Add missing on-chain positions (on-chain but not in tracker)
-            missing = onchain_cids - tracker_cids
-            for op in onchain_pos:
-                cid = op.get("condition_id", "")
-                if cid in missing and not op.get("resolved"):
-                    self._positions.append({
-                        "condition_id": cid,
-                        "question": op.get("question", op.get("title", "")),
-                        "direction": op.get("direction", "yes"),
-                        "entry_price": op.get("entry_price", 0.5),
-                        "size_usd": op.get("size_usd", op.get("value", 0)),
-                        "token_id": op.get("token_id", ""),
-                        "category": op.get("category", "unknown"),
-                        "filled": True,
-                        "original_size_usd": op.get("size_usd", op.get("value", 0)),
-                        "timestamp": time.time(),
-                        "opened_at": time.time(),
-                        "_from_onchain_sync": True,
-                    })
-                    corrections += 1
-                    log.info("[SYNC] Added missing on-chain position: %s", cid[:12])
+        # Update existing positions with fresh on-chain prices/sizes
+        onchain_by_cid = {p["condition_id"]: p for p in onchain_pos if p.get("condition_id")}
+        for pos in self._positions:
+            cid = pos.get("condition_id", "")
+            if cid in onchain_by_cid:
+                oc = onchain_by_cid[cid]
+                pos["cur_price"] = oc.get("cur_price", pos.get("cur_price", 0))
+                pos["shares"] = oc.get("shares", pos.get("shares", 0))
 
-            if corrections:
-                log.info("[SYNC] Made %d corrections (tracker now has %d positions)",
-                         corrections, len(self._positions))
-        except Exception:
-            log.warning("[SYNC] On-chain sync failed (non-fatal)")
+        # Add missing on-chain positions (on-chain but not in tracker)
+        missing = onchain_cids - tracker_cids
+        for op in onchain_pos:
+            cid = op.get("condition_id", "")
+            if cid in missing:
+                self._positions.append({
+                    "condition_id": cid,
+                    "question": op.get("question", op.get("title", "")),
+                    "direction": op.get("direction", "yes"),
+                    "entry_price": op.get("entry_price", 0.5),
+                    "size_usd": op.get("size_usd", op.get("value", 0)),
+                    "cur_price": op.get("cur_price", 0),
+                    "shares": op.get("shares", 0),
+                    "token_id": op.get("token_id", ""),
+                    "category": op.get("category", "unknown"),
+                    "filled": True,
+                    "original_size_usd": op.get("size_usd", op.get("value", 0)),
+                    "timestamp": time.time(),
+                    "opened_at": time.time(),
+                    "_from_onchain_sync": True,
+                })
+                corrections += 1
+                log.info("[SYNC] Added missing on-chain position: %s", cid[:12])
 
+        if corrections:
+            log.info("[SYNC] Made %d corrections (tracker now has %d positions)",
+                     corrections, len(self._positions))
+
+        log.info("[SYNC] On-chain: %d positions, tracker: %d positions",
+                 len(onchain_pos), len(self._positions))
         return corrections
+
+    def _fetch_onchain_positions(self) -> list[dict] | None:
+        """Query Polymarket data API for all on-chain positions.
+
+        Returns processed position list, or None if API is unreachable.
+        """
+        import urllib.request
+
+        wallet = os.getenv("FUNDER_ADDRESS", "")
+        if not wallet:
+            log.warning("[SYNC] FUNDER_ADDRESS not set — cannot query on-chain")
+            return None
+
+        try:
+            url = f"https://data-api.polymarket.com/positions?user={wallet.lower()}&limit=500"
+            req = urllib.request.Request(url, headers={"User-Agent": "Hawk/1.0"})
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                raw = json.loads(resp.read().decode())
+        except Exception as e:
+            log.warning("[SYNC] Polymarket API request failed: %s", str(e)[:100])
+            return None
+
+        if not isinstance(raw, list):
+            return None
+
+        # Group by conditionId, skip zero-size and crypto up/down (Garves territory)
+        grouped: dict[str, list] = {}
+        for pos in raw:
+            size = float(pos.get("size", 0))
+            if size <= 0:
+                continue
+            title = pos.get("title", pos.get("slug", ""))
+            if any(kw in title.lower() for kw in ("up or down", "updown", "up/down")):
+                continue
+            cid = pos.get("conditionId", pos.get("asset", ""))
+            grouped.setdefault(cid, []).append(pos)
+
+        positions = []
+        for cid, entries in grouped.items():
+            total_size = sum(float(e.get("size", 0)) for e in entries)
+            total_cost = sum(float(e.get("size", 0)) * float(e.get("avgPrice", 0)) for e in entries)
+            cur_price = float(entries[0].get("curPrice", 0))
+            if cur_price <= 0.001:
+                continue
+
+            total_value = total_size * cur_price
+            avg_price = total_cost / total_size if total_size > 0 else 0
+            pnl = total_value - total_cost
+            pnl_pct = (pnl / total_cost * 100) if total_cost > 0 else 0
+            title = entries[0].get("title", entries[0].get("slug", "Unknown"))
+            outcome = entries[0].get("outcome", "")
+
+            positions.append({
+                "condition_id": cid,
+                "question": title,
+                "direction": outcome.lower() if outcome else "yes",
+                "shares": round(total_size, 2),
+                "size_usd": round(total_cost, 2),
+                "entry_price": round(avg_price, 4),
+                "cur_price": round(cur_price, 4),
+                "value": round(total_value, 2),
+                "pnl": round(pnl, 2),
+                "pnl_pct": round(pnl_pct, 1),
+                "payout": round(total_size, 2),
+                "est_return": round(total_size - total_cost, 2),
+                "est_return_pct": round((total_size - total_cost) / total_cost * 100, 1) if total_cost > 0 else 0,
+                "status": "won" if cur_price >= 0.999 else "active",
+            })
+
+        positions.sort(key=lambda x: -x["value"])
+        return positions
 
     def _append_to_file(self, rec: dict) -> None:
         """Append a single trade record to the JSONL file."""
