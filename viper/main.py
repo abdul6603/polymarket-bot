@@ -185,7 +185,6 @@ def run_single_scan(cfg: ViperConfig, cycle: int = 0) -> dict:
         _save_pushed_ids(pushed_ids)
         log.info("Pushed %d items to Shelby (score >= 75)", push_count)
     result["shelby_pushes"] = push_count
-
     # 4. Match intel to markets → build context for Hawk
     matched = update_market_context()
     result["matched"] = matched
