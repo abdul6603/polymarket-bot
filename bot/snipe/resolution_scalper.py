@@ -236,6 +236,12 @@ class ResolutionScalper:
             current_price, strike_price, remaining, sigma, drift, ob_imbalance,
         )
         if est.probability < self._min_prob:
+            log.debug(
+                "[RES-SCALP] %s %s SKIP P=%.0f%%<%.0f%% | spot=$%.2f strike=$%.2f T-%ds",
+                asset.upper(), est.direction.upper(),
+                est.probability * 100, self._min_prob * 100,
+                current_price, strike_price, int(remaining),
+            )
             return None
 
         # Determine which token to buy
@@ -256,10 +262,20 @@ class ResolutionScalper:
 
         # Gate: spread too wide
         if spread > MAX_SPREAD:
+            log.debug(
+                "[RES-SCALP] %s %s SKIP spread=%.2f>%.2f | P=%.0f%% T-%ds",
+                asset.upper(), est.direction.upper(), spread, MAX_SPREAD,
+                est.probability * 100, int(remaining),
+            )
             return None
 
         # Gate: price too high
         if best_ask > self._max_price:
+            log.info(
+                "[RES-SCALP] %s %s SKIP ask=$%.2f>$%.2f | P=%.0f%% mkt=$%.2f T-%ds",
+                asset.upper(), est.direction.upper(), best_ask, self._max_price,
+                est.probability * 100, best_ask, int(remaining),
+            )
             return None
 
         # Calculate edge
