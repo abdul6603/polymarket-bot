@@ -192,7 +192,7 @@ class OrderManager:
                     break
 
                 elif decision.action in (
-                    ExitAction.PARTIAL_TP1, ExitAction.PARTIAL_TP2, ExitAction.PARTIAL_TP3,
+                    ExitAction.PARTIAL_EARLY, ExitAction.PARTIAL_TP1, ExitAction.PARTIAL_TP2, ExitAction.PARTIAL_TP3,
                 ):
                     if decision.close_pct >= 1.0:
                         # Full close (TP3 runner or all remaining)
