@@ -30,8 +30,10 @@ def _read_json(path: Path) -> dict:
     if path.exists():
         try:
             return json.loads(path.read_text())
-        except Exception:
-            pass
+        except (json.JSONDecodeError, IOError, OSError) as e:
+            log.warning("Failed to read JSON file %s: %s", path, e)
+        except Exception as e:
+            log.error("Unexpected error reading %s: %s", path, e)
     return {}
 
 
@@ -184,8 +186,10 @@ def compute_pnl() -> dict:
     DATA_DIR.mkdir(exist_ok=True)
     try:
         PNL_FILE.write_text(json.dumps(pnl_data, indent=2))
-    except Exception:
-        log.exception("Failed to save P&L data")
+    except (IOError, OSError) as e:
+        log.error("Failed to save P&L data: %s", e)
+    except Exception as e:
+        log.error("Unexpected error saving P&L data: %s", e)
 
     # Publish event
     try:
@@ -200,8 +204,10 @@ def compute_pnl() -> dict:
             },
             summary=f"Brotherhood P&L: ${net_daily:+.2f}/day ({trend})",
         )
-    except Exception:
-        pass
+    except ImportError:
+        log.debug("Event bus not available for P&L events")
+    except Exception as e:
+        log.error("Failed to publish P&L event: %s", e)
 
     log.info("Brotherhood P&L computed: net_daily=$%.2f, trend=%s", net_daily, trend)
     return pnl_data

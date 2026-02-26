@@ -39,8 +39,10 @@ def _read_json(path: Path) -> dict | list:
     if path.exists():
         try:
             return json.loads(path.read_text())
-        except Exception:
-            pass
+        except (json.JSONDecodeError, IOError, OSError) as e:
+            log.warning("Failed to read JSON file %s: %s", path, e)
+        except Exception as e:
+            log.error("Unexpected error reading %s: %s", path, e)
     return {}
 
 
@@ -66,8 +68,10 @@ def _load_baselines() -> dict:
     if BASELINES_FILE.exists():
         try:
             return json.loads(BASELINES_FILE.read_text())
-        except Exception:
-            pass
+        except (json.JSONDecodeError, IOError, OSError) as e:
+            log.warning("Failed to load baselines: %s", e)
+        except Exception as e:
+            log.error("Unexpected error loading baselines: %s", e)
     return {"agents": {}, "updated": None}
 
 
@@ -76,8 +80,10 @@ def _save_baselines(baselines: dict) -> None:
     baselines["updated"] = datetime.now().isoformat()
     try:
         BASELINES_FILE.write_text(json.dumps(baselines, indent=2))
-    except Exception:
-        log.exception("Failed to save baselines")
+    except (IOError, OSError) as e:
+        log.error("Failed to save baselines: %s", e)
+    except Exception as e:
+        log.error("Unexpected error saving baselines: %s", e)
 
 
 def _make_alert(severity: str, agent: str, alert_type: str, message: str, **extra) -> dict:
@@ -124,7 +130,7 @@ def _check_cost_spikes(baselines: dict) -> list[dict]:
                 "critical", agent, "cost_spike",
                 f"{agent} daily cost ${daily_cost:.2f} is {daily_cost/prev_avg:.1f}x baseline (${prev_avg:.2f})",
                 daily_cost=round(daily_cost, 2),
-                baseline=round(prev_avg, 2),
+                baseline=round(prev_avg, 2)
             ))
 
     baselines["agents"] = agent_baselines
@@ -269,10 +275,11 @@ def detect_anomalies() -> list[dict]:
                     data=alert,
                     summary=f"[ALERT] {alert['message']}",
                 )
-        except Exception:
-            pass
+        except ImportError:
+            log.debug("Event bus not available for anomaly alerts")
+        except Exception as e:
+            log.error("Failed to publish anomaly alert: %s", e)
 
     if alerts:
         log.info("Anomaly scan: %d alerts (%d critical)", len(alerts), len(critical))
-
     return alerts
