@@ -282,6 +282,22 @@ class ResolutionScalper:
             )
             return None
 
+        # Gate: dead zone $0.55-$0.70 (below breakeven WR for both directions)
+        if 0.55 <= best_ask < 0.70:
+            log.info(
+                "[RES-SCALP] %s %s SKIP ask=$%.2f in dead zone $0.55-$0.70 | T-%ds",
+                asset.upper(), est.direction.upper(), best_ask, int(remaining),
+            )
+            return None
+
+        # Gate: UP direction above $0.80 (needs 82%+ WR, only getting 62%)
+        if est.direction.lower() == "up" and best_ask >= 0.80:
+            log.info(
+                "[RES-SCALP] %s %s SKIP UP at $%.2f>=0.80 (unprofitable) | T-%ds",
+                asset.upper(), est.direction.upper(), best_ask, int(remaining),
+            )
+            return None
+
         # Gate: price too high
         if best_ask > self._max_price:
             log.info(
