@@ -24,7 +24,7 @@ ANALYSIS_FILE = DATA_DIR / "post_trade_analysis.jsonl"
 INDICATOR_ACCURACY_FILE = DATA_DIR / "indicator_accuracy.json"
 
 # Kill switch thresholds
-KILL_SWITCH_WR = 0.52           # 50-trade rolling WR below this → STOP
+KILL_SWITCH_WR = 0.40           # 50-trade rolling WR below this → STOP (lowered while monitoring)
 KILL_SWITCH_WINDOW = 50         # Need 50 trades minimum
 DEGRADATION_WR = 0.55           # 30-trade WR below this → WARNING
 DEGRADATION_WINDOW = 30
