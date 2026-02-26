@@ -1382,7 +1382,7 @@ def api_garves_positions():
                 totals["realized_pnl"] += row["result_pnl"]
 
         # ── 3. Include Resolution Scalper trades from JSONL ──
-        res_file = data_dir / "resolution_trades.jsonl"
+        res_file = DATA_DIR / "resolution_trades.jsonl"
         if res_file.exists():
             try:
                 for line in res_file.read_text().strip().split("\n"):
@@ -1417,7 +1417,7 @@ def api_garves_positions():
                 pass
 
         # ── 4. Include Snipe Engine trades from JSONL ──
-        snipe_file = data_dir / "snipe_trades.jsonl"
+        snipe_file = DATA_DIR / "snipe_trades.jsonl"
         if snipe_file.exists():
             try:
                 for line in snipe_file.read_text().strip().split("\n"):
@@ -1452,7 +1452,7 @@ def api_garves_positions():
                 pass
 
         # ── 5. Include main trades.jsonl (taker/other engines) ──
-        main_trades_file = data_dir / "trades.jsonl"
+        main_trades_file = DATA_DIR / "trades.jsonl"
         if main_trades_file.exists():
             try:
                 for line in main_trades_file.read_text().strip().split("\n"):
