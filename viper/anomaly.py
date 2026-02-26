@@ -138,7 +138,7 @@ def _check_cost_spikes(baselines: dict) -> list[dict]:
 
 
 def _check_garves_performance() -> list[dict]:
-    """Check Garves win rate over last 20 trades."""
+    """Check Garves win rate over last 20+ trades."""
     alerts = []
     trades = _read_jsonl_tail(TRADES_FILE, MIN_TRADES_FOR_WINRATE)
 
