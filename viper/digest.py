@@ -153,9 +153,9 @@ def _generate_hawk_digest() -> dict:
                     f"24h Volume: ${vol:,.0f} | Price: {raw.get('yes_price', 0.5):.2f}",
                     "polymarket_activity",
                     85,
-                    category="volume_spike",                    condition_id=raw.get("condition_id", ""),
+                    category="volume_spike",
+                    condition_id=raw.get("condition_id", ""),
                 ))
-
     items.sort(key=lambda x: x["score"], reverse=True)
     return {
         "agent": "hawk",
