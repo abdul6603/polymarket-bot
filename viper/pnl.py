@@ -177,10 +177,10 @@ def compute_pnl() -> dict:
         "net_monthly_est": net_monthly_est,
         "best_performer": best_performer,
         "biggest_cost": biggest_cost,
-        "trend": trend,        "days_tracked": days_tracked,
+        "trend": trend,
+        "days_tracked": days_tracked,
         "computed_at": time.time(),
     }
-
     # Save
     DATA_DIR.mkdir(exist_ok=True)
     try:
