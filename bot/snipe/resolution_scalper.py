@@ -325,6 +325,7 @@ class ResolutionScalper:
             liq_cap = sell_pressure * LIQUIDITY_CAP_PCT
             bet = min(bet, liq_cap)
 
+        bet = round(bet, 2)  # CLOB needs max 2 decimal precision
         if bet < 1.0:  # Minimum viable bet
             return None
 
@@ -441,8 +442,8 @@ class ResolutionScalper:
             from py_clob_client.order_builder.constants import BUY
 
             order_args = OrderArgs(
-                price=price,
-                size=shares,
+                price=round(price, 2),
+                size=round(shares, 4),
                 side=BUY,
                 token_id=token_id,
             )
