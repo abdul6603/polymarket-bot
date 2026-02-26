@@ -1,12 +1,14 @@
 """Traders tab — unified cross-agent portfolio view."""
 from __future__ import annotations
 
+import json
 import logging
 import os
 import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
+from pathlib import Path
 
 import requests
 from flask import Blueprint, jsonify
@@ -218,6 +220,100 @@ def _normalize_maker(data: dict | None, mode: str = "paper") -> list[dict]:
     return positions
 
 
+def _normalize_snipe() -> list[dict]:
+    """Read snipe + resolution scalper paper positions from snipe_status.json."""
+    status_file = Path(__file__).parent.parent.parent / "data" / "snipe_status.json"
+    try:
+        if not status_file.exists():
+            return []
+        data = json.loads(status_file.read_text())
+    except Exception:
+        return []
+
+    positions = []
+
+    # Active snipe positions from slots
+    for asset, slot in (data.get("slots") or {}).items():
+        pos = slot.get("position") or {}
+        if not pos.get("active"):
+            continue
+        direction = (pos.get("direction") or "up").upper()
+        invested = _safe_float(pos.get("total_invested"))
+        shares = _safe_float(pos.get("total_shares"))
+        avg_entry = _safe_float(pos.get("avg_entry"))
+        exec_tf = slot.get("exec_timeframe") or "5m"
+        score = slot.get("last_score", 0)
+        market_id = pos.get("market_id", "")
+
+        positions.append({
+            "id": f"snipe_{asset}_{market_id[:12]}",
+            "agent": "garves",
+            "mode": "paper" if data.get("dry_run", True) else "live",
+            "market": f"Snipe {asset.upper()} {direction} ({exec_tf})",
+            "asset": asset.upper()[:3],
+            "platform": "polymarket",
+            "direction": direction,
+            "direction_class": _direction_class(direction),
+            "category": "crypto",
+            "size_usd": round(invested, 2),
+            "entry_price": round(avg_entry, 4) if avg_entry else None,
+            "current_price": None,
+            "value": round(invested, 2),
+            "pnl": 0.0,
+            "pnl_pct": 0.0,
+            "status": "executing",
+            "end_date": None,
+            "leverage": None,
+            "tp_price": None,
+            "sl_price": None,
+            "tp_distance_pct": None,
+            "sl_distance_pct": None,
+            "edge": None,
+            "conviction": round(score, 1) if score else None,
+            "payout": round(shares, 1) if shares else None,
+        })
+
+    # Resolution scalper active positions
+    for p in (data.get("resolution_scalper") or {}).get("active_positions") or []:
+        asset = p.get("asset", "bitcoin")
+        direction = (p.get("direction") or "up").upper()
+        size = _safe_float(p.get("size_usd"))
+        entry = _safe_float(p.get("entry_price"))
+        prob = _safe_float(p.get("probability"))
+        edge = _safe_float(p.get("edge"))
+        remaining = int(p.get("remaining_s", 0))
+
+        positions.append({
+            "id": f"res_scalp_{asset}_{int(time.time())}",
+            "agent": "garves",
+            "mode": "paper" if data.get("dry_run", True) else "live",
+            "market": f"Scalp {asset.upper()} {direction} (T-{remaining}s)",
+            "asset": asset.upper()[:3],
+            "platform": "polymarket",
+            "direction": direction,
+            "direction_class": _direction_class(direction),
+            "category": "crypto",
+            "size_usd": round(size, 2),
+            "entry_price": round(entry, 4) if entry else None,
+            "current_price": None,
+            "value": round(size, 2),
+            "pnl": 0.0,
+            "pnl_pct": 0.0,
+            "status": "scalping",
+            "end_date": None,
+            "leverage": None,
+            "tp_price": None,
+            "sl_price": None,
+            "tp_distance_pct": None,
+            "sl_distance_pct": None,
+            "edge": round(edge, 1) if edge else None,
+            "conviction": round(prob * 100, 1) if prob else None,
+            "payout": None,
+        })
+
+    return positions
+
+
 def _normalize_hawk(data: dict | None, mode: str = "live") -> list[dict]:
     """Normalize Hawk positions into unified position schema."""
     if not data or not isinstance(data, dict):
@@ -371,7 +467,8 @@ def api_traders_positions():
 
     garves_pos = _normalize_garves(raw.get("garves"), modes["garves"])
     maker_pos = _normalize_maker(raw.get("maker"), modes["garves"])
-    garves_pos = garves_pos + maker_pos
+    snipe_pos = _normalize_snipe()
+    garves_pos = garves_pos + maker_pos + snipe_pos
     hawk_pos = _normalize_hawk(raw.get("hawk"), modes["hawk"])
     odin_pos = _normalize_odin(raw.get("odin"), modes["odin"])
     oracle_pos = _normalize_oracle(raw.get("oracle"), modes["oracle"])
@@ -421,7 +518,8 @@ def api_traders_overview():
     modes = _agent_mode(raw)
     garves_pos = _normalize_garves(raw.get("garves"), modes["garves"])
     maker_pos = _normalize_maker(raw.get("maker"), modes["garves"])
-    garves_pos = garves_pos + maker_pos
+    snipe_pos = _normalize_snipe()
+    garves_pos = garves_pos + maker_pos + snipe_pos
     hawk_pos = _normalize_hawk(raw.get("hawk"), modes["hawk"])
     odin_pos = _normalize_odin(raw.get("odin"), modes["odin"])
     oracle_pos = _normalize_oracle(raw.get("oracle"), modes["oracle"])
@@ -490,7 +588,8 @@ def api_traders_risk():
     modes = _agent_mode(raw)
     garves_pos = _normalize_garves(raw.get("garves"), modes["garves"])
     maker_pos = _normalize_maker(raw.get("maker"), modes["garves"])
-    garves_pos = garves_pos + maker_pos
+    snipe_pos = _normalize_snipe()
+    garves_pos = garves_pos + maker_pos + snipe_pos
     hawk_pos = _normalize_hawk(raw.get("hawk"), modes["hawk"])
     odin_pos = _normalize_odin(raw.get("odin"), modes["odin"])
     oracle_pos = _normalize_oracle(raw.get("oracle"), modes["oracle"])
