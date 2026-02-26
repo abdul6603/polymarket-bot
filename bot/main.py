@@ -127,7 +127,7 @@ class TradingBot:
             budget_per_window=cfg.snipe_budget_per_window,
             delta_threshold=cfg.snipe_delta_threshold / 100,
         )
-        log.info("[SNIPE] dry_run=%s (from .env)", cfg.dry_run)
+        log.info("[SNIPE] dry_run=%s (SNIPE_DRY_RUN)", cfg.snipe_dry_run)
 
         # Whale Follower — Smart Money copy trader
         self.whale_tracker = WhaleTracker(
