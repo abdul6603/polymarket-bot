@@ -61,6 +61,7 @@ class LivePositionManager:
         self._price_history: dict[str, list[float]] = {}  # condition_id -> last 10 midpoints
         self._peak_price: dict[str, float] = {}           # condition_id -> highest price seen
         self._match_confidence: dict[str, int] = {}        # condition_id -> last match confidence (0-100)
+        self._total_added: dict[str, float] = {}           # condition_id -> cumulative $ added (prevents restart abuse)
 
     def monitor_positions(self) -> list[LiveAction]:
         """Main entry — check all open positions against live games.
@@ -87,20 +88,27 @@ class LivePositionManager:
                 tracker_cids = {p.get("condition_id", "") for p in open_pos}
                 for op in onchain_pos:
                     cid = op.get("condition_id", "")
-                    if cid and cid not in tracker_cids and not op.get("resolved"):
-                        # Convert on-chain format to tracker format
-                        open_pos.append({
-                            "condition_id": cid,
-                            "question": op.get("question", op.get("title", "")),
-                            "direction": op.get("direction", "yes"),
-                            "entry_price": op.get("entry_price", 0.5),
-                            "size_usd": op.get("size_usd", op.get("value", 0)),
-                            "token_id": op.get("token_id", ""),
-                            "category": "sports" if op.get("category") in ("", "unknown", None) else op.get("category"),
-                            "shares": op.get("shares", 0),
-                            "cur_price": op.get("cur_price", 0),
-                            "_from_onchain": True,
-                        })
+                    if not cid or cid in tracker_cids or op.get("resolved"):
+                        continue
+                    # Don't re-add positions we already sold or have on cooldown
+                    if cid in self._sold:
+                        continue
+                    cooldown_ts = self.tracker._cancel_cooldowns.get(cid, 0)
+                    if cooldown_ts and (time.time() - cooldown_ts) < 1800:
+                        continue
+                    # Convert on-chain format to tracker format
+                    open_pos.append({
+                        "condition_id": cid,
+                        "question": op.get("question", op.get("title", "")),
+                        "direction": op.get("direction", "yes"),
+                        "entry_price": op.get("entry_price", 0.5),
+                        "size_usd": op.get("size_usd", op.get("value", 0)),
+                        "token_id": op.get("token_id", ""),
+                        "category": "sports" if op.get("category") in ("", "unknown", None) else op.get("category"),
+                        "shares": op.get("shares", 0),
+                        "cur_price": op.get("cur_price", 0),
+                        "_from_onchain": True,
+                    })
         except Exception:
             log.debug("[LIVE] On-chain position merge failed (non-fatal)")
 
@@ -330,6 +338,12 @@ class LivePositionManager:
         cid = pos.get("condition_id", "")
         if cid in self._sold:
             return None  # Already sold
+
+        # Respect tracker cooldowns (persisted — survives restarts)
+        cooldown_ts = self.tracker._cancel_cooldowns.get(cid, 0)
+        if cooldown_ts and (time.time() - cooldown_ts) < 1800:
+            return None
+
         now = time.time()
 
         # Min hold time check
@@ -418,12 +432,18 @@ class LivePositionManager:
             )
 
         # 3. SCALE-UP: Winning comfortably, edge increased (verified matches only)
+        # Price ceiling: never add above 75¢ — risk/reward is terrible (25% upside, 75% downside)
+        # Total $ cap: max_bet_usd total added per position (prevents restart abuse)
         if (confidence >= 90 and position_assessment == "winning_big"
                 and self._can_scale_up(pos)
-                and current_price > entry_price * 1.10):
+                and current_price > entry_price * 1.10
+                and current_price <= 0.75):
+            already_added = self._total_added.get(cid, 0)
+            add_budget = self.cfg.max_bet_usd - already_added
             extra = min(
                 pos.get("size_usd", 15) * 0.5,  # Add 50% of original
                 self.cfg.max_bet_usd * self.cfg.live_max_scale - pos.get("size_usd", 0),
+                max(0, add_budget),  # Never exceed total add budget
             )
             if extra >= 3:  # Min $3 to be worth the trade
                 reason = (f"Winning big: {home_score}-{away_score} P{period} | "
@@ -638,15 +658,22 @@ class LivePositionManager:
         return self._live_prices.get(cid, pos.get("entry_price", 0.5))
 
     def _can_scale_up(self, pos: dict) -> bool:
-        """Check if we can add to this position (max scale not exceeded).
+        """Check if we can add to this position.
 
-        Fix 4: Uses original_size_usd (recorded at trade creation) instead of
-        current size_usd, which grows with each add and allows infinite scaling.
+        Guards:
+        1. Size cap: current_size < original * live_max_scale
+        2. Total $ cap: cumulative adds < max_bet_usd (survives restarts)
         """
+        cid = pos.get("condition_id", "")
         current_size = pos.get("size_usd", 0)
         original_size = pos.get("original_size_usd", pos.get("size_usd", 0))
         max_total = original_size * self.cfg.live_max_scale
-        return current_size < max_total
+        if current_size >= max_total:
+            return False
+        # Hard cap on total $ added per position
+        if self._total_added.get(cid, 0) >= self.cfg.max_bet_usd:
+            return False
+        return True
 
     def _execute_exit(self, pos: dict, reason: str) -> None:
         """Execute a position exit."""
@@ -701,6 +728,7 @@ class LivePositionManager:
         if add_id:
             self._actions_count[cid] = self._actions_count.get(cid, 0) + 1
             self._last_action_time[cid] = time.time()
+            self._total_added[cid] = self._total_added.get(cid, 0) + extra_usd
             # Update position size in tracker
             for p in self.tracker._positions:
                 if p.get("condition_id") == cid:
