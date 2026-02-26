@@ -12,9 +12,12 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
+
+import requests as _requests
 
 from bot.config import Config
 from bot.snipe.probability_model import (
@@ -380,6 +383,24 @@ class ResolutionScalper:
         # Log to JSONL
         self._log_trade(opp, pos)
 
+        # Notify
+        dry_tag = "[DRY] " if self._dry_run else ""
+        self._notify(
+            f"RES-SCALP {dry_tag}ENTRY\n\n"
+            f"{opp.direction.upper()} {opp.asset.upper()} 5m\n"
+            f"P={opp.probability:.0%} | Edge={opp.edge:.0%} | z={opp.z_score:.2f}\n"
+            f"${opp.kelly_bet:.2f} → {shares:.1f} shares @ ${opp.market_price:.3f}\n"
+            f"T-{int(opp.remaining_s)}s",
+            event_data={
+                "engine": "resolution_scalper", "type": "entry",
+                "asset": opp.asset.upper(), "direction": opp.direction.upper(),
+                "size_usd": round(opp.kelly_bet, 2), "shares": shares,
+                "price": opp.market_price, "probability": round(opp.probability, 3),
+                "edge": round(opp.edge, 3), "z_score": round(opp.z_score, 2),
+                "remaining_s": int(opp.remaining_s), "dry_run": self._dry_run,
+            },
+        )
+
     def _place_fok_order(self, token_id: str, price: float, shares: float) -> str | None:
         """Place FOK order on CLOB. Returns order_id or None."""
         if not self._client:
@@ -471,6 +492,25 @@ class ResolutionScalper:
                 pos.probability_at_entry * 100, pos.edge_at_entry * 100,
             )
 
+            emoji = "W" if won else "L"
+            dry_tag = "[DRY] " if self._dry_run else ""
+            self._notify(
+                f"RES-SCALP {dry_tag}[{emoji}]\n\n"
+                f"{pos.direction.upper()} {pos.asset.upper()} 5m\n"
+                f"Entry: ${pos.entry_price:.3f} | Size: ${pos.size_usd:.2f}\n"
+                f"PnL: ${pos.pnl:+.2f}\n"
+                f"Running: {self._stats['wins']}W-{self._stats['losses']}L "
+                f"(${self._stats['pnl']:+.2f})",
+                event_data={
+                    "engine": "resolution_scalper", "type": "resolution",
+                    "asset": pos.asset.upper(), "direction": pos.direction.upper(),
+                    "won": won, "pnl": round(pos.pnl, 2),
+                    "size_usd": round(pos.size_usd, 2), "entry_price": pos.entry_price,
+                    "probability": round(pos.probability_at_entry, 3),
+                    "dry_run": self._dry_run,
+                },
+            )
+
     def _check_clob_resolution(self, pos: ScalpPosition) -> bool:
         """Check CLOB API for token resolution status."""
         try:
@@ -508,6 +548,29 @@ class ResolutionScalper:
                 f.write(json.dumps(entry) + "\n")
         except Exception as e:
             log.warning("[RES-SCALP] Failed to write trade log: %s", str(e)[:100])
+
+    def _notify(self, msg: str, event_data: dict | None = None) -> None:
+        """Send Telegram notification + event bus publish."""
+        # Event bus
+        if event_data:
+            try:
+                from shared.events import publish, TRADE_EXECUTED
+                publish(agent="garves", event_type=TRADE_EXECUTED,
+                        data=event_data, summary=msg.split("\n")[0])
+            except Exception:
+                pass
+        # Telegram
+        try:
+            tg_token = os.environ.get("TG_BOT_TOKEN", "")
+            tg_chat = os.environ.get("TG_CHAT_ID", "")
+            if tg_token and tg_chat:
+                _requests.post(
+                    f"https://api.telegram.org/bot{tg_token}/sendMessage",
+                    json={"chat_id": tg_chat, "text": msg},
+                    timeout=10,
+                )
+        except Exception:
+            pass
 
     @staticmethod
     def _opp_to_dict(opp: ScalpOpportunity) -> dict:
