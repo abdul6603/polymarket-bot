@@ -8732,14 +8732,14 @@ function renderHawkScanSummary(data) {
 function renderHawkCategories(cats, oppCats) {
   var el = document.getElementById('hawk-category-heatmap');
   if (!el) return;
-  var catColors = {politics:'#4488ff',sports:'#ff8844',crypto_event:'#FFD700',culture:'#cc66ff',other:'#888888'};
-  var catLabels = {politics:'Politics',sports:'Sports',crypto_event:'Crypto',culture:'Culture',other:'Other'};
+  var catColors = {politics:'#4488ff',sports:'#ff8844',crypto_event:'#FFD700',culture:'#cc66ff',weather:'#00ccaa',other:'#888888'};
+  var catLabels = {politics:'Politics',sports:'Sports',crypto_event:'Crypto',culture:'Culture',weather:'Weather',other:'Other'};
   var hasResolved = Object.keys(cats).length > 0;
   var hasOpps = oppCats && Object.keys(oppCats).length > 0;
   if (!hasResolved && !hasOpps) { el.innerHTML = '<div class="text-muted" style="text-align:center;padding:12px;">No category data yet — trigger a scan</div>'; return; }
 
   var html = '<div style="display:flex;flex-wrap:wrap;gap:10px;">';
-  // Show opportunity-based category cards (always if we have scan data)
+  // Show opportunity-based category cards + resolved-only categories
   if (hasOpps) {
     var oKeys = Object.keys(oppCats).sort(function(a,b){ return (oppCats[b].total_ev||0)-(oppCats[a].total_ev||0); });
     for (var i = 0; i < oKeys.length; i++) {
@@ -8759,6 +8759,24 @@ function renderHawkCategories(cats, oppCats) {
         html += '<div style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;border-top:1px solid rgba(255,255,255,0.06);padding-top:4px;">Resolved: ' + rc.wins + 'W-' + rc.losses + 'L (' + wr.toFixed(0) + '%) | $' + (rc.pnl||0).toFixed(2) + '</div>';
       }
       html += '</div>';
+    }
+    // Show resolved-only categories that have no current opportunities (e.g. sports)
+    if (hasResolved) {
+      var rKeys = Object.keys(cats);
+      for (var i = 0; i < rKeys.length; i++) {
+        var k = rKeys[i];
+        if (oppCats[k]) continue;
+        var c = cats[k];
+        var wr = (c.wins + c.losses) > 0 ? (c.wins / (c.wins + c.losses) * 100) : 0;
+        var color = catColors[k] || '#888';
+        var label = catLabels[k] || k;
+        html += '<div style="background:rgba(255,255,255,0.04);border-left:3px solid ' + color + ';border-radius:8px;padding:12px 16px;min-width:140px;flex:1;opacity:0.85;">';
+        html += '<div style="font-size:0.72rem;color:' + color + ';text-transform:uppercase;letter-spacing:0.05em;font-weight:700;margin-bottom:4px;">' + esc(label) + '</div>';
+        html += '<div style="font-size:1.1rem;font-weight:700;color:' + wrColor(wr) + ';">' + wr.toFixed(1) + '% <span style="font-size:0.68rem;color:var(--text-muted);font-weight:400;">WR</span></div>';
+        html += '<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:2px;">' + c.wins + 'W-' + c.losses + 'L | P&L: <span style="color:' + (c.pnl >= 0 ? 'var(--success)' : 'var(--danger)') + ';font-weight:600;">$' + (c.pnl||0).toFixed(2) + '</span></div>';
+        html += '<div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px;font-style:italic;">No current opportunities</div>';
+        html += '</div>';
+      }
     }
   } else if (hasResolved) {
     var keys = Object.keys(cats);
