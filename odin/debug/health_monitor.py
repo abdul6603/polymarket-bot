@@ -29,7 +29,7 @@ class HealthMonitor:
         if self._status_file.exists():
             try:
                 status = json.loads(self._status_file.read_text())
-                age = time.time() - status.get("last_updated", 0)
+                age = time.time() - status.get("timestamp", status.get("last_updated", 0))
                 if age > 600:  # >10 min stale
                     issues.append(f"Status file stale ({age:.0f}s old)")
 
