@@ -59,9 +59,24 @@ def _fetch_book(token_id: str) -> dict | None:
 
 
 def _parse_book(data: dict) -> dict:
-    """Parse raw orderbook into pressure/spread metrics."""
-    bids = data.get("bids", [])
-    asks = data.get("asks", [])
+    """Parse raw orderbook into pressure/spread metrics.
+
+    CLOB API returns bids ascending (worst first) and asks descending (worst first).
+    We sort bids descending and asks ascending so best prices are at index 0.
+    """
+    raw_bids = data.get("bids", [])
+    raw_asks = data.get("asks", [])
+
+    def _get_price(lvl) -> float:
+        if isinstance(lvl, dict):
+            return float(lvl.get("price", 0))
+        elif isinstance(lvl, (list, tuple)) and len(lvl) >= 2:
+            return float(lvl[0])
+        return 0.0
+
+    # Sort: bids descending (best/highest first), asks ascending (best/lowest first)
+    bids = sorted(raw_bids, key=_get_price, reverse=True)
+    asks = sorted(raw_asks, key=_get_price)
 
     def _sum_levels(levels: list, n: int = 5) -> tuple[float, float]:
         """Sum price*size for top N levels. Returns (pressure, best_price)."""
