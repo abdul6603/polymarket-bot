@@ -484,6 +484,9 @@ class ResolutionScalper:
             self._stats["pnl"] += pos.pnl
             self._learner.resolve(pos.learner_id, won, pos.pnl)
 
+            # Write resolution back to JSONL so dashboard API can read it
+            self._update_trade_log(pos)
+
             outcome = "WIN" if won else "LOSS"
             log.info(
                 "[RES-SCALP] %s %s %s: $%.2f -> $%.2f (P=%.0f%% edge=%.0f%%)",
@@ -548,6 +551,31 @@ class ResolutionScalper:
                 f.write(json.dumps(entry) + "\n")
         except Exception as e:
             log.warning("[RES-SCALP] Failed to write trade log: %s", str(e)[:100])
+
+    def _update_trade_log(self, pos: ScalpPosition) -> None:
+        """Update the JSONL entry for a resolved position with won/pnl."""
+        try:
+            if not TRADES_FILE.exists():
+                return
+            lines = TRADES_FILE.read_text().strip().split("\n")
+            updated = False
+            for i, line in enumerate(lines):
+                try:
+                    entry = json.loads(line)
+                except Exception:
+                    continue
+                if entry.get("order_id") == pos.order_id:
+                    entry["won"] = pos.won
+                    entry["pnl"] = round(pos.pnl, 2)
+                    entry["resolved"] = True
+                    entry["resolved_at"] = time.time()
+                    lines[i] = json.dumps(entry)
+                    updated = True
+                    break
+            if updated:
+                TRADES_FILE.write_text("\n".join(lines) + "\n")
+        except Exception as e:
+            log.warning("[RES-SCALP] Failed to update trade log: %s", str(e)[:100])
 
     def _notify(self, msg: str, event_data: dict | None = None) -> None:
         """Send Telegram notification + event bus publish."""
