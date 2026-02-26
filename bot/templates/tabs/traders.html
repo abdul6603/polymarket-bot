@@ -77,6 +77,7 @@
             <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;text-align:right;">Current</th>
             <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;text-align:right;">P&L ($)</th>
             <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;text-align:right;">P&L (%)</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;text-align:right;">Payout</th>
             <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;text-align:right;">Lev</th>
             <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">TP / SL</th>
             <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Expires</th>
@@ -475,6 +476,12 @@ function tradersRenderPositions(data) {
     rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);">' + (p.current_price != null ? p.current_price.toFixed(4) : '--') + '</td>';
     rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);color:' + pnlColor + ';">' + pnlSign + '$' + Math.abs(p.pnl).toFixed(2) + '</td>';
     rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);color:' + pnlColor + ';">' + pctSign + p.pnl_pct.toFixed(1) + '%</td>';
+    var payoutText = '--';
+    if (p.status === 'won' && p.shares) { payoutText = '<span style="color:var(--green);">$' + (p.shares * 1.0).toFixed(2) + '</span>'; }
+    else if (p.status === 'lost') { payoutText = '<span style="color:var(--text-muted);">$0.00</span>'; }
+    else if (p.payout != null && p.payout > 0) { payoutText = '$' + p.payout.toFixed(2); }
+    else if (p.shares && p.current_price != null) { payoutText = '<span style="color:var(--text-muted);">~$' + (p.shares * p.current_price).toFixed(2) + '</span>'; }
+    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);font-size:0.66rem;">' + payoutText + '</td>';
     rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);font-size:0.66rem;">' + levText + '</td>';
     rows += '<td style="padding:6px 10px;font-family:var(--font-mono);font-size:0.64rem;">' + tpslText + '</td>';
     rows += '<td style="padding:6px 10px;font-size:0.66rem;" data-end="' + (p.end_date || '') + '" data-platform="' + p.platform + '">' + expiryHtml + '</td>';
@@ -482,7 +489,7 @@ function tradersRenderPositions(data) {
     rows += '</tr>';
   }
   if (filtered.length === 0) {
-    rows = '<tr><td colspan="13" style="padding:20px;text-align:center;color:var(--text-muted);">No live positions</td></tr>';
+    rows = '<tr><td colspan="14" style="padding:20px;text-align:center;color:var(--text-muted);">No live positions</td></tr>';
   }
   tbody.innerHTML = rows;
 
@@ -575,7 +582,7 @@ function tradersToggleView(mode) {
 function tradersExportCSV() {
   if (!_tradersData || !_tradersData.positions) return;
   var filtered = tradersGetFiltered(_tradersData.positions);
-  var header = 'Agent,Market,Direction,Category,Size USD,Entry,Current,PnL USD,PnL %,Leverage,Status\n';
+  var header = 'Agent,Market,Direction,Category,Size USD,Entry,Current,PnL USD,PnL %,Payout,Leverage,Status\n';
   var lines = filtered.map(function(p) {
     return [
       p.agent,
@@ -587,6 +594,7 @@ function tradersExportCSV() {
       p.current_price.toFixed(4),
       p.pnl.toFixed(2),
       p.pnl_pct.toFixed(1),
+      p.payout != null ? p.payout.toFixed(2) : '--',
       p.leverage || '--',
       p.status
     ].join(',');

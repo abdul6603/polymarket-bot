@@ -134,7 +134,8 @@ def _normalize_garves(data: dict | None, mode: str = "live") -> list[dict]:
             "sl_distance_pct": None,
             "edge": None,
             "conviction": None,
-            "payout": None,
+            "payout": round(_safe_float(h.get("size")), 2) if h.get("size") else None,
+            "shares": _safe_float(h.get("size")),
         })
     return positions
 
