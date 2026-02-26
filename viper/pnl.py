@@ -122,6 +122,7 @@ def compute_pnl() -> dict:
     infra_daily = round(infra_monthly / 30, 2)
 
     total_daily_cost = daily_api + infra_daily
+    
     # For a fair daily comparison, estimate daily from total
     agent_totals = costs.get("agent_totals", {})
     days_tracked = max(costs.get("days_tracked", 1), 1)

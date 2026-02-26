@@ -185,10 +185,10 @@ def run_single_scan(cfg: ViperConfig, cycle: int = 0) -> dict:
         _save_pushed_ids(pushed_ids)
         log.info("Pushed %d items to Shelby (score >= 75)", push_count)
     result["shelby_pushes"] = push_count
+    
     # 4. Match intel to markets → build context for Hawk
     matched = update_market_context()
     result["matched"] = matched
-
     # 5. Soren opportunity scout (every 6th cycle = ~30min, or cycle=0 for API trigger)
     run_soren = (cycle == 0) or (cycle % 6 == 1)
     if run_soren:
