@@ -1339,7 +1339,7 @@ class OdinBot:
                 # Positions
                 "open_positions": self._order_mgr.get_open_positions_count(),
                 "total_exposure": round(self._order_mgr.get_total_exposure(), 2),
-                "paper_positions": self._order_mgr.get_paper_positions()
+                "paper_positions": self._order_mgr.get_paper_positions(self._ws_prices)
                     if self._cfg.dry_run else [],
                 "live_positions": self._order_mgr.get_live_positions()
                     if not self._cfg.dry_run else [],

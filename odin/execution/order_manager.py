@@ -598,8 +598,26 @@ class OrderManager:
             return sum(p["notional"] for p in self._paper_positions.values())
         return sum(p.get("notional", 0) for p in self._live_positions.values())
 
-    def get_paper_positions(self) -> list[dict]:
-        return list(self._paper_positions.values())
+    def get_paper_positions(self, current_prices: dict[str, float] | None = None) -> list[dict]:
+        """Return paper positions enriched with current price + P&L for dashboard."""
+        positions = []
+        for p in self._paper_positions.values():
+            pos = dict(p)  # shallow copy
+            if current_prices:
+                symbol = pos.get("symbol", "")
+                price = current_prices.get(symbol, 0)
+                if price > 0:
+                    pos["current_price"] = price
+                    pos["mark_price"] = price
+                    direction = pos.get("direction", "LONG")
+                    entry = pos.get("entry_price", 0)
+                    qty = pos.get("qty", 0)
+                    if direction == "LONG":
+                        pos["pnl_usd"] = round((price - entry) * qty, 2)
+                    else:
+                        pos["pnl_usd"] = round((entry - price) * qty, 2)
+            positions.append(pos)
+        return positions
 
     def set_position_meta(self, position_id: str, key: str, value) -> None:
         """Store metadata on a position (paper or live)."""
