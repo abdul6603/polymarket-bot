@@ -46,8 +46,8 @@ DEFAULT_BUDGETS: dict[str, float] = {
 SYSTEM_DAILY_LIMIT = 12.00
 
 # Thresholds
-THROTTLE_PCT = 80   # At 80% → force local_small (free, no 14B server blocking)
-BLOCK_PCT = 100     # At 100% → force local_small (cheapest)
+THROTTLE_PCT = 80   # At 80% → force local (free, all routes use local 14B)
+BLOCK_PCT = 100     # At 100% → force local (free, all routes use local 14B)
 SPIKE_MULTIPLIER = 3.0  # Hourly burn > 3x expected → alert
 
 # Tail read limit for large JSONL files

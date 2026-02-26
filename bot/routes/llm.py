@@ -245,7 +245,7 @@ def llm_pattern_feed():
 
 @llm_bp.route("/api/llm/cost-savings")
 def llm_cost_savings():
-    """Running total of money saved by using local MLX vs cloud."""
+    """Running total of money saved by using local llama.cpp vs cloud."""
     total_local_calls = 0
     total_cloud_calls = 0
     total_cloud_cost = 0.0

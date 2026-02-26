@@ -528,7 +528,7 @@ def analyze_llm_call_patterns() -> list[dict]:
                         "agent": agent,
                         "task_type": task_type,
                         "issue": f"Using {model} for 'fast' tasks ({count} calls)",
-                        "recommendation": f"Switch to gpt-4o-mini or local 3B model",
+                        "recommendation": f"Switch to local Qwen 14B model (free)",
                         "estimated_savings_monthly": round(savings * 30, 2),
                         "severity": "high" if savings > 1 else "medium",
                     })
@@ -543,7 +543,7 @@ def analyze_llm_call_patterns() -> list[dict]:
                     "agent": agent,
                     "task_type": task_type,
                     "issue": f"High volume ({cloud_count} cloud calls for '{task_type}')",
-                    "recommendation": "Route to local MLX (Qwen 3B/14B) to eliminate cost",
+                    "recommendation": "Route to local Qwen 14B to eliminate cost",
                     "estimated_savings_monthly": round(savings * 30, 2),
                     "severity": "medium",
                 })
