@@ -441,9 +441,17 @@ class ResolutionScalper:
             from py_clob_client.clob_types import OrderArgs, OrderType
             from py_clob_client.order_builder.constants import BUY
 
+            # CLOB needs: maker_amount (price*size) max 2 decimals,
+            # taker_amount (shares) max 4 decimals.
+            # Safest: floor shares to integer so price * int = clean 2 decimals.
+            import math
+            clean_shares = math.floor(shares)
+            if clean_shares < 1:
+                log.warning("[RES-SCALP] Shares too small after floor: %.4f -> %d", shares, clean_shares)
+                return None
             order_args = OrderArgs(
                 price=round(price, 2),
-                size=round(shares, 4),
+                size=float(clean_shares),
                 side=BUY,
                 token_id=token_id,
             )
