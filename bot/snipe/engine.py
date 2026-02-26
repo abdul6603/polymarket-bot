@@ -71,7 +71,13 @@ ASSETS = ("bitcoin",)
 SNIPE_ASSET_BLACKLIST = set()  # BTC is the only asset
 BINANCE_SYMBOLS = {
     "bitcoin": "BTCUSDT",
+    "ethereum": "ETHUSDT",
+    "solana": "SOLUSDT",
+    "xrp": "XRPUSDT",
 }
+
+# All assets that need live prices (flow scanner + resolution scalper)
+PRICE_ASSETS = ("bitcoin", "ethereum", "solana", "xrp")
 ASSET_CONFIG = {
     "bitcoin": {"base_threshold": 60, "budget": 25.0},
 }
@@ -326,7 +332,7 @@ class SnipeEngine:
         self._live_prices: dict[str, float] = {}
         self._price_sources: dict[str, str] = {}
         stale_threshold = 12.0
-        for asset in ASSETS:
+        for asset in PRICE_ASSETS:
             age = self._cache.get_price_age(asset)
             if age <= stale_threshold:
                 price = self._cache.get_price(asset)
@@ -1368,7 +1374,7 @@ class SnipeEngine:
                     "source": getattr(self, "_price_sources", {}).get(asset, "unknown"),
                     "stale": self._cache.get_price_age(asset) > 10.0,
                 }
-                for asset in ASSETS
+                for asset in PRICE_ASSETS
             },
             "success_rate_50": self._compute_success_rate_50(),
             "avg_latency_ms": avg_latency,
