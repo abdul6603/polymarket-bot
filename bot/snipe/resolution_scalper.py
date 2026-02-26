@@ -140,6 +140,71 @@ class ResolutionScalper:
         # Track which windows flow scanner has claimed
         self._flow_claimed: set[str] = set()
 
+        # Reload state from JSONL (survive restarts)
+        self._reload_positions()
+        self._reload_stats()
+
+    def _reload_positions(self) -> None:
+        """Reload unresolved live positions from JSONL so they survive restarts."""
+        if not TRADES_FILE.exists():
+            return
+        try:
+            for line in TRADES_FILE.read_text().strip().split("\n"):
+                if not line.strip():
+                    continue
+                t = json.loads(line)
+                # Only reload unresolved, live (non-dry-run) positions
+                if t.get("won") is not None or t.get("resolved"):
+                    continue
+                if t.get("dry_run", True):
+                    continue
+                pos = ScalpPosition(
+                    window_id=t.get("window_id", ""),
+                    asset=t.get("asset", ""),
+                    direction=t.get("direction", ""),
+                    token_id="",
+                    entry_price=t.get("market_price", 0),
+                    shares=t.get("shares", 0),
+                    size_usd=t.get("bet_size", 0),
+                    probability_at_entry=t.get("probability", 0),
+                    edge_at_entry=t.get("edge", 0),
+                    z_score_at_entry=t.get("z_score", 0),
+                    order_id=t.get("order_id", ""),
+                    entry_time=t.get("timestamp", 0),
+                    window_end_ts=t.get("timestamp", 0) + t.get("remaining_s", 88),
+                )
+                self._positions.append(pos)
+                self._stats["trades"] += 1
+            reloaded = sum(1 for p in self._positions if not p.resolved)
+            if reloaded:
+                log.info("[RES-SCALP] Reloaded %d unresolved live positions from JSONL", reloaded)
+        except Exception as e:
+            log.warning("[RES-SCALP] Failed to reload positions: %s", str(e)[:200])
+
+    def _reload_stats(self) -> None:
+        """Reload cumulative stats from JSONL so dashboard is accurate after restart."""
+        if not TRADES_FILE.exists():
+            return
+        try:
+            for line in TRADES_FILE.read_text().strip().split("\n"):
+                if not line.strip():
+                    continue
+                t = json.loads(line)
+                if t.get("won") is None:
+                    continue
+                if t.get("won"):
+                    self._stats["wins"] += 1
+                else:
+                    self._stats["losses"] += 1
+                self._stats["pnl"] += t.get("pnl", 0)
+                self._stats["trades"] += 1
+            total = self._stats["wins"] + self._stats["losses"]
+            if total:
+                log.info("[RES-SCALP] Loaded stats: %dW/%dL PnL=$%.2f",
+                         self._stats["wins"], self._stats["losses"], self._stats["pnl"])
+        except Exception as e:
+            log.warning("[RES-SCALP] Failed to reload stats: %s", str(e)[:200])
+
     def mark_flow_claimed(self, market_id: str) -> None:
         """Called by flow scanner when it claims a window."""
         self._flow_claimed.add(market_id)
