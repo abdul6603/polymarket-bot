@@ -1101,8 +1101,13 @@ class HawkBot:
                         log.info("[REGIME] Size: $%.2f→$%.2f (%.2fx) | %s",
                                  old_sz, opp.position_size_usd, _regime_mult, opp.market.question[:60])
 
-                    # V10: GPT-5-mini reasoning layer — non-fatal
-                    llm_adj, llm_reason = self._llm_evaluate(opp, market_price)
+                    # V10: GPT-5-mini reasoning layer — skip weather (pure data)
+                    _cat = (opp.market.category or "").lower()
+                    _src = (opp.estimate.edge_source or "").lower()
+                    if _cat == "weather" or _src == "weather_model":
+                        llm_adj, llm_reason = 0.0, ""
+                    else:
+                        llm_adj, llm_reason = self._llm_evaluate(opp, market_price)
                     if llm_adj != 0:
                         brain_edge_adj += llm_adj
                         brain_edge_adj = max(-0.80, min(0.05, brain_edge_adj))
