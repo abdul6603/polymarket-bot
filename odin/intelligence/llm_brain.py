@@ -2,7 +2,7 @@
 
 Architecture:
   1. Data filter (no LLM): CoinGlass regime + price action check per symbol
-  2. Claude Opus 4.6 full analysis for filtered symbols → JSON decision
+  2. Shared LLM router (local Qwen default) full analysis for filtered symbols → JSON decision
   3. Parse JSON into TradeSignal with validation
 
 The brain thinks like a trader: structure + regime + macro must align.
@@ -98,7 +98,7 @@ class OdinBrain:
         regime: object,
         macro: object,
     ) -> list[str]:
-        """Filter symbols worth sending to Opus. Returns list of symbol strings.
+        """Filter symbols worth sending to LLM. Returns list of symbol strings.
 
         A symbol passes if ANY of:
         1. CoinGlass regime score >= threshold (bull or bear — direction exists)
@@ -154,7 +154,7 @@ class OdinBrain:
 
         return passed
 
-    # ── Analyst (Claude Opus 4.6 — the brain) ──
+    # ── Analyst (shared LLM router — local Qwen default) ──
 
     def analyze(
         self,
@@ -177,33 +177,23 @@ class OdinBrain:
             regime, macro, zones, brotherhood, balance, open_positions,
         )
 
-        # Call Claude Opus 4.6 directly (not through shared router — needs specific model)
+        # Route through shared LLM client (local Qwen → cloud fallback)
         try:
-            raw, in_tok, out_tok = _call_opus(
-                model=self._cfg.llm_analyst_model,
+            from shared.llm_client import llm_call
+            raw = llm_call(
                 system=SYSTEM_PROMPT,
                 user=user_prompt,
+                agent="odin",
+                task_type="analyst",
                 max_tokens=self._cfg.llm_max_tokens_analyze,
                 temperature=self._cfg.llm_temperature,
             )
-            # Log cost via shared tracker
-            try:
-                from shared.llm_client import _log_cost
-                # Opus pricing: $15/M input, $75/M output
-                cost = (in_tok * 15.0 + out_tok * 75.0) / 1_000_000
-                _log_cost(
-                    agent="odin", provider="anthropic", model=self._cfg.llm_analyst_model,
-                    task_type="analyst", input_tokens=in_tok, output_tokens=out_tok,
-                    latency_ms=0, cost_usd=cost,
-                )
-            except Exception:
-                pass
         except Exception as e:
-            log.error("[LLM_BRAIN] Opus call failed: %s", str(e)[:200])
+            log.error("[LLM_BRAIN] LLM call failed: %s", str(e)[:200])
             return None
 
         if not raw:
-            log.warning("[LLM_BRAIN] Empty response from Opus")
+            log.warning("[LLM_BRAIN] Empty response from LLM")
             return None
 
         log.info("[LLM_BRAIN] %s raw response (%d chars): %.200s...",
@@ -439,27 +429,6 @@ class OdinBrain:
     @property
     def last_reasoning(self) -> list[str]:
         return self._last_reasoning
-
-
-# ── Anthropic Direct Call (Opus 4.6) ──
-
-def _call_opus(
-    model: str, system: str, user: str,
-    max_tokens: int, temperature: float,
-) -> tuple[str, int, int]:
-    """Call Anthropic Claude Opus directly. Returns (text, in_tokens, out_tokens)."""
-    import os
-    import anthropic
-    client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
-    resp = client.messages.create(
-        model=model,
-        max_tokens=max_tokens,
-        system=system,
-        messages=[{"role": "user", "content": user}],
-        temperature=temperature,
-    )
-    text = resp.content[0].text.strip()
-    return text, resp.usage.input_tokens, resp.usage.output_tokens
 
 
 # ── Data Formatting Helpers ──
