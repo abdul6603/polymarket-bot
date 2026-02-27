@@ -163,6 +163,12 @@ class OdinBot:
         self._ws: Optional[OdinWSManager] = None
         self._ws_prices: dict[str, float] = {}  # WS-cached prices (bare symbol → price)
         self._ws_last_exit_check: float = 0.0
+        self._price_snapshots: list[dict[str, float]] = []  # WS price history for alt movers
+
+        # Scalp sniper — real-time pump/dump detection
+        self._sniper_prices: dict[str, list[tuple[float, float]]] = {}  # coin → [(ts, price), ...]
+        self._sniper_cooldown: dict[str, float] = {}  # coin → last trigger time
+        self._sniper_last_scan: float = 0.0
 
         # Intelligence
         self._journal = OdinJournal()
@@ -265,7 +271,8 @@ class OdinBot:
                  self._cfg.portfolio_max_heat_pct, self._cfg.max_same_direction,
                  self._cfg.notional_cap_major, self._cfg.notional_cap_mid,
                  self._cfg.notional_cap_alt)
-        log.info("  WebSocket: %s", "ENABLED" if self._cfg.ws_enabled else "OFF")
+        log.info("  WebSocket: %s | Scalp Sniper: ON (5s scan)",
+                 "ENABLED" if self._cfg.ws_enabled else "OFF")
         log.info("  Skills: %s", ", ".join(self._skills.skill_names))
         log.info("=" * 60)
 
@@ -312,6 +319,7 @@ class OdinBot:
             asyncio.create_task(self._monitor_loop(), name="monitor"),
             asyncio.create_task(self._brotherhood_loop(), name="brotherhood"),
             asyncio.create_task(self._health_loop(), name="health"),
+            asyncio.create_task(self._scalp_sniper_loop(), name="scalp_sniper"),
         ]
         if self._ws:
             tasks.append(asyncio.create_task(self._ws_event_loop(), name="ws_events"))
@@ -335,6 +343,7 @@ class OdinBot:
             if task.get_name() in (
                 "trading", "coinglass", "macro", "monitor",
                 "brotherhood", "ws_events", "ws_health", "health",
+                "scalp_sniper",
             ):
                 task.cancel()
 
@@ -540,25 +549,27 @@ class OdinBot:
             await asyncio.sleep(self._cfg.cycle_seconds)
 
     def _pick_symbols(self) -> list[tuple[str, str]]:
-        """Pick symbols + direction from regime brain. Returns [(symbol, direction)].
+        """Pick symbols + direction from regime brain + alt movers.
 
-        Symbols are in USDT format (BTCUSDT) for internal consistency.
-        Staggered: analyze up to SYMBOLS_PER_CYCLE per cycle, rotating through universe.
+        Returns [(symbol, direction)] in USDT format.
+        Sources:
+          1. CoinGlass regime opportunities (directional bias)
+          2. Top alt movers from WS prices (scalp candidates — any direction)
         """
         picks: list[tuple[str, str]] = []
+        picked_syms: set[str] = set()
 
+        # ── Source 1: CoinGlass regime opportunities ──
         if self._last_regime and self._last_regime.opportunities:
             all_opps = [
                 opp for opp in self._last_regime.opportunities
                 if opp.symbol in self._hl_tradeable
             ]
 
-            # Filter to config symbols when restricted (BTC+ETH only by default)
             if self._cfg.restrict_to_config_symbols:
                 allowed_bare = {s.replace("USDT", "") for s in self._cfg.symbols}
                 all_opps = [opp for opp in all_opps if opp.symbol in allowed_bare]
 
-            # Stagger: take a rotating window of opportunities
             per_cycle = self._cfg.symbols_per_cycle
             if len(all_opps) > per_cycle:
                 start = self._analysis_offset % max(1, len(all_opps))
@@ -568,7 +579,6 @@ class OdinBot:
                 self._analysis_offset += per_cycle
                 all_opps = windowed
 
-            # Market selection: score and filter opportunities
             scored_opps = []
             for opp in all_opps:
                 try:
@@ -590,14 +600,24 @@ class OdinBot:
                     else:
                         log.debug("[MARKET] %s: score=%d SKIP", opp.symbol, ms.composite)
                 except Exception:
-                    scored_opps.append((opp, 50))  # Pass through on error
+                    scored_opps.append((opp, 50))
 
             scored_opps.sort(key=lambda x: x[1], reverse=True)
             for opp, score in scored_opps:
                 hl_sym = f"{opp.symbol}USDT"
                 picks.append((hl_sym, opp.direction.value))
+                picked_syms.add(hl_sym)
 
-        # Fallback: check majors with regime bias
+        # ── Source 2: Alt movers from WS prices (scalp fuel) ──
+        # Scan for coins that just moved — perfect scalp candidates
+        alt_movers = self._find_alt_movers()
+        slots_left = self._cfg.symbols_per_cycle - len(picks)
+        for sym, direction in alt_movers[:max(slots_left, 4)]:
+            if sym not in picked_syms and not self._order_mgr.has_position_for_symbol(sym):
+                picks.append((sym, direction))
+                picked_syms.add(sym)
+
+        # ── Fallback: majors with regime bias ──
         if not picks:
             bias = "NONE"
             if self._last_regime:
@@ -608,7 +628,16 @@ class OdinBot:
                 elif self._last_macro and self._last_macro.regime.value in ("bear",):
                     bias = "SHORT"
                 else:
-                    log.info("[PICK] Neutral regime + neutral macro — skipping")
+                    # Even in neutral — scan top alts, LLM decides direction
+                    universe = self._get_full_universe()
+                    for sym_bare in universe[:4]:
+                        hl_sym = f"{sym_bare}USDT"
+                        if hl_sym not in picked_syms:
+                            picks.append((hl_sym, "LONG"))  # LLM will override direction
+                    if picks:
+                        log.info("[PICK] Neutral regime — scanning %d alts for LLM", len(picks))
+                        return picks
+                    log.info("[PICK] No symbols to scan")
                     return []
 
             for sym in HL_MAJORS:
@@ -616,6 +645,44 @@ class OdinBot:
                     picks.append((sym, bias))
 
         return picks
+
+    def _find_alt_movers(self) -> list[tuple[str, str]]:
+        """Find alts with recent price movement from WS price snapshots.
+
+        Compares current WS price vs 5-min-ago snapshot. Zero API calls.
+        Returns [(symbol, direction)] sorted by move magnitude.
+        """
+        movers: list[tuple[str, str, float]] = []
+
+        # Need at least 3 snapshots (3+ min of data)
+        if len(self._price_snapshots) < 3:
+            log.info("[ALT-MOVERS] Warming up (%d/3 snapshots)", len(self._price_snapshots))
+            return []
+
+        # Compare current prices vs ~5 min ago
+        old_snap = self._price_snapshots[-5] if len(self._price_snapshots) >= 5 else self._price_snapshots[0]
+        universe = self._get_full_universe()
+
+        for bare in universe:
+            current = self._ws_prices.get(bare, 0)
+            old_price = old_snap.get(bare, 0)
+
+            if current <= 0 or old_price <= 0:
+                continue
+
+            move_pct = (current - old_price) / old_price * 100
+            abs_move = abs(move_pct)
+
+            # Scalp-worthy: >= 0.5% move in 5 min
+            if abs_move >= 0.5:
+                direction = "LONG" if move_pct > 0 else "SHORT"
+                movers.append((f"{bare}USDT", direction, abs_move))
+
+        movers.sort(key=lambda x: x[2], reverse=True)
+        top5 = ", ".join(f"{m[0].replace('USDT','')} {m[1][0]}{m[2]:.1f}%" for m in movers[:5])
+        log.info("[ALT-MOVERS] %d movers (>0.5%%): %s", len(movers), top5 or "none")
+
+        return [(sym, d) for sym, d, _ in movers]
 
     async def _analyze_and_trade(self, symbol: str) -> None:
         """LLM-powered analysis pipeline for one symbol. Opus decides direction."""
@@ -630,16 +697,20 @@ class OdinBot:
         mtf_candles = self._fetch_candles(symbol, self._cfg.mtf, 200)
         ltf_candles = self._fetch_candles(symbol, self._cfg.ltf, 200)
 
-        if not htf_candles or not mtf_candles or not ltf_candles:
-            log.debug("[%s] Insufficient candle data", symbol)
+        if not mtf_candles or not ltf_candles:
+            log.info("[%s] No candle data (mtf=%s ltf=%s)", symbol,
+                     bool(mtf_candles), bool(ltf_candles))
             return
 
-        htf_df = self._candles_to_df(htf_candles)
+        htf_df = self._candles_to_df(htf_candles) if htf_candles else pd.DataFrame()
         mtf_df = self._candles_to_df(mtf_candles)
         ltf_df = self._candles_to_df(ltf_candles)
 
-        if len(htf_df) < 50 or len(mtf_df) < 50 or len(ltf_df) < 20:
-            log.debug("[%s] Not enough candles", symbol)
+        # Scalp-friendly: new alts may lack daily candles — that's OK for scalps
+        # Need enough MTF (4H) for structure + LTF (15m) for entry
+        if len(mtf_df) < 20 or len(ltf_df) < 15:
+            log.info("[%s] Not enough candles (htf=%d mtf=%d ltf=%d)",
+                     symbol, len(htf_df), len(mtf_df), len(ltf_df))
             return
 
         # Current price
@@ -1017,8 +1088,20 @@ class OdinBot:
             self._ws_prices[coin] = price
             self._ws_prices[f"{coin}USDT"] = price
 
-        # Real-time exit checks (every WS tick instead of every 60s)
+        # ── Scalp sniper: track prices for pump/dump detection ──
         now = time.time()
+        self._sniper_track_prices(mids, now)
+
+        # Snapshot prices every 60s for alt mover detection
+        if not self._price_snapshots or now - self._price_snapshots[-1].get("_ts", 0) >= 60:
+            snap = dict(self._ws_prices)
+            snap["_ts"] = now
+            self._price_snapshots.append(snap)
+            # Keep last 10 snapshots (10 min of history)
+            if len(self._price_snapshots) > 10:
+                self._price_snapshots = self._price_snapshots[-10:]
+
+        # Real-time exit checks (every WS tick instead of every 60s)
         if now - self._ws_last_exit_check < 2.0:
             return  # Throttle to max every 2 seconds
         self._ws_last_exit_check = now
@@ -1057,6 +1140,266 @@ class OdinBot:
 
         # Zone alerts: check if price is near high-strength OB zones
         self._check_zone_alerts(mids)
+
+    # ── Scalp Sniper (real-time pump/dump detector) ──
+
+    def _sniper_track_prices(self, mids: dict[str, float], now: float) -> None:
+        """Track price ticks for every coin. Called on every WS update."""
+        for coin, price in mids.items():
+            if coin not in self._sniper_prices:
+                self._sniper_prices[coin] = []
+            self._sniper_prices[coin].append((now, price))
+            # Keep last 5 min of ticks (trim old)
+            cutoff = now - 300
+            self._sniper_prices[coin] = [
+                (t, p) for t, p in self._sniper_prices[coin] if t > cutoff
+            ]
+
+    async def _scalp_sniper_loop(self) -> None:
+        """Every 5 seconds: scan all coins for pump/dump → instant scalp trigger.
+
+        This is the core scalp engine. It doesn't wait for the 5-min trading cycle.
+        Detects: >0.5% move in last 2-3 min across entire universe.
+        Triggers: instant LLM analysis → scalp entry within seconds.
+        """
+        log.info("[SNIPER] Scalp sniper started — scanning every 5s")
+        # Warm up: wait 60s for price history to build
+        await asyncio.sleep(60)
+
+        while self._running:
+            try:
+                await asyncio.sleep(5)
+                now = time.time()
+
+                # Skip if we're at max scalp positions
+                scalp_count = sum(
+                    1 for p in (
+                        self._order_mgr.get_paper_positions()
+                        if self._cfg.dry_run
+                        else self._order_mgr.get_live_positions()
+                    )
+                    if p.get("trade_type") == "scalp"
+                )
+                if scalp_count >= self._cfg.scalp_max_positions:
+                    continue
+
+                # Skip if total positions maxed
+                if self._order_mgr.get_open_positions_count() >= self._cfg.max_open_positions:
+                    continue
+
+                # Check circuit breaker
+                cb = self._breaker.check()
+                if not cb.trading_allowed:
+                    continue
+
+                # Scan all tracked coins for pump/dump
+                triggers = self._sniper_scan(now)
+
+                for sym, direction, move_pct, speed in triggers[:2]:  # Max 2 triggers per scan
+                    if self._order_mgr.has_position_for_symbol(sym):
+                        continue
+                    if self._order_mgr.has_pending_for_symbol(sym):
+                        continue
+
+                    log.info(
+                        "[SNIPER] %s %s %.1f%% in %.0fs — triggering scalp analysis",
+                        sym, direction, move_pct, speed,
+                    )
+
+                    # Fire scalp analysis (non-blocking)
+                    asyncio.create_task(
+                        self._scalp_entry(sym, direction, move_pct),
+                        name=f"scalp_{sym}",
+                    )
+
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                log.debug("[SNIPER] Error: %s", str(e)[:150])
+
+    def _sniper_scan(self, now: float) -> list[tuple[str, str, float, float]]:
+        """Scan all coins for recent pump/dump moves.
+
+        Returns [(symbol, direction, move_pct, seconds)] sorted by move magnitude.
+        """
+        triggers: list[tuple[str, str, float, float]] = []
+
+        for coin, ticks in self._sniper_prices.items():
+            if len(ticks) < 5:
+                continue
+
+            sym = f"{coin}USDT"
+            if sym not in {f"{s}USDT" for s in (self._hl_tradeable or set())}:
+                continue
+
+            # Cooldown: don't re-trigger same coin within 10 min
+            if now - self._sniper_cooldown.get(sym, 0) < 600:
+                continue
+
+            current_price = ticks[-1][1]
+
+            # Check move over different windows (30s, 60s, 120s, 180s)
+            for window_sec in (60, 120, 180):
+                cutoff = now - window_sec
+                old_ticks = [p for t, p in ticks if t <= cutoff + 10 and t >= cutoff - 10]
+                if not old_ticks:
+                    continue
+
+                old_price = old_ticks[0]
+                if old_price <= 0:
+                    continue
+
+                move_pct = (current_price - old_price) / old_price * 100
+                abs_move = abs(move_pct)
+
+                # Thresholds scale with window:
+                # 60s: 0.4%, 120s: 0.6%, 180s: 0.8%
+                min_move = 0.3 + window_sec / 300
+                if abs_move >= min_move:
+                    direction = "LONG" if move_pct > 0 else "SHORT"
+                    triggers.append((sym, direction, abs_move, window_sec))
+                    self._sniper_cooldown[sym] = now
+                    break  # One trigger per coin
+
+        triggers.sort(key=lambda x: x[2], reverse=True)
+        return triggers
+
+    async def _scalp_entry(self, symbol: str, direction: str, move_pct: float) -> None:
+        """Fast scalp entry — minimal analysis, quick decision.
+
+        Uses lighter candle requirements than swing trades.
+        LLM gets told this is a SCALP opportunity specifically.
+        """
+        try:
+            # Quick candle fetch (only MTF + LTF needed for scalps)
+            mtf_candles = self._fetch_candles(symbol, self._cfg.mtf, 50)
+            ltf_candles = self._fetch_candles(symbol, self._cfg.ltf, 50)
+
+            if not ltf_candles or len(ltf_candles) < 10:
+                log.info("[SNIPER] %s: not enough LTF candles (%d)",
+                         symbol, len(ltf_candles) if ltf_candles else 0)
+                return
+
+            mtf_df = self._candles_to_df(mtf_candles) if mtf_candles else pd.DataFrame()
+            ltf_df = self._candles_to_df(ltf_candles)
+
+            # Use empty HTF if not available (new alts)
+            htf_candles = self._fetch_candles(symbol, self._cfg.htf, 50)
+            htf_df = self._candles_to_df(htf_candles) if htf_candles else pd.DataFrame()
+
+            current_price = self._ws_prices.get(
+                symbol.replace("USDT", ""),
+                self._ws_prices.get(symbol, 0),
+            )
+            if current_price <= 0:
+                current_price = self._client.get_price(symbol)
+            if current_price <= 0:
+                return
+
+            # Get structure zones
+            structure_zones = self._ob_memory.get_active_zones(
+                symbol, price_range=(current_price * 0.96, current_price * 1.04),
+            )
+
+            # LLM brain analysis — hint that this is a scalp opportunity
+            balance = self._get_balance()
+            open_count = self._order_mgr.get_open_positions_count()
+
+            trade_signal = self._brain.analyze(
+                symbol=symbol,
+                htf_df=htf_df,
+                mtf_df=mtf_df,
+                ltf_df=ltf_df,
+                current_price=current_price,
+                regime=self._last_regime,
+                macro=self._last_macro,
+                zones=structure_zones,
+                brotherhood=self._brotherhood,
+                balance=balance,
+                open_positions=open_count,
+            )
+
+            if trade_signal is None:
+                log.info("[SNIPER] %s: LLM said FLAT", symbol)
+                return
+
+            # Force trade_type to scalp if LLM didn't set it
+            if not hasattr(trade_signal, "trade_type") or trade_signal.trade_type != "scalp":
+                trade_signal.trade_type = "scalp"
+
+            trade_type = "scalp"
+            sl = trade_signal.stop_loss
+            tp1 = trade_signal.take_profit_1
+
+            # Portfolio guard check
+            self._portfolio_guard.update_state(
+                balance=balance,
+                positions=self._order_mgr.get_paper_positions()
+                    if self._cfg.dry_run else [],
+            )
+            tier = coin_tier(symbol)
+            tier_cap = notional_cap_for_tier(tier, self._cfg)
+            trade_risk = trade_signal.llm_risk_usd if trade_signal.llm_risk_usd > 0                 else self._cfg.risk_per_trade_usd
+
+            guard_decision = self._portfolio_guard.check_trade(
+                symbol=symbol,
+                direction=trade_signal.direction,
+                risk_usd=trade_risk,
+                notional_usd=tier_cap,
+                trade_type=trade_type,
+            )
+            if not guard_decision.allowed:
+                log.info("[SNIPER] %s: Guard blocked: %s",
+                         symbol, "; ".join(guard_decision.reasons))
+                return
+
+            # Position sizing
+            effective_risk = guard_decision.adjusted_risk_usd or trade_risk
+            bare = symbol.replace("USDT", "")
+            size = self._sizer.calculate(
+                balance=balance,
+                entry_price=current_price,
+                stop_loss=sl,
+                confidence=trade_signal.risk_multiplier,
+                trade_type=trade_type,
+                macro_multiplier=1.0,
+                current_exposure=self._order_mgr.get_total_exposure(),
+                conviction_score=trade_signal.conviction_score,
+                structure_zones=structure_zones,
+                direction=trade_signal.direction,
+                notional_cap_override=guard_decision.notional_cap or tier_cap,
+                risk_override=effective_risk,
+            )
+
+            if size.notional_usd < 5:
+                log.info("[SNIPER] %s: position too small ($%.2f)", symbol, size.notional_usd)
+                return
+
+            log.info(
+                "[SNIPER] %s SCALP: %s $%.2f | SL=$%.2f TP=$%.2f "
+                "| risk=$%.0f notional=$%.0f lev=%dx | triggered by %.1f%% move",
+                symbol, trade_signal.direction, current_price,
+                sl, tp1, size.risk_usd, size.notional_usd, size.leverage, move_pct,
+            )
+
+            # Execute — market entry for speed (no limit orders for scalps)
+            pos_id = self._order_mgr.execute_signal(
+                trade_signal, size, balance=self._cycle_balance,
+            )
+
+            if pos_id:
+                log.info("[SNIPER] %s position opened: %s", symbol, pos_id)
+                self._brotherhood.publish_trade_open({
+                    "symbol": symbol, "direction": trade_signal.direction,
+                    "entry_price": current_price,
+                    "conviction_score": trade_signal.conviction_score,
+                    "trade_type": "scalp",
+                })
+
+        except Exception as e:
+            import traceback
+            log.error("[SNIPER] %s error: %s\n%s",
+                      symbol, str(e)[:200], traceback.format_exc())
 
     def _check_zone_alerts(self, mids: dict[str, float]) -> None:
         """Check if any WS prices are near high-strength OB zones."""
