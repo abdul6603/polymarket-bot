@@ -3,11 +3,15 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 
 log = logging.getLogger("killshot.tracker")
+
+_TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+_TG_CHAT = os.getenv("TELEGRAM_CHAT_ID", "")
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -141,9 +145,31 @@ class PaperTracker:
                 trade.outcome.upper(), trade.direction.upper(), trade.asset,
                 trade.pnl, self._session_pnl, wr,
             )
+            emoji = "\u2705" if trade.outcome == "win" else "\u274c"
+            sign = "+" if trade.pnl >= 0 else ""
+            self._notify_tg(
+                f"{emoji} <b>Killshot {trade.outcome.upper()}</b>\n"
+                f"{trade.direction.upper()} {trade.asset.upper()} @ {trade.entry_price:.0%}\n"
+                f"P&L: <b>{sign}${trade.pnl:.2f}</b>\n"
+                f"Session: {sign if self._session_pnl >= 0 else ''}${self._session_pnl:.2f} | WR {wr:.0f}% ({self._session_trades} trades)"
+            )
 
         self._pending = still_pending
         return resolved
+
+    @staticmethod
+    def _notify_tg(text: str) -> None:
+        if not _TG_TOKEN or not _TG_CHAT:
+            return
+        try:
+            import requests
+            requests.post(
+                f"https://api.telegram.org/bot{_TG_TOKEN}/sendMessage",
+                json={"chat_id": _TG_CHAT, "text": text, "parse_mode": "HTML"},
+                timeout=5,
+            )
+        except Exception:
+            pass
 
     # ── File I/O ────────────────────────────────────────────────
 
