@@ -117,7 +117,7 @@ class KillshotEngine:
         shares = round(size_usd / entry_price, 2)
 
         # Log CLOB book vs our simulated entry
-        if market_bid is not None:
+        if market_bid is not None and market_ask is not None:
             fillable = "YES" if entry_price >= market_ask else "NO"
             log.info(
                 "[KILLSHOT] BOOK %s: bid=%.0f¢ ask=%.0f¢ spread=%.1f¢ | "
@@ -125,6 +125,11 @@ class KillshotEngine:
                 direction.upper(), market_bid * 100, market_ask * 100,
                 (market_ask - market_bid) * 100,
                 entry_price * 100, fillable,
+            )
+        elif market_bid is not None:
+            log.info(
+                "[KILLSHOT] BOOK %s: bid=%.0f¢ ask=NONE | our_entry=%.0f¢",
+                direction.upper(), market_bid * 100, entry_price * 100,
             )
         else:
             log.warning("[KILLSHOT] BOOK unavailable for %s", direction)
