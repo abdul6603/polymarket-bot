@@ -282,8 +282,8 @@ class OdinBrain:
             return None
 
         # Required fields — handle multiple naming conventions from LLM
-        action = (data.get("action") or data.get("direction") or "").upper()
-        conviction = data.get("conviction") or data.get("confidence") or 0
+        action = (data.get("action") or data.get("decision") or data.get("direction") or "").upper()
+        conviction = data.get("conviction") or data.get("conviction_score") or data.get("confidence") or 0
         stop_loss = data.get("stop_loss") or 0
         tp1 = data.get("take_profit_1") or data.get("take_profit") or 0
         tp2 = data.get("take_profit_2") or 0
