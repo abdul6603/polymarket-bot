@@ -45,7 +45,8 @@ class PositionTracker:
         if client is None:
             log.info("No CLOB client — skipping chain sync, falling back to trades.jsonl")
             self._seed_from_trades()
-            return
+            return  # Early exit if no client is available
+
 
         try:
             from py_clob_client.clob_types import BalanceAllowanceParams, AssetType
