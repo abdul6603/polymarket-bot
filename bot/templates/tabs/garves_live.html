@@ -261,6 +261,7 @@
       <button class="garves-engine-tab" data-engine="whale" onclick="garvesSelectEngine('whale')">Smart Money</button>
       <button class="garves-engine-tab" data-engine="taker" onclick="garvesSelectEngine('taker')">Taker Engine</button>
       <button class="garves-engine-tab" data-engine="res-scalp" onclick="garvesSelectEngine('res-scalp')">Resolution Scalper</button>
+      <button class="garves-engine-tab" data-engine="killshot" onclick="garvesSelectEngine('killshot')">Killshot</button>
     </div>
 
     <!-- SNIPE ENGINE -->
@@ -607,6 +608,100 @@
         <div class="gv-section-title orange" style="margin-bottom:8px;">Recent Trades</div>
         <table class="data-table"><thead><tr><th>Asset</th><th>Dir</th><th>Entry</th><th>Size</th><th>P%</th><th>Edge</th><th>Result</th><th>PnL</th></tr></thead>
         <tbody id="res-eng-trades-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;">No trades yet</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- KILLSHOT ENGINE -->
+    <div class="garves-engine-panel" id="garves-engine-killshot" style="display:none;">
+      <div class="gv-engine-header" style="border-bottom-color:rgba(239,68,68,0.15);">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="width:8px;height:8px;border-radius:50;background:#ef4444;display:inline-block;animation:pulse-glow 2s ease-in-out infinite;"></span>
+            <span class="gv-engine-header-title">Killshot</span>
+            <span id="killshot-engine-mode" class="gv-mode-badge dry">PAPER</span>
+          </div>
+          <div class="gv-engine-subtitle">Late-Window Maker Snipe &bull; Final 60s of 5m Windows</div>
+        </div>
+      </div>
+
+      <div class="gv-metrics">
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(239,68,68,0.12);color:#ef4444;">#</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="ks-trades">0</div>
+            <div class="gv-metric-lbl">Paper Trades</div>
+          </div>
+        </div>
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(34,197,94,0.12);color:#22c55e;">%</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="ks-wr">--</div>
+            <div class="gv-metric-lbl">Win Rate</div>
+          </div>
+        </div>
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(139,92,246,0.12);color:#8b5cf6;">$</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="ks-pnl">$0.00</div>
+            <div class="gv-metric-lbl">Paper P&amp;L</div>
+          </div>
+        </div>
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(234,179,8,0.12);color:#eab308;">&#9678;</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="ks-avg-entry">--</div>
+            <div class="gv-metric-lbl">Avg Entry</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Strategy Summary -->
+      <div class="glass-card" style="padding:10px 14px;margin-bottom:14px;">
+        <div class="gv-section-title" style="margin-bottom:8px;color:#ef4444;">Strategy</div>
+        <div style="font-size:0.72rem;color:var(--text-secondary);line-height:1.6;">
+          Monitors Binance spot price during 5m windows. In the final 60 seconds, if the price has moved
+          significantly from the open (direction &ldquo;locked&rdquo;), simulates posting a <strong>maker limit order</strong>
+          on the winning side at 82-93&cent;. Zero maker fees + rebates. Holds to resolution.
+        </div>
+        <div class="gv-thresholds-bar" style="margin-top:10px;">
+          <div class="gv-threshold-item">Bankroll: <span id="ks-cfg-bankroll">$50</span></div>
+          <div class="dot-sep"></div>
+          <div class="gv-threshold-item">Max Bet: <span id="ks-cfg-maxbet">$5</span></div>
+          <div class="dot-sep"></div>
+          <div class="gv-threshold-item">Threshold: <span id="ks-cfg-threshold">0.05%</span></div>
+          <div class="dot-sep"></div>
+          <div class="gv-threshold-item">Entry: <span id="ks-cfg-entry">82-93&cent;</span></div>
+          <div class="dot-sep"></div>
+          <div class="gv-threshold-item">Kill Zone: <span id="ks-cfg-killzone">T-60s</span></div>
+        </div>
+      </div>
+
+      <!-- Session Stats -->
+      <div class="glass-card" style="padding:10px 14px;margin-bottom:14px;">
+        <div class="gv-section-title" style="margin-bottom:8px;color:#ef4444;">Session Stats</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+          <div><div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;">Session Trades</div><div id="ks-session-trades" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">0</div></div>
+          <div><div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;">Session Wins</div><div id="ks-session-wins" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);color:#22c55e;">0</div></div>
+          <div><div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;">Session P&amp;L</div><div id="ks-session-pnl" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">$0.00</div></div>
+          <div><div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;">Daily Loss</div><div id="ks-daily-loss" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);color:#ef4444;">$0.00</div></div>
+        </div>
+      </div>
+
+      <!-- Pending Trades -->
+      <div class="glass-card" style="padding:10px 14px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div class="gv-section-title" style="margin-bottom:0;color:#ef4444;">Pending Trades</div>
+          <span id="ks-pending-count" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(239,68,68,0.1);color:#ef4444;font-weight:600;">0</span>
+        </div>
+        <table class="data-table"><thead><tr><th>Asset</th><th>Dir</th><th>Entry</th><th>Size</th><th>Remaining</th></tr></thead>
+        <tbody id="ks-pending-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;">No pending trades</td></tr></tbody></table>
+      </div>
+
+      <!-- Recent Paper Trades -->
+      <div class="glass-card" style="padding:10px 14px;">
+        <div class="gv-section-title" style="margin-bottom:8px;color:#ef4444;">Paper Trade History</div>
+        <table class="data-table"><thead><tr><th>Time</th><th>Asset</th><th>Dir</th><th>Entry</th><th>Size</th><th>Delta%</th><th>Result</th><th>P&amp;L</th></tr></thead>
+        <tbody id="ks-trades-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;">No paper trades yet</td></tr></tbody></table>
       </div>
     </div>
   </div>
@@ -1191,7 +1286,7 @@ function garvesSwitchSub(name) {
 
 /* Engine selector within Engines tab */
 function garvesSelectEngine(name) {
-  var panels = {snipe:'garves-engine-snipe', maker:'garves-engine-maker', whale:'garves-whale-section', taker:'garves-engine-taker', 'res-scalp':'garves-engine-res-scalp'};
+  var panels = {snipe:'garves-engine-snipe', maker:'garves-engine-maker', whale:'garves-whale-section', taker:'garves-engine-taker', 'res-scalp':'garves-engine-res-scalp', killshot:'garves-engine-killshot'};
   Object.keys(panels).forEach(function(k) {
     var el = document.getElementById(panels[k]);
     if (el) el.style.display = k === name ? '' : 'none';
@@ -1536,4 +1631,76 @@ function loadGarvesIntelligence() {
     if (days > 0) return days + 'd ago'; if (hrs > 0) return hrs + 'h ago'; return mins + 'm ago';
   }
 }
+
+/* ── Killshot Data Loader ── */
+function loadKillshotData() {
+  fetch('/api/killshot/status').then(function(r) { return r.json(); }).then(function(d) {
+    var el = function(id) { return document.getElementById(id); };
+    if (el('ks-trades')) el('ks-trades').textContent = d.total_trades || 0;
+    if (el('ks-wr')) el('ks-wr').textContent = d.win_rate != null ? d.win_rate.toFixed(1) + '%' : '--';
+    var pnl = d.total_pnl || 0;
+    if (el('ks-pnl')) { el('ks-pnl').textContent = '$' + pnl.toFixed(2); el('ks-pnl').style.color = pnl >= 0 ? '#22c55e' : '#ef4444'; }
+    if (el('ks-avg-entry')) el('ks-avg-entry').textContent = d.avg_entry_price ? (d.avg_entry_price * 100).toFixed(0) + '\u00a2' : '--';
+    if (el('ks-session-trades')) el('ks-session-trades').textContent = d.session_trades || 0;
+    if (el('ks-session-wins')) el('ks-session-wins').textContent = d.session_wins || 0;
+    var sp = d.session_pnl || 0;
+    if (el('ks-session-pnl')) { el('ks-session-pnl').textContent = '$' + sp.toFixed(2); el('ks-session-pnl').style.color = sp >= 0 ? '#22c55e' : '#ef4444'; }
+    if (el('ks-daily-loss')) el('ks-daily-loss').textContent = '$' + (d.daily_loss || 0).toFixed(2);
+    if (el('ks-pending-count')) el('ks-pending-count').textContent = d.pending || 0;
+
+    /* Pending trades table */
+    var pending = d.pending_details || [];
+    var ptbody = el('ks-pending-tbody');
+    if (ptbody) {
+      if (pending.length === 0) {
+        ptbody.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;">No pending trades</td></tr>';
+      } else {
+        var html = '';
+        pending.forEach(function(p) {
+          var dirColor = p.direction === 'up' ? '#22c55e' : '#ef4444';
+          html += '<tr><td>' + (p.asset || '').toUpperCase() + '</td>';
+          html += '<td style="color:' + dirColor + ';font-weight:600;">' + (p.direction || '').toUpperCase() + '</td>';
+          html += '<td>' + ((p.entry_price || 0) * 100).toFixed(0) + '\u00a2</td>';
+          html += '<td>$' + (p.size_usd || 0).toFixed(2) + '</td>';
+          html += '<td>' + (p.remaining_s || 0) + 's</td></tr>';
+        });
+        ptbody.innerHTML = html;
+      }
+    }
+  }).catch(function() {});
+
+  /* Paper trade history */
+  fetch('/api/killshot/trades').then(function(r) { return r.json(); }).then(function(trades) {
+    var tbody = document.getElementById('ks-trades-tbody');
+    if (!tbody) return;
+    if (!trades || trades.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="text-muted" style="text-align:center;">No paper trades yet</td></tr>';
+      return;
+    }
+    var html = '';
+    trades.slice(-30).reverse().forEach(function(t) {
+      var ts = t.timestamp ? new Date(t.timestamp * 1000).toLocaleTimeString() : '--';
+      var dirColor = t.direction === 'up' ? '#22c55e' : '#ef4444';
+      var resultColor = t.outcome === 'win' ? '#22c55e' : t.outcome === 'loss' ? '#ef4444' : '#888';
+      var pnlVal = t.pnl != null ? '$' + t.pnl.toFixed(2) : '--';
+      var pnlColor = (t.pnl || 0) >= 0 ? '#22c55e' : '#ef4444';
+      var delta = t.spot_delta_pct != null ? (t.spot_delta_pct * 100).toFixed(3) + '%' : '--';
+      html += '<tr>';
+      html += '<td style="font-size:0.68rem;">' + ts + '</td>';
+      html += '<td>' + (t.asset || '').toUpperCase() + '</td>';
+      html += '<td style="color:' + dirColor + ';font-weight:600;">' + (t.direction || '').toUpperCase() + '</td>';
+      html += '<td>' + ((t.entry_price || 0) * 100).toFixed(0) + '\u00a2</td>';
+      html += '<td>$' + (t.size_usd || 0).toFixed(2) + '</td>';
+      html += '<td>' + delta + '</td>';
+      html += '<td style="color:' + resultColor + ';font-weight:600;">' + (t.outcome || 'PENDING').toUpperCase() + '</td>';
+      html += '<td style="color:' + pnlColor + ';">' + (t.outcome ? pnlVal : '--') + '</td>';
+      html += '</tr>';
+    });
+    tbody.innerHTML = html;
+  }).catch(function() {});
+}
+
+/* Auto-refresh Killshot every 10s */
+setInterval(loadKillshotData, 10000);
+setTimeout(loadKillshotData, 2000);
 </script>

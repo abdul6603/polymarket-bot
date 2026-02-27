@@ -2170,6 +2170,30 @@ def engine_comparison():
         },
     }
 
+    # --- Killshot paper trades ---
+    ks_file = data_dir / "killshot_paper.jsonl"
+    ks_trades = _read_jsonl(ks_file)
+    ks_resolved = [t for t in ks_trades if t.get("outcome") in ("win", "loss")]
+    ks_wins = sum(1 for t in ks_resolved if t.get("outcome") == "win")
+    ks_losses = len(ks_resolved) - ks_wins
+    ks_pnl = sum(t.get("pnl", 0) for t in ks_resolved)
+    ks_size = sum(t.get("size_usd", 0) for t in ks_resolved)
+
+    engines["killshot"] = {
+        "name": "Killshot",
+        "allocation_pct": 0,
+        "max_exposure": 50,
+        "trades": len(ks_resolved),
+        "pending": len(ks_trades) - len(ks_resolved),
+        "wins": ks_wins,
+        "losses": ks_losses,
+        "win_rate": _wr(ks_wins, len(ks_resolved)),
+        "pnl": round(ks_pnl, 2),
+        "total_invested": round(ks_size, 2),
+        "avg_size": _avg(ks_size, len(ks_resolved)),
+        "status": "paper",
+    }
+
     total_trades = sum(e["trades"] for e in engines.values())
     total_wins = sum(e["wins"] for e in engines.values())
     total_losses = sum(e["losses"] for e in engines.values())
@@ -2244,3 +2268,50 @@ def api_momentum_end():
         return jsonify({"ok": True})
     except Exception as e:
         return jsonify({"ok": False, "error": str(e)[:200]}), 500
+
+
+# ── Killshot Engine ────────────────────────────────────────
+
+KILLSHOT_STATUS_FILE = DATA_DIR / "killshot_status.json"
+KILLSHOT_PAPER_FILE = DATA_DIR / "killshot_paper.jsonl"
+
+
+@garves_bp.route("/api/killshot/status")
+def api_killshot_status():
+    """Killshot paper trading status and stats."""
+    try:
+        if not KILLSHOT_STATUS_FILE.exists():
+            return jsonify({
+                "total_trades": 0, "resolved": 0, "pending": 0,
+                "wins": 0, "losses": 0, "win_rate": 0,
+                "total_pnl": 0, "avg_entry_price": 0,
+                "session_pnl": 0, "session_trades": 0,
+                "session_wins": 0, "daily_loss": 0,
+                "pending_details": [], "updated_at": 0,
+            })
+        data = json.loads(KILLSHOT_STATUS_FILE.read_text())
+        return jsonify(data)
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
+
+
+@garves_bp.route("/api/killshot/trades")
+def api_killshot_trades():
+    """Killshot paper trade history."""
+    try:
+        if not KILLSHOT_PAPER_FILE.exists():
+            return jsonify([])
+        trades = []
+        with open(KILLSHOT_PAPER_FILE) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    trades.append(json.loads(line))
+                except Exception:
+                    continue
+        limit = int(request.args.get("limit", 50))
+        return jsonify(trades[-limit:])
+    except Exception as e:
+        return jsonify({"error": str(e)[:200]}), 500
