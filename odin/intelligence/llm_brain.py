@@ -296,7 +296,10 @@ class OdinBrain:
             reasoning = [f"{k}: {v}" if isinstance(v, str) else f"{k}: {json.dumps(v)}"
                          for k, v in reasoning.items()]
 
-        # Validate action
+        # Normalize action (LLMs may prefix with SWING_/SCALP_)
+        for prefix in ("SWING_", "SCALP_"):
+            if action.startswith(prefix):
+                action = action[len(prefix):]
         if action not in ("LONG", "SHORT", "FLAT"):
             log.warning("[LLM_BRAIN] Invalid action: %s", action)
             return None
