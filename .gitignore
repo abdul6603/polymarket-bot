@@ -14,3 +14,7 @@ data/kalshi_private.pem
 data/*.db
 data/*.db-wal
 data/*.db-shm
+# Runtime trade data — NEVER let git overwrite live JSONL/JSON files
+data/*.jsonl
+data/*.json
+data/archives/
