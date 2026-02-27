@@ -128,8 +128,8 @@ class KillshotEngine:
         )
         self._tracker.record_trade(trade)
 
-        # Track against daily loss cap (pessimistic: full position at risk)
-        self._daily_loss += size_usd
+        # Track daily loss cap using actual losses only (updated on resolution)
+        # Don't count here — tracker handles it via report_loss()
 
         log.info(
             "[KILLSHOT] FIRE: %s %s | delta=%.3f%% | entry=%.0f¢ | "
@@ -137,6 +137,16 @@ class KillshotEngine:
             direction.upper(), window.asset.upper(), delta * 100,
             entry_price * 100, size_usd, shares, remaining,
         )
+
+    def report_resolved(self, trades: list[PaperTrade]) -> None:
+        """Update daily loss counter from actually resolved trades."""
+        for trade in trades:
+            if trade.outcome == "loss":
+                self._daily_loss += abs(trade.pnl)
+                log.info(
+                    "[KILLSHOT] Daily loss updated: +$%.2f → $%.2f / $%.2f cap",
+                    abs(trade.pnl), self._daily_loss, self._cfg.daily_loss_cap_usd,
+                )
 
     def cleanup_expired(self) -> None:
         """Remove old window IDs to prevent memory growth."""

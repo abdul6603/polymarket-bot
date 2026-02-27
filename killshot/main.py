@@ -233,7 +233,9 @@ def main() -> None:
             engine.tick(window_tracker.all_active_windows())
 
             # Resolve completed paper trades
-            tracker.resolve_trades(price_cache)
+            resolved = tracker.resolve_trades(price_cache)
+            if resolved:
+                engine.report_resolved(resolved)
 
             # Periodic cleanup (every hour)
             if tick_count % 3600 == 0:
