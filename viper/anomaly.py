@@ -148,7 +148,7 @@ def _check_garves_performance() -> list[dict]:
     resolved = [t for t in trades if t.get("resolved") or t.get("status") == "resolved"]
     if len(resolved) < MIN_TRADES_FOR_WINRATE:
         return alerts
-    
+
     wins = sum(1 for t in resolved if (t.get("profit", 0) or t.get("pnl", 0) or 0) > 0)
     win_rate = wins / len(resolved)
 
@@ -159,9 +159,9 @@ def _check_garves_performance() -> list[dict]:
             win_rate=round(win_rate, 3),
             sample_size=len(resolved),
         ))
+    log.info("Garves performance checks completed with %d alerts", len(alerts))
 
     return alerts
-
 
 def _check_hawk_performance() -> list[dict]:
     """Check Hawk win rate and P&L regression."""

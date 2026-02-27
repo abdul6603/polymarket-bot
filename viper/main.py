@@ -1,409 +1,1411 @@
-"""Viper Main Loop — 24/7 market intelligence engine.
-
-Scans real-time data sources every 5 minutes:
-  1. Tavily — breaking news across all categories
-  2. Polymarket — volume spikes, trending markets
-  3. Reddit — prediction market communities
-
-Feeds intelligence directly to Hawk for enhanced probability analysis.
-"""
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
+import signal
+import sys
 import time
-from dataclasses import asdict
-from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-from viper.config import ViperConfig
-from viper.scanner import scan_all
-from viper.intel import append_intel, load_intel, save_intel, IntelItem
-from viper.market_matcher import update_market_context
-from viper.cost_audit import audit_all, find_waste, get_llm_cost_recommendations
-from viper.scorer import score_intel
-from viper.shelby_push import push_to_shelby
+from bot.binance_feed import BinanceFeed
+from bot.config import Config
+from bot.conviction import ConvictionEngine
+from bot.derivatives_feed import DerivativesFeed
+from bot.http_session import get_session
+from bot.auth import build_client
+from bot.execution import Executor
+from bot.market_discovery import fetch_markets, rank_markets
+from bot.general_maker import scan_maker_markets, markets_for_engine, save_scan_results
+from bot.price_cache import PriceCache
+from bot.momentum import detect_momentum, MomentumState
+from bot.regime import RegimeAdjustment, detect_regime
+from bot.risk import PositionTracker, DrawdownBreaker, check_risk
+from bot.signals import SignalEngine
+from bot.bankroll import BankrollManager
+from bot.straddle import StraddleEngine
+from bot.tracker import PerformanceTracker
+from bot.ws_feed import MarketFeed
+from bot.v2_tools import is_emergency_stopped, accept_commands, process_command
+from bot.daily_cycle import should_reset, archive_and_reset
+from bot.orderbook_check import check_orderbook_depth
+from bot.macro import get_context as get_macro_context
+from bot.maker_engine import MakerEngine
+from bot.market_quality import MarketQualityScorer
+from bot.performance_monitor import PerformanceMonitor
+from bot.snipe.engine import SnipeEngine
+from bot.whale_follower import WhaleTracker
+from bot.whale_config import MAX_COPY_SIZE_USD, MAX_DAILY_EXPOSURE_USD
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("bot")
 
-# Agent Brain — learning memory
-_viper_brain = None
-try:
-    import sys as _sys
-    _sys.path.insert(0, str(Path.home() / "shared"))
-    _sys.path.insert(0, str(Path.home()))
-    from agent_brain import AgentBrain
-    _viper_brain = AgentBrain("viper", system_prompt="You are Viper, a market intelligence scanner.", task_type="fast")
-except Exception:
-    pass
-
-DATA_DIR = Path(__file__).parent.parent / "data"
-STATUS_FILE = DATA_DIR / "viper_status.json"
-OPPS_FILE = DATA_DIR / "viper_opportunities.json"
-COSTS_FILE = DATA_DIR / "viper_costs.json"
-PUSHED_FILE = DATA_DIR / "viper_pushed.json"
+# Telegram trade alerts — loaded from .env (never hardcode secrets)
+import os
+_TG_TOKEN = os.environ.get("TG_BOT_TOKEN", "")
+_TG_CHAT = os.environ.get("TG_CHAT_ID", "")
 
 
-def _load_pushed_ids() -> set:
-    """Load set of already-pushed intel IDs to avoid re-pushing to Shelby."""
-    if PUSHED_FILE.exists():
-        try:
-            return set(json.loads(PUSHED_FILE.read_text()))
-        except Exception:
-            pass
-    return set()
-
-
-def _save_pushed_ids(ids: set) -> None:
-    DATA_DIR.mkdir(exist_ok=True)
+def _send_telegram(text: str) -> bool:
+    """Send a Telegram message to Jordan via Shelby's bot."""
+    if not _TG_TOKEN or not _TG_CHAT:
+        return False
     try:
-        PUSHED_FILE.write_text(json.dumps(list(ids)[-500:]))  # cap at 500
-    except Exception:
-        log.exception("Failed to save pushed IDs")
+        import requests
+        resp = requests.post(
+            f"https://api.telegram.org/bot{_TG_TOKEN}/sendMessage",
+            json={"chat_id": _TG_CHAT, "text": text, "parse_mode": "Markdown"},
+            timeout=10,
+        )
+        if resp.status_code == 200:
+            return True
+        # Retry without parse_mode in case of markdown errors
+        retry = requests.post(
+            f"https://api.telegram.org/bot{_TG_TOKEN}/sendMessage",
+            json={"chat_id": _TG_CHAT, "text": text},
+            timeout=10,
+        )
+        return retry.status_code == 200
+    except Exception as e:
+        log.warning("Telegram alert failed: %s", str(e)[:100])
+        return False
 
-from zoneinfo import ZoneInfo
-ET = ZoneInfo("America/New_York")
 
-BRAIN_FILE = DATA_DIR / "brains" / "viper.json"
-
-
-def _load_brain_notes() -> list[dict]:
-    if BRAIN_FILE.exists():
-        try:
-            data = json.loads(BRAIN_FILE.read_text())
-            return data.get("notes", [])
-        except Exception:
-            pass
-    return []
-
-
-def _save_status(summary: dict) -> None:
-    DATA_DIR.mkdir(exist_ok=True)
-    summary["last_update"] = datetime.now(ET).isoformat()
+def _fetch_implied_price_rest(cfg: Config, market_id: str, up_token_id: str) -> float | None:
+    """REST fallback: fetch current token price from CLOB when WS has no data."""
     try:
-        STATUS_FILE.write_text(json.dumps(summary, indent=2))
+        resp = get_session().get(
+            f"{cfg.clob_host}/markets/{market_id}",
+            timeout=5,
+        )
+        if resp.status_code != 200:
+            return None
+        data = resp.json()
+        tokens = data.get("tokens", [])
+        for t in tokens:
+            if t.get("token_id") == up_token_id:
+                price = t.get("price")
+                if price is not None:
+                    return float(price)
+        return None
     except Exception:
-        log.exception("Failed to save Viper status")
+        return None
 
 
-def _save_opportunities(items: list[dict]) -> None:
-    try:
-        OPPS_FILE.write_text(json.dumps({"opportunities": items, "updated": time.time()}, indent=2))
-    except Exception:
-        log.exception("Failed to save Viper opportunities")
+class TradingBot:
+    def __init__(self, cfg: Config):
+        self.cfg = cfg
+        self._setup_logging()
 
+        self.tracker = PositionTracker()
+        self.drawdown_breaker = DrawdownBreaker()
+        self.drawdown_breaker.update()  # scan trades on startup
+        self.price_cache = PriceCache()
+        self.price_cache.preload_from_disk()
+        self.signal_engine = SignalEngine(cfg, self.price_cache)
+        self.binance_feed = BinanceFeed(cfg, self.price_cache)
+        self.feed = MarketFeed(cfg)
 
-def _save_costs(costs: dict) -> None:
-    try:
-        COSTS_FILE.write_text(json.dumps(costs, indent=2))
-    except Exception:
-        log.exception("Failed to save Viper costs")
+        # Build CLOB client (needed for snipe live mode even when taker is dry-run)
+        if cfg.private_key:
+            self.client = build_client(cfg)
+        else:
+            self.client = None
+            log.warning("No private key configured")
 
+        # Sync tracker with real Polymarket positions
+        self.tracker.sync_from_chain(self.client)
 
-def run_single_scan(cfg: ViperConfig, cycle: int = 0) -> dict:
-    """Run a single intelligence scan cycle. Used by both the main loop and the API trigger.
-
-    Tavily runs every cycle when triggered from API, but only every 3rd cycle
-    in the main loop (to save Tavily credits). Reddit + Polymarket always run.
-    cycle=0 means "run everything" (API trigger).
-    """
-    result = {"intel_count": 0, "matched": 0, "sources": {}, "briefing_active": False}
-
-    # Check if Hawk briefing exists
-    briefing_file = DATA_DIR / "hawk_briefing.json"
-    if briefing_file.exists():
-        try:
-            import json as _json
-            bf = _json.loads(briefing_file.read_text())
-            import time as _time
-            age = _time.time() - bf.get("generated_at", 0)
-            result["briefing_active"] = age < 7200
-            result["briefed_markets"] = bf.get("briefed_markets", 0)
-        except Exception:
-            pass
-
-    # Determine if Tavily should run this cycle
-    # cycle=0 → always run (API trigger), otherwise every 3rd cycle
-    run_tavily = (cycle == 0) or (cycle % 3 == 1)
-
-    # 1. Scan sources (Tavily conditionally, Reddit+Polymarket always)
-    if run_tavily:
-        intel_items = scan_all(cfg.tavily_api_key, cfg.clob_host)
-    else:
-        # Skip Tavily, only free sources
-        from viper.scanner import scan_polymarket_activity, scan_reddit_predictions
-        intel_items = []
-        seen_ids: set[str] = set()
-        seen_ids = set()
-        for item in scan_polymarket_activity(cfg.clob_host):
-            if item.id not in seen_ids:
-                seen_ids.add(item.id)
-                intel_items.append(item)
-        for item in scan_reddit_predictions():
-            if item.id not in seen_ids:
-                seen_ids.add(item.id)
-                intel_items.append(item)
-        log.info("Tavily skipped this cycle (cycle %d, runs every 3rd)", cycle)
-
-    result["intel_count"] = len(intel_items)
-    result["tavily_ran"] = run_tavily
-
-    # Count by source
-    for item in intel_items:
-        src = item.source.split("/")[0] if "/" in item.source else item.source
-        result["sources"][src] = result["sources"].get(src, 0) + 1
-
-    # 2. Append to intel feed (deduplicates)
-    new_count = append_intel(intel_items)
-    result["new_items"] = new_count
-
-    # 3. Score and save as opportunities
-    scored = []
-    for item in intel_items:
-        score = score_intel(item)
-        d = asdict(item)
-        d["score"] = score
-        scored.append(d)
-    scored.sort(key=lambda x: x["score"], reverse=True)
-    _save_opportunities(scored[:100])
-
-    # 3b. Push high-scoring items to Shelby (score >= 75, deduped)
-    pushed_ids = _load_pushed_ids()
-    push_count = 0
-    for sd in scored:
-        if sd["score"] >= 75 and sd["id"] not in pushed_ids:
+        self.derivatives_feed = DerivativesFeed(cfg)
+        self.executor = Executor(cfg, self.client, self.tracker)
+        self.conviction_engine = ConvictionEngine()
+        self.straddle_engine = StraddleEngine(cfg, self.executor, self.tracker, self.price_cache)
+        self.maker_engine = MakerEngine(cfg, self.client, self.price_cache)
+        # Build separate CLOB client for snipe/res-scalp wallet (if configured)
+        snipe_client = self.client  # default: shared maker wallet
+        _snipe_key = os.environ.get("SNIPE_PRIVATE_KEY", "")
+        if _snipe_key:
             try:
-                item_obj = IntelItem(**{k: v for k, v in sd.items() if k != "score"})
-                if push_to_shelby(cfg, item_obj, sd["score"]):
-                    pushed_ids.add(sd["id"])
-                    push_count += 1
+                from py_clob_client.client import ClobClient as _SC
+                from py_clob_client.clob_types import ApiCreds as _SA
+                snipe_client = _SC(
+                    cfg.clob_host,
+                    key=_snipe_key,
+                    chain_id=137,
+                    funder=os.environ.get("SNIPE_FUNDER_ADDRESS") or cfg.funder_address or None,
+                    signature_type=2,
+                )
+                _sapi = os.environ.get("SNIPE_CLOB_API_KEY", "")
+                if _sapi:
+                    snipe_client.set_api_creds(_SA(
+                        api_key=_sapi,
+                        api_secret=os.environ.get("SNIPE_CLOB_API_SECRET", ""),
+                        api_passphrase=os.environ.get("SNIPE_CLOB_API_PASSPHRASE", ""),
+                    ))
+                snipe_client.get_ok()
+                log.info("Snipe/Res-Scalp CLOB connection OK (own wallet)")
             except Exception:
-                log.exception("Failed to push item %s to Shelby", sd.get("id", "?"))
-            if push_count >= 5:  # cap at 5 pushes per cycle
-                break
-    if push_count > 0:
-        _save_pushed_ids(pushed_ids)
-        log.info("Pushed %d items to Shelby (score >= 75)", push_count)
-    result["pushes"] = push_count
-    
-    # 4. Match intel to markets → build context for Hawk
-    matched = update_market_context()
-    result["matched"] = matched
-    # 5. Soren opportunity scout (every 6th cycle = ~30min, or cycle=0 for API trigger)
-    run_soren = (cycle == 0) or (cycle % 6 == 1)
-    if run_soren:
+                log.warning("Snipe wallet init failed — falling back to shared client")
+                snipe_client = self.client
+
+        self.snipe_engine = SnipeEngine(
+            cfg=cfg,
+            price_cache=self.price_cache,
+            clob_client=snipe_client,
+            dry_run=cfg.snipe_dry_run,  # Independent SNIPE_DRY_RUN override
+            budget_per_window=cfg.snipe_budget_per_window,
+            delta_threshold=cfg.snipe_delta_threshold / 100,
+        )
+        log.info("[SNIPE] dry_run=%s (SNIPE_DRY_RUN)", cfg.snipe_dry_run)
+
+        # Whale Follower — Smart Money copy trader (uses snipe wallet)
+        self.whale_tracker = WhaleTracker(
+            clob_client=snipe_client,
+            dry_run=cfg.dry_run,
+        )
+
+        # Connect CLOB orderbook bridge — REST-based with 5s cache
+        from bot.snipe import clob_book
+        clob_book.init(cfg.clob_host)
+        self.perf_tracker = PerformanceTracker(cfg, position_tracker=self.tracker)
+        self.quality_scorer = MarketQualityScorer(cfg.clob_host, self.price_cache)
+        self.perf_monitor = PerformanceMonitor()
+        self.bankroll_manager = BankrollManager()
+
+        # Shared balance manager — cross-agent wallet coordination
+        self._balance_mgr = None
         try:
-            from viper.soren_scout import scout_soren_opportunities
-            soren_opps = scout_soren_opportunities(cfg.tavily_api_key)
-            result["soren_opportunities"] = len(soren_opps)
-            log.info("Soren scout: %d opportunities found", len(soren_opps))
+            sys.path.insert(0, str(Path.home() / "shared"))
+            from balance_manager import BalanceManager
+            self._balance_mgr = BalanceManager("garves")
+            self._balance_mgr.register(float(os.environ.get("GARVES_ALLOCATION_WEIGHT", "5")))
+        except Exception as e:
+            log.info("[BALANCE] Shared balance manager not available: %s", str(e)[:100])
+
+        self._shutdown_event = asyncio.Event()
+        self._subscribed_tokens: set[str] = set()
+        # Track when tokens were first subscribed (for warmup)
+        self._subscribe_time: dict[str, float] = {}
+
+        # Agent Hub heartbeat (optional integration — add ~/.agent-hub to path for import)
+        self._hub = None
+        try:
+            import sys as _sys
+            _sys.path.insert(0, str(Path.home() / ".agent-hub"))
+            from hub import AgentHub
+            self._hub = AgentHub("garves")
+            self._hub.register(capabilities=[
+                "trading", "signals", "conviction_engine",
+                "straddle", "multi_asset", "multi_timeframe",
+            ])
         except Exception:
-            log.exception("Soren scout failed")
-            result["soren_opportunities"] = 0
-    else:
-        result["soren_opportunities"] = -1  # -1 = skipped this cycle
+            pass
+        # Agent Brain — learning memory + LLM reasoning
+        self._brain = None
+        self._shared_llm_call = None
+        try:
+            import sys as _sys2
+            _sys2.path.insert(0, str(Path.home() / "shared"))
+            _sys2.path.insert(0, str(Path.home()))
+            from agent_brain import AgentBrain
+            from llm_client import llm_call as _garves_llm
+            self._brain = AgentBrain("garves", system_prompt="You are Garves V2, The Directional Sniper. You trade probabilities on Polymarket crypto up-or-down markets. You measure everything, trade less but better, and never assume bad luck.", task_type="analysis")
+            self._shared_llm_call = _garves_llm
+        except Exception:
+            pass
+        self._trade_journal_counter = 0  # Counts resolved trades for LLM analysis trigger
+        self._tick_counter = 0  # For periodic cache clearing (fee rates TTL)
 
-    return result
+        # Per-market cooldown: market_id -> last trade timestamp
+        self._market_cooldown: dict[str, float] = {}
+        self.COOLDOWN_SECONDS = 90  # 1.5 min cooldown after trading a market
+        # Per-market stacking cap: market_id -> trade count (prevents concentrated risk)
+        # Loaded from trades.jsonl so counts survive bot restarts mid-day
+        self._market_trade_count: dict[str, int] = self._load_market_counts()
+        if self._market_trade_count:
+            log.info("Loaded market trade counts from trades file: %d markets, %d total trades",
+                     len(self._market_trade_count),
+                     sum(self._market_trade_count.values()))
+        self.MAX_TRADES_PER_MARKET = 1  # Max 1 trade per market — no stacking (was 3, caused $73 concentrated loss)
+        # Smart stacking: escalating conviction for each additional bet in same window
+        self.STACK_EDGE_ESCALATION = 0.02       # +2% edge per stacked bet
+        self.STACK_CONFIDENCE_ESCALATION = 0.05  # +5% confidence per stacked bet
 
+        # Balance cache: written by the bot (which has VPN), read by dashboard
+        self._balance_cache_file = Path(__file__).parent.parent / "data" / "polymarket_balance.json"
+        self._last_balance_sync = 0.0
 
-class ViperBot:
-    """The Silent Assassin — 24/7 market intelligence engine feeding Hawk."""
+    def _load_market_counts(self) -> dict[str, int]:
+        """Load market trade counts from today's trades file to survive restarts."""
+        import json as _json
+        trades_file = Path(__file__).parent.parent / "data" / "trades.jsonl"
+        counts: dict[str, int] = {}
+        if not trades_file.exists():
+            return counts
+        try:
+            for line in trades_file.read_text().splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                trade = _json.loads(line)
+                mid = trade.get("market_id", "")
+                if mid:
+                    counts[mid] = counts.get(mid, 0) + 1
+        except Exception as e:
+            log.warning("Failed to load market counts from trades: %s", str(e)[:100])
+        return counts
 
-    def __init__(self):
-        self.cfg = ViperConfig()
-        self.cycle = 0
-        self.total_intel = 0
-        self.total_matched = 0
-        self._total_pushes = len(_load_pushed_ids())
+    def _sync_balance_cache(self) -> None:
+        """Write real USDC balance to cache file every 2 min (for dashboard)."""
+        import json as _json
+        now = time.time()
+        if now - self._last_balance_sync < 120:
+            return
+        self._last_balance_sync = now
+        if self.client is None:
+            return
+        try:
+            from py_clob_client.clob_types import BalanceAllowanceParams, AssetType
+            params = BalanceAllowanceParams(
+                asset_type=AssetType.COLLATERAL,
+                signature_type=2,
+            )
+            result = self.client.get_balance_allowance(params)
+            cash = int(result.get("balance", "0")) / 1e6
+
+            # Position value from tracker
+            pos_val = sum(
+                p.shares * p.current_price
+                for p in self.tracker.positions.values()
+                if p.shares > 0
+            ) if hasattr(self.tracker, 'positions') else 0.0
+
+            bankroll = float(self.cfg.bankroll_usd) if hasattr(self.cfg, 'bankroll_usd') else 250.0
+            portfolio = cash + pos_val
+            cache = {
+                "portfolio": round(portfolio, 2),
+                "cash": round(cash, 2),
+                "positions_value": round(pos_val, 2),
+                "pnl": round(portfolio - bankroll, 2),
+                "bankroll": bankroll,
+                "live": True,
+                "error": None,
+                "fetched_at": now,
+                "source": "garves_bot",
+            }
+            self._balance_cache_file.write_text(_json.dumps(cache, indent=2))
+            log.info("[BALANCE] Cash=$%.2f Positions=$%.2f Portfolio=$%.2f",
+                     cash, pos_val, portfolio)
+            # Sync to shared balance manager
+            if self._balance_mgr:
+                try:
+                    self._balance_mgr.update_wallet(cash, pos_val)
+                except Exception:
+                    pass
+        except Exception as e:
+            log.debug("Balance sync failed: %s", str(e)[:100])
+
+    def _setup_logging(self) -> None:
+        # force=True removes ALL existing handlers and sets exactly one
+        logging.basicConfig(
+            level=getattr(logging, self.cfg.log_level.upper(), logging.INFO),
+            format="%(asctime)s.%(msecs)03d [%(levelname)s] %(name)s: %(message)s",
+            datefmt="%H:%M:%S",
+            force=True,
+        )
 
     async def run(self) -> None:
-        logging.basicConfig(
-            level=logging.INFO,
-            format="%(asctime)s %(levelname)-7s [VIPER] %(message)s",
-            datefmt="%H:%M:%S",
-        )
-        log.info("Viper starting — The Silent Assassin (24/7 Intelligence Engine)")
-        log.info("Config: cycle=%dmin, tavily=%s, clob=%s",
-                 self.cfg.cycle_minutes,
-                 "YES" if self.cfg.tavily_api_key else "NO",
-                 self.cfg.clob_host[:30])
+        """Main async loop: discover → evaluate all markets → trade best signals."""
+        log.info("=" * 60)
+        log.info("Garves V2 — The Directional Sniper")
+        log.info("Trade probabilities, not narratives. Measure everything. Scale only what is proven.")
+        log.info("Assets: BTC, ETH, SOL, XRP | Timeframes: 5m(snipe), 15m, 1h, 4h, weekly")
+        log.info("Pipeline: Quality Gate -> Signal -> Conviction -> Execute -> Analyze -> Learn")
+        log.info("Risk: max %d concurrent, $%.2f cap, 5min cooldown",
+                 self.cfg.max_concurrent_positions, self.cfg.max_position_usd)
+        log.info("Dry run: %s | Tick: %ds", self.cfg.dry_run, self.cfg.tick_interval_s)
+        bankroll_status = self.bankroll_manager.get_status()
+        log.info("Bankroll: $%.2f (PnL: $%+.2f, mult: %.2fx)",
+                 bankroll_status["bankroll_usd"], bankroll_status["pnl_usd"],
+                 bankroll_status["multiplier"])
+        log.info("V2: kill_switch, post_trade_analysis, market_quality, self_improvement, edge_monitor")
+        if self.snipe_engine.enabled:
+            log.info("SnipeEngine: ENABLED (budget=$%.0f/window, delta=%.2f%%, 3-wave pyramid)",
+                     self.cfg.snipe_budget_per_window, self.cfg.snipe_delta_threshold)
+        else:
+            log.info("SnipeEngine: disabled (set SNIPE_ENABLED=true to activate)")
+        if self.maker_engine.enabled:
+            log.info("MakerEngine V2: ENABLED (bankroll=$%.0f, quote=$%.0f, dry_run=%s, tick=%.0fs)",
+                     self.cfg.maker_bankroll_usd, self.maker_engine.quote_size_usd,
+                     self.cfg.maker_dry_run, self.maker_engine.tick_interval_s)
+        else:
+            log.info("MakerEngine: disabled (set MAKER_ENABLED=true to activate)")
+        if self.cfg.whale_enabled:
+            log.info("WhaleTracker: ENABLED (poll=%.0fs, max_copy=$%.0f, daily_cap=$%.0f)",
+                     self.cfg.whale_poll_interval_s, MAX_COPY_SIZE_USD, MAX_DAILY_EXPOSURE_USD)
+        else:
+            log.info("WhaleTracker: disabled (set WHALE_ENABLED=true to activate)")
+        log.info("=" * 60)
 
-        _save_status({"running": True, "total_intel": 0, "total_matched": 0, "mode": "intelligence"})
+        # Start Binance real-time price feed + derivatives feed + Polymarket WebSocket feed
+        await self.binance_feed.start()
+        await self.derivatives_feed.start()
+        await self.feed.start()
 
-        while True:
-            self.cycle += 1
-            cycle_start = time.time()
-            log.info("=== Viper Cycle %d ===", self.cycle)
+        loop = asyncio.get_running_loop()
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(sig, self._handle_shutdown)
+
+        try:
+            # Run taker + maker + snipe + whale loops concurrently
+            taker_task = asyncio.create_task(self._taker_loop())
+            maker_task = asyncio.create_task(self._maker_loop())
+            snipe_task = asyncio.create_task(self._snipe_loop())
+            whale_task = asyncio.create_task(self._whale_loop())
+            await asyncio.gather(taker_task, maker_task, snipe_task, whale_task)
+        finally:
+            await self._cleanup()
+
+    async def _taker_loop(self) -> None:
+        """Taker strategy loop: evaluate markets every tick_interval_s."""
+        while not self._shutdown_event.is_set():
+            try:
+                await self._tick()
+            except Exception as e:
+                log.warning("[TAKER] Tick error (continuing): %s", str(e)[:200])
+            try:
+                await asyncio.wait_for(
+                    self._shutdown_event.wait(),
+                    timeout=self.cfg.tick_interval_s,
+                )
+            except asyncio.TimeoutError:
+                pass
+
+    async def _maker_loop(self) -> None:
+        """Maker strategy loop: refresh quotes every maker_tick_interval_s."""
+        if not self.maker_engine.enabled:
+            return
+
+        log.info("[MAKER] Maker loop started (%.0fs interval)", self.maker_engine.tick_interval_s)
+
+        # Cache of discovered markets for maker quoting
+        _maker_markets: list[dict] = []
+        _last_discovery = 0.0
+
+        while not self._shutdown_event.is_set():
+            try:
+                now = time.time()
+
+                # Re-discover maker markets every 120s (includes book checks)
+                if now - _last_discovery > 120:
+                    try:
+                        maker_mkts = scan_maker_markets(
+                            gamma_host=self.cfg.gamma_host,
+                            clob_host=self.cfg.clob_host,
+                        )
+                        _maker_markets = markets_for_engine(maker_mkts)
+                        save_scan_results(maker_mkts)
+                        _last_discovery = now
+                        if _maker_markets:
+                            log.info("[MAKER] Found %d maker markets (crypto+sports+politics)", len(_maker_markets))
+                    except Exception as e:
+                        log.warning("[MAKER] Market scan failed: %s", str(e)[:200])
+
+                # Get current regime for spread computation
+                regime_label = "neutral"
+                try:
+                    regime = detect_regime()
+                    regime_label = regime.label
+                except Exception:
+                    pass
+
+                self.maker_engine.tick(_maker_markets, regime_label)
+
+            except Exception as e:
+                log.warning("[MAKER] Tick error: %s", str(e)[:200])
 
             try:
-                # Read brain notes
-                notes = _load_brain_notes()
-                if notes:
-                    latest = notes[-1]
-                    log.info("Brain note: [%s] %s", latest.get("topic", "?"), latest.get("content", "")[:100])
+                await asyncio.wait_for(
+                    self._shutdown_event.wait(),
+                    timeout=self.maker_engine.tick_interval_s,
+                )
+            except asyncio.TimeoutError:
+                pass
 
-                # Run the scan (pass cycle for Tavily throttling)
-                result = run_single_scan(self.cfg, cycle=self.cycle)
-                self.total_intel += result.get("new_items", 0)
-                self.total_matched += result.get("matched", 0)
-                self._total_pushes += result.get("shelby_pushes", 0)
+    async def _snipe_loop(self) -> None:
+        """Snipe engine loop for BTC 5m markets (5s tick)."""
+        await self.snipe_engine.run_loop(self._shutdown_event)
 
-                # Brain: record scan cycle + outcome
-                if _viper_brain:
-                    try:
-                        _intel = result.get('intel_count', 0)
-                        _matched = result.get('matched', 0)
-                        _did = _viper_brain.remember_decision(
-                            context=f"Cycle {self.cycle}: scanned sources",
-                            decision=f"Found {_intel} intel items, {_matched} matched to markets",
-                            confidence=0.5,
-                            tags=["scan_cycle"],
-                        )
-                        # Record outcome — matches are the success metric
-                        _score = min(1.0, _matched / 5.0) if _matched > 0 else -0.2
-                        _viper_brain.remember_outcome(
-                            _did, f"Intel={_intel}, matched={_matched}, tavily={'on' if result.get('tavily_ran') else 'off'}",
-                            score=_score,
-                        )
-                        if _matched >= 3:
-                            _viper_brain.learn_pattern(
-                                "good_scan", f"Cycle with {_matched} market matches (tavily={'on' if result.get('tavily_ran') else 'off'})",
-                                evidence_count=1, confidence=0.6,
+    async def _whale_loop(self) -> None:
+        """Whale Follower loop: poll whale wallets, generate copy signals."""
+        if not self.cfg.whale_enabled:
+            return
+
+        # Initialize in a thread to avoid blocking the event loop
+        loop = asyncio.get_running_loop()
+        try:
+            await loop.run_in_executor(None, self.whale_tracker.initialize)
+        except Exception as e:
+            log.warning("[WHALE] Initialization failed: %s", str(e)[:200])
+            return
+
+        log.info("[WHALE] Whale loop started (%.0fs interval)", self.cfg.whale_poll_interval_s)
+
+        while not self._shutdown_event.is_set():
+            try:
+                await loop.run_in_executor(None, self.whale_tracker.tick)
+            except Exception as e:
+                log.warning("[WHALE] Tick error: %s", str(e)[:200])
+
+            try:
+                await asyncio.wait_for(
+                    self._shutdown_event.wait(),
+                    timeout=self.cfg.whale_poll_interval_s,
+                )
+            except asyncio.TimeoutError:
+                pass
+
+    def _handle_shutdown(self) -> None:
+        log.info("Shutdown signal received")
+        self._shutdown_event.set()
+
+    def _check_mode_toggle(self) -> None:
+        """Check if mode was toggled via dashboard and update cfg accordingly."""
+        mode_file = Path(__file__).parent.parent / "data" / "garves_mode.json"
+        if not mode_file.exists():
+            return
+        try:
+            import json as _json
+            mode_data = _json.loads(mode_file.read_text())
+            new_dry_run = mode_data.get("dry_run", self.cfg.dry_run)
+            if new_dry_run != self.cfg.dry_run:
+                old_mode = "DRY RUN" if self.cfg.dry_run else "LIVE"
+                new_mode = "DRY RUN" if new_dry_run else "LIVE"
+                object.__setattr__(self.cfg, "dry_run", new_dry_run)
+                log.info("Mode toggled: %s -> %s", old_mode, new_mode)
+                # Reinitialize CLOB client if switching to live
+                if not new_dry_run and self.cfg.private_key:
+                    self.client = build_client(self.cfg)
+                    self.executor = Executor(self.cfg, self.client, self.tracker)
+                elif new_dry_run:
+                    self.client = None
+                    self.executor = Executor(self.cfg, None, self.tracker)
+        except Exception:
+            log.exception("Failed to read Garves mode toggle file")
+
+    async def _tick(self) -> None:
+        """Single tick: evaluate ALL discovered markets, trade any with edge."""
+        log.info("--- Tick ---")
+        self._tick_counter += 1
+
+        # Ensure Binance WS thread is alive (auto-restart if crashed)
+        self.binance_feed.ensure_alive()
+
+        # Clear SDK fee rate cache every 60 ticks (~30 min) to avoid stale rates
+        if self.client and self._tick_counter % 60 == 0:
+            try:
+                if hasattr(self.client, '_fee_rates'):
+                    self.client._fee_rates.clear()
+                    log.info("[SDK] Cleared fee rate cache (tick %d)", self._tick_counter)
+            except Exception:
+                pass
+
+        # Check mode toggle from dashboard
+        self._check_mode_toggle()
+
+        # Daily cycle: archive yesterday's trades and start fresh at midnight ET
+        if should_reset():
+            try:
+                report = archive_and_reset()
+                day = report.get("date", "?")
+                s = report.get("summary", {})
+                log.info(
+                    "=== DAILY RESET === %s: %dW-%dL (%.1f%%) PnL=$%.2f | Archived & cleared",
+                    day, s.get("wins", 0), s.get("losses", 0),
+                    s.get("win_rate", 0), s.get("pnl", 0),
+                )
+                # Reload tracker with empty state
+                self.perf_tracker = PerformanceTracker(self.cfg, position_tracker=self.tracker)
+                # Reset per-market trade counts and cooldowns for new day
+                self._market_trade_count = {}
+                self._market_cooldown = {}
+            except Exception as e:
+                log.error("Daily reset failed: %s", str(e)[:200])
+
+        # V2: Check emergency stop
+        stop_info = is_emergency_stopped()
+        if stop_info:
+            log.warning("[V2] EMERGENCY STOP active: %s — skipping tick. Standing by.",
+                        stop_info.get("reason", "unknown"))
+            return
+
+        # V2: Performance monitor check (rolling WR, EV capture, kill switch)
+        try:
+            perf_state = self.perf_monitor.check()
+            if perf_state.kill_switch_active:
+                log.critical("[V2 KILL SWITCH] %s — halting all trading", perf_state.kill_switch_reason)
+                return
+            for w in perf_state.warnings:
+                log.warning("[V2 PERF] %s", w)
+        except Exception as e:
+            log.debug("Performance monitor check failed: %s", str(e)[:100])
+
+        # V2: Process Shelby commands
+        commands = accept_commands()
+        for cmd in commands:
+            resp = process_command(cmd, bot=self)
+            log.info("[V2] Shelby command '%s' -> %s", cmd.get("action"), resp.get("action", "done"))
+
+        # Read brain notes from dashboard
+        from bot.brain_reader import read_brain_notes
+        brain_notes = read_brain_notes("garves")
+        if brain_notes:
+            for note in brain_notes:
+                log.info("[BRAIN:%s] %s: %s", note.get("type", "note").upper(), note.get("topic", "?"), note.get("content", "")[:120])
+
+        # Atlas intelligence feed — learnings from research cycles
+        from bot.atlas_feed import get_actionable_insights
+        atlas_insights = get_actionable_insights("garves")
+        if atlas_insights:
+            log.info("[ATLAS] %d actionable insights for Garves:", len(atlas_insights))
+            for insight in atlas_insights[:3]:
+                log.info("[ATLAS] → %s", insight[:150])
+
+        # 0. Detect market regime (Fear & Greed based)
+        regime = detect_regime()
+        self.executor.regime = regime
+        log.info("[REGIME] %s (FnG=%d) — size=%.1fx edge=%.2fx",
+                 regime.label.upper(), regime.fng_value,
+                 regime.size_multiplier, regime.edge_multiplier)
+
+        # 0b. Momentum Capture Mode — detect large moves in extreme regimes
+        momentum = detect_momentum(self.price_cache, regime)
+        self._momentum = momentum
+        if momentum and momentum.active:
+            regime = RegimeAdjustment.momentum_override(regime)
+            log.info("[MOMENTUM] ACTIVE %s — %s %+.1f%% strength=%d expires_in=%.1fh",
+                     momentum.direction.upper(), momentum.trigger_asset.upper(),
+                     momentum.trigger_pct, momentum.strength,
+                     (momentum.expires_at - time.time()) / 3600)
+
+        # Sync balance cache for dashboard (every 2 min)
+        self._sync_balance_cache()
+
+        # 1. Discover all markets across assets and timeframes
+        all_markets = fetch_markets(self.cfg)
+
+        # Feed all 5m markets to snipe engine (BTC, ETH, SOL, XRP — isolated from taker)
+        markets_5m = [dm for dm in all_markets if dm.timeframe.name == "5m"]
+        if markets_5m:
+            self.snipe_engine.window_tracker.update(markets_5m)
+
+        # Filter 5m out of taker pipeline (snipe handles them separately)
+        ranked = rank_markets([dm for dm in all_markets if dm.timeframe.name != "5m"])
+
+        if not ranked:
+            log.info("No tradeable markets found, waiting...")
+            return
+
+        log.info("Evaluating %d markets for signals...", len(ranked))
+
+        # Collect all tokens we need WS data for (taker markets only — 5m uses REST)
+        all_tokens = set()
+        for dm in ranked:
+            tokens = dm.raw.get("tokens", [])
+            for t in tokens:
+                tid = t.get("token_id", "")
+                if tid:
+                    all_tokens.add(tid)
+
+        # Subscribe to any new tokens and track subscription time
+        new_tokens = all_tokens - self._subscribed_tokens
+        now = time.time()
+        if new_tokens:
+            await self.feed.subscribe(list(all_tokens))
+            for tid in new_tokens:
+                self._subscribe_time[tid] = now
+            self._subscribed_tokens = all_tokens
+
+        # Expire stale conviction signals at the start of each tick
+        self.conviction_engine.expire_stale_signals()
+
+        # Get derivatives intelligence (funding rates + liquidations)
+        deriv_status = self.derivatives_feed.get_status()
+        deriv_data = {
+            "funding_rates": deriv_status.get("funding_rates", {}),
+            "liquidations": deriv_status.get("liquidations", {}),
+        } if deriv_status.get("connected") else None
+
+        if deriv_data:
+            fr_count = len(deriv_data["funding_rates"])
+            liq_total = sum(
+                v.get("event_count", 0)
+                for v in deriv_data["liquidations"].values()
+            )
+            log.info("[DERIVATIVES] Funding rates: %d assets | Liquidation events: %d (5m window)",
+                     fr_count, liq_total)
+
+        # ── External Data Intelligence (Phase 1 — Multi-API) ──
+        macro_ctx = None
+        try:
+            macro_ctx = get_macro_context()
+            if macro_ctx and macro_ctx.is_event_day:
+                log.info("[MACRO] EVENT DAY: %s — edge_multiplier=%.1fx (require stronger signals)",
+                         macro_ctx.event_type.upper(), macro_ctx.edge_multiplier)
+                # Apply macro edge multiplier on top of regime
+                if regime:
+                    regime = RegimeAdjustment(
+                        label=regime.label,
+                        fng_value=regime.fng_value,
+                        size_multiplier=regime.size_multiplier,
+                        edge_multiplier=regime.edge_multiplier * macro_ctx.edge_multiplier,
+                        confidence_floor=regime.confidence_floor,
+                        consensus_offset=regime.consensus_offset,
+                    )
+        except Exception:
+            log.debug("Macro context fetch failed")
+
+        # Gather external data per asset (cached, won't re-fetch each tick)
+        external_data_cache: dict[str, dict] = {}
+        defi = None
+        mempool_data = None
+        try:
+            from bot.defi_data import get_data as get_defi
+            defi = get_defi()
+        except Exception:
+            log.debug("DeFi data fetch failed")
+        try:
+            from bot.mempool import get_data as get_mempool
+            mempool_data = get_mempool()
+        except Exception:
+            log.debug("Mempool data fetch failed")
+
+        for asset_name in ("bitcoin", "ethereum", "solana", "xrp"):
+            ext: dict = {}
+            try:
+                from bot.coinglass import get_data as get_coinglass
+                ext["coinglass"] = get_coinglass(asset_name, self.price_cache.get_price(asset_name) or 0.0)
+            except Exception:
+                ext["coinglass"] = None
+            ext["macro"] = macro_ctx
+            ext["defi"] = defi
+            ext["mempool"] = mempool_data
+            try:
+                from bot.whale_tracker import get_flow as get_whale_flow
+                ext["whale"] = get_whale_flow(asset_name)
+            except Exception:
+                ext["whale"] = None
+            external_data_cache[asset_name] = ext
+
+        # Log external data status
+        if external_data_cache:
+            sources = []
+            sample = next(iter(external_data_cache.values()), {})
+            if sample.get("defi"): sources.append("DeFi")
+            if sample.get("mempool"): sources.append("Mempool")
+            if sample.get("macro"): sources.append("Macro")
+            if sample.get("coinglass"): sources.append("Coinglass")
+            if sources:
+                log.info("[EXT DATA] Active sources: %s", ", ".join(sources))
+
+        # Save external data state for dashboard
+        self._save_external_data_state(external_data_cache, macro_ctx)
+
+        # 2. Evaluate each market for signals, trade the best ones
+        trades_this_tick = 0
+        for dm in ranked:
+            market = dm.raw
+            market_id = dm.market_id
+            timeframe = dm.timeframe.name
+            asset = dm.asset
+
+            # Per-market cooldown — don't re-enter same market too quickly
+            last_trade = self._market_cooldown.get(market_id, 0)
+            if now - last_trade < self.COOLDOWN_SECONDS:
+                continue
+
+            # Per-market stacking cap — prevent concentrated risk on one market
+            if self._market_trade_count.get(market_id, 0) >= self.MAX_TRADES_PER_MARKET:
+                continue
+
+            # V2: Market quality gate — score before spending time on signals
+            try:
+                # Use first token for orderbook lookup (resolved later if needed)
+                _qtoken = None
+                for t in dm.raw.get("tokens", []):
+                    _qtoken = t.get("token_id", "")
+                    if _qtoken:
+                        break
+                quality = self.quality_scorer.score(market_id, _qtoken, dm.remaining_s, timeframe, asset)
+                if not quality.passed:
+                    log.debug("[QUALITY] %s/%s SKIP: %.0f/60 — %s", asset, timeframe, quality.total_score, quality.reason)
+                    continue
+            except Exception as e:
+                log.debug("Quality scoring failed: %s", str(e)[:80])
+
+            # Extract token IDs
+            tokens = market.get("tokens", [])
+            if len(tokens) < 2:
+                continue
+
+            up_token = down_token = ""
+            for t in tokens:
+                outcome = (t.get("outcome") or "").lower()
+                tid = t.get("token_id", "")
+                if outcome in ("up", "yes"):
+                    up_token = tid
+                elif outcome in ("down", "no"):
+                    down_token = tid
+
+            if not up_token or not down_token:
+                continue
+
+            # Get implied price from WS cache
+            prices = self.feed.latest_price
+            implied_up = prices.get(up_token)
+
+            # REST fallback: if WS has no price data, fetch via REST API
+            if implied_up is None:
+                sub_time = self._subscribe_time.get(up_token, now)
+                if now - sub_time > 5:  # after 5s warmup
+                    implied_up = _fetch_implied_price_rest(self.cfg, market_id, up_token)
+                    if implied_up is not None:
+                        log.debug("REST fallback: implied_up=%.3f for %s", implied_up, market_id[:12])
+
+            orderbooks = self.feed.latest_orderbook
+            ob = orderbooks.get(up_token)
+
+            # Get Binance spot depth for this asset
+            spot_depth = self.binance_feed.get_depth(asset)
+
+            # Generate signal for this specific market
+            sig = self.signal_engine.generate_signal(
+                up_token, down_token,
+                asset=asset,
+                timeframe=timeframe,
+                implied_up_price=implied_up,
+                orderbook=ob,
+                regime=regime,
+                derivatives_data=deriv_data,
+                spot_depth=spot_depth,
+                external_data=external_data_cache.get(asset.lower()),
+                momentum_state=getattr(self, "_momentum", None),
+            )
+            if not sig:
+                continue
+
+            # ── Smart Window Stacking: escalating conviction for additional bets ──
+            stack_count = self._market_trade_count.get(market_id, 0)
+            if stack_count > 0:
+                escalated_edge = 0.08 + stack_count * self.STACK_EDGE_ESCALATION
+                escalated_conf = 0.55 + stack_count * self.STACK_CONFIDENCE_ESCALATION
+                if sig.edge < escalated_edge or sig.confidence < escalated_conf:
+                    log.info(
+                        "[%s/%s] Smart stack filter: bet #%d needs edge>=%.1f%% conf>=%.0f%% "
+                        "(have edge=%.1f%% conf=%.0f%%) — BLOCKED",
+                        asset.upper(), timeframe, stack_count + 1,
+                        escalated_edge * 100, escalated_conf * 100,
+                        sig.edge * 100, sig.confidence * 100,
+                    )
+                    continue
+                log.info(
+                    "[%s/%s] Smart stack filter: bet #%d passed (edge=%.1f%%>=%.1f%% conf=%.0f%%>=%.0f%%)",
+                    asset.upper(), timeframe, stack_count + 1,
+                    sig.edge * 100, escalated_edge * 100,
+                    sig.confidence * 100, escalated_conf * 100,
+                )
+
+            rr_str = f"R:R={sig.reward_risk_ratio:.2f}" if sig.reward_risk_ratio else "R:R=N/A"
+            log.info(
+                "[%s/%s] SIGNAL: %s (prob=%.3f, edge=%.1f%%, conf=%.2f, %s, Q=%.0f) | Implied: %s | %s",
+                asset.upper(), timeframe, sig.direction.upper(),
+                sig.probability, sig.edge * 100, sig.confidence, rr_str,
+                quality.total_score if quality else 0,
+                f"${implied_up:.3f}" if implied_up else "N/A",
+                dm.question[:50],
+            )
+
+            # ── Brain Pre-Decision: consult learned patterns + LLM reasoning ──
+            try:
+                if self._brain:
+                    _brain_adj = 0.0
+                    _brain_reasons = []
+                    _situation = f"{asset.upper()}/{timeframe} regime={regime.label} dir={sig.direction}"
+
+                    # 1. Check learned patterns for relevant win/loss signals
+                    _patterns = self._brain.memory.get_active_patterns(min_confidence=0.5)
+                    for _p in _patterns:
+                        _desc = _p.get("description", "").lower()
+                        _asset_match = asset.lower() in _desc
+                        _tf_match = timeframe.lower() in _desc
+                        _regime_match = regime.label.lower() in _desc
+                        _dir_match = sig.direction.lower() in _desc
+                        if _asset_match and (_tf_match or _regime_match or _dir_match):
+                            _ev = _p.get("evidence_count", 1)
+                            _conf = _p.get("confidence", 0.5)
+                            if _ev >= 3:
+                                _is_loss = any(w in _desc for w in ("loss", "lose", "bad", "avoid", "fail", "negative"))
+                                _is_win = any(w in _desc for w in ("win", "profit", "good", "strong", "positive"))
+                                if _is_loss:
+                                    _penalty = min(0.05, _conf * 0.05)
+                                    _brain_adj -= _penalty
+                                    _brain_reasons.append(f"loss_pattern({_ev}ev,{_conf:.0%})")
+                                elif _is_win:
+                                    _boost = min(0.05, _conf * 0.04)
+                                    _brain_adj += _boost
+                                    _brain_reasons.append(f"win_pattern({_ev}ev,{_conf:.0%})")
+
+                    # 2. Check similar past decisions for win/loss track record
+                    _past = self._brain.memory.get_relevant_context(_situation, limit=10)
+                    if _past:
+                        _resolved = [d for d in _past if d.get("resolved")]
+                        if len(_resolved) >= 3:
+                            _wins = sum(1 for d in _resolved if d.get("outcome_score", 0) > 0)
+                            _losses = sum(1 for d in _resolved if d.get("outcome_score", 0) < 0)
+                            _total = _wins + _losses
+                            if _total >= 3:
+                                _wr = _wins / _total
+                                if _wr < 0.35:
+                                    _brain_adj -= 0.03
+                                    _brain_reasons.append(f"history({_wins}W/{_losses}L={_wr:.0%})")
+                                elif _wr > 0.65:
+                                    _brain_adj += 0.02
+                                    _brain_reasons.append(f"history({_wins}W/{_losses}L={_wr:.0%})")
+
+                    # 3. LLM brain.think() for contextual reasoning (fast -> 3B for latency)
+                    if self._shared_llm_call:
+                        try:
+                            _t0 = time.time()
+                            _think = self._brain.think(
+                                situation=f"{_situation} edge={sig.edge:.3f} confidence={sig.confidence:.2f}",
+                                question="Should confidence be adjusted? Reply ONLY: +0.XX, -0.XX, or 0 (max +/-0.05). One number only.",
+                                task_type="fast",
+                                max_tokens=15,
+                                temperature=0.1,
                             )
-                    except Exception:
-                        pass
+                            _think_elapsed = time.time() - _t0
+                            if _think and _think.content and _think_elapsed < 3.0:
+                                try:
+                                    _llm_adj = float(_think.content.strip())
+                                    _llm_adj = max(-0.05, min(0.05, _llm_adj))
+                                    if _llm_adj != 0.0:
+                                        _brain_adj += _llm_adj
+                                        _brain_reasons.append(f"llm_think({_llm_adj:+.3f},{_think_elapsed:.1f}s)")
+                                except (ValueError, TypeError):
+                                    pass
+                        except Exception:
+                            pass  # LLM never blocks trading
 
-                tavily_note = " (Tavily: ON)" if result.get("tavily_ran") else " (Tavily: skipped)"
-                briefing_note = f" | Briefing: {result.get('briefed_markets', 0)} markets" if result.get("briefing_active") else ""
-                log.info("Cycle %d: %d items scanned, %d new, %d market matches%s%s",
-                         self.cycle, result["intel_count"], result.get("new_items", 0),
-                         result["matched"], tavily_note, briefing_note)
-                log.info("Sources: %s", result.get("sources", {}))
+                    # 4. Apply adjustment (capped at +/- 0.10 with LLM, was 0.05)
+                    if _brain_adj != 0.0:
+                        _brain_adj = max(-0.10, min(0.10, _brain_adj))
+                        _old_conf = sig.confidence
+                        sig.confidence = max(0.0, min(1.0, sig.confidence + _brain_adj))
+                        log.info(
+                            "  -> [BRAIN] Confidence adjusted %.2f -> %.2f (%+.3f) | Reasons: %s",
+                            _old_conf, sig.confidence, _brain_adj, ", ".join(_brain_reasons),
+                        )
+            except Exception as _brain_err:
+                log.debug("Brain pre-decision failed (non-fatal): %s", str(_brain_err)[:100])
 
-                # LLM Cost Governor (every cycle — lightweight)
-                gov_applied = []
-                try:
-                    from viper.llm_governor import run_governor
-                    gov_state = run_governor()
-                    gov_applied = gov_state.get("overrides_applied", [])
-                    if gov_applied:
-                        log.info("Governor: throttled %s", gov_applied)
-                    sys_spend = gov_state.get("system_budget", {})
-                    log.info("Governor: $%.4f/day (%.1f%% of $%.2f)",
-                             sys_spend.get("spent_today", 0),
-                             sys_spend.get("pct", 0),
-                             sys_spend.get("daily_limit", 12))
-                except Exception:
-                    log.exception("LLM Governor failed")
+            # ── ConvictionEngine: register signal + score conviction ──
+            votes = sig.indicator_votes or {}
+            # Filter out disabled indicators (weight=0) for accurate conviction scoring
+            from bot.weight_learner import get_dynamic_weights
+            from bot.signals import WEIGHTS
+            dw = get_dynamic_weights(WEIGHTS)
+            active_votes = {k: v for k, v in votes.items() if dw.get(k, 1.0) > 0}
+            _vote_dir = lambda v: v if isinstance(v, str) else v.get("direction", "")
+            up_count = sum(1 for d in active_votes.values() if _vote_dir(d) == "up")
+            down_count = sum(1 for d in active_votes.values() if _vote_dir(d) == "down")
+            snapshot = ConvictionEngine.build_snapshot(
+                signal=sig,
+                indicator_votes=active_votes,
+                up_count=up_count,
+                down_count=down_count,
+                total_indicators=len(active_votes),
+            )
+            self.conviction_engine.register_signal(snapshot)
+            self.conviction_engine.register_timeframe_signal(asset, timeframe, sig.direction)
 
-                # Cost audit (every 12 cycles = every hour)
-                if self.cycle % 12 == 0:
-                    log.info("Running hourly cost audit...")
-                    cost_data = audit_all()
-                    # Add waste analysis
-                    try:
-                        cost_data["waste"] = find_waste()
-                    except Exception:
-                        log.exception("find_waste() failed")
-                        cost_data["waste"] = []
-                    # Add LLM cost recommendations
-                    try:
-                        cost_data["recommendations"] = get_llm_cost_recommendations()
-                    except Exception:
-                        log.exception("get_llm_cost_recommendations() failed")
-                        cost_data["recommendations"] = ""
-                    # Add LLM call pattern analysis
-                    try:
-                        from viper.cost_audit import analyze_llm_call_patterns
-                        cost_data["llm_patterns"] = analyze_llm_call_patterns()
-                    except Exception:
-                        log.exception("analyze_llm_call_patterns() failed")
-                        cost_data["llm_patterns"] = []
-                    _save_costs(cost_data)
-                    log.info("Total estimated monthly API cost: $%.2f", cost_data.get("total_monthly", 0))
+            conviction = self.conviction_engine.score(
+                signal=sig,
+                asset_snapshot=snapshot,
+                regime=regime,
+                atr_value=sig.atr_value,
+                momentum=getattr(self, "_momentum", None),
+            )
 
-                    # Brotherhood P&L (hourly)
-                    try:
-                        from viper.pnl import compute_pnl
-                        pnl_data = compute_pnl()
-                        log.info("Brotherhood P&L: net_daily=$%.2f", pnl_data.get("net_daily", 0))
-                    except Exception:
-                        log.exception("Brotherhood P&L computation failed")
+            if conviction.ml_win_prob is not None:
+                log.info("  -> [ML] Win prob: %.1f%% | ML pts: %.1f/4",
+                         conviction.ml_win_prob * 100,
+                         conviction.components.get("ml_win_probability", 0))
 
-                # Anomaly detection (every cycle — lightweight reads)
-                anomalies = []
-                try:
-                    from viper.anomaly import detect_anomalies
-                    anomalies = detect_anomalies()
-                    if anomalies:
-                        log.warning("Anomalies detected: %d alerts", len(anomalies))
-                except Exception:
-                    log.exception("Anomaly detection failed")
+            if conviction.position_size_usd <= 0:
+                log.info("  -> ConvictionEngine: score=%.0f [%s] -> $0 (NO TRADE)",
+                         conviction.total_score, conviction.tier_label)
+                continue
 
-                # Agent digests (every 4th cycle = ~20 min)
-                digests_generated = False
-                if self.cycle % 4 == 0:
-                    try:
-                        from viper.digest import generate_digests
-                        digests = generate_digests()
-                        digests_generated = True
-                        log.info("Agent digests generated: %s", list(digests.keys()))
-                    except Exception:
-                        log.exception("Digest generation failed")
+            # Cross-asset time-window exposure cap: block if same timeframe
+            # has > total exposure across ALL assets combined
+            CROSS_ASSET_TW_CAP = 15.0
+            tw_exposure = sum(
+                p.size_usd for p in self.tracker.open_positions
+                if getattr(p, "timeframe", "") == timeframe
+            )
+            if tw_exposure + conviction.position_size_usd > CROSS_ASSET_TW_CAP:
+                log.info(
+                    "  -> Blocked: cross-asset time-window cap ($%.2f + $%.2f > $%.2f for %s)",
+                    tw_exposure, conviction.position_size_usd, CROSS_ASSET_TW_CAP, timeframe,
+                )
+                continue
 
-                # Save status
-                soren_count = result.get("soren_opportunities", -1)
-                _save_status({
-                    "running": True,
-                    "mode": "intelligence",
-                    "cycle": self.cycle,
-                    "total_intel": self.total_intel,
-                    "total_matched": self.total_matched,
-                    "last_scan_items": result["intel_count"],
-                    "last_scan_new": result.get("new_items", 0),
-                    "last_scan_matched": result["matched"],
-                    "sources": result.get("sources", {}),
-                    "briefing_active": result.get("briefing_active", False),
-                    "briefed_markets": result.get("briefed_markets", 0),
-                    "tavily_ran": result.get("tavily_ran", False),
-                    "soren_opportunities": soren_count if soren_count >= 0 else None,
-                    "anomalies": anomalies,
-                    "digests_generated": digests_generated,
-                    "pushes": result.get("shelby_pushes", 0),
-                    "pushed_to_shelby": (self._total_pushes if hasattr(self, '_total_pushes') else 0),
-                    "governor_throttled": gov_applied,
-                })
+            # ── Snipe Assist timing gate (advisory — size reduction only, never blocks) ──
+            try:
+                import json as _json
+                from pathlib import Path as _Path
+                _assist_file = _Path(__file__).parent.parent / "data" / "snipe_assist.json"
+                if _assist_file.exists():
+                    _assist = _json.loads(_assist_file.read_text())
+                    _age = time.time() - _assist.get("timestamp", 0)
+                    if _age < 120:  # Fresh recommendation (< 2 min)
+                        _ta_action = _assist.get("action", "")
+                        _ta_score = _assist.get("timing_score", 0)
+                        _taker_ovr = (_assist.get("agent_overrides") or {}).get("garves_taker", {})
+                        _ta_action = _taker_ovr.get("action", _ta_action)
+                        if _ta_action == "auto_skip":
+                            # Advisory only — reduce size but NEVER block. Let Garves learn.
+                            _old_size = conviction.position_size_usd
+                            conviction.position_size_usd *= 0.80
+                            log.info("  -> Snipe Assist: LOW-TIMING (score=%.0f) $%.2f -> $%.2f (reduced, not blocked)",
+                                     _ta_score, _old_size, conviction.position_size_usd)
+                        elif _ta_action == "conservative":
+                            _old_size = conviction.position_size_usd
+                            conviction.position_size_usd *= 0.85
+                            log.info("  -> Snipe Assist: CONSERVATIVE (score=%.0f) $%.2f -> $%.2f",
+                                     _ta_score, _old_size, conviction.position_size_usd)
+                        else:
+                            log.info("  -> Snipe Assist: AUTO-EXECUTE (score=%.0f)", _ta_score)
+            except Exception:
+                pass  # Timing assist is advisory — never block trades on errors
 
-                # Publish cycle_completed to the shared event bus
-                scan_duration = round(time.time() - cycle_start, 1)
+            # Risk check (pass actual conviction size, not default $10)
+            allowed, reason = check_risk(self.cfg, sig, self.tracker, market_id,
+                                         trade_size_usd=conviction.position_size_usd,
+                                         drawdown_breaker=self.drawdown_breaker,
+                                         balance_manager=self._balance_mgr)
+            if not allowed:
+                log.info("  -> Blocked: %s", reason)
+                continue
+
+            # Signal pipeline dry-run gate — log but don't execute
+            if os.environ.get("SIGNAL_PIPELINE_DRY_RUN", "").lower() in ("true", "1", "yes"):
+                log.info("  -> [DRY] Signal pipeline dry-run: would place $%.2f %s %s/%s (conviction=%.0f)",
+                         conviction.position_size_usd, sig.direction.upper(), asset.upper(), timeframe,
+                         conviction.total_score)
+                continue
+
+            # Orderbook depth check — verify liquidity before placing order
+            ob_ok, ob_reason, ob_analysis = check_orderbook_depth(
+                clob_host=self.cfg.clob_host,
+                token_id=sig.token_id,
+                order_size_usd=conviction.position_size_usd,
+                target_price=sig.probability,
+            )
+            if not ob_ok:
+                log.info("  -> Orderbook blocked: %s", ob_reason)
+                continue
+            if ob_analysis:
+                log.info(
+                    "  -> Orderbook: liq=$%.0f (bid=$%.0f ask=$%.0f) spread=$%.3f slip=%.1f%%",
+                    ob_analysis.total_liquidity_usd, ob_analysis.bid_liquidity_usd,
+                    ob_analysis.ask_liquidity_usd, ob_analysis.spread,
+                    ob_analysis.estimated_slippage_pct * 100,
+                )
+
+            # Execute with conviction-based sizing + V2 orderbook intelligence
+            order_id = self.executor.place_order(
+                sig, market_id, conviction_size=conviction.position_size_usd,
+                ob_analysis=ob_analysis,
+            )
+            if order_id:
+                trades_this_tick += 1
+                self._market_cooldown[market_id] = now
+                self._market_trade_count[market_id] = self._market_trade_count.get(market_id, 0) + 1
+                log.info(
+                    "  -> Order placed: %s | Conviction: %.0f/100 [%s] $%.2f%s",
+                    order_id, conviction.total_score, conviction.tier_label,
+                    conviction.position_size_usd,
+                    " ALL-ALIGNED" if conviction.all_assets_aligned else "",
+                )
+
+                # Publish trade_placed to shared event bus
                 try:
                     from shared.events import publish as bus_publish
                     bus_publish(
-                        agent="viper",
-                        event_type="cycle_completed",
+                        agent="garves",
+                        event_type="trade_placed",
                         data={
-                            "cycle": self.cycle,
-                            "opportunities_count": result.get("new_items", 0),
-                            "scan_duration": scan_duration,
-                            "total_scanned": result["intel_count"],
-                            "matched": result["matched"],
+                            "asset": asset,
+                            "direction": sig.direction,
+                            "timeframe": timeframe,
+                            "size_usd": round(conviction.position_size_usd, 2),
+                            "edge": round(sig.edge, 4),
+                            "conviction_score": round(conviction.total_score, 1),
+                            "order_id": order_id,
+                            "market_id": market_id,
+                            "dry_run": self.cfg.dry_run,
                         },
-                        summary=f"Viper cycle {self.cycle}: {result.get('new_items', 0)} new items in {scan_duration}s",
+                        summary=f"{sig.direction.upper()} {asset.upper()}/{timeframe} ${conviction.position_size_usd:.2f} (edge={sig.edge*100:.1f}%)",
                     )
                 except Exception:
-                    pass  # Never let bus failure crash Viper
+                    pass
 
+                # Brain: record trade decision
+                if self._brain:
+                    try:
+                        _ctx = f"{asset.upper()}/{timeframe} regime={regime.label} FnG={regime.fng_value} edge={sig.edge*100:.1f}% conf={sig.confidence:.2f}"
+                        _dec = f"{sig.direction.upper()} size=${conviction.position_size_usd:.2f} conviction={conviction.total_score:.0f}"
+                        _reason = f"Indicators: {str({k:v for k,v in (sig.indicator_votes or {}).items()})[:200]}"
+                        _did = self._brain.remember_decision(_ctx, _dec, reasoning=_reason, confidence=sig.confidence, tags=[asset, timeframe, regime.label])
+                        # Store decision_id on the trade for outcome tracking
+                        self.perf_tracker.set_decision_id(f"{market_id[:12]}_{int(time.time())}", _did)
+                    except Exception:
+                        pass
+
+                # Telegram alert for live trades
+                if not self.cfg.dry_run:
+                    try:
+                        # Determine engine type
+                        _tf_label = timeframe or "15m"
+                        if _tf_label == "5m":
+                            _engine_tag = "FLOW SNIPE"
+                            _engine_icon = "\U0001f3af"  # dart
+                        else:
+                            _engine_tag = "TAKER"
+                            _engine_icon = "\U0001f4a5"  # boom
+                        _dir_icon = "\U0001f7e2" if sig.direction.upper() == "UP" else "\U0001f534"
+                        _tier = conviction.tier_label.upper() if conviction.tier_label else "?"
+                        _conv_bar = "\u2588" * min(int(conviction.total_score / 10), 10) + "\u2591" * max(0, 10 - int(conviction.total_score / 10))
+                        msg = (
+                            f"{_engine_icon} *GARVES {_engine_tag}*\n"
+                            f"\n"
+                            f"{_dir_icon} *{sig.direction.upper()}* {asset.upper()} / {_tf_label}\n"
+                            f"\U0001f4cb _{dm.question[:80]}_\n"
+                            f"\n"
+                            f"\U0001f4b0 Size: *${conviction.position_size_usd:.2f}* @ ${sig.probability:.3f}\n"
+                            f"\U0001f4c8 Edge: *{sig.edge*100:.1f}%*"
+                        )
+                        if sig.reward_risk_ratio:
+                            msg += f" | R:R *{sig.reward_risk_ratio:.1f}x*"
+                        msg += (
+                            f"\n\U0001f9e0 Conviction: *{conviction.total_score:.0f}*/100 [{_tier}]\n"
+                            f"`{_conv_bar}`"
+                        )
+                        if ob_analysis:
+                            msg += (
+                                f"\n\U0001f4d6 Book: ${ob_analysis.total_liquidity_usd:,.0f} liq | "
+                                f"{ob_analysis.estimated_slippage_pct*100:.1f}% slip"
+                            )
+                        msg += f"\n\n\U0001f194 `{order_id}`"
+                        _send_telegram(msg)
+                    except Exception:
+                        pass
+
+                # Track for performance measurement
+                self.perf_tracker.record_signal(
+                    signal=sig,
+                    market_id=market_id,
+                    question=dm.question,
+                    implied_up_price=implied_up if implied_up else 0.5,
+                    binance_price=self.price_cache.get_price(asset) or 0.0,
+                    market_end_time=time.time() + dm.remaining_s,
+                    indicator_votes=sig.indicator_votes,
+                    regime_label=regime.label,
+                    regime_fng=regime.fng_value,
+                    ob_liquidity_usd=ob_analysis.total_liquidity_usd if ob_analysis else 0.0,
+                    ob_spread=ob_analysis.spread if ob_analysis else 0.0,
+                    ob_slippage_pct=ob_analysis.estimated_slippage_pct if ob_analysis else 0.0,
+                    size_usd=conviction.position_size_usd,
+                    entry_price=round(sig.probability, 4),
+                    ml_win_prob=conviction.ml_win_prob or 0.0,
+                    fill_price_estimate=ob_analysis.best_ask if ob_analysis else 0.0,
+                )
+
+        # Report current exposure to shared balance manager
+        if self._balance_mgr:
+            try:
+                self._balance_mgr.report_exposure(self.tracker.total_exposure)
             except Exception:
-                log.exception("Viper cycle %d failed", self.cycle)
-                _save_status({
-                    "running": True,
-                    "mode": "intelligence",
-                    "cycle": self.cycle,
-                    "total_intel": self.total_intel,
-                    "total_matched": self.total_matched,
-                    "error": True,
-                })
+                pass
 
-            log.info("Viper cycle %d complete. Next scan in %d minutes...", self.cycle, self.cfg.cycle_minutes)
-            await asyncio.sleep(self.cfg.cycle_minutes * 60)
+        # ── Straddle Engine: if no directional trades and regime is fear ──
+        if trades_this_tick == 0 and regime.label in ("extreme_fear", "fear"):
+            feed_prices = self.feed.latest_price
+            straddle_opps = self.straddle_engine.scan_for_straddles(
+                ranked, regime, feed_prices)
+            if straddle_opps:
+                best = straddle_opps[0]
+                result = self.straddle_engine.execute_straddle(best)
+                if result:
+                    trades_this_tick += 1
+                    log.info("[STRADDLE] Executed: %s + %s", result[0], result[1])
+
+        if trades_this_tick > 0:
+            log.info("Placed %d order(s) this tick", trades_this_tick)
+        else:
+            log.info("No trades this tick (positions: %d, exposure: $%.2f)",
+                     self.tracker.count, self.tracker.total_exposure)
+
+        # Save candle data to disk for backtesting
+        self.price_cache.save_candles()
+
+        # Save derivatives + depth state for dashboard
+        self._save_derivatives_state(deriv_data)
+
+        # Stop-loss: check if any positions need early exit
+        stopped = self.executor.check_stop_losses()
+        if stopped:
+            log.info("Stop-loss exited %d position(s) this tick", stopped)
+            sl = getattr(self.executor, '_last_stop_loss', None)
+            if sl:
+                _loss_pct = (1 - sl['bid'] / sl['entry_price']) * 100 if sl['entry_price'] else 0
+                _send_telegram(
+                    f"\U0001f6d1 *GARVES STOP-LOSS*\n"
+                    f"\n"
+                    f"\U0001f534 {sl['direction'].upper()} exited at -{_loss_pct:.1f}%\n"
+                    f"\U0001f4c9 ${sl['entry_price']:.3f} \u2192 ${sl['bid']:.3f}\n"
+                    f"\n"
+                    f"\U0001f4b0 Recovered: *${sl['recovery']:.2f}* of ${sl['size_usd']:.2f}\n"
+                    f"\U0001f6e1 Saved vs full loss: *${sl['loss_saved']:.2f}*"
+                )
+                self.executor._last_stop_loss = None
+
+        # Check existing fills (+ expire dry-run positions)
+        self.executor.check_fills()
+
+        # Check market resolutions for performance tracking
+        _prev_resolved = getattr(self.perf_tracker, '_total_resolved', 0)
+        self.perf_tracker.check_resolutions()
+        _new_resolved = getattr(self.perf_tracker, '_total_resolved', 0)
+        _just_resolved = _new_resolved - _prev_resolved
+        if _just_resolved > 0:
+            self._trade_journal_counter += _just_resolved
+            # Update drawdown breaker after new resolutions
+            self.drawdown_breaker.update()
+
+        if self.perf_tracker.pending_count > 0:
+            log.info("Performance tracker: %d trades pending resolution", self.perf_tracker.pending_count)
+
+        # Auto-claim resolved positions on both Maker and Snipe wallets
+        try:
+            from bot.auto_claimer import auto_claim
+            for _name, _key_env, _addr_env in [
+                ("Maker", "PRIVATE_KEY", "FUNDER_ADDRESS"),
+                ("Snipe", "SNIPE_PRIVATE_KEY", "SNIPE_FUNDER_ADDRESS"),
+            ]:
+                _k = os.environ.get(_key_env, "")
+                _a = os.environ.get(_addr_env, "")
+                if _k and _a:
+                    cr = auto_claim(_a, _k)
+                    if cr["claimed"] > 0:
+                        log.info("[CLAIM-%s] Redeemed %d positions for $%.2f USDC",
+                                 _name, cr["claimed"], cr["usdc"])
+        except Exception:
+            pass  # Never block trading
+
+        # ── Trade Journal Analysis: every 10 resolved trades, LLM analyzes patterns ──
+        if self._trade_journal_counter >= 10 and self._brain and self._shared_llm_call:
+            self._trade_journal_counter = 0
+            try:
+                _stats = self.perf_tracker.quick_stats() if hasattr(self.perf_tracker, 'quick_stats') else {}
+                _wr = _stats.get("win_rate", 0)
+                _pnl = _stats.get("total_pnl", 0)
+                _total = _stats.get("total_trades", 0)
+                _analysis = self._shared_llm_call(
+                    system=(
+                        "You are Garves's trade journal analyst. Analyze recent trading performance "
+                        "and identify 1-2 actionable patterns. Be specific about what to keep doing "
+                        "and what to change. Max 3 sentences."
+                    ),
+                    user=(
+                        f"Last 10 trades resolved. Overall stats: {_total} trades, "
+                        f"{_wr:.0%} win rate, ${_pnl:.2f} PnL. "
+                        f"Regime: {regime.label if regime else 'unknown'}."
+                    ),
+                    agent="garves",
+                    task_type="reasoning",
+                    max_tokens=150,
+                    temperature=0.3,
+                )
+                if _analysis:
+                    log.info("[TRADE JOURNAL] LLM analysis: %s", _analysis.strip()[:300])
+                    self._brain.learn_pattern(
+                        "trade_journal",
+                        _analysis.strip()[:200],
+                        evidence_count=10, confidence=0.6,
+                    )
+            except Exception as _je:
+                log.debug("Trade journal analysis failed: %s", str(_je)[:100])
+
+        # Send heartbeat with live trading metrics
+        if self._hub:
+            try:
+                stats = self.perf_tracker.quick_stats() if hasattr(self.perf_tracker, 'quick_stats') else {}
+                self._hub.heartbeat(status="trading", metrics={
+                    "trades_this_tick": trades_this_tick,
+                    "open_positions": self.tracker.count,
+                    "exposure_usd": round(self.tracker.total_exposure, 2),
+                    "pending_trades": self.perf_tracker.pending_count,
+                    "regime": regime.label if regime else "unknown",
+                    "dry_run": self.cfg.dry_run,
+                })
+            except Exception:
+                pass
+
+        # Signal cycle status for dashboard badge timer
+        try:
+            import json as _json
+            _cycle_file = Path(__file__).parent.parent / "data" / "signal_cycle_status.json"
+            _prev_count = 0
+            if _cycle_file.exists():
+                try:
+                    _prev_count = _json.loads(_cycle_file.read_text()).get("cycle_count", 0)
+                except Exception:
+                    pass
+            _cycle_file.write_text(_json.dumps({
+                "last_eval_at": time.time(),
+                "tick_interval_s": self.cfg.tick_interval_s,
+                "markets_evaluated": len(ranked),
+                "trades_this_tick": trades_this_tick,
+                "regime": regime.label if regime else "unknown",
+                "cycle_count": _prev_count + 1,
+            }))
+        except Exception:
+            pass
+
+    def _save_derivatives_state(self, deriv_data: dict | None) -> None:
+        """Persist derivatives + depth state to disk for dashboard access."""
+        import json as _json
+        data_dir = Path(__file__).parent.parent / "data"
+        try:
+            # Derivatives state (funding rates + liquidations)
+            state = deriv_data or {"funding_rates": {}, "liquidations": {}}
+            state["connected"] = self.derivatives_feed.get_status().get("connected", False)
+            state["timestamp"] = time.time()
+            state_file = data_dir / "derivatives_state.json"
+            with open(state_file, "w") as f:
+                _json.dump(state, f)
+
+            # Spot depth summary
+            depth = self.binance_feed.get_depth_summary()
+            if depth:
+                depth_file = data_dir / "spot_depth.json"
+                with open(depth_file, "w") as f:
+                    _json.dump(depth, f)
+        except Exception:
+            pass
+
+    def _save_external_data_state(self, ext_cache: dict, macro_ctx) -> None:
+        """Persist external data state to disk for dashboard access."""
+        import json as _json
+        from dataclasses import asdict
+        data_dir = Path(__file__).parent.parent / "data"
+        try:
+            state = {"timestamp": time.time(), "assets": {}}
+            for asset_name, ext in ext_cache.items():
+                asset_state = {}
+                if ext.get("coinglass"):
+                    cg = ext["coinglass"]
+                    asset_state["coinglass"] = {
+                        "oi_usd": cg.oi_usd,
+                        "oi_change_1h_pct": cg.oi_change_1h_pct,
+                        "long_short_ratio": cg.long_short_ratio,
+                        "avg_funding_rate": cg.avg_funding_rate,
+                        "etf_net_flow_usd": cg.etf_net_flow_usd,
+                        "etf_available": cg.etf_available,
+                    }
+                if ext.get("whale"):
+                    w = ext["whale"]
+                    asset_state["whale"] = {
+                        "deposits_usd": w.deposits_usd,
+                        "withdrawals_usd": w.withdrawals_usd,
+                        "net_flow_usd": w.net_flow_usd,
+                        "tx_count": w.tx_count,
+                    }
+                state["assets"][asset_name] = asset_state
+
+            if ext_cache and next(iter(ext_cache.values()), {}).get("defi"):
+                defi = next(iter(ext_cache.values()))["defi"]
+                state["defi"] = {
+                    "stablecoin_mcap_usd": defi.stablecoin_mcap_usd,
+                    "stablecoin_change_7d_pct": defi.stablecoin_change_7d_pct,
+                    "tvl_usd": defi.tvl_usd,
+                    "tvl_change_24h_pct": defi.tvl_change_24h_pct,
+                }
+            if ext_cache and next(iter(ext_cache.values()), {}).get("mempool"):
+                mp = next(iter(ext_cache.values()))["mempool"]
+                state["mempool"] = {
+                    "fastest_fee": mp.fastest_fee,
+                    "fee_ratio": mp.fee_ratio_vs_baseline,
+                    "tx_count": mp.tx_count,
+                    "congestion_level": mp.congestion_level,
+                }
+            if macro_ctx:
+                state["macro"] = {
+                    "is_event_day": macro_ctx.is_event_day,
+                    "event_type": macro_ctx.event_type,
+                    "edge_multiplier": macro_ctx.edge_multiplier,
+                    "dxy_value": macro_ctx.dxy_value,
+                    "dxy_trend": macro_ctx.dxy_trend,
+                    "vix_value": macro_ctx.vix_value,
+                }
+
+            state_file = data_dir / "external_data_state.json"
+            with open(state_file, "w") as f:
+                _json.dump(state, f)
+        except Exception:
+            pass
+
+    async def _cleanup(self) -> None:
+        log.info("Shutting down...")
+        self.maker_engine.cancel_all()
+        self.executor.cancel_all_open()
+        await self.binance_feed.stop()
+        await self.derivatives_feed.stop()
+        await self.feed.stop()
+        log.info("Shutdown complete")
+
+
+def _kill_orphans() -> None:
+    """Kill any other bot.main processes to prevent orphan buildup."""
+    import subprocess
+    my_pid = os.getpid()
+    try:
+        result = subprocess.run(
+            ["pgrep", "-f", "bot.main"],
+            capture_output=True, text=True, timeout=5,
+        )
+        for line in result.stdout.strip().split("\n"):
+            if not line.strip():
+                continue
+            pid = int(line.strip())
+            if pid != my_pid:
+                try:
+                    os.kill(pid, 9)
+                except ProcessLookupError:
+                    pass
+    except Exception:
+        pass
+
+
+def main() -> None:
+    _kill_orphans()
+    cfg = Config()
+    bot = TradingBot(cfg)
+    try:
+        asyncio.run(bot.run())
+    except KeyboardInterrupt:
+        pass
+
+
+if __name__ == "__main__":
+    main()

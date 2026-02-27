@@ -99,6 +99,7 @@ def compute_pnl() -> dict:
 
     # === REVENUE ===
 
+    log.info("Starting P&L computation for %s", today)
     # Garves trades
     garves_trades = _read_jsonl(TRADES_FILE)
     garves_pnl = _compute_trade_pnl(garves_trades)
