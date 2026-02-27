@@ -13262,10 +13262,11 @@ function renderEngineComparison(data) {
     snipe: '#8b5cf6',
     maker: '#22c55e',
     whale: '#3b82f6',
-    res_scalp: '#f97316'
+    res_scalp: '#f97316',
+    killshot: '#dc2626'
   };
 
-  var order = ['snipe', 'res_scalp', 'maker', 'whale', 'taker'];
+  var order = ['snipe', 'res_scalp', 'maker', 'whale', 'taker', 'killshot'];
   var rows = '';
 
   for (var i = 0; i < order.length; i++) {
