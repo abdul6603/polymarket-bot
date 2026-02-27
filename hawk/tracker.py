@@ -83,7 +83,7 @@ class HawkTracker:
             # Question similarity check (blocks "BTC $66-68k" vs "BTC $68-70k" type dupes)
             if question and p.get("question"):
                 ratio = SequenceMatcher(None, question.lower()[:80], p["question"].lower()[:80]).ratio()
-                if ratio > 0.75:
+                if ratio > 0.92:
                     log.warning("Similar market blocked (%.0f%% match): %s ~ %s",
                                 ratio * 100, question[:50], p["question"][:50])
                     return True
