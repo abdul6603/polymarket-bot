@@ -27,11 +27,11 @@ class KillshotConfig:
     daily_loss_cap_usd: float = float(_env("KILLSHOT_DAILY_LOSS_CAP_USD", "15"))
 
     # Direction detection — minimum spot price delta to consider direction "locked"
-    direction_threshold: float = float(_env("KILLSHOT_DIRECTION_THRESHOLD", "0.0005"))
+    direction_threshold: float = float(_env("KILLSHOT_DIRECTION_THRESHOLD", "0.0010"))
 
     # Entry pricing — simulated maker limit order price range
-    entry_price_min: float = float(_env("KILLSHOT_ENTRY_PRICE_MIN", "0.82"))
-    entry_price_max: float = float(_env("KILLSHOT_ENTRY_PRICE_MAX", "0.93"))
+    entry_price_min: float = float(_env("KILLSHOT_ENTRY_PRICE_MIN", "0.60"))
+    entry_price_max: float = float(_env("KILLSHOT_ENTRY_PRICE_MAX", "0.75"))
 
     # Kill zone — how many seconds before window close to evaluate
     window_seconds: int = int(_env("KILLSHOT_WINDOW_SECONDS", "60"))
