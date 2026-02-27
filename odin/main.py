@@ -43,6 +43,7 @@ from odin.intelligence.conviction import OdinConvictionEngine
 from odin.intelligence.journal import OdinJournal
 from odin.intelligence.brotherhood import BrotherhoodBridge
 from odin.intelligence.llm_brain import OdinBrain
+from odin.strategy.scalp_brain import ScalpBrain
 from odin.intelligence.reflection import ReflectionEngine
 from odin.intelligence.discord_pipeline import DiscordPipeline
 from odin.skills import SkillRegistry
@@ -177,6 +178,12 @@ class OdinBot:
 
         # LLM Brain (V7) — replaces rule-based SMC + conviction scoring
         self._brain = OdinBrain(self._cfg)
+
+        # Scalp Brain (V8) — rule-based, no LLM, instant decisions
+        self._scalp_brain = ScalpBrain(
+            base_risk_usd=self._cfg.risk_per_trade_usd,
+            min_score=55,
+        )
         self._reflection = ReflectionEngine(self._journal, self._brain)
         self._reflection.configure(
             reflect_every_n=self._cfg.reflection_every_n,
@@ -1265,73 +1272,46 @@ class OdinBot:
         return triggers
 
     async def _scalp_entry(self, symbol: str, direction: str, move_pct: float) -> None:
-        """Fast scalp entry — minimal analysis, quick decision.
+        """Fast scalp entry — rule-based brain, no LLM, instant decision.
 
-        Uses lighter candle requirements than swing trades.
-        LLM gets told this is a SCALP opportunity specifically.
+        ScalpBrain checks: EMA trend, volume, RSI, momentum.
+        ~0.1s decision vs 15s LLM call. Built for speed.
         """
         try:
-            # Quick candle fetch (only MTF + LTF needed for scalps)
-            mtf_candles = self._fetch_candles(symbol, self._cfg.mtf, 50)
+            # Fetch only LTF candles (5m/15m — all we need for a scalp)
             ltf_candles = self._fetch_candles(symbol, self._cfg.ltf, 50)
 
-            if not ltf_candles or len(ltf_candles) < 10:
-                log.info("[SNIPER] %s: not enough LTF candles (%d)",
+            if not ltf_candles or len(ltf_candles) < 25:
+                log.info("[SNIPER] %s: not enough candles (%d)",
                          symbol, len(ltf_candles) if ltf_candles else 0)
                 return
 
-            mtf_df = self._candles_to_df(mtf_candles) if mtf_candles else pd.DataFrame()
             ltf_df = self._candles_to_df(ltf_candles)
 
-            # Use empty HTF if not available (new alts)
-            htf_candles = self._fetch_candles(symbol, self._cfg.htf, 50)
-            htf_df = self._candles_to_df(htf_candles) if htf_candles else pd.DataFrame()
-
-            current_price = self._ws_prices.get(
-                symbol.replace("USDT", ""),
-                self._ws_prices.get(symbol, 0),
-            )
+            # Current price from WS (fastest)
+            bare = symbol.replace("USDT", "")
+            current_price = self._ws_prices.get(bare, self._ws_prices.get(symbol, 0))
             if current_price <= 0:
                 current_price = self._client.get_price(symbol)
             if current_price <= 0:
                 return
 
-            # Get structure zones
-            structure_zones = self._ob_memory.get_active_zones(
-                symbol, price_range=(current_price * 0.96, current_price * 1.04),
-            )
-
-            # LLM brain analysis — hint that this is a scalp opportunity
-            balance = self._get_balance()
-            open_count = self._order_mgr.get_open_positions_count()
-
-            trade_signal = self._brain.analyze(
-                symbol=symbol,
-                htf_df=htf_df,
-                mtf_df=mtf_df,
+            # ── ScalpBrain: instant rule-based decision ──
+            decision = self._scalp_brain.analyze(
                 ltf_df=ltf_df,
+                direction_hint=direction,
                 current_price=current_price,
-                regime=self._last_regime,
-                macro=self._last_macro,
-                zones=structure_zones,
-                brotherhood=self._brotherhood,
-                balance=balance,
-                open_positions=open_count,
+                move_pct=move_pct,
             )
 
-            if trade_signal is None:
-                log.info("[SNIPER] %s: LLM said FLAT", symbol)
-                return
+            if not decision.trade:
+                return  # ScalpBrain already logged the skip reason
 
-            # Force trade_type to scalp if LLM didn't set it
-            if not hasattr(trade_signal, "trade_type") or trade_signal.trade_type != "scalp":
-                trade_signal.trade_type = "scalp"
-
+            # ── Safety checks ──
+            balance = self._get_balance()
             trade_type = "scalp"
-            sl = trade_signal.stop_loss
-            tp1 = trade_signal.take_profit_1
 
-            # Portfolio guard check
+            # Portfolio guard
             self._portfolio_guard.update_state(
                 balance=balance,
                 positions=self._order_mgr.get_paper_positions()
@@ -1339,12 +1319,11 @@ class OdinBot:
             )
             tier = coin_tier(symbol)
             tier_cap = notional_cap_for_tier(tier, self._cfg)
-            trade_risk = trade_signal.llm_risk_usd if trade_signal.llm_risk_usd > 0                 else self._cfg.risk_per_trade_usd
 
             guard_decision = self._portfolio_guard.check_trade(
                 symbol=symbol,
-                direction=trade_signal.direction,
-                risk_usd=trade_risk,
+                direction=decision.direction,
+                risk_usd=decision.risk_usd,
                 notional_usd=tier_cap,
                 trade_type=trade_type,
             )
@@ -1354,45 +1333,60 @@ class OdinBot:
                 return
 
             # Position sizing
-            effective_risk = guard_decision.adjusted_risk_usd or trade_risk
-            bare = symbol.replace("USDT", "")
+            effective_risk = guard_decision.adjusted_risk_usd or decision.risk_usd
             size = self._sizer.calculate(
                 balance=balance,
                 entry_price=current_price,
-                stop_loss=sl,
-                confidence=trade_signal.risk_multiplier,
+                stop_loss=decision.stop_loss,
+                confidence=decision.confidence,
                 trade_type=trade_type,
                 macro_multiplier=1.0,
                 current_exposure=self._order_mgr.get_total_exposure(),
-                conviction_score=trade_signal.conviction_score,
-                structure_zones=structure_zones,
-                direction=trade_signal.direction,
+                conviction_score=decision.conviction_score,
+                direction=decision.direction,
                 notional_cap_override=guard_decision.notional_cap or tier_cap,
                 risk_override=effective_risk,
             )
 
-            if size.notional_usd < 5:
+            if size.notional_usd < 10:
                 log.info("[SNIPER] %s: position too small ($%.2f)", symbol, size.notional_usd)
                 return
 
-            log.info(
-                "[SNIPER] %s SCALP: %s $%.2f | SL=$%.2f TP=$%.2f "
-                "| risk=$%.0f notional=$%.0f lev=%dx | triggered by %.1f%% move",
-                symbol, trade_signal.direction, current_price,
-                sl, tp1, size.risk_usd, size.notional_usd, size.leverage, move_pct,
+            # Build TradeSignal for order manager
+            signal = TradeSignal(
+                symbol=symbol,
+                direction=decision.direction,
+                confidence=decision.confidence,
+                entry_price=current_price,
+                stop_loss=decision.stop_loss,
+                take_profit_1=decision.take_profit,
+                take_profit_2=decision.take_profit,
+                risk_reward=1.5,
+                trade_type="scalp",
+                conviction_score=decision.conviction_score,
+                entry_reason=f"SCALP sniper: {move_pct:.1f}% move | " + " | ".join(decision.reasons[:3]),
             )
 
-            # Execute — market entry for speed (no limit orders for scalps)
+            log.info(
+                "[SNIPER] %s SCALP: %s $%.2f | SL=$%.4f TP=$%.4f "
+                "| risk=$%.0f notional=$%.0f lev=%dx score=%d | %.1f%% trigger",
+                symbol, decision.direction, current_price,
+                decision.stop_loss, decision.take_profit,
+                size.risk_usd, size.notional_usd, size.leverage,
+                decision.conviction_score, move_pct,
+            )
+
+            # Execute — market entry for speed
             pos_id = self._order_mgr.execute_signal(
-                trade_signal, size, balance=self._cycle_balance,
+                signal, size, balance=self._cycle_balance,
             )
 
             if pos_id:
                 log.info("[SNIPER] %s position opened: %s", symbol, pos_id)
                 self._brotherhood.publish_trade_open({
-                    "symbol": symbol, "direction": trade_signal.direction,
+                    "symbol": symbol, "direction": decision.direction,
                     "entry_price": current_price,
-                    "conviction_score": trade_signal.conviction_score,
+                    "conviction_score": decision.conviction_score,
                     "trade_type": "scalp",
                 })
 
