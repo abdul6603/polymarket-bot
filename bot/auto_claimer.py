@@ -102,7 +102,7 @@ def claim_for_proxy(
 
     for cid in condition_ids:
         cid_bytes = bytes.fromhex(cid.replace("0x", ""))
-        call_data = ctf.encodeABI(
+        call_data = ctf.encode_abi(
             fn_name="redeemPositions",
             args=[collateral, parent, cid_bytes, [1, 2]],
         )
