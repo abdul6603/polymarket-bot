@@ -9,6 +9,8 @@ from bot.config import Config
 
 log = logging.getLogger(__name__)
 
+def log_client_config(cfg: Config) -> None:
+    log.debug("CLOB Client Config: host=%s, key=%s, funder=%s", cfg.clob_host, cfg.private_key, cfg.funder_address)
 
 def build_client(cfg: Config) -> ClobClient | None:
     """Create and verify a ClobClient with L1/L2 authentication.
