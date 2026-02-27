@@ -444,6 +444,14 @@ class MakerEngine:
                     "size": size, "price": price,
                     "reason": f"bankroll exhausted (${self._maker_total_committed:.0f} filled + ${pending_usd:.0f} pending = ${total_used:.0f}/${bankroll:.0f})"}
 
+        # 3b. TOTAL EXPOSURE CAP — on-chain positions must not exceed max_total_exposure
+        total_exposure = self._inv_mgr.get_total_exposure()
+        max_exposure = self.cfg.maker_max_total_exposure
+        if max_exposure > 0 and total_exposure + order_cost > max_exposure + 1.0:
+            return {"action": "block", "side": side, "token_id": token_id,
+                    "size": size, "price": price,
+                    "reason": f"total exposure cap hit (${total_exposure:.0f} on-chain + ${order_cost:.0f} new > ${max_exposure:.0f} max)"}
+
         # 4. Per-market exposure cap (max $10 per market = quote_size)
         exposure = self._inv_mgr.get_market_exposure(up_token, down_token)
         cat = self._token_category.get(token_id, "crypto")
