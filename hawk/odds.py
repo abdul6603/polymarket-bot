@@ -63,24 +63,17 @@ _SPORT_KEYS = {
     "euroleague": "basketball_euroleague",
 }
 
-# All soccer leagues to scan when we detect a soccer question but can't identify the league
+# Top soccer leagues to scan (trimmed from 21 to 7 to conserve API quota)
 _ALL_SOCCER_KEYS = [
     "soccer_epl", "soccer_spain_la_liga", "soccer_italy_serie_a",
     "soccer_germany_bundesliga", "soccer_france_ligue_one",
-    "soccer_uefa_champs_league", "soccer_uefa_europa_league",
-    "soccer_uefa_europa_conference_league", "soccer_fa_cup",
-    "soccer_efl_champ", "soccer_netherlands_eredivisie",
-    "soccer_portugal_primeira_liga", "soccer_turkey_super_league",
-    "soccer_spain_segunda_division", "soccer_italy_serie_b",
-    "soccer_usa_mls", "soccer_mexico_ligamx", "soccer_brazil_campeonato",
-    "soccer_argentina_primera_division", "soccer_spain_copa_del_rey",
-    "soccer_australia_aleague", "soccer_spl",
+    "soccer_uefa_champs_league", "soccer_fa_cup",
 ]
 
 # Cache: {sport_key: (timestamp, events_list)}
 _cache: dict[str, tuple[float, list[dict]]] = {}
-_CACHE_TTL_FAST = 300   # 5 min — live games, lines moving fast
-_CACHE_TTL_NORMAL = 1500  # 25 min — no live games, conserve credits
+_CACHE_TTL_FAST = 900   # 15 min — live games, lines moving fast
+_CACHE_TTL_NORMAL = 3600  # 60 min — no live games, conserve credits
 _CACHE_TTL = _CACHE_TTL_FAST  # Default, updated per cycle by set_cache_mode()
 
 
