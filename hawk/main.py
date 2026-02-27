@@ -364,6 +364,87 @@ class HawkBot:
             log.debug("[LIVE] Could not initialize live manager (non-fatal)")
             self.live_manager = None
 
+    def _llm_evaluate(self, opp, market_price: float) -> tuple[float, str]:
+        """GPT-5-mini reasoning layer — evaluates trade opportunity.
+
+        Returns (edge_adjustment, reasoning).
+        Non-fatal: returns (0.0, "") on any failure.
+        """
+        if not _USE_SHARED_LLM or not _shared_llm_call:
+            return 0.0, ""
+
+        try:
+            question = opp.market.question[:200]
+            category = opp.market.category or "unknown"
+            direction = opp.direction.upper()
+            edge_pct = opp.edge * 100
+            model_prob = opp.estimate.estimated_prob * 100
+            mkt_pct = market_price * 100
+            source = opp.estimate.edge_source or "unknown"
+            reasoning_snippet = (opp.estimate.reasoning or "")[:300]
+
+            prompt = (
+                "You are Hawk, a prediction market analyst. Evaluate this trade:"
+                "\n\n"
+                "MARKET: " + question + "\n"
+                "CATEGORY: " + category + "\n"
+                "DIRECTION: " + direction + "\n"
+                "OUR MODEL: " + f"{model_prob:.1f}%" + " | MARKET PRICE: " + f"{mkt_pct:.1f}%" + " | EDGE: " + f"{edge_pct:.1f}%" + "\n"
+                "DATA SOURCE: " + source + "\n"
+                "REASONING: " + reasoning_snippet + "\n\n"
+                "Rate confidence 1-10 that this bet has REAL edge. "
+                "Consider: Is the data source reliable for this type of question? "
+                "Are there obvious risks the model might miss? "
+                "Is the market likely efficient here?\n\n"
+                'Reply ONLY as JSON: {"confidence": N, "reason": "brief"}'
+            )
+
+            resp = _shared_llm_call(
+                system="You are a sharp prediction market analyst. Be skeptical. Reply only in JSON.",
+                user=prompt,
+                agent="hawk",
+                task_type="analysis",
+                max_tokens=100,
+                temperature=0.2,
+            )
+
+            if not resp:
+                return 0.0, ""
+
+            import json as _json
+            import re as _re
+            match = _re.search(r'\{[^}]+\}', resp)
+            if not match:
+                return 0.0, ""
+
+            parsed = _json.loads(match.group())
+            conf = int(parsed.get("confidence", 5))
+            reason = str(parsed.get("reason", ""))[:100]
+
+            if conf <= 2:
+                adj = -0.08
+                log.info("[LLM-EVAL] SKEPTICAL (conf=%d): %.1f%% penalty | %s | %s",
+                         conf, adj * 100, reason, question[:60])
+            elif conf <= 4:
+                adj = -0.04
+                log.info("[LLM-EVAL] CAUTIOUS (conf=%d): %.1f%% penalty | %s | %s",
+                         conf, adj * 100, reason, question[:60])
+            elif conf >= 8:
+                adj = 0.02
+                log.info("[LLM-EVAL] CONFIDENT (conf=%d): +%.1f%% boost | %s | %s",
+                         conf, adj * 100, reason, question[:60])
+            else:
+                adj = 0.0
+                log.debug("[LLM-EVAL] NEUTRAL (conf=%d): %s | %s", conf, reason, question[:60])
+
+            return adj, reason
+
+        except Exception as e:
+            log.debug("[LLM-EVAL] Failed (non-fatal): %s", e)
+            return 0.0, ""
+
+
+
     def _check_atlas_alignment(self, opp) -> tuple[float, str]:
         """V6: Atlas pre-bet gate. Returns (size_multiplier, reason).
 
@@ -1020,7 +1101,19 @@ class HawkBot:
                         log.info("[REGIME] Size: $%.2f→$%.2f (%.2fx) | %s",
                                  old_sz, opp.position_size_usd, _regime_mult, opp.market.question[:60])
 
-                    # V6: Atlas pre-bet gate — check alignment before execution
+                    # V10: GPT-5-mini reasoning layer — non-fatal
+                    llm_adj, llm_reason = self._llm_evaluate(opp, market_price)
+                    if llm_adj != 0:
+                        brain_edge_adj += llm_adj
+                        brain_edge_adj = max(-0.80, min(0.05, brain_edge_adj))
+                        effective_edge = opp.edge + learner_adj + brain_edge_adj
+                        if effective_edge < effective_min_edge:
+                            log.info("[LLM-EVAL] BLOCKED: edge %.1f%% + llm %.1f%% = %.1f%% < min %.1f%% | %s",
+                                     opp.edge * 100, llm_adj * 100,
+                                     effective_edge * 100, effective_min_edge * 100, opp.market.question[:60])
+                            continue
+
+                                        # V6: Atlas pre-bet gate — check alignment before execution
                     atlas_mult, atlas_reason = self._check_atlas_alignment(opp)
                     if atlas_mult == 0.0:
                         log.info("[ATLAS-GATE] BLOCKED: %s | %s", atlas_reason, opp.market.question[:60])
@@ -1042,8 +1135,8 @@ class HawkBot:
                             placed_cids.add(cid)
                             trades_placed += 1
                             adj_tag = ""
-                            if learner_adj != 0 or brain_edge_adj != 0:
-                                adj_tag = f" | learner={learner_adj*100:+.1f}% brain={brain_edge_adj*100:+.1f}%"
+                            if learner_adj != 0 or brain_edge_adj != 0 or llm_adj != 0:
+                                adj_tag = f" | learner={learner_adj*100:+.1f}% brain={brain_edge_adj*100:+.1f}% llm={llm_adj*100:+.1f}%"
                             log.info("TRADE PLACED: %s %s | $%.2f | edge=%.1f%%%s | %s",
                                      opp.direction.upper(), opp.market.question[:60],
                                      opp.position_size_usd, opp.edge * 100, adj_tag, order_id)
