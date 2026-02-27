@@ -205,7 +205,7 @@ class SnipeEngine:
             orderbook_signal=self._orderbook,
             clob_client=clob_client,
             dry_run=dry_run,
-            bankroll=cfg.bankroll_usd,
+            bankroll=cfg.snipe_bankroll_usd or cfg.bankroll_usd,
         )
 
         # Warm-up tracking

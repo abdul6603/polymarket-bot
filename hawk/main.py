@@ -313,16 +313,30 @@ class HawkBot:
             log.exception("Failed to read mode toggle file")
 
     def _init_executor(self) -> None:
-        """Initialize CLOB client and executor."""
+        """Initialize CLOB client and executor using Hawk-specific wallet."""
         client = None
         if not self.cfg.dry_run:
             try:
-                from bot.auth import build_client
-                from bot.config import Config
-                garves_cfg = Config()
-                client = build_client(garves_cfg)
+                from py_clob_client.client import ClobClient
+                from py_clob_client.clob_types import ApiCreds
+                client = ClobClient(
+                    self.cfg.clob_host,
+                    key=self.cfg.private_key,
+                    chain_id=137,
+                    funder=self.cfg.funder_address or None,
+                    signature_type=2,  # POLY_GNOSIS_SAFE
+                )
+                if self.cfg.clob_api_key:
+                    client.set_api_creds(ApiCreds(
+                        api_key=self.cfg.clob_api_key,
+                        api_secret=self.cfg.clob_api_secret,
+                        api_passphrase=self.cfg.clob_api_passphrase,
+                    ))
+                resp = client.get_ok()
+                log.info("Hawk CLOB connection OK (own wallet): %s", resp)
             except Exception:
-                log.warning("Could not initialize CLOB client, running in dry-run mode")
+                log.warning("Could not initialize Hawk CLOB client, running in dry-run mode")
+                client = None
         self.executor = HawkExecutor(self.cfg, client, self.tracker)
 
         # Kalshi executor — only if trading enabled and credentials present
@@ -1194,6 +1208,20 @@ class HawkBot:
 
                 # Resolve trades (check market outcomes)
                 res = resolve_paper_trades()
+
+                # Auto-claim resolved positions on-chain
+                try:
+                    from bot.auto_claimer import auto_claim
+                    _hk = os.environ.get("HAWK_PRIVATE_KEY", "")
+                    _ha = os.environ.get("HAWK_FUNDER_ADDRESS", "")
+                    if _hk and _ha:
+                        claim_result = auto_claim(_ha, _hk)
+                        if claim_result["claimed"] > 0:
+                            log.info("[CLAIM] Redeemed %d positions for $%.2f USDC",
+                                     claim_result["claimed"], claim_result["usdc"])
+                except Exception:
+                    pass  # Never block trading
+
                 if res["resolved"] > 0:
                     log.info(
                         "Resolved %d trades: %d W / %d L | P&L: $%.2f",

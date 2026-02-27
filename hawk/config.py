@@ -20,12 +20,12 @@ def _env(key: str, default: str = "") -> str:
 
 @dataclass(frozen=True)
 class HawkConfig:
-    # Reuse Garves CLOB credentials
-    private_key: str = _env("PRIVATE_KEY")
-    clob_api_key: str = _env("CLOB_API_KEY")
-    clob_api_secret: str = _env("CLOB_API_SECRET")
-    clob_api_passphrase: str = _env("CLOB_API_PASSPHRASE")
-    funder_address: str = _env("FUNDER_ADDRESS")
+    # Hawk-specific wallet (falls back to shared Garves credentials)
+    private_key: str = _env("HAWK_PRIVATE_KEY") or _env("PRIVATE_KEY")
+    clob_api_key: str = _env("HAWK_CLOB_API_KEY") or _env("CLOB_API_KEY")
+    clob_api_secret: str = _env("HAWK_CLOB_API_SECRET") or _env("CLOB_API_SECRET")
+    clob_api_passphrase: str = _env("HAWK_CLOB_API_PASSPHRASE") or _env("CLOB_API_PASSPHRASE")
+    funder_address: str = _env("HAWK_FUNDER_ADDRESS") or _env("FUNDER_ADDRESS")
     clob_host: str = _env("CLOB_HOST", "https://clob.polymarket.com")
     gamma_host: str = _env("GAMMA_HOST", "https://gamma-api.polymarket.com")
 

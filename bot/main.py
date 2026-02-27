@@ -119,19 +119,46 @@ class TradingBot:
         self.conviction_engine = ConvictionEngine()
         self.straddle_engine = StraddleEngine(cfg, self.executor, self.tracker, self.price_cache)
         self.maker_engine = MakerEngine(cfg, self.client, self.price_cache)
+        # Build separate CLOB client for snipe/res-scalp wallet (if configured)
+        snipe_client = self.client  # default: shared maker wallet
+        _snipe_key = os.environ.get("SNIPE_PRIVATE_KEY", "")
+        if _snipe_key:
+            try:
+                from py_clob_client.client import ClobClient as _SC
+                from py_clob_client.clob_types import ApiCreds as _SA
+                snipe_client = _SC(
+                    cfg.clob_host,
+                    key=_snipe_key,
+                    chain_id=137,
+                    funder=os.environ.get("SNIPE_FUNDER_ADDRESS") or cfg.funder_address or None,
+                    signature_type=2,
+                )
+                _sapi = os.environ.get("SNIPE_CLOB_API_KEY", "")
+                if _sapi:
+                    snipe_client.set_api_creds(_SA(
+                        api_key=_sapi,
+                        api_secret=os.environ.get("SNIPE_CLOB_API_SECRET", ""),
+                        api_passphrase=os.environ.get("SNIPE_CLOB_API_PASSPHRASE", ""),
+                    ))
+                snipe_client.get_ok()
+                log.info("Snipe/Res-Scalp CLOB connection OK (own wallet)")
+            except Exception:
+                log.warning("Snipe wallet init failed — falling back to shared client")
+                snipe_client = self.client
+
         self.snipe_engine = SnipeEngine(
             cfg=cfg,
             price_cache=self.price_cache,
-            clob_client=self.client,
+            clob_client=snipe_client,
             dry_run=cfg.snipe_dry_run,  # Independent SNIPE_DRY_RUN override
             budget_per_window=cfg.snipe_budget_per_window,
             delta_threshold=cfg.snipe_delta_threshold / 100,
         )
         log.info("[SNIPE] dry_run=%s (SNIPE_DRY_RUN)", cfg.snipe_dry_run)
 
-        # Whale Follower — Smart Money copy trader
+        # Whale Follower — Smart Money copy trader (uses snipe wallet)
         self.whale_tracker = WhaleTracker(
-            clob_client=self.client,
+            clob_client=snipe_client,
             dry_run=cfg.dry_run,
         )
 
@@ -1167,6 +1194,23 @@ class TradingBot:
 
         if self.perf_tracker.pending_count > 0:
             log.info("Performance tracker: %d trades pending resolution", self.perf_tracker.pending_count)
+
+        # Auto-claim resolved positions on both Maker and Snipe wallets
+        try:
+            from bot.auto_claimer import auto_claim
+            for _name, _key_env, _addr_env in [
+                ("Maker", "PRIVATE_KEY", "FUNDER_ADDRESS"),
+                ("Snipe", "SNIPE_PRIVATE_KEY", "SNIPE_FUNDER_ADDRESS"),
+            ]:
+                _k = os.environ.get(_key_env, "")
+                _a = os.environ.get(_addr_env, "")
+                if _k and _a:
+                    cr = auto_claim(_a, _k)
+                    if cr["claimed"] > 0:
+                        log.info("[CLAIM-%s] Redeemed %d positions for $%.2f USDC",
+                                 _name, cr["claimed"], cr["usdc"])
+        except Exception:
+            pass  # Never block trading
 
         # ── Trade Journal Analysis: every 10 resolved trades, LLM analyzes patterns ──
         if self._trade_journal_counter >= 10 and self._brain and self._shared_llm_call:

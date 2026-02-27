@@ -355,7 +355,7 @@ def api_hawk_positions():
         except Exception:
             pass
 
-    wallet = os.getenv("FUNDER_ADDRESS", "0x7CA4C1122aED3a226fEE08C38F329Ddf2Fb7817E")
+    wallet = os.getenv("HAWK_FUNDER_ADDRESS", "") or os.getenv("FUNDER_ADDRESS", "0x7CA4C1122aED3a226fEE08C38F329Ddf2Fb7817E")
     result = {"positions": [], "live": False, "fetched_at": 0, "error": None}
 
     try:

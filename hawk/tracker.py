@@ -428,7 +428,7 @@ class HawkTracker:
         """
         import urllib.request
 
-        wallet = os.getenv("FUNDER_ADDRESS", "")
+        wallet = os.getenv("HAWK_FUNDER_ADDRESS", "") or os.getenv("FUNDER_ADDRESS", "")
         if not wallet:
             log.warning("[SYNC] FUNDER_ADDRESS not set — cannot query on-chain")
             return None

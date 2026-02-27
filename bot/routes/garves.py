@@ -912,6 +912,7 @@ def api_garves_news_sentiment():
 BALANCE_CACHE_FILE = DATA_DIR / "polymarket_balance.json"
 BALANCE_CACHE_TTL = 60  # seconds
 POLYMARKET_WALLET = os.getenv("FUNDER_ADDRESS", "0x7CA4C1122aED3a226fEE08C38F329Ddf2Fb7817E")
+SNIPE_WALLET = os.getenv("SNIPE_FUNDER_ADDRESS", "")
 
 
 def _clob_hmac(secret: str, timestamp: int, method: str, path: str) -> str:
@@ -1016,9 +1017,11 @@ def api_garves_balance():
     result = {"portfolio": 0.0, "cash": 0.0, "positions_value": 0.0,
               "pnl": 0.0, "bankroll": bankroll, "live": False, "error": None}
 
-    # Position value — public data-api, always works
+    # Position value — public data-api, always works (aggregate all wallets)
     try:
         pos_val = _fetch_position_value(wallet)
+        if SNIPE_WALLET:
+            pos_val += _fetch_position_value(SNIPE_WALLET)
         result["positions_value"] = round(pos_val, 2)
         result["live"] = True
     except Exception as e:
@@ -1206,11 +1209,20 @@ def api_garves_positions():
         import urllib.request
         headers = {"User-Agent": "GarvesV2/2.0"}
 
-        # ── 1. Fetch current positions (open holdings) ──
-        pos_url = f"https://data-api.polymarket.com/positions?user={wallet.lower()}&limit=500"
-        req = urllib.request.Request(pos_url, headers=headers)
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            pos_data = json.loads(resp.read().decode())
+        # ── 1. Fetch current positions from all Garves wallets ──
+        pos_data = []
+        for _w in [wallet, SNIPE_WALLET]:
+            if not _w:
+                continue
+            try:
+                _url = f"https://data-api.polymarket.com/positions?user={_w.lower()}&limit=500"
+                _req = urllib.request.Request(_url, headers=headers)
+                with urllib.request.urlopen(_req, timeout=10) as _resp:
+                    _d = json.loads(_resp.read().decode())
+                if isinstance(_d, list):
+                    pos_data.extend(_d)
+            except Exception:
+                pass
 
         holdings = []
         totals = result["totals"]
@@ -1331,11 +1343,20 @@ def api_garves_positions():
         for h in holdings:
             h.pop("_cid", None)
 
-        # ── 2. Fetch activity for real W/L record ──
-        act_url = f"https://data-api.polymarket.com/activity?user={wallet.lower()}&limit=500"
-        req2 = urllib.request.Request(act_url, headers=headers)
-        with urllib.request.urlopen(req2, timeout=10) as resp2:
-            activity = json.loads(resp2.read().decode())
+        # ── 2. Fetch activity from all Garves wallets ──
+        activity = []
+        for _w in [wallet, SNIPE_WALLET]:
+            if not _w:
+                continue
+            try:
+                _url = f"https://data-api.polymarket.com/activity?user={_w.lower()}&limit=500"
+                _req = urllib.request.Request(_url, headers=headers)
+                with urllib.request.urlopen(_req, timeout=10) as _resp:
+                    _d = json.loads(_resp.read().decode())
+                if isinstance(_d, list):
+                    activity.extend(_d)
+            except Exception:
+                pass
 
         # Group activity by market title → compute spent vs redeemed
         from collections import defaultdict

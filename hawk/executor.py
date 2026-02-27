@@ -583,7 +583,7 @@ def _notify_trade_placed(opp: TradeOpportunity, cfg: HawkConfig | None = None) -
         f"\U0001f4cb {opp.market.question[:100]}\n"
         f"\n"
         f"{dir_icon} <b>{opp.direction.upper()}</b> ${opp.position_size_usd:.2f} @ ${price:.2f}\n"
-        f"\U0001f4c8 Edge: <b>{opp.edge*100:.1f}%</b> | Conf: {opp.confidence*100:.0f}%\n"
+        f"\U0001f4c8 Edge: <b>{opp.edge*100:.1f}%</b> | Conf: {opp.estimate.confidence*100:.0f}%\n"
         f"\u26a0\ufe0f Risk: {opp.risk_score}/10 {risk_bar}"
     )
 

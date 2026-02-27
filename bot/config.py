@@ -36,6 +36,7 @@ class Config:
     max_daily_loss_usd: float = float(_env("MAX_DAILY_LOSS_USD", "50.0"))
     max_drawdown_pct: float = float(_env("MAX_DRAWDOWN_PCT", "30.0"))
     bankroll_usd: float = float(_env("BANKROLL_USD", "250.0"))
+    snipe_bankroll_usd: float = float(_env("SNIPE_BANKROLL_USD", "0"))  # 0 = use bankroll_usd
 
     # Bot
     tick_interval_s: int = int(_env("TICK_INTERVAL_S", "30"))
