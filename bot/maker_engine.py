@@ -212,9 +212,9 @@ class MakerEngine:
         self.tick_interval_s = float(os.getenv("MAKER_TICK_INTERVAL_S", "5.0"))
 
         # Spread params
-        self.min_half_spread = 0.01
-        self.max_half_spread = 0.04
-        self.base_half_spread = 0.02
+        self.min_half_spread = 0.03   # 6c total floor
+        self.max_half_spread = 0.08   # 16c total ceiling
+        self.base_half_spread = 0.04  # 8c total base
 
         # Inventory Manager — on-chain synced, source of truth
         wallet = cfg.funder_address or os.getenv("FUNDER_ADDRESS", "")
@@ -347,10 +347,10 @@ class MakerEngine:
         if binance_price is None or binance_price <= 0:
             return implied_price
 
-        price_3m = self._cache.get_price_ago(asset, 3)
-        if price_3m and price_3m > 0:
-            momentum = (binance_price - price_3m) / price_3m
-            momentum_shift = momentum * 2.0
+        price_1m = self._cache.get_price_ago(asset, 1)
+        if price_1m and price_1m > 0:
+            momentum = (binance_price - price_1m) / price_1m
+            momentum_shift = momentum * 3.0  # amplify (1-min moves are smaller)
             momentum_fair = implied_price + momentum_shift
             momentum_fair = max(0.05, min(0.95, momentum_fair))
         else:
@@ -390,6 +390,20 @@ class MakerEngine:
 
         return max(self.min_half_spread, min(self.max_half_spread, half_spread))
 
+    def _adverse_selection_guard(self, asset: str) -> tuple[bool, bool]:
+        """Returns (skip_buy_yes, skip_buy_no) based on 1-min Binance momentum."""
+        price_now = self._cache.get_price(asset)
+        price_1m = self._cache.get_price_ago(asset, 1)
+        if not price_now or not price_1m or price_1m <= 0:
+            return False, False
+        pct_move = (price_now - price_1m) / price_1m
+        THRESHOLD = 0.0015  # 0.15% in 1 min = fast move
+        if pct_move > THRESHOLD:
+            return False, True   # skip BUY_NO (price surging up)
+        if pct_move < -THRESHOLD:
+            return True, False   # skip BUY_YES (price crashing down)
+        return False, False
+
     def _inventory_skew(self, up_token: str, down_token: str) -> float:
         """Inventory imbalance skew. Shifts quotes to reduce one-sided exposure.
 
@@ -399,12 +413,12 @@ class MakerEngine:
         if exposure["total_usd"] < 1.0:
             return 0.0
 
-        max_per_market = self.quote_size_usd  # $10 per market
+        max_per_market = max(self.quote_size_usd, 20.0)
 
         # Positive = more YES than NO -> lower BUY YES price, raise BUY NO attractiveness
         imbalance_usd = exposure["up_size"] - exposure["down_size"]
         skew_frac = min(1.0, abs(imbalance_usd) / max_per_market)
-        skew = 0.01 * skew_frac
+        skew = 0.04 * skew_frac  # max 4c shift (half the base spread)
 
         return skew if imbalance_usd > 0 else -skew
 
@@ -452,10 +466,10 @@ class MakerEngine:
                     "size": size, "price": price,
                     "reason": f"total exposure cap hit (${total_exposure:.0f} on-chain + ${order_cost:.0f} new > ${max_exposure:.0f} max)"}
 
-        # 4. Per-market exposure cap (max $10 per market = quote_size)
+        # 4. Per-market exposure cap ($30 = room for both sides)
         exposure = self._inv_mgr.get_market_exposure(up_token, down_token)
         cat = self._token_category.get(token_id, "crypto")
-        max_per_market = self.quote_size_usd
+        max_per_market = self.quote_size_usd * 3.0
         if exposure["total_usd"] >= max_per_market:
             return {"action": "block", "side": side, "token_id": token_id,
                     "size": size, "price": price,
@@ -827,8 +841,8 @@ class MakerEngine:
                     log.info("[MAKER-DRY] Would-fill: %s %s @ $%.3f ($%.1f) [%s]",
                              q.side, q.asset.upper(), q.price, q.size_usd, fill_info)
                 else:
-                    # Expire quotes after 120s in dry-run (gives time to fill)
-                    if now - q.placed_at > 120:
+                    # Expire quotes after 30s in dry-run
+                    if now - q.placed_at > 30:
                         log.debug("[MAKER-DRY] Expired: %s %s @ $%.4f [%s]",
                                   q.side, q.asset.upper(), q.price, fill_info)
                     else:
@@ -836,8 +850,8 @@ class MakerEngine:
                 continue
 
             # ── Live mode ──
-            # Stale quote check: cancel if older than 30s
-            if now - q.placed_at > 30:
+            # Stale quote check: cancel if older than 10s (2 tick cycles)
+            if now - q.placed_at > 10:
                 try:
                     self.client.cancel(q.order_id)
                 except Exception:
@@ -1161,11 +1175,15 @@ class MakerEngine:
                 self._flatten_inventory(up_token, down_token, asset)
                 continue
 
+            adv_skip_yes, adv_skip_no = self._adverse_selection_guard(asset)
+            skip_buy = ttr_params.get("skip_buy", False) or adv_skip_yes
+            skip_sell = ttr_params.get("skip_sell", False) or adv_skip_no
+
             new = self.refresh_quotes(
                 up_token, asset, fair, half_spread,
                 quote_size_override=ttr_params.get("quote_size_override"),
-                skip_buy=ttr_params.get("skip_buy", False),
-                skip_sell=ttr_params.get("skip_sell", False),
+                skip_buy=skip_buy,
+                skip_sell=skip_sell,
                 down_token_id=down_token,
                 market_id=market_id,
             )
