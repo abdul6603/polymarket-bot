@@ -71,7 +71,25 @@ A 7% bounce during tariff fears could be a dead cat bounce. News overrides techn
 - If positive news (rate cuts, stimulus, regulatory clarity): boost confidence in LONGs
 - No news = rely on technicals. Bad news + bullish technicals = FLAT or reduced size.
 
-Respond with ONLY a JSON object. No other text."""
+Respond with ONLY a JSON object using EXACTLY these field names:
+{
+  "action": "LONG" or "SHORT" or "FLAT",
+  "trade_type": "scalp" or "swing",
+  "conviction": 0-100,
+  "entry_price": number,
+  "stop_loss": number,
+  "take_profit_1": number,
+  "take_profit_2": number or 0,
+  "risk_reward": number,
+  "risk_usd": number (5-100),
+  "reasoning": ["reason1", "reason2", "reason3"],
+  "macro_alignment": "bullish" or "bearish" or "neutral",
+  "regime_alignment": "bullish" or "bearish" or "neutral",
+  "structure_bias": "bullish" or "bearish" or "neutral",
+  "timeframe_agreement": "2/3" or "3/3" or "1/3",
+  "volume_confirms": true or false
+}
+No other text. No markdown fences. Just the JSON object."""
 
 
 class OdinBrain:
