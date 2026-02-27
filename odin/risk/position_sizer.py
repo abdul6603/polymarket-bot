@@ -27,6 +27,8 @@ log = logging.getLogger(__name__)
 MIN_RISK_USD = 3.00           # Don't trade below $3 risk
 MAX_LEVERAGE = 50             # Exchange hard cap
 DEFAULT_RISK_USD = 25.0       # Default risk per trade (LLM overrides this)
+MAX_SCALP_RISK_USD = 10.0     # Hard cap: scalps never risk more than $10
+MAX_SCALP_NOTIONAL = 1500.0   # Hard cap: scalp notional never exceeds $1,500
 
 # ── Dynamic Max Notional Tiers (20x capital for cross margin) ──
 _NOTIONAL_TIERS = [
@@ -236,6 +238,11 @@ class PositionSizer:
                 risk *= (1 - funding_penalty_pct)
                 adjustments.append(f"funding_penalty_-{funding_penalty_pct:.0%} (pay {funding_rate_8h:+.4%}/8h)")
 
+        # ── Scalp risk hard cap — prevents ACE-type blowups ──
+        if trade_type == "scalp" and risk > MAX_SCALP_RISK_USD:
+            adjustments.append(f"scalp_risk_cap_${risk:.0f}>${MAX_SCALP_RISK_USD:.0f}")
+            risk = MAX_SCALP_RISK_USD
+
         # Scale down if already exposed (swings only — scalps use tight SL as risk mgmt)
         if trade_type != "scalp" and current_exposure > 0 and balance > 0:
             exposure_ratio = current_exposure / balance
@@ -266,6 +273,8 @@ class PositionSizer:
         # ── Step 5: Cap notional (tier-aware, 10x capital) ──
         dynamic_cap = get_max_notional(balance)
         effective_cap = notional_cap_override if notional_cap_override > 0 else dynamic_cap
+        if trade_type == "scalp":
+            effective_cap = min(effective_cap, MAX_SCALP_NOTIONAL)
         if notional > effective_cap:
             qty = effective_cap / entry_price
             notional = effective_cap
