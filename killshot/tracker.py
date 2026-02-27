@@ -34,6 +34,8 @@ class PaperTrade:
     window_end_ts: float  # when this 5m window closes
     spot_delta_pct: float # spot price change % that triggered this trade
     open_price: float     # asset open price at window start
+    market_bid: float = 0.0   # CLOB best bid at entry time
+    market_ask: float = 0.0   # CLOB best ask at entry time
     outcome: str = ""     # "win", "loss", or "expired" (empty while pending)
     pnl: float = 0.0
     resolved_at: float = 0.0

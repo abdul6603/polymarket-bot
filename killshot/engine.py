@@ -3,7 +3,7 @@
 Core logic:
 1. At T-60s to T-10s before each 5m window close, check Binance spot price
 2. If spot delta since window open exceeds threshold → direction is "locked"
-3. Simulate posting a maker limit order on the winning side at 82-93¢
+3. Simulate posting a maker limit order on the winning side at 60-75¢
 4. Track outcome at resolution for paper P&L
 """
 from __future__ import annotations
@@ -16,6 +16,7 @@ from killshot.tracker import PaperTrade, PaperTracker
 
 from bot.price_cache import PriceCache
 from bot.snipe.window_tracker import Window
+from bot.snipe import clob_book
 
 log = logging.getLogger("killshot.engine")
 
@@ -98,6 +99,12 @@ class KillshotEngine:
 
         direction = "up" if delta > 0 else "down"
 
+        # Fetch CLOB book for the winning side to see real market prices
+        winning_token = window.up_token_id if direction == "up" else window.down_token_id
+        book = clob_book.get_orderbook(winning_token) if winning_token else None
+        market_bid = book["best_bid"] if book and book["best_bid"] > 0 else None
+        market_ask = book["best_ask"] if book and book["best_ask"] > 0 else None
+
         # Entry price: stronger delta → higher confidence → willing to pay more
         delta_strength = min(abs(delta) / (self._cfg.direction_threshold * 5), 1.0)
         entry_price = self._cfg.entry_price_min + delta_strength * (
@@ -108,6 +115,19 @@ class KillshotEngine:
         # Position sizing (capped at max_bet and 10% of bankroll)
         size_usd = min(self._cfg.max_bet_usd, self._cfg.bankroll_usd * 0.10)
         shares = round(size_usd / entry_price, 2)
+
+        # Log CLOB book vs our simulated entry
+        if market_bid is not None:
+            fillable = "YES" if entry_price >= market_ask else "NO"
+            log.info(
+                "[KILLSHOT] BOOK %s: bid=%.0f¢ ask=%.0f¢ spread=%.1f¢ | "
+                "our_entry=%.0f¢ | fillable=%s",
+                direction.upper(), market_bid * 100, market_ask * 100,
+                (market_ask - market_bid) * 100,
+                entry_price * 100, fillable,
+            )
+        else:
+            log.warning("[KILLSHOT] BOOK unavailable for %s", direction)
 
         # Mark window as traded (one shot per window per asset)
         self._traded_windows[window.market_id] = time.time()
@@ -125,6 +145,8 @@ class KillshotEngine:
             window_end_ts=window.end_ts,
             spot_delta_pct=round(delta, 6),
             open_price=window.open_price,
+            market_bid=market_bid or 0.0,
+            market_ask=market_ask or 0.0,
         )
         self._tracker.record_trade(trade)
 

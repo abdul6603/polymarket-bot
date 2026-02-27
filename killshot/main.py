@@ -177,6 +177,9 @@ def main() -> None:
         sys.exit(1)
 
     # Initialize shared components
+    from bot.snipe import clob_book
+    clob_book.init("https://clob.polymarket.com")
+
     price_cache = PriceCache()
     price_cache.preload_from_disk()
 
