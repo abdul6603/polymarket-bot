@@ -2018,6 +2018,8 @@ def engine_comparison():
         return records
 
     # --- Taker trades (archives + current) ---
+    # Only count trades that have real dollar data (size_usd + pnl fields).
+    # Old-format trades (pre-Feb 20) only tracked win/loss without $ amounts.
     taker_trades = []
     archives_dir = data_dir / "archives"
     if archives_dir.exists():
@@ -2025,12 +2027,12 @@ def engine_comparison():
             taker_trades.extend(_read_jsonl(f))
     taker_trades.extend(_read_jsonl(data_dir / "trades.jsonl"))
 
-    taker_resolved = [t for t in taker_trades if t.get("resolved")]
+    taker_resolved = [t for t in taker_trades if t.get("resolved") and "size_usd" in t]
     taker_wins = sum(1 for t in taker_resolved if t.get("won"))
     taker_losses = len(taker_resolved) - taker_wins
     taker_pnl = sum(t.get("pnl", 0) for t in taker_resolved)
     taker_size = sum(t.get("size_usd", 0) for t in taker_resolved)
-    taker_pending = len([t for t in taker_trades if not t.get("resolved")])
+    taker_pending = len([t for t in taker_trades if not t.get("resolved") and "size_usd" in t])
 
     # --- Snipe trades ---
     snipe_trades = _read_jsonl(data_dir / "snipe_trades.jsonl")
