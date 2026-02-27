@@ -109,7 +109,8 @@ class ScalpBrain:
             score += 25
             reasons.append(f"below EMA20 ({current_price:.4f} < {ema[-1]:.4f})")
         else:
-            reasons.append(f"wrong side of EMA20")
+            score -= 15
+            reasons.append(f"wrong side of EMA20 (penalty)")
 
         # ── 2. Volume Confirmation (20 points) ──
         avg_vol = np.mean(volume[-20:-1]) if len(volume) >= 21 else np.mean(volume[:-1])
@@ -125,23 +126,33 @@ class ScalpBrain:
         else:
             reasons.append(f"low volume ({last_vol / max(avg_vol, 1):.1f}x)")
 
-        # ── 3. RSI Check (20 points) ──
+        # ── 3. RSI Check (20 points, can go NEGATIVE) ──
         rsi = self._rsi(close, self._rsi_period)
         if rsi > 0:
-            if direction_hint == "LONG" and rsi < self._rsi_long_max:
+            if direction_hint == "LONG" and rsi >= 80:
+                # HARD BLOCK: longing into extreme overbought
+                score -= 30
+                reasons.append(f"RSI={rsi:.0f} (OVERBOUGHT — BLOCKED)")
+            elif direction_hint == "SHORT" and rsi <= 20:
+                # HARD BLOCK: shorting into extreme oversold
+                score -= 30
+                reasons.append(f"RSI={rsi:.0f} (OVERSOLD — BLOCKED)")
+            elif direction_hint == "LONG" and rsi >= 70:
+                # Penalty: longing into overbought zone
+                score -= 10
+                reasons.append(f"RSI={rsi:.0f} (overbought — penalty)")
+            elif direction_hint == "SHORT" and rsi <= 30:
+                # Penalty: shorting into oversold zone
+                score -= 10
+                reasons.append(f"RSI={rsi:.0f} (oversold — penalty)")
+            elif direction_hint == "LONG" and rsi < self._rsi_long_max:
                 score += 20
                 reasons.append(f"RSI={rsi:.0f} (room to run)")
             elif direction_hint == "SHORT" and rsi > self._rsi_short_min:
                 score += 20
                 reasons.append(f"RSI={rsi:.0f} (room to fall)")
-            elif direction_hint == "LONG" and rsi < 80:
-                score += 10
-                reasons.append(f"RSI={rsi:.0f} (borderline high)")
-            elif direction_hint == "SHORT" and rsi > 20:
-                score += 10
-                reasons.append(f"RSI={rsi:.0f} (borderline low)")
             else:
-                reasons.append(f"RSI={rsi:.0f} (exhausted)")
+                reasons.append(f"RSI={rsi:.0f} (neutral)")
 
         # ── 4. Momentum Strength (20 points) ──
         # Check last 3 candles — are they confirming the direction?
@@ -216,9 +227,8 @@ class ScalpBrain:
             sl_dist = stop_loss - current_price
             take_profit = current_price - sl_dist * 1.5
 
-        # Risk: scale with score (higher score = more risk)
-        risk_mult = 0.6 + (score - self._min_score) / 80  # 0.6x to 1.1x
-        risk_usd = round(self._base_risk_usd * min(risk_mult, 1.2), 2)
+        # Risk: flat risk for scalps — score determines GO/NO-GO, not sizing
+        risk_usd = round(self._base_risk_usd * 0.5, 2)  # Fixed 50% of base = $10
 
         confidence = score / 100
         log.info("[SCALP_BRAIN] %s score=%d TRADE: %s | risk=$%.0f | %s",

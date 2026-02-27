@@ -1278,6 +1278,21 @@ class OdinBot:
         ~0.1s decision vs 15s LLM call. Built for speed.
         """
         try:
+            # ── Hard blocks before any work ──
+            bare = symbol.replace("USDT", "")
+            if bare in self._cfg.permanent_blacklist:
+                log.info("[SNIPER] %s: PERMANENTLY BLACKLISTED — skip", bare)
+                return
+
+            # Cooldown: no repeat scalps on same coin within N seconds
+            import time as _time
+            _last_scalp_key = f"_last_scalp_{bare}"
+            _last_t = getattr(self, _last_scalp_key, 0)
+            if _time.time() - _last_t < self._cfg.scalp_cooldown_seconds:
+                log.info("[SNIPER] %s: cooldown (%ds left) — skip",
+                         bare, int(self._cfg.scalp_cooldown_seconds - (_time.time() - _last_t)))
+                return
+
             # Fetch only LTF candles (5m/15m — all we need for a scalp)
             ltf_candles = self._fetch_candles(symbol, self._cfg.ltf, 50)
 
@@ -1289,7 +1304,7 @@ class OdinBot:
             ltf_df = self._candles_to_df(ltf_candles)
 
             # Current price from WS (fastest)
-            bare = symbol.replace("USDT", "")
+
             current_price = self._ws_prices.get(bare, self._ws_prices.get(symbol, 0))
             if current_price <= 0:
                 current_price = self._client.get_price(symbol)
@@ -1351,6 +1366,9 @@ class OdinBot:
             if size.notional_usd < 10:
                 log.info("[SNIPER] %s: position too small ($%.2f)", symbol, size.notional_usd)
                 return
+
+            # Set cooldown timestamp
+            setattr(self, f"_last_scalp_{bare}", _time.time())
 
             # Build TradeSignal for order manager
             signal = TradeSignal(

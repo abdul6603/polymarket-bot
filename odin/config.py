@@ -59,7 +59,11 @@ class OdinConfig:
     # ── Portfolio Risk Guard (Phase 2) ──
     portfolio_max_heat_pct: float = float(os.getenv("ODIN_MAX_HEAT_PCT", "10.0"))
     max_same_direction: int = int(os.getenv("ODIN_MAX_SAME_DIRECTION", "4"))
-    coin_blacklist_after_losses: int = int(os.getenv("ODIN_BLACKLIST_LOSSES", "3"))
+    coin_blacklist_after_losses: int = int(os.getenv("ODIN_BLACKLIST_LOSSES", "2"))  # Lowered: 2 losses = temp ban
+    scalp_cooldown_seconds: int = int(os.getenv("ODIN_SCALP_COOLDOWN", "300"))  # 5 min between scalps on same coin
+    permanent_blacklist: tuple[str, ...] = tuple(
+        s.strip() for s in os.getenv("ODIN_PERMA_BLACKLIST", "ACE,DOOD").split(",") if s.strip()
+    )
     notional_cap_major: float = float(os.getenv("ODIN_CAP_MAJOR", "1000"))
     notional_cap_mid: float = float(os.getenv("ODIN_CAP_MID", "600"))
     notional_cap_alt: float = float(os.getenv("ODIN_CAP_ALT", "400"))
