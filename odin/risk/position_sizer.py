@@ -236,8 +236,8 @@ class PositionSizer:
                 risk *= (1 - funding_penalty_pct)
                 adjustments.append(f"funding_penalty_-{funding_penalty_pct:.0%} (pay {funding_rate_8h:+.4%}/8h)")
 
-        # Scale down if already exposed
-        if current_exposure > 0 and balance > 0:
+        # Scale down if already exposed (swings only — scalps use tight SL as risk mgmt)
+        if trade_type != "scalp" and current_exposure > 0 and balance > 0:
             exposure_ratio = current_exposure / balance
             if exposure_ratio > 2.0:
                 risk *= 0.5

@@ -228,7 +228,8 @@ class OrderManager:
 
         for pos_id, pos in list(self._paper_positions.items()):
             symbol = pos["symbol"]
-            price = current_prices.get(symbol, 0)
+            bare = symbol.replace("USDT", "")
+            price = current_prices.get(bare, current_prices.get(symbol, 0))
             if price <= 0:
                 continue
 
@@ -732,7 +733,8 @@ class OrderManager:
             pos = dict(p)  # shallow copy
             if current_prices:
                 symbol = pos.get("symbol", "")
-                price = current_prices.get(symbol, 0)
+                bare = symbol.replace("USDT", "")
+                price = current_prices.get(bare, current_prices.get(symbol, 0))
                 if price > 0:
                     pos["current_price"] = price
                     pos["mark_price"] = price
@@ -983,7 +985,9 @@ class OrderManager:
                 del self._pending_orders[oid]
                 continue
 
-            price = current_prices.get(order["symbol"], 0)
+            sym = order["symbol"]
+            bare = sym.replace("USDT", "")
+            price = current_prices.get(bare, current_prices.get(sym, 0))
             if price <= 0:
                 continue
 

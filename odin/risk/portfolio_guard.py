@@ -252,9 +252,9 @@ class PortfolioGuard:
             )
             return decision
 
-        # 3. Portfolio heat check
+        # 3. Portfolio heat check (swings only — scalps use tight SL, not heat caps)
         new_heat_pct = ((s.total_heat_usd + risk_usd) / max(s.balance, 1)) * 100
-        if new_heat_pct > self.cfg.portfolio_max_heat_pct:
+        if trade_type != "scalp" and new_heat_pct > self.cfg.portfolio_max_heat_pct:
             # Scale risk down instead of blocking
             available_heat = max(
                 0, (self.cfg.portfolio_max_heat_pct / 100) * s.balance - s.total_heat_usd

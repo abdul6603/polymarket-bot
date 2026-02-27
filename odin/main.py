@@ -181,7 +181,7 @@ class OdinBot:
 
         # Scalp Brain (V8) — rule-based, no LLM, instant decisions
         self._scalp_brain = ScalpBrain(
-            base_risk_usd=self._cfg.risk_per_trade_usd,
+            base_risk_usd=20.0,  # $20 base → $2-5K positions with 0.3-1.5% SL
             min_score=55,
         )
         self._reflection = ReflectionEngine(self._journal, self._brain)
