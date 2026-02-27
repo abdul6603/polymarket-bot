@@ -161,7 +161,7 @@ def _get_cross_platform_data(market: HawkMarket, yes_price: float) -> tuple[str,
     try:
         from hawk.kalshi import get_kalshi_divergence
         kalshi = get_kalshi_divergence(market.question, yes_price)
-        if kalshi and kalshi.match_confidence >= 0.55:
+        if kalshi and kalshi.match_confidence >= 0.70:
             cp["kalshi_prob"] = kalshi.kalshi_price
             cp["count"] += 1
             context_parts.append(
@@ -176,7 +176,7 @@ def _get_cross_platform_data(market: HawkMarket, yes_price: float) -> tuple[str,
         try:
             from hawk.predictit import match_political_market
             pi = match_political_market(market.question, yes_price)
-            if pi and pi.match_confidence >= 0.50:
+            if pi and pi.match_confidence >= 0.70:
                 cp["predictit_prob"] = pi.pi_price
                 cp["count"] += 1
                 context_parts.append(
@@ -191,7 +191,7 @@ def _get_cross_platform_data(market: HawkMarket, yes_price: float) -> tuple[str,
         try:
             from hawk.metaculus import get_crowd_probability
             mc = get_crowd_probability(market.question, yes_price)
-            if mc and mc.match_confidence >= 0.40:
+            if mc and mc.match_confidence >= 0.70:
                 cp["metaculus_prob"] = mc.community_prob
                 cp["count"] += 1
                 context_parts.append(
