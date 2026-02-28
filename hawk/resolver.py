@@ -75,8 +75,9 @@ def resolve_paper_trades() -> dict:
         trades = clean_trades
         _rewrite_trades(trades)  # Persist dedup immediately
 
-    # Fix 1: Skip unfilled orders — they haven't been confirmed on CLOB yet
-    unresolved = [t for t in trades if not t.get("resolved") and t.get("filled", True)]
+    # Check all unresolved trades — including unfilled ones (fill confirmation
+    # can fail but order may have filled on-chain, resolver will verify via CLOB)
+    unresolved = [t for t in trades if not t.get("resolved")]
     if not unresolved:
         return {"checked": 0, "resolved": 0, "wins": 0, "losses": 0, "skipped": 0, "total_pnl": 0.0, "resolved_trades": []}
 
@@ -157,6 +158,8 @@ def resolve_paper_trades() -> dict:
                 t["won"] = won
                 t["pnl"] = round(pnl, 2)
                 t["resolve_time"] = time.time()
+                if not t.get("filled"):
+                    t["filled"] = True  # Order filled on-chain even if confirmation was missed
 
                 stats["resolved"] += 1
                 stats["total_pnl"] += pnl
