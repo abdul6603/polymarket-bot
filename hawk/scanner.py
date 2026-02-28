@@ -229,8 +229,9 @@ def scan_all_markets(cfg: HawkConfig) -> list[HawkMarket]:
                     if volume < effective_min_vol:
                         continue
 
-                    # Skip low-liquidity markets (wide spreads, slippage risk)
-                    if liquidity < cfg.min_liquidity:
+                    # Skip low-liquidity markets (weather gets lower threshold)
+                    weather_min_liq = 100 if _is_weather else cfg.min_liquidity
+                    if liquidity < weather_min_liq:
                         continue
 
                     # Skip markets that resolve too far out OR too soon

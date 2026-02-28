@@ -333,6 +333,15 @@ def calculate_edge(
     if not token_id:
         return None
 
+    # Zero-probability guard — if ensemble says 0% or 100%, only bet the supported side
+    if has_weather_model:
+        if direction == "yes" and est_prob <= 0.001:
+            log.info("[GUARD] Blocked YES bet on 0%% ensemble probability | %s", market.question[:60])
+            return None
+        if direction == "no" and est_prob >= 0.999:
+            log.info("[GUARD] Blocked NO bet on 100%% ensemble probability | %s", market.question[:60])
+            return None
+
     # Fix 6: Edge sanity cap — if edge is absurdly large, data is probably wrong
     # Weather model exempt: NOAA/Open-Meteo ensemble is highly accurate for short-term forecasts
     if edge > MAX_EDGE_SANITY and not has_weather_model:
@@ -376,9 +385,10 @@ def calculate_edge(
         return None
 
     # Fix 2: R:R ratio filter — potential win must exceed 1.2x potential loss
-    if buy_price > MAX_TOKEN_PRICE:
+    wx_max_price = 0.75 if has_weather_model else MAX_TOKEN_PRICE
+    if buy_price > wx_max_price:
         log.info("Rejected high-price token: $%.2f > $%.2f | %s",
-                 buy_price, MAX_TOKEN_PRICE, market.question[:50])
+                 buy_price, wx_max_price, market.question[:50])
         return None
 
     potential_win = (1.0 - buy_price)  # Win payout per $1 token

@@ -620,10 +620,10 @@ class HawkBot:
                 contested = []
                 for m in markets:
                     yes_price = _get_yes_price(m)
-                    if 0.12 <= yes_price <= 0.88:
+                    if m.category == "weather" or 0.12 <= yes_price <= 0.88:
                         contested.append(m)
 
-                log.info("Contested markets (12-88%%): %d / %d total", len(contested), len(markets))
+                log.info("Contested markets: %d / %d total (weather exempt)", len(contested), len(markets))
 
                 # 3. V2: Urgency-weighted ranking (ending-soon first)
                 ranked_markets = _urgency_rank(contested)
@@ -633,8 +633,8 @@ class HawkBot:
                 sports_markets = [m for m in ranked_markets if m.category == "sports"]
                 weather_markets = [m for m in ranked_markets if m.category == "weather"]
                 non_sports_markets = [m for m in ranked_markets if m.category not in ("sports", "weather")]
-                target_markets = sports_markets + weather_markets + non_sports_markets[:30]
-                log.info("V8 Analyzing %d markets: %d sports + %d weather + %d/%d non-sports (all $0)",
+                target_markets = weather_markets
+                log.info("V9 Weather-only: %d weather markets to analyze (skipping %d sports + %d/%d non-sports)",
                          len(target_markets), len(sports_markets), len(weather_markets),
                          min(len(non_sports_markets), 30), len(non_sports_markets))
 

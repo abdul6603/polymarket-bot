@@ -70,6 +70,7 @@ CITY_COORDS: dict[str, tuple[float, float]] = {
     "paris": (48.8566, 2.3522),
     "tokyo": (35.6762, 139.6503),
     "seoul": (37.5665, 126.9780),
+    "wellington": (-41.2924, 174.7787),
     "sydney": (-33.8688, 151.2093),
     "toronto": (43.6532, -79.3832),
     "mexico city": (19.4326, -99.1332),
@@ -540,6 +541,7 @@ def get_temperature_probability(
     threshold: float,
     direction: str = "above",
     unit: str = "fahrenheit",
+    metric: str = "temperature_max",
 ) -> float | None:
     """Compute probability of temperature above/below threshold from ensemble.
 
@@ -554,10 +556,8 @@ def get_temperature_probability(
     if not ensemble:
         return None
 
-    # Use max temp by default; use min if direction implies cold
-    var_key = "temperature_2m_max"
-    if "min" in direction or "low" in direction:
-        var_key = "temperature_2m_min"
+    # Use metric to determine which variable to compare against
+    var_key = "temperature_2m_min" if metric == "temperature_min" else "temperature_2m_max"
 
     members = ensemble.get(var_key, [])
     if not members:
@@ -913,8 +913,10 @@ def analyze_weather_market(question: str) -> dict | None:
 
     unit_sym = "°C" if query.unit == "celsius" else "°F"
 
-    # V6: Same-day nowcast — prefer hourly data for <24h markets
-    if horizon_hours < 24 and query.threshold is not None and query.lat and query.lon:
+    # V6: Same-day nowcast — ONLY for real-time events, NOT daily max/min forecasts
+    # Daily temp markets must use 82-member ensemble, not 6 hourly readings at 3AM
+    is_daily_temp = query.metric in ("temperature_max", "temperature_min")
+    if horizon_hours < 24 and query.threshold is not None and query.lat and query.lon and not is_daily_temp:
         nowcast = _fetch_hourly_nowcast(query.lat, query.lon)
         if nowcast and nowcast.get("temperature_2m"):
             temps = [t for t in nowcast["temperature_2m"] if t is not None]
@@ -956,9 +958,9 @@ def analyze_weather_market(question: str) -> dict | None:
         bucket_probs = get_temperature_bucket_probs(
             query.city, query.target_date, query.bucket_ranges, unit=query.unit,
         )
-        if bucket_probs:
+        if bucket_probs is not None:
             total_prob = sum(bucket_probs.values())
-            if total_prob > 0:
+            if True:  # Always return bucket result — 0% is a valid answer, don't fall through
                 # Count ensemble members for metadata
                 coords = CITY_COORDS.get(query.city.lower(), (0, 0))
                 ensemble = _fetch_ensemble(coords[0], coords[1], query.target_date, unit=query.unit)
@@ -985,7 +987,7 @@ def analyze_weather_market(question: str) -> dict | None:
     if query.metric in ("temperature_max", "temperature_min") and query.threshold is not None:
         prob = get_temperature_probability(
             query.city, query.target_date, query.threshold, query.direction,
-            unit=query.unit,
+            unit=query.unit, metric=query.metric,
         )
         if prob is not None:
             # Cross-verify with NWS for US cities

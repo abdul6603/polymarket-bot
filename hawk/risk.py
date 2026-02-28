@@ -146,8 +146,11 @@ class HawkRiskManager:
         if _is_updown_price_market(opp.market.question):
             return False, f"Blocked crypto price market: {opp.market.question[:60]}"
 
-        if opp.edge < self.cfg.min_edge:
-            return False, f"Edge {opp.edge:.3f} below minimum {self.cfg.min_edge:.3f}"
+        # Weather model gets lower min_edge (ensemble data is accurate)
+        is_wx = getattr(getattr(opp, 'estimate', None), 'edge_source', '') == 'weather_model'
+        eff_min = max(0.05, self.cfg.min_edge - 0.05) if is_wx else self.cfg.min_edge
+        if opp.edge < eff_min:
+            return False, f"Edge {opp.edge:.3f} below minimum {eff_min:.3f}"
 
         # V2: Risk score gate
         if opp.risk_score > self.cfg.max_risk_score:

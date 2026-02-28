@@ -34,7 +34,7 @@ class HawkConfig:
 
     # Hawk-specific risk params — V4 sportsbook-pure (targeting 55-60% WR)
     bankroll_usd: float = float(_env("HAWK_BANKROLL_USD", "250"))
-    max_bet_usd: float = float(_env("HAWK_MAX_BET_USD", "15"))
+    max_bet_usd: float = float(_env("HAWK_MAX_BET_USD", "10"))
     max_concurrent: int = int(_env("HAWK_MAX_CONCURRENT", "10"))
     daily_loss_cap: float = float(_env("HAWK_DAILY_LOSS_CAP", "30"))
     cycle_minutes: int = int(_env("HAWK_CYCLE_MINUTES", "30"))
