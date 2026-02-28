@@ -1218,6 +1218,11 @@ class HawkBot:
                             log.warning("[CLV-EXIT] %s | %s", _clv_reason, _pos.get("question", "")[:60])
                             _pos["_early_exit"] = True
                             _pos["_exit_reason"] = _clv_reason
+                            if self.executor and not _pos.get("_exit_sold"):
+                                sell_id = self.executor.sell_position(_pos, _clv_reason)
+                                if sell_id:
+                                    _pos["_exit_sold"] = True
+                                    log.info("[CLV-EXIT] Sell placed: %s", sell_id)
                 except Exception:
                     log.debug("[CLV-EXIT] Check failed (non-fatal)")
 
@@ -1301,6 +1306,22 @@ class HawkBot:
                                         pass
                         except Exception:
                             continue
+
+                    # Execute sells for all positions flagged for early exit
+                    if self.executor:
+                        for _pos in list(self.tracker.open_positions):
+                            if _pos.get("_early_exit") and not _pos.get("_exit_sold"):
+                                _reason = _pos.get("_exit_reason", "early_exit")
+                                log.warning("[EARLY-EXIT] SELLING: %s | %s",
+                                            _reason, _pos.get("question", "")[:60])
+                                sell_id = self.executor.sell_position(_pos, _reason)
+                                if sell_id:
+                                    _pos["_exit_sold"] = True
+                                    log.info("[EARLY-EXIT] Sell placed: %s", sell_id)
+                                else:
+                                    log.warning("[EARLY-EXIT] Sell failed for %s",
+                                                _pos.get("condition_id", "")[:12])
+
                 except Exception:
                     log.debug("[EARLY-EXIT] Check failed (non-fatal)")
 
