@@ -29,11 +29,9 @@
 
   <!-- Status Pills -->
   <div id="garves-widgets" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-    <div class="garves-engine-pill"><span class="gep-dot" style="background:#22c55e;"></span> Snipe <span id="snipe-positions-badge" style="font-size:0.58rem;padding:1px 6px;border-radius:8px;background:rgba(34,197,94,0.15);color:#22c55e;font-weight:600;margin-left:2px;">0/3</span></div>
     <div class="garves-engine-pill"><span class="gep-dot" style="background:#6b7280;"></span> Maker <span id="maker-status-badge" style="font-size:0.58rem;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;margin-left:2px;">OFF</span></div>
     <div class="garves-engine-pill"><span class="gep-dot" style="background:#6b7280;"></span> Whale <span id="whale-status-badge" style="font-size:0.58rem;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;margin-left:2px;">OFF</span> <span id="whale-tracked-count" style="font-size:0.56rem;color:var(--text-muted);margin-left:2px;">0 whales</span></div>
     <div class="garves-engine-pill"><span class="gep-dot" style="background:#6b7280;"></span> Taker <span id="taker-status-badge" style="font-size:0.58rem;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;margin-left:2px;">OFF</span></div>
-    <div class="garves-engine-pill"><span id="res-scalp-dot" class="gep-dot" style="background:#6b7280;"></span> Res-Scalp <span id="res-scalp-badge" style="font-size:0.58rem;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;margin-left:2px;">OFF</span></div>
     <div style="flex:1;"></div>
     <!-- Binance WS -->
     <div id="binance-pill-wrap" style="position:relative;">
@@ -130,16 +128,7 @@
 
   <!-- ═══ OVERVIEW PANEL ═══ -->
   <div class="garves-panel" id="garves-panel-overview">
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;">
-      <div class="glass-card" style="border-left:3px solid #22c55e;padding:14px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <span style="font-weight:700;font-size:0.78rem;">Snipe Engine</span>
-          <span id="ov-snipe-status" style="font-size:0.6rem;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,0.15);color:#22c55e;font-weight:600;">ACTIVE</span>
-        </div>
-        <div style="font-size:1.1rem;font-weight:800;font-family:var(--font-mono);" id="ov-snipe-wr">--</div>
-        <div style="font-size:0.62rem;color:var(--text-muted);">Win Rate</div>
-        <div style="font-size:0.62rem;color:var(--text-muted);margin-top:4px;" id="ov-snipe-trades">0 trades</div>
-      </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
       <div class="glass-card" style="border-left:3px solid #8b5cf6;padding:14px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
           <span style="font-weight:700;font-size:0.78rem;">Market Making</span>
@@ -166,55 +155,6 @@
         <div style="font-size:1.1rem;font-weight:800;font-family:var(--font-mono);" id="ov-taker-wr">--</div>
         <div style="font-size:0.62rem;color:var(--text-muted);">Win Rate</div>
         <div style="font-size:0.62rem;color:var(--text-muted);margin-top:4px;" id="ov-taker-trades">0 trades</div>
-      </div>
-    </div>
-    <!-- Resolution Scalper Overview Row -->
-    <div class="glass-card" style="margin-bottom:14px;border-left:3px solid #f97316;padding:14px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-        <span style="font-weight:700;font-size:0.78rem;">Resolution Scalper (Engine #2)</span>
-        <span id="ov-res-scalp-status" style="font-size:0.6rem;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;">OFF</span>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;">
-        <div style="text-align:center;">
-          <div style="font-size:1rem;font-weight:800;font-family:var(--font-mono);" id="ov-res-wr">--</div>
-          <div style="font-size:0.58rem;color:var(--text-muted);">Win Rate</div>
-        </div>
-        <div style="text-align:center;">
-          <div style="font-size:1rem;font-weight:800;font-family:var(--font-mono);" id="ov-res-trades">0</div>
-          <div style="font-size:0.58rem;color:var(--text-muted);">Trades</div>
-        </div>
-        <div style="text-align:center;">
-          <div style="font-size:1rem;font-weight:800;font-family:var(--font-mono);" id="ov-res-pnl">$0.00</div>
-          <div style="font-size:0.58rem;color:var(--text-muted);">P&amp;L</div>
-        </div>
-        <div style="text-align:center;">
-          <div style="font-size:1rem;font-weight:800;font-family:var(--font-mono);" id="ov-res-cal">--</div>
-          <div style="font-size:0.58rem;color:var(--text-muted);">Calibration</div>
-        </div>
-        <div style="text-align:center;">
-          <div style="font-size:1rem;font-weight:800;font-family:var(--font-mono);" id="ov-res-active">0</div>
-          <div style="font-size:0.58rem;color:var(--text-muted);">Active</div>
-        </div>
-      </div>
-      <!-- Live Opportunities -->
-      <div id="res-scalp-opps" style="margin-top:10px;display:none;">
-        <div style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Live Opportunities</div>
-        <div style="overflow-x:auto;">
-          <table style="width:100%;border-collapse:collapse;font-size:0.72rem;font-family:var(--font-mono);">
-            <thead><tr style="border-bottom:1px solid rgba(255,255,255,0.08);color:var(--text-muted);"><th style="padding:4px 6px;text-align:left;">Asset</th><th style="padding:4px 6px;">Dir</th><th style="padding:4px 6px;">P%</th><th style="padding:4px 6px;">Mkt</th><th style="padding:4px 6px;">Edge</th><th style="padding:4px 6px;">z</th><th style="padding:4px 6px;">T-s</th><th style="padding:4px 6px;">Bet</th></tr></thead>
-            <tbody id="res-scalp-opps-body"></tbody>
-          </table>
-        </div>
-      </div>
-      <!-- Recent Trades -->
-      <div id="res-scalp-recent" style="margin-top:8px;display:none;">
-        <div style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Recent Trades</div>
-        <div style="overflow-x:auto;">
-          <table style="width:100%;border-collapse:collapse;font-size:0.72rem;font-family:var(--font-mono);">
-            <thead><tr style="border-bottom:1px solid rgba(255,255,255,0.08);color:var(--text-muted);"><th style="padding:4px 6px;text-align:left;">Asset</th><th style="padding:4px 6px;">Dir</th><th style="padding:4px 6px;">P%</th><th style="padding:4px 6px;">Edge</th><th style="padding:4px 6px;">Size</th><th style="padding:4px 6px;">Result</th><th style="padding:4px 6px;text-align:right;">PnL</th></tr></thead>
-            <tbody id="res-scalp-recent-body"></tbody>
-          </table>
-        </div>
       </div>
     </div>
     <div class="glass-card" style="margin-bottom:14px;border-left:3px solid var(--agent-garves);">
@@ -256,107 +196,16 @@
 
     <!-- Engine Selector -->
     <div style="display:flex;gap:6px;margin-bottom:14px;">
-      <button class="garves-engine-tab active" data-engine="snipe" onclick="garvesSelectEngine('snipe')">Snipe Engine</button>
-      <button class="garves-engine-tab" data-engine="maker" onclick="garvesSelectEngine('maker')">Market Making</button>
+      <button class="garves-engine-tab active" data-engine="maker" onclick="garvesSelectEngine('maker')">Market Making</button>
       <button class="garves-engine-tab" data-engine="whale" onclick="garvesSelectEngine('whale')">Smart Money</button>
       <button class="garves-engine-tab" data-engine="taker" onclick="garvesSelectEngine('taker')">Taker Engine</button>
-      <button class="garves-engine-tab" data-engine="res-scalp" onclick="garvesSelectEngine('res-scalp')">Resolution Scalper</button>
       <button class="garves-engine-tab" data-engine="killshot" onclick="garvesSelectEngine('killshot')">Killshot</button>
     </div>
 
-    <!-- SNIPE ENGINE -->
-    <div class="garves-engine-panel" id="garves-engine-snipe">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-        <span style="font-weight:700;font-size:0.82rem;">Snipe Engine</span>
-        <span id="snipe-exec-venue" onclick="event.stopPropagation();toggleExecVenue()" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;font-weight:600;cursor:pointer;">5m &rarr; 15m</span>
-      </div>
-      <div id="exec-routing-card" class="glass-card" style="padding:10px 14px;margin-bottom:12px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-weight:700;font-size:0.76rem;">Execution Routing</span>
-          <span id="exec-routing-badge" style="padding:3px 10px;border-radius:12px;font-size:0.72rem;font-weight:600;background:rgba(139,92,246,0.15);color:#8b5cf6;">5m &rarr; 15m</span>
-        </div>
-        <div id="exec-routing-detail" style="font-size:0.68rem;color:var(--text-muted);margin-top:6px;">Scanner detects flow on 5m, executes on 15m/1h where liquidity exists</div>
-        <div id="exec-last-route" style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;display:none;"></div>
-      </div>
-      <div id="snipe-v8-cards" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-        <div class="stat-card" id="snipe-card-bitcoin" style="border-left:3px solid #f7931a;">
-          <div class="stat-value" id="snipe-score-bitcoin" style="font-size:1.6rem;color:#f7931a;">--</div>
-          <div class="stat-label">BTC Score</div>
-          <div id="snipe-state-bitcoin" style="font-size:0.68rem;color:var(--text-muted);margin-top:4px;">idle</div>
-          <div id="snipe-thresh-bitcoin" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div>
-        </div>
-        <div class="stat-card" id="flow-status-card" style="border-left:3px solid #8b5cf6;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-            <span id="flow-direction-badge" style="font-size:1.1rem;font-weight:700;color:var(--text-muted);">--</span>
-            <span id="flow-active-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;display:none;font-weight:600;">FLOW ACTIVE</span>
-          </div>
-          <div class="stat-label">Flow Detection</div>
-          <div style="margin-top:6px;">
-            <div style="display:flex;align-items:center;gap:6px;font-size:0.68rem;">
-              <span style="color:var(--text-muted);width:55px;">Strength</span>
-              <div style="flex:1;height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">
-                <div id="flow-strength-bar" style="width:0%;height:100%;background:#8b5cf6;border-radius:3px;transition:width 0.5s;"></div>
-              </div>
-              <span id="flow-strength-pct" style="width:32px;font-family:var(--font-mono);font-size:0.68rem;">0%</span>
-            </div>
-            <div id="flow-sustained-label" style="font-size:0.62rem;color:var(--text-muted);margin-top:3px;">0 sustained ticks</div>
-          </div>
-        </div>
-      </div>
-      <div id="snipe-v7-cards" class="grid-4" style="margin-bottom:12px;">
-        <div class="stat-card" style="border-left:3px solid #22c55e;"><div class="stat-value" id="snipe-success-rate" style="font-size:1.3rem;">--</div><div class="stat-label">Success Rate (50)</div><div id="snipe-wl-record" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div></div>
-        <div class="stat-card" style="border-left:3px solid #eab308;"><div class="stat-value" id="snipe-avg-latency" style="font-size:1.3rem;">--</div><div class="stat-label">Avg Latency</div><div id="snipe-latency-detail" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div></div>
-        <div class="stat-card" style="border-left:3px solid #8b5cf6;"><div class="stat-value" id="snipe-signal-score" style="font-size:1.3rem;color:#8b5cf6;">--</div><div class="stat-label">Last Score</div><div id="snipe-score-dir" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div></div>
-        <div class="stat-card" style="border-left:3px solid #06b6d4;"><div class="stat-value" id="snipe-clob-spread" style="font-size:1.3rem;">--</div><div class="stat-label">CLOB Spread</div><div id="snipe-state-label" style="font-size:0.64rem;color:var(--text-muted);margin-top:2px;"></div></div>
-      </div>
-      <div id="snipe-hot-windows" style="margin-bottom:12px;display:none;">
-        <div class="glass-card" style="padding:10px 14px;">
-          <div style="font-weight:700;font-size:0.76rem;margin-bottom:8px;">Hot Windows</div>
-          <table class="data-table"><thead><tr><th>Asset</th><th>Direction</th><th>Score</th><th>State</th></tr></thead>
-          <tbody id="snipe-hot-tbody"><tr><td colspan="4" class="text-muted" style="text-align:center;">No hot windows</td></tr></tbody></table>
-        </div>
-      </div>
-      <div id="snipe-warmup-card" style="margin-bottom:12px;display:none;"></div>
-      <div id="snipe-threshold-card" style="margin-bottom:12px;display:none;"></div>
-      <div id="snipe-price-freshness" style="margin-bottom:12px;display:none;"></div>
-      <div id="snipe-v7-breakdown" style="margin-bottom:12px;display:none;">
-        <div class="glass-card" style="padding:10px 14px;">
-          <div style="font-weight:700;font-size:0.76rem;margin-bottom:8px;">Signal Score Breakdown</div>
-          <div id="snipe-score-bars" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:0.68rem;"></div>
-        </div>
-      </div>
-      <div class="glass-card" style="padding:10px 14px;margin-bottom:12px;">
-        <div style="font-weight:700;font-size:0.76rem;margin-bottom:8px;">Snipe v10 Performance</div>
-        <div id="snipe-perf-stats" style="font-size:0.78rem;"></div>
-      </div>
-      <div class="glass-card" style="padding:10px 14px;margin-bottom:12px;border-left:3px solid #a855f7;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
-          <div style="font-weight:700;font-size:0.76rem;">Snipe Assist Live</div>
-          <div id="sa-override-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;display:none;"></div>
-        </div>
-        <div class="grid-4" style="margin-bottom:8px;">
-          <div class="stat-card" style="border-left:3px solid #a855f7;"><div class="stat-value" id="sa-timing-score" style="font-size:1.3rem;color:#a855f7;">--</div><div class="stat-label">Timing Score</div></div>
-          <div class="stat-card" style="border-left:3px solid #06b6d4;"><div class="stat-value" id="sa-direction" style="font-size:1.3rem;">--</div><div class="stat-label">Direction</div></div>
-          <div class="stat-card" style="border-left:3px solid #22c55e;"><div class="stat-value" id="sa-size-rec" style="font-size:1.3rem;">--</div><div class="stat-label">Size Rec</div></div>
-          <div class="stat-card" style="border-left:3px solid #eab308;"><div class="stat-value" id="sa-accuracy" style="font-size:1.3rem;">--</div><div class="stat-label">Accuracy (50)</div></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-          <div id="sa-action-badge" style="font-size:0.72rem;font-weight:700;padding:3px 12px;border-radius:6px;background:rgba(255,255,255,0.06);">--</div>
-          <span id="sa-age" style="font-size:0.62rem;color:var(--text-muted);"></span>
-          <div style="margin-left:auto;display:flex;gap:6px;">
-            <button onclick="snipeAssistOverride('force_execute')" style="font-size:0.64rem;padding:3px 8px;border:1px solid #22c55e;border-radius:4px;background:rgba(34,197,94,0.1);color:#22c55e;cursor:pointer;">Force Execute</button>
-            <button onclick="snipeAssistOverride('force_skip')" style="font-size:0.64rem;padding:3px 8px;border:1px solid #ef4444;border-radius:4px;background:rgba(239,68,68,0.1);color:#ef4444;cursor:pointer;">Force Skip</button>
-            <button onclick="snipeAssistOverride('clear')" style="font-size:0.64rem;padding:3px 8px;border:1px solid #888;border-radius:4px;background:rgba(255,255,255,0.05);color:#888;cursor:pointer;">Clear</button>
-          </div>
-        </div>
-        <div id="sa-factors" style="display:grid;grid-template-columns:1fr 1fr;gap:3px 12px;font-size:0.66rem;margin-bottom:6px;"></div>
-        <div id="sa-agents-row" style="display:flex;gap:12px;font-size:0.64rem;color:var(--text-muted);margin-bottom:4px;"></div>
-        <div id="sa-learner-footer" style="font-size:0.62rem;color:var(--text-muted);"></div>
-      </div>
-    </div>
+    <!-- Snipe Engine + Resolution Scalper removed (deprecated Feb 27 2026) -->
 
     <!-- MARKET MAKING ENGINE -->
-    <div class="garves-engine-panel" id="garves-engine-maker" style="display:none;">
+    <div class="garves-engine-panel" id="garves-engine-maker">
       <div class="gv-engine-header">
         <div>
           <div class="gv-engine-header-title">Market Making Engine</div>
@@ -530,84 +379,6 @@
         <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Recent Taker Trades</div>
         <table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Direction</th><th>Size</th><th>Edge</th><th>Result</th><th>PnL</th></tr></thead>
         <tbody id="taker-trades-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;">No taker trades yet</td></tr></tbody></table>
-      </div>
-    </div>
-
-    <!-- RESOLUTION SCALPER ENGINE -->
-    <div class="garves-engine-panel" id="garves-engine-res-scalp" style="display:none;">
-      <div class="gv-engine-header" style="border-bottom-color:rgba(249,115,22,0.15);">
-        <div>
-          <div style="display:flex;align-items:center;gap:8px;">
-            <span class="gv-pulse-dot-orange"></span>
-            <span class="gv-engine-header-title">Resolution Scalper</span>
-            <span id="res-scalp-engine-mode" class="gv-mode-badge dry">DRY RUN</span>
-          </div>
-          <div class="gv-engine-subtitle">Brownian Motion &bull; Last 90s of 5m Windows</div>
-        </div>
-      </div>
-
-      <div class="gv-metrics">
-        <div class="gv-metric-card">
-          <div class="gv-metric-icon" style="background:rgba(249,115,22,0.12);color:#f97316;">#</div>
-          <div class="gv-metric-body">
-            <div class="gv-metric-val" id="res-eng-trades">0</div>
-            <div class="gv-metric-lbl">Trades</div>
-          </div>
-        </div>
-        <div class="gv-metric-card">
-          <div class="gv-metric-icon" style="background:rgba(34,197,94,0.12);color:#22c55e;">%</div>
-          <div class="gv-metric-body">
-            <div class="gv-metric-val" id="res-eng-wr">--</div>
-            <div class="gv-metric-lbl">Win Rate</div>
-          </div>
-        </div>
-        <div class="gv-metric-card">
-          <div class="gv-metric-icon" style="background:rgba(139,92,246,0.12);color:#8b5cf6;">$</div>
-          <div class="gv-metric-body">
-            <div class="gv-metric-val" id="res-eng-pnl">$0.00</div>
-            <div class="gv-metric-lbl">P&amp;L</div>
-          </div>
-        </div>
-        <div class="gv-metric-card">
-          <div class="gv-metric-icon" style="background:rgba(234,179,8,0.12);color:#eab308;">&#9678;</div>
-          <div class="gv-metric-body">
-            <div class="gv-metric-val" id="res-eng-cal">--</div>
-            <div class="gv-metric-lbl">Calibration</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Active Windows Scanner -->
-      <div id="res-eng-scanner-wrap" class="gv-scanner-wrap" style="display:none;">
-        <div class="gv-section-title orange" style="margin-bottom:10px;">Active Windows Scanner</div>
-        <div id="res-eng-scanner-grid" class="gv-scanner-grid"></div>
-      </div>
-
-      <!-- Open Positions -->
-      <div class="glass-card" style="padding:10px 14px;margin-bottom:14px;">
-        <div class="gv-section-title orange" style="margin-bottom:8px;">Open Positions</div>
-        <table class="data-table"><thead><tr><th>Asset</th><th>Dir</th><th>Entry</th><th>Size</th><th>Shares</th><th>P%</th><th>Edge</th><th>z</th><th>T-s</th></tr></thead>
-        <tbody id="res-eng-active-tbody"><tr><td colspan="9" class="text-muted" style="text-align:center;">No active positions</td></tr></tbody></table>
-      </div>
-
-      <!-- Thresholds Bar -->
-      <div class="gv-thresholds-bar">
-        <div class="gv-threshold-item">Min P: <span id="res-eng-min-p">75%</span></div>
-        <div class="dot-sep"></div>
-        <div class="gv-threshold-item">Min Edge: <span id="res-eng-min-edge">8%</span></div>
-        <div class="dot-sep"></div>
-        <div class="gv-threshold-item">Max Price: <span id="res-eng-max-price">$0.88</span></div>
-        <div class="dot-sep"></div>
-        <div class="gv-threshold-item">Max Bet: <span id="res-eng-max-bet">$20</span></div>
-        <div class="dot-sep"></div>
-        <div class="gv-threshold-item">Kelly: <span id="res-eng-kelly">25%</span></div>
-      </div>
-
-      <!-- Recent Trades -->
-      <div class="glass-card" style="padding:10px 14px;">
-        <div class="gv-section-title orange" style="margin-bottom:8px;">Recent Trades</div>
-        <table class="data-table"><thead><tr><th>Asset</th><th>Dir</th><th>Entry</th><th>Size</th><th>P%</th><th>Edge</th><th>Result</th><th>PnL</th></tr></thead>
-        <tbody id="res-eng-trades-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;">No trades yet</td></tr></tbody></table>
       </div>
     </div>
 
@@ -789,11 +560,9 @@
       <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
         <select id="garves-hist-engine" onchange="garvesFilterHistory()" class="gv-filter-select">
           <option value="all">All Engines</option>
-          <option value="snipe">Snipe</option>
           <option value="maker">Maker</option>
           <option value="whale">Whale</option>
           <option value="taker">Taker</option>
-          <option value="res_scalp">Res Scalper</option>
         </select>
       </div>
     </div>
@@ -1150,7 +919,6 @@
     <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #f7931a;">
       <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#f7931a;margin-bottom:8px;">Engine Intelligence</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;">
-        <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;"><div class="stat-value" id="gi-snipe-wr" style="font-size:0.9rem;">--</div><div class="stat-label">Snipe Engine WR</div><div id="gi-snipe-detail" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div></div>
         <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;"><div class="stat-value" id="gi-whale-wr" style="font-size:0.9rem;">--</div><div class="stat-label">Whale Shadow WR</div><div id="gi-whale-detail" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div></div>
         <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;"><div class="stat-value" id="gi-maker-eff" style="font-size:0.9rem;">--</div><div class="stat-label">Maker Efficiency</div><div id="gi-maker-detail" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div></div>
         <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;"><div class="stat-value" id="gi-flow-acc" style="font-size:0.9rem;">--</div><div class="stat-label">Flow Detection</div><div id="gi-flow-detail" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div></div>
@@ -1286,7 +1054,7 @@ function garvesSwitchSub(name) {
 
 /* Engine selector within Engines tab */
 function garvesSelectEngine(name) {
-  var panels = {snipe:'garves-engine-snipe', maker:'garves-engine-maker', whale:'garves-whale-section', taker:'garves-engine-taker', 'res-scalp':'garves-engine-res-scalp', killshot:'garves-engine-killshot'};
+  var panels = {maker:'garves-engine-maker', whale:'garves-whale-section', taker:'garves-engine-taker', killshot:'garves-engine-killshot'};
   Object.keys(panels).forEach(function(k) {
     var el = document.getElementById(panels[k]);
     if (el) el.style.display = k === name ? '' : 'none';
@@ -1573,7 +1341,6 @@ function loadGarvesIntelligence() {
   fetch('/api/garves/engine-comparison').then(function(r) { return r.json(); }).then(function(d) {
     var engines = d.engines || {};
     var totals = d.totals || {};
-    var snipe = engines.snipe || {};
     var whale = engines.whale || {};
     var maker = engines.maker || {};
     var taker = engines.taker || {};
@@ -1581,9 +1348,6 @@ function loadGarvesIntelligence() {
     /* Engine comparison table rendered by loadEngineComparison() in dashboard_v2.js */
 
     /* --- Intelligence panel cards --- */
-    var snipeWrEl = document.getElementById('gi-snipe-wr'); var snipeDetailEl = document.getElementById('gi-snipe-detail');
-    if (snipeWrEl) { snipeWrEl.textContent = snipe.trades > 0 ? snipe.win_rate.toFixed(1) + '%' : '--'; snipeWrEl.style.color = snipe.win_rate >= 55 ? '#22c55e' : snipe.win_rate > 0 && snipe.win_rate < 50 ? '#ef4444' : ''; }
-    if (snipeDetailEl) snipeDetailEl.textContent = snipe.wins + 'W-' + snipe.losses + 'L / ' + snipe.trades + ' trades';
     var whaleWrEl = document.getElementById('gi-whale-wr'); var whaleDetailEl = document.getElementById('gi-whale-detail');
     if (whaleWrEl) { whaleWrEl.textContent = whale.trades > 0 ? whale.win_rate.toFixed(1) + '%' : '--'; whaleWrEl.style.color = whale.win_rate >= 55 ? '#22c55e' : whale.win_rate > 0 && whale.win_rate < 50 ? '#ef4444' : ''; }
     if (whaleDetailEl) whaleDetailEl.textContent = whale.wins + 'W-' + whale.losses + 'L / ' + whale.trades + ' trades';
@@ -1591,14 +1355,10 @@ function loadGarvesIntelligence() {
     if (makerEl) { var pnl = maker.pnl || 0; makerEl.textContent = pnl > 0 ? '$' + pnl.toFixed(2) : '--'; makerEl.style.color = pnl > 0 ? '#22c55e' : ''; }
     if (makerDetailEl) makerDetailEl.textContent = maker.trades + ' fills today';
     var flowEl = document.getElementById('gi-flow-acc'); var flowDetailEl = document.getElementById('gi-flow-detail');
-    if (flowEl && snipe.trades > 0) { flowEl.textContent = snipe.win_rate >= 55 ? 'STRONG' : snipe.win_rate >= 45 ? 'MODERATE' : 'WEAK'; flowEl.style.color = snipe.win_rate >= 55 ? '#22c55e' : snipe.win_rate >= 45 ? '#eab308' : '#ef4444'; }
-    if (flowDetailEl) flowDetailEl.textContent = 'Based on ' + snipe.trades + ' snipe trades';
+    if (flowEl) { flowEl.textContent = '--'; }
+    if (flowDetailEl) flowDetailEl.textContent = '';
 
     /* --- Overview cards --- */
-    var ovSnipeWr = document.getElementById('ov-snipe-wr');
-    if (ovSnipeWr && snipe.trades > 0) ovSnipeWr.textContent = snipe.win_rate.toFixed(1) + '%';
-    var ovSnipeTrades = document.getElementById('ov-snipe-trades');
-    if (ovSnipeTrades) ovSnipeTrades.textContent = snipe.trades + ' trades';
     var ovWhaleWr = document.getElementById('ov-whale-wr');
     if (ovWhaleWr && whale.trades > 0) ovWhaleWr.textContent = whale.win_rate.toFixed(1) + '%';
     var ovMakerPnl = document.getElementById('ov-maker-pnl');

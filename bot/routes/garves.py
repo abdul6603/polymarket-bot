@@ -114,26 +114,7 @@ def api_garves_health_warnings():
             "hours_since_trade": round(hours_since_trade, 1),
         })
 
-    # 3. Average implied entry price warning
-    try:
-        snipe_file = DATA_DIR / "snipe_trades.jsonl"
-        if snipe_file.exists():
-            lines = snipe_file.read_text().strip().split("\n")
-            recent = [json.loads(l) for l in lines[-10:] if l.strip()]
-            if recent:
-                prices = [t.get("price", 0) for t in recent if t.get("price", 0) > 0]
-                if prices:
-                    avg_price = sum(prices) / len(prices)
-                    if avg_price > 0.58:
-                        warnings.append({
-                            "level": "warning",
-                            "message": f"Avg snipe entry price ${avg_price:.3f} > $0.58 — "
-                                       f"need {avg_price * 100:.0f}%+ WR to break even.",
-                        })
-    except Exception:
-        pass
-
-    # 4. Self-healing: if 0 trades for >12h, auto-lower consensus_floor
+    # 3. Self-healing: if 0 trades for >12h, auto-lower consensus_floor
     global _self_heal_applied
     if hours_since_trade > 12 and consensus_floor > 2 and not _self_heal_applied:
         try:
@@ -162,29 +143,6 @@ def api_garves_health_warnings():
             })
         except Exception:
             pass
-
-    # 5. Snipe threshold check — warn if CLOB data quality is poor
-    try:
-        snipe_status_file = DATA_DIR / "snipe_status.json"
-        if snipe_status_file.exists():
-            ss = json.loads(snipe_status_file.read_text())
-            thresh_info = ss.get("threshold_info", {})
-            per_asset = thresh_info.get("per_asset", {})
-            high_assets = [f"{a.upper()}={v}" for a, v in per_asset.items() if v > 70]
-            if high_assets:
-                warnings.append({
-                    "level": "warning",
-                    "message": f"High snipe thresholds: {', '.join(high_assets)} — CLOB data may be dead/stale",
-                })
-            if thresh_info.get("override_active"):
-                ttl_min = thresh_info.get("override_ttl_s", 0) / 60
-                warnings.append({
-                    "level": "info",
-                    "message": f"Snipe threshold override active: {thresh_info.get('override_value', '?')} "
-                               f"(expires in {ttl_min:.0f}m)",
-                })
-    except Exception:
-        pass
 
     return jsonify({
         "warnings": warnings,
@@ -1392,7 +1350,7 @@ def api_garves_positions():
                 "size": 0, "cost": round(m["spent"], 2),
                 "won": won,
                 "result_pnl": round(pnl, 2),
-                "engine": "snipe",
+                "engine": "legacy",
             }
             # Skip markets still open (no redeem yet and position still active)
             if m["redeemed"] == 0:
@@ -1412,82 +1370,7 @@ def api_garves_positions():
                 totals["record_losses"] += 1
                 totals["realized_pnl"] += row["result_pnl"]
 
-        # ── 3. Include Resolution Scalper trades from JSONL ──
-        # Skip penny trades (entry < $0.20) — no real liquidity, inflated PnL
-        _RS_MIN_REALISTIC_PRICE = 0.20
-        res_file = DATA_DIR / "resolution_trades.jsonl"
-        if res_file.exists():
-            try:
-                for line in res_file.read_text().strip().split("\n"):
-                    if not line.strip():
-                        continue
-                    rt = json.loads(line)
-                    if rt.get("won") is None:
-                        continue  # Not resolved yet
-                    entry_price = rt.get("market_price", 1.0)
-                    if entry_price < _RS_MIN_REALISTIC_PRICE:
-                        continue  # Penny trade — would never fill live
-                    won = bool(rt["won"])
-                    pnl_val = rt.get("pnl", 0)
-                    asset_name = (rt.get("asset", "unknown")).upper()
-                    direction = (rt.get("direction", "?")).upper()
-                    row = {
-                        "market": f"Res-Scalp: {asset_name} {direction} 5m",
-                        "asset": asset_name,
-                        "outcome": direction,
-                        "size": 0,
-                        "cost": round(rt.get("bet_size", 0), 2),
-                        "won": won,
-                        "result_pnl": round(pnl_val, 2),
-                        "engine": "res_scalp",
-                        "timestamp": rt.get("timestamp", 0),
-                    }
-                    history.append(row)
-                    if won:
-                        totals["record_wins"] += 1
-                        totals["realized_pnl"] += pnl_val
-                    else:
-                        totals["record_losses"] += 1
-                        totals["realized_pnl"] += pnl_val
-            except Exception:
-                pass
-
-        # ── 4. Include Snipe Engine trades from JSONL ──
-        snipe_file = DATA_DIR / "snipe_trades.jsonl"
-        if snipe_file.exists():
-            try:
-                for line in snipe_file.read_text().strip().split("\n"):
-                    if not line.strip():
-                        continue
-                    st = json.loads(line)
-                    if st.get("won") is None:
-                        continue
-                    won = bool(st["won"])
-                    pnl_val = st.get("pnl_usd", 0)
-                    asset_name = (st.get("asset", "unknown")).upper()
-                    direction = (st.get("direction", "?")).upper()
-                    row = {
-                        "market": f"Snipe: {asset_name} {direction} 5m",
-                        "asset": asset_name,
-                        "outcome": direction,
-                        "size": 0,
-                        "cost": round(st.get("total_size_usd", 0), 2),
-                        "won": won,
-                        "result_pnl": round(pnl_val, 2),
-                        "engine": "snipe",
-                        "timestamp": st.get("timestamp", 0),
-                    }
-                    history.append(row)
-                    if won:
-                        totals["record_wins"] += 1
-                        totals["realized_pnl"] += pnl_val
-                    else:
-                        totals["record_losses"] += 1
-                        totals["realized_pnl"] += pnl_val
-            except Exception:
-                pass
-
-        # ── 5. Include main trades.jsonl (taker/other engines) ──
+        # ── 3. Include main trades.jsonl (taker/other engines) ──
         main_trades_file = DATA_DIR / "trades.jsonl"
         if main_trades_file.exists():
             try:
@@ -1828,24 +1711,6 @@ def api_garves_force_reconnect():
         return jsonify({"ok": False, "error": str(e)[:200]}), 500
 
 
-# ── Snipe Engine v7 ─────────────────────────────────────────
-
-SNIPE_STATUS_FILE = DATA_DIR / "snipe_status.json"
-
-
-@garves_bp.route("/api/garves/snipe-v7")
-@garves_bp.route("/api/garves/snipe-v8")
-def api_garves_snipe():
-    """Snipe engine v8 status — multi-asset scoring, MTF gate, correlation."""
-    try:
-        if not SNIPE_STATUS_FILE.exists():
-            return jsonify({"enabled": False, "detail": "No snipe status file"})
-        data = json.loads(SNIPE_STATUS_FILE.read_text())
-        return jsonify(data)
-    except Exception as e:
-        return jsonify({"error": str(e)[:200]}), 500
-
-
 # ── Maker Engine ─────────────────────────────────────────
 
 MAKER_STATE_FILE = DATA_DIR / "maker_state.json"
@@ -2034,14 +1899,6 @@ def engine_comparison():
     taker_size = sum(t.get("size_usd", 0) for t in taker_resolved)
     taker_pending = len([t for t in taker_trades if not t.get("resolved") and "size_usd" in t])
 
-    # --- Snipe trades ---
-    snipe_trades = _read_jsonl(data_dir / "snipe_trades.jsonl")
-    snipe_resolved = [t for t in snipe_trades if "won" in t]
-    snipe_wins = sum(1 for t in snipe_resolved if t.get("won"))
-    snipe_losses = len(snipe_resolved) - snipe_wins
-    snipe_pnl = sum(t.get("pnl_usd", 0) for t in snipe_resolved)
-    snipe_size = sum(t.get("total_size_usd", 0) for t in snipe_resolved)
-
     # --- Maker stats ---
     maker_data = {"fills": 0, "rebate": 0.0, "pnl": 0.0, "active_quotes": 0, "spread_captured": 0.0, "exposure_usd": 0.0, "inventory_count": 0, "inventory_value": 0.0}
     maker_state_file = data_dir / "maker_state.json"
@@ -2085,14 +1942,6 @@ def engine_comparison():
     def _avg(total, count):
         return round(total / count, 2) if count > 0 else 0.0
 
-    # --- Resolution Scalper trades (skip penny entries < $0.20) ---
-    res_trades = _read_jsonl(data_dir / "resolution_trades.jsonl")
-    res_resolved = [t for t in res_trades if (t.get("won") is not None or t.get("resolved")) and t.get("market_price", 1.0) >= 0.20]
-    res_wins = sum(1 for t in res_resolved if t.get("won"))
-    res_losses = len(res_resolved) - res_wins
-    res_pnl = sum(t.get("pnl", 0) for t in res_resolved)
-    res_size = sum(t.get("bet_size", 0) for t in res_resolved)
-
     engines = {
         "taker": {
             "name": "Main Taker",
@@ -2106,20 +1955,6 @@ def engine_comparison():
             "pnl": round(taker_pnl, 2),
             "total_invested": round(taker_size, 2),
             "avg_size": _avg(taker_size, len(taker_resolved)),
-            "status": "active",
-        },
-        "snipe": {
-            "name": "Snipe v10",
-            "allocation_pct": 30,
-            "max_exposure": 300,
-            "trades": len(snipe_resolved),
-            "pending": 0,
-            "wins": snipe_wins,
-            "losses": snipe_losses,
-            "win_rate": _wr(snipe_wins, len(snipe_resolved)),
-            "pnl": round(snipe_pnl, 2),
-            "total_invested": round(snipe_size, 2),
-            "avg_size": _avg(snipe_size, len(snipe_resolved)),
             "status": "active",
         },
         "maker": {
@@ -2154,20 +1989,6 @@ def engine_comparison():
             "total_invested": round(whale_size, 2),
             "avg_size": _avg(whale_size, len(whale_resolved)),
             "tracked_wallets": whale_tracked,
-            "status": "active",
-        },
-        "res_scalp": {
-            "name": "Res Scalper",
-            "allocation_pct": 0,
-            "max_exposure": 60,
-            "trades": len(res_resolved),
-            "pending": len(res_trades) - len(res_resolved),
-            "wins": res_wins,
-            "losses": res_losses,
-            "win_rate": _wr(res_wins, len(res_resolved)),
-            "pnl": round(res_pnl, 2),
-            "total_invested": round(res_size, 2),
-            "avg_size": _avg(res_size, len(res_resolved)),
             "status": "active",
         },
     }

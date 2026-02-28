@@ -3211,11 +3211,9 @@
   padding:2px 8px; border-radius:999px; text-transform:uppercase;
   letter-spacing:0.03em;
 }
-.gv-engine-pill.snipe { background:rgba(139,92,246,0.15); color:#a855f7; }
 .gv-engine-pill.maker { background:rgba(34,197,94,0.15); color:#22c55e; }
 .gv-engine-pill.whale { background:rgba(255,215,0,0.15); color:#FFD700; }
 .gv-engine-pill.taker { background:rgba(6,182,212,0.15); color:#06b6d4; }
-.gv-engine-pill.res_scalp { background:rgba(249,115,22,0.15); color:#f97316; }
 
 /* Thresholds Bar */
 .gv-thresholds-bar {
