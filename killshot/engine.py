@@ -116,7 +116,7 @@ class KillshotEngine:
         paper_entry = round(paper_entry, 2)
 
         # Position sizing
-        size_usd = min(self._cfg.max_bet_usd, self._cfg.bankroll_usd * 0.10)
+        size_usd = self._cfg.max_bet_usd
 
         # Log CLOB book
         if market_bid is not None and market_ask is not None:
