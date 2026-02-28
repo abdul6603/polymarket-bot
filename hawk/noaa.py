@@ -132,6 +132,36 @@ _NWS_GRIDS: dict[str, tuple[str, int, int]] = {
 _cache: dict[str, tuple[float, Any]] = {}
 CACHE_TTL = 7200  # 2 hours
 
+# ── Circuit breaker for Open-Meteo 429 rate limiting ──
+_om_consecutive_429s: int = 0
+_om_breaker_until: float = 0.0  # timestamp when breaker resets
+_OM_BREAKER_THRESHOLD = 3       # trip after 3 consecutive 429s
+_OM_BREAKER_COOLDOWN = 600      # stay tripped for 10 minutes
+
+
+def _om_breaker_tripped() -> bool:
+    """Check if the Open-Meteo circuit breaker is active."""
+    if _om_breaker_until > 0 and time.time() < _om_breaker_until:
+        return True
+    return False
+
+
+def _om_record_429() -> None:
+    """Record a 429 response. Trips breaker after threshold."""
+    global _om_consecutive_429s, _om_breaker_until
+    _om_consecutive_429s += 1
+    if _om_consecutive_429s >= _OM_BREAKER_THRESHOLD:
+        _om_breaker_until = time.time() + _OM_BREAKER_COOLDOWN
+        log.warning("[NOAA] Circuit breaker TRIPPED — skipping Open-Meteo for %ds after %d consecutive 429s",
+                    _OM_BREAKER_COOLDOWN, _om_consecutive_429s)
+
+
+def _om_record_success() -> None:
+    """Record a successful response. Resets breaker counter."""
+    global _om_consecutive_429s, _om_breaker_until
+    _om_consecutive_429s = 0
+    _om_breaker_until = 0.0
+
 
 def _get_cached(key: str) -> Any | None:
     if key in _cache:
@@ -448,6 +478,9 @@ def _fetch_ensemble(lat: float, lon: float, target_date: date, unit: str = "fahr
     if cached is not None:
         return cached
 
+    if _om_breaker_tripped():
+        return None
+
     session = get_session()
 
     # Forecast range
@@ -473,9 +506,12 @@ def _fetch_ensemble(lat: float, lon: float, target_date: date, unit: str = "fahr
             timeout=15,
         )
         if resp.status_code != 200:
+            if resp.status_code == 429:
+                _om_record_429()
             log.warning("[NOAA] Open-Meteo returned %d", resp.status_code)
             return None
 
+        _om_record_success()
         data = resp.json()
     except Exception:
         log.exception("[NOAA] Open-Meteo API call failed")
@@ -801,6 +837,9 @@ def _fetch_hourly_nowcast(lat: float, lon: float) -> dict | None:
             return val
         del _cache[cache_key]
 
+    if _om_breaker_tripped():
+        return None
+
     session = get_session()
     try:
         resp = session.get(
@@ -816,9 +855,12 @@ def _fetch_hourly_nowcast(lat: float, lon: float) -> dict | None:
             timeout=10,
         )
         if resp.status_code != 200:
+            if resp.status_code == 429:
+                _om_record_429()
             log.warning("[NOWCAST] Open-Meteo hourly returned %d", resp.status_code)
             return None
 
+        _om_record_success()
         data = resp.json()
         hourly = data.get("hourly", {})
         if not hourly.get("time"):
