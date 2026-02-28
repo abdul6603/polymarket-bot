@@ -113,6 +113,9 @@ class MakerMarket:
     remaining_s: float
     event_title: str = ""
     market_slug: str = ""
+    bid_depth_usd: float = 0.0   # total USD on bid side (top 5 levels)
+    ask_depth_usd: float = 0.0   # total USD on ask side (top 5 levels)
+    book_imbalance: float = 0.0  # (bid_depth - ask_depth) / (bid_depth + ask_depth)
 
 
 # ── Scanner ──────────────────────────────────────────────────────────────
@@ -142,7 +145,7 @@ def scan_maker_markets(
     # Fetch active events sorted by 24h volume (highest first)
     offset = 0
     page_size = 50
-    max_scan = 300  # Don't over-scan — top 300 events by volume is plenty
+    max_scan = 500  # Deeper scan for more maker opportunities
 
     while offset < max_scan:
         try:
@@ -285,7 +288,7 @@ def scan_maker_markets(
     # Phase 2: Fetch order books and filter by spread
     maker_ready: list[MakerMarket] = []
 
-    for mkt in candidates[:60]:  # Check books for top 60 candidates max (rate limit friendly)
+    for mkt in candidates[:80]:  # Check books for top 80 candidates max (rate limit friendly)
         yes_token = mkt.tokens[0]["token_id"]
         try:
             resp = session.get(
@@ -317,11 +320,20 @@ def scan_maker_markets(
         if spread < min_spread or spread > max_spread:
             continue
 
+        # Orderbook depth: sum top 5 levels each side
+        bid_depth = sum(float(b.get("size", 0)) * float(b.get("price", 0)) for b in bids[-5:])
+        ask_depth = sum(float(a.get("size", 0)) * float(a.get("price", 0)) for a in asks[-5:])
+        total_depth = bid_depth + ask_depth
+        imbalance = (bid_depth - ask_depth) / total_depth if total_depth > 0 else 0.0
+
         # Update with real book data
         mkt.spread = spread
         mkt.mid_price = round(mid, 4)
         mkt.best_bid = best_bid
         mkt.best_ask = best_ask
+        mkt.bid_depth_usd = round(bid_depth, 2)
+        mkt.ask_depth_usd = round(ask_depth, 2)
+        mkt.book_imbalance = round(imbalance, 4)
 
         maker_ready.append(mkt)
 
@@ -358,6 +370,7 @@ def markets_for_engine(maker_markets: list[MakerMarket]) -> list[dict]:
             "mid_price": mkt.mid_price,
             "book_spread": mkt.spread,
             "category": mkt.category,
+            "book_imbalance": mkt.book_imbalance,
         })
     return result
 

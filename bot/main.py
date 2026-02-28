@@ -355,12 +355,11 @@ class TradingBot:
             loop.add_signal_handler(sig, self._handle_shutdown)
 
         try:
-            # Run taker + maker + snipe + whale loops concurrently
+            # Run taker + maker + whale loops concurrently (snipe killed Feb 27 2026)
             taker_task = asyncio.create_task(self._taker_loop())
             maker_task = asyncio.create_task(self._maker_loop())
-            snipe_task = asyncio.create_task(self._snipe_loop())
             whale_task = asyncio.create_task(self._whale_loop())
-            await asyncio.gather(taker_task, maker_task, snipe_task, whale_task)
+            await asyncio.gather(taker_task, maker_task, whale_task)
         finally:
             await self._cleanup()
 
@@ -400,6 +399,7 @@ class TradingBot:
                         maker_mkts = scan_maker_markets(
                             gamma_host=self.cfg.gamma_host,
                             clob_host=self.cfg.clob_host,
+                            max_markets=30,
                         )
                         _maker_markets = markets_for_engine(maker_mkts)
                         save_scan_results(maker_mkts)
@@ -592,13 +592,8 @@ class TradingBot:
         # 1. Discover all markets across assets and timeframes
         all_markets = fetch_markets(self.cfg)
 
-        # Feed all 5m markets to snipe engine (BTC, ETH, SOL, XRP — isolated from taker)
-        markets_5m = [dm for dm in all_markets if dm.timeframe.name == "5m"]
-        if markets_5m:
-            self.snipe_engine.window_tracker.update(markets_5m)
-
-        # Filter 5m out of taker pipeline (snipe handles them separately)
-        ranked = rank_markets([dm for dm in all_markets if dm.timeframe.name != "5m"])
+        # Rank all markets for taker pipeline (5m no longer routed to snipe)
+        ranked = rank_markets(all_markets)
 
         if not ranked:
             log.info("No tradeable markets found, waiting...")

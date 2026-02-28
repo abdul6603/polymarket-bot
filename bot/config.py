@@ -43,8 +43,8 @@ class Config:
     dry_run: bool = _env("DRY_RUN", "true").lower() in ("true", "1", "yes")
     log_level: str = _env("LOG_LEVEL", "INFO")
 
-    # Snipe engine — 5m BTC pyramid accumulation
-    snipe_enabled: bool = _env("SNIPE_ENABLED", "true").lower() in ("true", "1", "yes")
+    # Snipe engine — DEPRECATED (lost $75+, killed Feb 27 2026)
+    snipe_enabled: bool = _env("SNIPE_ENABLED", "false").lower() in ("true", "1", "yes")
     snipe_dry_run: bool = _env("SNIPE_DRY_RUN", _env("DRY_RUN", "true")).lower() in ("true", "1", "yes")
     snipe_budget_per_window: float = float(_env("SNIPE_BUDGET_PER_WINDOW", "50.0"))
     snipe_delta_threshold: float = float(_env("SNIPE_DELTA_THRESHOLD", "0.08"))
@@ -66,8 +66,8 @@ class Config:
     whale_enabled: bool = _env("WHALE_ENABLED", "false").lower() in ("true", "1", "yes")
     whale_poll_interval_s: float = float(_env("WHALE_POLL_INTERVAL_S", "4.0"))
 
-    # Resolution Scalper — trades last 15-90s of 5m windows (Engine #2)
-    res_scalp_enabled: bool = _env("RES_SCALP_ENABLED", "true").lower() in ("true", "1", "yes")
+    # Resolution Scalper — DEPRECATED (killed Feb 27 2026)
+    res_scalp_enabled: bool = _env("RES_SCALP_ENABLED", "false").lower() in ("true", "1", "yes")
     res_scalp_min_edge: float = float(_env("RES_SCALP_MIN_EDGE", "0.08"))
     res_scalp_min_prob: float = float(_env("RES_SCALP_MIN_PROB", "0.75"))
     res_scalp_max_price: float = float(_env("RES_SCALP_MAX_PRICE", "0.88"))

@@ -24,6 +24,7 @@ log = logging.getLogger(__name__)
 CTF_ADDRESS = "0x4D97DCd97eC945f40cF65F87097ACe5EA0476045"
 USDC_E = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"
 POLYGON_RPC = "https://polygon-bor-rpc.publicnode.com"
+MAX_GAS_PRICE = 300 * 10**9  # 300 gwei cap — Polygon gas spikes above 200 sometimes
 
 CTF_ABI = [
     {"inputs":[{"name":"collateralToken","type":"address"},{"name":"parentCollectionId","type":"bytes32"},{"name":"conditionId","type":"bytes32"},{"name":"indexSets","type":"uint256[]"}],"name":"redeemPositions","outputs":[],"stateMutability":"nonpayable","type":"function"},
@@ -73,7 +74,7 @@ def claim_for_eoa(
         ).build_transaction({
             "from": acct.address,
             "nonce": nonce,
-            "gasPrice": w3.eth.gas_price,
+            "gasPrice": min(w3.eth.gas_price, MAX_GAS_PRICE),
             "gas": 200_000,
             "chainId": 137,
         })
@@ -127,13 +128,21 @@ def claim_for_proxy(
         ).build_transaction({
             "from": acct.address,
             "nonce": nonce,
-            "gasPrice": w3.eth.gas_price,
-            "gas": 300_000,
+            "gasPrice": min(w3.eth.gas_price, MAX_GAS_PRICE),
+            "gas": 350_000,
             "chainId": 137,
         })
         signed = acct.sign_transaction(tx)
         tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
         tx_hashes.append(tx_hash.hex())
+        log.info("[CLAIM] Sent proxy redeem tx %s (nonce=%d)", tx_hash.hex()[:18], nonce)
+        # Wait for confirmation before next tx (avoids gas pre-reservation issues)
+        try:
+            receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+            log.info("[CLAIM] Confirmed block=%d status=%d gas_used=%d",
+                     receipt.blockNumber, receipt.status, receipt.gasUsed)
+        except Exception as e:
+            log.warning("[CLAIM] Wait for receipt failed: %s", str(e)[:100])
         nonce += 1
 
     return tx_hashes

@@ -1,14 +1,16 @@
-"""Snipe Engine v10 — BTC Flow Scanner + 15m/1h Execution.
+"""DEPRECATED — Snipe Engine v10 (killed Feb 27 2026).
 
-State machine:
+Lost $75+ using FOK taker orders (1.56% fee), GBM model overestimated
+probability (claimed 96%, actual WR 26%), priced against Binance but
+market resolves on Chainlink oracle.
+
+Kept for reference only. Default disabled in config. Removed from
+asyncio.gather() in main.py. Infrastructure reused: clob_book, ws_feed,
+binance_feed, CLOB client.
+
+Original description:
+  BTC Flow Scanner + 15m/1h Execution. State machine:
   IDLE -> TRACKING -> ARMED -> EXECUTING -> COOLDOWN -> IDLE
-
-Runs in its own background thread (independent of Garves's main event loop).
-Ticks every 2s. BTC only — single state machine.
-
-5m windows provide high-resolution flow detection. When signal fires
-(flow strong + score >=75 + implied <=0.52), execution routes to the
-active 15m or 1h market where real liquidity exists.
 """
 from __future__ import annotations
 

@@ -26,6 +26,20 @@ class Candle:
 class PriceCache:
     """Stores 1-minute OHLCV candles built from raw trade ticks."""
 
+    # Chainlink feed — lazy-initialized to avoid import cost when not needed
+    _chainlink = None
+
+    @classmethod
+    def _get_chainlink(cls):
+        if cls._chainlink is None:
+            try:
+                from bot.chainlink_feed import ChainlinkFeed
+                cls._chainlink = ChainlinkFeed()
+                log.info("[CHAINLINK] Feed initialized")
+            except Exception as e:
+                log.warning("[CHAINLINK] Failed to init: %s", str(e)[:100])
+        return cls._chainlink
+
     def __init__(self, maxlen: int = 500):
         self._maxlen = maxlen
         # asset -> deque of completed 1m candles
@@ -248,3 +262,24 @@ class PriceCache:
             log.warning("Failed to load candles for %s: %s", asset, e)
             return []
         return sorted(candles, key=lambda c: c.timestamp)
+
+    def get_resolution_price(self, asset: str) -> float | None:
+        """Get the resolution-grade price (Chainlink primary, Binance fallback).
+
+        Polymarket resolves crypto markets against Chainlink oracles, not
+        Binance. Use this when TTR is low and resolution price matters.
+        """
+        chainlink = self._get_chainlink()
+        if chainlink:
+            price = chainlink.get_price(asset)
+            if price is not None:
+                return price
+        # Fallback to Binance tick price
+        return self.get_price(asset)
+
+    def get_chainlink_price(self, asset: str) -> float | None:
+        """Get Chainlink oracle price only (no fallback). Returns None if unavailable."""
+        chainlink = self._get_chainlink()
+        if chainlink:
+            return chainlink.get_price(asset)
+        return None

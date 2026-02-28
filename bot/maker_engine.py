@@ -211,10 +211,10 @@ class MakerEngine:
         self.quote_size_usd = float(os.getenv("MAKER_QUOTE_SIZE_USD", "5.0"))
         self.tick_interval_s = float(os.getenv("MAKER_TICK_INTERVAL_S", "5.0"))
 
-        # Spread params
-        self.min_half_spread = 0.03   # 6c total floor
+        # Spread params (tightened Feb 27 2026 for more fills)
+        self.min_half_spread = 0.025  # 5c total floor
         self.max_half_spread = 0.08   # 16c total ceiling
-        self.base_half_spread = 0.04  # 8c total base
+        self.base_half_spread = 0.03  # 6c total base (was 8c)
 
         # Inventory Manager — on-chain synced, source of truth
         wallet = cfg.funder_address or os.getenv("FUNDER_ADDRESS", "")
@@ -235,6 +235,11 @@ class MakerEngine:
         self._fills_log: list[dict] = []
         self._kill_reason: str | None = None
         self._token_session_pnl: dict[str, float] = {}  # per-token PnL for circuit breaker
+
+        # Fill rate tracking: quotes placed vs fills received
+        self._quotes_placed = 0
+        self._quotes_filled = 0
+        self._last_fill_rate_log = 0.0
 
         # HARD BANKROLL CAP: tracks total USD committed by maker (persists across restarts)
         self._committed_file = Path(__file__).parent.parent / "data" / "maker_committed.json"
@@ -335,10 +340,12 @@ class MakerEngine:
 
     # ── Fair Value & Spread ──────────────────────────────────
 
-    def compute_fair_value(self, asset: str, implied_price: float | None) -> float | None:
+    def compute_fair_value(self, asset: str, implied_price: float | None, remaining_s: float = 9999) -> float | None:
         """Blend Binance spot momentum with Polymarket implied price.
 
         Fair value = 60% Polymarket implied + 40% Binance momentum signal.
+        When TTR < 5 min, blend in Chainlink oracle price (50% weight) since
+        that's what the market actually resolves against.
         """
         if implied_price is None or not (0.05 < implied_price < 0.95):
             return None
@@ -357,6 +364,19 @@ class MakerEngine:
             momentum_fair = implied_price
 
         fair = 0.6 * implied_price + 0.4 * momentum_fair
+
+        # Near resolution: blend Chainlink oracle (what market actually resolves against)
+        if remaining_s < 300:
+            chainlink_price = self._cache.get_chainlink_price(asset)
+            if chainlink_price and binance_price:
+                # Chainlink divergence from Binance as a signal
+                divergence = (chainlink_price - binance_price) / binance_price
+                # Weight Chainlink more as TTR decreases (50% at 5 min, 80% at 1 min)
+                cl_weight = min(0.8, 0.5 + 0.3 * (1.0 - remaining_s / 300))
+                chainlink_shift = divergence * cl_weight * 2.0
+                fair += chainlink_shift
+                fair = max(0.05, min(0.95, fair))
+
         return max(0.05, min(0.95, round(fair, 4)))
 
     def compute_spread(self, asset: str, token_id: str, regime_label: str = "neutral", book_spread: float | None = None) -> float:
@@ -562,6 +582,7 @@ class MakerEngine:
                         size_usd=round(price * size, 2), placed_at=time.time(),
                     )
                     self._active_quotes.append(q)
+                    self._quotes_placed += 1
                     log.info("[MAKER] %s %s @ $%.4f (%.1f tokens)", label, asset.upper(), price, size)
                     return q
                 break
@@ -783,6 +804,14 @@ class MakerEngine:
         except Exception as e:
             log.warning("[MAKER] Heartbeat failed: %s", str(e)[:100])
 
+        # Log fill rate every 5 min
+        if now - self._last_fill_rate_log > 300 and self._quotes_placed > 0:
+            fill_rate = self._quotes_filled / self._quotes_placed * 100
+            log.info("[MAKER] Fill rate: %d/%d = %.1f%% | Spread PnL: $%.2f | Rebates: $%.2f",
+                     self._quotes_filled, self._quotes_placed, fill_rate,
+                     self._total_spread_captured, self._estimated_rebate_today)
+            self._last_fill_rate_log = now
+
     def cancel_all(self) -> None:
         """Cancel all active maker quotes (shutdown / emergency)."""
         if self.client and self._active_quotes:
@@ -898,6 +927,7 @@ class MakerEngine:
             spread_captured = max(0, fill_price - fair_value)
 
         self._fills_today += 1
+        self._quotes_filled += 1
 
         # Track committed against hard bankroll cap
         if not self.cfg.maker_dry_run:
@@ -1153,9 +1183,16 @@ class MakerEngine:
                             implied_price = float(p)
                         break
 
-            fair = self.compute_fair_value(asset, implied_price)
+            fair = self.compute_fair_value(asset, implied_price, remaining_s=remaining_s)
             if fair is None:
                 continue
+
+            # Orderbook imbalance adjustment: shift fair value toward heavy side
+            # Positive imbalance = more bids = buying pressure = shift fair up
+            book_imbalance = mkt.get("book_imbalance", 0.0)
+            if abs(book_imbalance) > 0.15:  # only act on meaningful imbalance (>15%)
+                imb_shift = book_imbalance * 0.01  # max ±1c shift at full imbalance
+                fair = max(0.05, min(0.95, fair + imb_shift))
 
             # Cache fair value for P&L calculation
             self._last_fair[up_token] = fair
@@ -1317,4 +1354,7 @@ class MakerEngine:
             "spread_captured": round(self._total_spread_captured, 4),
             "resolution_losses": round(self._resolution_losses, 4),
             "kill_reason": self._kill_reason,
+            "quotes_placed": self._quotes_placed,
+            "quotes_filled": self._quotes_filled,
+            "fill_rate_pct": round(self._quotes_filled / max(1, self._quotes_placed) * 100, 1),
         }
