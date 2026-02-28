@@ -64,6 +64,7 @@ class Config:
 
     # Whale Follower — Smart Money copy trader (disabled by default)
     whale_enabled: bool = _env("WHALE_ENABLED", "false").lower() in ("true", "1", "yes")
+    whale_dry_run: bool = _env("WHALE_DRY_RUN", "true").lower() in ("true", "1", "yes")
     whale_poll_interval_s: float = float(_env("WHALE_POLL_INTERVAL_S", "4.0"))
 
     # Resolution Scalper — DEPRECATED (killed Feb 27 2026)

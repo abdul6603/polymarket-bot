@@ -159,7 +159,7 @@ class TradingBot:
         # Whale Follower — Smart Money copy trader (uses snipe wallet)
         self.whale_tracker = WhaleTracker(
             clob_client=snipe_client,
-            dry_run=cfg.dry_run,
+            dry_run=cfg.whale_dry_run,
         )
 
         # Connect CLOB orderbook bridge — REST-based with 5s cache
@@ -339,8 +339,8 @@ class TradingBot:
         else:
             log.info("MakerEngine: disabled (set MAKER_ENABLED=true to activate)")
         if self.cfg.whale_enabled:
-            log.info("WhaleTracker: ENABLED (poll=%.0fs, max_copy=$%.0f, daily_cap=$%.0f)",
-                     self.cfg.whale_poll_interval_s, MAX_COPY_SIZE_USD, MAX_DAILY_EXPOSURE_USD)
+            log.info("WhaleTracker: ENABLED (dry_run=%s, poll=%.0fs, max_copy=$%.0f, daily_cap=$%.0f)",
+                     self.cfg.whale_dry_run, self.cfg.whale_poll_interval_s, MAX_COPY_SIZE_USD, MAX_DAILY_EXPOSURE_USD)
         else:
             log.info("WhaleTracker: disabled (set WHALE_ENABLED=true to activate)")
         log.info("=" * 60)
