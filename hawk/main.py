@@ -569,6 +569,31 @@ class HawkBot:
 
                 self.risk.daily_reset()
 
+                # Resolve trades FIRST — before the long scan which can take 25+ min
+                # (Open-Meteo 429 rate limiting delays weather scanning)
+                try:
+                    res = resolve_paper_trades()
+                    if res["resolved"] > 0:
+                        log.info(
+                            "[EARLY-RESOLVE] Resolved %d trades: %d W / %d L | P&L: $%.2f",
+                            res["resolved"], res["wins"], res["losses"],
+                            res.get("total_pnl", 0.0),
+                        )
+                        for trade_pnl in res.get("per_trade_pnl", []):
+                            self.risk.record_pnl(trade_pnl)
+                    # Auto-claim resolved positions on-chain
+                    import os
+                    _hk = os.environ.get("HAWK_PRIVATE_KEY", "")
+                    _ha = os.environ.get("HAWK_FUNDER_ADDRESS", "")
+                    if _hk and _ha:
+                        from bot.auto_claimer import auto_claim
+                        claim_result = auto_claim(_ha, _hk)
+                        if claim_result["claimed"] > 0:
+                            log.info("[CLAIM] Redeemed %d positions for $%.2f USDC",
+                                     claim_result["claimed"], claim_result["usdc"])
+                except Exception:
+                    log.debug("[EARLY-RESOLVE] Resolver failed (non-fatal)")
+
                 if self.risk.is_shutdown():
                     log.warning("Daily loss cap hit — skipping cycle")
                     _save_status(self.tracker, self.risk, running=True, cycle=self.cycle)
@@ -634,9 +659,8 @@ class HawkBot:
                 weather_markets = [m for m in ranked_markets if m.category == "weather"]
                 non_sports_markets = [m for m in ranked_markets if m.category not in ("sports", "weather")]
                 target_markets = weather_markets
-                log.info("V9 Weather-only: %d weather markets to analyze (skipping %d sports + %d/%d non-sports)",
-                         len(target_markets), len(sports_markets), len(weather_markets),
-                         min(len(non_sports_markets), 30), len(non_sports_markets))
+                log.info("V9 Weather-only: %d weather markets to analyze (skipping %d sports + %d non-sports)",
+                         len(target_markets), len(sports_markets), len(non_sports_markets))
 
                 # Track scan stats for dashboard
                 _scan_stats = {
