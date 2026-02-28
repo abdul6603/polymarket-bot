@@ -180,13 +180,38 @@ def main() -> None:
     from bot.snipe import clob_book
     clob_book.init("https://clob.polymarket.com")
 
+    # Build CLOB client for live trading
+    clob_client = None
+    if not cfg.dry_run and cfg.private_key:
+        try:
+            from py_clob_client.client import ClobClient
+            from py_clob_client.clob_types import ApiCreds
+            clob_client = ClobClient(
+                "https://clob.polymarket.com",
+                key=cfg.private_key,
+                chain_id=137,
+                funder=cfg.funder_address or None,
+                signature_type=2,
+            )
+            if cfg.clob_api_key:
+                clob_client.set_api_creds(ApiCreds(
+                    api_key=cfg.clob_api_key,
+                    api_secret=cfg.clob_api_secret,
+                    api_passphrase=cfg.clob_api_passphrase,
+                ))
+            clob_client.get_ok()
+            log.info("CLOB client connected — LIVE trading enabled")
+        except Exception:
+            log.exception("CLOB client init FAILED — falling back to paper mode")
+            clob_client = None
+
     price_cache = PriceCache()
     price_cache.preload_from_disk()
 
     binance_feed = BinanceFeed(bot_cfg, price_cache)
     window_tracker = WindowTracker(bot_cfg, price_cache)
     tracker = PaperTracker()
-    engine = KillshotEngine(cfg, price_cache, tracker)
+    engine = KillshotEngine(cfg, price_cache, tracker, clob_client=clob_client)
 
     # Start Binance WebSocket feed (runs in daemon threads)
     loop = asyncio.new_event_loop()
