@@ -1169,15 +1169,22 @@ def api_garves_positions():
 
         # ── 1. Fetch current positions from all Garves wallets ──
         pos_data = []
+        _wallet_labels = {
+            (wallet or "").lower(): "maker",
+            (SNIPE_WALLET or "").lower(): "snipe",
+        }
         for _w in [wallet, SNIPE_WALLET]:
             if not _w:
                 continue
+            _label = _wallet_labels.get(_w.lower(), "taker")
             try:
                 _url = f"https://data-api.polymarket.com/positions?user={_w.lower()}&limit=500"
                 _req = urllib.request.Request(_url, headers=headers)
                 with urllib.request.urlopen(_req, timeout=10) as _resp:
                     _d = json.loads(_resp.read().decode())
                 if isinstance(_d, list):
+                    for _entry in _d:
+                        _entry["_wallet"] = _label
                     pos_data.extend(_d)
             except Exception:
                 pass
@@ -1219,12 +1226,20 @@ def api_garves_positions():
             outcome = entries[0].get("outcome", "")
             asset = _parse_asset_from_title(title)
 
+            # Determine engine from wallet origin
+            _wallets_in_group = {e.get("_wallet", "taker") for e in entries}
+            if "snipe" in _wallets_in_group:
+                _engine = "snipe"
+            else:
+                _engine = "maker"
+
             row = {
                 "market": title, "asset": asset, "outcome": outcome,
                 "size": round(total_size, 2), "avg_price": round(avg_price, 4),
                 "cur_price": round(cur_price, 4), "cost": round(total_cost, 2),
                 "value": round(total_value, 2), "pnl": round(pnl, 2),
                 "pnl_pct": round((pnl / total_cost * 100) if total_cost > 0 else 0, 1),
+                "engine": _engine,
                 "_cid": cid,
             }
 

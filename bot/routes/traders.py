@@ -111,7 +111,7 @@ def _normalize_garves(data: dict | None, mode: str = "live") -> list[dict]:
         positions.append({
             "id": f"garves_{h.get('market', '')[:20]}",
             "agent": "garves",
-            "engine": "taker",
+            "engine": h.get("engine", "taker"),
             "mode": mode,
             "market": h.get("market", "Unknown"),
             "asset": h.get("asset", "?"),

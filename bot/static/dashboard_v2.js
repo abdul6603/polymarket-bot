@@ -500,7 +500,7 @@ function renderOnChainPositions(data) {
         var gReturn = gPayout - (p.cost || 0);
         var gReturnPct = (p.cost || 0) > 0 ? (gReturn / p.cost * 100) : 0;
         var engName = (p.engine || 'taker').toLowerCase().replace(/[^a-z_]/g, '');
-        var engLabel = engName === 'maker' ? 'MKR' : engName === 'whale' ? 'WHALE' : engName === 'taker' ? 'TAKER' : engName === 'killshot' ? 'KILL' : engName.toUpperCase();
+        var engLabel = engName === 'maker' ? 'MAKER' : engName === 'snipe' ? 'SNIPE' : engName === 'whale' ? 'WHALE' : engName === 'taker' ? 'TAKER' : engName === 'killshot' ? 'KILL' : engName.toUpperCase();
         var engClass = engName;
         html += '<tr>';
         html += '<td><span class="gv-engine-pill ' + esc(engClass) + '">' + engLabel + '</span></td>';
