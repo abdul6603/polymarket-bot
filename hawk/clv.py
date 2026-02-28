@@ -15,6 +15,7 @@ import logging
 import time
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 from bot.http_session import get_session
 
@@ -71,7 +72,8 @@ def record_entry(
         log.info("[CLV] Entry recorded: %s @ %.4f (market=%.4f) | %s",
                  direction, entry_price, market_price, question[:60])
     except Exception:
-        log.debug("[CLV] Failed to record entry")
+        # Keep exception visible for ops — debug level to avoid noisy INFO
+        log.exception("[CLV] Failed to record entry for %s %s", condition_id[:12], question[:60])
 
 
 def update_on_resolution(condition_id: str, won: bool) -> CLVRecord | None:
@@ -92,6 +94,7 @@ def update_on_resolution(condition_id: str, won: bool) -> CLVRecord | None:
                 if line:
                     records.append(json.loads(line))
     except Exception:
+        log.exception("[CLV] Failed reading CLV file for resolution update")
         return None
 
     for r in records:
@@ -132,50 +135,77 @@ def update_on_resolution(condition_id: str, won: bool) -> CLVRecord | None:
     # Rewrite file
     if updated:
         try:
-            with open(CLV_FILE, "w") as f:
+            DATA_DIR.mkdir(parents=True, exist_ok=True)
+            tmp = CLV_FILE.with_suffix(".jsonl.tmp")
+            with open(tmp, "w", encoding="utf-8") as f:
                 for r in records:
                     f.write(json.dumps(r) + "\n")
+            tmp.replace(CLV_FILE)
         except Exception:
-            log.debug("[CLV] Failed to update CLV file")
+            log.exception("[CLV] Failed to update CLV file for %s", condition_id[:12])
 
     return updated
 
 
 def get_clv_stats() -> dict:
     """Get aggregate CLV statistics for dashboard display."""
-    if not CLV_FILE.exists():
-        return {"total_trades": 0, "resolved": 0, "avg_clv": 0.0, "avg_clv_pct": 0.0,
-                "positive_clv_rate": 0.0, "trades": []}
-
-    records = []
+    # Ensure data dir exists
     try:
-        with open(CLV_FILE) as f:
+        if not CLV_FILE.exists():
+            return {
+                "total_trades": 0,
+                "resolved": 0,
+                "avg_clv": 0.0,
+                "avg_clv_pct": 0.0,
+                "positive_clv_rate": 0.0,
+                "trades": [],
+            }
+
+        records: list[dict[str, Any]] = []
+        with open(CLV_FILE, encoding="utf-8") as f:
             for line in f:
                 line = line.strip()
-                if line:
+                if not line:
+                    continue
+                try:
                     records.append(json.loads(line))
+                except Exception:
+                    log.debug("[CLV] Skipping malformed line in CLV file")
+
+        resolved = [r for r in records if r.get("resolved") and r.get("clv") is not None]
+
+        if not resolved:
+            return {
+                "total_trades": len(records),
+                "resolved": 0,
+                "avg_clv": 0.0,
+                "avg_clv_pct": 0.0,
+                "positive_clv_rate": 0.0,
+                "trades": records[-50:],  # return recent up to 50
+            }
+
+        clvs = [float(r["clv"]) for r in resolved]
+        clv_pcts = [float(r.get("clv_pct", 0.0)) for r in resolved]
+        positive = sum(1 for c in clvs if c > 0)
+
+        return {
+            "total_trades": len(records),
+            "resolved": len(resolved),
+            "avg_clv": round(sum(clvs) / len(clvs), 4),
+            "avg_clv_pct": round(sum(clv_pcts) / len(clv_pcts), 2),
+            "positive_clv_rate": round(positive / len(resolved) * 100, 1),
+            "trades": records[-50:],  # return recent up to 50
+        }
     except Exception:
-        return {"total_trades": 0, "resolved": 0, "avg_clv": 0.0, "avg_clv_pct": 0.0,
-                "positive_clv_rate": 0.0, "trades": []}
-
-    resolved = [r for r in records if r.get("resolved") and r.get("clv") is not None]
-
-    if not resolved:
-        return {"total_trades": len(records), "resolved": 0, "avg_clv": 0.0,
-                "avg_clv_pct": 0.0, "positive_clv_rate": 0.0, "trades": records}
-
-    clvs = [r["clv"] for r in resolved]
-    clv_pcts = [r["clv_pct"] for r in resolved]
-    positive = sum(1 for c in clvs if c > 0)
-
-    return {
-        "total_trades": len(records),
-        "resolved": len(resolved),
-        "avg_clv": round(sum(clvs) / len(clvs), 4),
-        "avg_clv_pct": round(sum(clv_pcts) / len(clv_pcts), 2),
-        "positive_clv_rate": round(positive / len(resolved) * 100, 1),
-        "trades": records,
-    }
+        log.exception("[CLV] Failed to compute CLV stats")
+        return {
+            "total_trades": 0,
+            "resolved": 0,
+            "avg_clv": 0.0,
+            "avg_clv_pct": 0.0,
+            "positive_clv_rate": 0.0,
+            "trades": [],
+        }
 
 
 def get_realtime_clv(condition_id: str, token_id: str) -> dict | None:
@@ -183,8 +213,7 @@ def get_realtime_clv(condition_id: str, token_id: str) -> dict | None:
 
     Returns dict with realtime_clv, realtime_clv_pct, current_price, entry_price, age_hours
     or None if no unresolved entry found.
-    """
-    if not CLV_FILE.exists():
+    """    if not CLV_FILE.exists():
         return None
 
     entry_rec = None
