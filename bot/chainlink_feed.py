@@ -62,7 +62,7 @@ AGGREGATOR_ABI = [
 class ChainlinkFeed:
     """Read Chainlink price feeds on Polygon with caching."""
 
-    def __init__(self, cache_ttl: float = 5.0, rpc_url: str = POLYGON_RPC):
+    def __init__(self, cache_ttl: float = 2.0, rpc_url: str = POLYGON_RPC):
         self._w3 = Web3(Web3.HTTPProvider(rpc_url, request_kwargs={"timeout": 10}))
         self._cache_ttl = cache_ttl
         # asset -> (price, updated_at_chain, fetched_at_local)

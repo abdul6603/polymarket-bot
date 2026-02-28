@@ -1,0 +1,20 @@
+# Killshot standalone dependencies
+# Minimal set for VPS deployment (Python 3.12)
+
+# WebSocket feeds (Binance, Chainlink RTDS, CLOB orderbook)
+websockets>=12.0,<14.0
+
+# HTTP client (Gamma API market scanning)
+httpx>=0.27.0,<1.0
+
+# Polymarket CLOB client (live order placement)
+py-clob-client>=0.18.0
+
+# Environment variable loading (.env)
+python-dotenv>=1.0.0
+
+# Chainlink on-chain price oracle (Polygon RPC)
+web3>=6.0.0,<8.0
+
+# HTTP session with retry (bot/http_session.py, Telegram notifications)
+requests>=2.31.0,urllib3>=2.0.0

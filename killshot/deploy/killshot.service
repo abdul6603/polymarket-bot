@@ -1,0 +1,32 @@
+[Unit]
+Description=Killshot — Late-Window Maker Snipe (Polymarket 5m Crypto)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=killshot
+Group=killshot
+
+WorkingDirectory=/home/killshot/polymarket-bot
+ExecStart=/home/killshot/polymarket-bot/.venv/bin/python -m killshot.main
+Environment=PYTHONPATH=/home/killshot/polymarket-bot
+
+Restart=always
+RestartSec=5
+StartLimitIntervalSec=300
+StartLimitBurst=10
+
+# Logging
+StandardOutput=append:/var/log/killshot.log
+StandardError=append:/var/log/killshot.log
+
+# Hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/killshot/polymarket-bot/data /var/log/killshot.log
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

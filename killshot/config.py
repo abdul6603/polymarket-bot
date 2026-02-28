@@ -34,14 +34,14 @@ class KillshotConfig:
     entry_price_max: float = float(_env("KILLSHOT_ENTRY_PRICE_MAX", "0.75"))
 
     # Kill zone — how many seconds before window close to evaluate
-    window_seconds: int = int(_env("KILLSHOT_WINDOW_SECONDS", "60"))
+    window_seconds: int = int(_env("KILLSHOT_WINDOW_SECONDS", "20"))
     min_window_seconds: int = int(_env("KILLSHOT_MIN_WINDOW_SECONDS", "10"))
 
     # Assets (comma-separated)
     assets_str: str = _env("KILLSHOT_ASSETS", "bitcoin")
 
     # Loop intervals
-    tick_interval_s: float = float(_env("KILLSHOT_TICK_INTERVAL_S", "1.0"))
+    tick_interval_s: float = float(_env("KILLSHOT_TICK_INTERVAL_S", "0.1"))
     scan_interval_s: float = float(_env("KILLSHOT_SCAN_INTERVAL_S", "60"))
 
     # Separate wallet (live mode only — unused in paper)

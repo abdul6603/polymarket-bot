@@ -118,8 +118,8 @@ class PaperTracker:
                 )
                 continue
 
-            # Determine outcome from current spot price
-            current_price = price_cache.get_price(trade.asset)
+            # Determine outcome from Chainlink price (what Polymarket resolves against)
+            current_price = price_cache.get_resolution_price(trade.asset)
             if current_price is None:
                 still_pending.append(trade)
                 continue

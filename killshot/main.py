@@ -27,6 +27,7 @@ from bot.binance_feed import BinanceFeed
 from bot.snipe.window_tracker import WindowTracker
 
 from killshot.config import KillshotConfig
+from killshot.clob_ws import ClobWS
 from killshot.engine import KillshotEngine
 from killshot.tracker import PaperTracker
 
@@ -208,20 +209,32 @@ def main() -> None:
     price_cache = PriceCache()
     price_cache.preload_from_disk()
 
+    # Start Chainlink real-time WebSocket (exact oracle Polymarket resolves against)
+    from killshot.chainlink_ws import ChainlinkWS
+    chainlink_ws = ChainlinkWS()
+    chainlink_ws.start()
+    log.info("Chainlink RTDS feed starting...")
+
+    # Start CLOB orderbook WebSocket (replaces REST polling — instant book reads)
+    clob_ws = ClobWS()
+    clob_ws.start()
+    log.info("CLOB orderbook WebSocket starting...")
+
     binance_feed = BinanceFeed(bot_cfg, price_cache)
     window_tracker = WindowTracker(bot_cfg, price_cache)
     tracker = PaperTracker()
-    engine = KillshotEngine(cfg, price_cache, tracker, clob_client=clob_client)
+    engine = KillshotEngine(cfg, price_cache, tracker, clob_client=clob_client,
+                            chainlink_ws=chainlink_ws, clob_ws=clob_ws)
 
     # Start Binance WebSocket feed (runs in daemon threads)
     loop = asyncio.new_event_loop()
     loop.run_until_complete(binance_feed.start())
     log.info("Binance feed started")
 
-    # Wait for first price data
-    log.info("Waiting for Binance price data...")
+    # Wait for first price data (Chainlink or Binance)
+    log.info("Waiting for price data...")
     for _ in range(30):
-        if price_cache.get_price("bitcoin"):
+        if chainlink_ws.get_price("bitcoin") or price_cache.get_price("bitcoin"):
             break
         time.sleep(1)
     else:
@@ -233,14 +246,13 @@ def main() -> None:
 
     last_scan = 0.0
     last_status_write = 0.0
-    tick_count = 0
+    last_cleanup = 0.0
 
     log.info("Entering main loop...")
 
     while _running:
         try:
             now = time.time()
-            tick_count += 1
 
             # Keep Binance feed alive
             binance_feed.ensure_alive()
@@ -255,6 +267,17 @@ def main() -> None:
                     "Scan: %d markets found, %d active windows",
                     len(markets), active,
                 )
+
+                # Update CLOB WS subscriptions for active windows
+                token_ids = set()
+                for w in window_tracker.all_active_windows():
+                    if w.up_token_id:
+                        token_ids.add(w.up_token_id)
+                    if w.down_token_id:
+                        token_ids.add(w.down_token_id)
+                if token_ids:
+                    clob_ws.update_subscriptions(token_ids)
+
                 last_scan = now
 
             # Engine tick — evaluate kill zones
@@ -265,9 +288,10 @@ def main() -> None:
             if resolved:
                 engine.report_resolved(resolved)
 
-            # Periodic cleanup (every hour)
-            if tick_count % 3600 == 0:
+            # Periodic cleanup (every hour — time-based, not tick-based)
+            if now - last_cleanup > 3600:
                 engine.cleanup_expired()
+                last_cleanup = now
 
             # Write status for dashboard (every 10s)
             if now - last_status_write > 10:
@@ -284,6 +308,7 @@ def main() -> None:
 
     # Graceful shutdown
     log.info("Shutting down Killshot...")
+    clob_ws.stop()
     tracker.write_status()
     price_cache.save_candles()
     binance_feed._running = False
