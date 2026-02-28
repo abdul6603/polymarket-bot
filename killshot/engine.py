@@ -131,6 +131,15 @@ class KillshotEngine:
                 direction.upper(), market_bid * 100,
             )
 
+        # Skip if winning side already at extreme price (no edge left)
+        if not self._dry_run and market_ask is None and market_bid and market_bid > 0.90:
+            log.info(
+                "[KILLSHOT] Skip: %s already at %.0f¢ (no asks), no edge",
+                direction.upper(), market_bid * 100,
+            )
+            self._traded_windows[window.market_id] = time.time()
+            return
+
         # Mark window as traded
         self._traded_windows[window.market_id] = time.time()
 
@@ -191,9 +200,11 @@ class KillshotEngine:
                 price = self._cfg.entry_price_max
 
             shares = round(size_usd / price, 2)
-            if shares < 1:
-                log.warning("[KILLSHOT] Shares too low: %.2f", shares)
-                return None, 0, ""
+            if shares < 5:
+                # Polymarket minimum is 5 shares — bump up
+                shares = 5.0
+                size_usd = round(shares * price, 2)
+                log.info("[KILLSHOT] Bumped to min 5 shares ($%.2f)", size_usd)
 
             order_args = OrderArgs(
                 price=price,
