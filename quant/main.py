@@ -28,6 +28,7 @@ from quant.regime import tag_trades_with_regime, analyze_regime_performance
 from quant.correlation_guard import check_correlation, write_correlation_report
 from quant.self_learner import run_learning_cycle, load_odin_trades
 from quant.pnl_estimator import estimate_pnl_impact, write_pnl_impact
+from quant.odin_optimizer import load_odin_trades as load_odin_trades_opt, analyze_odin_trades, write_odin_recommendations
 from quant.scorer import score_result
 from quant.ml_predictor import retrain_model
 from quant.odin_backtester import run_multi_asset_backtest
@@ -344,6 +345,27 @@ class QuantBot:
                     log.info("Odin backtest: no 4H candle data in %s (run: .venv/bin/python -m quant.bulk_download --all-assets --interval 4h --months 12)", candle_dir)
             except Exception:
                 log.exception("Odin strategy backtest failed (non-fatal)")
+
+        # 14b. Odin Trade Analyzer — analyze real paper/live trades
+        try:
+            odin_real_trades = load_odin_trades_opt()
+            if len(odin_real_trades) >= 5:
+                odin_analysis = analyze_odin_trades(odin_real_trades)
+                write_odin_recommendations(odin_analysis, DATA_DIR)
+                recs = odin_analysis.get("recommendations", [])
+                high_recs = [r for r in recs if r.get("priority") == "HIGH"]
+                log.info(
+                    "Odin optimizer: %d trades analyzed, WR=%.1f%%, %d recommendations (%d HIGH)",
+                    odin_analysis["summary"]["total_trades"],
+                    odin_analysis["summary"]["win_rate"],
+                    len(recs), len(high_recs),
+                )
+                for r in high_recs:
+                    log.info("  [HIGH] %s: %s", r["param"], r["suggestion"][:80])
+            else:
+                log.info("Odin optimizer: only %d trades (need 5+)", len(odin_real_trades))
+        except Exception:
+            log.exception("Odin trade analysis failed (non-fatal)")
 
         # 15. ML Model retrain (XGBoost on resolved trades)
         # (was step 14 before Odin backtest added)
