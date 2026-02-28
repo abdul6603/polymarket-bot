@@ -67,7 +67,9 @@ def record_entry(
     }
 
     try:
-        with open(CLV_FILE, "a") as f:
+        # ensure consistent encoding on writes
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        with open(CLV_FILE, "a", encoding="utf-8") as f:
             f.write(json.dumps(record) + "\n")
         log.info("[CLV] Entry recorded: %s @ %.4f (market=%.4f) | %s",
                  direction, entry_price, market_price, question[:60])
@@ -137,6 +139,7 @@ def update_on_resolution(condition_id: str, won: bool) -> CLVRecord | None:
         try:
             DATA_DIR.mkdir(parents=True, exist_ok=True)
             tmp = CLV_FILE.with_suffix(".jsonl.tmp")
+            # write via a tmp file then replace atomically
             with open(tmp, "w", encoding="utf-8") as f:
                 for r in records:
                     f.write(json.dumps(r) + "\n")
