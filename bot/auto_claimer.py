@@ -20,6 +20,10 @@ from eth_account import Account
 
 log = logging.getLogger(__name__)
 
+# Track condition IDs that failed redeem (already claimed or reverted)
+_failed_cids: dict[str, float] = {}  # conditionId -> timestamp of last failure
+_FAIL_COOLDOWN = 3600  # skip retrying for 1 hour after failure
+
 # Polygon contracts
 CTF_ADDRESS = "0x4D97DCd97eC945f40cF65F87097ACe5EA0476045"
 USDC_E = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"
@@ -101,6 +105,11 @@ def claim_for_proxy(
     tx_hashes = []
     nonce = w3.eth.get_transaction_count(acct.address)
 
+    # Check USDC balance before claiming
+    usdc_abi = [{"constant":True,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"}]
+    usdc_contract = w3.eth.contract(address=Web3.to_checksum_address(USDC_E), abi=usdc_abi)
+    pre_bal = usdc_contract.functions.balanceOf(proxy).call() / 1e6
+
     for cid in condition_ids:
         cid_bytes = bytes.fromhex(cid.replace("0x", ""))
         call_data = ctf.encode_abi(
@@ -143,7 +152,20 @@ def claim_for_proxy(
                      receipt.blockNumber, receipt.status, receipt.gasUsed)
         except Exception as e:
             log.warning("[CLAIM] Wait for receipt failed: %s", str(e)[:100])
+            # Mark as failed to prevent retry loop
+            _failed_cids[cid] = time.time()
         nonce += 1
+
+    # Check USDC balance after claiming — if unchanged, mark all cids as failed
+    try:
+        post_bal = usdc_contract.functions.balanceOf(proxy).call() / 1e6
+        if post_bal <= pre_bal + 0.01:
+            for cid in condition_ids:
+                _failed_cids[cid] = time.time()
+            log.warning("[CLAIM] USDC unchanged (%.2f -> %.2f) — %d cids marked failed (1h cooldown)",
+                       pre_bal, post_bal, len(condition_ids))
+    except Exception:
+        pass
 
     return tx_hashes
 
@@ -165,10 +187,24 @@ def auto_claim(wallet_address: str, private_key: str) -> dict[str, Any]:
         return result
 
     total_value = sum(float(p.get("currentValue", 0)) for p in redeemable)
-    condition_ids = list({p["conditionId"] for p in redeemable if p.get("conditionId")})
+
+    # Filter out condition IDs that recently failed (already claimed)
+    now = time.time()
+    all_cids = {p["conditionId"] for p in redeemable if p.get("conditionId")}
+    condition_ids = [
+        cid for cid in all_cids
+        if cid not in _failed_cids or (now - _failed_cids[cid]) > _FAIL_COOLDOWN
+    ]
+    if not condition_ids:
+        skipped = len(all_cids)
+        if skipped:
+            log.debug("[CLAIM] Skipping %d condition IDs in cooldown (already claimed)", skipped)
+        return result
+
     log.info(
-        "[CLAIM] %d redeemable positions worth $%.2f on %s",
+        "[CLAIM] %d redeemable positions worth $%.2f on %s (%d skipped in cooldown)",
         len(redeemable), total_value, wallet_address[:10],
+        len(all_cids) - len(condition_ids),
     )
 
     try:
