@@ -1259,8 +1259,8 @@ class HawkBot:
                                          _drop * 100, _entry, _cur_price, _q)
                                 _pos["_flagged"] = True
 
-                            # Level 2: Hard exit (>15% drop — edge gone)
-                            if _drop > 0.15:
+                            # Level 2: Hard exit (>30% drop — edge gone)
+                            if _drop > 0.30:
                                 log.warning("[EARLY-EXIT] EXIT: price dropped %.0f%% ($%.2f→$%.2f) | %s",
                                             _drop * 100, _entry, _cur_price, _q)
                                 _pos["_early_exit"] = True
