@@ -159,9 +159,11 @@ def _match_game(
             best_match = event
 
     if best_score < 0.4:
+        log.debug("[ESPN] Best match score too low (%.3f) for %s vs %s | question: %s",
+                  best_score, team_a, team_b, question[:80])
         return None
+    log.debug("[ESPN] Matched event (score=%.3f): %s", best_score, best_match.get("id", best_match.get("name", "") if best_match else "" ) if best_match else "")
     return best_match
-
 
 def get_match_context(
     question: str,
