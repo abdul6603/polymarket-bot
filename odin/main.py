@@ -71,6 +71,12 @@ ET = ZoneInfo("America/New_York")
 # Fallback majors (used if CoinGlass has no opportunities)
 HL_MAJORS = ["BTCUSDT", "ETHUSDT", "XRPUSDT", "SOLUSDT"]
 
+# Top-20 coins allowed for scalp trades (no shitcoins)
+SCALP_ALLOWED = {
+    "BTC", "ETH", "XRP", "SOL", "BNB", "ADA", "DOGE", "AVAX", "DOT", "LINK",
+    "MATIC", "UNI", "LTC", "BCH", "NEAR", "APT", "OP", "ARB", "FIL", "SUI",
+}
+
 # CoinGlass detail slots (3 API calls each) — rotate the rest
 CG_DETAIL_SLOTS = 4
 # How many symbols to analyze per trading cycle (rotate through universe)
@@ -671,6 +677,10 @@ class OdinBot:
         universe = self._get_full_universe()
 
         for bare in universe:
+            # Scalps only on top-20 coins — no shitcoins
+            if bare not in SCALP_ALLOWED:
+                continue
+
             current = self._ws_prices.get(bare, 0)
             old_price = old_snap.get(bare, 0)
 
