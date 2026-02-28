@@ -109,46 +109,57 @@ class ScalpBrain:
             score += 25
             reasons.append(f"below EMA20 ({current_price:.4f} < {ema[-1]:.4f})")
         else:
-            score -= 15
-            reasons.append(f"wrong side of EMA20 (penalty)")
+            # HARD BLOCK: fighting the trend killed STBL, MAVIA, HMSTR
+            log.info("[SCALP_BRAIN] %s BLOCKED: wrong side of EMA20", direction_hint)
+            return ScalpDecision(trade=False, reasons=["wrong side of EMA20 — BLOCKED"])
 
-        # ── 2. Volume Confirmation (20 points) ──
+        # ── 2. Volume Confirmation (20 points, can BLOCK) ──
         avg_vol = np.mean(volume[-20:-1]) if len(volume) >= 21 else np.mean(volume[:-1])
         last_vol = volume[-1]
+        vol_ratio = last_vol / max(avg_vol, 1)
+
+        if avg_vol > 0 and vol_ratio < 0.5:
+            # HARD BLOCK: no liquidity = guaranteed loss
+            log.info("[SCALP_BRAIN] %s BLOCKED: volume %.1fx (min 0.5x)",
+                     direction_hint, vol_ratio)
+            return ScalpDecision(trade=False, reasons=[f"volume {vol_ratio:.1f}x — BLOCKED (min 0.5x)"])
+
         if avg_vol > 0 and last_vol >= avg_vol * self._volume_mult:
             score += 20
-            vol_ratio = last_vol / avg_vol
             reasons.append(f"volume {vol_ratio:.1f}x avg")
         elif avg_vol > 0 and last_vol >= avg_vol * 0.8:
-            # Acceptable volume — partial credit
             score += 10
-            reasons.append(f"volume OK ({last_vol / avg_vol:.1f}x)")
+            reasons.append(f"volume OK ({vol_ratio:.1f}x)")
         else:
-            reasons.append(f"low volume ({last_vol / max(avg_vol, 1):.1f}x)")
+            # Low volume penalty (was 0 — many losses had 0.5-0.8x vol)
+            score -= 10
+            reasons.append(f"low volume ({vol_ratio:.1f}x) (penalty)")
 
-        # ── 3. RSI Check (20 points, can go NEGATIVE) ──
+        # ── 3. RSI Check (20 points, can BLOCK) ──
         rsi = self._rsi(close, self._rsi_period)
         if rsi > 0:
-            if direction_hint == "LONG" and rsi >= 80:
-                # HARD BLOCK: longing into extreme overbought
-                score -= 30
-                reasons.append(f"RSI={rsi:.0f} (OVERBOUGHT — BLOCKED)")
-            elif direction_hint == "SHORT" and rsi <= 20:
-                # HARD BLOCK: shorting into extreme oversold
-                score -= 30
-                reasons.append(f"RSI={rsi:.0f} (OVERSOLD — BLOCKED)")
-            elif direction_hint == "LONG" and rsi >= 70:
-                # Penalty: longing into overbought zone
-                score -= 10
-                reasons.append(f"RSI={rsi:.0f} (overbought — penalty)")
+            if direction_hint == "LONG" and rsi >= 70:
+                # HARD BLOCK: longing into overbought (ACE burned $60 at RSI 73-74)
+                log.info("[SCALP_BRAIN] %s BLOCKED: RSI=%.0f (max 70 for LONG)",
+                         direction_hint, rsi)
+                return ScalpDecision(trade=False, reasons=[f"RSI={rsi:.0f} — BLOCKED (max 70 for LONG)"])
             elif direction_hint == "SHORT" and rsi <= 30:
-                # Penalty: shorting into oversold zone
-                score -= 10
-                reasons.append(f"RSI={rsi:.0f} (oversold — penalty)")
-            elif direction_hint == "LONG" and rsi < self._rsi_long_max:
+                # HARD BLOCK: shorting into oversold (DOOD burned $15 at RSI 17)
+                log.info("[SCALP_BRAIN] %s BLOCKED: RSI=%.0f (min 30 for SHORT)",
+                         direction_hint, rsi)
+                return ScalpDecision(trade=False, reasons=[f"RSI={rsi:.0f} — BLOCKED (min 30 for SHORT)"])
+            elif direction_hint == "LONG" and rsi >= 60:
+                # Caution zone — partial penalty
+                score -= 5
+                reasons.append(f"RSI={rsi:.0f} (elevated — caution)")
+            elif direction_hint == "SHORT" and rsi <= 40:
+                # Caution zone — partial penalty
+                score -= 5
+                reasons.append(f"RSI={rsi:.0f} (depressed — caution)")
+            elif direction_hint == "LONG" and rsi < 60:
                 score += 20
                 reasons.append(f"RSI={rsi:.0f} (room to run)")
-            elif direction_hint == "SHORT" and rsi > self._rsi_short_min:
+            elif direction_hint == "SHORT" and rsi > 40:
                 score += 20
                 reasons.append(f"RSI={rsi:.0f} (room to fall)")
             else:

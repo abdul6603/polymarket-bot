@@ -189,7 +189,7 @@ class OdinBot:
         # Scalp Brain (V8) — rule-based, no LLM, instant decisions
         self._scalp_brain = ScalpBrain(
             base_risk_usd=20.0,  # $20 base → $2-5K positions with 0.3-1.5% SL
-            min_score=55,
+            min_score=65,
         )
         self._reflection = ReflectionEngine(self._journal, self._brain)
         self._reflection.configure(
@@ -1246,6 +1246,10 @@ class OdinBot:
             if len(ticks) < 5:
                 continue
 
+            # Scalps only on allowed coins — no shitcoins
+            if coin not in SCALP_ALLOWED:
+                continue
+
             sym = f"{coin}USDT"
             if sym not in {f"{s}USDT" for s in (self._hl_tradeable or set())}:
                 continue
@@ -1293,6 +1297,11 @@ class OdinBot:
             bare = symbol.replace("USDT", "")
             if bare in self._cfg.permanent_blacklist:
                 log.info("[SNIPER] %s: PERMANENTLY BLACKLISTED — skip", bare)
+                return
+
+            # Scalps only on allowed coins — no shitcoins
+            if bare not in SCALP_ALLOWED:
+                log.info("[SNIPER] %s: not in SCALP_ALLOWED — skip", bare)
                 return
 
             # Cooldown: no repeat scalps on same coin within N seconds
@@ -1433,6 +1442,10 @@ class OdinBot:
         now = time.time()
 
         for coin, price in mids.items():
+            # Zone-triggered trades only on allowed coins — no shitcoins
+            if coin not in SCALP_ALLOWED:
+                continue
+
             symbol = f"{coin}USDT"
             # Cooldown: only alert once per symbol per 5 minutes
             if now - self._zone_alert_cooldown.get(symbol, 0) < 300:
