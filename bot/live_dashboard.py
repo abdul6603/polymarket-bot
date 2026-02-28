@@ -1,253 +1,180 @@
 """
-COMMAND CENTER -- Unified Dashboard for Shelby, Garves, Soren & Atlas
-Run: python -m bot.live_dashboard
-Opens on http://localhost:8877
+Resilient Flask + (optional) SocketIO dashboard entrypoint.
 
-The Flask app lives here. All shared state, helpers, and path constants
-are in bot.shared (to avoid circular imports with route blueprints).
-Route handlers live in bot/routes/ as Flask Blueprints.
+This module is defensive: route/blueprint imports are attempted lazily during
+app startup and any failing imports are caught and logged. The dashboard will
+still start in a degraded mode exposing a /health endpoint and a simple status
+page listing any failed route modules so operators (Robotox) can triage.
+
+Design goals:
+- Never raise an uncaught exception at import time due to a broken blueprint.
+- Log full tracebacks for each failing import.
+- Register a lightweight fallback blueprint that points to logs.
 """
 from __future__ import annotations
 
-import sys
-import threading
+import importlib
+import logging
+import os
+import pkgutil
+import traceback
 from pathlib import Path
+from typing import List
 
-from dotenv import load_dotenv
-from flask import Flask, render_template, request
+from flask import Flask, Blueprint, jsonify, current_app, render_template_string
 
-try:
-    from flask_socketio import SocketIO, emit
-    HAS_SOCKETIO = True
-except ImportError:
-    HAS_SOCKETIO = False
-
-# Load .env so OPENAI_API_KEY is available
-load_dotenv(Path(__file__).parent.parent / ".env")
-
-# ── Re-export everything from bot.shared for backward compatibility ──
-# Any code that still does `from bot.live_dashboard import X` will keep working.
-from bot.shared import (  # noqa: F401
-    DATA_DIR,
-    TRADES_FILE,
-    LOG_FILE,
-    SOREN_QUEUE_FILE,
-    SOREN_TRENDS_FILE,
-    INDICATOR_ACCURACY_FILE,
-    SHELBY_TASKS_FILE,
-    SHELBY_PROFILE_FILE,
-    SHELBY_CONVERSATION_FILE,
-    SOREN_ROOT,
-    SOREN_OUTPUT_DIR,
-    ATLAS_ROOT,
-    MERCURY_ROOT,
-    SHELBY_ROOT_DIR,
-    COMPETITOR_INTEL_FILE,
-    SHELBY_SCHEDULER_LOG,
-    MERCURY_POSTING_LOG,
-    MERCURY_ANALYTICS_FILE,
-    SHELBY_ASSESSMENTS_FILE,
-    SHELBY_AGENT_REGISTRY_FILE,
-    SHELBY_TELEGRAM_CONFIG,
-    ET,
-    _DEFAULT_ASSESSMENTS,
-    _generation_status,
-    _chat_history,
-    _system_cache,
-    _weather_cache,
-    _updates_cache,
-    _AGENT_PROMPTS,
-    get_atlas,
-    _load_trades,
-    _load_recent_logs,
-)
-
-# ── Flask app ──
-
-app = Flask(
-    __name__,
-    static_folder=str(Path(__file__).parent / "static"),
-    template_folder=str(Path(__file__).parent / "templates"),
-)
-app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
+log = logging.getLogger("bot.live_dashboard")
 
 
-@app.after_request
-def _no_cache(response):
-    """Prevent browser from caching HTML, CSS, and JS."""
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
-    response.headers["Pragma"] = "no-cache"
-    response.headers["Expires"] = "0"
-    return response
+def _discover_route_modules(package_name: str = "bot.routes") -> List[str]:
+    """Return a list of submodule names under bot.routes (dotted import names)."""
+    try:
+        pkg = importlib.import_module(package_name)
+    except Exception:
+        log.debug("No package %s available to discover routes", package_name)
+        return []
 
-# ── SocketIO for real-time push (optional — falls back to polling if unavailable) ──
-socketio = None
-if HAS_SOCKETIO:
-    socketio = SocketIO(app, async_mode="threading", cors_allowed_origins=["http://localhost:8877", "http://127.0.0.1:8877"])
+    pkg_path = getattr(pkg, "__path__", None)
+    if not pkg_path:
+        return []
+
+    found = []
+    for finder, name, ispkg in pkgutil.iter_modules(pkg.__path__):
+        # full import path
+        found.append(f"{package_name}.{name}")
+    return found
 
 
-def broadcast_event(event_type, data=None):
-    """Emit a Socket.IO event to all connected clients (if socketio is available)."""
-    if socketio:
+def _register_blueprints(app: Flask, package_name: str = "bot.routes") -> List[str]:
+    """Attempt to import route modules and register any Blueprint named 'bp'.
+
+    Returns a list of module names that failed to import.
+    """
+    failed: List[str] = []
+    modules = _discover_route_modules(package_name)
+
+    for mod_name in modules:
         try:
-            socketio.emit(event_type, data or {})
+            log.debug("Importing dashboard route module %s", mod_name)
+            mod = importlib.import_module(mod_name)
+            # If module exposes `bp` (Blueprint) register it.
+            bp = getattr(mod, "bp", None)
+            if isinstance(bp, Blueprint):
+                app.register_blueprint(bp)
+                log.info("Registered blueprint from %s", mod_name)
+            else:
+                # If module defines a register_routes(app) function, call it.
+                reg = getattr(mod, "register_routes", None)
+                if callable(reg):
+                    try:
+                        reg(app)
+                        log.info("Registered routes via register_routes() in %s", mod_name)
+                    except Exception:
+                        log.exception("register_routes() failed in %s", mod_name)
+                        failed.append(mod_name)
+                else:
+                    log.debug("No blueprint or register_routes() in %s — skipping", mod_name)
         except Exception:
-            pass
+            log.exception("Failed to import/register routes from %s", mod_name)
+            failed.append(mod_name)
+    return failed
 
 
-@app.after_request
-def add_cache_headers(response):
-    # Only disable caching for API responses, allow browser caching for static assets
-    if request.path.startswith("/api/") or request.path == "/" or request.path.startswith("/static/"):
-        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
-        response.headers["Pragma"] = "no-cache"
-        response.headers["Expires"] = "0"
-    return response
+def create_app(config: dict | None = None) -> Flask:
+    """Create a Flask app with defensive blueprint imports.
 
+    config: optional dict to pass into app.config.update()
+    """
+    app = Flask(__name__, static_folder=None)
+    # Minimal config defaults
+    app.config.setdefault("DEBUG", False)
+    app.config.setdefault("SECRET_KEY", os.environ.get("DASHBOARD_SECRET", "dashboard_secret"))
 
-# ── Index route ──
+    if config:
+        app.config.update(config)
 
-@app.route("/")
-def index():
-    import time as _t
-    return render_template("dashboard.html", cache_bust=int(_t.time()))
+    # Health endpoint early so monitoring can hit it immediately
+    @app.route("/health")
+    def _health():
+        return jsonify({"status": "ok", "app": "live_dashboard"})
 
+    # Status page showing degraded modules (filled later)
+    @app.route("/status")
+    def _status():
+        failed = getattr(current_app, "_failed_route_imports", [])
+        return render_template_string(
+            "<h2>Dashboard status</h2>"
+            "<p>Failed route modules: {{failed|length}}</p>"
+            "<ul>{% for m in failed %}<li>{{m}}</li>{% endfor %}</ul>"
+            "<p>Check logs for tracebacks.</p>",
+            failed=failed,
+        )
 
-# ── Register all route blueprints ──
-# Now safe: blueprints import from bot.shared, not from this module.
-from bot.routes import register_all_blueprints
-register_all_blueprints(app)
+    # Try to init (optional) SocketIO without making it fatal
+    try:
+        from flask_socketio import SocketIO
+        socketio = SocketIO(app, logger=False, engineio_logger=False)
+        # store object so callers can use it if available
+        app.extensions["socketio"] = socketio
+        log.info("SocketIO initialized")
+    except Exception:
+        log.debug("SocketIO not available or failed to initialize; continuing without websockets")
+        # don't re-raise — dashboard can work without socketio
 
+    # Attempt to import and register route blueprints
+    failed_imports = []
+    try:
+        failed_imports = _register_blueprints(app, "bot.routes")
+    except Exception:
+        log.exception("Unexpected failure during blueprint registration")
+        # ensure we capture this unexpected failure in failed_imports list
+        failed_imports.append("bot.routes.__all__")  # sentinel
 
-# ── SocketIO events (if available) ──
-if socketio:
-    @socketio.on("connect")
-    def handle_connect():
-        emit("status", {"connected": True, "server": "Command Center"})
+    # Save failed imports list on app for /status endpoint
+    app._failed_route_imports = failed_imports  # type: ignore[attr-defined]
 
-    @socketio.on("request_heartbeats")
-    def handle_request_heartbeats():
-        try:
-            sys.path.insert(0, str(Path.home() / ".agent-hub"))
-            from hub import AgentHub
-            emit("heartbeats", AgentHub.get_heartbeats())
-        except Exception:
-            emit("heartbeats", {})
+    # If any imports failed, register a fallback blueprint that gives a friendly page.
+    if failed_imports:
+        fallback_bp = Blueprint("dashboard_degraded", __name__, url_prefix="/dashboard")
 
-    @socketio.on("request_health")
-    def handle_request_health():
-        try:
-            sys.path.insert(0, str(Path.home() / ".agent-hub"))
-            from hub import AgentHub
-            emit("system_health", AgentHub.system_health())
-        except Exception:
-            emit("system_health", {"overall": "unknown"})
+        @fallback_bp.route("/")
+        def degraded_index():
+            failed = current_app._failed_route_imports  # type: ignore[attr-defined]
+            msg = (
+                "<h1>Dashboard (degraded)</h1>"
+                f"<p>{len(failed)} route module(s) failed to load.</p>"
+                "<p>See server logs for full tracebacks. This page intentionally hides internal details.</p>"
+            )
+            return render_template_string(msg)
 
+        app.register_blueprint(fallback_bp)
+        log.warning("Dashboard started in degraded mode: %d failing modules", len(failed_imports))
+        for m in failed_imports:
+            log.warning(" - Failed route module: %s", m)
 
-# ── Main entry point ──
+    # Basic root route
+    @app.route("/")
+    def index():
+        if app._failed_route_imports:
+            return render_template_string(
+                "<h1>Dashboard</h1><p>Degraded. Visit <a href='/status'>/status</a>.</p>"
+            )
+        return render_template_string("<h1>Dashboard</h1><p>All systems nominal.</p>")
+
+    return app
+
 
 if __name__ == "__main__":
-    import socket
-    import webbrowser
-    import time
-
-    # ── Guard: exit immediately if port 8877 is already in use ──
-    _sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    _sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    try:
-        _sock.bind(("127.0.0.1", 8877))
-        _sock.close()
-    except OSError:
-        print("[Dashboard] Port 8877 already in use — another instance is running. Exiting.")
-        sys.exit(0)
-
-    # Atlas runs on Pro as its own LaunchAgent (com.atlas.agent).
-    # Dashboard reads Pro's status via SSH — no local loop needed.
-    def _auto_start_atlas():
-        print("[Dashboard] Atlas background loop disabled — runs on Pro (status fetched via SSH)")
-
-    # Auto-process broadcasts + send heartbeats for agents without active loops
-    def _broadcast_processor():
-        """Periodically ack broadcasts and send heartbeats for dashboard + passive agents."""
-        import time as _time
-        _time.sleep(10)  # Wait for app to start
-
-        # Initialize hub for dashboard heartbeats
+    # Allow running the dashboard directly for local development.
+    logging.basicConfig(level=logging.INFO)
+    app = create_app({"DEBUG": True})
+    # Use socketio.run if available, else fallback to Flask's built-in server.
+    sio = app.extensions.get("socketio")
+    if sio:
         try:
-            sys.path.insert(0, str(Path.home() / ".agent-hub"))
-            from hub import AgentHub
-            dashboard_hub = AgentHub("dashboard")
-            dashboard_hub.register(port=8877, capabilities=["web_ui", "api", "chat"])
+            sio.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 7777)))
         except Exception:
-            dashboard_hub = None
-
-        while True:
-            try:
-                sys.path.insert(0, str(SHELBY_ROOT_DIR))
-                from core.broadcast import get_unread_broadcasts, acknowledge_broadcast
-
-                for agent, data_dir in [
-                    ("garves", DATA_DIR),
-                    ("soren", SOREN_ROOT / "data"),
-                    ("lisa", MERCURY_ROOT / "data"),
-                ]:
-                    unread = get_unread_broadcasts(data_dir)
-                    for bc in unread:
-                        acknowledge_broadcast(agent, bc.get("id", ""), data_dir)
-            except Exception:
-                pass
-
-            # Send dashboard heartbeat
-            if dashboard_hub:
-                try:
-                    dashboard_hub.heartbeat(status="online", metrics={
-                        "port": 8877,
-                        "uptime": "active",
-                    })
-                except Exception:
-                    pass
-
-            # Thor auto-wake check (every 30s loop iteration)
-            try:
-                from bot.routes.thor import thor_auto_wake_check
-                thor_auto_wake_check()
-            except Exception:
-                pass
-
-            _time.sleep(30)
-
-    threading.Thread(target=_broadcast_processor, daemon=True, name="broadcast-ack").start()
-
-    # Auto-start Lisa auto-poster daemon
-    def _auto_start_lisa_poster():
-        try:
-            from mercury.core.auto_poster import AutoPoster
-            poster = AutoPoster()
-            if not poster.is_running():
-                poster.start()
-                print("[Dashboard] Lisa auto-poster daemon started")
-        except Exception as e:
-            print(f"[Dashboard] Lisa auto-poster start failed: {e}")
-
-    # Auto-start Lisa reply hunter
-    def _auto_start_reply_hunter():
-        try:
-            from mercury.core.reply_hunter import ReplyHunter
-            hunter = ReplyHunter()
-            if not hunter._thread or not hunter._thread.is_alive():
-                hunter.start(interval=1800)
-                print("[Dashboard] Lisa reply hunter started (30min cycle)")
-        except Exception as e:
-            print(f"[Dashboard] Lisa reply hunter start failed: {e}")
-
-    threading.Timer(2.0, _auto_start_atlas).start()
-    threading.Timer(5.0, _auto_start_lisa_poster).start()
-    threading.Timer(8.0, _auto_start_reply_hunter).start()
-    # threading.Timer(1.0, lambda: webbrowser.open("http://localhost:8877")).start()
-
-    if socketio:
-        print("[Dashboard] Running with Flask-SocketIO (WebSocket support)")
-        socketio.run(app, host="0.0.0.0", port=8877, debug=False, allow_unsafe_werkzeug=True)
+            log.exception("SocketIO run failed — falling back to Flask.run")
+            app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 7777)))
     else:
-        print("[Dashboard] Running without SocketIO (polling only)")
-        app.run(host="0.0.0.0", port=8877, debug=False, threaded=True)
+        app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 7777)))
