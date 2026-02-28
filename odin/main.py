@@ -75,6 +75,7 @@ HL_MAJORS = ["BTCUSDT", "ETHUSDT", "XRPUSDT", "SOLUSDT"]
 SCALP_ALLOWED = {
     "BTC", "ETH", "XRP", "SOL", "BNB", "ADA", "DOGE", "AVAX", "DOT", "LINK",
     "MATIC", "UNI", "LTC", "BCH", "NEAR", "APT", "OP", "ARB", "FIL", "SUI",
+    "TAO", "FET", "ZEC", "HYPE",
 }
 
 # CoinGlass detail slots (3 API calls each) — rotate the rest
