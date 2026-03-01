@@ -1,10 +1,10 @@
 var currentTab = 'overview';
 var _atlasBgCache = null;
 var _overviewCache = null;
-var AGENT_COLORS = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',sentinel:'#00ff44',thor:'#ff6600',hawk:'#FFD700',viper:'#00ff88',quant:'#00BFFF',odin:'#8B5CF6',oracle:'#F59E0B'};
-var AGENT_INITIALS = {garves:'GA',soren:'SO',shelby:'SH',atlas:'AT',lisa:'LI',sentinel:'RO',thor:'TH',hawk:'HK',viper:'VP',quant:'QT',odin:'OD',oracle:'OR'};
-var AGENT_ROLES = {garves:'Trading Bot',soren:'Content Creator',shelby:'Team Leader',atlas:'Data Scientist',lisa:'Social Media',sentinel:'Health Monitor',thor:'Coding Lieutenant',hawk:'Market Predator',viper:'Opportunity Hunter',quant:'Strategy Lab',odin:'Futures Trader',oracle:'Weekly Crypto Oracle'};
-var AGENT_NAMES = {garves:'Garves',soren:'Soren',shelby:'Shelby',atlas:'Atlas',lisa:'Lisa',sentinel:'Robotox',thor:'Thor',hawk:'Hawk',viper:'Viper',quant:'Quant',odin:'Odin',oracle:'Oracle'};
+var AGENT_COLORS = {garves:'#00d4ff',soren:'#cc66ff',shelby:'#ffaa00',atlas:'#22aa44',lisa:'#ff8800',sentinel:'#00ff44',thor:'#ff6600',hawk:'#FFD700',viper:'#00ff88',quant:'#00BFFF',odin:'#8B5CF6',oracle:'#F59E0B',arbiter:'#A855F7'};
+var AGENT_INITIALS = {garves:'GA',soren:'SO',shelby:'SH',atlas:'AT',lisa:'LI',sentinel:'RO',thor:'TH',hawk:'HK',viper:'VP',quant:'QT',odin:'OD',oracle:'OR',arbiter:'AB'};
+var AGENT_ROLES = {garves:'Trading Bot',soren:'Content Creator',shelby:'Team Leader',atlas:'Data Scientist',lisa:'Social Media',sentinel:'Health Monitor',thor:'Coding Lieutenant',hawk:'Market Predator',viper:'Opportunity Hunter',quant:'Strategy Lab',odin:'Futures Trader',oracle:'Weekly Crypto Oracle',arbiter:'Cross-Market Arb'};
+var AGENT_NAMES = {garves:'Garves',soren:'Soren',shelby:'Shelby',atlas:'Atlas',lisa:'Lisa',sentinel:'Robotox',thor:'Thor',hawk:'Hawk',viper:'Viper',quant:'Quant',odin:'Odin',oracle:'Oracle',arbiter:'Arbiter'};
 var AGENT_AVATARS = {soren:'/static/soren_profile.png'};
 
 function renderLossCapBar(containerId, dailyPnl, cap, period) {
@@ -4786,6 +4786,8 @@ async function refresh() {
       loadOdinTab();
     } else if (currentTab === 'oracle') {
       oracleRefresh();
+    } else if (currentTab === 'arbiter') {
+      arbiterRefresh();
     } else if (currentTab === 'discord') {
       if (typeof discordRefresh === 'function') discordRefresh();
     } else if (currentTab === 'intelligence') {
@@ -12611,4 +12613,131 @@ function loadWhaleFollower() {
       }
     })
     .catch(function() {});
+}
+
+// ── ARBITER TAB ──
+function arbiterRefresh() {
+  fetch('/api/arbiter').then(function(r){return r.json()}).then(function(d){
+    var el;
+    el = document.getElementById('ab-events-scanned');
+    if (el) el.textContent = d.events_scanned || 0;
+    el = document.getElementById('ab-arbs-found');
+    if (el) el.textContent = d.arbs_found_this_cycle || 0;
+    el = document.getElementById('ab-active-arbs');
+    if (el) el.textContent = d.active_arbs || 0;
+    el = document.getElementById('ab-total-pnl');
+    if (el) {
+      var pnl = d.total_pnl || 0;
+      el.textContent = '$' + pnl.toFixed(2);
+      el.style.color = pnl >= 0 ? '#10B981' : '#EF4444';
+    }
+    el = document.getElementById('ab-bankroll');
+    if (el) el.textContent = '$' + (d.bankroll || 100);
+    el = document.getElementById('ab-exposure');
+    if (el) el.textContent = '$' + (d.total_exposure || 0).toFixed(2);
+    el = document.getElementById('ab-min-dev');
+    if (el) el.textContent = (d.min_deviation_pct || 3.0).toFixed(1) + '%';
+    el = document.getElementById('ab-max-arb');
+    if (el) el.textContent = '$50';
+    el = document.getElementById('ab-resolved');
+    if (el) el.textContent = d.resolved || 0;
+    el = document.getElementById('ab-successful');
+    if (el) el.textContent = d.successful || 0;
+    el = document.getElementById('ab-cycle-num');
+    if (el) el.textContent = d.cycle || 0;
+    el = document.getElementById('ab-cycle-interval');
+    if (el) el.textContent = (d.cycle_minutes || 5) + 'min';
+    el = document.getElementById('ab-mode-badge');
+    if (el) {
+      var mode = d.mode || 'LIVE';
+      el.textContent = 'Mode: ' + mode;
+      el.className = 'trading-mode-badge ' + (mode === 'LIVE' ? 'trading-mode-live' : 'trading-mode-paper');
+    }
+    el = document.getElementById('ab-last-update');
+    if (el) el.textContent = d.last_update ? 'Updated ' + d.last_update : '';
+  }).catch(function(){});
+
+  // Active positions
+  fetch('/api/arbiter/positions').then(function(r){return r.json()}).then(function(d){
+    var arbs = d.arbs || [];
+    var el = document.getElementById('ab-pos-count');
+    if (el) el.textContent = arbs.length;
+    var tbl = document.getElementById('ab-positions-table');
+    if (!tbl) return;
+    if (arbs.length === 0) {
+      tbl.innerHTML = '<span class="text-muted">No active arbs</span>';
+      return;
+    }
+    var html = '<table class="mini-table" style="width:100%;"><thead><tr>'
+      + '<th>Event</th><th>Type</th><th>Legs</th><th>Dev%</th><th>Profit%</th><th>Status</th>'
+      + '</tr></thead><tbody>';
+    arbs.forEach(function(a){
+      html += '<tr>'
+        + '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (a.event_title || '').substring(0,60) + '</td>'
+        + '<td><span style="color:#A855F7;font-weight:600;">' + (a.arb_type || '').toUpperCase() + '</span></td>'
+        + '<td>' + (a.legs ? a.legs.length : 0) + '</td>'
+        + '<td>' + (a.deviation_pct || 0).toFixed(1) + '%</td>'
+        + '<td style="color:#10B981;font-weight:600;">' + (a.expected_profit_pct || 0).toFixed(1) + '%</td>'
+        + '<td>' + (a.status || 'unknown') + '</td>'
+        + '</tr>';
+    });
+    html += '</tbody></table>';
+    tbl.innerHTML = html;
+  }).catch(function(){});
+
+  // History
+  fetch('/api/arbiter/history').then(function(r){return r.json()}).then(function(d){
+    var trades = d.trades || [];
+    var el = document.getElementById('ab-hist-count');
+    if (el) el.textContent = d.total || 0;
+    var tbl = document.getElementById('ab-history-table');
+    if (!tbl) return;
+    if (trades.length === 0) {
+      tbl.innerHTML = '<span class="text-muted">No completed arbs yet</span>';
+      return;
+    }
+    var html = '<table class="mini-table" style="width:100%;"><thead><tr>'
+      + '<th>Event</th><th>Type</th><th>Dev%</th><th>P&L</th><th>Status</th>'
+      + '</tr></thead><tbody>';
+    trades.slice(-20).reverse().forEach(function(t){
+      var pnl = t.pnl || 0;
+      var pnlColor = pnl >= 0 ? '#10B981' : '#EF4444';
+      html += '<tr>'
+        + '<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (t.event_title || '').substring(0,60) + '</td>'
+        + '<td><span style="color:#A855F7;">' + (t.arb_type || '').toUpperCase() + '</span></td>'
+        + '<td>' + (t.deviation_pct || 0).toFixed(1) + '%</td>'
+        + '<td style="color:' + pnlColor + ';font-weight:600;">$' + pnl.toFixed(2) + '</td>'
+        + '<td>' + (t.status || '') + '</td>'
+        + '</tr>';
+    });
+    html += '</tbody></table>';
+    tbl.innerHTML = html;
+  }).catch(function(){});
+
+  // Orders log
+  fetch('/api/arbiter/orders').then(function(r){return r.json()}).then(function(d){
+    var orders = d.orders || [];
+    var tbl = document.getElementById('ab-orders-log');
+    if (!tbl) return;
+    if (orders.length === 0) {
+      tbl.innerHTML = '<span class="text-muted">No orders yet</span>';
+      return;
+    }
+    var html = '<table class="mini-table" style="width:100%;"><thead><tr>'
+      + '<th>Time</th><th>Event</th><th>Type</th><th>Legs</th><th>Status</th><th>Profit%</th>'
+      + '</tr></thead><tbody>';
+    orders.slice(-15).reverse().forEach(function(o){
+      var ts = o.timestamp ? new Date(o.timestamp * 1000).toLocaleTimeString() : '--';
+      html += '<tr>'
+        + '<td style="font-size:0.65rem;">' + ts + '</td>'
+        + '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (o.event_title || '').substring(0,50) + '</td>'
+        + '<td style="color:#A855F7;">' + (o.arb_type || '').toUpperCase() + '</td>'
+        + '<td>' + (o.legs || 0) + '</td>'
+        + '<td>' + (o.status || '') + '</td>'
+        + '<td>' + (o.expected_profit_pct || 0).toFixed(1) + '%</td>'
+        + '</tr>';
+    });
+    html += '</tbody></table>';
+    tbl.innerHTML = html;
+  }).catch(function(){});
 }

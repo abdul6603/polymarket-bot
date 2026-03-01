@@ -1,0 +1,91 @@
+<!-- ARBITER — Cross-Market Arbitrage Engine -->
+<div class="tab-content" id="tab-arbiter">
+
+  <!-- Header + Mode Badge -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+    <span id="ab-mode-badge" class="trading-mode-badge trading-mode-live">Mode: LIVE</span>
+    <span id="ab-cycle-timer" style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:0.82rem;font-weight:700;padding:6px 16px;border-radius:999px;border:1px solid rgba(168,85,247,0.35);background:rgba(168,85,247,0.12);color:#A855F7;margin-left:auto;">
+      <span style="width:8px;height:8px;border-radius:50%;background:#A855F7;animation:rxPulse 2s ease-in-out infinite;"></span>
+      Cycle: <span id="ab-cycle-num">0</span>
+      <span style="color:rgba(255,255,255,0.2);">|</span>
+      <span id="ab-cycle-interval" style="font-size:0.7rem;color:var(--text-muted);">5min</span>
+    </span>
+  </div>
+
+  <!-- Action Bar -->
+  <div class="agent-widget-row">
+    <button class="btn" onclick="arbiterRefresh()" style="font-size:0.72rem;font-weight:700;border-color:#A855F7;color:#A855F7;">Refresh</button>
+    <button class="btn" onclick="healthCheckAgent('arbiter')" style="font-size:0.72rem;">Health Check</button>
+    <span id="ab-last-update" class="text-muted" style="font-size:0.68rem;margin-left:auto;"></span>
+  </div>
+  <div class="health-inline" id="ab-health-result"></div>
+
+  <!-- Hero Cards -->
+  <div class="grid-4" style="margin-bottom:12px;">
+    <div class="stat-card" data-accent="custom" style="--accent-color:#A855F7;">
+      <div class="stat-value" id="ab-events-scanned" style="font-size:1.4rem;color:#A855F7;">0</div>
+      <div class="stat-label">Events Scanned</div>
+    </div>
+    <div class="stat-card" data-accent="custom" style="--accent-color:#A855F7;">
+      <div class="stat-value" id="ab-arbs-found" style="font-size:1.4rem;color:#A855F7;">0</div>
+      <div class="stat-label">Arbs Detected</div>
+    </div>
+    <div class="stat-card" data-accent="custom" style="--accent-color:#A855F7;">
+      <div class="stat-value" id="ab-active-arbs" style="font-size:1.4rem;color:#10B981;">0</div>
+      <div class="stat-label">Active Arbs</div>
+    </div>
+    <div class="stat-card" data-accent="custom" style="--accent-color:#A855F7;">
+      <div class="stat-value" id="ab-total-pnl" style="font-size:1.4rem;">$0.00</div>
+      <div class="stat-label">Total P&L</div>
+    </div>
+  </div>
+
+  <!-- Bankroll + Config -->
+  <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #A855F7;">
+    <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Configuration</h3>
+    <div class="grid-6" style="margin-bottom:0;">
+      <div class="stat-card"><div class="stat-value" id="ab-bankroll" style="font-size:0.9rem;color:#A855F7;">$100</div><div class="stat-label">Bankroll</div></div>
+      <div class="stat-card"><div class="stat-value" id="ab-exposure" style="font-size:0.9rem;">$0</div><div class="stat-label">Exposure</div></div>
+      <div class="stat-card"><div class="stat-value" id="ab-min-dev" style="font-size:0.9rem;">3.0%</div><div class="stat-label">Min Deviation</div></div>
+      <div class="stat-card"><div class="stat-value" id="ab-max-arb" style="font-size:0.9rem;">$50</div><div class="stat-label">Max/Arb</div></div>
+      <div class="stat-card"><div class="stat-value" id="ab-resolved" style="font-size:0.9rem;">0</div><div class="stat-label">Resolved</div></div>
+      <div class="stat-card"><div class="stat-value" id="ab-successful" style="font-size:0.9rem;">0</div><div class="stat-label">Successful</div></div>
+    </div>
+  </div>
+
+  <!-- Active Arb Positions -->
+  <div class="collapse-section default-open">
+    <div class="collapse-trigger">
+      <span class="collapse-icon"></span>
+      <span style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Active Arb Positions</span>
+      <span class="badge" id="ab-pos-count" style="background:rgba(168,85,247,0.15);color:#A855F7;margin-left:8px;">0</span>
+    </div>
+    <div class="collapse-body">
+      <div id="ab-positions-table" class="text-muted" style="font-size:0.75rem;">No active arbs</div>
+    </div>
+  </div>
+
+  <!-- Trade History -->
+  <div class="collapse-section">
+    <div class="collapse-trigger">
+      <span class="collapse-icon"></span>
+      <span style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Trade History</span>
+      <span class="badge" id="ab-hist-count" style="background:rgba(168,85,247,0.15);color:#A855F7;margin-left:8px;">0</span>
+    </div>
+    <div class="collapse-body">
+      <div id="ab-history-table" class="text-muted" style="font-size:0.75rem;">No completed arbs yet</div>
+    </div>
+  </div>
+
+  <!-- Recent Orders Log -->
+  <div class="collapse-section">
+    <div class="collapse-trigger">
+      <span class="collapse-icon"></span>
+      <span style="font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Order Log</span>
+    </div>
+    <div class="collapse-body">
+      <div id="ab-orders-log" class="text-muted" style="font-size:0.75rem;">No orders yet</div>
+    </div>
+  </div>
+
+</div>

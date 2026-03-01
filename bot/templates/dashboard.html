@@ -14,7 +14,7 @@
 <nav class="sidebar">
   <div class="sidebar-header">
     <div class="sidebar-brand-text">Command Center</div>
-    <div class="sidebar-online"><span class="dot-online"></span><span id="sidebar-agents-online">15</span> Agents Online</div>
+    <div class="sidebar-online"><span class="dot-online"></span><span id="sidebar-agents-online">16</span> Agents Online</div>
   </div>
 
   <div class="sidebar-scroll">
@@ -33,6 +33,7 @@
     <button class="sidebar-btn" data-tab="hawk" style="--accent:var(--agent-hawk);" onclick="switchTab('hawk')">Hawk</button>
     <button class="sidebar-btn" data-tab="oracle" style="--accent:var(--agent-oracle);" onclick="switchTab('oracle')">Oracle</button>
     <button class="sidebar-btn" data-tab="quant" style="--accent:var(--agent-quant);" onclick="switchTab('quant')">Quant</button>
+    <button class="sidebar-btn" data-tab="arbiter" style="--accent:#A855F7;" onclick="switchTab('arbiter')">Arbiter</button>
 
     <div class="sidebar-section-label">INTELLIGENCE</div>
     <button class="sidebar-btn" data-tab="discord" style="--accent:#5865F2;" onclick="switchTab('discord')">Discord</button>
@@ -63,7 +64,7 @@
   <header class="header">
     <div class="header-left">
       <h1 class="header-title">Command Center</h1>
-      <div class="header-subtitle"><span class="dot-online"></span> <span id="agents-online-count">15</span> Agents Online</div>
+      <div class="header-subtitle"><span class="dot-online"></span> <span id="agents-online-count">16</span> Agents Online</div>
     </div>
     <div class="header-right">Last update: <span id="last-update">--:--:--</span></div>
   </header>
@@ -86,6 +87,7 @@
   {% include 'tabs/discord.html' %}
   {% include 'tabs/system.html' %}
   {% include 'tabs/intelligence.html' %}
+  {% include 'tabs/arbiter.html' %}
   <!-- Video Modal -->
   <div class="video-modal" id="video-modal">
     <div class="video-modal-inner">
