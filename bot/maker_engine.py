@@ -1072,21 +1072,18 @@ class MakerEngine:
             # Update local inventory
             self._inv_mgr.update_from_fill(token_id, reduce_shares, exit_price, SELL)
         else:
-            # Live: BUY opposite token to hedge/exit
-            opp_token = self._opposite_token.get(token_id, "")
-            if not opp_token:
-                log.warning("[MAKER] No opposite token for %s, can't reduce", asset.upper())
-                return
+            # Live: SELL the tokens we hold to free USDC
+            fair = self._last_fair.get(token_id, 0.5)
+            sell_price = round(max(0.01, fair - 0.02), 2)  # 2c below fair for fast fill
             try:
-                args = OrderArgs(price=0.99, size=reduce_shares, side=BUY, token_id=opp_token)
+                args = OrderArgs(price=sell_price, size=reduce_shares, side=SELL, token_id=token_id)
                 signed = self.client.create_order(args)
                 self.client.post_order(signed, OrderType.GTC)
-                log.info("[MAKER] Exit: BUY opposite %.1f @ $0.99 for %s",
-                         reduce_shares, asset.upper())
-                # Update local inventory for the hedge
-                self._inv_mgr.update_from_fill(opp_token, reduce_shares, 0.99, BUY)
+                log.info("[MAKER] Exit: SELL %.1f @ $%.2f for %s (freeing ~$%.0f USDC)",
+                         reduce_shares, sell_price, asset.upper(), reduce_shares * sell_price)
+                self._inv_mgr.update_from_fill(token_id, reduce_shares, sell_price, SELL)
             except Exception as e:
-                log.warning("[MAKER] Reduce failed for %s: %s", asset.upper(), str(e)[:100])
+                log.warning("[MAKER] Reduce/sell failed for %s: %s", asset.upper(), str(e)[:100])
 
     def _flatten_inventory(self, up_token: str, down_token: str, asset: str) -> None:
         """Emergency flatten: cancel quotes + dump ALL inventory for a market."""
@@ -1227,6 +1224,11 @@ class MakerEngine:
 
             fair = self.compute_fair_value(asset, implied_price, remaining_s=remaining_s)
             if fair is None:
+                # Still track high-value positions for profit-taking
+                if implied_price is not None and implied_price >= 0.93:
+                    self._last_fair[up_token] = implied_price
+                    if down_token:
+                        self._last_fair[down_token] = 1.0 - implied_price
                 continue
 
             # Orderbook imbalance adjustment: shift fair value toward heavy side
