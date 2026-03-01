@@ -1,0 +1,1466 @@
+<!-- GARVES — 5m BTC Multi-Engine Trader -->
+<div class="tab-content" id="tab-garves-live">
+
+  <!-- Health Banner -->
+  <div id="garves-health-banner" style="display:none;margin-bottom:12px;padding:10px 16px;border-radius:8px;font-size:0.78rem;font-weight:600;"></div>
+  <div id="intel-garves" class="intel-meter" style="margin-bottom:12px;"></div>
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+    <h2 style="margin:0;font-size:1.1rem;font-weight:700;">Garves &mdash; 5m BTC Multi-Engine Trader</h2>
+    <span id="garves-mode-badge" class="trading-mode-badge trading-mode-live">Trading: Real Money</span>
+    <button class="trading-mode-toggle" id="garves-mode-toggle" onclick="toggleGarvesMode()" style="font-size:0.66rem;">Switch</button>
+    <span class="text-muted" style="font-size:0.72rem;"><span id="garves-bankroll-label">-- bankroll</span></span>
+    <button class="btn" onclick="garvesRefreshAll()" style="font-size:0.72rem;font-weight:700;border-color:#10B981;color:#10B981;margin-left:auto;">Refresh</button>
+    <span class="text-muted" style="font-size:0.68rem;">Updated: <span id="garves-updated">--</span></span>
+  </div>
+
+  <!-- Momentum Capture Mode -->
+  <div id="momentum-bar" style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:8px 14px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);">
+    <div id="momentum-pill" style="display:inline-flex;align-items:center;gap:6px;padding:4px 14px;border-radius:20px;font-size:0.74rem;font-weight:700;font-family:var(--font-mono);background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);transition:all 0.3s ease;">
+      <span id="momentum-dot" class="gep-dot" style="background:#6b7280;width:8px;height:8px;"></span>
+      <span id="momentum-label">Momentum: OFF</span>
+    </div>
+    <span id="momentum-countdown" style="font-size:0.68rem;color:var(--text-muted);font-family:var(--font-mono);"></span>
+    <div style="flex:1;"></div>
+    <button id="momentum-force-btn" class="btn" onclick="toggleMomentumForce()" style="font-size:0.64rem;font-weight:700;border-color:#f59e0b;color:#f59e0b;padding:3px 10px;">Force</button>
+    <button id="momentum-end-btn" class="btn" onclick="endMomentumMode()" style="display:none;font-size:0.64rem;font-weight:700;border-color:#ef4444;color:#ef4444;padding:3px 10px;">End Mode</button>
+  </div>
+
+  <!-- Status Pills -->
+  <div id="garves-widgets" style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+    <div class="garves-engine-pill"><span class="gep-dot" style="background:#6b7280;"></span> Maker <span id="maker-status-badge" style="font-size:0.58rem;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;margin-left:2px;">OFF</span></div>
+    <div class="garves-engine-pill"><span class="gep-dot" style="background:#6b7280;"></span> Whale <span id="whale-status-badge" style="font-size:0.58rem;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;margin-left:2px;">OFF</span> <span id="whale-tracked-count" style="font-size:0.56rem;color:var(--text-muted);margin-left:2px;">0 whales</span></div>
+    <div class="garves-engine-pill"><span class="gep-dot" style="background:#6b7280;"></span> Taker <span id="taker-status-badge" style="font-size:0.58rem;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;margin-left:2px;">OFF</span></div>
+    <div style="flex:1;"></div>
+    <!-- Binance WS -->
+    <div id="binance-pill-wrap" style="position:relative;">
+      <div id="binance-pill" onclick="toggleBinancePopover()" style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;cursor:pointer;font-size:0.72rem;font-weight:600;font-family:var(--font-mono);background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);transition:all 0.3s ease;user-select:none;">
+        <span id="binance-pill-dot" style="font-size:0.8rem;">&#x26AB;</span>
+        <span id="binance-pill-label">Binance</span>
+        <span id="binance-pill-age" style="font-size:0.62rem;color:var(--text-muted);"></span>
+      </div>
+      <div id="binance-popover" style="display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:100;background:var(--bg-secondary);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:14px 18px;min-width:260px;box-shadow:0 8px 32px rgba(0,0,0,0.4);font-size:0.72rem;">
+        <div style="font-weight:700;margin-bottom:8px;font-size:0.76rem;">Binance WebSocket</div>
+        <div id="binance-pop-status" style="margin-bottom:4px;"></div>
+        <div id="binance-pop-reconnects" style="color:var(--text-muted);margin-bottom:4px;"></div>
+        <div id="binance-pop-stream" style="color:var(--text-muted);margin-bottom:4px;"></div>
+        <div id="binance-pop-silence" style="color:var(--text-muted);margin-bottom:4px;"></div>
+      </div>
+    </div>
+    <!-- CLOB -->
+    <div id="clob-pill-wrap" style="position:relative;">
+      <div id="clob-pill" onclick="toggleClobPopover()" style="display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;cursor:pointer;font-size:0.72rem;font-weight:600;font-family:var(--font-mono);background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);transition:all 0.3s ease;user-select:none;">
+        <span id="clob-pill-dot" style="font-size:0.8rem;">&#x26AB;</span>
+        <span id="clob-pill-label">CLOB</span>
+        <span id="clob-pill-age" style="font-size:0.62rem;color:var(--text-muted);"></span>
+      </div>
+      <div id="clob-popover" style="display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:100;background:var(--bg-secondary);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:14px 18px;min-width:260px;box-shadow:0 8px 32px rgba(0,0,0,0.4);font-size:0.72rem;">
+        <div style="font-weight:700;margin-bottom:8px;font-size:0.76rem;">CLOB WebSocket</div>
+        <div id="clob-pop-status" style="margin-bottom:4px;"></div>
+        <div id="clob-pop-detail" style="color:var(--text-muted);margin-bottom:4px;"></div>
+        <div id="clob-pop-reconnects" style="color:var(--text-muted);margin-bottom:4px;"></div>
+        <div id="clob-pop-proactive" style="color:var(--text-muted);margin-bottom:4px;"></div>
+        <div id="clob-pop-uptime" style="color:var(--text-muted);margin-bottom:4px;"></div>
+        <div id="clob-pop-silence" style="color:var(--text-muted);margin-bottom:10px;"></div>
+        <button onclick="forceReconnectClob()" style="width:100%;padding:6px 0;border:none;border-radius:6px;cursor:pointer;background:rgba(239,68,68,0.15);color:#ef4444;font-weight:600;font-size:0.72rem;transition:background 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.3)'" onmouseout="this.style.background='rgba(239,68,68,0.15)'">Force Reconnect</button>
+      </div>
+    </div>
+    <!-- Signal Cycle -->
+    <span id="signal-cycle-pill" style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:0.82rem;font-weight:700;padding:6px 16px;border-radius:999px;border:1px solid rgba(139,92,246,0.35);background:rgba(139,92,246,0.12);color:#8b5cf6;transition:box-shadow .3s;cursor:default;position:relative;" onmouseenter="document.getElementById('signal-cycle-tooltip').style.display='block'" onmouseleave="document.getElementById('signal-cycle-tooltip').style.display='none'">
+      <span style="width:8px;height:8px;border-radius:50%;background:#8b5cf6;animation:rxPulse 2s ease-in-out infinite;"></span>
+      Next: <span id="signal-cycle-countdown" style="min-width:38px;text-align:center;">--</span>
+      <span style="color:rgba(255,255,255,0.2);">|</span>
+      <span style="font-size:0.7rem;color:var(--text-muted);">#<span id="signal-cycle-num">0</span></span>
+      <span style="color:rgba(255,255,255,0.2);">|</span>
+      <span id="signal-cycle-markets" style="font-size:0.7rem;color:var(--text-muted);">-- mkts</span>
+      <div id="signal-cycle-tooltip" style="display:none;position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);z-index:100;background:var(--bg-secondary);border:1px solid rgba(139,92,246,0.3);border-radius:8px;padding:10px 14px;min-width:220px;box-shadow:0 8px 32px rgba(0,0,0,0.4);font-size:0.68rem;text-align:left;font-weight:400;white-space:normal;">
+        <div style="font-weight:700;margin-bottom:6px;color:#c4b5fd;">Signal Pipeline</div>
+        <div style="color:var(--text-muted);line-height:1.5;">20+ indicators per market: regime, momentum, sentiment, volume, derivatives, on-chain, correlation &amp; consensus scoring.</div>
+        <div id="signal-cycle-detail" style="margin-top:6px;color:var(--text-muted);"></div>
+      </div>
+    </span>
+    <span id="signal-cycle-dot" style="display:none;"></span>
+    <span id="signal-cycle-timer" style="display:none;"></span>
+  </div>
+
+  <!-- Learning + Health -->
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+    <div class="widget-badge" id="garves-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
+    <button class="btn" onclick="healthCheckAgent('garves')" style="font-size:0.72rem;">Health Check</button>
+  </div>
+  <div class="health-inline" id="garves-health-result"></div>
+
+  <!-- Hero Metrics -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;">
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">P&amp;L</div>
+      <div id="garves-hero-today-pnl" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">--</div>
+      <div style="font-size:0.6rem;color:var(--text-muted);">today</div>
+      <div style="font-size:0.6rem;color:var(--text-muted);margin-top:2px;">Total: <span id="garves-hero-total-pnl" style="font-family:var(--font-mono);">--</span></div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Win Rate (L20)</div>
+      <div id="garves-hero-wr-20" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">--</div>
+      <div style="font-size:0.6rem;color:var(--text-muted);">L50: <span id="garves-hero-wr-50" style="font-family:var(--font-mono);">--</span> &nbsp; L100: <span id="garves-hero-wr-100" style="font-family:var(--font-mono);">--</span></div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Active Exposure</div>
+      <div id="garves-hero-exposure" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">--</div>
+      <div style="font-size:0.6rem;color:var(--text-muted);">Util: <span id="garves-hero-util-pct" style="font-family:var(--font-mono);">--</span></div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">EV Capture</div>
+      <div id="garves-hero-ev-capture" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">--</div>
+      <div style="font-size:0.6rem;color:var(--text-muted);">Edge: <span id="garves-hero-edge-quality" style="font-family:var(--font-mono);">--</span></div>
+    </div>
+  </div>
+
+  <!-- Sub-tab Navigation -->
+  <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+    <button class="garves-subtab active" data-sub="overview" onclick="garvesSwitchSub('overview')">Overview</button>
+    <button class="garves-subtab" data-sub="engines" onclick="garvesSwitchSub('engines')">Engines Comparison</button>
+    <button class="garves-subtab" data-sub="positions" onclick="garvesSwitchSub('positions')">Open Positions</button>
+    <button class="garves-subtab" data-sub="history" onclick="garvesSwitchSub('history')">Trade History</button>
+    <button class="garves-subtab" data-sub="performance" onclick="garvesSwitchSub('performance')">Performance Insights</button>
+    <button class="garves-subtab" data-sub="intelligence" onclick="garvesSwitchSub('intelligence')">Intelligence &amp; Self-Improvement</button>
+  </div>
+
+  <!-- ═══ OVERVIEW PANEL ═══ -->
+  <div class="garves-panel" id="garves-panel-overview">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;">
+      <div class="glass-card" style="border-left:3px solid #8b5cf6;padding:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-weight:700;font-size:0.78rem;">Market Making</span>
+          <span id="ov-maker-status" style="font-size:0.6rem;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;">OFF</span>
+        </div>
+        <div style="font-size:1.1rem;font-weight:800;font-family:var(--font-mono);" id="ov-maker-pnl">$0.00</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);">Session P&amp;L</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);margin-top:4px;" id="ov-maker-fills">0 fills</div>
+      </div>
+      <div class="glass-card" style="border-left:3px solid #FFD700;padding:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-weight:700;font-size:0.78rem;">Whale Follower</span>
+          <span id="ov-whale-status" style="font-size:0.6rem;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;">OFF</span>
+        </div>
+        <div style="font-size:1.1rem;font-weight:800;font-family:var(--font-mono);" id="ov-whale-wr">--</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);">Win Rate</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);margin-top:4px;" id="ov-whale-count">0 whales tracked</div>
+      </div>
+      <div class="glass-card" style="border-left:3px solid #06b6d4;padding:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-weight:700;font-size:0.78rem;">Taker Engine</span>
+          <span id="ov-taker-status" style="font-size:0.6rem;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;">OFF</span>
+        </div>
+        <div style="font-size:1.1rem;font-weight:800;font-family:var(--font-mono);" id="ov-taker-wr">--</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);">Win Rate</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);margin-top:4px;" id="ov-taker-trades">0 trades</div>
+      </div>
+    </div>
+    <div class="glass-card" style="margin-bottom:14px;border-left:3px solid var(--agent-garves);">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px;">Agent Activity</div>
+      <div id="garves-activity-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:150px;overflow-y:auto;"><span class="text-muted">Waiting for activity...</span></div>
+    </div>
+    <div class="glass-card" style="margin-bottom:14px;">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px;">Today's Mistake Analysis</div>
+      <div id="daily-mistakes" style="font-size:0.72rem;"><span class="text-muted">Loading analysis...</span></div>
+    </div>
+    <div class="glass-card">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px;">Live Log</div>
+      <div class="log-feed" id="live-log-feed"><div class="log-line"><span class="log-time">--:--:--</span><span class="log-msg">Waiting for log data...</span></div></div>
+    </div>
+  </div>
+
+  <!-- ═══ ENGINES COMPARISON PANEL ═══ -->
+  <div class="garves-panel" id="garves-panel-engines" style="display:none;">
+    <div class="glass-card" style="padding:14px 18px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <div style="font-weight:700;font-size:0.82rem;">Engine Performance Comparison</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="engine-comp-mode" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;font-weight:600;"></span>
+          <span id="engine-comp-bankroll" style="font-size:0.68rem;color:var(--text-muted);font-family:var(--font-mono);"></span>
+        </div>
+      </div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.88rem;font-family:var(--font-mono);">
+          <thead>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.1);color:var(--text-muted);text-align:left;">
+              <th style="padding:8px 12px;">Engine</th><th style="padding:8px 10px;text-align:center;">Alloc</th><th style="padding:8px 10px;text-align:center;">Trades</th><th style="padding:8px 10px;text-align:center;">W</th><th style="padding:8px 10px;text-align:center;">L</th><th style="padding:8px 10px;text-align:center;">WR%</th><th style="padding:8px 10px;text-align:right;">PnL</th><th style="padding:8px 10px;text-align:right;">Avg Size</th><th style="padding:8px 10px;text-align:center;">Status</th>
+            </tr>
+          </thead>
+          <tbody id="engine-comp-body"></tbody>
+          <tfoot><tr id="engine-comp-totals" style="border-top:2px solid rgba(255,255,255,0.15);font-weight:700;"></tr></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Engine Selector -->
+    <div style="display:flex;gap:6px;margin-bottom:14px;">
+      <button class="garves-engine-tab active" data-engine="maker" onclick="garvesSelectEngine('maker')">Market Making</button>
+      <button class="garves-engine-tab" data-engine="whale" onclick="garvesSelectEngine('whale')">Smart Money</button>
+      <button class="garves-engine-tab" data-engine="taker" onclick="garvesSelectEngine('taker')">Taker Engine</button>
+      <button class="garves-engine-tab" data-engine="killshot" onclick="garvesSelectEngine('killshot')">Killshot</button>
+    </div>
+
+    <!-- Snipe Engine + Resolution Scalper removed (deprecated Feb 27 2026) -->
+
+    <!-- MARKET MAKING ENGINE -->
+    <div class="garves-engine-panel" id="garves-engine-maker">
+      <div class="gv-engine-header">
+        <div>
+          <div class="gv-engine-header-title">Market Making Engine</div>
+          <div class="gv-engine-subtitle">Passive liquidity provision &bull; Spread capture</div>
+        </div>
+        <span id="maker-engine-status-badge" class="gv-mode-badge off">OFF</span>
+      </div>
+
+      <div class="gv-metrics">
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(34,197,94,0.12);color:#22c55e;">$</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="maker-session-pnl">$0.00</div>
+            <div class="gv-metric-lbl">Session P&amp;L</div>
+          </div>
+        </div>
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(139,92,246,0.12);color:#8b5cf6;">&harr;</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="maker-spread-captured">$0.00</div>
+            <div class="gv-metric-lbl">Spread Captured</div>
+          </div>
+        </div>
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(239,68,68,0.12);color:#ef4444;">&times;</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="maker-resolution-losses">$0.00</div>
+            <div class="gv-metric-lbl">Res. Losses</div>
+          </div>
+        </div>
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(234,179,8,0.12);color:#eab308;">&olarr;</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="maker-fills-today">0</div>
+            <div class="gv-metric-lbl">Fills Today</div>
+            <div class="gv-metric-sub" id="maker-rebate-label"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Exposure Heat Bar -->
+      <div class="glass-card" style="padding:10px 14px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div class="gv-section-title" style="margin-bottom:0;">Exposure</div>
+          <span id="maker-exposure-label" class="gv-exposure-label">0%</span>
+        </div>
+        <div class="gv-exposure-bar">
+          <div id="maker-exposure-fill" class="gv-exposure-fill" style="width:0%;background:var(--success);"></div>
+        </div>
+        <div id="maker-warnings-card" style="display:none;margin-top:8px;">
+          <div id="maker-warnings-list" style="font-family:var(--font-mono);font-size:0.68rem;color:#ef4444;"></div>
+        </div>
+      </div>
+
+      <!-- Inventory Grid -->
+      <div class="glass-card" style="padding:10px 14px;margin-bottom:14px;">
+        <div class="gv-section-title" style="margin-bottom:10px;">Inventory</div>
+        <div id="maker-inventory-grid" class="gv-inventory-grid">
+          <div style="text-align:center;color:var(--text-muted);font-size:0.72rem;grid-column:1/-1;">No inventory</div>
+        </div>
+        <table class="data-table" style="display:none;"><thead><tr><th>Asset</th><th>Direction</th><th>Shares</th><th>Fills</th><th>TTR</th><th>Risk</th></tr></thead>
+        <tbody id="maker-inventory-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">No inventory</td></tr></tbody></table>
+      </div>
+
+      <!-- Active Quotes -->
+      <div class="glass-card" style="margin-bottom:14px;padding:10px 14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div class="gv-section-title" style="margin-bottom:0;">Active Quotes</div>
+          <span id="maker-quote-count" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(0,212,255,0.1);color:var(--agent-garves);font-weight:600;">0</span>
+        </div>
+        <table class="data-table"><thead><tr><th>Asset</th><th>Side</th><th>Price</th><th>Size</th><th>Age</th></tr></thead>
+        <tbody id="maker-quotes-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;">No active quotes</td></tr></tbody></table>
+      </div>
+
+      <!-- Recent Fills -->
+      <div class="glass-card" style="padding:10px 14px;">
+        <div class="gv-section-title" style="margin-bottom:8px;">Recent Fills</div>
+        <table class="data-table"><thead><tr><th>Time</th><th>Asset</th><th>Side</th><th>Price</th><th>Fair</th><th>Spread</th></tr></thead>
+        <tbody id="maker-fills-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">No fills yet</td></tr></tbody></table>
+      </div>
+      <div style="margin-top:8px;font-size:0.62rem;color:var(--text-muted);font-family:var(--font-mono);" id="maker-config-label"></div>
+    </div>
+
+    <!-- SMART MONEY TRACKER ENGINE -->
+    <div class="garves-engine-panel" id="garves-whale-section" style="display:none;">
+      <div class="gv-engine-header" style="border-bottom-color:rgba(255,215,0,0.15);">
+        <div>
+          <div class="gv-engine-header-title">Smart Money Tracker</div>
+          <div class="gv-engine-subtitle">Whale wallet monitoring &bull; Copy trade signals</div>
+        </div>
+        <span id="whale-engine-count-badge" style="font-family:var(--font-mono);font-size:0.68rem;color:#FFD700;font-weight:600;">0 whales</span>
+      </div>
+
+      <div class="gv-metrics">
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(255,215,0,0.12);color:#FFD700;">&#128051;</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="whale-tracked-wallets">0</div>
+            <div class="gv-metric-lbl">Tracked</div>
+          </div>
+        </div>
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(139,92,246,0.12);color:#8b5cf6;">&#128203;</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="whale-copy-count">0</div>
+            <div class="gv-metric-lbl">Copies</div>
+          </div>
+        </div>
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(34,197,94,0.12);color:#22c55e;">%</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="whale-win-rate">--</div>
+            <div class="gv-metric-lbl">Win Rate</div>
+          </div>
+        </div>
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(239,68,68,0.12);color:#ef4444;">$</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="whale-total-pnl">$0.00</div>
+            <div class="gv-metric-lbl">Copy P&amp;L</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Tracked Whales -->
+      <div class="glass-card" style="margin-bottom:14px;padding:10px 14px;">
+        <div class="gv-section-title gold" style="margin-bottom:8px;">Top Tracked Whales</div>
+        <table class="data-table"><thead><tr><th>#</th><th>Wallet</th><th>Username</th><th>Score</th><th>Trades</th><th>WR%</th><th>P&amp;L</th></tr></thead>
+        <tbody id="whale-wallets-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;">No tracked whales</td></tr></tbody></table>
+        <table style="display:none;"><tbody id="whale-top-wallets-body"></tbody></table>
+      </div>
+
+      <!-- Active Signals -->
+      <div class="gv-signals-wrap">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div class="gv-section-title gold" style="margin-bottom:0;">Active Signals</div>
+          <span id="whale-signal-count" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(255,215,0,0.12);color:#FFD700;font-weight:600;">0</span>
+        </div>
+        <div id="whale-signals-list" style="font-family:var(--font-mono);font-size:0.72rem;"><span class="text-muted">No active signals</span></div>
+      </div>
+
+      <!-- Recent Copy Trades -->
+      <div class="glass-card" style="margin-bottom:14px;padding:10px 14px;">
+        <div class="gv-section-title gold" style="margin-bottom:8px;">Recent Copy Trades</div>
+        <table class="data-table"><thead><tr><th>Time</th><th>Whale</th><th>Market</th><th>Dir</th><th>Size</th><th>Status</th><th>P&amp;L</th></tr></thead>
+        <tbody id="whale-trades-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;">No copy trades</td></tr></tbody></table>
+      </div>
+
+      <!-- Backtest Status -->
+      <div class="glass-card" style="padding:10px 14px;">
+        <div style="display:flex;align-items:center;gap:12px;font-size:0.72rem;">
+          <span style="font-weight:600;">Backtest:</span> <span id="whale-backtest-status">--</span>
+          <span class="dot-sep" style="width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,0.15);"></span>
+          <span>Signals: <span id="whale-signals-count" style="font-weight:600;">0</span></span>
+          <span class="dot-sep" style="width:3px;height:3px;border-radius:50%;background:rgba(255,255,255,0.15);"></span>
+          <span>Cycles: <span id="whale-ticks" style="font-weight:600;">0</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAKER ENGINE -->
+    <div class="garves-engine-panel" id="garves-engine-taker" style="display:none;">
+      <div style="font-weight:700;font-size:0.82rem;margin-bottom:12px;">Taker Engine</div>
+      <div class="grid-4" style="margin-bottom:12px;">
+        <div class="stat-card" style="border-left:3px solid #06b6d4;"><div class="stat-value" id="taker-trades" style="font-size:1.3rem;">0</div><div class="stat-label">Trades</div></div>
+        <div class="stat-card" style="border-left:3px solid #22c55e;"><div class="stat-value" id="taker-wr" style="font-size:1.3rem;">--</div><div class="stat-label">Win Rate</div></div>
+        <div class="stat-card" style="border-left:3px solid #8b5cf6;"><div class="stat-value" id="taker-pnl" style="font-size:1.3rem;">$0.00</div><div class="stat-label">PnL</div></div>
+        <div class="stat-card" style="border-left:3px solid #eab308;"><div class="stat-value" id="taker-alloc" style="font-size:1.3rem;">15%</div><div class="stat-label">Allocation</div></div>
+      </div>
+      <div class="glass-card" style="padding:10px 14px;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-bottom:6px;">Recent Taker Trades</div>
+        <table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Direction</th><th>Size</th><th>Edge</th><th>Result</th><th>PnL</th></tr></thead>
+        <tbody id="taker-trades-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;">No taker trades yet</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- KILLSHOT ENGINE -->
+    <div class="garves-engine-panel" id="garves-engine-killshot" style="display:none;">
+      <div class="gv-engine-header" style="border-bottom-color:rgba(239,68,68,0.15);">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="width:8px;height:8px;border-radius:50;background:#ef4444;display:inline-block;animation:pulse-glow 2s ease-in-out infinite;"></span>
+            <span class="gv-engine-header-title">Killshot</span>
+            <span id="killshot-engine-mode" class="gv-mode-badge dry">PAPER</span>
+          </div>
+          <div class="gv-engine-subtitle">Late-Window Maker Snipe &bull; Final 60s of 5m Windows</div>
+        </div>
+      </div>
+
+      <div class="gv-metrics">
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(239,68,68,0.12);color:#ef4444;">#</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="ks-trades">0</div>
+            <div class="gv-metric-lbl">Paper Trades</div>
+          </div>
+        </div>
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(34,197,94,0.12);color:#22c55e;">%</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="ks-wr">--</div>
+            <div class="gv-metric-lbl">Win Rate</div>
+          </div>
+        </div>
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(139,92,246,0.12);color:#8b5cf6;">$</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="ks-pnl">$0.00</div>
+            <div class="gv-metric-lbl">Paper P&amp;L</div>
+          </div>
+        </div>
+        <div class="gv-metric-card">
+          <div class="gv-metric-icon" style="background:rgba(234,179,8,0.12);color:#eab308;">&#9678;</div>
+          <div class="gv-metric-body">
+            <div class="gv-metric-val" id="ks-avg-entry">--</div>
+            <div class="gv-metric-lbl">Avg Entry</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Strategy Summary -->
+      <div class="glass-card" style="padding:10px 14px;margin-bottom:14px;">
+        <div class="gv-section-title" style="margin-bottom:8px;color:#ef4444;">Strategy</div>
+        <div style="font-size:0.72rem;color:var(--text-secondary);line-height:1.6;">
+          Monitors Binance spot price during 5m windows. In the final 60 seconds, if the price has moved
+          significantly from the open (direction &ldquo;locked&rdquo;), simulates posting a <strong>maker limit order</strong>
+          on the winning side at 82-93&cent;. Zero maker fees + rebates. Holds to resolution.
+        </div>
+        <div class="gv-thresholds-bar" style="margin-top:10px;">
+          <div class="gv-threshold-item">Bankroll: <span id="ks-cfg-bankroll">$50</span></div>
+          <div class="dot-sep"></div>
+          <div class="gv-threshold-item">Max Bet: <span id="ks-cfg-maxbet">$5</span></div>
+          <div class="dot-sep"></div>
+          <div class="gv-threshold-item">Threshold: <span id="ks-cfg-threshold">0.05%</span></div>
+          <div class="dot-sep"></div>
+          <div class="gv-threshold-item">Entry: <span id="ks-cfg-entry">82-93&cent;</span></div>
+          <div class="dot-sep"></div>
+          <div class="gv-threshold-item">Kill Zone: <span id="ks-cfg-killzone">T-60s</span></div>
+        </div>
+      </div>
+
+      <!-- Session Stats -->
+      <div class="glass-card" style="padding:10px 14px;margin-bottom:14px;">
+        <div class="gv-section-title" style="margin-bottom:8px;color:#ef4444;">Session Stats</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+          <div><div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;">Session Trades</div><div id="ks-session-trades" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">0</div></div>
+          <div><div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;">Session Wins</div><div id="ks-session-wins" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);color:#22c55e;">0</div></div>
+          <div><div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;">Session P&amp;L</div><div id="ks-session-pnl" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">$0.00</div></div>
+          <div><div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;">Daily Loss</div><div id="ks-daily-loss" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);color:#ef4444;">$0.00</div></div>
+        </div>
+      </div>
+
+      <!-- Pending Trades -->
+      <div class="glass-card" style="padding:10px 14px;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <div class="gv-section-title" style="margin-bottom:0;color:#ef4444;">Pending Trades</div>
+          <span id="ks-pending-count" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(239,68,68,0.1);color:#ef4444;font-weight:600;">0</span>
+        </div>
+        <table class="data-table"><thead><tr><th>Asset</th><th>Dir</th><th>Entry</th><th>Size</th><th>Remaining</th></tr></thead>
+        <tbody id="ks-pending-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;">No pending trades</td></tr></tbody></table>
+      </div>
+
+      <!-- Recent Paper Trades -->
+      <div class="glass-card" style="padding:10px 14px;">
+        <div class="gv-section-title" style="margin-bottom:8px;color:#ef4444;">Paper Trade History</div>
+        <table class="data-table"><thead><tr><th>Time</th><th>Asset</th><th>Dir</th><th>Entry</th><th>Size</th><th>Delta%</th><th>Result</th><th>P&amp;L</th></tr></thead>
+        <tbody id="ks-trades-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;">No paper trades yet</td></tr></tbody></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ OPEN POSITIONS PANEL ═══ -->
+  <div class="garves-panel" id="garves-panel-positions" style="display:none;">
+    <div class="gv-engine-header">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="gv-engine-header-title" style="font-size:0.92rem;">Open Positions</span>
+        <span id="positions-live-dot" style="width:8px;height:8px;border-radius:50%;background:#555;display:inline-block;animation:pulse-glow 2s ease-in-out infinite;"></span>
+        <span style="font-size:0.64rem;color:var(--success);font-weight:600;">LIVE</span>
+      </div>
+    </div>
+
+    <!-- Holdings Table -->
+    <div class="glass-card" style="margin-bottom:14px;overflow-x:auto;padding:0;">
+      <table class="data-table"><thead><tr><th>Engine</th><th>Asset</th><th>Market</th><th>Bet</th><th>Shares</th><th>Entry</th><th>Now</th><th>Margin</th><th>Value</th><th>Resolves</th><th>P&amp;L</th><th>Payout</th><th>Return</th></tr></thead>
+      <tbody id="oc-holdings-tbody"><tr><td colspan="13" class="text-muted" style="text-align:center;padding:16px;">No open positions</td></tr></tbody></table>
+    </div>
+
+    <!-- Portfolio Allocation -->
+    <div id="portfolio-alloc-card" class="glass-card" style="padding:12px 16px;margin-bottom:14px;border-left:3px solid #8b5cf6;display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div class="gv-section-title" style="margin-bottom:0;">Portfolio Allocation</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span id="pa-wallet-age" style="font-size:0.62rem;color:var(--text-muted);"></span>
+          <span id="pa-total-util" style="font-size:0.68rem;font-weight:700;font-family:var(--font-mono);padding:2px 8px;border-radius:10px;background:rgba(0,212,255,0.1);color:var(--agent-garves);">0%</span>
+        </div>
+      </div>
+      <div class="gv-metrics" style="grid-template-columns:repeat(3,1fr);margin-bottom:10px;">
+        <div class="gv-metric-card" style="padding:10px;justify-content:center;">
+          <div class="gv-metric-body" style="text-align:center;">
+            <div class="gv-metric-val" id="pa-deployable" style="font-size:1rem;">--</div>
+            <div class="gv-metric-lbl">Deployable</div>
+          </div>
+        </div>
+        <div class="gv-metric-card" style="padding:10px;justify-content:center;">
+          <div class="gv-metric-body" style="text-align:center;">
+            <div class="gv-metric-val" id="pa-total-exposure" style="font-size:1rem;">--</div>
+            <div class="gv-metric-lbl">Total Exposure</div>
+          </div>
+        </div>
+        <div class="gv-metric-card" style="padding:10px;justify-content:center;">
+          <div class="gv-metric-body" style="text-align:center;">
+            <div class="gv-metric-val" id="pa-reserve" style="font-size:1rem;color:var(--warning);">--</div>
+            <div class="gv-metric-lbl">Reserve (20%)</div>
+          </div>
+        </div>
+      </div>
+      <div id="pa-agent-bars" style="display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+
+    <!-- Portfolio Summary -->
+    <div class="gv-metrics" style="grid-template-columns:repeat(3,1fr);">
+      <div class="gv-metric-card">
+        <div class="gv-metric-icon" style="background:rgba(0,255,136,0.12);color:var(--success);">&#9650;</div>
+        <div class="gv-metric-body">
+          <div class="gv-metric-val" id="live-portfolio" style="font-size:1.4rem;">--</div>
+          <div class="gv-metric-lbl">Portfolio</div>
+        </div>
+      </div>
+      <div class="gv-metric-card">
+        <div class="gv-metric-icon" style="background:rgba(0,212,255,0.12);color:var(--agent-garves);">&#9670;</div>
+        <div class="gv-metric-body">
+          <div class="gv-metric-val" id="live-cash" style="font-size:1.4rem;">--</div>
+          <div class="gv-metric-lbl">Cash</div>
+        </div>
+      </div>
+      <div class="gv-metric-card">
+        <div class="gv-metric-icon" style="background:rgba(255,170,0,0.12);color:var(--warning);">&#9660;</div>
+        <div class="gv-metric-body">
+          <div class="gv-metric-val" id="live-real-pnl" style="font-size:1.4rem;">--</div>
+          <div class="gv-metric-lbl">Real PnL</div>
+          <div id="garves-loss-cap-bar" style="margin-top:6px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ TRADE HISTORY PANEL ═══ -->
+  <div class="garves-panel" id="garves-panel-history" style="display:none;">
+    <!-- Filter Bar -->
+    <div class="gv-filter-bar">
+      <span class="gv-engine-header-title" style="font-size:0.92rem;">Trade History</span>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+        <select id="garves-hist-engine" onchange="garvesFilterHistory()" class="gv-filter-select">
+          <option value="all">All Engines</option>
+          <option value="maker">Maker</option>
+          <option value="whale">Whale</option>
+          <option value="taker">Taker</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="gv-metrics" style="grid-template-columns:repeat(6,1fr);margin-bottom:14px;">
+      <div class="gv-metric-card" style="padding:12px;">
+        <div class="gv-metric-body">
+          <div class="gv-metric-val" id="live-winrate" style="font-size:1.2rem;">--</div>
+          <div class="gv-metric-lbl">Win Rate</div>
+        </div>
+      </div>
+      <div class="gv-metric-card" style="padding:12px;">
+        <div class="gv-metric-body">
+          <div class="gv-metric-val" id="live-pnl" style="font-size:1.2rem;">--</div>
+          <div class="gv-metric-lbl">Trade P&amp;L</div>
+        </div>
+      </div>
+      <div class="gv-metric-card" style="padding:12px;">
+        <div class="gv-metric-body">
+          <div class="gv-metric-val" id="live-wins-losses" style="font-size:1.2rem;">--</div>
+          <div class="gv-metric-lbl">W / L</div>
+        </div>
+      </div>
+      <div class="gv-metric-card" style="padding:12px;">
+        <div class="gv-metric-body">
+          <div class="gv-metric-val" id="live-total" style="font-size:1.2rem;">--</div>
+          <div class="gv-metric-lbl">Total</div>
+        </div>
+      </div>
+      <div class="gv-metric-card" style="padding:12px;">
+        <div class="gv-metric-body">
+          <div class="gv-metric-val" id="live-resolved" style="font-size:1.2rem;">--</div>
+          <div class="gv-metric-lbl">Resolved</div>
+        </div>
+      </div>
+      <div class="gv-metric-card" style="padding:12px;">
+        <div class="gv-metric-body">
+          <div class="gv-metric-val" id="live-pending" style="font-size:1.2rem;">--</div>
+          <div class="gv-metric-lbl">Pending</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="grid-2" style="margin-bottom:14px;">
+      <div class="glass-card"><h3 class="gv-section-title" style="font-size:0.72rem;margin-bottom:8px;">Equity Curve</h3><div class="chart-container chart-sm"><canvas id="garves-pnl-chart"></canvas></div></div>
+      <div class="glass-card"><h3 class="gv-section-title" style="font-size:0.72rem;margin-bottom:8px;">Win Rate</h3><div class="chart-container chart-sm"><canvas id="garves-wr-donut"></canvas></div></div>
+    </div>
+    <div id="garves-regime-badge" style="margin-bottom:14px;"><span class="badge badge-info">Regime: --</span></div>
+
+    <!-- Trade History Table -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <div class="gv-section-title" style="margin-bottom:0;">Trade History</div>
+      <span id="oc-record" class="text-muted" style="font-size:0.72rem;">--</span>
+      <span id="oc-realized-pnl" class="text-muted" style="font-size:0.72rem;margin-left:auto;">--</span>
+    </div>
+    <div class="glass-card" style="margin-bottom:14px;overflow-x:auto;padding:0;"><table class="data-table"><thead><tr><th>Engine</th><th>Asset</th><th>Market</th><th>Bet</th><th>Cost</th><th>Result</th><th>P&amp;L</th></tr></thead>
+    <tbody id="oc-history-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;padding:16px;">No trade history</td></tr></tbody></table></div>
+
+    <!-- Pending Trades -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <div class="gv-section-title" style="margin-bottom:0;">Pending Trades</div>
+      <span id="pending-count-badge" style="background:var(--warning);color:#000;font-weight:700;padding:2px 8px;border-radius:10px;font-size:0.72rem;">0</span>
+      <span id="pending-exposure" class="text-muted" style="font-size:0.72rem;margin-left:auto;">Exposure: --</span>
+    </div>
+    <div class="glass-card" id="live-positions-table-wrap" style="margin-bottom:14px;overflow-x:auto;padding:0;">
+      <table class="data-table"><thead><tr><th>Placed</th><th>Market</th><th>Direction</th><th>Stake</th><th>Edge</th><th style="min-width:100px;">Countdown</th><th>Pot. Profit</th><th>Pot. Loss</th></tr></thead>
+      <tbody id="live-pending-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No pending trades</td></tr></tbody></table>
+    </div>
+
+    <!-- Resolved Trades -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+      <div class="gv-section-title" style="margin-bottom:0;">Resolved Trades</div>
+      <span id="resolved-summary" class="text-muted" style="font-size:0.72rem;margin-left:auto;">--</span>
+    </div>
+    <div class="glass-card" style="margin-bottom:14px;overflow-x:auto;padding:0;"><table class="data-table"><thead><tr><th>Time</th><th>Market</th><th>Direction</th><th>Stake</th><th>Edge</th><th>Result</th><th>PnL</th></tr></thead><tbody id="live-resolved-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;padding:24px;">No resolved trades yet</td></tr></tbody></table></div>
+
+    <!-- Breakdowns -->
+    <div class="gv-section-title" style="margin-bottom:10px;">Breakdowns</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;" id="live-breakdowns">
+      <div class="glass-card"><div class="gv-section-title" style="font-size:0.68rem;margin-bottom:8px;">By Asset</div><table class="data-table"><thead><tr><th>Asset</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-asset"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+      <div class="glass-card"><div class="gv-section-title" style="font-size:0.68rem;margin-bottom:8px;">By Timeframe</div><table class="data-table"><thead><tr><th>TF</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-tf"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+      <div class="glass-card"><div class="gv-section-title" style="font-size:0.68rem;margin-bottom:8px;">By Direction</div><table class="data-table"><thead><tr><th>Dir</th><th>Trades</th><th>Win %</th></tr></thead><tbody id="live-bd-dir"><tr><td colspan="3" class="text-muted" style="text-align:center;">--</td></tr></tbody></table></div>
+    </div>
+
+    <!-- Daily Performance -->
+    <div class="gv-section-title" style="margin-bottom:10px;">Daily Performance History</div>
+    <div class="glass-card" style="overflow-x:auto;padding:0;"><table class="data-table"><thead><tr><th>Date</th><th>Trades</th><th>W-L</th><th>Win Rate</th><th>PnL</th><th>Avg Edge</th><th>Regime</th><th>Issues</th></tr></thead><tbody id="daily-history-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No daily reports yet</td></tr></tbody></table></div>
+  </div>
+
+  <!-- ═══ PERFORMANCE INSIGHTS PANEL (Redesigned) ═══ -->
+  <div class="garves-panel" id="garves-panel-performance" style="display:none;">
+
+    <!-- ── 1. TOP PERFORMANCE SUMMARY ── -->
+    <div class="perf-section">
+      <div class="perf-hero-row">
+        <div class="perf-hero-card">
+          <div class="perf-hero-icon" style="background:rgba(0,255,136,0.1);color:var(--success);">$</div>
+          <div class="perf-hero-body">
+            <div class="perf-hero-value" id="perf-win-rate">--</div>
+            <div class="perf-hero-label">Win Rate <span id="perf-wr-trend" class="perf-trend"></span></div>
+            <div class="perf-hero-sub" id="perf-wr-detail">L20: -- | Overall: --</div>
+          </div>
+        </div>
+        <div class="perf-hero-card">
+          <div class="perf-hero-icon" style="background:rgba(0,212,255,0.1);color:var(--agent-garves);">%</div>
+          <div class="perf-hero-body">
+            <div class="perf-hero-value" id="perf-ev-capture">--</div>
+            <div class="perf-hero-label">Edge Captured</div>
+            <div class="perf-hero-sub" id="perf-ev-detail">EV L20: -- | Slippage: --</div>
+          </div>
+        </div>
+        <div class="perf-hero-card">
+          <div class="perf-hero-icon" style="background:rgba(255,170,0,0.1);color:var(--warning);">&#9660;</div>
+          <div class="perf-hero-body">
+            <div class="perf-hero-value" id="perf-drawdown">--</div>
+            <div class="perf-hero-label">Max Drawdown</div>
+            <div class="perf-hero-sub" id="perf-dd-detail">Timing cost: --</div>
+          </div>
+        </div>
+        <div class="perf-hero-card">
+          <div class="perf-hero-icon perf-streak-icon" id="perf-streak-icon" style="background:rgba(128,128,128,0.1);color:var(--text-muted);">-</div>
+          <div class="perf-hero-body">
+            <div class="perf-hero-value" id="perf-streak-val">--</div>
+            <div class="perf-hero-label">Current Streak</div>
+            <div class="perf-hero-sub" id="perf-streak-detail">No trades yet</div>
+          </div>
+        </div>
+      </div>
+      <!-- Kill Switch Banner (only shows when triggered) -->
+      <div id="perf-kill-banner" class="perf-kill-banner" style="display:none;">
+        <span id="v2-kill-switch-badge" style="padding:2px 10px;border-radius:10px;font-size:0.7rem;font-weight:700;background:var(--error);color:#fff;">KILLED</span>
+        <span id="v2-kill-switch-reason" style="font-size:0.72rem;color:var(--error);margin-left:8px;"></span>
+      </div>
+    </div>
+
+    <!-- ── 2. MODEL INTELLIGENCE ── -->
+    <div class="perf-section">
+      <div class="perf-section-header">Model Intelligence</div>
+      <div class="perf-grid-3">
+        <!-- Active Models -->
+        <div class="glass-card perf-card-tight">
+          <div class="perf-card-title">Active Models</div>
+          <div id="perf-models-list" class="perf-models-list">
+            <div class="perf-model-row"><span class="perf-model-name">XGBoost</span><span class="perf-model-acc" id="ml-xgb-status">--</span><span class="perf-model-badge" id="ml-xgb-badge">--</span></div>
+            <div class="perf-model-row"><span class="perf-model-name">LSTM Neural</span><span class="perf-model-acc" id="ml-lstm-status">--</span><span class="perf-model-badge" id="ml-lstm-badge">--</span></div>
+            <div class="perf-model-row"><span class="perf-model-name">FinBERT Sentiment</span><span class="perf-model-acc" id="ml-finbert-status">--</span><span class="perf-model-badge" id="ml-finbert-badge">--</span></div>
+          </div>
+        </div>
+        <!-- Model Health Gauge -->
+        <div class="glass-card perf-card-tight" style="text-align:center;">
+          <div class="perf-card-title">Overall Model Health</div>
+          <div class="perf-gauge-wrap">
+            <svg viewBox="0 0 120 80" class="perf-gauge-svg">
+              <path d="M 15 70 A 50 50 0 0 1 105 70" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10" stroke-linecap="round"/>
+              <path id="perf-gauge-arc" d="M 15 70 A 50 50 0 0 1 105 70" fill="none" stroke="var(--agent-garves)" stroke-width="10" stroke-linecap="round" stroke-dasharray="0 157"/>
+            </svg>
+            <div class="perf-gauge-value" id="perf-gauge-pct">--</div>
+            <div class="perf-gauge-label">CV Accuracy</div>
+          </div>
+          <div style="font-size:0.66rem;color:var(--text-muted);margin-top:4px;" id="perf-gauge-samples">-- samples trained</div>
+        </div>
+        <!-- Feature Importances -->
+        <div class="glass-card perf-card-tight">
+          <div class="perf-card-title">Top Signal Drivers</div>
+          <div id="ml-feature-bars" class="perf-feature-bars"><span class="text-muted" style="font-size:0.72rem;">Awaiting model training</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 3. INDICATOR HEALTH ── -->
+    <div class="perf-section">
+      <div class="perf-section-header">Indicator Health
+        <span class="perf-section-hint">Base = Quant backtest weight | Dynamic = live-adjusted | Accuracy = real-time hit rate</span>
+      </div>
+      <div class="glass-card" style="overflow-x:auto;padding:0;">
+        <table class="data-table perf-table-sortable">
+          <thead><tr><th>Indicator</th><th>Base Wt</th><th>Dynamic Wt</th><th>Accuracy</th><th>Samples</th><th>Status</th></tr></thead>
+          <tbody id="conv-weights-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:20px;">Awaiting indicator data</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── 4. TRADE JOURNAL ── -->
+    <div class="perf-section">
+      <div class="perf-section-header">Trade Journal</div>
+      <!-- Hour Heatmap -->
+      <div class="glass-card" style="margin-bottom:12px;">
+        <div class="perf-card-title" style="margin-bottom:8px;">Performance by Hour (ET)</div>
+        <div id="journal-hour-heatmap" class="perf-heatmap-grid"><span class="text-muted" style="grid-column:1/-1;text-align:center;font-size:0.72rem;">Awaiting trade data</span></div>
+        <div class="perf-heatmap-legend">
+          <span><span class="perf-legend-dot" style="background:rgba(0,255,136,0.4);"></span>65%+ WR</span>
+          <span><span class="perf-legend-dot" style="background:rgba(0,255,136,0.15);"></span>50-65% WR</span>
+          <span><span class="perf-legend-dot" style="background:rgba(255,68,68,0.3);"></span>&lt;50% WR</span>
+          <span><span class="perf-legend-dot" style="background:rgba(128,128,128,0.2);"></span>Low data</span>
+        </div>
+      </div>
+      <!-- Best/Worst Combos Side by Side -->
+      <div id="perf-combos-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+        <div class="glass-card" id="perf-best-combos-card" style="border-left:3px solid var(--success);display:none;">
+          <div class="perf-card-title" style="color:var(--success);">Winning Combinations</div>
+          <table class="data-table"><thead><tr><th>Strategy</th><th>Record</th><th>Win Rate</th></tr></thead>
+          <tbody id="journal-best-tbody"></tbody></table>
+        </div>
+        <div class="glass-card" id="perf-worst-combos-card" style="border-left:3px solid var(--error);display:none;">
+          <div class="perf-card-title" style="color:var(--error);">Losing Combinations</div>
+          <table class="data-table"><thead><tr><th>Strategy</th><th>Record</th><th>Win Rate</th></tr></thead>
+          <tbody id="journal-worst-tbody"></tbody></table>
+        </div>
+      </div>
+      <!-- Mistake Patterns + Lessons -->
+      <div id="perf-mistakes-card" class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--warning);display:none;">
+        <div class="perf-card-title" style="color:var(--warning);">Detected Patterns</div>
+        <div id="journal-mistakes" style="font-size:0.74rem;"></div>
+      </div>
+    </div>
+
+    <!-- ── 5. ACTIONABLE INTELLIGENCE ── -->
+    <div class="perf-section">
+      <div class="perf-section-header" style="color:var(--agent-garves);">Actionable Intelligence</div>
+      <!-- Recommendations -->
+      <div class="glass-card perf-action-card" style="margin-bottom:12px;border-left:3px solid var(--agent-garves);">
+        <div class="perf-card-title">Recommendations</div>
+        <div id="journal-recommendations" style="font-size:0.74rem;"><span class="text-muted">System analyzing — recommendations will appear after sufficient trades</span></div>
+      </div>
+      <!-- Auto-Debug -->
+      <div id="v2-debug-card" class="glass-card perf-action-card" style="margin-bottom:12px;border-left:3px solid var(--warning);display:none;">
+        <div class="perf-card-title" style="color:var(--warning);">Auto-Debug Suggestions</div>
+        <div id="v2-debug-fixes" style="font-size:0.74rem;"></div>
+      </div>
+      <!-- Post-Trade + Auto-Rules + Edge Decay in 3-col -->
+      <div class="perf-grid-3" style="margin-bottom:12px;">
+        <div class="glass-card perf-card-tight" style="border-left:3px solid var(--agent-garves);">
+          <div class="perf-card-title">Post-Trade Analysis</div>
+          <div id="v2-post-trade-feed" style="font-size:0.72rem;max-height:140px;overflow-y:auto;"><span class="text-muted">No analyses yet</span></div>
+        </div>
+        <div class="glass-card perf-card-tight" style="border-left:3px solid var(--warning);">
+          <div class="perf-card-title">Active Auto-Rules</div>
+          <div id="v2-auto-rules" style="font-size:0.72rem;"><span class="text-muted">No active rules</span></div>
+        </div>
+        <div class="glass-card perf-card-tight" style="border-left:3px solid var(--error);">
+          <div class="perf-card-title">Edge Health</div>
+          <div id="v2-edge-decay" style="font-size:0.72rem;"><span class="text-muted">Edges stable</span></div>
+        </div>
+      </div>
+      <!-- Weekly Competitive Check (hidden until data) -->
+      <div id="v2-weekly-card" class="glass-card perf-action-card" style="margin-bottom:12px;border-left:3px solid var(--agent-garves);display:none;">
+        <div class="perf-card-title" style="color:var(--agent-garves);">Weekly Competitive Check</div>
+        <div id="v2-weekly-content" style="font-size:0.74rem;"></div>
+      </div>
+      <!-- Performance Warnings (hidden until triggered) -->
+      <div id="v2-warnings-card" class="glass-card perf-action-card" style="margin-bottom:12px;border-left:3px solid var(--error);display:none;">
+        <div class="perf-card-title" style="color:var(--error);">Performance Warnings</div>
+        <div id="v2-warnings-list" style="font-size:0.74rem;"></div>
+      </div>
+    </div>
+
+    <!-- ── 6. MARKET CONTEXT ── -->
+    <div class="perf-section">
+      <div class="perf-section-header">Market Context</div>
+      <div class="perf-grid-4" style="margin-bottom:8px;">
+        <div class="glass-card perf-card-compact" id="deriv-funding"><div class="perf-card-title-sm">Funding Rates</div><div class="text-muted" style="font-size:0.72rem;">Awaiting data</div></div>
+        <div class="glass-card perf-card-compact" id="deriv-liquidations"><div class="perf-card-title-sm">Liquidations</div><div class="text-muted" style="font-size:0.72rem;">Awaiting data</div></div>
+        <div class="glass-card perf-card-compact" id="deriv-depth"><div class="perf-card-title-sm">Order Book Depth</div><div class="text-muted" style="font-size:0.72rem;">Awaiting data</div></div>
+        <div class="glass-card perf-card-compact" id="ext-macro"><div class="perf-card-title-sm">Macro (FRED)</div><div class="text-muted" style="font-size:0.72rem;">Awaiting data</div></div>
+      </div>
+      <div class="perf-grid-4">
+        <div class="glass-card perf-card-compact" id="ext-btc"><div class="perf-card-title-sm">BTC Intel</div><div class="text-muted" style="font-size:0.72rem;">Awaiting data</div></div>
+        <div class="glass-card perf-card-compact" id="ext-eth"><div class="perf-card-title-sm">ETH Intel</div><div class="text-muted" style="font-size:0.72rem;">Awaiting data</div></div>
+        <div class="glass-card perf-card-compact" id="ext-sol"><div class="perf-card-title-sm">SOL Intel</div><div class="text-muted" style="font-size:0.72rem;">Awaiting data</div></div>
+        <div class="glass-card perf-card-compact" id="ext-xrp"><div class="perf-card-title-sm">XRP Intel</div><div class="text-muted" style="font-size:0.72rem;">Awaiting data</div></div>
+      </div>
+      <div style="margin-top:10px;">
+        <div class="perf-card-title-sm" style="margin-bottom:6px;">News Sentiment</div>
+        <div class="grid-3" id="garves-sentiment-grid"><span class="text-muted" style="font-size:0.72rem;grid-column:1/-1;text-align:center;">Awaiting sentiment data</span></div>
+      </div>
+    </div>
+
+    <!-- ── 7. ADVANCED ANALYTICS (Collapsible) ── -->
+    <div class="perf-section">
+      <div class="perf-collapse-header" onclick="togglePerfAdvanced()">
+        <span>Advanced Analytics</span>
+        <span id="perf-collapse-arrow" class="perf-collapse-arrow">&#9660;</span>
+      </div>
+      <div id="perf-advanced-panel" style="display:none;margin-top:10px;">
+        <div class="perf-grid-3" style="margin-bottom:12px;">
+          <div class="glass-card perf-card-compact" id="ext-defi"><div class="perf-card-title-sm">DeFi (DeFiLlama)</div><div class="text-muted" style="font-size:0.72rem;">Awaiting data</div></div>
+          <div class="glass-card perf-card-compact" id="ext-mempool"><div class="perf-card-title-sm">Mempool (BTC)</div><div class="text-muted" style="font-size:0.72rem;">Awaiting data</div></div>
+          <div class="glass-card perf-card-compact">
+            <div class="perf-card-title-sm">Model Details</div>
+            <div style="font-size:0.72rem;">
+              <div style="display:flex;justify-content:space-between;margin-bottom:2px;"><span class="text-muted">Status</span><span id="ml-status">--</span></div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:2px;"><span class="text-muted">F1 Score</span><span id="ml-f1">--</span></div>
+              <div style="display:flex;justify-content:space-between;"><span class="text-muted">Samples</span><span id="ml-samples">--</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="glass-card perf-card-compact">
+          <div class="perf-card-title-sm">Raw Metric Grid</div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px;font-family:var(--font-mono);font-size:0.72rem;">
+            <div style="text-align:center;"><div class="text-muted" style="font-size:0.62rem;">WR L20</div><div id="v2-wr-20" style="font-weight:700;">--</div></div>
+            <div style="text-align:center;"><div class="text-muted" style="font-size:0.62rem;">WR L50</div><div id="v2-wr-50" style="font-weight:700;">--</div></div>
+            <div style="text-align:center;"><div class="text-muted" style="font-size:0.62rem;">EV L20</div><div id="v2-ev-20" style="font-weight:700;">--</div></div>
+            <div style="text-align:center;"><div class="text-muted" style="font-size:0.62rem;">EV L50</div><div id="v2-ev-50" style="font-weight:700;">--</div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:6px;font-family:var(--font-mono);font-size:0.72rem;border-top:1px solid rgba(255,255,255,0.04);padding-top:6px;">
+            <div style="text-align:center;"><div class="text-muted" style="font-size:0.62rem;">EV All</div><div id="v2-ev-capture" style="font-weight:700;">--</div></div>
+            <div style="text-align:center;"><div class="text-muted" style="font-size:0.62rem;">Drawdown</div><div id="v2-drawdown" style="font-weight:700;">--</div></div>
+            <div style="text-align:center;"><div class="text-muted" style="font-size:0.62rem;">Slippage</div><div id="v2-slippage" style="font-weight:700;">--</div></div>
+            <div style="text-align:center;"><div class="text-muted" style="font-size:0.62rem;">Timing</div><div id="v2-timing" style="font-weight:700;">--</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══ INTELLIGENCE & SELF-IMPROVEMENT PANEL ═══ -->
+  <div class="garves-panel" id="garves-panel-intelligence" style="display:none;">
+    <!-- Self-Improvement Score -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #a855f7;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#a855f7;">Self-Improvement Score</span>
+        <span id="gi-score-badge" style="font-size:0.62rem;padding:2px 10px;border-radius:10px;background:rgba(139,92,246,0.15);color:#8b5cf6;font-weight:700;font-family:var(--font-mono);">--</span>
+        <span id="gi-edge-trend-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;">--</span>
+        <span id="gi-score-dot" style="width:10px;height:10px;border-radius:50%;background:#6b7280;"></span>
+        <span id="gi-score-label" style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">--/100</span>
+        <span style="color:rgba(255,255,255,0.15);">|</span>
+        <span id="gi-resolved-label" style="font-size:0.68rem;color:var(--text-muted);">-- resolved trades</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;"><div class="stat-value" id="gi-wr-component" style="font-size:0.9rem;">--</div><div class="stat-label">WR Score (L50)</div></div>
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;"><div class="stat-value" id="gi-ev-component" style="font-size:0.9rem;">--</div><div class="stat-label">EV Capture</div></div>
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;"><div class="stat-value" id="gi-mistake-rate" style="font-size:0.9rem;">--</div><div class="stat-label">Mistake Rate</div></div>
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;"><div class="stat-value" id="gi-active-rules" style="font-size:0.9rem;">0</div><div class="stat-label">Active Auto-Rules</div></div>
+      </div>
+      <div id="gi-score-breakdown" style="display:flex;gap:2px;height:6px;border-radius:3px;overflow:hidden;margin-bottom:6px;">
+        <div id="gi-bar-wr" style="flex:0;background:#8b5cf6;transition:flex 0.5s;"></div>
+        <div id="gi-bar-ev" style="flex:0;background:#22c55e;transition:flex 0.5s;"></div>
+        <div id="gi-bar-mistake" style="flex:0;background:#eab308;transition:flex 0.5s;"></div>
+        <div id="gi-bar-edge" style="flex:0;background:#06b6d4;transition:flex 0.5s;"></div>
+        <div style="flex:1;background:rgba(255,255,255,0.04);"></div>
+      </div>
+      <div style="display:flex;gap:12px;font-size:0.6rem;color:var(--text-muted);">
+        <span><span style="color:#8b5cf6;">&#9632;</span> Win Rate</span>
+        <span><span style="color:#22c55e;">&#9632;</span> EV Capture</span>
+        <span><span style="color:#eab308;">&#9632;</span> Mistake Avoidance</span>
+        <span><span style="color:#06b6d4;">&#9632;</span> Edge Stability</span>
+      </div>
+    </div>
+
+    <!-- Engine Intelligence -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #f7931a;">
+      <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#f7931a;margin-bottom:8px;">Engine Intelligence</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;"><div class="stat-value" id="gi-whale-wr" style="font-size:0.9rem;">--</div><div class="stat-label">Whale Shadow WR</div><div id="gi-whale-detail" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div></div>
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;"><div class="stat-value" id="gi-maker-eff" style="font-size:0.9rem;">--</div><div class="stat-label">Maker Efficiency</div><div id="gi-maker-detail" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div></div>
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:120px;"><div class="stat-value" id="gi-flow-acc" style="font-size:0.9rem;">--</div><div class="stat-label">Flow Detection</div><div id="gi-flow-detail" style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;"></div></div>
+      </div>
+    </div>
+
+    <!-- Mistake Frequency -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #ef4444;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <span style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#ef4444;">Mistake Frequency</span>
+        <span id="gi-mistake-trend-badge" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;">--</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;"><div class="stat-value" id="gi-mk-model" style="font-size:0.9rem;">0</div><div class="stat-label">Model</div></div>
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;"><div class="stat-value" id="gi-mk-thesis" style="font-size:0.9rem;">0</div><div class="stat-label">Thesis</div></div>
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;"><div class="stat-value" id="gi-mk-execution" style="font-size:0.9rem;">0</div><div class="stat-label">Execution</div></div>
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;"><div class="stat-value" id="gi-mk-sizing" style="font-size:0.9rem;">0</div><div class="stat-label">Sizing</div></div>
+      </div>
+      <div style="font-size:0.68rem;color:var(--text-muted);">Total analysed: <span id="gi-mk-total" style="font-family:var(--font-mono);">0</span> &nbsp;|&nbsp; Mistake rate: <span id="gi-mk-rate-pct" style="font-family:var(--font-mono);">--</span> &nbsp;|&nbsp; Avg EV Capture: <span id="gi-mk-avg-ev" style="font-family:var(--font-mono);">--</span></div>
+    </div>
+
+    <!-- Lessons & Auto-Rules -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #22c55e;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <span style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#22c55e;">Lessons Learned &amp; Auto-Rules</span>
+        <span id="gi-lessons-count" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,0.15);color:#22c55e;font-weight:600;">0</span>
+      </div>
+      <div id="gi-lessons-list" style="font-size:0.72rem;"><span class="text-muted">No lessons yet — Garves learns from repeated mistakes</span></div>
+    </div>
+
+    <!-- Indicator Tracker -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #06b6d4;">
+      <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#06b6d4;margin-bottom:8px;">Indicator Performance Tracker</div>
+      <table class="data-table"><thead><tr><th>Indicator</th><th style="text-align:center;">All-Time</th><th style="text-align:center;">Recent</th><th style="text-align:center;">Trend</th><th style="text-align:center;">Samples</th><th style="text-align:center;">Status</th></tr></thead>
+      <tbody id="gi-indicator-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;">Loading...</td></tr></tbody></table>
+    </div>
+
+    <!-- Competitive Advantage -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #eab308;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <span style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#eab308;">Competitive Advantage</span>
+        <span id="gi-comp-status" style="font-size:0.68rem;font-weight:700;color:var(--text-muted);">--</span>
+        <span id="gi-comp-recommendation" style="font-size:0.64rem;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.05);color:var(--text-muted);margin-left:auto;">--</span>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;"><div class="stat-value" id="gi-comp-wr-first" style="font-size:0.9rem;">--</div><div class="stat-label">First Half WR</div></div>
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;"><div class="stat-value" id="gi-comp-wr-second" style="font-size:0.9rem;">--</div><div class="stat-label">Second Half WR</div></div>
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;"><div class="stat-value" id="gi-comp-wr-trend" style="font-size:0.9rem;">--</div><div class="stat-label">WR Trend</div></div>
+        <div class="stat-card" data-accent="garves" style="flex:1;min-width:100px;"><div class="stat-value" id="gi-comp-ev-trend" style="font-size:0.9rem;">--</div><div class="stat-label">EV Trend</div></div>
+      </div>
+      <div id="gi-comp-recommendations" style="font-size:0.68rem;color:var(--text-muted);"></div>
+    </div>
+
+    <!-- Autonomous Monitoring -->
+    <div class="glass-card" style="border-left:3px solid #8b5cf6;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <span style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#8b5cf6;">Autonomous Monitoring</span>
+        <span id="gi-diag-dot" style="width:8px;height:8px;border-radius:50%;background:#22c55e;"></span>
+        <span id="gi-diag-label" style="font-size:0.68rem;font-weight:600;color:var(--text-muted);">All Clear</span>
+        <span id="gi-diag-count" style="font-size:0.62rem;padding:2px 8px;border-radius:10px;background:rgba(255,255,255,0.06);color:var(--text-muted);font-weight:600;margin-left:auto;">0 issues</span>
+      </div>
+      <div id="gi-diag-checks" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>
+      <div id="gi-diag-fixes" style="font-size:0.7rem;color:var(--text-muted);"></div>
+    </div>
+  </div>
+
+</div>
+
+<style>
+  .garves-subtab {
+    background: var(--surface-elevated);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    padding: 5px 16px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .garves-subtab:hover { color: var(--text); border-color: var(--text-muted); }
+  .garves-subtab.active { background: #10B981; color: #000; border-color: #10B981; }
+  .garves-engine-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: all 0.2s;
+  }
+  .garves-engine-pill:hover { border-color: rgba(255,255,255,0.2); }
+  .gep-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .garves-engine-tab {
+    background: var(--surface-elevated);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 4px 14px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .garves-engine-tab:hover { color: var(--text); border-color: var(--text-muted); }
+  .garves-engine-tab.active { background: rgba(139,92,246,0.15); color: #8b5cf6; border-color: rgba(139,92,246,0.4); }
+</style>
+
+<script>
+/* Sub-tab switching */
+function garvesSwitchSub(name) {
+  document.querySelectorAll('.garves-panel').forEach(function(p) { p.style.display = 'none'; });
+  var panel = document.getElementById('garves-panel-' + name);
+  if (panel) panel.style.display = '';
+  document.querySelectorAll('.garves-subtab').forEach(function(b) {
+    b.classList.toggle('active', b.getAttribute('data-sub') === name);
+  });
+  if (name === 'intelligence' && !window._garvesIntelLoaded) {
+    window._garvesIntelLoaded = true;
+    loadGarvesIntelligence();
+  }
+  if (name === 'engines' && !window._garvesWhaleLoaded) {
+    window._garvesWhaleLoaded = true;
+    loadWhaleFollower();
+  }
+}
+
+/* Engine selector within Engines tab */
+function garvesSelectEngine(name) {
+  var panels = {maker:'garves-engine-maker', whale:'garves-whale-section', taker:'garves-engine-taker', killshot:'garves-engine-killshot'};
+  Object.keys(panels).forEach(function(k) {
+    var el = document.getElementById(panels[k]);
+    if (el) el.style.display = k === name ? '' : 'none';
+  });
+  document.querySelectorAll('.garves-engine-tab').forEach(function(b) {
+    b.classList.toggle('active', b.getAttribute('data-engine') === name);
+  });
+}
+
+/* Engine filter for trade history (placeholder) */
+function garvesFilterHistory() {
+  /* Engine filter dropdown - future: filter oc-history-tbody rows by engine */
+}
+
+/* Refresh all garves data */
+function garvesRefreshAll() {
+  populateGarvesHeroExposure();
+  loadWhaleFollower();
+  loadGarvesIntelligence();
+  var el = document.getElementById('garves-updated');
+  if (el) el.textContent = new Date().toLocaleTimeString();
+}
+
+/* Hero Metrics Populator */
+function populateGarvesHeroExposure() {
+  var paUtil = document.getElementById('pa-total-util');
+  var paExposure = document.getElementById('pa-total-exposure');
+  if (paUtil) {
+    var elUtil = document.getElementById('garves-hero-util-pct');
+    if (elUtil && paUtil.textContent !== '0%') elUtil.textContent = paUtil.textContent;
+  }
+  if (paExposure) {
+    var elExp = document.getElementById('garves-hero-exposure');
+    if (elExp && paExposure.textContent !== '--') elExp.textContent = paExposure.textContent;
+  }
+}
+
+/* Whale Follower Loader */
+function loadWhaleFollower() {
+  fetch('/api/whale').then(function(r) { return r.json(); }).then(function(data) {
+    var badge = document.getElementById('whale-status-badge');
+    var countLabel = document.getElementById('whale-tracked-count');
+    if (data.enabled) {
+      if (badge) { badge.textContent = 'ON'; badge.style.background = 'rgba(34,197,94,0.15)'; badge.style.color = '#22c55e'; }
+    } else {
+      if (badge) { badge.textContent = 'OFF'; badge.style.background = 'rgba(255,255,255,0.06)'; badge.style.color = 'var(--text-muted)'; }
+    }
+    var tracked = (data.tracked_wallets || []).length || data.total_tracked || 0;
+    if (countLabel) countLabel.textContent = tracked + ' whales';
+    var elW = document.getElementById('whale-tracked-wallets');
+    if (elW) elW.textContent = tracked;
+  }).catch(function() {});
+
+  fetch('/api/whale/wallets').then(function(r) { return r.json(); }).then(function(data) {
+    var wallets = data.tracked || [];
+    var elW = document.getElementById('whale-tracked-wallets');
+    if (elW && wallets.length > 0) elW.textContent = wallets.length;
+    var tbody = document.getElementById('whale-wallets-tbody');
+    if (!tbody) return;
+    if (wallets.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;">No tracked whales</td></tr>'; return; }
+    var html = '';
+    wallets.slice(0, 15).forEach(function(w) {
+      var wallet = w.wallet ? (w.wallet.substring(0, 6) + '...' + w.wallet.slice(-4)) : '--';
+      var username = w.username || '--';
+      var score = w.score != null ? w.score.toFixed(1) : '--';
+      var trades = w.trades || w.total_trades || '--';
+      var wr = w.win_rate != null ? (w.win_rate * 100).toFixed(1) + '%' : '--';
+      var pnl = w.pnl != null ? '$' + w.pnl.toFixed(2) : '--';
+      var pnlColor = (w.pnl || 0) >= 0 ? '#22c55e' : '#ef4444';
+      html += '<tr><td style="font-family:var(--font-mono);font-size:0.68rem;">' + wallet + '</td><td>' + username + '</td><td>' + score + '</td><td>' + trades + '</td><td>' + wr + '</td><td style="color:' + pnlColor + ';">' + pnl + '</td></tr>';
+    });
+    tbody.innerHTML = html;
+  }).catch(function() {});
+
+  fetch('/api/whale/copy-trades').then(function(r) { return r.json(); }).then(function(data) {
+    var summary = data.summary || {};
+    var elCount = document.getElementById('whale-copy-count');
+    var elWR = document.getElementById('whale-win-rate');
+    var elPnl = document.getElementById('whale-total-pnl');
+    if (elCount) elCount.textContent = summary.total || 0;
+    if (elWR) elWR.textContent = summary.win_rate != null ? (summary.win_rate * 100).toFixed(1) + '%' : '--';
+    if (elPnl) { var pnl = summary.total_pnl || 0; elPnl.textContent = '$' + pnl.toFixed(2); elPnl.style.color = pnl >= 0 ? '#22c55e' : '#ef4444'; }
+    var trades = data.trades || [];
+    var tbody = document.getElementById('whale-trades-tbody');
+    if (!tbody) return;
+    if (trades.length === 0) { tbody.innerHTML = '<tr><td colspan="7" class="text-muted" style="text-align:center;">No copy trades</td></tr>'; return; }
+    var html = '';
+    trades.slice(0, 20).forEach(function(t) {
+      var time = t.time || t.placed_at || '--'; if (time.length > 16) time = time.substring(5, 16);
+      var whale = t.whale || t.wallet || '--'; if (whale.length > 10) whale = whale.substring(0, 6) + '..';
+      var market = t.market || t.question || '--'; if (market.length > 30) market = market.substring(0, 30) + '..';
+      var dir = t.direction || '--'; var dirColor = dir === 'YES' ? '#22c55e' : dir === 'NO' ? '#ef4444' : 'inherit';
+      var size = t.size != null ? '$' + Number(t.size).toFixed(2) : '--';
+      var status = t.status || t.result || 'pending'; var statusColor = status === 'won' ? '#22c55e' : status === 'lost' ? '#ef4444' : '#eab308';
+      var pnl = t.pnl != null ? '$' + Number(t.pnl).toFixed(2) : '--'; var pnlColor = (t.pnl || 0) >= 0 ? '#22c55e' : '#ef4444';
+      html += '<tr><td style="font-size:0.68rem;">' + time + '</td><td style="font-size:0.68rem;">' + whale + '</td><td style="font-size:0.68rem;">' + market + '</td><td style="color:' + dirColor + ';font-weight:600;">' + dir + '</td><td>' + size + '</td><td style="color:' + statusColor + ';font-weight:600;">' + status + '</td><td style="color:' + pnlColor + ';">' + pnl + '</td></tr>';
+    });
+    tbody.innerHTML = html;
+  }).catch(function() {});
+
+  fetch('/api/whale/signals').then(function(r) { return r.json(); }).then(function(data) {
+    var signals = data.signals || [];
+    var elCount = document.getElementById('whale-signal-count');
+    if (elCount) elCount.textContent = signals.length;
+    var el = document.getElementById('whale-signals-list');
+    if (!el) return;
+    if (signals.length === 0) { el.innerHTML = '<span class="text-muted">No active signals</span>'; return; }
+    var html = '';
+    signals.slice(0, 10).forEach(function(s) {
+      var dir = s.direction || '--'; var dirColor = dir === 'YES' ? '#22c55e' : dir === 'NO' ? '#ef4444' : '#eab308';
+      var market = s.market || s.question || '--'; if (market.length > 40) market = market.substring(0, 40) + '..';
+      var wallets = s.wallets || s.whale_count || 1;
+      var consensus = s.consensus ? 'CONSENSUS' : '';
+      html += '<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);">';
+      html += '<span style="color:' + dirColor + ';font-weight:700;min-width:28px;">' + dir + '</span>';
+      html += '<span style="flex:1;font-size:0.68rem;">' + market + '</span>';
+      html += '<span style="font-size:0.62rem;color:var(--text-muted);">' + wallets + ' whale' + (wallets !== 1 ? 's' : '') + '</span>';
+      if (consensus) html += '<span style="font-size:0.58rem;padding:1px 6px;border-radius:8px;background:rgba(139,92,246,0.15);color:#8b5cf6;font-weight:600;">CONSENSUS</span>';
+      html += '</div>';
+    });
+    el.innerHTML = html;
+  }).catch(function() {});
+}
+
+setInterval(populateGarvesHeroExposure, 3000);
+setTimeout(populateGarvesHeroExposure, 2000);
+
+/* Intelligence Loader */
+function loadGarvesIntelligence() {
+  var score = {wr: 0, ev: 0, mistake: 0, edge: 0, total: 0};
+
+  fetch('/api/garves/v2-metrics').then(function(r) { return r.json(); }).then(function(d) {
+    var cm = d.core_metrics || {};
+    var resolved = d.total_resolved || 0;
+    var resolvedEl = document.getElementById('gi-resolved-label');
+    if (resolvedEl) resolvedEl.textContent = resolved + ' resolved trades';
+    var wr50 = cm.wr_50 || 0;
+    score.wr = Math.min(25, Math.max(0, (wr50 - 0.50) * 250));
+    var wrEl = document.getElementById('gi-wr-component');
+    if (wrEl) { wrEl.textContent = wr50 > 0 ? (wr50 * 100).toFixed(1) + '%' : '--'; wrEl.style.color = wr50 >= 0.55 ? 'var(--success)' : wr50 > 0 && wr50 < 0.50 ? 'var(--danger)' : ''; }
+    var evPct = cm.ev_capture_pct || 0;
+    score.ev = Math.min(25, Math.max(0, evPct * 25));
+    var evEl = document.getElementById('gi-ev-component');
+    if (evEl) { evEl.textContent = evPct > 0 ? (evPct * 100).toFixed(0) + '%' : '--'; evEl.style.color = evPct > 0.5 ? 'var(--success)' : evPct > 0 && evPct < 0.3 ? 'var(--danger)' : ''; }
+    updateIntelScore();
+  }).catch(function() {});
+
+  fetch('/api/garves/post-trade-analysis').then(function(r) { return r.json(); }).then(function(d) {
+    var total = d.total || 0; var mistakes = d.mistakes || 0; var byType = d.by_type || {}; var avgEv = d.avg_ev_capture_pct;
+    var modelEl = document.getElementById('gi-mk-model'); var thesisEl = document.getElementById('gi-mk-thesis');
+    var execEl = document.getElementById('gi-mk-execution'); var sizingEl = document.getElementById('gi-mk-sizing');
+    if (modelEl) modelEl.textContent = byType.model || 0; if (thesisEl) thesisEl.textContent = byType.thesis || 0;
+    if (execEl) execEl.textContent = byType.execution || 0; if (sizingEl) sizingEl.textContent = byType.sizing || 0;
+    var totalEl = document.getElementById('gi-mk-total'); if (totalEl) totalEl.textContent = total;
+    var rate = total > 0 ? (mistakes / total * 100) : 0;
+    var rateEl = document.getElementById('gi-mk-rate-pct');
+    if (rateEl) { rateEl.textContent = rate.toFixed(1) + '%'; rateEl.style.color = rate > 30 ? '#ef4444' : rate < 15 ? '#22c55e' : '#eab308'; }
+    var avgEvEl = document.getElementById('gi-mk-avg-ev'); if (avgEvEl && avgEv != null) avgEvEl.textContent = avgEv.toFixed(1) + '%';
+    var mistakeRateEl = document.getElementById('gi-mistake-rate');
+    if (mistakeRateEl) { mistakeRateEl.textContent = rate.toFixed(0) + '%'; mistakeRateEl.style.color = rate > 30 ? '#ef4444' : rate < 15 ? '#22c55e' : '#eab308'; }
+    var trendBadge = document.getElementById('gi-mistake-trend-badge');
+    if (trendBadge) {
+      if (rate < 15) { trendBadge.textContent = 'LOW'; trendBadge.style.background = 'rgba(34,197,94,0.15)'; trendBadge.style.color = '#22c55e'; }
+      else if (rate > 30) { trendBadge.textContent = 'HIGH'; trendBadge.style.background = 'rgba(239,68,68,0.15)'; trendBadge.style.color = '#ef4444'; }
+      else { trendBadge.textContent = 'MODERATE'; trendBadge.style.background = 'rgba(234,179,8,0.15)'; trendBadge.style.color = '#eab308'; }
+    }
+    score.mistake = Math.min(25, Math.max(0, (1 - rate / 50) * 25));
+    updateIntelScore();
+  }).catch(function() {});
+
+  fetch('/api/garves/auto-rules').then(function(r) { return r.json(); }).then(function(d) {
+    var rules = d.active_rules || [];
+    var rulesEl = document.getElementById('gi-active-rules'); if (rulesEl) rulesEl.textContent = rules.length;
+    var countEl = document.getElementById('gi-lessons-count'); if (countEl) countEl.textContent = rules.length;
+    var listEl = document.getElementById('gi-lessons-list');
+    if (!listEl) return;
+    if (rules.length === 0) { listEl.innerHTML = '<span class="text-muted">No active lessons — Garves learns from repeated mistakes</span>'; return; }
+    var html = '';
+    rules.slice(0, 5).forEach(function(r) {
+      var typeColors = {thesis:'#ef4444', model:'#8b5cf6', execution:'#eab308', sizing:'#06b6d4'};
+      var color = typeColors[r.mistake_type] || 'var(--text-muted)';
+      var action = r.action || {}; var age = r.created_at ? timeSince(r.created_at) : ''; var expires = r.expires_at ? timeSince(r.expires_at, true) : '';
+      html += '<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;gap:8px;">';
+      html += '<span style="font-size:0.62rem;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.06);color:' + color + ';font-weight:600;text-transform:uppercase;min-width:56px;text-align:center;">' + (r.mistake_type || '--') + '</span>';
+      html += '<span style="flex:1;font-size:0.7rem;">' + (r.detail || '--').replace(/_/g, ' / ') + ' <span style="color:var(--text-muted);">(' + (r.count || 0) + 'x)</span></span>';
+      html += '<span style="font-size:0.62rem;color:var(--text-muted);">' + (action.type || '').replace(/_/g, ' ') + '</span>';
+      if (age) html += '<span style="font-size:0.58rem;color:var(--text-muted);">' + age + '</span>';
+      html += '</div>';
+    });
+    listEl.innerHTML = html;
+  }).catch(function() {});
+
+  fetch('/api/garves/edge-report').then(function(r) { return r.json(); }).then(function(d) {
+    var cc = d.competitive_check || {};
+    var statusEl = document.getElementById('gi-comp-status');
+    var status = cc.status || 'insufficient_data';
+    if (statusEl) {
+      var statusMap = {stable:['EDGE STABLE','#22c55e'], improving:['EDGE IMPROVING','#22c55e'], declining:['EDGE DECLINING','#ef4444'], insufficient_data:['INSUFFICIENT DATA','var(--text-muted)']};
+      var s = statusMap[status] || statusMap.insufficient_data; statusEl.textContent = s[0]; statusEl.style.color = s[1];
+    }
+    var trendBadge = document.getElementById('gi-edge-trend-badge');
+    if (trendBadge) {
+      if (status === 'stable' || status === 'improving') { trendBadge.textContent = status === 'improving' ? 'IMPROVING' : 'STABLE'; trendBadge.style.background = 'rgba(34,197,94,0.15)'; trendBadge.style.color = '#22c55e'; }
+      else if (status === 'declining') { trendBadge.textContent = 'DECLINING'; trendBadge.style.background = 'rgba(239,68,68,0.15)'; trendBadge.style.color = '#ef4444'; }
+      else { trendBadge.textContent = 'N/A'; }
+    }
+    var wrFirst = document.getElementById('gi-comp-wr-first'); var wrSecond = document.getElementById('gi-comp-wr-second');
+    var wrTrend = document.getElementById('gi-comp-wr-trend'); var evTrend = document.getElementById('gi-comp-ev-trend');
+    if (wrFirst && cc.first_half_wr != null) wrFirst.textContent = (cc.first_half_wr * 100).toFixed(1) + '%';
+    if (wrSecond && cc.second_half_wr != null) { wrSecond.textContent = (cc.second_half_wr * 100).toFixed(1) + '%'; wrSecond.style.color = cc.second_half_wr >= cc.first_half_wr ? '#22c55e' : '#ef4444'; }
+    if (wrTrend && cc.wr_trend_pp != null) { var pp = cc.wr_trend_pp; wrTrend.textContent = (pp >= 0 ? '+' : '') + pp.toFixed(1) + 'pp'; wrTrend.style.color = pp >= 0 ? '#22c55e' : '#ef4444'; }
+    var evt = cc.ev_capture_trend || {};
+    if (evTrend && evt.trend) { evTrend.textContent = evt.trend === 'improving' ? 'IMPROVING' : evt.trend === 'declining' ? 'DECLINING' : evt.trend.toUpperCase(); evTrend.style.color = evt.trend === 'improving' ? '#22c55e' : evt.trend === 'declining' ? '#ef4444' : 'var(--text-muted)'; }
+    var recEl = document.getElementById('gi-comp-recommendation'); var recs = cc.recommendations || [];
+    if (recEl && recs.length > 0) { recEl.textContent = recs[0].action || '--'; recEl.style.color = recs[0].priority === 'high' ? '#ef4444' : recs[0].priority === 'medium' ? '#eab308' : 'var(--text-muted)'; }
+    var recsEl = document.getElementById('gi-comp-recommendations');
+    if (recsEl && recs.length > 1) {
+      var html = '';
+      recs.slice(1, 4).forEach(function(r) {
+        var pColor = r.priority === 'high' ? '#ef4444' : r.priority === 'medium' ? '#eab308' : 'var(--text-muted)';
+        html += '<div style="margin-bottom:3px;"><span style="font-size:0.58rem;padding:1px 4px;border-radius:3px;background:rgba(255,255,255,0.06);color:' + pColor + ';font-weight:600;margin-right:6px;">' + (r.priority || '').toUpperCase() + '</span>' + (r.action || '') + '</div>';
+      });
+      recsEl.innerHTML = html;
+    }
+    var indicators = cc.indicator_health || d.edge_decay || [];
+    var tbody = document.getElementById('gi-indicator-tbody');
+    if (tbody && indicators.length > 0) {
+      var html = '';
+      indicators.forEach(function(ind) {
+        var allTime = ind.alltime_accuracy || ind.allTime_accuracy || 0;
+        var recent = ind.recent_accuracy || 0;
+        var diff = recent - allTime;
+        var trendArrow = diff > 0.02 ? '<span style="color:#22c55e;">&#9650;</span>' : diff < -0.02 ? '<span style="color:#ef4444;">&#9660;</span>' : '<span style="color:var(--text-muted);">&#9644;</span>';
+        var statusText = ind.status || (diff > 0.02 ? 'improving' : diff < -0.05 ? 'decaying' : 'healthy');
+        var statusColor = statusText === 'improving' ? '#22c55e' : statusText === 'decaying' ? '#ef4444' : 'var(--text-muted)';
+        html += '<tr><td style="font-weight:600;">' + (ind.indicator || '--') + '</td>';
+        html += '<td style="text-align:center;font-family:var(--font-mono);">' + (allTime * 100).toFixed(1) + '%</td>';
+        html += '<td style="text-align:center;font-family:var(--font-mono);color:' + (recent >= 0.55 ? '#22c55e' : recent < 0.45 ? '#ef4444' : 'inherit') + ';">' + (recent * 100).toFixed(1) + '%</td>';
+        html += '<td style="text-align:center;">' + trendArrow + ' ' + (diff >= 0 ? '+' : '') + (diff * 100).toFixed(1) + 'pp</td>';
+        html += '<td style="text-align:center;font-family:var(--font-mono);">' + (ind.alltime_samples || ind.recent_samples || '--') + '</td>';
+        html += '<td style="text-align:center;"><span style="font-size:0.62rem;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,0.06);color:' + statusColor + ';font-weight:600;">' + statusText.toUpperCase() + '</span></td></tr>';
+      });
+      tbody.innerHTML = html;
+    }
+    score.edge = status === 'improving' ? 25 : status === 'stable' ? 22 : status === 'declining' ? 5 : 10;
+    updateIntelScore();
+  }).catch(function() {});
+
+  fetch('/api/garves/diagnostics').then(function(r) { return r.json(); }).then(function(d) {
+    var checks = d.checks || {}; var fixes = d.suggested_fixes || []; var issueCount = fixes.length;
+    var dotEl = document.getElementById('gi-diag-dot'); var labelEl = document.getElementById('gi-diag-label'); var countEl = document.getElementById('gi-diag-count');
+    if (countEl) countEl.textContent = issueCount + ' issue' + (issueCount !== 1 ? 's' : '');
+    if (dotEl && labelEl) {
+      if (issueCount === 0) { dotEl.style.background = '#22c55e'; labelEl.textContent = 'All Clear'; labelEl.style.color = '#22c55e'; }
+      else if (issueCount <= 2) { dotEl.style.background = '#eab308'; labelEl.textContent = 'Monitoring'; labelEl.style.color = '#eab308'; }
+      else { dotEl.style.background = '#ef4444'; labelEl.textContent = 'Issues Detected'; labelEl.style.color = '#ef4444'; }
+    }
+    var checksEl = document.getElementById('gi-diag-checks');
+    if (checksEl) {
+      var html = '';
+      var checkNames = ['model_drift','regime_shift','api_health','liquidity','execution','indicator_health','ev_capture'];
+      var labels = {model_drift:'Model Drift', regime_shift:'Regime', api_health:'API Health', liquidity:'Liquidity', execution:'Execution', indicator_health:'Indicators', ev_capture:'EV Capture'};
+      checkNames.forEach(function(name) {
+        var c = checks[name] || {}; var st = c.status || 'unknown';
+        var isOk = st === 'normal' || st === 'healthy' || st === 'stable';
+        var color = isOk ? '#22c55e' : st === 'insufficient_data' || st === 'no_data' ? 'var(--text-muted)' : '#ef4444';
+        var bg = isOk ? 'rgba(34,197,94,0.1)' : st === 'insufficient_data' || st === 'no_data' ? 'rgba(255,255,255,0.04)' : 'rgba(239,68,68,0.1)';
+        html += '<span style="font-size:0.62rem;padding:3px 8px;border-radius:4px;background:' + bg + ';color:' + color + ';font-weight:600;">' + (labels[name] || name) + '</span>';
+      });
+      checksEl.innerHTML = html;
+    }
+    var fixesEl = document.getElementById('gi-diag-fixes');
+    if (fixesEl && fixes.length > 0) {
+      var html = '';
+      fixes.slice(0, 4).forEach(function(f) {
+        html += '<div style="margin-bottom:4px;padding:4px 8px;border-radius:4px;background:rgba(239,68,68,0.06);border-left:2px solid #ef4444;">';
+        html += '<span style="font-weight:600;color:#ef4444;font-size:0.64rem;text-transform:uppercase;">' + (f.check || '') + '</span> ';
+        html += '<span style="color:var(--text-muted);">' + (f.fix || '') + '</span></div>';
+      });
+      fixesEl.innerHTML = html;
+    } else if (fixesEl) { fixesEl.innerHTML = '<span class="text-muted" style="font-size:0.68rem;">All 7 diagnostic checks passing</span>'; }
+  }).catch(function() {});
+
+  fetch('/api/garves/engine-comparison').then(function(r) { return r.json(); }).then(function(d) {
+    var engines = d.engines || {};
+    var totals = d.totals || {};
+    var whale = engines.whale || {};
+    var maker = engines.maker || {};
+    var taker = engines.taker || {};
+
+    /* Engine comparison table rendered by loadEngineComparison() in dashboard_v2.js */
+
+    /* --- Intelligence panel cards --- */
+    var whaleWrEl = document.getElementById('gi-whale-wr'); var whaleDetailEl = document.getElementById('gi-whale-detail');
+    if (whaleWrEl) { whaleWrEl.textContent = whale.trades > 0 ? whale.win_rate.toFixed(1) + '%' : '--'; whaleWrEl.style.color = whale.win_rate >= 55 ? '#22c55e' : whale.win_rate > 0 && whale.win_rate < 50 ? '#ef4444' : ''; }
+    if (whaleDetailEl) whaleDetailEl.textContent = whale.wins + 'W-' + whale.losses + 'L / ' + whale.trades + ' trades';
+    var makerEl = document.getElementById('gi-maker-eff'); var makerDetailEl = document.getElementById('gi-maker-detail');
+    if (makerEl) { var pnl = maker.pnl || 0; makerEl.textContent = pnl > 0 ? '$' + pnl.toFixed(2) : '--'; makerEl.style.color = pnl > 0 ? '#22c55e' : ''; }
+    if (makerDetailEl) makerDetailEl.textContent = maker.trades + ' fills today';
+    var flowEl = document.getElementById('gi-flow-acc'); var flowDetailEl = document.getElementById('gi-flow-detail');
+    if (flowEl) { flowEl.textContent = '--'; }
+    if (flowDetailEl) flowDetailEl.textContent = '';
+
+    /* --- Overview cards --- */
+    var ovWhaleWr = document.getElementById('ov-whale-wr');
+    if (ovWhaleWr && whale.trades > 0) ovWhaleWr.textContent = whale.win_rate.toFixed(1) + '%';
+    var ovMakerPnl = document.getElementById('ov-maker-pnl');
+    if (ovMakerPnl) { var mp = maker.pnl || 0; ovMakerPnl.textContent = '$' + mp.toFixed(2); }
+    var ovMakerFills = document.getElementById('ov-maker-fills');
+    if (ovMakerFills) ovMakerFills.textContent = maker.trades + ' fills';
+    var ovTakerWr = document.getElementById('ov-taker-wr');
+    if (ovTakerWr && taker.trades > 0) ovTakerWr.textContent = taker.win_rate.toFixed(1) + '%';
+    var ovTakerTrades = document.getElementById('ov-taker-trades');
+    if (ovTakerTrades) ovTakerTrades.textContent = taker.trades + ' trades';
+  }).catch(function() {});
+
+  function updateIntelScore() {
+    var total = Math.round(score.wr + score.ev + score.mistake + score.edge); score.total = total;
+    var badge = document.getElementById('gi-score-badge'); var label = document.getElementById('gi-score-label'); var dot = document.getElementById('gi-score-dot');
+    if (badge) badge.textContent = total + '/100'; if (label) label.textContent = total + '/100';
+    var color = total >= 70 ? '#22c55e' : total >= 45 ? '#eab308' : '#ef4444';
+    if (badge) { badge.style.background = 'rgba(' + (total >= 70 ? '34,197,94' : total >= 45 ? '234,179,8' : '239,68,68') + ',0.15)'; badge.style.color = color; }
+    if (label) label.style.color = color; if (dot) dot.style.background = color;
+    var barWr = document.getElementById('gi-bar-wr'); var barEv = document.getElementById('gi-bar-ev');
+    var barMk = document.getElementById('gi-bar-mistake'); var barEdge = document.getElementById('gi-bar-edge');
+    if (barWr) barWr.style.flex = score.wr; if (barEv) barEv.style.flex = score.ev;
+    if (barMk) barMk.style.flex = score.mistake; if (barEdge) barEdge.style.flex = score.edge;
+  }
+
+  function timeSince(ts, future) {
+    var diff = future ? (ts * 1000 - Date.now()) : (Date.now() - ts * 1000);
+    if (diff < 0) diff = Math.abs(diff);
+    var mins = Math.floor(diff / 60000); var hrs = Math.floor(mins / 60); var days = Math.floor(hrs / 24);
+    if (days > 0) return days + 'd ago'; if (hrs > 0) return hrs + 'h ago'; return mins + 'm ago';
+  }
+}
+
+/* ── Killshot Data Loader ── */
+function loadKillshotData() {
+  fetch('/api/killshot/status').then(function(r) { return r.json(); }).then(function(d) {
+    var el = function(id) { return document.getElementById(id); };
+    if (el('ks-trades')) el('ks-trades').textContent = d.total_trades || 0;
+    if (el('ks-wr')) el('ks-wr').textContent = d.win_rate != null ? d.win_rate.toFixed(1) + '%' : '--';
+    var pnl = d.total_pnl || 0;
+    if (el('ks-pnl')) { el('ks-pnl').textContent = '$' + pnl.toFixed(2); el('ks-pnl').style.color = pnl >= 0 ? '#22c55e' : '#ef4444'; }
+    if (el('ks-avg-entry')) el('ks-avg-entry').textContent = d.avg_entry_price ? (d.avg_entry_price * 100).toFixed(0) + '\u00a2' : '--';
+    if (el('ks-session-trades')) el('ks-session-trades').textContent = d.session_trades || 0;
+    if (el('ks-session-wins')) el('ks-session-wins').textContent = d.session_wins || 0;
+    var sp = d.session_pnl || 0;
+    if (el('ks-session-pnl')) { el('ks-session-pnl').textContent = '$' + sp.toFixed(2); el('ks-session-pnl').style.color = sp >= 0 ? '#22c55e' : '#ef4444'; }
+    if (el('ks-daily-loss')) el('ks-daily-loss').textContent = '$' + (d.daily_loss || 0).toFixed(2);
+    if (el('ks-pending-count')) el('ks-pending-count').textContent = d.pending || 0;
+
+    /* Pending trades table */
+    var pending = d.pending_details || [];
+    var ptbody = el('ks-pending-tbody');
+    if (ptbody) {
+      if (pending.length === 0) {
+        ptbody.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;">No pending trades</td></tr>';
+      } else {
+        var html = '';
+        pending.forEach(function(p) {
+          var dirColor = p.direction === 'up' ? '#22c55e' : '#ef4444';
+          html += '<tr><td>' + (p.asset || '').toUpperCase() + '</td>';
+          html += '<td style="color:' + dirColor + ';font-weight:600;">' + (p.direction || '').toUpperCase() + '</td>';
+          html += '<td>' + ((p.entry_price || 0) * 100).toFixed(0) + '\u00a2</td>';
+          html += '<td>$' + (p.size_usd || 0).toFixed(2) + '</td>';
+          html += '<td>' + (p.remaining_s || 0) + 's</td></tr>';
+        });
+        ptbody.innerHTML = html;
+      }
+    }
+  }).catch(function() {});
+
+  /* Paper trade history */
+  fetch('/api/killshot/trades').then(function(r) { return r.json(); }).then(function(trades) {
+    var tbody = document.getElementById('ks-trades-tbody');
+    if (!tbody) return;
+    if (!trades || trades.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="text-muted" style="text-align:center;">No paper trades yet</td></tr>';
+      return;
+    }
+    var html = '';
+    trades.slice(-30).reverse().forEach(function(t) {
+      var ts = t.timestamp ? new Date(t.timestamp * 1000).toLocaleTimeString() : '--';
+      var dirColor = t.direction === 'up' ? '#22c55e' : '#ef4444';
+      var resultColor = t.outcome === 'win' ? '#22c55e' : t.outcome === 'loss' ? '#ef4444' : '#888';
+      var pnlVal = t.pnl != null ? '$' + t.pnl.toFixed(2) : '--';
+      var pnlColor = (t.pnl || 0) >= 0 ? '#22c55e' : '#ef4444';
+      var delta = t.spot_delta_pct != null ? (t.spot_delta_pct * 100).toFixed(3) + '%' : '--';
+      html += '<tr>';
+      html += '<td style="font-size:0.68rem;">' + ts + '</td>';
+      html += '<td>' + (t.asset || '').toUpperCase() + '</td>';
+      html += '<td style="color:' + dirColor + ';font-weight:600;">' + (t.direction || '').toUpperCase() + '</td>';
+      html += '<td>' + ((t.entry_price || 0) * 100).toFixed(0) + '\u00a2</td>';
+      html += '<td>$' + (t.size_usd || 0).toFixed(2) + '</td>';
+      html += '<td>' + delta + '</td>';
+      html += '<td style="color:' + resultColor + ';font-weight:600;">' + (t.outcome || 'PENDING').toUpperCase() + '</td>';
+      html += '<td style="color:' + pnlColor + ';">' + (t.outcome ? pnlVal : '--') + '</td>';
+      html += '</tr>';
+    });
+    tbody.innerHTML = html;
+  }).catch(function() {});
+}
+
+/* Auto-refresh Killshot every 10s */
+setInterval(loadKillshotData, 10000);
+setTimeout(loadKillshotData, 2000);
+</script>

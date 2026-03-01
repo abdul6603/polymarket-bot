@@ -1,0 +1,549 @@
+<!-- ORACLE — The Weekly Crypto Oracle -->
+<div class="tab-content" id="tab-oracle">
+
+  <!-- A: Intel Meter + Header -->
+  <div id="intel-oracle" class="intel-meter" style="margin-bottom:12px;"></div>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+    <span id="oracle-mode-badge" class="trading-mode-badge trading-mode-paper">Trading: Paper Money</span>
+    <button class="trading-mode-toggle" id="oracle-mode-toggle" onclick="toggleOracleMode()">Switch</button>
+    <span id="oracle-cycle-timer" style="display:inline-flex;align-items:center;gap:7px;font-family:var(--font-mono);font-size:0.82rem;font-weight:700;padding:6px 16px;border-radius:999px;border:1px solid rgba(245,158,11,0.35);background:rgba(245,158,11,0.12);color:var(--agent-oracle);margin-left:auto;transition:box-shadow .3s;cursor:default;"
+       title="Oracle scans every 4 hours (6x/day)">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--agent-oracle);animation:rxPulse 2s ease-in-out infinite;"></span>
+      Next: <span id="oracle-cycle-countdown" style="min-width:48px;text-align:center;">--</span>
+      <span style="color:rgba(255,255,255,0.2);">|</span>
+      <span style="font-size:0.7rem;color:var(--text-muted);">#<span id="oracle-cycle-num">0</span></span>
+      <span style="color:rgba(255,255,255,0.2);">|</span>
+      <span id="oracle-sc-markets" style="font-size:0.7rem;color:var(--text-muted);">-- mkts</span>
+    </span>
+  </div>
+
+  <!-- B: Action Bar -->
+  <div class="agent-widget-row">
+    <button class="btn" onclick="oracleRefresh()" style="font-size:0.72rem;font-weight:700;border-color:var(--agent-oracle);color:var(--agent-oracle);">Refresh Status</button>
+    <button class="btn" onclick="healthCheckAgent('oracle')" style="font-size:0.72rem;">Health Check</button>
+    <span id="oracle-last-run" class="text-muted" style="font-size:0.68rem;margin-left:auto;"></span>
+  </div>
+  <div class="health-inline" id="oracle-health-result"></div>
+
+  <!-- C: Hero Cards -->
+  <div class="grid-3" style="margin-bottom:12px;">
+    <div class="stat-card" data-accent="oracle">
+      <div class="stat-value" id="oracle-bankroll" style="font-size:1.4rem;color:var(--agent-oracle);">$150</div>
+      <div class="stat-label">Bankroll</div>
+    </div>
+    <div class="stat-card" data-accent="oracle">
+      <div class="stat-value" id="oracle-wagered" style="font-size:1.4rem;">$0</div>
+      <div class="stat-label">Capital Deployed</div>
+      <div id="oracle-loss-cap-bar" style="margin-top:6px;"></div>
+    </div>
+    <div class="stat-card" data-accent="oracle">
+      <div class="stat-value" id="oracle-ev" style="font-size:1.4rem;">$0.00</div>
+      <div class="stat-label">Expected Value</div>
+    </div>
+  </div>
+
+  <!-- D: Market Regime -->
+  <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-oracle);">
+    <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Market Regime</h3>
+    <div class="grid-6" style="margin-bottom:0;">
+      <div class="stat-card" data-accent="oracle"><div class="stat-value" id="oracle-regime" style="font-size:0.9rem;color:var(--agent-oracle);">--</div><div class="stat-label">Regime</div></div>
+      <div class="stat-card" data-accent="oracle"><div class="stat-value" id="oracle-confidence">0%</div><div class="stat-label">Confidence</div></div>
+      <div class="stat-card" data-accent="oracle"><div class="stat-value" id="oracle-scanned">0</div><div class="stat-label">Scanned</div></div>
+      <div class="stat-card" data-accent="oracle"><div class="stat-value" id="oracle-tradeable">0</div><div class="stat-label">Tradeable</div></div>
+      <div class="stat-card" data-accent="oracle"><div class="stat-value" id="oracle-trades-placed">0</div><div class="stat-label">Placed</div></div>
+      <div class="stat-card" data-accent="oracle"><div class="stat-value" id="oracle-btc-price">--</div><div class="stat-label">BTC at Run</div></div>
+    </div>
+  </div>
+
+  <!-- E: Key Weekly Questions (main table) -->
+  <div class="collapse-section default-open">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="oracle" style="margin-bottom:0;">Key Weekly Questions <span id="oracle-predictions-badge" style="font-size:0.56rem;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:8px;background:rgba(245,158,11,0.15);border:1px solid var(--agent-oracle);color:var(--agent-oracle);">0</span></h2>
+    </div>
+    <div class="collapse-body">
+      <table class="data-table">
+        <thead><tr><th>Exch</th><th>Question</th><th>Asset</th><th>Type</th><th>Market</th><th>Oracle</th><th>Edge</th><th>Side</th><th>Conv.</th><th>Size</th></tr></thead>
+        <tbody id="oracle-predictions-tbody"><tr><td colspan="10" class="text-muted" style="text-align:center;">No predictions yet — first cycle runs Sunday 00:00 UTC</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- E2: Open Positions -->
+  <div class="collapse-section default-open">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="oracle" style="margin-bottom:0;">Open Positions <span id="oracle-positions-badge" style="font-size:0.56rem;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:8px;background:rgba(245,158,11,0.15);border:1px solid var(--agent-oracle);color:var(--agent-oracle);">0</span></h2>
+    </div>
+    <div class="collapse-body">
+      <table class="data-table">
+        <thead><tr><th>Exch</th><th>Market</th><th>Asset</th><th>Side</th><th>Cost</th><th>Entry</th><th>Now</th><th>P&amp;L</th><th>Payout</th><th>Conv.</th><th>Week</th></tr></thead>
+        <tbody id="oracle-positions-tbody"><tr><td colspan="11" class="text-muted" style="text-align:center;">No open positions</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- F: Track Record -->
+  <div class="collapse-section default-open">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="oracle" style="margin-bottom:0;">Track Record (52-Week Memory)</h2>
+    </div>
+    <div class="collapse-body">
+      <div class="grid-6" style="margin-bottom:10px;">
+        <div class="stat-card" data-accent="oracle"><div class="stat-value" id="oracle-wr" style="color:var(--agent-oracle);">--</div><div class="stat-label">Win Rate</div></div>
+        <div class="stat-card" data-accent="oracle"><div class="stat-value" id="oracle-total-pnl">$0.00</div><div class="stat-label">Total P&amp;L</div></div>
+        <div class="stat-card" data-accent="oracle"><div class="stat-value" id="oracle-total-preds">0</div><div class="stat-label">Predictions</div></div>
+        <div class="stat-card" data-accent="oracle"><div class="stat-value" id="oracle-weeks-tracked">0</div><div class="stat-label">Weeks</div></div>
+        <div class="stat-card" data-accent="oracle"><div class="stat-value" id="oracle-best-type">--</div><div class="stat-label">Best Type</div></div>
+        <div class="stat-card" data-accent="oracle"><div class="stat-value" id="oracle-avg-edge">--</div><div class="stat-label">Avg Edge</div></div>
+      </div>
+      <h3 class="section-title" style="font-size:0.68rem;margin-bottom:6px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;">Accuracy by Market Type</h3>
+      <table class="data-table">
+        <thead><tr><th>Type</th><th>Wins</th><th>Losses</th><th>Win Rate</th><th>P&amp;L</th></tr></thead>
+        <tbody id="oracle-accuracy-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;">No resolved predictions yet</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- G: Weekly Report -->
+  <div class="collapse-section">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="oracle" style="margin-bottom:0;">Oracle Weekly Report</h2>
+    </div>
+    <div class="collapse-body">
+      <div id="oracle-report" class="oracle-report-styled">No report available yet — first cycle runs Sunday 00:00 UTC</div>
+    </div>
+  </div>
+
+  <!-- H: History -->
+  <div class="collapse-section">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="oracle" style="margin-bottom:0;">Cycle History</h2>
+    </div>
+    <div class="collapse-body">
+      <table class="data-table">
+        <thead><tr><th>Week</th><th>Regime</th><th>Confidence</th><th>Scanned</th><th>Tradeable</th><th>Trades</th><th>Wagered</th></tr></thead>
+        <tbody id="oracle-history-tbody"><tr><td colspan="7" class="text-muted" style="text-align:center;">No history yet</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- I: Config -->
+  <div class="collapse-section">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="oracle" style="margin-bottom:0;">Config</h2>
+    </div>
+    <div class="collapse-body">
+      <div id="oracle-config" class="text-muted" style="font-family:var(--font-mono);font-size:0.72rem;">Loading config...</div>
+    </div>
+  </div>
+
+</div>
+
+<style>
+.oracle-report-styled {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.78rem;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+.oracle-report-styled .oracle-h4 {
+  color: var(--agent-oracle);
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin: 14px 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(245,158,11,0.2);
+}
+.oracle-report-styled .oracle-bullet {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 4px 0;
+  padding-left: 4px;
+}
+.oracle-report-styled .oracle-bullet::before {
+  content: '';
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--agent-oracle);
+  margin-top: 7px;
+  flex-shrink: 0;
+}
+.oracle-report-styled .oracle-amount { font-weight: 700; }
+.oracle-report-styled .oracle-pos { color: var(--success); font-weight: 600; }
+.oracle-report-styled .oracle-neg { color: var(--error); font-weight: 600; }
+</style>
+
+<script>
+function oracleRenderMarkdown(text) {
+  if (!text) return '';
+  var lines = text.split('\n');
+  var html = '';
+  var inTable = false;
+  var tableRows = [];
+
+  function flushTable() {
+    if (tableRows.length < 2) { inTable = false; tableRows = []; return; }
+    html += '<table class="data-table" style="margin:8px 0;">';
+    var headers = tableRows[0];
+    html += '<thead><tr>';
+    headers.forEach(function(h) { html += '<th>' + h.trim() + '</th>'; });
+    html += '</tr></thead><tbody>';
+    for (var i = 2; i < tableRows.length; i++) {
+      html += '<tr>';
+      tableRows[i].forEach(function(c) {
+        var cell = c.trim();
+        var style = '';
+        if (/^\+\d/.test(cell) || /^\+\$/.test(cell)) style = 'color:var(--success);font-weight:600;';
+        else if (/^-\d/.test(cell) || /^-\$/.test(cell)) style = 'color:var(--error);font-weight:600;';
+        else if (/^\$/.test(cell)) style = 'font-weight:700;';
+        html += '<td' + (style ? ' style="' + style + '"' : '') + '>' + cell + '</td>';
+      });
+      html += '</tr>';
+    }
+    html += '</tbody></table>';
+    tableRows = [];
+    inTable = false;
+  }
+
+  for (var i = 0; i < lines.length; i++) {
+    var line = lines[i];
+
+    // Table row
+    if (line.trim().indexOf('|') === 0) {
+      var cells = line.split('|').filter(function(c, idx) { return idx > 0 && idx < line.split('|').length - 1; });
+      if (cells.length > 0) {
+        // Skip separator rows (---|---)
+        if (/^[\s\-:|]+$/.test(cells.join('|'))) { tableRows.push(null); inTable = true; continue; }
+        tableRows.push(cells);
+        inTable = true;
+        continue;
+      }
+    }
+    if (inTable) flushTable();
+
+    // Bold headers: **text**
+    if (/^\*\*(.+)\*\*\s*$/.test(line.trim())) {
+      html += '<div class="oracle-h4">' + line.trim().replace(/\*\*/g, '') + '</div>';
+      continue;
+    }
+
+    // Bullet points
+    if (/^\s*[-•]\s+/.test(line)) {
+      var bullet = line.replace(/^\s*[-•]\s+/, '');
+      // Highlight amounts and percentages
+      bullet = bullet.replace(/(\$[\d,.]+)/g, '<span class="oracle-amount">$1</span>');
+      bullet = bullet.replace(/(\+[\d.]+%)/g, '<span class="oracle-pos">$1</span>');
+      bullet = bullet.replace(/(-[\d.]+%)/g, '<span class="oracle-neg">$1</span>');
+      html += '<div class="oracle-bullet"><span>' + bullet + '</span></div>';
+      continue;
+    }
+
+    // Regular line — highlight amounts
+    var processed = line;
+    processed = processed.replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--agent-oracle);">$1</strong>');
+    processed = processed.replace(/(\$[\d,.]+)/g, '<span class="oracle-amount">$1</span>');
+    processed = processed.replace(/(\+[\d.]+%)/g, '<span class="oracle-pos">$1</span>');
+    processed = processed.replace(/(-[\d.]+%)/g, '<span class="oracle-neg">$1</span>');
+    if (line.trim()) html += '<div style="margin:2px 0;">' + processed + '</div>';
+    else html += '<div style="height:8px;"></div>';
+  }
+  if (inTable) flushTable();
+  return html;
+}
+
+function oracleRefresh() {
+  fetch('/api/oracle').then(function(r) { return r.json(); }).then(function(d) {
+    // Mode
+    var modeBadge = document.getElementById('oracle-mode-badge');
+    if (modeBadge) {
+      modeBadge.classList.remove('trading-mode-live', 'trading-mode-paper');
+      if (d.dry_run) {
+        modeBadge.classList.add('trading-mode-paper');
+        modeBadge.textContent = 'Trading: Paper Money';
+      } else {
+        modeBadge.classList.add('trading-mode-live');
+        modeBadge.textContent = 'Trading: Real Money';
+      }
+    }
+
+    // Last run
+    var lastRunEl = document.getElementById('oracle-last-run');
+    if (lastRunEl && d.last_run) {
+      lastRunEl.textContent = 'Last run: ' + d.last_run;
+    }
+
+    // Cycle timer badge
+    var numEl = document.getElementById('oracle-cycle-num');
+    if (numEl) numEl.textContent = d.cycle_count || 0;
+    var mktsEl = document.getElementById('oracle-sc-markets');
+    if (mktsEl) mktsEl.textContent = (d.markets_scanned || 0) + ' mkts';
+    if (d.next_scan_at > 0) {
+      oracleStartCountdown(d.next_scan_at);
+    }
+
+    // Hero cards
+    oracleSetVal('oracle-bankroll', '$150');
+    oracleSetVal('oracle-wagered', '$' + (d.total_wagered || 0).toFixed(0));
+    oraclePnl('oracle-ev', d.total_expected_value || 0);
+    var oracleTotalPnl = (d.accuracy || {}).total_pnl || 0;
+    if (typeof renderLossCapBar === 'function') renderLossCapBar('oracle-loss-cap-bar', oracleTotalPnl, 100, 'Weekly');
+
+    // Market regime
+    var regime = (d.regime || '--').replace(/_/g, ' ');
+    oracleSetVal('oracle-regime', regime.charAt(0).toUpperCase() + regime.slice(1));
+    oracleSetVal('oracle-confidence', ((d.confidence || 0) * 100).toFixed(0) + '%');
+    oracleSetVal('oracle-scanned', d.markets_scanned || 0);
+    oracleSetVal('oracle-tradeable', d.tradeable_markets || 0);
+    oracleSetVal('oracle-trades-placed', d.trades_placed || 0);
+    oracleSetVal('oracle-btc-price', d.btc_price_at_run > 0 ? '$' + d.btc_price_at_run.toLocaleString() : '--');
+
+    // Predictions table
+    var preds = d.predictions || [];
+    var badge = document.getElementById('oracle-predictions-badge');
+    if (badge) badge.textContent = preds.length;
+
+    var tbody = document.getElementById('oracle-predictions-tbody');
+    if (tbody) {
+      if (preds.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" class="text-muted" style="text-align:center;">No predictions yet</td></tr>';
+      } else {
+        var html = '';
+        preds.forEach(function(p) {
+          var edgeColor = p.edge > 0 ? 'var(--success)' : p.edge < 0 ? 'var(--error)' : 'var(--text-muted)';
+          var sideColor = p.side === 'YES' ? 'var(--success)' : 'var(--error)';
+          var convColors = {HIGH: 'var(--success)', MEDIUM: 'var(--warning)', LOW: 'var(--text-secondary)', SKIP: 'var(--text-muted)'};
+          var isKalshi = (p.condition_id || '').indexOf('kalshi_') === 0;
+          var exchBadge = isKalshi
+            ? '<span style="padding:2px 6px;border-radius:3px;font-size:0.58rem;font-weight:700;background:rgba(138,43,226,0.15);color:#b388ff;">K</span>'
+            : '<span style="padding:2px 6px;border-radius:3px;font-size:0.58rem;font-weight:700;background:rgba(0,200,100,0.15);color:#00c864;">P</span>';
+          html += '<tr>';
+          html += '<td style="text-align:center;">' + exchBadge + '</td>';
+          html += '<td style="font-size:0.68rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (p.question || '') + '</td>';
+          html += '<td style="font-weight:600;">' + (p.asset || '').toUpperCase() + '</td>';
+          html += '<td style="font-size:0.68rem;">' + (p.type || '') + '</td>';
+          html += '<td>' + ((p.market_prob || 0) * 100).toFixed(0) + '%</td>';
+          html += '<td style="color:var(--agent-oracle);font-weight:600;">' + ((p.oracle_prob || 0) * 100).toFixed(0) + '%</td>';
+          html += '<td style="color:' + edgeColor + ';font-weight:600;">' + (p.edge > 0 ? '+' : '') + ((p.edge || 0) * 100).toFixed(1) + '%</td>';
+          html += '<td style="color:' + sideColor + ';font-weight:700;">' + (p.side || '') + '</td>';
+          html += '<td style="color:' + (convColors[p.conviction] || 'var(--text-muted)') + ';font-weight:600;">' + (p.conviction || '') + '</td>';
+          html += '<td>$' + (p.size || 0).toFixed(0) + '</td>';
+          html += '</tr>';
+        });
+        tbody.innerHTML = html;
+      }
+    }
+
+    // Accuracy
+    var acc = d.accuracy || {};
+    oracleSetVal('oracle-wr', (acc.overall_win_rate || 0).toFixed(1) + '%');
+    var wrEl = document.getElementById('oracle-wr');
+    if (wrEl) wrEl.style.color = (acc.overall_win_rate || 0) >= 50 ? 'var(--success)' : 'var(--error)';
+    oraclePnl('oracle-total-pnl', acc.total_pnl || 0);
+    oracleSetVal('oracle-total-preds', acc.total_predictions || 0);
+    oracleSetVal('oracle-weeks-tracked', acc.weeks_tracked || 0);
+
+    // Best type
+    var byType = acc.by_type || {};
+    var bestType = '--';
+    var bestWR = 0;
+    Object.keys(byType).forEach(function(k) {
+      var t = byType[k];
+      if (t.win_rate > bestWR && t.total >= 3) {
+        bestWR = t.win_rate;
+        bestType = k;
+      }
+    });
+    oracleSetVal('oracle-best-type', bestType);
+
+    // Avg edge from predictions
+    if (preds.length > 0) {
+      var totalEdge = 0;
+      preds.forEach(function(p) { totalEdge += Math.abs(p.edge || 0); });
+      oracleSetVal('oracle-avg-edge', ((totalEdge / preds.length) * 100).toFixed(1) + '%');
+    }
+
+    // Accuracy by type table
+    var accTbody = document.getElementById('oracle-accuracy-tbody');
+    if (accTbody) {
+      var typeKeys = Object.keys(byType);
+      if (typeKeys.length === 0) {
+        accTbody.innerHTML = '<tr><td colspan="5" class="text-muted" style="text-align:center;">No resolved predictions yet</td></tr>';
+      } else {
+        var accHtml = '';
+        typeKeys.forEach(function(k) {
+          var t = byType[k];
+          var wr = t.total > 0 ? (t.won / t.total * 100) : 0;
+          var wrColor = wr >= 50 ? 'var(--success)' : 'var(--error)';
+          var pnlColor = (t.pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)';
+          accHtml += '<tr>';
+          accHtml += '<td style="font-weight:600;">' + k + '</td>';
+          accHtml += '<td>' + (t.won || 0) + '</td>';
+          accHtml += '<td>' + (t.lost || 0) + '</td>';
+          accHtml += '<td style="color:' + wrColor + ';font-weight:600;">' + wr.toFixed(1) + '%</td>';
+          accHtml += '<td style="color:' + pnlColor + ';">$' + (t.pnl || 0).toFixed(2) + '</td>';
+          accHtml += '</tr>';
+        });
+        accTbody.innerHTML = accHtml;
+      }
+    }
+
+    // Config
+    var cfgEl = document.getElementById('oracle-config');
+    if (cfgEl) {
+      cfgEl.innerHTML = 'Mode: ' + (d.dry_run ? 'DRY RUN' : 'LIVE')
+        + ' | Bankroll: $150 | Flat $25/trade (8% min edge)'
+        + ' | Max Trades: 8/week, 3/day | Max Exposure: $100 | Weekly Loss Limit: $75'
+        + ' | Cycle: Every 4h (6x/day) | Emergency: 8% BTC move'
+        + ' | Ensemble: Claude (0.45) + Grok (0.30) + Gemini (0.25)';
+    }
+
+    // Intel meter
+    if (typeof updateIntelMeter === 'function') {
+      var pct = d.running ? 50 : 10;
+      if (d.trades_placed > 0) pct = Math.min(90, 40 + d.trades_placed * 5);
+      var acc_wr = (d.accuracy || {}).overall_win_rate || 0;
+      if (acc_wr > 0) pct = Math.min(95, pct + acc_wr * 0.3);
+      updateIntelMeter('intel-oracle', pct, 'var(--agent-oracle)');
+    }
+  }).catch(function(e) {
+    console.log('[Oracle] Refresh error:', e);
+  });
+
+  // Report (styled markdown)
+  fetch('/api/oracle/report').then(function(r) { return r.json(); }).then(function(d) {
+    var el = document.getElementById('oracle-report');
+    if (el && d.report) {
+      el.innerHTML = oracleRenderMarkdown(d.report);
+    }
+  }).catch(function() {});
+
+  // Open Positions
+  fetch('/api/oracle/positions').then(function(r) { return r.json(); }).then(function(positions) {
+    var badge = document.getElementById('oracle-positions-badge');
+    if (badge) badge.textContent = positions.length;
+
+    var tbody = document.getElementById('oracle-positions-tbody');
+    if (!tbody) return;
+
+    if (!positions.length) {
+      tbody.innerHTML = '<tr><td colspan="11" class="text-muted" style="text-align:center;">No open positions</td></tr>';
+      return;
+    }
+
+    var html = '';
+    positions.forEach(function(p) {
+      var sideColor = p.side === 'YES' ? 'var(--success)' : 'var(--error)';
+      var sideBg = p.side === 'YES' ? 'rgba(34,197,94,0.12)' : 'rgba(239,68,68,0.12)';
+      var pnlColor = p.pnl >= 0 ? 'var(--success)' : 'var(--error)';
+      var pnlPrefix = p.pnl >= 0 ? '+$' : '-$';
+      var convColors = {HIGH:'var(--success)', MEDIUM:'var(--warning)', LOW:'var(--text-secondary)', SKIP:'var(--text-muted)'};
+      var isKalshi = (p.condition_id || '').indexOf('kalshi_') === 0;
+      var exchBadge = isKalshi
+        ? '<span style="padding:2px 6px;border-radius:3px;font-size:0.58rem;font-weight:700;background:rgba(138,43,226,0.15);color:#b388ff;">K</span>'
+        : '<span style="padding:2px 6px;border-radius:3px;font-size:0.58rem;font-weight:700;background:rgba(0,200,100,0.15);color:#00c864;">P</span>';
+      html += '<tr>';
+      html += '<td style="text-align:center;">' + exchBadge + '</td>';
+      html += '<td style="font-size:0.68rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (p.question || '') + '</td>';
+      html += '<td style="font-weight:600;">' + (p.asset || '') + '</td>';
+      html += '<td><span style="padding:2px 8px;border-radius:3px;font-weight:700;font-size:0.68rem;background:' + sideBg + ';color:' + sideColor + ';">' + p.side + '</span></td>';
+      html += '<td>$' + (p.cost || 0).toFixed(2) + '</td>';
+      html += '<td>' + ((p.entry || 0) * 100).toFixed(0) + '%</td>';
+      html += '<td style="font-weight:600;color:var(--agent-oracle);">' + ((p.now || 0) * 100).toFixed(0) + '%</td>';
+      html += '<td style="color:' + pnlColor + ';font-weight:700;">' + pnlPrefix + Math.abs(p.pnl).toFixed(2) + '</td>';
+      html += '<td>$' + (p.payout || 0).toFixed(2) + '</td>';
+      html += '<td style="color:' + (convColors[p.conviction] || 'var(--text-muted)') + ';font-weight:600;">' + (p.conviction || '') + '</td>';
+      html += '<td style="font-size:0.68rem;">' + (p.week || '') + '</td>';
+      html += '</tr>';
+    });
+    tbody.innerHTML = html;
+  }).catch(function() {});
+
+  // History
+  fetch('/api/oracle/history').then(function(r) { return r.json(); }).then(function(rows) {
+    var tbody = document.getElementById('oracle-history-tbody');
+    if (!tbody || !rows.length) return;
+    var html = '';
+    rows.forEach(function(r) {
+      html += '<tr>';
+      html += '<td>' + (r.week_start || '') + '</td>';
+      html += '<td>' + ((r.regime || '').replace(/_/g, ' ')) + '</td>';
+      html += '<td>' + ((r.ensemble_confidence || 0) * 100).toFixed(0) + '%</td>';
+      html += '<td>' + (r.total_markets_scanned || 0) + '</td>';
+      html += '<td>' + (r.tradeable_markets || 0) + '</td>';
+      html += '<td>' + (r.trades_placed || 0) + '</td>';
+      html += '<td>$' + (r.total_wagered || 0).toFixed(0) + '</td>';
+      html += '</tr>';
+    });
+    tbody.innerHTML = html;
+  }).catch(function() {});
+}
+
+function oracleSetVal(id, val) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function oraclePnl(id, val) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var prefix = val >= 0 ? '+$' : '-$';
+  el.textContent = prefix + Math.abs(val).toFixed(2);
+  el.style.color = val >= 0 ? 'var(--success)' : 'var(--error)';
+}
+
+// Cycle countdown timer
+var _oracleCycleInterval = null;
+function oracleStartCountdown(nextAt) {
+  if (_oracleCycleInterval) clearInterval(_oracleCycleInterval);
+  function tick() {
+    var el = document.getElementById('oracle-cycle-countdown');
+    var pill = document.getElementById('oracle-cycle-timer');
+    if (!el) return;
+    var now = Date.now() / 1000;
+    var diff = Math.max(0, Math.round(nextAt - now));
+    if (diff <= 0) {
+      el.textContent = 'NOW';
+      el.style.color = 'var(--success)';
+      if (pill) pill.style.boxShadow = '0 0 12px rgba(34,197,94,0.4)';
+    } else {
+      var h = Math.floor(diff / 3600);
+      var m = Math.floor((diff % 3600) / 60);
+      var s = diff % 60;
+      if (h > 0) {
+        el.textContent = h + 'h ' + (m < 10 ? '0' : '') + m + 'm';
+      } else {
+        el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+      }
+      if (diff < 300) {
+        el.style.color = 'var(--warning)';
+        if (pill) pill.style.boxShadow = '0 0 10px rgba(243,156,18,0.3)';
+      } else {
+        el.style.color = '';
+        if (pill) pill.style.boxShadow = '';
+      }
+    }
+  }
+  tick();
+  _oracleCycleInterval = setInterval(tick, 1000);
+}
+
+// Auto-refresh when tab is active
+var _oracleInterval = null;
+(function() {
+  var origSwitch = window.switchTab;
+  if (origSwitch) {
+    window.switchTab = function(tab) {
+      origSwitch(tab);
+      if (tab === 'oracle') {
+        oracleRefresh();
+        if (_oracleInterval) clearInterval(_oracleInterval);
+        _oracleInterval = setInterval(oracleRefresh, 60000);
+      } else {
+        if (_oracleInterval) { clearInterval(_oracleInterval); _oracleInterval = null; }
+      }
+    };
+  }
+})();
+</script>

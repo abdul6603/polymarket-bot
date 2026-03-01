@@ -1,315 +1,311 @@
-<!-- LISA — The Operator (V3: X Integration + Smart Actions) -->
+<!-- LISA — Social Media Manager -->
 <div class="tab-content" id="tab-lisa">
-  <!-- Header + Status Row -->
-  <div id="intel-lisa" class="intel-meter" style="margin-bottom:12px;"></div>
-  <div class="agent-widget-row" id="lisa-widgets">
-    <div class="widget-badge" id="lisa-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+    <h2 style="margin:0;font-size:1.1rem;font-weight:700;">
+      Lisa &mdash; Social Media Manager
+    </h2>
+    <span id="lisa-mode-badge" class="badge badge-info">
+      <span class="status-dot idle"></span> X: @soren0era
+    </span>
+    <span id="x-connection-status" style="font-family:var(--font-mono);font-size:0.68rem;color:var(--text-muted);">--</span>
+    <span id="x-auto-poster-badge" style="font-family:var(--font-mono);font-size:0.64rem;padding:2px 8px;border-radius:var(--radius-pill);background:rgba(255,255,255,0.05);color:var(--text-muted);">Auto-poster: --</span>
     <button class="btn" onclick="healthCheckAgent('lisa')" style="font-size:0.72rem;">Health Check</button>
-</div>
+    <button class="btn" onclick="lisaRefreshAll()" style="font-size:0.72rem;font-weight:700;border-color:var(--agent-lisa);color:var(--agent-lisa);margin-left:auto;">
+      Refresh
+    </button>
+    <span class="text-muted" style="font-size:0.68rem;">
+      Updated: <span id="lisa-updated">--</span>
+    </span>
+  </div>
+
   <div class="health-inline" id="lisa-health-result"></div>
 
-  <!-- Workflow Status -->
-  <div class="glass-card" style="margin-bottom:12px;padding:10px 14px;">
-    <div style="display:flex;align-items:center;gap:12px;font-family:var(--font-mono);font-size:0.72rem;flex-wrap:wrap;">
-      <span style="color:var(--agent-lisa);font-weight:600;">WORKFLOW</span>
-      <span style="color:var(--agent-soren);">Soren generates</span>
+  <!-- Workflow Pipeline -->
+  <div class="glass-card" style="margin-bottom:14px;padding:10px 14px;">
+    <div style="display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:0.72rem;flex-wrap:wrap;justify-content:center;">
+      <span style="padding:3px 10px;border-radius:var(--radius-pill);background:rgba(204,102,255,0.1);border:1px solid rgba(204,102,255,0.2);color:var(--agent-soren);font-weight:600;">Soren generates</span>
       <span style="color:var(--text-muted);">&rarr;</span>
-      <span style="color:var(--agent-lisa);">Lisa rates (80+ auto)</span>
+      <span style="padding:3px 10px;border-radius:var(--radius-pill);background:rgba(255,136,0,0.1);border:1px solid rgba(255,136,0,0.2);color:var(--agent-lisa);font-weight:600;">Lisa rates (80+ auto)</span>
       <span style="color:var(--text-muted);">&rarr;</span>
-      <span style="color:#ffaa00;">Jordan approves</span>
+      <span style="padding:3px 10px;border-radius:var(--radius-pill);background:rgba(255,170,0,0.1);border:1px solid rgba(255,170,0,0.2);color:var(--warning);font-weight:600;">Jordan approves</span>
       <span style="color:var(--text-muted);">&rarr;</span>
-      <span style="color:#22aa44;">Auto-posts to X w/ image</span>
+      <span style="padding:3px 10px;border-radius:var(--radius-pill);background:rgba(34,170,68,0.1);border:1px solid rgba(34,170,68,0.2);color:var(--success);font-weight:600;">Auto-posts to X</span>
     </div>
   </div>
 
-  <!-- Smart Action Buttons Grid -->
-  <div style="margin-bottom:var(--space-6);">
-    <h2 class="section-title" data-accent="lisa">Smart Actions</h2>
-    <div class="atlas-content-actions" style="grid-template-columns:repeat(4,1fr);">
-      <button class="atlas-action-btn atlas-action-btn--x" onclick="testXConnection()">
-        <span class="action-icon">🔗</span>
-        <span class="action-text"><span class="action-title">Test X Connection</span><span class="action-sub">Verify API credentials</span></span>
-      </button>
-      <button class="atlas-action-btn atlas-action-btn--soren" onclick="generateXImage('quote')">
-        <span class="action-icon">💬</span>
-        <span class="action-text"><span class="action-title">Quote Card</span><span class="action-sub">DALL-E 3 quote image</span></span>
-      </button>
-      <button class="atlas-action-btn atlas-action-btn--soren" onclick="generateXImage('cinematic')">
-        <span class="action-icon">🎬</span>
-        <span class="action-text"><span class="action-title">Post Image</span><span class="action-sub">Cinematic branded image</span></span>
-      </button>
-      <button class="atlas-action-btn atlas-action-btn--x" onclick="huntReplies()">
-        <span class="action-icon">🎯</span>
-        <span class="action-text"><span class="action-title">Hunt Replies</span><span class="action-sub">Find viral opportunities</span></span>
-      </button>
-      <button class="atlas-action-btn atlas-action-btn--scan" onclick="scanXCompetitors()">
-        <span class="action-icon">🔍</span>
-        <span class="action-text"><span class="action-title">Scan Competitors</span><span class="action-sub">X niche intelligence</span></span>
-      </button>
-      <button class="atlas-action-btn atlas-action-btn--lisa" onclick="runPipeline()">
-        <span class="action-icon">⚡</span>
-        <span class="action-text"><span class="action-title">Run Pipeline</span><span class="action-sub">Review pending content</span></span>
-      </button>
-      <button class="atlas-action-btn atlas-action-btn--x" onclick="postNextToX()">
-        <span class="action-icon">📤</span>
-        <span class="action-text"><span class="action-title">Post Next</span><span class="action-sub">Post next scheduled item</span></span>
-      </button>
-      <button class="atlas-action-btn atlas-action-btn--lisa" onclick="loadXMentions()">
-        <span class="action-icon">📬</span>
-        <span class="action-text"><span class="action-title">Check Mentions</span><span class="action-sub">Fetch @soren0era mentions</span></span>
-      </button>
+  <!-- Hero Metrics -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;">
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Posted Today</div>
+      <div id="lisa-posted-today" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">--</div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Scheduled</div>
+      <div id="lisa-scheduled-count" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);color:var(--warning);">--</div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Mentions</div>
+      <div id="lisa-mentions-count" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">--</div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Image Budget</div>
+      <div id="lisa-image-budget" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">--</div>
     </div>
   </div>
 
-  <!-- Stats Row -->
-  <div class="grid-4" style="margin-bottom:var(--space-4);">
-    <div class="stat-card" data-accent="lisa"><div class="stat-value" id="lisa-posted-today">--</div><div class="stat-label">Posted Today</div></div>
-    <div class="stat-card" data-accent="lisa"><div class="stat-value" id="lisa-scheduled-count">--</div><div class="stat-label">Scheduled</div></div>
-    <div class="stat-card" data-accent="lisa"><div class="stat-value" id="lisa-mentions-count">--</div><div class="stat-label">Mentions</div></div>
-    <div class="stat-card" data-accent="lisa"><div class="stat-value" id="lisa-image-budget">--</div><div class="stat-label">Image Budget</div></div>
+  <!-- Essential Action Buttons -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;">
+    <button class="btn" onclick="testXConnection()" style="font-size:0.72rem;text-align:center;padding:8px;">
+      <span style="display:block;font-weight:700;">Test X Connection</span>
+      <span style="display:block;font-size:0.62rem;color:var(--text-muted);margin-top:2px;">Verify API credentials</span>
+    </button>
+    <button class="btn" onclick="runPipeline()" style="font-size:0.72rem;text-align:center;padding:8px;">
+      <span style="display:block;font-weight:700;">Run Pipeline</span>
+      <span style="display:block;font-size:0.62rem;color:var(--text-muted);margin-top:2px;">Review pending content</span>
+    </button>
+    <button class="btn" onclick="huntReplies()" style="font-size:0.72rem;text-align:center;padding:8px;">
+      <span style="display:block;font-weight:700;">Hunt Replies</span>
+      <span style="display:block;font-size:0.62rem;color:var(--text-muted);margin-top:2px;">Find viral opportunities</span>
+    </button>
+    <button class="btn" onclick="postNextToX()" style="font-size:0.72rem;text-align:center;padding:8px;">
+      <span style="display:block;font-weight:700;">Post Next</span>
+      <span style="display:block;font-size:0.62rem;color:var(--text-muted);margin-top:2px;">Post next scheduled item</span>
+    </button>
   </div>
 
-  <!-- X Connection Status -->
-  <div class="glass-card" id="x-connection-card" style="border-left:3px solid #1DA1F2;margin-bottom:var(--space-6);">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-      <h3 class="section-title" style="font-size:0.74rem;margin:0;text-transform:uppercase;letter-spacing:0.06em;color:#1DA1F2;">X Connection</h3>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <span id="x-connection-status" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-muted);">Not tested</span>
-        <span id="x-auto-poster-badge" style="font-family:var(--font-mono);font-size:0.68rem;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,0.05);color:var(--text-muted);">Auto-poster: --</span>
-      </div>
-    </div>
-    <div id="x-connection-details" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-secondary);">
-      <span class="text-muted">Click "Test X Connection" to verify</span>
-    </div>
-    <div style="display:flex;gap:12px;margin-top:8px;align-items:center;" id="x-golive-row">
-      <span style="font-size:0.72rem;color:var(--text-muted);">X Live Posting:</span>
-      <div id="lisa-golive-toggles" style="display:flex;gap:8px;"></div>
-    </div>
+  <!-- Sub-tab Navigation -->
+  <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+    <button class="lisa-subtab active" data-sub="content" onclick="lisaSwitchSub('content')">Content</button>
+    <button class="lisa-subtab" data-sub="intelligence" onclick="lisaSwitchSub('intelligence')">Intelligence</button>
+    <button class="lisa-subtab" data-sub="tools" onclick="lisaSwitchSub('tools')">Tools</button>
   </div>
 
-  <!-- ═══ COLLAPSIBLE: Content (default OPEN) ═══ -->
-  <div class="collapse-section default-open">
-    <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="lisa" style="margin-bottom:0;">Content</h2>
-    </div>
-    <div class="collapse-body">
-      <!-- Jordan's Approval Queue -->
-      <div class="section-spacer">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
-          <h3 class="section-title" data-accent="warning" style="margin-bottom:0;font-size:0.82rem;">Jordan's Approval Queue</h3>
-          <span id="jordan-queue-count" style="font-family:var(--font-mono);font-size:0.78rem;color:#ffaa00;font-weight:600;"></span>
-        </div>
-        <div id="jordan-approval-queue" class="flex flex-col gap-3"><div class="text-muted" style="padding:var(--space-4);text-align:center;">Loading...</div></div>
-      </div>
+  <!-- ═══ Panel: Content ═══ -->
+  <div class="lisa-panel" id="lisa-panel-content">
 
-      <!-- Posting Schedule Timeline -->
-      <div class="section-spacer">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
-          <h3 class="section-title" data-accent="success" style="margin-bottom:0;font-size:0.82rem;">Posting Schedule</h3>
-          <span id="posting-schedule-count" style="font-family:var(--font-mono);font-size:0.78rem;color:#22aa44;font-weight:600;"></span>
-        </div>
-        <div id="posting-schedule-timeline" class="flex flex-col gap-2"><div class="text-muted" style="padding:var(--space-4);text-align:center;">Loading...</div></div>
+    <!-- X Connection Card -->
+    <div class="glass-card" style="border-left:3px solid #1DA1F2;margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:#1DA1F2;">X Connection</span>
       </div>
-
-      <!-- Content Pipeline -->
-      <div class="section-spacer">
-        <h3 class="section-title" data-accent="lisa" style="font-size:0.82rem;">Content Pipeline</h3>
-        <div class="glass-card">
-          <div class="grid-4" style="margin-bottom:var(--space-4);">
-            <div class="stat-card" data-accent="lisa" style="border-left:3px solid #22aa44;"><div class="stat-value" id="pipeline-approved">--</div><div class="stat-label">Passed</div></div>
-            <div class="stat-card" data-accent="lisa" style="border-left:3px solid #ffaa00;"><div class="stat-value" id="pipeline-review">--</div><div class="stat-label">Review</div></div>
-            <div class="stat-card" data-accent="lisa" style="border-left:3px solid #ff8800;"><div class="stat-value" id="pipeline-work">--</div><div class="stat-label">Revisions</div></div>
-            <div class="stat-card" data-accent="lisa" style="border-left:3px solid #ff4444;"><div class="stat-value" id="pipeline-rejected">--</div><div class="stat-label">Rejected</div></div>
-          </div>
-          <div id="pipeline-results" style="font-family:var(--font-mono);font-size:0.74rem;max-height:150px;overflow-y:auto;"></div>
-        </div>
-      </div>
-
-      <!-- Recent Posts -->
-      <div class="section-spacer">
-        <h3 class="section-title" data-accent="lisa" style="font-size:0.82rem;">Recent Posts</h3>
-        <div class="glass-card"><table class="data-table"><thead><tr><th>Time</th><th>Platform</th><th>Content</th><th>Image</th><th>Status</th></tr></thead><tbody id="lisa-posts-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No posts yet</td></tr></tbody></table></div>
+      <div id="x-connection-details" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-secondary);"></div>
+      <div style="display:flex;gap:12px;margin-top:8px;align-items:center;" id="x-golive-row">
+        <span style="font-size:0.72rem;color:var(--text-muted);">X Live Posting:</span>
+        <div id="lisa-golive-toggles" style="display:flex;gap:8px;"></div>
       </div>
     </div>
-  </div>
 
-  <!-- ═══ COLLAPSIBLE: Intelligence (default CLOSED) ═══ -->
-  <div class="collapse-section">
-    <div class="collapse-trigger">
-      <h2 class="section-title" style="color:var(--agent-lisa);margin-bottom:0;">Intelligence</h2>
+    <!-- Jordan's Approval Queue -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--warning);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--warning);">Jordan's Approval Queue</span>
+        <span id="jordan-queue-count" style="font-family:var(--font-mono);font-size:0.78rem;color:var(--warning);font-weight:600;"></span>
+      </div>
+      <div id="jordan-approval-queue" class="flex flex-col gap-3"></div>
     </div>
-    <div class="collapse-body">
-      <!-- Lisa's Intelligence -->
-      <div class="section-spacer">
-        <div class="glass-card" style="border-left:3px solid var(--agent-lisa);">
-          <div class="grid-4" style="margin-bottom:var(--space-4);">
-            <div class="stat-card" data-accent="lisa"><div class="stat-value" id="intel-users-remembered">0</div><div class="stat-label">Users Remembered</div></div>
-            <div class="stat-card" data-accent="lisa"><div class="stat-value" id="intel-total-interactions">0</div><div class="stat-label">Interactions</div></div>
-            <div class="stat-card" data-accent="lisa"><div class="stat-value" id="intel-loyal-fans">0</div><div class="stat-label">Loyal Fans</div></div>
-            <div class="stat-card" data-accent="lisa"><div class="stat-value" id="intel-engagement-rate">0%</div><div class="stat-label">Engagement Rate</div></div>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-            <div style="background:rgba(255,255,255,0.02);border-radius:6px;padding:10px;">
-              <div style="font-family:var(--font-mono);font-size:0.68rem;color:var(--agent-lisa);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Reply Strategy</div>
-              <div id="intel-reply-guidance" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-secondary);">Not enough data yet - keep replying!</div>
-            </div>
-            <div style="background:rgba(255,255,255,0.02);border-radius:6px;padding:10px;">
-              <div style="font-family:var(--font-mono);font-size:0.68rem;color:var(--agent-lisa);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Best Posting Times</div>
-              <div id="intel-posting-guidance" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-secondary);">Not enough data yet - keep posting!</div>
-            </div>
-          </div>
-          <div style="background:rgba(255,255,255,0.02);border-radius:6px;padding:10px;margin-bottom:12px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-              <span style="font-family:var(--font-mono);font-size:0.68rem;color:var(--agent-lisa);text-transform:uppercase;letter-spacing:0.08em;">Top Engagers</span>
-              <button class="btn" onclick="checkEngagement()" style="font-size:0.66rem;padding:2px 8px;">Refresh Engagement</button>
-            </div>
-            <div id="intel-top-engagers" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-secondary);">No interactions tracked yet</div>
-          </div>
-          <div style="background:rgba(255,255,255,0.02);border-radius:6px;padding:10px;">
-            <div style="font-family:var(--font-mono);font-size:0.68rem;color:var(--agent-lisa);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Content Intelligence</div>
-            <div id="intel-content-guidance" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-secondary);">Not enough data yet - keep posting!</div>
-          </div>
-        </div>
-      </div>
 
-      <!-- X Competitor Intelligence -->
-      <div class="section-spacer">
-        <h3 class="section-title" style="color:#1DA1F2;font-size:0.82rem;">X Competitor Intelligence</h3>
-        <div class="glass-card" style="border-left:3px solid #1DA1F2;">
-          <div class="grid-3" style="margin-bottom:var(--space-4);">
-            <div class="stat-card" data-accent="lisa"><div class="stat-value" id="x-comp-accounts">--</div><div class="stat-label">Accounts Tracked</div></div>
-            <div class="stat-card" data-accent="lisa"><div class="stat-value" id="x-comp-hooks">--</div><div class="stat-label">Viral Hooks</div></div>
-            <div class="stat-card" data-accent="lisa"><div class="stat-value" id="x-comp-reads">--</div><div class="stat-label">API Reads Used</div></div>
-          </div>
-          <div id="x-viral-hooks" style="font-family:var(--font-mono);font-size:0.74rem;max-height:200px;overflow-y:auto;">
-            <span class="text-muted">Click "Scan Competitors" to fetch intel</span>
-          </div>
-        </div>
+    <!-- Posting Schedule -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--success);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--success);">Posting Schedule</span>
+        <span id="posting-schedule-count" style="font-family:var(--font-mono);font-size:0.78rem;color:var(--success);font-weight:600;"></span>
       </div>
+      <div id="posting-schedule-timeline" class="flex flex-col gap-2"></div>
+    </div>
 
-      <!-- Reply Opportunities -->
-      <div class="section-spacer">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
-          <h3 class="section-title" style="margin-bottom:0;color:#1DA1F2;font-size:0.82rem;">Reply Opportunities</h3>
-          <span id="reply-counter" style="font-family:var(--font-mono);font-size:0.78rem;color:#1DA1F2;font-weight:600;">--/10 today</span>
-        </div>
-        <div id="reply-opportunities-list" class="flex flex-col gap-3">
-          <div class="text-muted" style="padding:var(--space-4);text-align:center;">Click "Hunt Replies" to find viral tweet opportunities</div>
-        </div>
+    <!-- Content Pipeline -->
+    <div class="glass-card" style="margin-bottom:12px;">
+      <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--agent-lisa);">Content Pipeline</span>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:8px;margin-bottom:8px;">
+        <div class="stat-card" style="border-left:3px solid var(--success);"><div class="stat-value" id="pipeline-approved">--</div><div class="stat-label">Passed</div></div>
+        <div class="stat-card" style="border-left:3px solid var(--warning);"><div class="stat-value" id="pipeline-review">--</div><div class="stat-label">Review</div></div>
+        <div class="stat-card" style="border-left:3px solid #ff8800;"><div class="stat-value" id="pipeline-work">--</div><div class="stat-label">Revisions</div></div>
+        <div class="stat-card" style="border-left:3px solid var(--error);"><div class="stat-value" id="pipeline-rejected">--</div><div class="stat-label">Rejected</div></div>
       </div>
+      <div id="pipeline-results" style="font-family:var(--font-mono);font-size:0.74rem;max-height:150px;overflow-y:auto;"></div>
+    </div>
 
-      <!-- X Mentions Monitor -->
-      <div class="section-spacer">
-        <h3 class="section-title" style="color:#1DA1F2;font-size:0.82rem;">X Mentions Monitor</h3>
-        <div class="glass-card" style="border-left:3px solid #1DA1F2;">
-          <div id="x-mentions-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:250px;overflow-y:auto;">
-            <span class="text-muted">Click "Check Mentions" to load @soren0era mentions</span>
-          </div>
-        </div>
-      </div>
+    <!-- Recent Posts -->
+    <div class="glass-card" style="overflow-x:auto;padding:0;">
+      <table style="width:100%;border-collapse:collapse;font-size:0.72rem;">
+        <thead>
+          <tr style="background:var(--surface-elevated);text-align:left;">
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Time</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Platform</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Content</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Image</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Status</th>
+          </tr>
+        </thead>
+        <tbody id="lisa-posts-tbody"></tbody>
+      </table>
     </div>
   </div>
 
-  <!-- ═══ COLLAPSIBLE: Tools (default CLOSED) ═══ -->
-  <div class="collapse-section">
-    <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="lisa" style="margin-bottom:0;">Tools</h2>
-    </div>
-    <div class="collapse-body">
-      <!-- X Image Studio -->
-      <div class="section-spacer">
-        <h3 class="section-title" data-accent="soren" style="font-size:0.82rem;">X Image Studio</h3>
-        <div class="glass-card" style="border-left:3px solid var(--agent-soren);">
-          <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-3);flex-wrap:wrap;align-items:end;">
-            <select class="input" id="img-pillar" style="font-size:0.76rem;padding:4px 8px;width:160px;">
-              <option value="dark_motivation">Dark Motivation</option>
-              <option value="gym_warrior">Gym Warrior</option>
-              <option value="lone_wolf_lifestyle">Lone Wolf</option>
-              <option value="heartbreak_to_power">Heartbreak to Power</option>
-              <option value="stoic_lessons">Stoic Lessons</option>
-            </select>
-            <select class="input" id="img-style" style="font-size:0.76rem;padding:4px 8px;width:120px;">
-              <option value="cinematic">Cinematic</option>
-              <option value="editorial">Editorial</option>
-              <option value="dark_art">Dark Art</option>
-              <option value="minimal">Minimal</option>
-              <option value="quote">Quote Card</option>
-            </select>
-            <input type="text" class="input" id="img-caption" placeholder="Caption or quote text..." style="flex:1;min-width:150px;font-size:0.76rem;padding:4px 8px;">
-            <button class="btn btn-primary" onclick="generateXImageCustom()">Generate</button>
-          </div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-            <span id="img-cost-bar" style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-muted);">Budget: --</span>
-          </div>
-          <div id="img-result" style="min-height:40px;font-family:var(--font-mono);font-size:0.74rem;"></div>
+  <!-- ═══ Panel: Intelligence ═══ -->
+  <div class="lisa-panel" id="lisa-panel-intelligence" style="display:none;">
+
+    <!-- Lisa's Intelligence Stats -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-lisa);">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;">
+        <div class="stat-card" data-accent="lisa"><div class="stat-value" id="intel-users-remembered">0</div><div class="stat-label">Users Remembered</div></div>
+        <div class="stat-card" data-accent="lisa"><div class="stat-value" id="intel-total-interactions">0</div><div class="stat-label">Interactions</div></div>
+        <div class="stat-card" data-accent="lisa"><div class="stat-value" id="intel-loyal-fans">0</div><div class="stat-label">Loyal Fans</div></div>
+        <div class="stat-card" data-accent="lisa"><div class="stat-value" id="intel-engagement-rate">0%</div><div class="stat-label">Engagement Rate</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="glass-card" style="padding:10px;">
+          <span style="font-family:var(--font-mono);font-size:0.68rem;color:var(--agent-lisa);text-transform:uppercase;letter-spacing:0.08em;">Reply Strategy</span>
+          <div id="intel-reply-guidance" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-secondary);margin-top:6px;"></div>
+        </div>
+        <div class="glass-card" style="padding:10px;">
+          <span style="font-family:var(--font-mono);font-size:0.68rem;color:var(--agent-lisa);text-transform:uppercase;letter-spacing:0.08em;">Best Posting Times</span>
+          <div id="intel-posting-guidance" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-secondary);margin-top:6px;"></div>
         </div>
       </div>
-
-      <!-- Writing Studio -->
-      <div class="section-spacer">
-        <h3 class="section-title" data-accent="lisa" style="font-size:0.82rem;">Writing Studio</h3>
-        <div class="glass-card">
-          <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-3);flex-wrap:wrap;align-items:end;">
-            <select class="input" id="write-type" style="font-size:0.76rem;padding:4px 8px;width:120px;" onchange="toggleWriteFields()">
-              <option value="quote">Quote</option>
-              <option value="caption">Caption</option>
-              <option value="essay">Essay</option>
-              <option value="thread">X Thread</option>
-            </select>
-            <input type="text" class="input" id="write-topic" placeholder="Topic or theme..." style="flex:1;min-width:150px;font-size:0.76rem;padding:4px 8px;">
-            <select class="input" id="write-platform" style="font-size:0.76rem;padding:4px 8px;width:110px;">
-              <option value="x" selected>X</option>
-              <option value="instagram">Instagram</option>
-              <option value="tiktok">TikTok</option>
-            </select>
-            <button class="btn btn-primary" onclick="generateWrite()">Generate</button>
-          </div>
-          <div id="write-result" style="min-height:60px;font-family:var(--font-mono);font-size:0.76rem;white-space:pre-wrap;"></div>
+      <div class="glass-card" style="padding:10px;margin-top:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <span style="font-family:var(--font-mono);font-size:0.68rem;color:var(--agent-lisa);text-transform:uppercase;letter-spacing:0.08em;">Top Engagers</span>
+          <button class="btn" onclick="checkEngagement()" style="font-size:0.66rem;padding:2px 8px;">Refresh</button>
         </div>
+        <div id="intel-top-engagers" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-secondary);"></div>
       </div>
-
-      <!-- Comment Analyzer -->
-      <div class="section-spacer">
-        <h3 class="section-title" data-accent="lisa" style="font-size:0.82rem;">Comment Analyzer</h3>
-        <div class="glass-card">
-          <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-3);flex-wrap:wrap;align-items:end;">
-            <div style="flex:1;min-width:200px;">
-              <textarea class="input" id="lisa-comment-input" rows="2" placeholder="Paste a comment to analyze..." style="width:100%;resize:vertical;font-family:var(--font-mono);font-size:0.78rem;"></textarea>
-            </div>
-            <div style="display:flex;gap:var(--space-2);flex-direction:column;">
-              <select class="input" id="lisa-comment-platform" style="font-size:0.76rem;padding:4px 8px;">
-                <option value="x" selected>X</option>
-                <option value="instagram">Instagram</option>
-                <option value="tiktok">TikTok</option>
-              </select>
-              <button class="btn btn-primary" onclick="lisaAnalyzeComment()">Analyze</button>
-            </div>
-          </div>
-          <div id="lisa-comment-result" style="min-height:40px;font-family:var(--font-mono);font-size:0.76rem;"></div>
-        </div>
-      </div>
-
-      <!-- Content Rating -->
-      <div class="section-spacer">
-        <h3 class="section-title" data-accent="lisa" style="font-size:0.82rem;">Content Rating</h3>
-        <div class="glass-card">
-          <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-3);flex-wrap:wrap;align-items:end;">
-            <div style="flex:1;min-width:200px;">
-              <textarea class="input" id="rating-caption" rows="2" placeholder="Paste a caption to rate..." style="width:100%;resize:vertical;font-family:var(--font-mono);font-size:0.78rem;"></textarea>
-            </div>
-            <div style="display:flex;gap:var(--space-2);flex-direction:column;">
-              <select class="input" id="rating-platform" style="font-size:0.76rem;padding:4px 8px;">
-                <option value="x" selected>X</option>
-                <option value="instagram">Instagram</option>
-                <option value="tiktok">TikTok</option>
-              </select>
-              <button class="btn btn-primary" onclick="rateContent()">Rate Content</button>
-            </div>
-          </div>
-          <div id="rating-result" style="min-height:40px;font-family:var(--font-mono);font-size:0.76rem;"></div>
-        </div>
+      <div class="glass-card" style="padding:10px;margin-top:12px;">
+        <span style="font-family:var(--font-mono);font-size:0.68rem;color:var(--agent-lisa);text-transform:uppercase;letter-spacing:0.08em;">Content Intelligence</span>
+        <div id="intel-content-guidance" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-secondary);margin-top:6px;"></div>
       </div>
     </div>
+
+    <!-- X Competitor Intelligence -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #1DA1F2;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:#1DA1F2;">X Competitor Intelligence</span>
+        <button class="btn" onclick="scanXCompetitors()" style="font-size:0.72rem;">Scan</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:8px;">
+        <div class="stat-card" data-accent="lisa"><div class="stat-value" id="x-comp-accounts">--</div><div class="stat-label">Accounts Tracked</div></div>
+        <div class="stat-card" data-accent="lisa"><div class="stat-value" id="x-comp-hooks">--</div><div class="stat-label">Viral Hooks</div></div>
+        <div class="stat-card" data-accent="lisa"><div class="stat-value" id="x-comp-reads">--</div><div class="stat-label">API Reads Used</div></div>
+      </div>
+      <div id="x-viral-hooks" style="font-family:var(--font-mono);font-size:0.74rem;max-height:200px;overflow-y:auto;"></div>
+    </div>
+
+    <!-- Reply Opportunities -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #1DA1F2;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:#1DA1F2;">Reply Opportunities</span>
+        <span id="reply-counter" style="font-family:var(--font-mono);font-size:0.78rem;color:#1DA1F2;font-weight:600;">--/10 today</span>
+      </div>
+      <div id="reply-opportunities-list" class="flex flex-col gap-3"></div>
+    </div>
+
+    <!-- X Mentions Monitor -->
+    <div class="glass-card" style="border-left:3px solid #1DA1F2;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:#1DA1F2;">X Mentions Monitor</span>
+        <button class="btn" onclick="loadXMentions()" style="font-size:0.72rem;">Check Mentions</button>
+      </div>
+      <div id="x-mentions-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:250px;overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <!-- ═══ Panel: Tools ═══ -->
+  <div class="lisa-panel" id="lisa-panel-tools" style="display:none;">
+
+    <!-- X Image Studio -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-soren);">
+      <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--agent-soren);">X Image Studio</span>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:end;">
+        <select class="input" id="img-pillar" style="font-size:0.76rem;padding:4px 8px;width:160px;">
+          <option value="dark_motivation">Dark Motivation</option>
+          <option value="gym_warrior">Gym Warrior</option>
+          <option value="lone_wolf_lifestyle">Lone Wolf</option>
+          <option value="heartbreak_to_power">Heartbreak to Power</option>
+          <option value="stoic_lessons">Stoic Lessons</option>
+        </select>
+        <select class="input" id="img-style" style="font-size:0.76rem;padding:4px 8px;width:120px;">
+          <option value="cinematic">Cinematic</option>
+          <option value="editorial">Editorial</option>
+          <option value="dark_art">Dark Art</option>
+          <option value="minimal">Minimal</option>
+          <option value="quote">Quote Card</option>
+        </select>
+        <input type="text" class="input" id="img-caption" placeholder="Caption or quote text..." style="flex:1;min-width:150px;font-size:0.76rem;padding:4px 8px;">
+        <button class="btn" onclick="generateXImageCustom()" style="font-weight:700;border-color:var(--agent-soren);color:var(--agent-soren);">Generate</button>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+        <span id="img-cost-bar" style="font-family:var(--font-mono);font-size:0.7rem;color:var(--text-muted);"></span>
+      </div>
+      <div id="img-result" style="min-height:40px;font-family:var(--font-mono);font-size:0.74rem;margin-top:6px;"></div>
+    </div>
+
+    <!-- Writing Studio -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-lisa);">
+      <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--agent-lisa);">Writing Studio</span>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:end;">
+        <select class="input" id="write-type" style="font-size:0.76rem;padding:4px 8px;width:120px;" onchange="toggleWriteFields()">
+          <option value="quote">Quote</option>
+          <option value="caption">Caption</option>
+          <option value="essay">Essay</option>
+          <option value="thread">X Thread</option>
+        </select>
+        <input type="text" class="input" id="write-topic" placeholder="Topic or theme..." style="flex:1;min-width:150px;font-size:0.76rem;padding:4px 8px;">
+        <select class="input" id="write-platform" style="font-size:0.76rem;padding:4px 8px;width:110px;">
+          <option value="x" selected>X</option>
+          <option value="instagram">Instagram</option>
+          <option value="tiktok">TikTok</option>
+        </select>
+        <button class="btn" onclick="generateWrite()" style="font-weight:700;border-color:var(--agent-lisa);color:var(--agent-lisa);">Generate</button>
+      </div>
+      <div id="write-result" style="min-height:40px;font-family:var(--font-mono);font-size:0.76rem;white-space:pre-wrap;margin-top:8px;"></div>
+    </div>
+
+    <!-- Comment Analyzer -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-lisa);">
+      <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--agent-lisa);">Comment Analyzer</span>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:end;">
+        <div style="flex:1;min-width:200px;">
+          <textarea class="input" id="lisa-comment-input" rows="2" placeholder="Paste a comment to analyze..." style="width:100%;resize:vertical;font-family:var(--font-mono);font-size:0.78rem;"></textarea>
+        </div>
+        <div style="display:flex;gap:4px;flex-direction:column;">
+          <select class="input" id="lisa-comment-platform" style="font-size:0.76rem;padding:4px 8px;">
+            <option value="x" selected>X</option>
+            <option value="instagram">Instagram</option>
+            <option value="tiktok">TikTok</option>
+          </select>
+          <button class="btn" onclick="lisaAnalyzeComment()" style="font-weight:700;border-color:var(--agent-lisa);color:var(--agent-lisa);">Analyze</button>
+        </div>
+      </div>
+      <div id="lisa-comment-result" style="min-height:40px;font-family:var(--font-mono);font-size:0.76rem;margin-top:8px;"></div>
+    </div>
+
+    <!-- Content Rating -->
+    <div class="glass-card" style="border-left:3px solid var(--agent-lisa);">
+      <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--agent-lisa);">Content Rating</span>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:end;">
+        <div style="flex:1;min-width:200px;">
+          <textarea class="input" id="rating-caption" rows="2" placeholder="Paste a caption to rate..." style="width:100%;resize:vertical;font-family:var(--font-mono);font-size:0.78rem;"></textarea>
+        </div>
+        <div style="display:flex;gap:4px;flex-direction:column;">
+          <select class="input" id="rating-platform" style="font-size:0.76rem;padding:4px 8px;">
+            <option value="x" selected>X</option>
+            <option value="instagram">Instagram</option>
+            <option value="tiktok">TikTok</option>
+          </select>
+          <button class="btn" onclick="rateContent()" style="font-weight:700;border-color:var(--agent-lisa);color:var(--agent-lisa);">Rate Content</button>
+        </div>
+      </div>
+      <div id="rating-result" style="min-height:40px;font-family:var(--font-mono);font-size:0.76rem;margin-top:8px;"></div>
+    </div>
+  </div>
+
+  <!-- Hidden compat -->
+  <div style="display:none;">
+    <div id="intel-lisa" class="intel-meter"></div>
+    <div id="lisa-widgets"><div id="lisa-learning"><span>--</span></div></div>
+    <div id="x-connection-card"></div>
   </div>
 
 </div>

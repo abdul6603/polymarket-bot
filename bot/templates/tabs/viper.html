@@ -1,133 +1,270 @@
-<!-- VIPER -->
+<!-- VIPER — Revenue Intelligence -->
 <div class="tab-content" id="tab-viper">
-  <div class="agent-widget-row">
-    <div class="widget-badge"><span class="wb-label">Agent:</span> <span style="color:#00ff88;font-weight:700;">Viper</span></div>
-    <div class="widget-badge"><span class="wb-label">Role:</span> <span>24/7 Intelligence Engine</span></div>
-    <div class="widget-badge" id="viper-mode-badge"><span class="wb-label">Mode:</span> <span style="color:#00ff88;">Intelligence</span></div>
-    <div class="widget-badge" style="background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.15);"><span id="viper-auto-timer" style="color:#00ff88;font-size:0.7rem;font-weight:600;">Auto: 10m 00s</span></div>
-    <button class="btn" onclick="viperRefreshNow()" style="font-size:0.72rem;background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.3);font-weight:600;">Refresh Data</button>
-    <button class="btn" id="viper-scan-btn" onclick="viperTriggerScan()" style="font-size:0.72rem;background:#00ff88;color:#000;font-weight:700;">Trigger Scan</button>
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+    <h2 style="margin:0;font-size:1.1rem;font-weight:700;">
+      Viper &mdash; Revenue Intelligence
+    </h2>
+    <span id="viper-mode-badge" class="badge badge-success">
+      <span class="status-dot online"></span> Intelligence
+    </span>
+    <span id="viper-auto-timer" style="font-family:var(--font-mono);font-size:0.68rem;padding:2px 10px;border-radius:var(--radius-pill);background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.15);color:var(--agent-viper);font-weight:600;">Auto: 10m 00s</span>
+    <button class="btn" onclick="viperTriggerScan()" id="viper-scan-btn" style="font-size:0.72rem;font-weight:700;border-color:var(--agent-viper);color:var(--agent-viper);">Trigger Scan</button>
     <button class="btn" onclick="healthCheckAgent('viper')" style="font-size:0.72rem;">Health Check</button>
-</div>
+    <button class="btn" onclick="viperRefreshNow()" style="font-size:0.72rem;font-weight:700;border-color:var(--agent-viper);color:var(--agent-viper);margin-left:auto;">
+      Refresh
+    </button>
+    <span class="text-muted" style="font-size:0.68rem;">
+      Updated: <span id="viper-updated">--</span>
+    </span>
+  </div>
+
   <div class="health-inline" id="viper-health-result"></div>
+
   <!-- Scan Progress Bar -->
-  <div id="viper-scan-progress" style="display:none;margin:10px 0;">
-    <div style="background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.25);border-radius:8px;padding:12px 16px;">
+  <div id="viper-scan-progress" style="display:none;margin-bottom:12px;">
+    <div class="glass-card" style="border-left:3px solid var(--agent-viper);padding:12px 16px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <span id="viper-scan-step" style="font-weight:600;color:#00ff88;font-size:0.82rem;">Starting scan...</span>
+        <span id="viper-scan-step" style="font-weight:600;color:var(--agent-viper);font-size:0.82rem;"></span>
         <span id="viper-scan-pct" style="font-size:0.72rem;color:var(--text-muted);">0%</span>
       </div>
       <div style="height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;">
-        <div id="viper-scan-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#00ff88,#00cc66);border-radius:3px;transition:width 0.5s ease;"></div>
+        <div id="viper-scan-bar" style="height:100%;width:0%;background:var(--agent-viper);border-radius:3px;transition:width 0.5s ease;"></div>
       </div>
       <div id="viper-scan-detail" style="font-size:0.7rem;color:var(--text-muted);margin-top:6px;"></div>
     </div>
   </div>
-  <div id="intel-viper" class="intel-meter" style="margin-bottom:12px;"></div>
-  <div class="grid-4">
-    <div class="stat-card" data-accent="viper"><div class="stat-value" id="viper-intel-count">0</div><div class="stat-label">Intel Items</div></div>
-    <div class="stat-card" data-accent="success"><div class="stat-value" id="viper-matched" style="color:var(--success);">0</div><div class="stat-label">Market Matches</div></div>
-    <div class="stat-card" data-accent="warning"><div class="stat-value" id="viper-sources">0</div><div class="stat-label">Active Sources</div></div>
-    <div class="stat-card" data-accent="viper"><div class="stat-value" id="viper-cycle">0</div><div class="stat-label">Scan Cycle</div></div>
+
+  <!-- Hero Metrics -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;">
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Intel Items</div>
+      <div id="viper-intel-count" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">0</div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Market Matches</div>
+      <div id="viper-matched" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);color:var(--success);">0</div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Active Sources</div>
+      <div id="viper-sources" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);color:var(--warning);">0</div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Scan Cycle</div>
+      <div id="viper-cycle" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">0</div>
+    </div>
   </div>
+
   <!-- Hawk Briefing Status -->
   <div id="viper-hawk-briefing" style="display:none;margin-bottom:12px;">
     <div style="display:flex;gap:8px;flex-wrap:wrap;" id="viper-briefing-badges"></div>
   </div>
-  <!-- Brotherhood P&L -->
-  <div class="section-spacer">
-    <h2 class="section-title" style="color:#00ff88;">Brotherhood P&L</h2>
-    <div id="viper-pnl-cards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px;">
-      <div class="stat-card" data-accent="viper"><div class="stat-value" id="viper-pnl-net" style="color:var(--text-muted);">--</div><div class="stat-label">Net Daily</div></div>
-      <div class="stat-card" data-accent="success"><div class="stat-value" id="viper-pnl-monthly" style="color:var(--text-muted);">--</div><div class="stat-label">Monthly Est.</div></div>
-      <div class="stat-card" data-accent="warning"><div class="stat-value" id="viper-pnl-cost" style="color:var(--text-muted);">--</div><div class="stat-label">Daily Cost</div></div>
-      <div class="stat-card" data-accent="viper"><div class="stat-value" id="viper-pnl-trend" style="color:var(--text-muted);">--</div><div class="stat-label">Trend</div></div>
+
+  <!-- Sub-tab Navigation -->
+  <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+    <button class="viper-subtab active" data-sub="overview" onclick="viperSwitchSub('overview')">Overview</button>
+    <button class="viper-subtab" data-sub="pnl" onclick="viperSwitchSub('pnl')">P&amp;L</button>
+    <button class="viper-subtab" data-sub="feed" onclick="viperSwitchSub('feed')">Intelligence Feed</button>
+    <button class="viper-subtab" data-sub="costs" onclick="viperSwitchSub('costs')">Cost Audit</button>
+    <button class="viper-subtab" data-sub="brand" onclick="viperSwitchSub('brand')">Brand Channel</button>
+  </div>
+
+  <!-- ═══ Panel: Overview ═══ -->
+  <div class="viper-panel" id="viper-panel-overview">
+
+    <!-- Anomaly Alerts -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-viper);">
+      <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Anomaly Alerts</span>
+      <div id="viper-anomalies" style="margin-top:8px;"></div>
     </div>
-    <div id="viper-pnl-detail" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
-  </div>
-  <!-- Anomaly Alerts -->
-  <div class="section-spacer">
-    <h2 class="section-title" style="color:#00ff88;">Anomaly Alerts</h2>
-    <div id="viper-anomalies" style="margin-bottom:12px;"><div class="text-muted" style="text-align:center;padding:12px;">No anomalies detected</div></div>
-  </div>
-  <!-- Agent Digest Status -->
-  <div class="section-spacer">
-    <h2 class="section-title" style="color:#00ff88;">Agent Digests</h2>
-    <div id="viper-digests" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;"></div>
-  </div>
-  <!-- Shelby Push Log -->
-  <div class="section-spacer">
-    <h2 class="section-title" style="color:#00ff88;">Shelby Push Log</h2>
-    <div id="viper-push-log" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
-      <div class="widget-badge"><span class="wb-label">Pushes:</span> <span id="viper-push-count" style="color:#00ff88;font-weight:700;">0</span></div>
+
+    <!-- Agent Digests -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-viper);">
+      <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Agent Digests</span>
+      <div id="viper-digests" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
+    </div>
+
+    <!-- Shelby Push Log -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-viper);">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Shelby Push Log</span>
+        <span style="font-family:var(--font-mono);font-size:0.72rem;color:var(--agent-viper);font-weight:700;">Pushes: <span id="viper-push-count">0</span></span>
+      </div>
+      <div id="viper-push-log" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;"></div>
+    </div>
+
+    <!-- Soren Metrics -->
+    <div class="glass-card" style="border-left:3px solid var(--agent-viper);">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Soren Metrics</span>
+        <span id="viper-metrics-updated" style="font-size:0.62rem;color:var(--text-muted);"></span>
+      </div>
+      <div id="viper-soren-metrics" style="margin-top:8px;"></div>
     </div>
   </div>
-  <div class="section-spacer">
-    <h2 class="section-title" style="color:#00ff88;">Live Intelligence Feed</h2>
-    <div class="glass-card"><table class="data-table"><thead><tr><th>Source</th><th>Headline</th><th>Category</th><th>Sentiment</th><th>Score</th></tr></thead><tbody id="viper-intel-tbody"><tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No intelligence yet — hit Trigger Scan</td></tr></tbody></table></div>
+
+  <!-- ═══ Panel: P&L ═══ -->
+  <div class="viper-panel" id="viper-panel-pnl" style="display:none;">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px;">
+      <div class="glass-card" style="text-align:center;padding:14px;">
+        <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Net Daily</div>
+        <div id="viper-pnl-net" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">--</div>
+      </div>
+      <div class="glass-card" style="text-align:center;padding:14px;">
+        <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Monthly Est.</div>
+        <div id="viper-pnl-monthly" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);color:var(--success);">--</div>
+      </div>
+      <div class="glass-card" style="text-align:center;padding:14px;">
+        <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Daily Cost</div>
+        <div id="viper-pnl-cost" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);color:var(--warning);">--</div>
+      </div>
+      <div class="glass-card" style="text-align:center;padding:14px;">
+        <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Trend</div>
+        <div id="viper-pnl-trend" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">--</div>
+      </div>
+    </div>
+    <div id="viper-pnl-detail" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
   </div>
-  <div class="section-spacer">
-    <h2 class="section-title" style="color:#00ff88;">Live Cost Audit</h2>
-    <div id="viper-cost-summary"></div>
-    <div class="glass-card"><table class="data-table"><thead><tr><th>Agent</th><th>Service</th><th>Monthly</th><th>Per Call</th><th>Volume</th><th>Source</th></tr></thead><tbody id="viper-cost-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">Loading live costs...</td></tr></tbody></table></div>
-  </div>
-  <div class="section-spacer">
-    <h2 class="section-title" style="color:#00ff88;">Cost Optimization</h2>
-    <div id="viper-cost-recs" style="margin-bottom:12px;"><div class="text-muted" style="text-align:center;padding:12px;">No optimization data yet</div></div>
-  </div>
-  <div class="section-spacer">
-    <h2 class="section-title" style="color:#00ff88;">Soren Opportunity Feed <span style="font-size:0.68rem;color:#cc66ff;font-weight:400;margin-left:6px;">powered by Viper</span></h2>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;" id="soren-opp-badges"></div>
-    <div class="glass-card">
-      <table class="data-table">
-        <thead><tr><th>Type</th><th>Opportunity</th><th>Fit</th><th>Value</th><th>Est. Cost</th><th>Est. Profit</th><th>Urgency</th><th>Action</th></tr></thead>
-        <tbody id="soren-opp-tbody"><tr><td colspan="8" class="text-muted" style="text-align:center;padding:24px;">No Soren opportunities yet — trigger a scan</td></tr></tbody>
+
+  <!-- ═══ Panel: Intelligence Feed ═══ -->
+  <div class="viper-panel" id="viper-panel-feed" style="display:none;">
+    <div class="glass-card" style="overflow-x:auto;padding:0;">
+      <table style="width:100%;border-collapse:collapse;font-size:0.72rem;">
+        <thead>
+          <tr style="background:var(--surface-elevated);text-align:left;">
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Source</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Headline</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Category</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Sentiment</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Score</th>
+          </tr>
+        </thead>
+        <tbody id="viper-intel-tbody"></tbody>
       </table>
     </div>
   </div>
-  <!-- Brand Channel: Viper → Soren → Lisa -->
-  <div class="section-spacer">
-    <h2 class="section-title" style="color:#00ff88;">Brand Channel <span style="font-size:0.68rem;color:#cc66ff;font-weight:400;margin-left:6px;">Viper &rarr; Soren &rarr; Lisa</span></h2>
-    <!-- Workflow Diagram -->
-    <div style="display:flex;align-items:center;gap:0;margin-bottom:14px;padding:12px 16px;background:rgba(0,255,136,0.04);border:1px solid rgba(0,255,136,0.12);border-radius:8px;flex-wrap:wrap;justify-content:center;">
-      <div style="text-align:center;min-width:100px;">
-        <div style="font-size:1.2rem;">&#x1F50D;</div>
-        <div style="font-size:0.72rem;font-weight:700;color:#00ff88;">Viper</div>
-        <div style="font-size:0.62rem;color:var(--text-muted);">Finds opportunity</div>
-      </div>
-      <div style="color:var(--text-muted);font-size:1.1rem;padding:0 8px;">&rarr;</div>
-      <div style="text-align:center;min-width:100px;">
-        <div style="font-size:1.2rem;">&#x2B50;</div>
-        <div style="font-size:0.72rem;font-weight:700;color:#FFD700;">Scores brand fit</div>
-        <div style="font-size:0.62rem;color:var(--text-muted);">Match to Soren pillars</div>
-      </div>
-      <div style="color:var(--text-muted);font-size:1.1rem;padding:0 8px;">&rarr;</div>
-      <div style="text-align:center;min-width:100px;">
-        <div style="font-size:1.2rem;">&#x270D;&#xFE0F;</div>
-        <div style="font-size:0.72rem;font-weight:700;color:var(--agent-soren);">Soren</div>
-        <div style="font-size:0.62rem;color:var(--text-muted);">Creates content</div>
-      </div>
-      <div style="color:var(--text-muted);font-size:1.1rem;padding:0 8px;">&rarr;</div>
-      <div style="text-align:center;min-width:100px;">
-        <div style="font-size:1.2rem;">&#x1F4E2;</div>
-        <div style="font-size:0.72rem;font-weight:700;color:var(--agent-lisa);">Lisa</div>
-        <div style="font-size:0.62rem;color:var(--text-muted);">Schedules & posts</div>
-      </div>
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;" id="brand-channel-badges"></div>
-    <!-- Needs Review Cards -->
-    <div id="brand-channel-review" style="margin-bottom:12px;"></div>
-    <!-- Activity Table -->
-    <div class="glass-card">
-      <table class="data-table">
-        <thead><tr><th>Status</th><th>Opportunity</th><th>Brand Fit</th><th>Pillar</th><th>Verdict</th><th>Action</th></tr></thead>
-        <tbody id="brand-channel-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No brand channel activity yet</td></tr></tbody>
+
+  <!-- ═══ Panel: Cost Audit ═══ -->
+  <div class="viper-panel" id="viper-panel-costs" style="display:none;">
+    <div id="viper-cost-summary" style="margin-bottom:12px;"></div>
+    <div class="glass-card" style="overflow-x:auto;padding:0;margin-bottom:12px;">
+      <table style="width:100%;border-collapse:collapse;font-size:0.72rem;">
+        <thead>
+          <tr style="background:var(--surface-elevated);text-align:left;">
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Agent</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Service</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Monthly</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Per Call</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Volume</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Source</th>
+          </tr>
+        </thead>
+        <tbody id="viper-cost-tbody"></tbody>
       </table>
     </div>
+
+    <!-- Cost Optimization -->
+    <div class="glass-card" style="border-left:3px solid var(--agent-viper);">
+      <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Cost Optimization</span>
+      <div id="viper-cost-recs" style="margin-top:8px;"></div>
+    </div>
   </div>
-  <div class="section-spacer">
-    <h2 class="section-title" style="color:#00ff88;">Soren Metrics</h2>
-    <div class="glass-card" id="viper-soren-metrics"><div class="text-muted" style="text-align:center;padding:12px;">Waiting for Soren metrics...</div></div>
-    <div id="viper-metrics-updated" style="font-size:0.62rem;color:var(--text-muted);margin-top:6px;text-align:right;"></div>
+
+  <!-- ═══ Panel: Brand Channel ═══ -->
+  <div class="viper-panel" id="viper-panel-brand" style="display:none;">
+
+    <!-- Workflow Diagram (CSS-based) -->
+    <div class="glass-card" style="margin-bottom:14px;padding:12px 16px;">
+      <div style="display:flex;align-items:center;gap:0;flex-wrap:wrap;justify-content:center;">
+        <div style="text-align:center;min-width:100px;padding:8px 12px;">
+          <div style="width:36px;height:36px;border-radius:50%;background:rgba(0,255,136,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;border:1px solid rgba(0,255,136,0.25);">
+            <span style="font-size:0.72rem;font-weight:700;color:var(--agent-viper);">V</span>
+          </div>
+          <div style="font-size:0.72rem;font-weight:700;color:var(--agent-viper);">Viper</div>
+          <div style="font-size:0.62rem;color:var(--text-muted);">Finds opportunity</div>
+        </div>
+        <div style="color:var(--text-muted);font-size:1.1rem;padding:0 4px;">&rarr;</div>
+        <div style="text-align:center;min-width:100px;padding:8px 12px;">
+          <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,215,0,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;border:1px solid rgba(255,215,0,0.25);">
+            <span style="font-size:0.72rem;font-weight:700;color:#FFD700;">S</span>
+          </div>
+          <div style="font-size:0.72rem;font-weight:700;color:#FFD700;">Scores fit</div>
+          <div style="font-size:0.62rem;color:var(--text-muted);">Match to pillars</div>
+        </div>
+        <div style="color:var(--text-muted);font-size:1.1rem;padding:0 4px;">&rarr;</div>
+        <div style="text-align:center;min-width:100px;padding:8px 12px;">
+          <div style="width:36px;height:36px;border-radius:50%;background:rgba(204,102,255,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;border:1px solid rgba(204,102,255,0.25);">
+            <span style="font-size:0.72rem;font-weight:700;color:var(--agent-soren);">S</span>
+          </div>
+          <div style="font-size:0.72rem;font-weight:700;color:var(--agent-soren);">Soren</div>
+          <div style="font-size:0.62rem;color:var(--text-muted);">Creates content</div>
+        </div>
+        <div style="color:var(--text-muted);font-size:1.1rem;padding:0 4px;">&rarr;</div>
+        <div style="text-align:center;min-width:100px;padding:8px 12px;">
+          <div style="width:36px;height:36px;border-radius:50%;background:rgba(255,136,0,0.12);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;border:1px solid rgba(255,136,0,0.25);">
+            <span style="font-size:0.72rem;font-weight:700;color:var(--agent-lisa);">L</span>
+          </div>
+          <div style="font-size:0.72rem;font-weight:700;color:var(--agent-lisa);">Lisa</div>
+          <div style="font-size:0.62rem;color:var(--text-muted);">Schedules &amp; posts</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Soren Opportunity Feed -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-viper);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--agent-viper);">Soren Opportunity Feed</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;" id="soren-opp-badges"></div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.72rem;">
+          <thead>
+            <tr style="background:var(--surface-elevated);text-align:left;">
+              <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Type</th>
+              <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Opportunity</th>
+              <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Fit</th>
+              <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Value</th>
+              <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Cost</th>
+              <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Profit</th>
+              <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Urgency</th>
+              <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="soren-opp-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Brand Channel Activity -->
+    <div class="glass-card" style="border-left:3px solid var(--agent-viper);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--agent-viper);">Brand Channel Activity</span>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;" id="brand-channel-badges"></div>
+      <div id="brand-channel-review" style="margin-bottom:12px;"></div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.72rem;">
+          <thead>
+            <tr style="background:var(--surface-elevated);text-align:left;">
+              <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Status</th>
+              <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Opportunity</th>
+              <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Brand Fit</th>
+              <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Pillar</th>
+              <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Verdict</th>
+              <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="brand-channel-tbody"></tbody>
+        </table>
+      </div>
+    </div>
   </div>
+
+  <!-- Hidden compat -->
+  <div style="display:none;">
+    <div id="intel-viper" class="intel-meter"></div>
+    <div id="viper-pnl-cards"></div>
+  </div>
+
 </div>

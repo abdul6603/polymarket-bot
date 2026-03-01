@@ -1,0 +1,251 @@
+<!-- SYSTEM / INFRASTRUCTURE -->
+<div class="tab-content" id="tab-system">
+  <div class="grid-6" style="margin-bottom:12px;">
+    <div class="stat-card" data-accent="garves"><div class="stat-value" id="sys-cpu">--</div><div class="stat-label">CPU %</div></div>
+    <div class="stat-card" data-accent="atlas"><div class="stat-value" id="sys-memory">--</div><div class="stat-label">Memory %</div></div>
+    <div class="stat-card" data-accent="odin"><div class="stat-value" id="sys-disk">--</div><div class="stat-label">Disk %</div></div>
+    <div class="stat-card" data-accent="shelby"><div class="stat-value" id="sys-uptime">--</div><div class="stat-label">Uptime</div></div>
+    <div class="stat-card" data-accent="thor"><div class="stat-value" id="sys-processes">--</div><div class="stat-label">Processes</div></div>
+    <div class="stat-card" data-accent="hawk"><div class="stat-value" id="sys-ports">--</div><div class="stat-label">Open Ports</div></div>
+  </div>
+  <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;" id="sys-action-buttons">
+    <button class="btn" onclick="sysAction('restart-dashboard')" style="font-size:0.74rem;">Restart Dashboard</button>
+    <button class="btn" onclick="sysAction('restart-shelby')" style="font-size:0.74rem;" title="Stops and restarts the Shelby LaunchAgent (scheduler + task manager)">Restart Shelby</button>
+    <button class="btn" onclick="sysAction('restart-thor')" style="font-size:0.74rem;" title="Stops and restarts the Thor LaunchAgent (coding agent task runner)">Restart Thor</button>
+    <button class="btn" onclick="sysAction('force-atlas-cycle')" style="font-size:0.74rem;" title="Triggers an immediate Atlas research cycle instead of waiting for the 45-min timer">Force Atlas Cycle</button>
+    <button class="btn" onclick="sysAction('flush-events')" style="font-size:0.74rem;" title="Clears all events from the shared event bus (events.jsonl). Resets agent cursors.">Flush Event Bus</button>
+    <button class="btn" onclick="loadSystemTab()" style="font-size:0.74rem;">Refresh All</button>
+  </div>
+  <div id="sys-action-result" style="font-size:0.72rem;font-family:var(--font-mono);color:var(--text-secondary);min-height:18px;margin-bottom:8px;"></div>
+
+  <!-- EYE ECOSYSTEM — BROTHERHOOD OVERVIEW -->
+  <div class="section-spacer" style="margin-top:8px;">
+    <h2 class="section-title" data-accent="atlas" style="font-size:1.05rem;">Agent Ecosystem — System Overview</h2>
+    <div style="color:var(--text-secondary);font-size:0.74rem;margin:-4px 0 14px 16px;font-style:italic;">Building the strongest multi-agent trading swarm on the planet.</div>
+
+    <div class="grid-6" style="margin-bottom:16px;">
+      <div class="stat-card" data-accent="garves"><div class="stat-value" id="sys-code-lines">--</div><div class="stat-label">Total Lines</div></div>
+      <div class="stat-card" data-accent="shelby"><div class="stat-value" id="sys-code-files">--</div><div class="stat-label">Total Files</div></div>
+      <div class="stat-card" data-accent="atlas"><div class="stat-value" id="sys-code-py-lines">--</div><div class="stat-label">Python Lines</div></div>
+      <div class="stat-card" data-accent="thor"><div class="stat-value" id="sys-code-projects">--</div><div class="stat-label">Projects</div></div>
+      <div class="stat-card" data-accent="odin"><div class="stat-value" id="sys-code-size">--</div><div class="stat-label">Total Size</div></div>
+      <div class="stat-card" data-accent="hawk"><div class="stat-value" id="sys-code-top-ext">--</div><div class="stat-label">Top Language</div></div>
+    </div>
+  </div>
+
+  <!-- Agent Evolution Tracker -->
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="shelby">Agent Evolution Tracker</h2>
+    <div class="glass-card" style="overflow-x:auto;">
+      <table class="data-table" style="font-size:0.72rem;">
+        <thead>
+          <tr>
+            <th style="width:24px;">#</th>
+            <th>Agent</th>
+            <th>Role / Market</th>
+            <th style="text-align:center;">Ver</th>
+            <th style="text-align:center;">Status</th>
+            <th>Key Capabilities</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td style="color:var(--agent-garves);font-weight:700;">Garves</td>
+            <td>Crypto Up/Down — Polymarket</td>
+            <td style="text-align:center;font-weight:600;">v8</td>
+            <td style="text-align:center;"><span style="color:var(--success);font-weight:600;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.04em;">Active</span></td>
+            <td style="font-size:0.68rem;color:var(--text-secondary);">Maker + Whale + Taker engines, Binance WS real-time, conviction engine, weight learner, cross-asset caps, cycle countdown, signal pipeline</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td style="color:var(--agent-hawk);font-weight:700;">Hawk</td>
+            <td>Non-Crypto — Polymarket</td>
+            <td style="text-align:center;font-weight:600;">v8</td>
+            <td style="text-align:center;"><span style="color:var(--success);font-weight:600;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.04em;">Active</span></td>
+            <td style="font-size:0.68rem;color:var(--text-secondary);">Capital card + on-chain positions, domain win rates, gap heatmap, CLV tracking, learner dimensions, cycle countdown, scan pipeline</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td style="color:var(--agent-odin);font-weight:700;">Odin</td>
+            <td>BTC/ETH Futures — Hyperliquid</td>
+            <td style="text-align:center;font-weight:600;">v5</td>
+            <td style="text-align:center;"><span style="color:var(--success);font-weight:600;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.04em;">Active</span></td>
+            <td style="font-size:0.68rem;color:var(--text-secondary);">13-skill system, WebSocket real-time feed, limit orders + scaled entries, OmniCoin analyzer, CoinGlass regime, cycle countdown, conviction engine</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td style="color:var(--agent-oracle);font-weight:700;">Oracle</td>
+            <td>Weekly Crypto — Polymarket</td>
+            <td style="text-align:center;font-weight:600;">v1</td>
+            <td style="text-align:center;"><span style="color:var(--success);font-weight:600;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.04em;">Active</span></td>
+            <td style="font-size:0.68rem;color:var(--text-secondary);">3-model LLM ensemble, 12 modules, swarm intelligence, emergency mid-week trigger</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td style="color:var(--agent-shelby);font-weight:700;">Shelby</td>
+            <td>Commander — Scheduler</td>
+            <td style="text-align:center;font-weight:600;">v3</td>
+            <td style="text-align:center;"><span style="color:var(--success);font-weight:600;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.04em;">Active</span></td>
+            <td style="font-size:0.68rem;color:var(--text-secondary);">Telegram bot, task scheduler, agent registry, health routing, past-due detection</td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td style="color:var(--agent-atlas);font-weight:700;">Atlas</td>
+            <td>24/7 Research Engine</td>
+            <td style="text-align:center;font-weight:600;">v2</td>
+            <td style="text-align:center;"><span style="color:var(--success);font-weight:600;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.04em;">Active</span></td>
+            <td style="font-size:0.68rem;color:var(--text-secondary);">90-min cycles, Tavily API, thread-safe KB, feeds ALL agents</td>
+          </tr>
+          <tr>
+            <td>7</td>
+            <td style="color:var(--agent-soren);font-weight:700;">Soren</td>
+            <td>Dark Motivation Content</td>
+            <td style="text-align:center;font-weight:600;">v2</td>
+            <td style="text-align:center;"><span style="color:var(--success);font-weight:600;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.04em;">Active</span></td>
+            <td style="font-size:0.68rem;color:var(--text-secondary);">Content pipeline, scheduling, style templates, brand voice</td>
+          </tr>
+          <tr>
+            <td>8</td>
+            <td style="color:var(--agent-lisa);font-weight:700;">Lisa</td>
+            <td>Social Media — X</td>
+            <td style="text-align:center;font-weight:600;">v2</td>
+            <td style="text-align:center;"><span style="color:var(--warning);font-weight:600;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.04em;">Degraded</span></td>
+            <td style="font-size:0.68rem;color:var(--text-secondary);">X API integration, scheduling, analytics (401 auth needs refresh)</td>
+          </tr>
+          <tr>
+            <td>9</td>
+            <td style="color:var(--agent-sentinel);font-weight:700;">Robotox</td>
+            <td>Health Monitor</td>
+            <td style="text-align:center;font-weight:600;">v3</td>
+            <td style="text-align:center;"><span style="color:var(--success);font-weight:600;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.04em;">Active</span></td>
+            <td style="font-size:0.68rem;color:var(--text-secondary);">Monitors 12 agents, auto-restart via launchctl, log watching, Telegram alerts, discord intel scraper</td>
+          </tr>
+          <tr>
+            <td>10</td>
+            <td style="color:var(--agent-thor);font-weight:700;">Thor</td>
+            <td>Coding Lieutenant</td>
+            <td style="text-align:center;font-weight:600;">v2</td>
+            <td style="text-align:center;"><span style="color:var(--success);font-weight:600;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.04em;">Active</span></td>
+            <td style="font-size:0.68rem;color:var(--text-secondary);">Task queue, autonomous code changes, codebase index, smart actions</td>
+          </tr>
+          <tr>
+            <td>11</td>
+            <td style="color:var(--agent-quant);font-weight:700;">Quant</td>
+            <td>Backtesting Lab</td>
+            <td style="text-align:center;font-weight:600;">v3</td>
+            <td style="text-align:center;"><span style="color:var(--success);font-weight:600;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.04em;">Active</span></td>
+            <td style="font-size:0.68rem;color:var(--text-secondary);">WFV2 + Monte Carlo + CUSUM triple gate, radar intelligence, live param push/rollback, PNL impact estimator, self-learning</td>
+          </tr>
+          <tr>
+            <td>12</td>
+            <td style="color:var(--agent-viper);font-weight:700;">Viper</td>
+            <td>Revenue Hunter</td>
+            <td style="text-align:center;font-weight:600;">v1</td>
+            <td style="text-align:center;"><span style="color:var(--success);font-weight:600;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.04em;">Active</span></td>
+            <td style="font-size:0.68rem;color:var(--text-secondary);">Cost auditing, intel gathering for Hawk, market context matching</td>
+          </tr>
+          <tr>
+            <td>13</td>
+            <td style="font-weight:700;color:var(--text);">Dashboard</td>
+            <td>Command Center</td>
+            <td style="text-align:center;font-weight:600;">v5</td>
+            <td style="text-align:center;"><span style="color:var(--success);font-weight:600;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.04em;">Active</span></td>
+            <td style="font-size:0.68rem;color:var(--text-secondary);">12+ tabs, per-agent cycle timers, radar charts, glass-card design, collapsible panels, live P&L</td>
+          </tr>
+          <tr>
+            <td>14</td>
+            <td style="font-weight:700;color:var(--text);">Shared</td>
+            <td>LLM Router / Memory / Events</td>
+            <td style="text-align:center;font-weight:600;">v2</td>
+            <td style="text-align:center;"><span style="color:var(--success);font-weight:600;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.04em;">Active</span></td>
+            <td style="font-size:0.68rem;color:var(--text-secondary);">LLM router (MLX local + cloud), per-agent SQLite memory, JSONL event bus, cost tracking</td>
+          </tr>
+          <tr>
+            <td>15</td>
+            <td style="font-weight:700;color:var(--text);">Pro Infra</td>
+            <td>Deploy / LaunchAgents / SSH</td>
+            <td style="text-align:center;font-weight:600;">v2</td>
+            <td style="text-align:center;"><span style="color:var(--success);font-weight:600;font-size:0.66rem;text-transform:uppercase;letter-spacing:0.04em;">Active</span></td>
+            <td style="font-size:0.68rem;color:var(--text-secondary);">12 LaunchAgents with KeepAlive, auto-deploy every 5min, log rotation, boot recovery</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Codebase Breakdown -->
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="garves">Codebase Breakdown</h2>
+    <div class="glass-card">
+      <div id="sys-code-breakdown" style="font-family:var(--font-mono);font-size:0.74rem;"><span class="text-muted">Loading codebase stats...</span></div>
+    </div>
+  </div>
+
+  <!-- Infrastructure Stack -->
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="thor">Infrastructure Stack</h2>
+    <div class="glass-card" style="overflow-x:auto;">
+      <table class="data-table" style="font-size:0.72rem;">
+        <thead>
+          <tr><th>Layer</th><th>Technology</th><th>Details</th></tr>
+        </thead>
+        <tbody>
+          <tr><td style="font-weight:600;color:var(--agent-garves);">Runtime</td><td>Python 3.12</td><td style="color:var(--text-secondary);">.venv on Pro M3</td></tr>
+          <tr><td style="font-weight:600;color:var(--agent-atlas);">LLM Local</td><td>MLX Qwen 14B / 3B</td><td style="color:var(--text-secondary);">Reasoning + fast routes</td></tr>
+          <tr><td style="font-weight:600;color:var(--agent-soren);">LLM Cloud</td><td>Claude + OpenAI + Gemini + Grok</td><td style="color:var(--text-secondary);">Fallback chain with cost tracking</td></tr>
+          <tr><td style="font-weight:600;color:var(--agent-odin);">Exchange</td><td>Polymarket CLOB + Hyperliquid</td><td style="color:var(--text-secondary);">Binary markets + perpetual futures</td></tr>
+          <tr><td style="font-weight:600;color:var(--agent-hawk);">Data</td><td>CoinGlass, CoinGecko, FRED, Tavily, NOAA</td><td style="color:var(--text-secondary);">Multi-source intelligence</td></tr>
+          <tr><td style="font-weight:600;color:var(--agent-shelby);">Infra</td><td>macOS LaunchAgents</td><td style="color:var(--text-secondary);">12 agents with KeepAlive</td></tr>
+          <tr><td style="font-weight:600;color:var(--agent-thor);">Network</td><td>Tailscale + NordVPN</td><td style="color:var(--text-secondary);">Air M2 to Pro M3, geo-bypass</td></tr>
+          <tr><td style="font-weight:600;color:var(--agent-sentinel);">Monitoring</td><td>Robotox + Dashboard</td><td style="color:var(--text-secondary);">Auto-restart, health checks, Telegram</td></tr>
+          <tr><td style="font-weight:600;color:var(--agent-viper);">Memory</td><td>SQLite + JSONL Event Bus</td><td style="color:var(--text-secondary);">Per-agent memory, shared intelligence</td></tr>
+          <tr><td style="font-weight:600;color:var(--agent-quant);">Deploy</td><td>Git auto-pull (5 min) + SCP</td><td style="color:var(--text-secondary);">Pro M3 is source of truth</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="shelby">Agent Process Monitor</h2>
+    <div class="glass-card">
+      <table class="data-table">
+        <thead>
+          <tr><th>Agent</th><th>PID</th><th>CPU %</th><th>Mem MB</th><th>Uptime</th><th>Command</th></tr>
+        </thead>
+        <tbody id="sys-process-tbody">
+          <tr><td colspan="6" class="text-muted" style="text-align:center;padding:16px;">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid-2 mt-3">
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="garves">LaunchAgent Status</h2>
+      <div class="glass-card">
+        <div id="sys-launchagents" style="font-family:var(--font-mono);font-size:0.76rem;"><span class="text-muted">Loading...</span></div>
+      </div>
+    </div>
+    <div class="section-spacer">
+      <h2 class="section-title" data-accent="atlas">Port Monitor</h2>
+      <div class="glass-card">
+        <div id="sys-port-list" style="font-family:var(--font-mono);font-size:0.76rem;"><span class="text-muted">Loading...</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="error">Recent Errors</h2>
+    <div class="glass-card" style="max-height:250px;overflow-y:auto;">
+      <div id="sys-errors" style="font-family:var(--font-mono);font-size:0.74rem;"><span class="text-muted">No errors detected.</span></div>
+    </div>
+  </div>
+
+  <div class="section-spacer">
+    <h2 class="section-title" data-accent="atlas">Live Event Feed</h2>
+    <div class="glass-card" style="max-height:300px;overflow-y:auto;">
+      <div id="sys-event-feed" style="font-family:var(--font-mono);font-size:0.74rem;"><span class="text-muted">Loading events...</span></div>
+    </div>
+  </div>
+</div>

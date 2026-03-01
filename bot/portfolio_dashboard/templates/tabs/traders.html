@@ -1,0 +1,977 @@
+<!-- Traders — Unified Cross-Agent Portfolio -->
+<div class="tab-content" id="tab-traders">
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+    <h2 style="margin:0;font-size:1.1rem;font-weight:700;">Traders — Live Portfolio</h2>
+    <button class="btn" onclick="tradersRefresh()" style="font-size:0.72rem;font-weight:700;border-color:#10B981;color:#10B981;">Refresh</button>
+    <span class="text-muted" style="font-size:0.68rem;margin-left:auto;">Updated: <span id="traders-updated">--</span></span>
+  </div>
+
+  <!-- Hero Metrics -->
+  <div id="traders-hero" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;">
+    <div class="glass-card" style="text-align:center;padding:12px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Portfolio Value</div>
+      <div id="traders-hero-portfolio" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">$0.00</div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:12px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Unrealized P&L</div>
+      <div id="traders-hero-pnl" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">$0.00</div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:12px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Win Rate</div>
+      <div id="traders-hero-wr" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">0%</div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:12px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Positions</div>
+      <div id="traders-hero-count" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">0</div>
+      <div style="font-size:0.6rem;color:var(--text-muted);"><span id="traders-hero-live">0</span> live / <span id="traders-hero-paper">0</span> paper</div>
+    </div>
+  </div>
+
+  <!-- Sub-tab Navigation -->
+  <div class="traders-subtabs" style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+    <button class="traders-subtab active" data-sub="overview" onclick="tradersSwitchSub('overview')">Overview</button>
+    <button class="traders-subtab" data-sub="positions" onclick="tradersSwitchSub('positions')">Live Positions</button>
+    <button class="traders-subtab" data-sub="paper" onclick="tradersSwitchSub('paper')">Paper Positions</button>
+    <button class="traders-subtab" data-sub="history" onclick="tradersSwitchSub('history')">Trade History</button>
+    <button class="traders-subtab" data-sub="performance" onclick="tradersSwitchSub('performance')">Performance</button>
+    <button class="traders-subtab" data-sub="risk" onclick="tradersSwitchSub('risk')">Risk Overview</button>
+  </div>
+
+  <!-- SUB-TAB: Overview -->
+  <div class="traders-panel" id="traders-panel-overview">
+    <div id="traders-agent-cards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;"></div>
+  </div>
+
+  <!-- SUB-TAB: Open Positions -->
+  <div class="traders-panel" id="traders-panel-positions" style="display:none;">
+    <!-- Filter Bar -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+      <select id="traders-filter-agent" onchange="tradersFilterPositions()" style="background:var(--surface-elevated);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 8px;font-size:0.72rem;font-family:var(--font-mono);">
+        <option value="all">All Agents</option>
+        <option value="garves">Garves</option>
+        <option value="hawk">Hawk</option>
+        <option value="odin">Odin</option>
+        <option value="oracle">Oracle</option>
+      </select>
+      <input id="traders-search" type="text" placeholder="Search market..." onkeyup="tradersFilterPositions()" style="background:var(--surface-elevated);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 10px;font-size:0.72rem;font-family:var(--font-mono);width:180px;">
+      <div style="display:flex;gap:2px;margin-left:auto;">
+        <button class="btn traders-view-btn active" onclick="tradersToggleView('table')" style="font-size:0.66rem;padding:3px 10px;">Table</button>
+        <button class="btn traders-view-btn" onclick="tradersToggleView('card')" style="font-size:0.66rem;padding:3px 10px;">Cards</button>
+      </div>
+      <button class="btn" onclick="tradersExportCSV()" style="font-size:0.66rem;padding:3px 10px;border-color:#10B981;color:#10B981;">CSV</button>
+    </div>
+
+    <!-- Table View -->
+    <div id="traders-table-wrap" class="glass-card" style="overflow-x:auto;padding:0;">
+      <table style="width:100%;border-collapse:collapse;font-size:0.72rem;">
+        <thead>
+          <tr style="background:var(--surface-elevated);text-align:left;">
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Agent</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Market</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Dir</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Cat</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;text-align:right;">Size</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;text-align:right;">Entry</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;text-align:right;">Current</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;text-align:right;">P&L ($)</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;text-align:right;">P&L (%)</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;text-align:right;">Payout</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;text-align:right;">Lev</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">TP / SL</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Expires</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Status</th>
+          </tr>
+        </thead>
+        <tbody id="traders-table-body"></tbody>
+        <tfoot id="traders-table-foot" style="border-top:1px solid var(--border);"></tfoot>
+      </table>
+    </div>
+
+    <!-- Card View -->
+    <div id="traders-card-wrap" style="display:none;"></div>
+  </div>
+
+  <!-- SUB-TAB: Paper Positions -->
+  <div class="traders-panel" id="traders-panel-paper" style="display:none;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+      <select id="traders-paper-filter-agent" onchange="tradersFilterPaper()" style="background:var(--surface-elevated);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 8px;font-size:0.72rem;font-family:var(--font-mono);">
+        <option value="all">All Agents</option>
+        <option value="odin">Odin</option>
+        <option value="garves">Garves</option>
+        <option value="oracle">Oracle</option>
+      </select>
+      <span class="text-muted" style="font-size:0.68rem;">Simulated positions — not on-chain</span>
+    </div>
+    <div id="traders-paper-wrap" class="glass-card" style="overflow-x:auto;padding:0;">
+      <table style="width:100%;border-collapse:collapse;font-size:0.72rem;">
+        <thead>
+          <tr style="background:var(--surface-elevated);text-align:left;">
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Agent</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Market</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Dir</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Cat</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;text-align:right;">Size</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;text-align:right;">Entry</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;text-align:right;">P&L ($)</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;text-align:right;">Lev</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">TP / SL</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Conviction</th>
+          </tr>
+        </thead>
+        <tbody id="traders-paper-body"></tbody>
+        <tfoot id="traders-paper-foot" style="border-top:1px solid var(--border);"></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- SUB-TAB: Trade History -->
+  <div class="traders-panel" id="traders-panel-history" style="display:none;">
+    <!-- History Stats Bar -->
+    <div id="traders-history-stats" style="display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px;"></div>
+
+    <!-- History Filters -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+      <select id="traders-hist-agent" onchange="tradersFilterHistory()" style="background:var(--surface-elevated);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 8px;font-size:0.72rem;font-family:var(--font-mono);">
+        <option value="all">All Agents</option>
+        <option value="garves">Garves</option>
+        <option value="hawk">Hawk</option>
+        <option value="odin">Odin</option>
+      </select>
+      <select id="traders-hist-mode" onchange="tradersFilterHistory()" style="background:var(--surface-elevated);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 8px;font-size:0.72rem;font-family:var(--font-mono);">
+        <option value="all">All Modes</option>
+        <option value="live">Live Only</option>
+        <option value="paper">Paper Only</option>
+      </select>
+      <select id="traders-hist-result" onchange="tradersFilterHistory()" style="background:var(--surface-elevated);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 8px;font-size:0.72rem;font-family:var(--font-mono);">
+        <option value="all">All Results</option>
+        <option value="won">Wins</option>
+        <option value="lost">Losses</option>
+      </select>
+      <span class="text-muted" style="font-size:0.62rem;margin-left:auto;">Post-upgrade only (Feb 24+)</span>
+    </div>
+
+    <!-- History Table -->
+    <div id="traders-history-wrap" class="glass-card" style="overflow-x:auto;padding:0;">
+      <table style="width:100%;border-collapse:collapse;font-size:0.72rem;">
+        <thead>
+          <tr style="background:var(--surface-elevated);text-align:left;">
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Agent</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Mode</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Market</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Dir</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Cat</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;text-align:right;">Cost</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;text-align:right;">Payout</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;text-align:right;">P&L</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Result</th>
+            <th style="padding:8px 10px;font-weight:600;color:var(--text-secondary);font-size:0.66rem;">Closed</th>
+          </tr>
+        </thead>
+        <tbody id="traders-history-body"></tbody>
+        <tfoot id="traders-history-foot" style="border-top:1px solid var(--border);"></tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- SUB-TAB: Performance -->
+  <div class="traders-panel" id="traders-panel-performance" style="display:none;">
+    <div id="traders-perf-content"><div class="text-muted">Loading performance data...</div></div>
+  </div>
+
+  <!-- SUB-TAB: Risk Overview -->
+  <div class="traders-panel" id="traders-panel-risk" style="display:none;">
+    <div id="traders-risk-content"><div class="text-muted">Loading risk data...</div></div>
+  </div>
+
+</div>
+
+<style>
+  .traders-subtab {
+    background: var(--surface-elevated);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-pill);
+    padding: 5px 16px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .traders-subtab:hover { color: var(--text); border-color: var(--text-muted); }
+  .traders-subtab.active {
+    background: #10B981;
+    color: #000;
+    border-color: #10B981;
+  }
+  .tr-agent-garves { border-left: 3px solid var(--agent-garves); }
+  .tr-agent-hawk { border-left: 3px solid var(--agent-hawk); }
+  .tr-agent-odin { border-left: 3px solid var(--agent-odin); }
+  .tr-agent-oracle { border-left: 3px solid var(--agent-oracle); }
+  .dir-long { color: var(--success); font-weight: 700; }
+  .dir-short { color: var(--error); font-weight: 700; }
+  .traders-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: #000;
+  }
+  .traders-cat-badge {
+    display: inline-block;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.58rem;
+    font-weight: 600;
+    background: var(--surface-elevated);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    text-transform: uppercase;
+  }
+  .traders-status-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 4px;
+  }
+  .traders-view-btn.active {
+    background: rgba(16, 185, 129, 0.15);
+    border-color: #10B981;
+    color: #10B981;
+  }
+  .pos-card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 14px;
+    backdrop-filter: var(--glass-blur);
+  }
+  .countdown-urgent { color: var(--error); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+  .util-track {
+    width: 100%;
+    height: 8px;
+    background: var(--surface-elevated);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .util-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s;
+  }
+  .corr-warning {
+    background: var(--glass-bg);
+    border: 1px solid var(--warning);
+    border-radius: var(--radius);
+    padding: 12px;
+  }
+  #traders-table-body tr, #traders-history-body tr, #traders-paper-body tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  #traders-table-body tr:hover, #traders-history-body tr:hover, #traders-paper-body tr:hover { background: rgba(255,255,255,0.02); }
+  .traders-mode-live {
+    display: inline-block; padding: 1px 6px; border-radius: 3px;
+    font-size: 0.58rem; font-weight: 700; font-family: var(--font-mono);
+    background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3);
+  }
+  .traders-mode-paper {
+    display: inline-block; padding: 1px 6px; border-radius: 3px;
+    font-size: 0.58rem; font-weight: 700; font-family: var(--font-mono);
+    background: rgba(251,191,36,0.15); color: #FBBF24; border: 1px solid rgba(251,191,36,0.3);
+  }
+  .traders-result-win {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 0.66rem; font-weight: 700; color: var(--success);
+  }
+  .traders-result-loss {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 0.66rem; font-weight: 700; color: var(--error);
+  }
+</style>
+
+<script>
+/* ======================================================================
+   TRADERS TAB — Unified Cross-Agent Portfolio
+   ====================================================================== */
+var _tradersData = null;
+var _tradersOverview = null;
+var _tradersViewMode = 'table';
+var _tradersInterval = null;
+var _tradersCountdownInterval = null;
+
+var AGENT_COLORS = {
+  garves: 'var(--agent-garves)',
+  hawk: 'var(--agent-hawk)',
+  odin: 'var(--agent-odin)',
+  oracle: 'var(--agent-oracle)'
+};
+var AGENT_BADGES = {
+  garves: 'GA',
+  hawk: 'HK',
+  odin: 'OD',
+  oracle: 'OR'
+};
+var ENGINE_BADGES = {
+  taker: {label: 'TKR', bg: '#F59E0B'},
+  maker: {label: 'MKR', bg: '#22c55e'},
+  snipe: {label: 'SNP', bg: '#ef4444'},
+  whale: {label: 'WHL', bg: '#EC4899'}
+};
+function tradersEngineBadge(engine) {
+  var e = ENGINE_BADGES[engine];
+  if (!e) return '';
+  return ' <span style="display:inline-block;padding:1px 4px;border-radius:3px;font-size:0.54rem;font-weight:700;font-family:var(--font-mono);color:#000;background:' + e.bg + ';margin-left:3px;">' + e.label + '</span>';
+}
+
+/* --- Auto-refresh: runs only when traders tab is active --- */
+setInterval(function() {
+  if (typeof currentTab !== 'undefined' && currentTab === 'traders') {
+    tradersRefresh();
+  }
+}, 30000);
+setInterval(function() {
+  if (typeof currentTab !== 'undefined' && currentTab === 'traders') {
+    tradersUpdateCountdowns();
+  }
+}, 1000);
+
+/* --- Master refresh (debounced to prevent flicker) --- */
+var _tradersRefreshing = false;
+async function tradersRefresh() {
+  if (_tradersRefreshing) return;
+  _tradersRefreshing = true;
+  try {
+    var [posResp, ovResp] = await Promise.all([
+      fetch('/api/traders/positions'),
+      fetch('/api/traders/overview')
+    ]);
+    var posData = await posResp.json();
+    var ovData = await ovResp.json();
+    if (posData && posData.positions) _tradersData = posData;
+    if (ovData && ovData.hero) _tradersOverview = ovData;
+    tradersRenderHero(_tradersOverview);
+    tradersRenderPositions(_tradersData);
+    tradersRenderPaper(_tradersData);
+    tradersRenderOverview(_tradersOverview);
+    document.getElementById('traders-updated').textContent = new Date().toLocaleTimeString();
+  } catch (e) {
+    console.error('[Traders] refresh error:', e);
+  } finally {
+    _tradersRefreshing = false;
+  }
+}
+
+/* --- Sub-tab switching --- */
+function tradersSwitchSub(name) {
+  var panels = document.querySelectorAll('.traders-panel');
+  for (var i = 0; i < panels.length; i++) panels[i].style.display = 'none';
+  var target = document.getElementById('traders-panel-' + name);
+  if (target) target.style.display = '';
+
+  var btns = document.querySelectorAll('.traders-subtab');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.remove('active');
+    if (btns[i].getAttribute('data-sub') === name) btns[i].classList.add('active');
+  }
+
+  if (name === 'history') tradersLoadHistory();
+  if (name === 'performance') tradersLoadPerformance();
+  if (name === 'risk') tradersLoadRisk();
+}
+
+/* --- Hero cards --- */
+function tradersRenderHero(ov) {
+  if (!ov || !ov.hero) return;
+  var h = ov.hero;
+  var elPort = document.getElementById('traders-hero-portfolio');
+  var elPnl = document.getElementById('traders-hero-pnl');
+  var elWr = document.getElementById('traders-hero-wr');
+  var elCnt = document.getElementById('traders-hero-count');
+  elPort.textContent = '$' + (h.portfolio_value || 0).toFixed(2);
+  elPnl.textContent = (h.unrealized_pnl >= 0 ? '+$' : '-$') + Math.abs(h.unrealized_pnl || 0).toFixed(2);
+  elPnl.style.color = h.unrealized_pnl >= 0 ? 'var(--success)' : 'var(--error)';
+  elWr.textContent = (h.win_rate || 0).toFixed(1) + '%';
+  elWr.style.color = h.win_rate >= 50 ? 'var(--success)' : 'var(--error)';
+  elCnt.textContent = h.active_positions || 0;
+
+  // Update live/paper counts from positions data
+  if (_tradersData && _tradersData.positions) {
+    var liveCount = _tradersData.positions.filter(function(p) { return p.mode === 'live'; }).length;
+    var paperCount = _tradersData.positions.filter(function(p) { return p.mode === 'paper'; }).length;
+    var elLive = document.getElementById('traders-hero-live');
+    var elPaper = document.getElementById('traders-hero-paper');
+    if (elLive) elLive.textContent = liveCount;
+    if (elPaper) elPaper.textContent = paperCount;
+  }
+}
+
+/* --- Overview sub-tab (per-agent cards) --- */
+function tradersRenderOverview(ov) {
+  if (!ov || !ov.agents) return;
+  var wrap = document.getElementById('traders-agent-cards');
+  var html = '';
+  var order = ['garves', 'hawk', 'odin', 'oracle'];
+  for (var i = 0; i < order.length; i++) {
+    var name = order[i];
+    var a = ov.agents[name] || {};
+    var color = AGENT_COLORS[name];
+    var badge = AGENT_BADGES[name];
+    var pnlColor = (a.unrealized_pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)';
+    var pnlSign = (a.unrealized_pnl || 0) >= 0 ? '+' : '';
+    html += '<div class="glass-card" style="border-left:3px solid ' + color + ';padding:14px;">';
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">';
+    html += '<span class="traders-badge" style="background:' + color + ';">' + badge + '</span>';
+    html += '<span style="font-size:0.78rem;font-weight:700;text-transform:capitalize;">' + name + '</span>';
+    html += '</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:0.7rem;">';
+    html += '<div><span class="text-muted">Positions</span><br><strong>' + (a.open_positions || 0) + '</strong></div>';
+    html += '<div><span class="text-muted">Exposure</span><br><strong>$' + (a.exposure || 0).toFixed(2) + '</strong></div>';
+    html += '<div><span class="text-muted">Unreal P&L</span><br><strong style="color:' + pnlColor + ';">' + pnlSign + '$' + Math.abs(a.unrealized_pnl || 0).toFixed(2) + '</strong></div>';
+    html += '<div><span class="text-muted">Real P&L</span><br><strong style="color:' + ((a.realized_pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)') + ';">' + ((a.realized_pnl || 0) >= 0 ? '+' : '') + '$' + Math.abs(a.realized_pnl || 0).toFixed(2) + '</strong></div>';
+    html += '<div><span class="text-muted">Win Rate</span><br><strong>' + (a.win_rate || 0).toFixed(1) + '%</strong></div>';
+    html += '<div><span class="text-muted">Trades</span><br><strong>' + (a.total_trades || 0) + '</strong></div>';
+    html += '</div></div>';
+  }
+  wrap.innerHTML = html;
+}
+
+/* --- Positions table --- */
+function tradersRenderPositions(data) {
+  if (!data || !data.positions) return;
+  var tbody = document.getElementById('traders-table-body');
+  var tfoot = document.getElementById('traders-table-foot');
+  var filtered = tradersGetFiltered(data.positions, 'live');
+  var rows = '';
+  for (var i = 0; i < filtered.length; i++) {
+    var p = filtered[i];
+    var agentColor = AGENT_COLORS[p.agent] || 'var(--text-muted)';
+    var badge = AGENT_BADGES[p.agent] || '??';
+    var dirArrow = p.direction_class === 'long' ? '&#9650;' : '&#9660;';
+    var dirClass = p.direction_class === 'long' ? 'dir-long' : 'dir-short';
+    var pnlColor = p.pnl >= 0 ? 'var(--success)' : 'var(--error)';
+    var pnlSign = p.pnl >= 0 ? '+' : '';
+    var pctSign = p.pnl_pct >= 0 ? '+' : '';
+    var statusDot = p.status === 'won' ? 'var(--success)' : (p.status === 'expiring' ? 'var(--warning)' : 'var(--text-muted)');
+    var levText = p.leverage ? p.leverage + 'x' : '--';
+    var tpslText = '--';
+    if (p.tp_distance_pct !== null && p.sl_distance_pct !== null) {
+      tpslText = '<span style="color:var(--success);font-size:0.64rem;">TP ' + (p.tp_distance_pct >= 0 ? '+' : '') + p.tp_distance_pct.toFixed(1) + '%</span>'
+        + ' / <span style="color:var(--error);font-size:0.64rem;">SL ' + (p.sl_distance_pct >= 0 ? '+' : '') + p.sl_distance_pct.toFixed(1) + '%</span>';
+    }
+    var marketShort = p.market.length > 40 ? p.market.substring(0, 40) + '...' : p.market;
+    var expiryHtml = tradersCountdownHtml(p.end_date, p.platform);
+
+    rows += '<tr class="tr-agent-' + p.agent + '" data-agent="' + p.agent + '" data-market="' + (p.market || '').toLowerCase() + '">';
+    rows += '<td style="padding:6px 10px;"><span class="traders-badge" style="background:' + agentColor + ';">' + badge + '</span>' + tradersEngineBadge(p.engine) + '</td>';
+    rows += '<td style="padding:6px 10px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + tradersEsc(p.market) + '">' + tradersEsc(marketShort) + '</td>';
+    rows += '<td style="padding:6px 10px;" class="' + dirClass + '">' + dirArrow + ' ' + p.direction + '</td>';
+    rows += '<td style="padding:6px 10px;"><span class="traders-cat-badge">' + p.category + '</span></td>';
+    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);">$' + p.size_usd.toFixed(2) + '</td>';
+    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);">' + (p.entry_price != null ? p.entry_price.toFixed(4) : '--') + '</td>';
+    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);">' + (p.current_price != null ? p.current_price.toFixed(4) : '--') + '</td>';
+    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);color:' + pnlColor + ';">' + pnlSign + '$' + Math.abs(p.pnl).toFixed(2) + '</td>';
+    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);color:' + pnlColor + ';">' + pctSign + p.pnl_pct.toFixed(1) + '%</td>';
+    var payoutText = '--';
+    if (p.status === 'won' && p.shares) { payoutText = '<span style="color:var(--green);">$' + (p.shares * 1.0).toFixed(2) + '</span>'; }
+    else if (p.status === 'lost') { payoutText = '<span style="color:var(--text-muted);">$0.00</span>'; }
+    else if (p.payout != null && p.payout > 0) { payoutText = '$' + p.payout.toFixed(2); }
+    else if (p.shares && p.current_price != null) { payoutText = '<span style="color:var(--text-muted);">~$' + (p.shares * p.current_price).toFixed(2) + '</span>'; }
+    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);font-size:0.66rem;">' + payoutText + '</td>';
+    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);font-size:0.66rem;">' + levText + '</td>';
+    rows += '<td style="padding:6px 10px;font-family:var(--font-mono);font-size:0.64rem;">' + tpslText + '</td>';
+    rows += '<td style="padding:6px 10px;font-size:0.66rem;" data-end="' + (p.end_date || '') + '" data-platform="' + p.platform + '">' + expiryHtml + '</td>';
+    rows += '<td style="padding:6px 10px;"><span class="traders-status-dot" style="background:' + statusDot + ';"></span><span style="font-size:0.66rem;">' + (p.status || 'active') + '</span></td>';
+    rows += '</tr>';
+  }
+  if (filtered.length === 0) {
+    rows = '<tr><td colspan="14" style="padding:20px;text-align:center;color:var(--text-muted);">No live positions</td></tr>';
+  }
+  tbody.innerHTML = rows;
+
+  // Footer totals — filtered positions only (respects agent + search filter)
+  var totals = {
+    count: filtered.length,
+    exposure: filtered.reduce(function(s, p) { return s + p.size_usd; }, 0),
+    pnl: filtered.reduce(function(s, p) { return s + p.pnl; }, 0),
+  };
+  tfoot.innerHTML = '<tr style="font-size:0.72rem;font-weight:600;background:var(--surface-elevated);">'
+    + '<td colspan="4" style="padding:8px 10px;">' + (totals.count || 0) + ' positions</td>'
+    + '<td style="padding:8px 10px;text-align:right;font-family:var(--font-mono);">$' + (totals.exposure || 0).toFixed(2) + '</td>'
+    + '<td colspan="2"></td>'
+    + '<td style="padding:8px 10px;text-align:right;font-family:var(--font-mono);color:' + ((totals.pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)') + ';">' + ((totals.pnl || 0) >= 0 ? '+' : '') + '$' + Math.abs(totals.pnl || 0).toFixed(2) + '</td>'
+    + '<td colspan="5"></td></tr>';
+
+  // Also render card view
+  tradersRenderCards(filtered);
+}
+
+/* --- Card view --- */
+function tradersRenderCards(positions) {
+  var wrap = document.getElementById('traders-card-wrap');
+  if (!positions || !positions.length) {
+    wrap.innerHTML = '<div class="text-muted" style="padding:20px;text-align:center;">No open positions</div>';
+    return;
+  }
+  var html = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">';
+  for (var i = 0; i < positions.length; i++) {
+    var p = positions[i];
+    var agentColor = AGENT_COLORS[p.agent] || 'var(--text-muted)';
+    var dirClass = p.direction_class === 'long' ? 'dir-long' : 'dir-short';
+    var dirArrow = p.direction_class === 'long' ? '&#9650;' : '&#9660;';
+    var pnlColor = p.pnl >= 0 ? 'var(--success)' : 'var(--error)';
+    var pnlSign = p.pnl >= 0 ? '+' : '';
+    html += '<div class="pos-card" style="border-left:3px solid ' + agentColor + ';">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
+    html += '<span class="traders-badge" style="background:' + agentColor + ';">' + AGENT_BADGES[p.agent] + '</span>' + tradersEngineBadge(p.engine);
+    html += '<span class="traders-cat-badge">' + p.category + '</span>';
+    html += '</div>';
+    html += '<div style="font-size:0.76rem;font-weight:600;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + tradersEsc(p.market) + '">' + tradersEsc(p.market.length > 35 ? p.market.substring(0, 35) + '...' : p.market) + '</div>';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
+    html += '<span class="' + dirClass + '" style="font-size:0.78rem;">' + dirArrow + ' ' + p.direction + '</span>';
+    html += '<span style="font-family:var(--font-mono);font-size:0.78rem;color:' + pnlColor + ';">' + pnlSign + '$' + Math.abs(p.pnl).toFixed(2) + '</span>';
+    html += '</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.66rem;">';
+    html += '<div><span class="text-muted">Size</span><br>$' + p.size_usd.toFixed(2) + '</div>';
+    html += '<div><span class="text-muted">P&L %</span><br><span style="color:' + pnlColor + ';">' + (p.pnl_pct >= 0 ? '+' : '') + p.pnl_pct.toFixed(1) + '%</span></div>';
+    if (p.leverage) {
+      html += '<div><span class="text-muted">Leverage</span><br>' + p.leverage + 'x</div>';
+    }
+    html += '</div></div>';
+  }
+  html += '</div>';
+  wrap.innerHTML = html;
+}
+
+/* --- Filtering --- */
+function tradersGetFiltered(positions, modeFilter) {
+  var agent = document.getElementById('traders-filter-agent').value;
+  var search = (document.getElementById('traders-search').value || '').toLowerCase();
+  return positions.filter(function(p) {
+    if (modeFilter && p.mode !== modeFilter) return false;
+    if (agent !== 'all' && p.agent !== agent) return false;
+    if (search && (p.market || '').toLowerCase().indexOf(search) === -1) return false;
+    return true;
+  });
+}
+
+function tradersFilterPositions() {
+  if (_tradersData) tradersRenderPositions(_tradersData);
+}
+
+function tradersFilterPaper() {
+  if (_tradersData) tradersRenderPaper(_tradersData);
+}
+
+/* --- View toggle --- */
+function tradersToggleView(mode) {
+  _tradersViewMode = mode;
+  document.getElementById('traders-table-wrap').style.display = mode === 'table' ? '' : 'none';
+  document.getElementById('traders-card-wrap').style.display = mode === 'card' ? '' : 'none';
+  var btns = document.querySelectorAll('.traders-view-btn');
+  for (var i = 0; i < btns.length; i++) {
+    btns[i].classList.toggle('active', btns[i].textContent.toLowerCase() === mode);
+  }
+}
+
+/* --- CSV export --- */
+function tradersExportCSV() {
+  if (!_tradersData || !_tradersData.positions) return;
+  var filtered = tradersGetFiltered(_tradersData.positions);
+  var header = 'Agent,Market,Direction,Category,Size USD,Entry,Current,PnL USD,PnL %,Payout,Leverage,Status\n';
+  var lines = filtered.map(function(p) {
+    return [
+      p.agent,
+      '"' + (p.market || '').replace(/"/g, '""') + '"',
+      p.direction,
+      p.category,
+      p.size_usd.toFixed(2),
+      p.entry_price.toFixed(4),
+      p.current_price.toFixed(4),
+      p.pnl.toFixed(2),
+      p.pnl_pct.toFixed(1),
+      p.payout != null ? p.payout.toFixed(2) : '--',
+      p.leverage || '--',
+      p.status
+    ].join(',');
+  });
+  var csv = header + lines.join('\n');
+  var blob = new Blob([csv], {type: 'text/csv'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'traders_positions_' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+/* --- Countdown timers --- */
+function tradersCountdownHtml(endDate, platform) {
+  if (platform === 'hyperliquid') return '<span style="color:var(--text-muted);">Perp</span>';
+  if (!endDate) return '<span style="color:var(--text-muted);">--</span>';
+  var end = new Date(endDate).getTime();
+  var now = Date.now();
+  var diff = end - now;
+  if (diff <= 0) return '<span style="color:var(--text-muted);">Expired</span>';
+  return '<span class="traders-countdown" data-end="' + endDate + '">' + tradersFormatCountdown(diff) + '</span>';
+}
+
+function tradersFormatCountdown(ms) {
+  if (ms <= 0) return 'Expired';
+  var d = Math.floor(ms / 86400000);
+  var h = Math.floor((ms % 86400000) / 3600000);
+  var m = Math.floor((ms % 3600000) / 60000);
+  if (d > 0) return d + 'd ' + h + 'h';
+  if (h > 0) return h + 'h ' + m + 'm';
+  return m + 'm';
+}
+
+function tradersUpdateCountdowns() {
+  var spans = document.querySelectorAll('.traders-countdown');
+  var now = Date.now();
+  for (var i = 0; i < spans.length; i++) {
+    var end = new Date(spans[i].getAttribute('data-end')).getTime();
+    var diff = end - now;
+    if (diff <= 0) {
+      spans[i].textContent = 'Expired';
+      spans[i].className = 'traders-countdown';
+    } else {
+      spans[i].textContent = tradersFormatCountdown(diff);
+      if (diff < 86400000) {
+        spans[i].className = 'traders-countdown countdown-urgent';
+      }
+    }
+  }
+}
+
+/* --- Paper positions sub-tab --- */
+function tradersRenderPaper(data) {
+  if (!data || !data.positions) return;
+  var tbody = document.getElementById('traders-paper-body');
+  var tfoot = document.getElementById('traders-paper-foot');
+  var agentFilter = document.getElementById('traders-paper-filter-agent').value;
+  var paperPos = data.positions.filter(function(p) {
+    if (p.mode !== 'paper') return false;
+    if (agentFilter !== 'all' && p.agent !== agentFilter) return false;
+    return true;
+  });
+
+  var rows = '';
+  for (var i = 0; i < paperPos.length; i++) {
+    try {
+    var p = paperPos[i];
+    var agentColor = AGENT_COLORS[p.agent] || 'var(--text-muted)';
+    var badge = AGENT_BADGES[p.agent] || '??';
+    var dirArrow = p.direction_class === 'long' ? '&#9650;' : '&#9660;';
+    var dirClass = p.direction_class === 'long' ? 'dir-long' : 'dir-short';
+    var pnlVal = p.pnl || 0;
+    var pnlColor = pnlVal >= 0 ? 'var(--success)' : 'var(--error)';
+    var pnlSign = pnlVal >= 0 ? '+' : '';
+    var levText = p.leverage ? p.leverage + 'x' : '--';
+    var tpslText = '--';
+    if (p.tp_distance_pct != null && p.sl_distance_pct != null) {
+      tpslText = '<span style="color:var(--success);font-size:0.64rem;">TP ' + (p.tp_distance_pct >= 0 ? '+' : '') + p.tp_distance_pct.toFixed(1) + '%</span>'
+        + ' / <span style="color:var(--error);font-size:0.64rem;">SL ' + (p.sl_distance_pct >= 0 ? '+' : '') + p.sl_distance_pct.toFixed(1) + '%</span>';
+    }
+    var convText = p.conviction != null ? p.conviction : '--';
+    var marketShort = (p.market || '').length > 40 ? p.market.substring(0, 40) + '...' : (p.market || '');
+
+    rows += '<tr class="tr-agent-' + p.agent + '">';
+    rows += '<td style="padding:6px 10px;"><span class="traders-badge" style="background:' + agentColor + ';">' + badge + '</span>' + tradersEngineBadge(p.engine) + '</td>';
+    rows += '<td style="padding:6px 10px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + tradersEsc(p.market) + '">' + tradersEsc(marketShort) + '</td>';
+    rows += '<td style="padding:6px 10px;" class="' + dirClass + '">' + dirArrow + ' ' + p.direction + '</td>';
+    rows += '<td style="padding:6px 10px;"><span class="traders-cat-badge">' + p.category + '</span></td>';
+    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);">$' + (p.size_usd != null ? p.size_usd.toFixed(2) : '0.00') + '</td>';
+    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);">' + (p.entry_price != null ? p.entry_price.toFixed(4) : '--') + '</td>';
+    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);color:' + pnlColor + ';">' + pnlSign + '$' + (p.pnl != null ? Math.abs(p.pnl).toFixed(2) : '0.00') + '</td>';
+    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);font-size:0.66rem;">' + levText + '</td>';
+    rows += '<td style="padding:6px 10px;font-family:var(--font-mono);font-size:0.64rem;">' + tpslText + '</td>';
+    rows += '<td style="padding:6px 10px;font-size:0.66rem;">' + convText + '</td>';
+    rows += '</tr>';
+    } catch(e) { console.error('[Paper] render error for position', i, e); }
+  }
+
+  if (paperPos.length === 0) {
+    rows = '<tr><td colspan="10" style="padding:20px;text-align:center;color:var(--text-muted);">No paper positions</td></tr>';
+  }
+  tbody.innerHTML = rows;
+
+  var totalExposure = paperPos.reduce(function(s, p) { return s + p.size_usd; }, 0);
+  var totalPnl = paperPos.reduce(function(s, p) { return s + p.pnl; }, 0);
+  tfoot.innerHTML = '<tr style="font-size:0.72rem;font-weight:600;background:var(--surface-elevated);">'
+    + '<td colspan="4" style="padding:8px 10px;">' + paperPos.length + ' paper positions</td>'
+    + '<td style="padding:8px 10px;text-align:right;font-family:var(--font-mono);">$' + totalExposure.toFixed(2) + '</td>'
+    + '<td></td>'
+    + '<td style="padding:8px 10px;text-align:right;font-family:var(--font-mono);color:' + (totalPnl >= 0 ? 'var(--success)' : 'var(--error)') + ';">' + (totalPnl >= 0 ? '+' : '') + '$' + Math.abs(totalPnl).toFixed(2) + '</td>'
+    + '<td colspan="3"></td></tr>';
+}
+
+/* --- Trade History sub-tab --- */
+var _tradersHistoryData = null;
+
+async function tradersLoadHistory() {
+  var statsWrap = document.getElementById('traders-history-stats');
+  var tbody = document.getElementById('traders-history-body');
+  if (!_tradersHistoryData) {
+    tbody.innerHTML = '<tr><td colspan="10" style="padding:20px;text-align:center;color:var(--text-muted);">Loading trade history...</td></tr>';
+  }
+  try {
+    var resp = await fetch('/api/traders/history');
+    var data = await resp.json();
+    _tradersHistoryData = data;
+    tradersRenderHistoryStats(data.stats || {});
+    tradersRenderHistory(data.trades || []);
+  } catch (e) {
+    tbody.innerHTML = '<tr><td colspan="10" style="padding:20px;text-align:center;color:var(--text-muted);">Error loading history</td></tr>';
+  }
+}
+
+function tradersRenderHistoryStats(s) {
+  var wrap = document.getElementById('traders-history-stats');
+  var pnlColor = (s.total_pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)';
+  var wrColor = (s.win_rate || 0) >= 50 ? 'var(--success)' : 'var(--error)';
+  wrap.innerHTML = ''
+    + tradersStatCard('Total Trades', s.total || 0, 'var(--text)')
+    + tradersStatCard('Win Rate', (s.win_rate || 0).toFixed(1) + '%', wrColor)
+    + tradersStatCard('Total P&L', (s.total_pnl >= 0 ? '+$' : '-$') + Math.abs(s.total_pnl || 0).toFixed(2), pnlColor)
+    + tradersStatCard('Live Trades', s.live_count || 0, '#10B981')
+    + tradersStatCard('Paper Trades', s.paper_count || 0, '#FBBF24')
+    + tradersStatCard('W / L', (s.wins || 0) + ' / ' + (s.losses || 0), 'var(--text)');
+}
+
+function tradersRenderHistory(trades) {
+  var tbody = document.getElementById('traders-history-body');
+  var tfoot = document.getElementById('traders-history-foot');
+  var agentFilter = document.getElementById('traders-hist-agent').value;
+  var modeFilter = document.getElementById('traders-hist-mode').value;
+  var resultFilter = document.getElementById('traders-hist-result').value;
+
+  var filtered = trades.filter(function(t) {
+    if (agentFilter !== 'all' && t.agent !== agentFilter) return false;
+    if (modeFilter !== 'all' && t.mode !== modeFilter) return false;
+    if (resultFilter === 'won' && !t.won) return false;
+    if (resultFilter === 'lost' && t.won) return false;
+    return true;
+  });
+
+  var rows = '';
+  for (var i = 0; i < filtered.length; i++) {
+    var t = filtered[i];
+    var agentColor = AGENT_COLORS[t.agent] || 'var(--text-muted)';
+    var badge = AGENT_BADGES[t.agent] || '??';
+    var dirArrow = t.direction && ['UP','LONG','YES'].indexOf(t.direction) >= 0 ? '&#9650;' : '&#9660;';
+    var dirClass = ['UP','LONG','YES'].indexOf((t.direction||'').toUpperCase()) >= 0 ? 'dir-long' : 'dir-short';
+    var pnlColor = t.pnl >= 0 ? 'var(--success)' : 'var(--error)';
+    var pnlSign = t.pnl >= 0 ? '+' : '';
+    var modeClass = t.mode === 'live' ? 'traders-mode-live' : 'traders-mode-paper';
+    var resultHtml = t.won
+      ? '<span class="traders-result-win">&#10003; WIN</span>'
+      : '<span class="traders-result-loss">&#10007; LOSS</span>';
+    var closedAt = t.resolved_at ? new Date(t.resolved_at * 1000).toLocaleDateString('en-US', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : '--';
+    var marketShort = (t.market || '').length > 38 ? t.market.substring(0, 38) + '...' : (t.market || '');
+
+    rows += '<tr class="tr-agent-' + t.agent + '">';
+    rows += '<td style="padding:6px 10px;"><span class="traders-badge" style="background:' + agentColor + ';">' + badge + '</span>' + tradersEngineBadge(t.engine) + '</td>';
+    rows += '<td style="padding:6px 10px;"><span class="' + modeClass + '">' + t.mode.toUpperCase() + '</span></td>';
+    rows += '<td style="padding:6px 10px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' + tradersEsc(t.market) + '">' + tradersEsc(marketShort) + '</td>';
+    rows += '<td style="padding:6px 10px;" class="' + dirClass + '">' + dirArrow + ' ' + (t.direction || '') + '</td>';
+    rows += '<td style="padding:6px 10px;"><span class="traders-cat-badge">' + (t.category || '') + '</span></td>';
+    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);">$' + (t.cost || 0).toFixed(2) + '</td>';
+    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);">$' + (t.payout || 0).toFixed(2) + '</td>';
+    rows += '<td style="padding:6px 10px;text-align:right;font-family:var(--font-mono);color:' + pnlColor + ';">' + pnlSign + '$' + Math.abs(t.pnl).toFixed(2) + '</td>';
+    rows += '<td style="padding:6px 10px;">' + resultHtml + '</td>';
+    rows += '<td style="padding:6px 10px;font-size:0.64rem;color:var(--text-secondary);">' + closedAt + '</td>';
+    rows += '</tr>';
+  }
+
+  if (filtered.length === 0) {
+    rows = '<tr><td colspan="10" style="padding:20px;text-align:center;color:var(--text-muted);">No trades in this period</td></tr>';
+  }
+  tbody.innerHTML = rows;
+
+  // Footer
+  var totalPnl = filtered.reduce(function(s, t) { return s + t.pnl; }, 0);
+  var totalCost = filtered.reduce(function(s, t) { return s + (t.cost || 0); }, 0);
+  var winCount = filtered.filter(function(t) { return t.won; }).length;
+  var wr = filtered.length > 0 ? (winCount / filtered.length * 100).toFixed(1) : '0.0';
+  tfoot.innerHTML = '<tr style="font-size:0.72rem;font-weight:600;background:var(--surface-elevated);">'
+    + '<td colspan="5" style="padding:8px 10px;">' + filtered.length + ' trades | WR: ' + wr + '%</td>'
+    + '<td style="padding:8px 10px;text-align:right;font-family:var(--font-mono);">$' + totalCost.toFixed(2) + '</td>'
+    + '<td></td>'
+    + '<td style="padding:8px 10px;text-align:right;font-family:var(--font-mono);color:' + (totalPnl >= 0 ? 'var(--success)' : 'var(--error)') + ';">' + (totalPnl >= 0 ? '+' : '') + '$' + Math.abs(totalPnl).toFixed(2) + '</td>'
+    + '<td colspan="2"></td></tr>';
+}
+
+function tradersFilterHistory() {
+  if (_tradersHistoryData) tradersRenderHistory(_tradersHistoryData.trades || []);
+}
+
+/* --- Performance sub-tab --- */
+async function tradersLoadPerformance() {
+  var wrap = document.getElementById('traders-perf-content');
+  wrap.innerHTML = '<div class="text-muted">Loading...</div>';
+  try {
+    var resp = await fetch('/api/traders/performance');
+    var data = await resp.json();
+    var html = '';
+
+    // Combined stats
+    var c = data.combined || {};
+    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;">';
+    html += tradersStatCard('Total P&L', '$' + (c.total_pnl || 0).toFixed(2), (c.total_pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)');
+    html += tradersStatCard('Total Trades', c.total_trades || 0, 'var(--text)');
+    html += tradersStatCard('Win Rate', (c.win_rate || 0).toFixed(1) + '%', (c.win_rate || 0) >= 50 ? 'var(--success)' : 'var(--error)');
+    html += tradersStatCard('Net After Costs', '$' + (c.net_after_costs || 0).toFixed(2), (c.net_after_costs || 0) >= 0 ? 'var(--success)' : 'var(--error)');
+    html += '</div>';
+
+    // Per-agent win rate bars
+    html += '<h3 style="font-size:0.82rem;font-weight:700;margin-bottom:10px;">Win Rate by Agent</h3>';
+    html += '<div class="glass-card" style="padding:14px;margin-bottom:16px;">';
+    var agents = data.agents || {};
+    var agentOrder = ['garves', 'hawk', 'odin'];
+    for (var i = 0; i < agentOrder.length; i++) {
+      var name = agentOrder[i];
+      var ag = agents[name] || {};
+      var wr = ag.win_rate || 0;
+      var color = AGENT_COLORS[name];
+      html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">';
+      html += '<span style="width:60px;font-size:0.7rem;font-weight:600;text-transform:capitalize;">' + name + '</span>';
+      html += '<div class="util-track" style="flex:1;"><div class="util-bar" style="width:' + Math.min(wr, 100) + '%;background:' + color + ';"></div></div>';
+      html += '<span style="width:45px;text-align:right;font-size:0.7rem;font-family:var(--font-mono);">' + wr.toFixed(1) + '%</span>';
+      html += '<span style="width:60px;text-align:right;font-size:0.66rem;color:var(--text-muted);">' + (ag.wins || 0) + 'W/' + (ag.losses || 0) + 'L</span>';
+      html += '</div>';
+    }
+    html += '</div>';
+
+    // Daily P&L (last 14 days)
+    var daily = c.daily_pnl || {};
+    var days = Object.keys(daily).sort().slice(-14);
+    if (days.length > 0) {
+      html += '<h3 style="font-size:0.82rem;font-weight:700;margin-bottom:10px;">Daily P&L (Last 14 Days)</h3>';
+      html += '<div class="glass-card" style="padding:14px;margin-bottom:16px;">';
+      html += '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;">';
+      for (var i = 0; i < days.length; i++) {
+        var day = days[i];
+        var val = daily[day] || 0;
+        var dayColor = val >= 0 ? 'var(--success)' : 'var(--error)';
+        html += '<div style="text-align:center;padding:6px;background:var(--surface-elevated);border-radius:var(--radius-sm);">';
+        html += '<div style="font-size:0.58rem;color:var(--text-muted);">' + day.slice(5) + '</div>';
+        html += '<div style="font-size:0.72rem;font-weight:700;font-family:var(--font-mono);color:' + dayColor + ';">' + (val >= 0 ? '+' : '') + '$' + Math.abs(val).toFixed(2) + '</div>';
+        html += '</div>';
+      }
+      html += '</div></div>';
+    }
+
+    // LLM Costs
+    var costs = data.llm_costs || {};
+    if (costs.total > 0) {
+      html += '<h3 style="font-size:0.82rem;font-weight:700;margin-bottom:10px;">LLM Costs</h3>';
+      html += '<div class="glass-card" style="padding:14px;">';
+      html += '<div style="font-size:0.8rem;font-weight:700;color:var(--error);margin-bottom:8px;">Total: $' + costs.total.toFixed(2) + '</div>';
+      var perAgent = costs.per_agent || {};
+      var agentNames = Object.keys(perAgent).sort();
+      for (var i = 0; i < agentNames.length; i++) {
+        var n = agentNames[i];
+        html += '<div style="display:flex;justify-content:space-between;font-size:0.7rem;padding:2px 0;">';
+        html += '<span style="text-transform:capitalize;">' + n + '</span>';
+        html += '<span style="font-family:var(--font-mono);">$' + perAgent[n].toFixed(4) + '</span>';
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+
+    wrap.innerHTML = html;
+  } catch (e) {
+    wrap.innerHTML = '<div class="text-muted">Error loading performance data</div>';
+  }
+}
+
+function tradersStatCard(label, value, color) {
+  return '<div class="glass-card" style="text-align:center;padding:12px;">'
+    + '<div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">' + label + '</div>'
+    + '<div style="font-size:1.2rem;font-weight:800;font-family:var(--font-mono);color:' + color + ';">' + value + '</div>'
+    + '</div>';
+}
+
+/* --- Risk sub-tab --- */
+async function tradersLoadRisk() {
+  var wrap = document.getElementById('traders-risk-content');
+  wrap.innerHTML = '<div class="text-muted">Loading...</div>';
+  try {
+    var resp = await fetch('/api/traders/risk');
+    var data = await resp.json();
+    var alloc = data.allocation || {};
+    var html = '';
+
+    // Portfolio allocation overview
+    var wallet = alloc.wallet || {};
+    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;">';
+    html += tradersStatCard('Portfolio', '$' + (wallet.portfolio_total || 0).toFixed(2), 'var(--text)');
+    html += tradersStatCard('Cash Reserve', '$' + (alloc.reserve || 0).toFixed(2), 'var(--success)');
+    html += tradersStatCard('Deployable', '$' + (alloc.deployable || 0).toFixed(2), 'var(--text)');
+    html += tradersStatCard('Utilization', (alloc.total_utilization_pct || 0).toFixed(1) + '%', (alloc.total_utilization_pct || 0) > 80 ? 'var(--error)' : 'var(--success)');
+    html += '</div>';
+
+    // Per-agent allocation bars
+    var agents = alloc.agents || [];
+    if (agents.length > 0) {
+      html += '<h3 style="font-size:0.82rem;font-weight:700;margin-bottom:10px;">Agent Allocations</h3>';
+      html += '<div class="glass-card" style="padding:14px;margin-bottom:16px;">';
+      for (var i = 0; i < agents.length; i++) {
+        var ag = agents[i];
+        var color = AGENT_COLORS[ag.name] || 'var(--text-muted)';
+        var utilPct = Math.min(ag.utilization_pct || 0, 100);
+        var barColor = utilPct > 80 ? 'var(--error)' : (utilPct > 50 ? 'var(--warning)' : color);
+        html += '<div style="margin-bottom:10px;">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">';
+        html += '<span style="font-size:0.72rem;font-weight:600;text-transform:capitalize;">' + ag.name + '</span>';
+        html += '<span style="font-size:0.66rem;font-family:var(--font-mono);color:var(--text-secondary);">';
+        html += '$' + (ag.exposure || 0).toFixed(2) + ' / $' + (ag.allocation || 0).toFixed(2);
+        html += ' (' + utilPct.toFixed(1) + '%)';
+        html += '</span></div>';
+        html += '<div class="util-track"><div class="util-bar" style="width:' + utilPct + '%;background:' + barColor + ';"></div></div>';
+        html += '<div style="display:flex;justify-content:space-between;font-size:0.6rem;color:var(--text-muted);margin-top:2px;">';
+        html += '<span>Weight: ' + (ag.weight || 0) + '</span>';
+        html += '<span>' + (ag.alive ? '&#9679; Alive' : '&#9675; Stale') + ' (' + Math.round(ag.heartbeat_age_s || 0) + 's ago)</span>';
+        html += '</div></div>';
+      }
+      html += '</div>';
+    }
+
+    // Correlation warnings
+    var corrs = data.correlations || [];
+    if (corrs.length > 0) {
+      html += '<h3 style="font-size:0.82rem;font-weight:700;margin-bottom:10px;">Correlation Warnings</h3>';
+      for (var i = 0; i < corrs.length; i++) {
+        var c = corrs[i];
+        var hedgeLabel = c.hedged ? '<span style="color:var(--success);font-size:0.66rem;">HEDGED</span>' : '<span style="color:var(--warning);font-size:0.66rem;">CORRELATED</span>';
+        html += '<div class="corr-warning" style="margin-bottom:8px;">';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;">';
+        html += '<div>';
+        html += '<strong style="font-size:0.78rem;">' + c.asset + '</strong>';
+        html += ' <span style="font-size:0.66rem;color:var(--text-secondary);">held by ' + c.agents.join(', ') + '</span>';
+        html += '</div>';
+        html += '<div style="text-align:right;">';
+        html += '<div style="font-size:0.72rem;font-family:var(--font-mono);">$' + c.total_exposure.toFixed(2) + ' exposure</div>';
+        html += hedgeLabel;
+        html += '</div></div></div>';
+      }
+    } else {
+      html += '<div class="glass-card" style="padding:14px;text-align:center;color:var(--text-muted);font-size:0.76rem;">No cross-agent correlations detected</div>';
+    }
+
+    wrap.innerHTML = html;
+  } catch (e) {
+    wrap.innerHTML = '<div class="text-muted">Error loading risk data</div>';
+  }
+}
+
+/* --- Utility --- */
+function tradersEsc(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+</script>

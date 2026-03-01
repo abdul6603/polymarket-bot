@@ -1,60 +1,99 @@
-<!-- SOREN — The Thinker -->
+<!-- SOREN — Content Creator -->
 <div class="tab-content" id="tab-soren">
-  <div id="intel-soren" class="intel-meter" style="margin-bottom:12px;"></div>
-  <div class="agent-widget-row" id="soren-widgets">
-    <div class="widget-badge" id="soren-learning"><span class="wb-label">Learning:</span> <span>--</span></div>
-    <button class="btn" onclick="healthCheckAgent(&apos;soren&apos;)" style="font-size:0.72rem;">Health Check</button>
-</div>
+
+  <!-- Header -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+    <h2 style="margin:0;font-size:1.1rem;font-weight:700;">
+      Soren &mdash; Content Creator
+    </h2>
+    <span id="soren-mode-badge" class="badge badge-info">
+      <span class="status-dot online"></span> @soren.era
+    </span>
+    <button class="btn" onclick="healthCheckAgent('soren')" style="font-size:0.72rem;">Health Check</button>
+    <button class="btn" onclick="sorenRefreshQueue()" style="font-size:0.72rem;font-weight:700;border-color:var(--agent-soren);color:var(--agent-soren);margin-left:auto;">
+      Refresh
+    </button>
+    <span class="text-muted" style="font-size:0.68rem;">
+      Updated: <span id="soren-updated">--</span>
+    </span>
+  </div>
+
   <div class="health-inline" id="soren-health-result"></div>
 
-  <!-- Stats Row -->
-  <div class="grid-4" id="soren-stats">
-    <div class="stat-card" data-accent="soren"><div class="stat-value" id="soren-queue-total">--</div><div class="stat-label">Queue Total</div></div>
-    <div class="stat-card" data-accent="warning"><div class="stat-value" id="soren-pending">--</div><div class="stat-label">Pending</div></div>
-    <div class="stat-card" data-accent="success"><div class="stat-value" id="soren-posted">--</div><div class="stat-label">Posted</div></div>
-    <div class="stat-card" data-accent="error"><div class="stat-value" id="soren-failed">--</div><div class="stat-label">Failed</div></div>
+  <!-- Workflow Pipeline -->
+  <div class="glass-card" style="margin-bottom:14px;padding:10px 14px;">
+    <div style="display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:0.72rem;flex-wrap:wrap;justify-content:center;">
+      <span style="padding:3px 10px;border-radius:var(--radius-pill);background:rgba(204,102,255,0.1);border:1px solid rgba(204,102,255,0.2);color:var(--agent-soren);font-weight:600;">Soren generates</span>
+      <span style="color:var(--text-muted);">&rarr;</span>
+      <span style="padding:3px 10px;border-radius:var(--radius-pill);background:rgba(255,136,0,0.1);border:1px solid rgba(255,136,0,0.2);color:var(--agent-lisa);font-weight:600;">Lisa evaluates</span>
+      <span style="color:var(--text-muted);">&rarr;</span>
+      <span style="padding:3px 10px;border-radius:var(--radius-pill);background:rgba(255,170,0,0.1);border:1px solid rgba(255,170,0,0.2);color:var(--warning);font-weight:600;">Jordan approves</span>
+      <span style="color:var(--text-muted);">&rarr;</span>
+      <span style="padding:3px 10px;border-radius:var(--radius-pill);background:rgba(34,170,68,0.1);border:1px solid rgba(34,170,68,0.2);color:var(--success);font-weight:600;">Posts to X</span>
+    </div>
   </div>
+
+  <!-- Hero Metrics -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;">
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Queue Total</div>
+      <div id="soren-queue-total" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">--</div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Pending</div>
+      <div id="soren-pending" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);color:var(--warning);">--</div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Posted</div>
+      <div id="soren-posted" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);color:var(--success);">--</div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Failed</div>
+      <div id="soren-failed" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);color:var(--error);">--</div>
+    </div>
+  </div>
+
   <div id="soren-freshness" style="margin-bottom:8px;"></div>
 
-  <!-- Workflow Status -->
-  <div class="glass-card" style="margin-bottom:12px;padding:10px 14px;">
-    <div style="display:flex;align-items:center;gap:12px;font-family:var(--font-mono);font-size:0.72rem;flex-wrap:wrap;">
-      <span style="color:var(--agent-soren);font-weight:600;">WORKFLOW</span>
-      <span style="color:var(--text-muted);">Soren generates</span>
-      <span style="color:var(--text-muted);">&rarr;</span>
-      <span style="color:var(--agent-lisa);">Lisa evaluates</span>
-      <span style="color:var(--text-muted);">&rarr;</span>
-      <span style="color:#ffaa00;">Jordan approves</span>
-      <span style="color:var(--text-muted);">&rarr;</span>
-      <span style="color:#22aa44;">Lisa schedules &amp; posts</span>
-    </div>
+  <!-- Sub-tab Navigation -->
+  <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+    <button class="soren-subtab active" data-sub="queue" onclick="sorenSwitchSub('queue')">Content Queue</button>
+    <button class="soren-subtab" data-sub="generator" onclick="sorenSwitchSub('generator')">Generator</button>
+    <button class="soren-subtab" data-sub="performance" onclick="sorenSwitchSub('performance')">Performance</button>
+    <button class="soren-subtab" data-sub="intelligence" onclick="sorenSwitchSub('intelligence')">Intelligence</button>
   </div>
 
-  <!-- Agent Activity -->
-  <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-soren);">
-    <h3 class="section-title" style="font-size:0.72rem;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Agent Activity</h3>
-    <div id="soren-activity-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:150px;overflow-y:auto;"><span class="text-muted">Waiting for activity...</span></div>
-  </div>
+  <!-- ═══ Panel: Content Queue ═══ -->
+  <div class="soren-panel" id="soren-panel-queue">
 
-  <!-- Quick Actions -->
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="soren">Quick Actions</h2>
+    <!-- Quick Actions -->
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-      <button class="btn btn-primary" onclick="sorenSendToLisa()" style="font-size:0.74rem;">Send All Pending to Lisa</button>
+      <button class="btn" onclick="sorenSendToLisa()" style="font-size:0.74rem;font-weight:700;border-color:var(--agent-soren);color:var(--agent-soren);">Send All Pending to Lisa</button>
       <button class="btn" onclick="sorenCustomGenerate()" style="font-size:0.74rem;color:var(--agent-soren);">Generate Custom Content</button>
-      <button class="btn" onclick="sorenRefreshQueue()" style="font-size:0.74rem;">Refresh Queue</button>
     </div>
+
+    <!-- Filter Buttons -->
+    <div style="display:flex;gap:6px;margin-bottom:8px;">
+      <button class="btn soren-filter-btn active" onclick="sorenFilterQueue('all',this)">All</button>
+      <button class="btn soren-filter-btn" onclick="sorenFilterQueue('pending',this)">Pending</button>
+      <button class="btn soren-filter-btn" onclick="sorenFilterQueue('lisa_approved',this)">Lisa Approved</button>
+      <button class="btn soren-filter-btn" onclick="sorenFilterQueue('jordan_approved',this)">Scheduled</button>
+      <button class="btn soren-filter-btn" onclick="sorenFilterQueue('rejected',this)">Rejected</button>
+    </div>
+
+    <!-- Queue List -->
+    <div class="flex flex-col gap-3" id="soren-queue"></div>
   </div>
 
-  <!-- Custom Content Generator -->
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="soren">Content Generator</h2>
-    <div class="glass-card">
-      <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-3);flex-wrap:wrap;align-items:end;">
+  <!-- ═══ Panel: Generator ═══ -->
+  <div class="soren-panel" id="soren-panel-generator" style="display:none;">
+    <div class="glass-card" style="border-left:3px solid var(--agent-soren);">
+      <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--agent-soren);">Content Generator</span>
+      <div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap;align-items:end;">
         <div style="flex:1;min-width:200px;">
           <textarea class="input" id="soren-gen-prompt" rows="2" placeholder="Enter content idea or let Soren create..." style="width:100%;resize:vertical;font-family:var(--font-mono);font-size:0.78rem;"></textarea>
         </div>
-        <div style="display:flex;gap:var(--space-2);flex-direction:column;">
+        <div style="display:flex;gap:8px;flex-direction:column;">
           <select class="input" id="soren-gen-pillar" style="font-size:0.76rem;padding:4px 8px;">
             <option value="dark_motivation">Dark Motivation</option>
             <option value="gym_warrior">Gym Warrior</option>
@@ -68,74 +107,76 @@
             <option value="progress_showcase">Progress</option>
           </select>
           <div style="display:flex;gap:4px;">
-            <button class="btn btn-primary" onclick="sorenGenerateCustom(&apos;full&apos;)" style="font-size:0.72rem;">Full Reel</button>
-            <button class="btn" onclick="sorenGenerateCustom(&apos;caption&apos;)" style="font-size:0.72rem;">Caption Only</button>
+            <button class="btn" onclick="sorenGenerateCustom('full')" style="font-size:0.72rem;font-weight:700;border-color:var(--agent-soren);color:var(--agent-soren);">Full Reel</button>
+            <button class="btn" onclick="sorenGenerateCustom('caption')" style="font-size:0.72rem;">Caption Only</button>
           </div>
         </div>
       </div>
-      <div id="soren-gen-result" style="font-family:var(--font-mono);font-size:0.74rem;"></div>
+      <div id="soren-gen-result" style="font-family:var(--font-mono);font-size:0.74rem;margin-top:10px;"></div>
     </div>
   </div>
 
-  <!-- Pillar Distribution -->
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="soren">Pillar Distribution</h2>
-    <div class="glass-card" id="soren-pillar-dist"><div class="text-muted">Loading...</div></div>
-  </div>
-
-  <!-- Content Queue -->
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="soren">Content Queue</h2>
-    <div style="display:flex;gap:6px;margin-bottom:8px;">
-      <button class="btn soren-filter-btn active" onclick="sorenFilterQueue(&apos;all&apos;,this)">All</button>
-      <button class="btn soren-filter-btn" onclick="sorenFilterQueue(&apos;pending&apos;,this)">Pending</button>
-      <button class="btn soren-filter-btn" onclick="sorenFilterQueue(&apos;lisa_approved&apos;,this)">Lisa Approved</button>
-      <button class="btn soren-filter-btn" onclick="sorenFilterQueue(&apos;jordan_approved&apos;,this)">Scheduled</button>
-      <button class="btn soren-filter-btn" onclick="sorenFilterQueue(&apos;rejected&apos;,this)">Rejected</button>
-    </div>
-    <div class="flex flex-col gap-3" id="soren-queue"><div class="text-muted" style="padding:var(--space-4);text-align:center;">Loading...</div></div>
-  </div>
-
-  <!-- Performance Metrics -->
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="soren">Performance Metrics</h2>
+  <!-- ═══ Panel: Performance ═══ -->
+  <div class="soren-panel" id="soren-panel-performance" style="display:none;">
     <div class="glass-card" style="border-left:3px solid var(--agent-soren);">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-3);">
-        <span class="text-muted" style="font-size:0.76rem;">Content velocity, quality scores, and pipeline health</span>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--agent-soren);">Performance Metrics</span>
         <button class="btn" onclick="loadSorenMetrics()" style="font-size:0.72rem;">Refresh</button>
       </div>
-      <div class="grid-4" style="margin-bottom:12px;">
-        <div style="text-align:center;">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px;">
+        <div class="glass-card" style="text-align:center;padding:12px;">
           <div id="soren-metric-velocity" style="font-size:1.2rem;font-weight:800;color:var(--agent-soren);">--</div>
           <div style="font-size:0.68rem;color:var(--text-muted);">Posts / Week</div>
         </div>
-        <div style="text-align:center;">
+        <div class="glass-card" style="text-align:center;padding:12px;">
           <div id="soren-metric-quality" style="font-size:1.2rem;font-weight:800;color:var(--success);">--</div>
           <div style="font-size:0.68rem;color:var(--text-muted);">Avg Quality</div>
         </div>
-        <div style="text-align:center;">
+        <div class="glass-card" style="text-align:center;padding:12px;">
           <div id="soren-metric-approval" style="font-size:1.2rem;font-weight:800;color:#FFD700;">--</div>
           <div style="font-size:0.68rem;color:var(--text-muted);">Approval Rate</div>
         </div>
-        <div style="text-align:center;">
+        <div class="glass-card" style="text-align:center;padding:12px;">
           <div id="soren-metric-pillars" style="font-size:1.2rem;font-weight:800;color:var(--agent-soren);">--</div>
           <div style="font-size:0.68rem;color:var(--text-muted);">Active Pillars</div>
         </div>
       </div>
       <div id="soren-metrics-detail" style="font-family:var(--font-mono);font-size:0.72rem;color:var(--text-secondary);"></div>
     </div>
+
+    <!-- Pillar Distribution -->
+    <div class="glass-card" style="margin-top:12px;border-left:3px solid var(--agent-soren);">
+      <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Pillar Distribution</span>
+      <div id="soren-pillar-dist" style="margin-top:8px;"></div>
+    </div>
   </div>
 
-  <!-- Competitor Intelligence -->
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="soren">Competitor Intelligence</h2>
-    <div class="glass-card" id="soren-competitors"><div class="text-muted" style="text-align:center;padding:var(--space-4);">No competitor data yet.</div></div>
+  <!-- ═══ Panel: Intelligence ═══ -->
+  <div class="soren-panel" id="soren-panel-intelligence" style="display:none;">
+
+    <!-- Agent Activity -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-soren);">
+      <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Agent Activity</span>
+      <div id="soren-activity-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:150px;overflow-y:auto;margin-top:8px;"></div>
+    </div>
+
+    <!-- Competitor Intelligence -->
+    <div class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-soren);">
+      <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Competitor Intelligence</span>
+      <div id="soren-competitors" style="margin-top:8px;"></div>
+    </div>
+
+    <!-- Suggested Actions -->
+    <div class="glass-card" style="border-left:3px solid var(--agent-soren);">
+      <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Suggested Actions</span>
+      <div id="soren-smart-actions" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+    </div>
   </div>
 
-  <!-- Suggested Actions -->
-  <div class="section-spacer">
-    <h2 class="section-title" data-accent="soren">Suggested Actions</h2>
-    <div id="soren-smart-actions" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;"><span class="text-muted" style="font-size:0.76rem;">Loading...</span></div>
+  <!-- Hidden compat -->
+  <div style="display:none;">
+    <div id="intel-soren" class="intel-meter"></div>
+    <div id="soren-widgets"><div id="soren-learning"><span>--</span></div></div>
   </div>
 
 </div>

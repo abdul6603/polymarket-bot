@@ -1,0 +1,713 @@
+<!-- DISCORD — Alpha Intelligence Pipeline -->
+<div class="tab-content" id="tab-discord">
+
+  <!-- HEADER -->
+  <div class="dc-header">
+    <div class="dc-header-top">
+      <div class="dc-header-left">
+        <div>
+          <span class="dc-title">Discord</span>
+          <span class="dc-title-sep"> — </span>
+          <span class="dc-title-role">Alpha Intelligence Pipeline</span>
+        </div>
+        <div class="dc-tagline">
+          UT Traders Academy | <span id="dc-channel-count">6</span> channels | <span id="dc-trader-count">0</span> traders tracked
+        </div>
+      </div>
+      <div class="dc-header-right">
+        <div class="dc-pills-row">
+          <span class="dc-pill" id="dc-pill-scraper">
+            <span class="dc-pill-dot" id="dc-scraper-dot"></span> Scraper <span id="dc-scraper-label">OFF</span>
+          </span>
+          <span class="dc-pill" id="dc-pill-pipeline">
+            Pipeline <span id="dc-pipeline-label">OFF</span>
+          </span>
+          <span class="dc-pill" id="dc-pill-exit">
+            Exit Monitor <span id="dc-exit-label">OFF</span>
+          </span>
+        </div>
+        <button class="dc-refresh-btn" onclick="dcRefresh()">Refresh</button>
+      </div>
+    </div>
+    <div style="font-size:0.56rem;color:var(--text-muted);text-align:right;" id="dc-last-updated"></div>
+  </div>
+
+  <!-- HERO METRICS -->
+  <div class="dc-metrics">
+    <div class="dc-metric-card">
+      <div class="dc-metric-icon" style="background:rgba(88,101,242,0.12);color:#5865F2;border-color:rgba(88,101,242,0.2);">#</div>
+      <div class="dc-metric-body">
+        <div class="dc-metric-val" id="dc-total-msgs" style="color:#5865F2;">--</div>
+        <div class="dc-metric-lbl">Messages Scraped</div>
+        <div class="dc-metric-sub" id="dc-msgs-sub"></div>
+      </div>
+    </div>
+    <div class="dc-metric-card">
+      <div class="dc-metric-icon" style="background:rgba(255,193,7,0.12);color:var(--warning);border-color:rgba(255,193,7,0.2);">S</div>
+      <div class="dc-metric-body">
+        <div class="dc-metric-val" id="dc-total-signals" style="color:var(--warning);">--</div>
+        <div class="dc-metric-lbl">Signals Extracted</div>
+        <div class="dc-metric-sub" id="dc-signals-sub"></div>
+      </div>
+    </div>
+    <div class="dc-metric-card">
+      <div class="dc-metric-icon" style="background:rgba(34,170,68,0.12);color:var(--success);border-color:rgba(34,170,68,0.2);">T</div>
+      <div class="dc-metric-body">
+        <div class="dc-metric-val" id="dc-total-trades" style="color:var(--success);">--</div>
+        <div class="dc-metric-lbl">Trades Executed</div>
+        <div class="dc-metric-sub" id="dc-trades-sub"></div>
+      </div>
+    </div>
+    <div class="dc-metric-card">
+      <div class="dc-metric-icon" style="background:rgba(255,215,0,0.12);color:#FFD700;border-color:rgba(255,215,0,0.2);">%</div>
+      <div class="dc-metric-body">
+        <div class="dc-metric-val" id="dc-win-rate" style="color:#FFD700;">--</div>
+        <div class="dc-metric-lbl">Win Rate</div>
+        <div class="dc-metric-sub" id="dc-wr-sub"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUB-TAB NAVIGATION -->
+  <div class="dc-subtabs">
+    <div class="dc-subtab active" onclick="dcSwitchSub('overview')">Overview</div>
+    <div class="dc-subtab" onclick="dcSwitchSub('pipeline')">Live Pipeline</div>
+    <div class="dc-subtab" onclick="dcSwitchSub('signals')">Signals</div>
+    <div class="dc-subtab" onclick="dcSwitchSub('leaderboard')">Leaderboard</div>
+    <div class="dc-subtab" onclick="dcSwitchSub('chart-ideas')">Chart Ideas</div>
+  </div>
+
+  <!-- ═══ OVERVIEW PANEL ═══ -->
+  <div class="dc-panel active" id="dc-panel-overview">
+
+    <!-- Tier cards -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;">
+      <div class="dc-tier-card" id="dc-tier-trusted">
+        <div class="dc-tier-label" style="color:#FFD700;">TRUSTED — Auto-Execute</div>
+        <div class="dc-tier-traders" id="dc-tier-trusted-list"></div>
+        <div class="dc-metric-sub" style="margin-top:6px;">Max risk: $180 | 3 pos</div>
+      </div>
+      <div class="dc-tier-card" id="dc-tier-good">
+        <div class="dc-tier-label" style="color:#C0C0C0;">GOOD — 4-Agent Voting</div>
+        <div class="dc-tier-traders" id="dc-tier-good-list"></div>
+        <div class="dc-metric-sub" style="margin-top:6px;">Risk: $50-75 | 3 pos</div>
+      </div>
+      <div class="dc-tier-card" id="dc-tier-evaluate">
+        <div class="dc-tier-label" style="color:#B87FDB;">EVALUATE — Score Only</div>
+        <div class="dc-tier-traders" id="dc-tier-evaluate-list"><span class="dc-tier-badge" style="color:#B87FDB;">charts-ideas</span></div>
+        <div class="dc-metric-sub" style="margin-top:6px;">No execution | Manual approval</div>
+      </div>
+      <div class="dc-tier-card" id="dc-tier-learning">
+        <div class="dc-tier-label" style="color:var(--text-muted);">LEARNING — KB Only</div>
+        <div class="dc-tier-traders" id="dc-tier-learning-list"><span class="dc-tier-badge" style="color:var(--text-muted);">ut-education</span></div>
+        <div class="dc-metric-sub" style="margin-top:6px;">Atlas knowledge base only</div>
+      </div>
+    </div>
+
+    <!-- Pipeline flow visualization -->
+    <div class="dc-pipeline-flow" id="dc-pipeline-flow">
+      <div class="dc-pipeline-step">
+        <div class="dc-pipeline-step-val" id="dc-flow-channels">6</div>
+        <span class="dc-pipeline-step-lbl">Channels</span>
+      </div>
+      <span class="dc-pipeline-arrow">→</span>
+      <div class="dc-pipeline-step">
+        <div class="dc-pipeline-step-val" id="dc-flow-scraped">0</div>
+        <span class="dc-pipeline-step-lbl">Scraped</span>
+      </div>
+      <span class="dc-pipeline-arrow">→</span>
+      <div class="dc-pipeline-step">
+        <div class="dc-pipeline-step-val" id="dc-flow-analyzed">0</div>
+        <span class="dc-pipeline-step-lbl">Analyzed</span>
+      </div>
+      <span class="dc-pipeline-arrow">→</span>
+      <div class="dc-pipeline-step">
+        <div class="dc-pipeline-step-val" id="dc-flow-pipeline">0</div>
+        <span class="dc-pipeline-step-lbl">Pipeline</span>
+      </div>
+      <span class="dc-pipeline-arrow">→</span>
+      <div class="dc-pipeline-step">
+        <div class="dc-pipeline-step-val" id="dc-flow-executed" style="color:var(--success);">0</div>
+        <span class="dc-pipeline-step-lbl">Executed</span>
+      </div>
+    </div>
+
+    <!-- Channel status grid -->
+    <h3 class="dc-section-title">Channel Status</h3>
+    <div id="dc-channels-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;">
+      <div class="dc-empty-state">Loading channels...</div>
+    </div>
+
+    <!-- Recent activity -->
+    <h3 class="dc-section-title">Recent Activity</h3>
+    <div id="dc-activity-feed" style="max-height:280px;overflow-y:auto;">
+      <div class="dc-empty-state">Waiting for activity...</div>
+    </div>
+  </div>
+
+  <!-- ═══ LIVE PIPELINE PANEL ═══ -->
+  <div class="dc-panel" id="dc-panel-pipeline">
+
+    <!-- Open Discord positions -->
+    <h3 class="dc-section-title">Open Discord Positions</h3>
+    <div class="dc-positions-wrap" style="margin-bottom:16px;">
+      <div id="dc-open-positions">
+        <div class="dc-empty-state">No open Discord positions</div>
+      </div>
+    </div>
+
+    <!-- Recent decisions -->
+    <h3 class="dc-section-title">Recent Decisions</h3>
+    <div id="dc-decisions-list" style="max-height:360px;overflow-y:auto;margin-bottom:16px;">
+      <div class="dc-empty-state">No pipeline decisions yet — waiting for Discord traders...</div>
+    </div>
+
+    <!-- Exit monitor status -->
+    <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(88,101,242,0.03);border:1px solid rgba(88,101,242,0.08);border-radius:8px;margin-bottom:16px;">
+      <span class="dc-pulse" id="dc-exit-pulse"></span>
+      <span style="font-size:0.72rem;font-weight:600;color:#5865F2;">Exit Monitor</span>
+      <span id="dc-exit-status" style="font-size:0.66rem;color:var(--text-muted);">Checking...</span>
+      <span id="dc-exit-channels" style="font-size:0.60rem;color:var(--text-muted);margin-left:auto;"></span>
+    </div>
+
+    <!-- Manual review queue -->
+    <h3 class="dc-section-title">Manual Review Queue</h3>
+    <div id="dc-review-queue" style="max-height:300px;overflow-y:auto;">
+      <div class="dc-empty-state">No signals pending review</div>
+    </div>
+  </div>
+
+  <!-- ═══ SIGNALS PANEL ═══ -->
+  <div class="dc-panel" id="dc-panel-signals">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+      <h3 class="dc-section-title" style="margin-bottom:0;">Trading Signals</h3>
+      <select id="dc-signal-filter" onchange="dcRefreshSignals()" style="margin-left:auto;font-size:0.66rem;padding:3px 8px;background:var(--glass-bg);border:1px solid var(--glass-border);color:var(--text-primary);border-radius:4px;">
+        <option value="">All Channels</option>
+        <option value="CRITICAL">CRITICAL</option>
+        <option value="CONTEXT">CONTEXT</option>
+        <option value="KNOWLEDGE">KNOWLEDGE</option>
+        <option value="MEDIUM">MEDIUM</option>
+      </select>
+    </div>
+    <div id="dc-signals-list" style="max-height:500px;overflow-y:auto;">
+      <div class="dc-empty-state">Waiting for alpha...</div>
+    </div>
+  </div>
+
+  <!-- ═══ LEADERBOARD PANEL ═══ -->
+  <div class="dc-panel" id="dc-panel-leaderboard">
+    <h3 class="dc-section-title">Trader Leaderboard</h3>
+    <div id="dc-leaderboard-wrap" style="max-height:500px;overflow-y:auto;">
+      <div class="dc-empty-state">Tracking begins when signals arrive</div>
+    </div>
+  </div>
+
+  <!-- ═══ CHART IDEAS PANEL ═══ -->
+  <div class="dc-panel" id="dc-panel-chart-ideas">
+    <h3 class="dc-section-title">Chart Ideas — Odin Evaluation</h3>
+    <div id="dc-chart-ideas-list" style="max-height:500px;overflow-y:auto;">
+      <div class="dc-empty-state">No chart ideas yet — monitoring charts-ideas channel...</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ── Discord Tab — JavaScript ── */
+
+var _dcAgentColors = {
+  garves:'var(--agent-garves)', odin:'var(--agent-odin)', oracle:'var(--agent-oracle)',
+  atlas:'var(--agent-atlas)', quant:'var(--agent-quant)', hawk:'var(--agent-hawk)'
+};
+var _dcPriorityColors = {
+  CRITICAL:'var(--error)', CONTEXT:'var(--warning)', KNOWLEDGE:'var(--agent-atlas)', MEDIUM:'var(--text-muted)'
+};
+var _dcChannelMeta = {
+  'sn06-trades':   {priority:'CRITICAL',  icon:'SN', tier:'trusted'},
+  'kiku-trades':   {priority:'CRITICAL',  icon:'KK', tier:'trusted'},
+  'charts-ideas':  {priority:'CONTEXT',   icon:'CI', tier:'evaluate'},
+  'ut-education':  {priority:'KNOWLEDGE', icon:'UT', tier:'learning'},
+  'abns92-trial':  {priority:'MEDIUM',    icon:'AB', tier:'good'},
+  'miku-trades':   {priority:'MEDIUM',    icon:'MK', tier:'good'}
+};
+
+function dcSetVal(id, val) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = typeof val === 'number' ? val.toLocaleString() : val;
+}
+
+function dcEscape(str) {
+  var div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function dcFormatTime(ts) {
+  if (!ts) return '';
+  try {
+    var d = new Date(ts);
+    var now = new Date();
+    var diff = Math.floor((now - d) / 1000);
+    if (diff < 60) return diff + 's ago';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    return d.toLocaleDateString('en-US', {month:'short', day:'numeric'}) + ' ' + d.toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'});
+  } catch(e) { return ts.substring(0, 16); }
+}
+
+function dcTierColor(tier) {
+  if (tier === 'trusted') return '#FFD700';
+  if (tier === 'good') return '#C0C0C0';
+  if (tier === 'evaluate') return '#B87FDB';
+  return 'var(--text-muted)';
+}
+
+function dcDecisionColor(dec) {
+  if (dec === 'auto_take' || dec === 'approved') return 'var(--success)';
+  if (dec === 'manual_review') return 'var(--warning)';
+  if (dec === 'rejected' || dec === 'blocked') return 'var(--error)';
+  return 'var(--text-muted)';
+}
+
+/* ── Sub-tab switching ── */
+
+function dcSwitchSub(panel) {
+  var tabs = document.querySelectorAll('.dc-subtab');
+  tabs.forEach(function(t) { t.classList.remove('active'); });
+  var panels = document.querySelectorAll('.dc-panel');
+  panels.forEach(function(p) { p.classList.remove('active'); });
+
+  var targetPanel = document.getElementById('dc-panel-' + panel);
+  if (targetPanel) targetPanel.classList.add('active');
+
+  tabs.forEach(function(t) {
+    if (t.textContent.trim().toLowerCase().replace(/\s+/g, '-') === panel) {
+      t.classList.add('active');
+    }
+  });
+
+  // Refresh the active panel
+  if (panel === 'overview') dcRefreshOverview();
+  else if (panel === 'pipeline') dcRefreshPipeline();
+  else if (panel === 'signals') dcRefreshSignals();
+  else if (panel === 'leaderboard') dcRefreshLeaderboard();
+  else if (panel === 'chart-ideas') dcRefreshChartIdeas();
+}
+
+/* ── Main refresh ── */
+
+function dcRefresh() {
+  dcRefreshHero();
+  // Refresh whichever panel is active
+  var activePanel = document.querySelector('.dc-panel.active');
+  if (activePanel) {
+    var id = activePanel.id.replace('dc-panel-', '');
+    if (id === 'overview') dcRefreshOverview();
+    else if (id === 'pipeline') dcRefreshPipeline();
+    else if (id === 'signals') dcRefreshSignals();
+    else if (id === 'leaderboard') dcRefreshLeaderboard();
+    else if (id === 'chart-ideas') dcRefreshChartIdeas();
+  }
+  document.getElementById('dc-last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString();
+}
+
+/* ── Hero metrics ── */
+
+function dcRefreshHero() {
+  fetch('/api/discord').then(function(r) { return r.json(); }).then(function(d) {
+    dcSetVal('dc-total-msgs', d.total_messages || 0);
+    dcSetVal('dc-total-signals', d.total_signals || 0);
+
+    // Scraper pill
+    var scraperPill = document.getElementById('dc-pill-scraper');
+    var scraperLabel = document.getElementById('dc-scraper-label');
+    if (d.running) {
+      scraperPill.classList.add('dc-pill-on');
+      scraperLabel.textContent = 'ON';
+    } else {
+      scraperPill.classList.remove('dc-pill-on');
+      scraperLabel.textContent = 'OFF';
+    }
+
+    if (d.channels) {
+      dcSetVal('dc-channel-count', d.channels.length);
+    }
+  }).catch(function(e) { console.error('dc hero:', e); });
+
+  // Pipeline stats for hero
+  fetch('/api/discord/pipeline').then(function(r) { return r.json(); }).then(function(p) {
+    var stats = p.stats || {};
+    var executed = (stats.auto_taken || 0) + (stats.approved || 0);
+    dcSetVal('dc-total-trades', executed);
+    dcSetVal('dc-trades-sub', stats.processed ? stats.processed + ' processed' : '');
+
+    // Pipeline pill
+    var pipePill = document.getElementById('dc-pill-pipeline');
+    var pipeLabel = document.getElementById('dc-pipeline-label');
+    if (p.attached) {
+      pipePill.classList.add('dc-pill-on');
+      pipeLabel.textContent = 'ACTIVE';
+    } else {
+      pipePill.classList.remove('dc-pill-on');
+      pipeLabel.textContent = 'OFF';
+    }
+
+    // Trader count + tier cards
+    var traders = p.registered_traders || {};
+    var traderNames = Object.keys(traders);
+    dcSetVal('dc-trader-count', traderNames.length);
+
+    var trustedList = document.getElementById('dc-tier-trusted-list');
+    var goodList = document.getElementById('dc-tier-good-list');
+    if (trustedList) {
+      var trusted = traderNames.filter(function(k) { return traders[k] === 'trusted'; });
+      trustedList.innerHTML = trusted.map(function(t) {
+        return '<span class="dc-tier-badge" style="color:#FFD700;">' + t + '</span>';
+      }).join('');
+    }
+    if (goodList) {
+      var good = traderNames.filter(function(k) { return traders[k] === 'good'; });
+      goodList.innerHTML = good.map(function(t) {
+        return '<span class="dc-tier-badge" style="color:#C0C0C0;">' + t + '</span>';
+      }).join('');
+    }
+
+    // Pipeline flow
+    dcSetVal('dc-flow-scraped', p.stats ? (stats.processed || 0) : 0);
+    dcSetVal('dc-flow-analyzed', stats.processed || 0);
+    dcSetVal('dc-flow-pipeline', stats.processed || 0);
+    dcSetVal('dc-flow-executed', executed);
+  }).catch(function(e) { console.error('dc pipeline hero:', e); });
+
+  // Win rate from leaderboard
+  fetch('/api/discord/leaderboard').then(function(r) { return r.json(); }).then(function(traders) {
+    if (traders.length > 0) {
+      var totalWins = 0, totalResolved = 0;
+      traders.forEach(function(t) {
+        totalWins += (t.wins || 0);
+        totalResolved += (t.wins || 0) + (t.losses || 0);
+      });
+      var wr = totalResolved > 0 ? (totalWins / totalResolved * 100).toFixed(1) + '%' : '--';
+      dcSetVal('dc-win-rate', wr);
+      dcSetVal('dc-wr-sub', totalResolved + ' resolved trades');
+    }
+  }).catch(function(e) { console.error('dc wr:', e); });
+
+  // Exit monitor
+  fetch('/api/discord/exit-monitor').then(function(r) { return r.json(); }).then(function(d) {
+    var exitPill = document.getElementById('dc-pill-exit');
+    var exitLabel = document.getElementById('dc-exit-label');
+    if (d.active) {
+      exitPill.classList.add('dc-pill-on');
+      exitLabel.textContent = d.interval + 's';
+    } else {
+      exitPill.classList.remove('dc-pill-on');
+      exitLabel.textContent = 'OFF';
+    }
+  }).catch(function() {
+    /* exit-monitor endpoint may not exist yet */
+  });
+}
+
+/* ── Overview panel ── */
+
+function dcRefreshOverview() {
+  // Channel grid
+  fetch('/api/discord').then(function(r) { return r.json(); }).then(function(d) {
+    var el = document.getElementById('dc-channels-grid');
+    if (!el || !d.channels || d.channels.length === 0) return;
+    el.innerHTML = d.channels.map(function(ch) {
+      var meta = _dcChannelMeta[ch.channel_name] || {priority:'MEDIUM', icon:'??', tier:'learning'};
+      var pc = _dcPriorityColors[meta.priority] || 'var(--text-muted)';
+      var tc = dcTierColor(meta.tier);
+      return '<div class="dc-tier-card" style="display:flex;align-items:center;gap:10px;">'
+        + '<span style="width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.62rem;font-weight:800;background:rgba(88,101,242,0.12);color:#5865F2;">' + meta.icon + '</span>'
+        + '<div style="flex:1;min-width:0;">'
+        + '<div style="font-size:0.74rem;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">#' + ch.channel_name + '</div>'
+        + '<div style="font-size:0.58rem;color:var(--text-muted);">' + ch.count + ' messages</div>'
+        + '</div>'
+        + '<div style="text-align:right;">'
+        + '<span style="font-size:0.52rem;font-weight:700;padding:2px 6px;border-radius:3px;background:rgba(255,255,255,0.06);color:' + pc + ';">' + meta.priority + '</span>'
+        + '<div style="font-size:0.48rem;color:' + tc + ';margin-top:3px;">' + meta.tier + '</div>'
+        + '</div></div>';
+    }).join('');
+  }).catch(function(e) { console.error('dc channels:', e); });
+
+  // Recent activity (from discussions)
+  fetch('/api/discord/discussions?limit=10').then(function(r) { return r.json(); }).then(function(discs) {
+    var el = document.getElementById('dc-activity-feed');
+    if (!el) return;
+    if (discs.length === 0) { el.innerHTML = '<div class="dc-empty-state">Waiting for activity...</div>'; return; }
+    el.innerHTML = discs.map(function(d) {
+      var ac = _dcAgentColors[d.agent] || 'var(--text-muted)';
+      return '<div class="dc-activity-item">'
+        + '<div style="display:flex;align-items:center;gap:6px;">'
+        + '<span style="font-size:0.6rem;font-weight:800;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.06);color:' + ac + ';text-transform:uppercase;">' + d.agent + '</span>'
+        + (d.ticker ? '<span style="font-size:0.68rem;font-weight:700;color:var(--text-primary);">' + d.ticker + '</span>' : '')
+        + (d.direction ? '<span style="font-size:0.62rem;color:' + (d.direction === 'LONG' ? 'var(--success)' : 'var(--error)') + ';">' + d.direction + '</span>' : '')
+        + '<span style="font-size:0.54rem;color:var(--text-muted);margin-left:auto;">' + dcFormatTime(d.created_at) + '</span>'
+        + '</div>'
+        + '<div style="font-size:0.64rem;color:var(--text-secondary);margin-top:3px;line-height:1.4;">' + dcEscape(d.reaction || '') + '</div>'
+        + (d.action_taken ? '<div style="font-size:0.56rem;color:var(--agent-atlas);margin-top:2px;">Action: ' + dcEscape(d.action_taken) + '</div>' : '')
+        + '</div>';
+    }).join('');
+  }).catch(function(e) { console.error('dc activity:', e); });
+}
+
+/* ── Pipeline panel ── */
+
+function dcRefreshPipeline() {
+  fetch('/api/discord/pipeline').then(function(r) { return r.json(); }).then(function(p) {
+    var stats = p.stats || {};
+
+    // Open positions
+    var posEl = document.getElementById('dc-open-positions');
+    var positions = p.open_position_details || [];
+    if (posEl) {
+      if (positions.length === 0) {
+        posEl.innerHTML = '<div class="dc-empty-state">No open Discord positions</div>';
+      } else {
+        var html = '<table class="dc-leaderboard-table"><thead><tr>'
+          + '<th>Ticker</th><th>Dir</th><th>Entry</th><th>SL</th><th>TP</th>'
+          + '<th>Trader</th><th>Risk</th><th>Decision</th></tr></thead><tbody>';
+        positions.forEach(function(pos) {
+          var dirColor = pos.direction === 'LONG' ? 'var(--success)' : 'var(--error)';
+          html += '<tr>'
+            + '<td style="font-weight:700;">' + (pos.ticker || '?') + '</td>'
+            + '<td style="color:' + dirColor + ';font-weight:700;">' + (pos.direction || '') + '</td>'
+            + '<td style="font-family:var(--font-mono);">$' + (pos.entry_price ? pos.entry_price.toLocaleString() : '--') + '</td>'
+            + '<td style="font-family:var(--font-mono);color:var(--error);">$' + (pos.stop_loss ? pos.stop_loss.toLocaleString() : '--') + '</td>'
+            + '<td style="font-family:var(--font-mono);color:var(--success);">$' + (pos.take_profit ? pos.take_profit.toLocaleString() : '--') + '</td>'
+            + '<td>' + (pos.trader || '') + '</td>'
+            + '<td style="font-family:var(--font-mono);">$' + (pos.risk_usd || 0).toFixed(0) + '</td>'
+            + '<td style="color:' + dcDecisionColor(pos.decision) + ';font-weight:600;">' + ((pos.decision || '').replace('_', ' ').toUpperCase()) + '</td>'
+            + '</tr>';
+        });
+        html += '</tbody></table>';
+        posEl.innerHTML = html;
+      }
+    }
+
+    // Recent decisions (signals)
+    var decEl = document.getElementById('dc-decisions-list');
+    var recent = p.recent_signals || [];
+    if (decEl) {
+      if (recent.length === 0) {
+        decEl.innerHTML = '<div class="dc-empty-state">No pipeline decisions yet — waiting for Discord traders...</div>';
+      } else {
+        decEl.innerHTML = recent.map(function(s) {
+          var dirColor = s.direction === 'LONG' ? 'var(--success)' : 'var(--error)';
+          var decColor = dcDecisionColor(s.decision);
+          var decLabel = (s.decision || 'pending').replace('_', ' ').toUpperCase();
+          var tc = dcTierColor(s.tier);
+
+          var html = '<div class="dc-signal-card">'
+            + '<div class="dc-signal-header">'
+            + '<span style="font-size:0.56rem;font-weight:700;padding:1px 5px;border-radius:3px;color:' + tc + ';background:rgba(255,255,255,0.06);">' + (s.tier || '').toUpperCase() + '</span>'
+            + '<span style="font-size:0.74rem;font-weight:700;color:var(--text-primary);">' + (s.ticker || '?') + '</span>'
+            + '<span style="font-size:0.68rem;font-weight:700;color:' + dirColor + ';">' + (s.direction || '') + '</span>'
+            + '<span style="font-size:0.58rem;color:var(--text-muted);">' + (s.trader || '') + '</span>'
+            + '<span style="font-size:0.56rem;font-weight:700;padding:1px 6px;border-radius:3px;margin-left:auto;background:rgba(255,255,255,0.06);color:' + decColor + ';">' + decLabel + '</span>'
+            + '</div>';
+
+          // Score bar
+          var score = s.decision_score || 0;
+          var barColor = score >= 82 ? 'var(--success)' : score >= 65 ? 'var(--warning)' : 'var(--error)';
+          html += '<div style="display:flex;align-items:center;gap:6px;margin:6px 0;">'
+            + '<div style="flex:1;background:rgba(255,255,255,0.06);border-radius:3px;height:5px;overflow:hidden;">'
+            + '<div style="width:' + Math.min(score, 100) + '%;height:100%;background:' + barColor + ';border-radius:3px;"></div></div>'
+            + '<span style="font-size:0.58rem;font-weight:700;color:' + barColor + ';">' + score.toFixed(0) + '</span></div>';
+
+          // Vote badges
+          if (s.vote_result) {
+            html += '<div style="display:flex;gap:4px;flex-wrap:wrap;">';
+            ['oracle', 'odin', 'garves', 'atlas'].forEach(function(a) {
+              var v = s.vote_result[a];
+              if (!v) return;
+              var vc = v.vote === 'YES' ? 'var(--success)' : v.vote === 'NO' ? 'var(--error)' : 'var(--text-muted)';
+              html += '<span class="dc-vote-badge" style="border-color:' + vc + ';color:' + vc + ';">'
+                + a.toUpperCase() + ' ' + (v.vote === 'YES' ? 'Y' : v.vote === 'NO' ? 'N' : '?') + ' ' + (v.confidence || 0) + '%</span>';
+            });
+            html += '</div>';
+          }
+
+          // Approve button
+          if (s.decision === 'manual_review') {
+            html += '<button class="dc-approve-btn" onclick="dcApproveSignal(\'' + s.signal_id + '\')" style="margin-top:6px;">APPROVE</button>';
+          }
+
+          html += '</div>';
+          return html;
+        }).join('');
+      }
+    }
+
+    // Manual review queue
+    var reviewEl = document.getElementById('dc-review-queue');
+    if (reviewEl) {
+      var pending = recent.filter(function(s) { return s.decision === 'manual_review'; });
+      if (pending.length === 0) {
+        reviewEl.innerHTML = '<div class="dc-empty-state">No signals pending review</div>';
+      } else {
+        reviewEl.innerHTML = pending.map(function(s) {
+          return '<div class="dc-signal-card">'
+            + '<div class="dc-signal-header">'
+            + '<span style="font-size:0.74rem;font-weight:700;color:var(--text-primary);">' + (s.ticker || '?') + '</span>'
+            + '<span style="font-size:0.68rem;font-weight:700;color:' + (s.direction === 'LONG' ? 'var(--success)' : 'var(--error)') + ';">' + (s.direction || '') + '</span>'
+            + '<span style="font-size:0.58rem;color:var(--text-muted);">' + (s.trader || '') + '</span>'
+            + '<span style="font-size:0.58rem;font-weight:700;color:var(--warning);margin-left:auto;">Score: ' + (s.decision_score || 0).toFixed(0) + '</span>'
+            + '</div>'
+            + '<button class="dc-approve-btn" onclick="dcApproveSignal(\'' + s.signal_id + '\')" style="margin-top:6px;">APPROVE</button>'
+            + '</div>';
+        }).join('');
+      }
+    }
+  }).catch(function(e) { console.error('dc pipeline:', e); });
+
+  // Exit monitor
+  fetch('/api/discord/exit-monitor').then(function(r) { return r.json(); }).then(function(d) {
+    var statusEl = document.getElementById('dc-exit-status');
+    var channelsEl = document.getElementById('dc-exit-channels');
+    if (statusEl) {
+      if (d.active) {
+        statusEl.textContent = 'Active — polling every ' + d.interval + 's';
+        statusEl.style.color = 'var(--success)';
+      } else {
+        statusEl.textContent = 'Inactive';
+        statusEl.style.color = 'var(--text-muted)';
+      }
+    }
+    if (channelsEl && d.channels) {
+      channelsEl.textContent = d.channels.join(', ');
+    }
+  }).catch(function() {
+    var statusEl = document.getElementById('dc-exit-status');
+    if (statusEl) { statusEl.textContent = 'Not configured'; statusEl.style.color = 'var(--text-muted)'; }
+  });
+}
+
+/* ── Signals panel ── */
+
+function dcRefreshSignals() {
+  var filter = document.getElementById('dc-signal-filter');
+  var priority = filter ? filter.value : '';
+  fetch('/api/discord/signals?limit=30').then(function(r) { return r.json(); }).then(function(sigs) {
+    var el = document.getElementById('dc-signals-list');
+    if (!el) return;
+    if (priority) sigs = sigs.filter(function(s) { return s.priority === priority; });
+    if (sigs.length === 0) { el.innerHTML = '<div class="dc-empty-state">Waiting for alpha...</div>'; return; }
+    el.innerHTML = sigs.map(function(s) {
+      var pc = _dcPriorityColors[s.priority] || 'var(--text-muted)';
+      var dirColor = s.direction === 'LONG' ? 'var(--success)' : s.direction === 'SHORT' ? 'var(--error)' : 'var(--text-muted)';
+      var prices = '';
+      if (s.entry_price) prices += 'Entry: $' + Number(s.entry_price).toFixed(4) + ' ';
+      if (s.stop_loss) prices += 'SL: $' + Number(s.stop_loss).toFixed(4) + ' ';
+      if (s.take_profit) prices += 'TP: $' + Number(s.take_profit).toFixed(4);
+      return '<div class="dc-signal-card">'
+        + '<div class="dc-signal-header">'
+        + '<span style="font-size:0.56rem;font-weight:700;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,0.06);color:' + pc + ';">' + (s.priority || '') + '</span>'
+        + '<span style="font-size:0.74rem;font-weight:700;color:var(--text-primary);">' + (s.ticker || '?') + '</span>'
+        + '<span style="font-size:0.68rem;font-weight:700;color:' + dirColor + ';">' + (s.direction || '?') + '</span>'
+        + '<span style="font-size:0.58rem;color:var(--text-muted);margin-left:auto;">' + (s.author || '') + ' in #' + (s.channel_name || '') + '</span>'
+        + '</div>'
+        + '<div style="font-size:0.54rem;color:var(--text-muted);margin-bottom:3px;">' + dcFormatTime(s.published_at) + '</div>'
+        + (prices ? '<div class="dc-signal-prices">' + prices + '</div>' : '')
+        + (s.strategy ? '<div style="font-size:0.62rem;color:var(--agent-atlas);">Strategy: ' + dcEscape(s.strategy) + '</div>' : '')
+        + (s.approach ? '<div style="font-size:0.62rem;color:var(--text-muted);font-style:italic;margin-top:2px;">' + dcEscape(s.approach) + '</div>' : '')
+        + '<div style="display:flex;gap:4px;margin-top:4px;">'
+        + (s.consumers ? JSON.parse(s.consumers).map(function(c) {
+            return '<span style="font-size:0.5rem;padding:1px 4px;border-radius:2px;background:rgba(255,255,255,0.06);color:' + (_dcAgentColors[c] || 'var(--text-muted)') + ';">' + c + '</span>';
+          }).join('') : '')
+        + '</div></div>';
+    }).join('');
+  }).catch(function(e) { console.error('dc signals:', e); });
+}
+
+/* ── Leaderboard panel ── */
+
+function dcRefreshLeaderboard() {
+  fetch('/api/discord/leaderboard').then(function(r) { return r.json(); }).then(function(traders) {
+    var el = document.getElementById('dc-leaderboard-wrap');
+    if (!el) return;
+    if (traders.length === 0) { el.innerHTML = '<div class="dc-empty-state">Tracking begins when signals arrive</div>'; return; }
+
+    // Compute streaks per trader
+    var html = '<table class="dc-leaderboard-table">'
+      + '<thead><tr><th>#</th><th>Trader</th><th>Tier</th><th>Calls</th><th>W</th><th>L</th><th>WR%</th><th>Avg P&L</th></tr></thead><tbody>';
+    traders.forEach(function(t, i) {
+      var wrColor = (t.win_rate || 0) >= 60 ? 'var(--success)' : (t.win_rate || 0) >= 40 ? 'var(--warning)' : 'var(--error)';
+      var pnlColor = (t.avg_pnl || 0) >= 0 ? 'var(--success)' : 'var(--error)';
+      var medal = i === 0 ? '#FFD700' : i === 1 ? '#C0C0C0' : i === 2 ? '#CD7F32' : 'var(--text-primary)';
+      var medalWeight = i < 3 ? '800' : '400';
+
+      // Tier badge from known traders
+      var tierBadge = '';
+      var traderLower = t.author.toLowerCase();
+      if (traderLower === 'kiku' || traderLower === 'sn06') tierBadge = '<span style="font-size:0.48rem;font-weight:700;padding:1px 4px;border-radius:2px;background:rgba(255,215,0,0.1);color:#FFD700;">TRUSTED</span>';
+      else if (traderLower === 'abns92' || traderLower === 'miku') tierBadge = '<span style="font-size:0.48rem;font-weight:700;padding:1px 4px;border-radius:2px;background:rgba(192,192,192,0.1);color:#C0C0C0;">GOOD</span>';
+
+      html += '<tr>'
+        + '<td style="color:' + medal + ';font-weight:' + medalWeight + ';">' + (i + 1) + '</td>'
+        + '<td style="font-weight:600;">' + dcEscape(t.author) + '</td>'
+        + '<td>' + tierBadge + '</td>'
+        + '<td>' + t.total_calls + '</td>'
+        + '<td style="color:var(--success);">' + (t.wins || 0) + '</td>'
+        + '<td style="color:var(--error);">' + (t.losses || 0) + '</td>'
+        + '<td style="color:' + wrColor + ';font-weight:700;">' + (t.win_rate != null ? t.win_rate.toFixed(1) + '%' : '--') + '</td>'
+        + '<td style="color:' + pnlColor + ';">' + (t.avg_pnl != null ? (t.avg_pnl >= 0 ? '+' : '') + t.avg_pnl.toFixed(1) + '%' : '--') + '</td>'
+        + '</tr>';
+    });
+    html += '</tbody></table>';
+    el.innerHTML = html;
+  }).catch(function(e) { console.error('dc leaderboard:', e); });
+}
+
+/* ── Chart Ideas panel ── */
+
+function dcRefreshChartIdeas() {
+  fetch('/api/discord/chart-ideas').then(function(r) { return r.json(); }).then(function(ideas) {
+    var el = document.getElementById('dc-chart-ideas-list');
+    if (!el) return;
+    if (!ideas || ideas.length === 0) {
+      el.innerHTML = '<div class="dc-empty-state">No chart ideas yet — monitoring charts-ideas channel...</div>';
+      return;
+    }
+
+    // Find best score
+    var bestScore = -1;
+    ideas.forEach(function(idea) { if ((idea.score || 0) > bestScore) bestScore = idea.score || 0; });
+
+    el.innerHTML = ideas.map(function(idea) {
+      var isBest = bestScore > 0 && (idea.score || 0) === bestScore;
+      var dirColor = idea.direction === 'LONG' ? 'var(--success)' : idea.direction === 'SHORT' ? 'var(--error)' : 'var(--text-muted)';
+      return '<div class="dc-idea-card">'
+        + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;">'
+        + '<span style="font-size:0.76rem;font-weight:700;color:var(--text-primary);">' + (idea.ticker || '?') + '</span>'
+        + (idea.direction ? '<span style="font-size:0.66rem;font-weight:700;color:' + dirColor + ';">' + idea.direction + '</span>' : '')
+        + '<span style="font-size:0.58rem;color:var(--text-muted);">' + dcEscape(idea.author || '') + '</span>'
+        + (isBest ? '<span class="dc-best-setup">Best Setup</span>' : '')
+        + (idea.score != null ? '<span style="font-size:0.58rem;font-weight:700;margin-left:auto;color:' + (idea.score >= 70 ? 'var(--success)' : idea.score >= 50 ? 'var(--warning)' : 'var(--text-muted)') + ';">Score: ' + idea.score + '</span>' : '')
+        + '</div>'
+        + (idea.strategy ? '<div style="font-size:0.64rem;color:var(--text-secondary);margin-bottom:4px;">' + dcEscape(idea.strategy) + '</div>' : '')
+        + '<div style="font-size:0.56rem;color:var(--text-muted);">' + dcFormatTime(idea.published_at || idea.created_at) + '</div>'
+        + '</div>';
+    }).join('');
+  }).catch(function() {
+    var el = document.getElementById('dc-chart-ideas-list');
+    if (el) el.innerHTML = '<div class="dc-empty-state">Chart ideas endpoint not available yet</div>';
+  });
+}
+
+/* ── Actions ── */
+
+function dcApproveSignal(signalId) {
+  fetch('/api/discord/approve/' + signalId, {method: 'POST'}).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.ok) dcRefreshPipeline();
+  }).catch(function(e) { console.error('dc approve:', e); });
+}
+
+/* ── Init (called by dashboard.js on tab switch) ── */
+function discordRefresh() {
+  dcRefresh();
+}
+</script>

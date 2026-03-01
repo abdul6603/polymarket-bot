@@ -3654,3 +3654,43 @@
   border:1px solid rgba(255,255,255,0.05);
 }
 .data-freshness.stale { color:var(--warning); border-color:rgba(255,170,0,0.15); }
+
+/* ═══════════════════════════════════════════════════════════════
+   PORTFOLIO DASHBOARD — Agency Overrides
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Demo mode banner */
+.demo-banner {
+  position:fixed; top:0; left:0; right:0; z-index:9999;
+  background:linear-gradient(90deg, rgba(255,170,0,0.15), rgba(255,68,68,0.15));
+  border-bottom:1px solid rgba(255,170,0,0.3);
+  text-align:center; padding:4px 16px;
+  font-family:var(--font-mono); font-size:0.68rem;
+  color:var(--warning); font-weight:600;
+  letter-spacing:0.03em;
+}
+.demo-banner ~ .sidebar { top:28px; height:calc(100vh - 28px); }
+.demo-banner ~ .main { padding-top:48px; }
+
+/* Demo mode toggle button */
+#demo-mode-toggle {
+  border-color:var(--agent-quant); color:var(--agent-quant);
+}
+#demo-mode-toggle.demo-active {
+  border-color:var(--warning); color:var(--warning);
+  background:rgba(255,170,0,0.08);
+}
+
+/* Wallet address masking */
+.wallet-masked {
+  font-family:var(--font-mono); font-size:0.72rem;
+  color:var(--text-muted); letter-spacing:0.02em;
+}
+
+/* Portfolio footer */
+.portfolio-footer {
+  text-align:center; padding:24px 16px; margin-top:40px;
+  border-top:1px solid var(--border);
+  font-family:var(--font-mono); font-size:0.68rem;
+  color:var(--text-muted);
+}

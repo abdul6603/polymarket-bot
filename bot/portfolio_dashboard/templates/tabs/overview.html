@@ -1,0 +1,135 @@
+<!-- OVERVIEW TAB -->
+<div class="tab-content active" id="tab-overview">
+
+  <!-- Section 1: Header Bar -->
+  <div class="ov-header">
+    <div class="ov-title-group">
+      <span class="ov-title">EYE ECOSYSTEM</span>
+      <span class="ov-subtitle">COMMAND CENTER</span>
+    </div>
+    <div class="ov-header-right">
+      <span class="ov-badge" id="ov-agent-count-badge"><span class="dot-online"></span> -- Online</span>
+      <span class="ov-badge" id="ov-llm-badge" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:var(--text-muted);">
+        <span class="dot-offline" id="ov-llm-dot"></span> LLM --
+      </span>
+      <span class="ov-timestamp" id="ov-updated">--:--</span>
+      <button class="btn" onclick="refresh()" style="padding:4px 10px;font-size:0.7rem;">&#x27F3;</button>
+    </div>
+  </div>
+
+  <!-- Resource Vitals Strip -->
+  <div id="ov-resource-strip" style="display:flex;gap:16px;margin-bottom:var(--space-4);padding:8px 14px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);">
+    <div style="flex:1;">
+      <div style="display:flex;justify-content:space-between;font-size:0.64rem;font-family:var(--font-mono);margin-bottom:3px;">
+        <span style="color:var(--text-muted);">CPU</span>
+        <span id="ov-cpu-val" style="font-weight:600;">--%</span>
+      </div>
+      <div style="height:5px;border-radius:3px;background:rgba(255,255,255,0.06);overflow:hidden;">
+        <div id="ov-cpu-fill" style="height:100%;border-radius:3px;width:0%;transition:width 0.5s,background 0.5s;"></div>
+      </div>
+    </div>
+    <div style="flex:1;">
+      <div style="display:flex;justify-content:space-between;font-size:0.64rem;font-family:var(--font-mono);margin-bottom:3px;">
+        <span style="color:var(--text-muted);">MEM</span>
+        <span id="ov-mem-val" style="font-weight:600;">--%</span>
+      </div>
+      <div style="height:5px;border-radius:3px;background:rgba(255,255,255,0.06);overflow:hidden;">
+        <div id="ov-mem-fill" style="height:100%;border-radius:3px;width:0%;transition:width 0.5s,background 0.5s;"></div>
+      </div>
+    </div>
+    <div style="flex:1;">
+      <div style="display:flex;justify-content:space-between;font-size:0.64rem;font-family:var(--font-mono);margin-bottom:3px;">
+        <span style="color:var(--text-muted);">DISK</span>
+        <span id="ov-disk-val" style="font-weight:600;">--%</span>
+      </div>
+      <div style="height:5px;border-radius:3px;background:rgba(255,255,255,0.06);overflow:hidden;">
+        <div id="ov-disk-fill" style="height:100%;border-radius:3px;width:0%;transition:width 0.5s,background 0.5s;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="ov-garves-health-banner" style="display:none;margin-bottom:12px;padding:10px 16px;border-radius:8px;font-size:0.78rem;font-weight:600;"></div>
+
+  <!-- Section 1b: Metric Cards -->
+  <div class="grid-4" style="margin-bottom:var(--space-6);">
+    <div class="stat-card" data-accent="success"><div class="stat-value" id="ov-pnl">--</div><div class="stat-label">Total PNL</div></div>
+    <div class="stat-card" data-accent="shelby"><div class="stat-value" id="ov-agents">--</div><div class="stat-label">Active Agents</div></div>
+    <div class="stat-card" data-accent="garves"><div class="stat-value" id="ov-trades">--</div><div class="stat-label">Trades (WR%)</div></div>
+    <div class="stat-card" data-accent="error"><div class="stat-value" id="ov-alerts">--</div><div class="stat-label">Critical Alerts</div></div>
+  </div>
+
+  <!-- Section 2: Intelligence Panel + Agent Grid -->
+  <div class="ov-main-row">
+    <!-- Left: Team Intelligence -->
+    <div class="ov-intel-panel glass-card" id="team-intelligence"></div>
+    <!-- Right: Agent Grid (3x4) -->
+    <div style="flex:1;min-width:0;">
+      <div class="ov-agent-grid" id="agent-grid"></div>
+    </div>
+  </div>
+
+  <!-- Section 3: Priority Actions -->
+  <div class="glass-card" style="margin-top:var(--space-6);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-4);">
+      <h2 class="section-title" data-accent="thor" style="margin-bottom:0;">Priority Actions</h2>
+      <span style="font-size:0.64rem;color:var(--text-muted);font-family:var(--font-mono);letter-spacing:0.06em;">AUTO-GENERATED</span>
+    </div>
+    <div id="overview-smart-actions" style="max-height:280px;overflow-y:auto;">
+      <span class="text-muted" style="font-size:0.76rem;">Loading smart actions...</span>
+    </div>
+  </div>
+
+  <!-- Section 3b: Collapsible — Recent Errors (default CLOSED) -->
+  <div class="collapse-section" style="margin-top:var(--space-6);">
+    <div class="collapse-trigger">
+      <h2 class="section-title" data-accent="error" style="margin-bottom:0;">Recent Errors <span id="ov-error-count" style="font-size:0.62rem;background:var(--error);color:#fff;padding:1px 6px;border-radius:8px;margin-left:6px;display:inline-block;min-width:16px;text-align:center;">0</span></h2>
+    </div>
+    <div class="collapse-body">
+      <div class="glass-card" style="max-height:200px;overflow-y:auto;">
+        <div id="ov-errors" style="font-family:var(--font-mono);font-size:0.74rem;">
+          <span class="text-muted">No errors detected.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 4: Collapsible — Agent Comms (default CLOSED) -->
+  <div class="collapse-section" style="margin-top:var(--space-8);">
+    <div class="collapse-trigger">
+      <h2 class="section-title" style="margin-bottom:0;">Agent Comms</h2>
+    </div>
+    <div class="collapse-body">
+      <div class="glass-card">
+        <div id="agent-comms-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:320px;overflow-y:auto;"><span class="text-muted">Loading agent communications...</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 4b: Collapsible — Claude Brain (default CLOSED) -->
+  <div class="collapse-section">
+    <div class="collapse-trigger">
+      <h2 class="section-title" style="color:#e0e0e0;margin-bottom:0;">Claude Brain</h2>
+    </div>
+    <div class="collapse-body">
+      <div class="glass-card" style="margin-bottom:var(--space-4);">
+        <div id="claude-commands" style="max-height:250px;overflow-y:auto;"><span class="text-muted">Loading commands...</span></div>
+      </div>
+      <div class="glass-card">
+        <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;">
+          <input type="text" class="input" id="claude-brain-topic" placeholder="Topic..." style="flex:1;font-size:0.76rem;padding:5px 10px;">
+          <div id="claude-brain-type-pills" style="display:flex;gap:4px;">
+            <button class="brain-pill active" data-type="note" onclick="setBrainType('claude','note',this)">Note</button>
+            <button class="brain-pill" data-type="command" onclick="setBrainType('claude','command',this)">Cmd</button>
+            <button class="brain-pill" data-type="memory" onclick="setBrainType('claude','memory',this)">Mem</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <textarea class="input" id="claude-brain-content" placeholder="Instructions, knowledge, or notes for Claude..." style="flex:1;min-height:48px;font-size:0.76rem;padding:5px 10px;resize:vertical;box-sizing:border-box;"></textarea>
+          <button class="btn btn-primary" onclick="addBrainNote('claude')" style="align-self:flex-end;padding:6px 14px;font-size:0.74rem;">Add</button>
+        </div>
+        <input type="hidden" id="claude-brain-type" value="note">
+        <div id="claude-brain-list" style="margin-top:10px;max-height:350px;overflow-y:auto;"><div class="text-muted" style="text-align:center;padding:12px;font-size:0.74rem;">No notes yet.</div></div>
+      </div>
+    </div>
+  </div>
+</div>

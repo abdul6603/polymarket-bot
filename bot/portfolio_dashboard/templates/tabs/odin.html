@@ -1,0 +1,1261 @@
+<!-- ODIN — BTC/ETH Futures Swing Trader (Hyperliquid) -->
+<div class="tab-content" id="tab-odin">
+
+  <!-- Hidden compat elements -->
+  <span id="odin-sc-dot" style="display:none;"></span>
+  <span id="odin-sc-timer" style="display:none;"></span>
+  <span id="odin-sc-syms" style="display:none;"></span>
+  <span id="odin-sc-detail" style="display:none;"></span>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       HEADER
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="odin-header">
+    <div class="odin-header-top">
+      <div class="odin-header-left">
+        <h1 class="odin-title">Odin <span class="odin-title-sep">&mdash;</span> <span class="odin-title-role">BTC/ETH Futures Swing Trader</span></h1>
+        <div class="odin-tagline">"I see everything. I forget nothing." &nbsp;&bull;&nbsp; SMC + Macro &nbsp;&bull;&nbsp; Hyperliquid</div>
+      </div>
+      <div class="odin-header-right">
+        <span id="odin-mode-badge" class="trading-mode-badge trading-mode-paper">Trading: Paper Money</span>
+        <button class="trading-mode-toggle" id="odin-mode-toggle" onclick="toggleOdinMode()">Switch</button>
+      </div>
+    </div>
+    <div class="odin-pills-row">
+      <span class="odin-pill odin-pill-on"><span class="odin-pill-dot"></span>CoinGlass Regime</span>
+      <span class="odin-pill odin-pill-on"><span class="odin-pill-dot" style="background:#8B5CF6;box-shadow:0 0 6px #8B5CF6;"></span>SMC Engine</span>
+      <span class="odin-pill"><span class="odin-pill-dot" style="background:#4FC3F7;box-shadow:0 0 6px #4FC3F7;"></span>Macro Alignment</span>
+      <span class="odin-pill"><span class="odin-pill-dot" style="background:#00d4ff;box-shadow:0 0 6px #00d4ff;"></span>Brother Sync</span>
+      <span class="odin-pill"><span class="odin-pill-dot" style="background:#22c55e;box-shadow:0 0 6px #22c55e;"></span>Circuit Breaker</span>
+      <span id="odin-cycle-timer" class="odin-cycle-pill">
+        <span style="width:8px;height:8px;border-radius:50%;background:var(--agent-odin);animation:rxPulse 2s ease-in-out infinite;display:inline-block;"></span>
+        Next: <span id="odin-cycle-countdown" style="min-width:38px;text-align:center;">--</span>
+        <span style="color:rgba(255,255,255,0.12);">|</span>
+        <span style="font-size:0.66rem;color:var(--text-muted);">#<span id="odin-cycle-num">0</span></span>
+      </span>
+      <span style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+        <button class="btn" onclick="odinRefresh()" style="font-size:0.68rem;font-weight:700;border-color:var(--agent-odin);color:var(--agent-odin);">Refresh</button>
+        <button class="btn" onclick="healthCheckAgent('odin')" style="font-size:0.68rem;">Health</button>
+        <input type="text" id="odin-omni-input" placeholder="Coin (e.g. BTC)" style="width:80px;padding:3px 8px;font-size:0.68rem;border:1px solid var(--agent-odin);border-radius:4px;background:transparent;color:var(--text);">
+        <button class="btn" onclick="odinRunOmniCoin()" style="font-size:0.68rem;font-weight:700;border-color:var(--agent-odin);color:#fff;background:var(--agent-odin);">OmniCoin</button>
+      </span>
+    </div>
+  </div>
+
+  <div class="health-inline" id="odin-health-result"></div>
+
+  <!-- Warning Banner -->
+  <div id="odin-warning-banner" style="display:none;margin-bottom:12px;padding:10px 16px;border-radius:8px;background:rgba(239,68,68,0.15);border:2px solid var(--error);color:var(--error);font-weight:700;font-size:0.82rem;line-height:1.5;">
+    <span style="font-size:1rem;margin-right:6px;">&#9888;</span>
+    <span id="odin-warning-text"></span>
+  </div>
+
+  <!-- OmniCoin Results -->
+  <div id="odin-omnicoin-section" class="glass-card" style="margin-bottom:12px;border-left:3px solid var(--agent-odin);display:none;">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+      <h3 style="font-size:0.76rem;margin:0;text-transform:uppercase;letter-spacing:0.06em;color:var(--agent-odin);">OmniCoin: <span id="odin-omni-symbol">--</span></h3>
+      <span id="odin-omni-confidence" style="font-weight:700;font-size:1rem;padding:2px 10px;border-radius:6px;background:rgba(139,92,246,0.15);color:var(--agent-odin);">--/10</span>
+      <span id="odin-omni-bias" class="badge" style="font-size:0.64rem;font-weight:700;padding:2px 10px;">--</span>
+      <span id="odin-omni-time" class="text-muted" style="font-size:0.64rem;margin-left:auto;">--</span>
+    </div>
+    <div id="odin-omni-summary" style="font-size:0.76rem;margin-bottom:10px;line-height:1.5;color:var(--text);"></div>
+    <div id="odin-omni-sections" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;"></div>
+    <div id="odin-omni-loading" style="display:none;text-align:center;padding:20px;color:var(--agent-odin);font-size:0.8rem;">Analyzing... <span style="animation:pulse 1.5s infinite;">&#9679;</span></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       HERO METRICS (4 glass-cards)
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="odin-metrics">
+    <div class="odin-metric-card">
+      <div class="odin-metric-icon" style="background:rgba(139,92,246,0.06);border-color:rgba(139,92,246,0.15);color:var(--agent-odin);">R</div>
+      <div class="odin-metric-body">
+        <div class="odin-metric-val" id="odin-regime-score" style="color:var(--agent-odin);">50</div>
+        <div class="odin-metric-lbl">Regime Score</div>
+        <div class="odin-metric-sub"><span id="odin-regime" style="font-weight:600;">--</span> &middot; <span id="odin-regime-bias" style="font-weight:600;">--</span></div>
+      </div>
+    </div>
+    <div class="odin-metric-card">
+      <div class="odin-metric-icon" style="background:rgba(255,215,0,0.06);border-color:rgba(255,215,0,0.15);color:#FFD700;">C</div>
+      <div class="odin-metric-body">
+        <div class="odin-metric-val" id="odin-conviction-badge" style="color:#FFD700;">--/10</div>
+        <div class="odin-metric-lbl">Conviction Level</div>
+        <div class="odin-metric-sub">Tier: <span id="odin-conv-tier" style="font-weight:600;">--</span></div>
+      </div>
+    </div>
+    <div class="odin-metric-card">
+      <div class="odin-metric-icon" style="background:rgba(0,255,136,0.06);border-color:rgba(0,255,136,0.15);color:var(--success);">$</div>
+      <div class="odin-metric-body">
+        <div class="odin-metric-val" id="odin-total-pnl">$0.00</div>
+        <div class="odin-metric-lbl">Total P&amp;L</div>
+        <div class="odin-metric-sub">Opps: <span id="odin-regime-opps" style="font-weight:600;color:var(--agent-odin);">0</span> &middot; Bal: <span id="odin-balance" style="font-weight:600;">$200.00</span></div>
+      </div>
+    </div>
+    <div class="odin-metric-card">
+      <div class="odin-metric-icon" style="background:rgba(0,212,255,0.06);border-color:rgba(0,212,255,0.15);color:#00d4ff;">%</div>
+      <div class="odin-metric-body">
+        <div class="odin-metric-val" id="odin-winrate">--</div>
+        <div class="odin-metric-lbl">Win Rate</div>
+        <div class="odin-metric-sub">Sharpe: <span id="odin-d-sharpe" style="font-weight:600;">--</span> &middot; DD: <span id="odin-drawdown" style="font-weight:600;">0%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SUB-TAB NAVIGATION
+       ═══════════════════════════════════════════════════════════════ -->
+  <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+    <button class="odin-subtab" data-sub="overview" onclick="odinSwitchSub('overview')">Overview</button>
+    <button class="odin-subtab active" data-sub="regime" onclick="odinSwitchSub('regime')">&#9733; Regime Monitor</button>
+    <button class="odin-subtab" data-sub="opportunities" onclick="odinSwitchSub('opportunities')">Opportunities</button>
+    <button class="odin-subtab" data-sub="positions" onclick="odinSwitchSub('positions')">Open Positions</button>
+    <button class="odin-subtab" data-sub="history" onclick="odinSwitchSub('history')">Trade History</button>
+    <button class="odin-subtab" data-sub="performance" onclick="odinSwitchSub('performance')">Performance</button>
+    <button class="odin-subtab" data-sub="intelligence" onclick="odinSwitchSub('intelligence')">Intelligence</button>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL 1: OVERVIEW
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="odin-panel" id="odin-panel-overview" style="display:none;">
+
+    <!-- Circuit Breaker & Portfolio Guard -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;border-left:3px solid var(--agent-odin);">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Circuit Breaker</span>
+        <span id="odin-cb-status" style="font-weight:700;font-size:0.82rem;color:var(--success);">TRADING ALLOWED</span>
+        <span id="odin-cb-reason" class="text-muted" style="font-size:0.72rem;"></span>
+        <span class="text-muted" style="font-size:0.72rem;margin-left:auto;">Size mod: <span id="odin-size-mod">1.0x</span></span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-daily-pnl" style="font-size:1rem;">$0.00</div>
+          <div class="stat-label" style="font-size:0.64rem;">Daily P&amp;L</div>
+        </div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-weekly-pnl" style="font-size:1rem;">$0.00</div>
+          <div class="stat-label" style="font-size:0.64rem;">Weekly P&amp;L</div>
+        </div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-peak-balance" style="font-size:1rem;">$200.00</div>
+          <div class="stat-label" style="font-size:0.64rem;">Peak Balance</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Portfolio Guard -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;">
+      <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;">Portfolio Guard</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px;">
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-pg-heat" style="font-size:0.9rem;">0%</div>
+          <div class="stat-label" style="font-size:0.64rem;">Portfolio Heat</div>
+        </div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-pg-direction" style="font-size:0.9rem;">0L / 0S</div>
+          <div class="stat-label" style="font-size:0.64rem;">Direction Balance</div>
+        </div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-pg-positions" style="font-size:0.9rem;">0 / 5</div>
+          <div class="stat-label" style="font-size:0.64rem;">Open / Max</div>
+        </div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-pg-universe" style="font-size:0.9rem;">0</div>
+          <div class="stat-label" style="font-size:0.64rem;">Coin Universe</div>
+        </div>
+      </div>
+      <div id="odin-pg-exposure" style="font-size:0.70rem;color:var(--text-secondary);"></div>
+      <div id="odin-pg-blacklist" style="margin-top:4px;font-size:0.70rem;"></div>
+    </div>
+
+    <!-- WebSocket & Pending Orders -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Real-Time Feed</span>
+        <span id="odin-ws-dot" style="width:8px;height:8px;border-radius:50%;background:#ef4444;"></span>
+        <span id="odin-ws-label" style="font-size:0.68rem;color:var(--text-muted);">Disconnected</span>
+        <span id="odin-ws-stats" style="font-size:0.64rem;color:var(--text-secondary);margin-left:auto;"></span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px;">
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-ws-tick-age" style="font-size:0.9rem;">--</div>
+          <div class="stat-label" style="font-size:0.64rem;">Last Tick</div>
+        </div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-ws-events" style="font-size:0.9rem;">0</div>
+          <div class="stat-label" style="font-size:0.64rem;">Events</div>
+        </div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-ws-pending" style="font-size:0.9rem;">0</div>
+          <div class="stat-label" style="font-size:0.64rem;">Pending Orders</div>
+        </div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-ws-coins" style="font-size:0.9rem;">0</div>
+          <div class="stat-label" style="font-size:0.64rem;">Tracked Coins</div>
+        </div>
+      </div>
+      <div id="odin-pending-orders-table" style="font-size:0.70rem;"></div>
+    </div>
+
+    <!-- Config -->
+    <div class="glass-card" style="padding:14px;">
+      <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px;">Configuration</div>
+      <div id="odin-config" class="text-muted" style="font-family:var(--font-mono);font-size:0.72rem;">Loading config...</div>
+    </div>
+
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL 2: REGIME MONITOR (DEFAULT — visible on load)
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="odin-panel" id="odin-panel-regime">
+
+    <!-- Large Regime Display -->
+    <div class="glass-card" style="padding:16px;margin-bottom:14px;border:1px solid rgba(139,92,246,0.2);text-align:center;">
+      <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-muted);margin-bottom:6px;">CoinGlass Regime</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:24px;margin-bottom:12px;">
+        <div>
+          <div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Top Long</div>
+          <div id="odin-top-long" style="font-size:1.1rem;font-weight:800;font-family:var(--font-mono);color:var(--success);">--</div>
+        </div>
+        <div>
+          <div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">Top Short</div>
+          <div id="odin-top-short" style="font-size:1.1rem;font-weight:800;font-family:var(--font-mono);color:var(--error);">--</div>
+        </div>
+      </div>
+      <button class="btn" onclick="odinRefresh()" style="font-size:0.72rem;font-weight:700;border-color:var(--agent-odin);color:#fff;background:var(--agent-odin);padding:6px 20px;border-radius:6px;">Force Regime Scan</button>
+    </div>
+
+    <!-- Conviction Component Bars -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Conviction Engine</span>
+        <span style="font-size:0.72rem;font-weight:700;color:var(--agent-odin);">Score: <span id="odin-conv-score">--</span>/100</span>
+        <span style="font-size:0.68rem;color:var(--text-muted);">Risk mult: <span id="odin-conv-mult">--</span></span>
+        <span id="odin-conv-rails" class="text-muted" style="font-size:0.64rem;margin-left:auto;"></span>
+      </div>
+      <div id="odin-conviction-bars" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;">
+        <div class="text-muted" style="font-size:0.72rem;grid-column:span 2;">No conviction data yet</div>
+      </div>
+    </div>
+
+    <!-- Last Signal -->
+    <div class="glass-card" style="padding:14px;">
+      <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px;">Last Signal</div>
+      <div id="odin-last-signal" class="text-muted" style="font-family:var(--font-mono);font-size:0.74rem;">No signal yet</div>
+    </div>
+
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL 3: OPPORTUNITIES
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="odin-panel" id="odin-panel-opportunities" style="display:none;">
+
+    <div class="glass-card" style="padding:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Regime Opportunities</span>
+        </div>
+        <button class="btn" onclick="odinRefresh()" style="font-size:0.68rem;font-weight:600;border-color:var(--agent-odin);color:var(--agent-odin);">Refresh</button>
+      </div>
+      <div class="hk-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Symbol</th><th>Direction</th><th>Score</th><th>Reasons</th></tr>
+          </thead>
+          <tbody id="odin-opps-tbody">
+            <tr><td colspan="4" class="text-muted" style="text-align:center;padding:24px;">No opportunities detected</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL 4: OPEN POSITIONS
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="odin-panel" id="odin-panel-positions" style="display:none;">
+
+    <div class="glass-card" style="padding:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Open Positions</span>
+          <span id="odin-positions-badge" style="font-size:0.56rem;font-weight:700;padding:2px 8px;border-radius:4px;"></span>
+        </div>
+      </div>
+      <div class="hk-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Asset</th><th>Dir</th><th>Conv</th><th>Lev</th><th>Entry</th><th>Now</th><th>SL</th><th>TP</th><th>Qty</th><th>Margin</th><th>P&amp;L</th></tr>
+          </thead>
+          <tbody id="odin-positions-tbody">
+            <tr><td colspan="11" class="text-muted" style="text-align:center;padding:24px;">No open positions</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL 5: TRADE HISTORY
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="odin-panel" id="odin-panel-history" style="display:none;">
+
+    <!-- Trade Stats Summary -->
+    <div id="odin-trades-summary" style="display:none;margin-bottom:14px;">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-th-total" style="font-size:1rem;">0</div>
+          <div class="stat-label" style="font-size:0.64rem;">Total Trades</div>
+        </div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-th-wr" style="font-size:1rem;">--</div>
+          <div class="stat-label" style="font-size:0.64rem;">Win Rate</div>
+        </div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-th-pnl" style="font-size:1rem;">$0</div>
+          <div class="stat-label" style="font-size:0.64rem;">Net P&amp;L</div>
+        </div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-th-avghold" style="font-size:1rem;">--</div>
+          <div class="stat-label" style="font-size:0.64rem;">Avg Hold</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trade Count Badge (hidden, used by JS) -->
+    <span id="odin-trades-count-badge" style="display:none;">0</span>
+
+    <!-- History Table -->
+    <div class="glass-card" style="padding:14px;">
+      <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;">Trade Log</div>
+      <div class="hk-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Time</th><th>Symbol</th><th>Side</th><th>Mode</th><th>Entry</th><th>Exit</th><th>P&amp;L</th><th>Lev</th><th>Reason</th><th>Hold</th></tr>
+          </thead>
+          <tbody id="odin-trades-tbody">
+            <tr><td colspan="10" class="text-muted" style="text-align:center;padding:24px;font-style:italic;">Odin is scanning markets &mdash; closed trades will appear here</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL 6: PERFORMANCE INSIGHTS
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="odin-panel" id="odin-panel-performance" style="display:none;">
+
+    <!-- Edge Tracker -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Edge Tracker</span>
+        <span id="odin-edge-dot" style="width:8px;height:8px;border-radius:50%;background:#6b7280;"></span>
+        <span id="odin-edge-label" style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">--</span>
+        <span id="odin-edge-recommendation" style="font-size:0.64rem;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,0.05);color:var(--text-muted);margin-left:auto;">--</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-d-edge-scalar" style="font-size:1rem;">1.0x</div>
+          <div class="stat-label" style="font-size:0.64rem;">Edge Scalar</div>
+        </div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-d-rolling-wr" style="font-size:1rem;">--</div>
+          <div class="stat-label" style="font-size:0.64rem;">Rolling WR</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Health Monitor -->
+    <div class="glass-card" style="padding:14px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Health Monitor</span>
+        <span id="odin-health-dot" style="width:8px;height:8px;border-radius:50%;background:#6b7280;"></span>
+        <span id="odin-health-label" style="font-size:0.72rem;font-weight:700;color:var(--text-muted);">--</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px;">
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" id="odin-d-flags" style="font-size:1rem;">0</div>
+          <div class="stat-label" style="font-size:0.64rem;">Red Flags</div>
+        </div>
+        <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+          <div class="stat-value" style="font-size:1rem;color:var(--text-muted);">--</div>
+          <div class="stat-label" style="font-size:0.64rem;">Risk Status</div>
+        </div>
+      </div>
+      <div id="odin-health-issues" style="font-size:0.66rem;color:var(--text-secondary);"></div>
+    </div>
+
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL 7: INTELLIGENCE & SELF-IMPROVEMENT
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="odin-panel" id="odin-panel-intelligence" style="display:none;">
+
+    <!-- Intelligence Score Ring + Pillars -->
+    <div class="glass-card" style="padding:16px;margin-bottom:14px;border:1px solid transparent;background-image:linear-gradient(var(--glass-bg), var(--glass-bg)), linear-gradient(135deg, rgba(139,92,246,0.4), rgba(0,212,255,0.4));background-origin:border-box;background-clip:padding-box, border-box;border-radius:var(--radius);">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+        <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--agent-odin);">Intelligence &amp; Self-Improvement</span>
+        <span id="odin-intel-badge" style="font-size:0.64rem;font-weight:700;padding:2px 10px;border-radius:999px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.3);color:var(--agent-odin);">Score: --</span>
+      </div>
+      <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;">
+        <!-- SVG Ring -->
+        <div style="flex-shrink:0;text-align:center;">
+          <svg id="odin-intel-ring" width="130" height="130" viewBox="0 0 130 130">
+            <circle cx="65" cy="65" r="52" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+            <circle id="odin-intel-ring-fill" cx="65" cy="65" r="52" fill="none" stroke="var(--agent-odin)" stroke-width="8" stroke-linecap="round"
+                    stroke-dasharray="326.73" stroke-dashoffset="326.73" transform="rotate(-90 65 65)"
+                    style="transition:stroke-dashoffset 1.2s ease-out;"/>
+            <text x="65" y="60" text-anchor="middle" fill="var(--text)" font-family="var(--font-heading)" font-size="28" font-weight="700">
+              <tspan id="odin-intel-score-text">0</tspan>
+            </text>
+            <text x="65" y="78" text-anchor="middle" fill="var(--text-muted)" font-family="var(--font-ui)" font-size="10">INTELLIGENCE</text>
+          </svg>
+        </div>
+        <!-- Four Pillars -->
+        <div style="flex:1;display:grid;grid-template-columns:repeat(4,1fr);gap:10px;min-width:320px;">
+          <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+            <div class="stat-value" id="odin-intel-decisions" style="font-size:1rem;">0</div>
+            <div class="stat-label" style="font-size:0.64rem;">Decisions Logged</div>
+          </div>
+          <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+            <div class="stat-value" id="odin-intel-patterns" style="font-size:1rem;">0</div>
+            <div class="stat-label" style="font-size:0.64rem;">Patterns Learned</div>
+          </div>
+          <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+            <div class="stat-value" id="odin-intel-gen" style="font-size:1rem;">0</div>
+            <div class="stat-label" style="font-size:0.64rem;">Evolution Gen</div>
+          </div>
+          <div class="stat-card" data-accent="odin" style="padding:10px 14px;">
+            <div class="stat-value" id="odin-intel-knowledge" style="font-size:1rem;">0</div>
+            <div class="stat-label" style="font-size:0.64rem;">Knowledge Items</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Self-Improvement Loop -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;">
+      <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;">Self-Improvement Loop</div>
+      <div style="display:flex;align-items:center;gap:0;justify-content:center;flex-wrap:wrap;">
+        <div id="odin-loop-trade" style="flex:1;min-width:120px;text-align:center;padding:10px 8px;background:rgba(139,92,246,0.08);border-radius:8px;border:1px solid rgba(139,92,246,0.2);">
+          <div style="font-size:1.1rem;margin-bottom:4px;">&#128200;</div>
+          <div style="font-size:0.72rem;font-weight:700;color:var(--agent-odin);">Trade</div>
+          <div style="font-size:0.6rem;color:var(--text-muted);">Logs every decision</div>
+          <div style="font-size:0.82rem;font-weight:700;color:var(--text);margin-top:3px;" id="odin-loop-trade-count">0</div>
+        </div>
+        <div style="color:var(--agent-odin);font-size:1.2rem;padding:0 4px;">&#8594;</div>
+        <div id="odin-loop-analyze" style="flex:1;min-width:120px;text-align:center;padding:10px 8px;background:rgba(139,92,246,0.08);border-radius:8px;border:1px solid rgba(139,92,246,0.2);">
+          <div style="font-size:1.1rem;margin-bottom:4px;">&#129504;</div>
+          <div style="font-size:0.72rem;font-weight:700;color:var(--agent-odin);">Analyze</div>
+          <div style="font-size:0.6rem;color:var(--text-muted);">Extracts patterns</div>
+          <div style="font-size:0.82rem;font-weight:700;color:var(--text);margin-top:3px;" id="odin-loop-analyze-count">0</div>
+        </div>
+        <div style="color:var(--agent-odin);font-size:1.2rem;padding:0 4px;">&#8594;</div>
+        <div id="odin-loop-evolve" style="flex:1;min-width:120px;text-align:center;padding:10px 8px;background:rgba(139,92,246,0.08);border-radius:8px;border:1px solid rgba(139,92,246,0.2);">
+          <div style="font-size:1.1rem;margin-bottom:4px;">&#129516;</div>
+          <div style="font-size:0.72rem;font-weight:700;color:var(--agent-odin);">Evolve</div>
+          <div style="font-size:0.6rem;color:var(--text-muted);">Backtests mutations</div>
+          <div style="font-size:0.82rem;font-weight:700;color:var(--text);margin-top:3px;" id="odin-loop-evolve-count">Gen 0</div>
+        </div>
+        <div style="color:var(--agent-odin);font-size:1.2rem;padding:0 4px;">&#8594;</div>
+        <div id="odin-loop-apply" style="flex:1;min-width:120px;text-align:center;padding:10px 8px;background:rgba(139,92,246,0.08);border-radius:8px;border:1px solid rgba(139,92,246,0.2);">
+          <div style="font-size:1.1rem;margin-bottom:4px;">&#128640;</div>
+          <div style="font-size:0.72rem;font-weight:700;color:var(--agent-odin);">Apply</div>
+          <div style="font-size:0.6rem;color:var(--text-muted);">Deploys best variant</div>
+          <div style="font-size:0.82rem;font-weight:700;color:var(--text);margin-top:3px;" id="odin-loop-apply-status">--</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Learned Patterns -->
+    <div class="glass-card" style="padding:14px;">
+      <div style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px;">Learned Patterns</div>
+      <div id="odin-top-patterns" style="font-size:0.72rem;color:var(--text-secondary);">No patterns learned yet &mdash; needs more trade data</div>
+    </div>
+
+  </div>
+
+
+  <!-- Final Rule -->
+  <div style="margin-top:20px;padding:16px;text-align:center;font-size:0.72rem;color:var(--text-muted);border-top:1px solid rgba(139,92,246,0.1);">
+    This is a probabilistic engine competing against institutions, algos, and market makers. <strong style="color:var(--agent-odin);">Discipline is the edge.</strong>
+  </div>
+
+</div>
+
+<!-- ═══ Odin Sub-Tab Styles ═══ -->
+<style>
+.odin-header { margin-bottom:14px; }
+.odin-header-top { display:flex;align-items:center;gap:12px;margin-bottom:10px;flex-wrap:wrap; }
+.odin-header-left { flex:1;min-width:240px; }
+.odin-header-right { display:flex;align-items:center;gap:8px; }
+.odin-title { font-size:1.1rem;font-weight:800;margin:0;font-family:var(--font-heading);letter-spacing:-0.02em; }
+.odin-title-sep { color:var(--text-muted);font-weight:300; }
+.odin-title-role { color:var(--text-secondary);font-weight:400;font-size:0.82rem; }
+.odin-tagline { font-size:0.66rem;color:var(--text-muted);font-style:italic;margin-top:2px; }
+.odin-pills-row { display:flex;align-items:center;gap:8px;flex-wrap:wrap; }
+.odin-pill {
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 12px;border-radius:20px;font-size:0.68rem;font-weight:600;
+  font-family:var(--font-mono);background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);transition:all 0.2s;
+}
+.odin-pill:hover { border-color:rgba(255,255,255,0.15); }
+.odin-pill-on { border-color:rgba(139,92,246,0.3);background:rgba(139,92,246,0.08); }
+.odin-pill-dot { width:6px;height:6px;border-radius:50%;background:var(--agent-odin);box-shadow:0 0 6px var(--agent-odin);display:inline-block; }
+.odin-cycle-pill {
+  display:inline-flex;align-items:center;gap:7px;
+  font-family:var(--font-mono);font-size:0.72rem;font-weight:700;
+  padding:4px 14px;border-radius:999px;
+  border:1px solid rgba(139,92,246,0.35);background:rgba(139,92,246,0.12);
+  color:var(--agent-odin);transition:box-shadow .3s;
+}
+.odin-metrics {
+  display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;
+}
+.odin-metric-card {
+  display:flex;align-items:center;gap:12px;
+  padding:14px 16px;border-radius:var(--radius);
+  background:var(--glass-bg);backdrop-filter:var(--glass-blur);-webkit-backdrop-filter:var(--glass-blur);
+  border:1px solid var(--glass-border);
+  transition:border-color 200ms ease,box-shadow 200ms ease,transform 200ms ease;
+}
+.odin-metric-card:hover { border-color:rgba(255,255,255,0.1);box-shadow:0 4px 24px rgba(0,0,0,0.3);transform:translateY(-1px); }
+.odin-metric-icon {
+  width:36px;height:36px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-family:var(--font-mono);font-size:0.9rem;
+  border:1px solid transparent;flex-shrink:0;
+}
+.odin-metric-body { flex:1;min-width:0; }
+.odin-metric-val { font-size:1.1rem;font-weight:800;font-family:var(--font-mono);line-height:1.2; }
+.odin-metric-lbl { font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:1px; }
+.odin-metric-sub { font-size:0.60rem;color:var(--text-muted);margin-top:2px; }
+.odin-subtab {
+  background: var(--surface-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 5px 16px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.odin-subtab:hover { color: var(--text); border-color: var(--text-muted); }
+.odin-subtab.active { background: var(--agent-odin); color: #fff; border-color: var(--agent-odin); }
+</style>
+
+<!-- ═══ Odin Sub-Tab Switching + Inline JS ═══ -->
+<script>
+function odinSwitchSub(name) {
+  document.querySelectorAll('.odin-panel').forEach(function(p) { p.style.display = 'none'; });
+  var panel = document.getElementById('odin-panel-' + name);
+  if (panel) panel.style.display = '';
+  document.querySelectorAll('.odin-subtab').forEach(function(b) {
+    b.classList.toggle('active', b.getAttribute('data-sub') === name);
+  });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ODIN DASHBOARD — JavaScript
+   ═══════════════════════════════════════════════════════════ */
+
+function odinSetVal(id, val) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+
+function odinPnl(id, val) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var prefix = val >= 0 ? '+$' : '-$';
+  el.textContent = prefix + Math.abs(val).toFixed(2);
+  el.style.color = val >= 0 ? 'var(--success)' : 'var(--error)';
+}
+
+/* ── Intelligence Score Ring ── */
+function odinRenderIntelRing(score) {
+  var radius = 52;
+  var circumference = 2 * Math.PI * radius;
+  var offset = circumference - (score / 100) * circumference;
+  var fill = document.getElementById('odin-intel-ring-fill');
+  var text = document.getElementById('odin-intel-score-text');
+  var badge = document.getElementById('odin-intel-badge');
+  if (fill) fill.setAttribute('stroke-dashoffset', offset.toFixed(2));
+  if (text) text.textContent = Math.round(score);
+  if (badge) badge.textContent = 'Score: ' + Math.round(score);
+  // Color gradient based on score
+  if (fill) {
+    if (score >= 70) fill.setAttribute('stroke', 'var(--success)');
+    else if (score >= 40) fill.setAttribute('stroke', 'var(--agent-odin)');
+    else fill.setAttribute('stroke', 'var(--warning)');
+  }
+}
+
+/* ── Compute Intelligence Score ── */
+function odinComputeIntelScore(journal, evolution, edgeStatus, healthOverall) {
+  var score = 0;
+  score += Math.min(25, (journal.resolved_decisions || 0) * 0.5);
+  score += Math.min(20, (journal.active_patterns || 0) * 5);
+  score += Math.min(20, (evolution.current_gen || 0) * 4);
+  if (edgeStatus === 'STRONG') score += 15;
+  else if (edgeStatus === 'WEAKENING') score += 8;
+  if (healthOverall === 'GREEN') score += 10;
+  else if (healthOverall === 'YELLOW') score += 5;
+  score += Math.min(10, (journal.total_knowledge || 0) * 2);
+  return Math.min(100, score);
+}
+
+/* ── Warning checker ── */
+function odinCheckWarnings(d) {
+  var banner = document.getElementById('odin-warning-banner');
+  var textEl = document.getElementById('odin-warning-text');
+  if (!banner || !textEl) return;
+  var warnings = [];
+  var conv = d.conviction || {};
+  if (conv.active === false || conv.total_score === 0) {
+    warnings.push('Conviction engine inactive (score=0)');
+  }
+  var consecLosses = d.consecutive_losses || 0;
+  if (consecLosses >= 4) {
+    warnings.push(consecLosses + ' consecutive losses');
+  }
+  fetch('/api/odin/trades').then(function(r) { return r.json(); }).then(function(trades) {
+    if (trades.length >= 4) {
+      var last4 = trades.slice(-4);
+      var allShorts = last4.every(function(t) { return t.side === 'SHORT'; });
+      if (allShorts) {
+        var regimeScore = d.regime ? d.regime.global_score : (d.global_score || 50);
+        if (regimeScore > 50) warnings.push('4+ SHORTs while regime bullish (' + regimeScore + ')');
+        else warnings.push('4+ consecutive SHORTs');
+      }
+    }
+    if (warnings.length > 0) {
+      textEl.innerHTML = warnings.join(' &nbsp;|&nbsp; ');
+      banner.style.display = 'block';
+    } else { banner.style.display = 'none'; }
+  }).catch(function() {
+    if (warnings.length > 0) {
+      textEl.innerHTML = warnings.join(' &nbsp;|&nbsp; ');
+      banner.style.display = 'block';
+    } else { banner.style.display = 'none'; }
+  });
+}
+
+/* ── Countdown Timer ── */
+function odinTickCountdown() {
+  var el = document.getElementById('odin-cycle-countdown');
+  var pill = document.getElementById('odin-cycle-timer');
+  if (!el || !window._odinNextCycle) return;
+  var now = Date.now() / 1000;
+  var diff = Math.max(0, Math.round(window._odinNextCycle - now));
+  if (diff <= 0) {
+    el.textContent = 'NOW';
+    el.style.color = 'var(--success)';
+    if (pill) pill.style.boxShadow = '0 0 12px rgba(34,197,94,0.4)';
+  } else {
+    var m = Math.floor(diff / 60);
+    var s = diff % 60;
+    el.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+    if (diff < 30) {
+      el.style.color = 'var(--warning)';
+      if (pill) pill.style.boxShadow = '0 0 10px rgba(243,156,18,0.3)';
+    } else {
+      el.style.color = '';
+      if (pill) pill.style.boxShadow = '';
+    }
+  }
+}
+var _odinCountdownTick = setInterval(odinTickCountdown, 1000);
+
+/* ── CoinGecko Price Fetch ── */
+var _odinPriceCache = {};
+function odinFetchPrices(symbols, cb) {
+  var idMap = {BTC:'bitcoin',ETH:'ethereum',SOL:'solana',XRP:'ripple',DOGE:'dogecoin',AVAX:'avalanche-2',LINK:'chainlink',ADA:'cardano',DOT:'polkadot',MATIC:'matic-network'};
+  var ids = [];
+  symbols.forEach(function(s) {
+    var base = s.replace('USDT','').replace('USD','');
+    if (idMap[base]) ids.push(idMap[base]);
+  });
+  if (ids.length === 0) return cb({});
+  var unique = ids.filter(function(v, i, a) { return a.indexOf(v) === i; });
+  fetch('https://api.coingecko.com/api/v3/simple/price?ids=' + unique.join(',') + '&vs_currencies=usd')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var map = {};
+      Object.keys(idMap).forEach(function(sym) {
+        var cgId = idMap[sym];
+        if (data[cgId]) map[sym + 'USDT'] = data[cgId].usd;
+      });
+      _odinPriceCache = map;
+      cb(map);
+    })
+    .catch(function() { cb(_odinPriceCache); });
+}
+
+/* ── Render Positions ── */
+function odinRenderPositions(positions) {
+  var symbols = positions.map(function(p) { return p.symbol; });
+  odinFetchPrices(symbols, function(prices) {
+    var tbody = document.getElementById('odin-positions-tbody');
+    if (!tbody) return;
+    var html = '';
+    var totalPnl = 0;
+    positions.forEach(function(p) {
+      var dirColor = p.direction === 'LONG' ? 'var(--success)' : 'var(--error)';
+      var curPrice = prices[p.symbol] || p.current_price || 0;
+      var pnl = 0;
+      if (curPrice > 0) {
+        pnl = p.direction === 'LONG' ? (curPrice - p.entry_price) * p.qty : (p.entry_price - curPrice) * p.qty;
+      }
+      totalPnl += pnl;
+      var pnlColor = pnl >= 0 ? 'var(--success)' : 'var(--error)';
+      var pnlPrefix = pnl >= 0 ? '+$' : '-$';
+      var pnlPct = p.margin > 0 ? (pnl / p.margin * 100) : 0;
+      var asset = (p.symbol || '').replace('USDT', '');
+      var conv = p.conviction_score || p.confidence || 0;
+      var convColor = conv >= 70 ? 'var(--success)' : conv >= 55 ? 'var(--warning)' : 'var(--error)';
+      html += '<tr style="font-size:0.78rem;">';
+      html += '<td style="font-weight:600;">' + asset + '</td>';
+      html += '<td style="color:' + dirColor + ';font-weight:700;">' + (p.direction || '') + '</td>';
+      html += '<td style="color:' + convColor + ';font-weight:700;">' + Math.round(conv) + '</td>';
+      html += '<td>' + (p.leverage || 3) + 'x</td>';
+      html += '<td>$' + (p.entry_price || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + '</td>';
+      html += '<td style="font-weight:600;">' + (curPrice > 0 ? '$' + curPrice.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '--') + '</td>';
+      html += '<td style="color:var(--error);">$' + (p.stop_loss || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + '</td>';
+      html += '<td style="color:var(--success);">$' + (p.take_profit_1 || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + '</td>';
+      html += '<td>' + (p.qty || 0).toFixed(4) + '</td>';
+      html += '<td>$' + (p.margin || 0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) + '</td>';
+      html += '<td style="color:' + pnlColor + ';font-weight:700;">' + pnlPrefix + Math.abs(pnl).toFixed(2) + '<div style="font-size:0.62rem;color:' + pnlColor + ';">' + (pnlPct >= 0 ? '+' : '') + pnlPct.toFixed(2) + '%</div></td>';
+      html += '</tr>';
+    });
+    tbody.innerHTML = html;
+    if (totalPnl !== 0) odinPnl('odin-total-pnl', totalPnl);
+  });
+}
+
+/* ── OmniCoin Analyzer ── */
+function odinRunOmniCoin() {
+  var input = document.getElementById('odin-omni-input');
+  var symbol = (input ? input.value : '').trim().toUpperCase();
+  if (!symbol) { alert('Enter a coin symbol (e.g. BTC, ETH)'); return; }
+  var section = document.getElementById('odin-omnicoin-section');
+  var loading = document.getElementById('odin-omni-loading');
+  var sectionsEl = document.getElementById('odin-omni-sections');
+  var summaryEl = document.getElementById('odin-omni-summary');
+  if (section) section.style.display = 'block';
+  if (loading) loading.style.display = 'block';
+  if (sectionsEl) sectionsEl.innerHTML = '';
+  if (summaryEl) summaryEl.textContent = '';
+  fetch('/api/odin/omnicoin', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({symbol:symbol})})
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    if (loading) loading.style.display = 'none';
+    if (d.error) { if (summaryEl) summaryEl.textContent = 'Error: ' + d.error; return; }
+    odinSetVal('odin-omni-symbol', d.symbol || symbol);
+    var conf = d.confidence || 0;
+    var confEl = document.getElementById('odin-omni-confidence');
+    if (confEl) { confEl.textContent = conf + '/10'; confEl.style.color = conf >= 7 ? 'var(--success)' : conf >= 4 ? 'var(--warning)' : 'var(--error)'; }
+    var biasEl = document.getElementById('odin-omni-bias');
+    if (biasEl) {
+      biasEl.textContent = d.bias || '--';
+      biasEl.style.background = d.bias === 'LONG' ? 'rgba(46,204,113,0.15)' : d.bias === 'SHORT' ? 'rgba(231,76,60,0.15)' : 'rgba(255,255,255,0.08)';
+      biasEl.style.color = d.bias === 'LONG' ? 'var(--success)' : d.bias === 'SHORT' ? 'var(--error)' : 'var(--text-muted)';
+    }
+    odinSetVal('odin-omni-time', d.timestamp_et || '');
+    if (summaryEl) summaryEl.textContent = d.summary || '';
+    if (sectionsEl && d.sections) {
+      var html = '';
+      var sectionNames = {'eye_vision':'Eye Vision','regime':'Regime','smc_structure':'SMC Structure','ob_memory':'OB Memory','liquidity_raids':'Liquidity Raids','sentiment':'Sentiment','arb_check':'Cross-Chain Arb','stop_hunt_sim':'Stop Hunt Sim','evolution':'Self-Evolve','journal':'Journal','brotherhood':'Network'};
+      Object.keys(d.sections).forEach(function(key) {
+        var sec = d.sections[key];
+        var name = sectionNames[key] || key;
+        var avail = sec.available;
+        var statusColor = avail ? 'var(--success)' : 'var(--text-muted)';
+        html += '<div style="padding:8px;background:rgba(139,92,246,0.04);border-radius:6px;border:1px solid rgba(139,92,246,0.1);">';
+        html += '<div style="font-size:0.68rem;font-weight:700;color:' + statusColor + ';margin-bottom:4px;">' + (avail ? '&#9679; ' : '&#9675; ') + name + '</div>';
+        var details = Object.keys(sec).filter(function(k){ return k !== 'available' && k !== 'error'; });
+        details.forEach(function(k) { var v = sec[k]; if (typeof v === 'object' && v !== null) v = JSON.stringify(v).substring(0,80); html += '<div style="font-size:0.62rem;color:var(--text-muted);">' + k + ': <span style="color:var(--text);">' + v + '</span></div>'; });
+        html += '</div>';
+      });
+      sectionsEl.innerHTML = html;
+    }
+  })
+  .catch(function(e) { if (loading) loading.style.display = 'none'; if (summaryEl) summaryEl.textContent = 'Analysis failed: ' + e; });
+}
+
+function odinLoadLastOmni() {
+  fetch('/api/odin/omnicoin').then(function(r) { return r.json(); }).then(function(d) {
+    if (d && d.symbol) {
+      var section = document.getElementById('odin-omnicoin-section');
+      if (section) section.style.display = 'block';
+      odinSetVal('odin-omni-symbol', d.symbol);
+      var confEl = document.getElementById('odin-omni-confidence');
+      if (confEl) confEl.textContent = (d.confidence || 0) + '/10';
+      var biasEl = document.getElementById('odin-omni-bias');
+      if (biasEl) biasEl.textContent = d.bias || '--';
+      odinSetVal('odin-omni-time', d.timestamp_et || '');
+      var summaryEl = document.getElementById('odin-omni-summary');
+      if (summaryEl) summaryEl.textContent = d.summary || '';
+    }
+  }).catch(function(){});
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MAIN REFRESH — fetches 6 endpoints in parallel
+   ═══════════════════════════════════════════════════════════ */
+function odinRefresh() {
+  var journalData = {};
+  var evolutionData = {};
+  var edgeStatus = 'UNKNOWN';
+  var healthOverall = 'UNKNOWN';
+
+  // 1. Main status
+  fetch('/api/odin').then(function(r){ return r.json(); }).then(function(d) {
+    // Mode badge
+    var isLive = (d.mode || 'paper').toLowerCase() === 'live';
+    var modeBadge = document.getElementById('odin-mode-badge');
+    if (modeBadge) {
+      modeBadge.classList.remove('trading-mode-live', 'trading-mode-paper');
+      if (isLive) { modeBadge.classList.add('trading-mode-live'); modeBadge.textContent = 'LIVE TRADING'; }
+      else { modeBadge.classList.add('trading-mode-paper'); modeBadge.textContent = 'Paper Trading'; }
+    }
+    // Positions badge
+    var posBadge = document.getElementById('odin-positions-badge');
+    if (posBadge) {
+      if (isLive) { posBadge.textContent = 'LIVE'; posBadge.style.background = 'rgba(0,255,136,0.15)'; posBadge.style.border = '1px solid rgba(0,255,136,0.4)'; posBadge.style.color = '#00ff88'; }
+      else { posBadge.textContent = 'PAPER'; posBadge.style.background = 'rgba(255,215,0,0.15)'; posBadge.style.border = '1px solid rgba(255,215,0,0.4)'; posBadge.style.color = '#FFD700'; }
+    }
+
+    // Hero cards
+    odinSetVal('odin-balance', '$' + (d.balance || 200).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}));
+    odinPnl('odin-total-pnl', d.total_pnl || 0);
+    var wr = d.win_rate || 0;
+    var wrEl = document.getElementById('odin-winrate');
+    if (wrEl) { wrEl.textContent = wr.toFixed(1) + '%'; wrEl.style.color = wr >= 50 ? 'var(--success)' : wr >= 35 ? 'var(--warning)' : wr > 0 ? 'var(--error)' : 'var(--text-muted)'; }
+    var dd = d.drawdown_pct || 0;
+    var ddEl = document.getElementById('odin-drawdown');
+    if (ddEl) { ddEl.textContent = dd.toFixed(1) + '%'; ddEl.style.color = dd > 10 ? 'var(--error)' : dd > 5 ? 'var(--warning)' : 'var(--success)'; }
+
+    // Regime
+    var regime = d.regime || {};
+    odinSetVal('odin-regime', (regime.regime || '--').toUpperCase());
+    odinSetVal('odin-regime-score', regime.global_score || 50);
+    var biasEl = document.getElementById('odin-regime-bias');
+    if (biasEl) {
+      var bias = regime.direction_bias || 'NONE';
+      biasEl.textContent = bias;
+      biasEl.style.color = bias === 'SHORT' ? 'var(--error)' : bias === 'LONG' ? 'var(--success)' : 'var(--text-muted)';
+    }
+    odinSetVal('odin-regime-opps', regime.opportunity_count || (regime.opportunities || []).length || 0);
+    odinSetVal('odin-top-long', regime.top_long || '--');
+    odinSetVal('odin-top-short', regime.top_short || '--');
+
+    // Opportunities table
+    var opps = d.opportunities || [];
+    var oppsTbody = document.getElementById('odin-opps-tbody');
+    if (oppsTbody) {
+      if (opps.length === 0) { oppsTbody.innerHTML = '<tr><td colspan="4" class="text-muted">No opportunities detected</td></tr>'; }
+      else {
+        var oppsHtml = '';
+        opps.forEach(function(o) {
+          var dirColor = o.direction === 'SHORT' ? 'var(--error)' : 'var(--success)';
+          oppsHtml += '<tr><td style="font-weight:600;">' + (o.symbol||'') + '</td><td style="color:' + dirColor + ';font-weight:600;">' + (o.direction||'') + '</td><td>' + (o.score||0) + '</td><td class="text-muted" style="font-size:0.7rem;">' + (o.reasons||[]).join(', ') + '</td></tr>';
+        });
+        oppsTbody.innerHTML = oppsHtml;
+      }
+    }
+
+    // Positions
+    var positions = d.paper_positions || [];
+    var tbody = document.getElementById('odin-positions-tbody');
+    if (tbody) {
+      if (positions.length === 0) { tbody.innerHTML = '<tr><td colspan="11" class="text-muted">No open positions</td></tr>'; }
+      else { odinRenderPositions(positions); }
+    }
+
+    // Circuit breaker
+    var cbEl = document.getElementById('odin-cb-status');
+    if (cbEl) {
+      if (d.trading_allowed) { cbEl.textContent = 'TRADING ALLOWED'; cbEl.style.color = 'var(--success)'; }
+      else { cbEl.textContent = 'PAUSED'; cbEl.style.color = 'var(--error)'; }
+    }
+    odinSetVal('odin-cb-reason', d.cb_reason || '');
+    odinSetVal('odin-size-mod', (d.size_modifier || 1).toFixed(2) + 'x');
+    odinPnl('odin-daily-pnl', d.daily_pnl || 0);
+    odinPnl('odin-weekly-pnl', d.weekly_pnl || 0);
+    odinSetVal('odin-peak-balance', '$' + (d.peak_balance || 200).toFixed(2));
+
+    // Portfolio Guard
+    var pg = d.portfolio_guard || {};
+    var pgHeat = pg.total_heat_pct || 0;
+    var pgMax = pg.max_heat_pct || 10;
+    odinSetVal('odin-pg-heat', pgHeat.toFixed(1) + '% / ' + pgMax + '%');
+    var heatEl = document.getElementById('odin-pg-heat');
+    if (heatEl) heatEl.style.color = pgHeat > pgMax * 0.8 ? 'var(--error)' : pgHeat > pgMax * 0.5 ? 'var(--warning)' : 'var(--success)';
+    odinSetVal('odin-pg-direction', (pg.long_count || 0) + 'L / ' + (pg.short_count || 0) + 'S');
+    odinSetVal('odin-pg-positions', (pg.open_positions || 0) + ' / ' + (pg.max_positions || 5));
+    var pgCfg = d.config || {};
+    odinSetVal('odin-pg-universe', pgCfg.coin_universe || pgCfg.priority_coins || 0);
+    var expEl = document.getElementById('odin-pg-exposure');
+    if (expEl) {
+      var longN = pg.long_notional || 0; var shortN = pg.short_notional || 0;
+      expEl.textContent = 'Long: $' + longN.toFixed(0) + ' | Short: $' + shortN.toFixed(0) + ' | Detail slots: ' + (pgCfg.detail_slots || 4) + ' | Per cycle: ' + (pgCfg.symbols_per_cycle || 8);
+    }
+    var blEl = document.getElementById('odin-pg-blacklist');
+    if (blEl) {
+      var bl = pg.blacklisted || {};
+      var blKeys = Object.keys(bl).filter(function(k) { return bl[k].active; });
+      if (blKeys.length > 0) { blEl.innerHTML = '<span style="color:var(--error);font-weight:600;">Blacklisted: ' + blKeys.join(', ') + '</span>'; }
+      else { blEl.innerHTML = '<span style="color:var(--success);">No blacklisted coins</span>'; }
+    }
+
+    // Discipline Layer — Edge
+    var edge = d.edge || {};
+    edgeStatus = edge.status || 'UNKNOWN';
+    var edgeColors = {STRONG:'var(--success)', WEAKENING:'var(--warning)', DECAYED:'var(--error)'};
+    var eDot = document.getElementById('odin-edge-dot');
+    if (eDot) eDot.style.background = edgeColors[edgeStatus] || '#6b7280';
+    odinSetVal('odin-edge-label', edgeStatus);
+    var eLbl = document.getElementById('odin-edge-label');
+    if (eLbl) eLbl.style.color = edgeColors[edgeStatus] || 'var(--text-muted)';
+    odinSetVal('odin-d-sharpe', (edge.sharpe || 0).toFixed(2));
+    odinSetVal('odin-d-edge-scalar', (edge.risk_scalar || 1).toFixed(1) + 'x');
+    var esEl = document.getElementById('odin-d-edge-scalar');
+    if (esEl) esEl.style.color = (edge.risk_scalar || 1) < 1 ? 'var(--warning)' : 'var(--success)';
+    var recEl = document.getElementById('odin-edge-recommendation');
+    if (recEl) {
+      var eRec = edgeStatus === 'DECAYED' ? 'PAUSE' : edgeStatus === 'WEAKENING' ? 'REDUCE' : edgeStatus === 'STRONG' ? 'MAINTAIN' : '--';
+      recEl.textContent = eRec;
+      var recColors = {MAINTAIN:'var(--success)',REDUCE:'var(--warning)',PAUSE:'var(--error)'};
+      recEl.style.color = recColors[eRec] || 'var(--text-muted)';
+      if (eRec !== '--') recEl.style.border = '1px solid ' + (recColors[eRec] || 'transparent');
+    }
+
+    // Discipline Layer — Health
+    var health = d.health || {};
+    var rolling = d.rolling_stats || {};
+    healthOverall = health.overall || 'UNKNOWN';
+    var healthColors = {GREEN:'#22c55e', YELLOW:'#f59e0b', RED:'#ef4444', UNKNOWN:'#6b7280'};
+    var hDot = document.getElementById('odin-health-dot');
+    if (hDot) hDot.style.background = healthColors[healthOverall] || '#6b7280';
+    odinSetVal('odin-health-label', healthOverall);
+    var hLabel = document.getElementById('odin-health-label');
+    if (hLabel) hLabel.style.color = healthColors[healthOverall] || 'var(--text-muted)';
+    odinSetVal('odin-d-flags', health.red_flags || 0);
+    var flagsEl = document.getElementById('odin-d-flags');
+    if (flagsEl) flagsEl.style.color = (health.red_flags || 0) >= 3 ? 'var(--error)' : (health.red_flags || 0) >= 1 ? 'var(--warning)' : 'var(--success)';
+    var rWr = rolling.win_rate;
+    if (rWr != null) {
+      odinSetVal('odin-d-rolling-wr', rWr.toFixed(1) + '%');
+      var rwEl = document.getElementById('odin-d-rolling-wr');
+      if (rwEl) rwEl.style.color = rWr >= 50 ? 'var(--success)' : rWr >= 35 ? 'var(--warning)' : 'var(--error)';
+    }
+    var issuesEl = document.getElementById('odin-health-issues');
+    if (issuesEl) {
+      var recs = health.recommendations || [];
+      var dqIssues = (health.data_quality || {}).issues || [];
+      var allIssues = dqIssues.concat(recs);
+      if (allIssues.length > 0) { issuesEl.innerHTML = allIssues.map(function(i) { return '<span style="color:var(--warning);margin-right:8px;">&#9888; ' + i + '</span>'; }).join(''); }
+      else { issuesEl.innerHTML = '<span style="color:var(--success);">All systems healthy</span>'; }
+    }
+
+    // WebSocket + Pending Orders
+    var ws = d.ws_status || {};
+    var wsConnected = ws.connected || false;
+    var wsDot = document.getElementById('odin-ws-dot');
+    var wsLabel = document.getElementById('odin-ws-label');
+    if (wsDot) wsDot.style.background = wsConnected ? '#10b981' : '#ef4444';
+    if (wsLabel) wsLabel.textContent = wsConnected ? 'Connected' : 'Disconnected';
+    var wsStats = document.getElementById('odin-ws-stats');
+    if (wsStats && wsConnected) { wsStats.textContent = 'Reconnects: ' + (ws.reconnect_count||0) + ' | Queue: ' + (ws.queue_size||0) + ' | Uptime: ' + Math.round((ws.uptime_s||0)/60) + 'm'; }
+    var tickAge = ws.last_tick_age_s;
+    odinSetVal('odin-ws-tick-age', tickAge >= 0 ? (tickAge < 5 ? 'LIVE' : tickAge.toFixed(0) + 's ago') : '--');
+    var tickEl = document.getElementById('odin-ws-tick-age');
+    if (tickEl) tickEl.style.color = tickAge >= 0 && tickAge < 5 ? '#10b981' : tickAge > 15 ? 'var(--error)' : 'var(--warning)';
+    odinSetVal('odin-ws-events', (ws.events_received||0).toLocaleString());
+    odinSetVal('odin-ws-pending', (d.pending_order_count||0));
+    odinSetVal('odin-ws-coins', ws.cached_coins || 0);
+
+    // Pending orders table
+    var pendingOrders = d.pending_orders || [];
+    var poDiv = document.getElementById('odin-pending-orders-table');
+    if (poDiv) {
+      if (pendingOrders.length === 0) { poDiv.innerHTML = '<span style="color:var(--text-muted);font-style:italic;">No pending limit orders</span>'; }
+      else {
+        var poHtml = '<table style="width:100%;border-collapse:collapse;"><thead><tr style="border-bottom:1px solid var(--border);color:var(--text-muted);"><th style="text-align:left;padding:3px 6px;">Symbol</th><th>Side</th><th>Price</th><th>Qty</th><th>Age</th><th>TTL</th></tr></thead><tbody>';
+        var nowSec = Date.now() / 1000;
+        pendingOrders.forEach(function(po) {
+          var dirColor = po.direction === 'SHORT' ? 'var(--error)' : 'var(--success)';
+          var ageMins = Math.round((nowSec - (po.placed_time||nowSec)) / 60);
+          var ttlMins = Math.max(0, Math.round(((po.expires_at||nowSec) - nowSec) / 60));
+          poHtml += '<tr style="border-bottom:1px solid rgba(255,255,255,0.05);">';
+          poHtml += '<td style="padding:3px 6px;font-weight:600;">' + (po.symbol||'').replace('USDT','') + '</td>';
+          poHtml += '<td style="text-align:center;color:' + dirColor + ';font-weight:600;">' + (po.direction||'') + '</td>';
+          poHtml += '<td style="text-align:center;">$' + (po.limit_price||0).toFixed(2) + '</td>';
+          poHtml += '<td style="text-align:center;">' + (po.qty||0).toFixed(4) + '</td>';
+          poHtml += '<td style="text-align:center;">' + ageMins + 'm</td>';
+          poHtml += '<td style="text-align:center;color:' + (ttlMins < 30 ? 'var(--warning)' : 'var(--text-muted)') + ';">' + ttlMins + 'm</td>';
+          poHtml += '</tr>';
+        });
+        poHtml += '</tbody></table>';
+        poDiv.innerHTML = poHtml;
+      }
+    }
+
+    // Last signal
+    var sigEl = document.getElementById('odin-last-signal');
+    if (sigEl && d.last_signal) {
+      var s = d.last_signal;
+      var sigColor = s.direction === 'LONG' ? 'var(--success)' : 'var(--error)';
+      sigEl.innerHTML = '<span style="color:' + sigColor + ';font-weight:700;">' + (s.direction||'') + '</span> '
+        + (s.symbol||'') + ' @ $' + (s.entry_price||0).toFixed(2)
+        + ' | SL: $' + (s.stop_loss||0).toFixed(2) + ' | TP: $' + (s.take_profit_1||0).toFixed(2)
+        + ' | R:R ' + (s.risk_reward||0).toFixed(1) + ' | Conf: ' + ((s.confidence||0)*100).toFixed(0) + '%'
+        + ' | Macro: ' + (s.macro_regime||'--')
+        + '<br><span class="text-muted">' + (s.entry_reason||'') + '</span>';
+    }
+
+    // Config
+    var cfgEl = document.getElementById('odin-config');
+    if (cfgEl && d.config) {
+      var c = d.config;
+      cfgEl.innerHTML = 'Exchange: ' + (c.exchange||'Hyperliquid') + ' (' + (c.hl_pairs||0) + ' pairs)'
+        + ' | Risk: ' + (c.risk_cap||'1R') + ' ($' + (c.risk_per_trade||10) + ')'
+        + ' | R:R: ' + (c.target_rr||2) + ':1 | Max pos: ' + (c.max_positions||2)
+        + ' | CoinGlass: ' + (c.coinglass ? 'ON' : 'OFF')
+        + ' | Priority: Top ' + (c.priority_coins||8) + ' | Cycle: ' + (c.cycle_seconds||300) + 's'
+        + ' | Skills: ' + (d.skill_count||13);
+    }
+
+    // Cycle countdown
+    var cycleSec = (d.config || {}).cycle_seconds || 300;
+    var lastTs = d.timestamp || 0;
+    if (lastTs > 0) {
+      window._odinNextCycle = lastTs + cycleSec;
+      odinTickCountdown();
+    }
+    odinSetVal('odin-cycle-num', d.cycle_count || 0);
+
+    // Warnings
+    odinCheckWarnings(d);
+
+    // Intel meter compat
+    if (typeof updateIntelMeter === 'function') {
+      var pct = d.running ? 80 : 10;
+      if (d.trade_count > 0) pct = Math.min(95, 60 + d.win_rate * 0.3);
+      updateIntelMeter('intel-odin', pct, 'var(--agent-odin)');
+    }
+  }).catch(function(e) { console.log('[Odin] Main refresh error:', e); });
+
+  // 2. Trade history
+  fetch('/api/odin/trades').then(function(r){ return r.json(); }).then(function(trades) {
+    var tbody = document.getElementById('odin-trades-tbody');
+    var countBadge = document.getElementById('odin-trades-count-badge');
+    var summaryDiv = document.getElementById('odin-trades-summary');
+    if (!tbody) return;
+    if (countBadge) countBadge.textContent = trades.length;
+    if (!trades.length) return;
+    if (summaryDiv) {
+      summaryDiv.style.display = 'block';
+      var wins = trades.filter(function(t){ return t.is_win; });
+      var totalPnl = trades.reduce(function(s,t){ return s + (t.pnl_usd||0); }, 0);
+      var holdSum = trades.reduce(function(s,t){ return s + (t.hold_hours||0); }, 0);
+      odinSetVal('odin-th-total', trades.length);
+      var wr = trades.length > 0 ? (wins.length / trades.length * 100) : 0;
+      var wrEl = document.getElementById('odin-th-wr');
+      if (wrEl) { wrEl.textContent = wr.toFixed(1) + '%'; wrEl.style.color = wr >= 50 ? 'var(--success)' : wr >= 30 ? 'var(--warning)' : 'var(--error)'; }
+      var pnlEl = document.getElementById('odin-th-pnl');
+      if (pnlEl) { var prefix = totalPnl >= 0 ? '+$' : '-$'; pnlEl.textContent = prefix + Math.abs(totalPnl).toFixed(2); pnlEl.style.color = totalPnl >= 0 ? 'var(--success)' : 'var(--error)'; }
+      var avgHold = trades.length > 0 ? holdSum / trades.length : 0;
+      odinSetVal('odin-th-avghold', avgHold < 1 ? Math.round(avgHold * 60) + 'm' : avgHold.toFixed(1) + 'h');
+    }
+    var html = '';
+    var nowMs = Date.now();
+    trades.slice(-20).reverse().forEach(function(t) {
+      var pnlColor = t.pnl_usd >= 0 ? 'var(--success)' : 'var(--error)';
+      var dirColor = t.side === 'LONG' ? 'var(--success)' : 'var(--error)';
+      var borderColor = t.is_win ? 'rgba(46,204,113,0.5)' : 'rgba(231,76,60,0.5)';
+      var timeStr = '--';
+      if (t.exit_time) {
+        var diffMs = nowMs - t.exit_time * 1000;
+        if (diffMs < 86400000) { var diffMin = Math.floor(diffMs / 60000); timeStr = diffMin < 60 ? diffMin + 'm ago' : Math.floor(diffMin/60) + 'h ago'; }
+        else { timeStr = new Date(t.exit_time*1000).toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+      }
+      var mode = t.mode || 'paper';
+      var modeBadge = mode === 'live'
+        ? '<span class="trading-mode-badge trading-mode-live" style="font-size:0.52rem;padding:1px 6px;border-radius:3px;">LIVE</span>'
+        : '<span class="trading-mode-badge trading-mode-paper" style="font-size:0.52rem;padding:1px 6px;border-radius:3px;">PAPER</span>';
+      var asset = (t.symbol||'').replace('USDT','');
+      var pnlPrefix = t.pnl_usd >= 0 ? '+$' : '-$';
+      var pnlHtml = '<span style="font-weight:700;color:' + pnlColor + ';">' + pnlPrefix + Math.abs(t.pnl_usd||0).toFixed(2) + '</span>';
+      if (t.pnl_pct != null) { pnlHtml += '<div style="font-size:0.56rem;color:' + pnlColor + ';">' + (t.pnl_pct >= 0 ? '+' : '') + t.pnl_pct.toFixed(2) + '%</div>'; }
+      var reason = t.exit_reason || '';
+      var reasonColor = reason === 'SL' ? 'var(--error)' : reason.indexOf('TP') >= 0 ? 'var(--success)' : 'var(--warning)';
+      var holdHours = t.hold_hours || 0;
+      var holdStr = holdHours < 1 ? Math.round(holdHours * 60) + 'm' : holdHours.toFixed(1) + 'h';
+      html += '<tr style="border-left:2px solid ' + borderColor + ';">';
+      html += '<td style="font-size:0.68rem;color:var(--text-muted);">' + timeStr + '</td>';
+      html += '<td style="font-weight:700;">' + asset + '</td>';
+      html += '<td><span style="color:' + dirColor + ';font-weight:700;">' + (t.side||'') + '</span></td>';
+      html += '<td>' + modeBadge + '</td>';
+      html += '<td>$' + (t.entry_price||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) + '</td>';
+      html += '<td>$' + (t.exit_price||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}) + '</td>';
+      html += '<td>' + pnlHtml + '</td>';
+      html += '<td>' + (t.leverage||3) + 'x</td>';
+      html += '<td><span style="color:' + reasonColor + ';font-weight:600;font-size:0.7rem;">' + reason + '</span></td>';
+      html += '<td>' + holdStr + '</td></tr>';
+    });
+    tbody.innerHTML = html;
+  }).catch(function(){});
+
+  // 3. Conviction engine
+  fetch('/api/odin/conviction').then(function(r){ return r.json(); }).then(function(c) {
+    if (!c || !c.active) return;
+    var conf110 = c.confidence_1_10 || Math.max(1, Math.min(10, Math.round((c.total_score||0)/10)));
+    odinSetVal('odin-conv-score', (c.total_score||0) + ' (' + conf110 + '/10)');
+    odinSetVal('odin-conv-mult', (c.risk_multiplier||0).toFixed(2) + ' (1R cap)');
+    var badge = document.getElementById('odin-conviction-badge');
+    if (badge) badge.textContent = conf110 + '/10';
+    var tierEl = document.getElementById('odin-conv-tier');
+    if (tierEl) {
+      tierEl.textContent = c.tier || '--';
+      var tierColors = {FULL:'var(--success)',HIGH:'var(--success)',MODERATE:'var(--warning)',LOW:'var(--error)',NO_TRADE:'var(--error)'};
+      tierEl.style.color = tierColors[c.tier] || 'var(--text-muted)';
+      tierEl.style.border = '1px solid ' + (tierColors[c.tier] || 'var(--text-muted)');
+    }
+    var railsEl = document.getElementById('odin-conv-rails');
+    if (railsEl) railsEl.textContent = (c.safety_adjustments || []).join(', ');
+    var barsEl = document.getElementById('odin-conviction-bars');
+    if (barsEl && c.components) {
+      var barsHtml = '';
+      var compOrder = ['regime_alignment','smc_quality','multi_tf_agreement','macro_support','funding_rate_edge','sentiment_alignment','volume_confirmation','journal_fitness','brother_alignment','risk_reward_quality'];
+      compOrder.forEach(function(key) {
+        var comp = c.components[key];
+        if (!comp) return;
+        var raw = comp.raw || 0;
+        var weighted = comp.weighted || 0;
+        var weight = comp.weight || 0;
+        var pct = Math.round(raw * 100);
+        var barColor = pct >= 70 ? 'var(--success)' : pct >= 40 ? 'var(--warning)' : 'var(--error)';
+        var label = key.replace(/_/g, ' ').replace(/\b\w/g, function(c){return c.toUpperCase();});
+        barsHtml += '<div style="padding:4px 6px;background:rgba(139,92,246,0.04);border-radius:4px;">';
+        barsHtml += '<div style="display:flex;justify-content:space-between;font-size:0.66rem;margin-bottom:2px;"><span style="font-weight:600;">' + label + '</span><span style="color:' + barColor + ';">' + weighted.toFixed(1) + '/' + weight + '</span></div>';
+        barsHtml += '<div style="height:4px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden;"><div style="width:' + pct + '%;height:100%;background:' + barColor + ';border-radius:2px;transition:width 0.6s ease;"></div></div>';
+        barsHtml += '<div style="font-size:0.58rem;color:var(--text-muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + (comp.reason||'') + '</div></div>';
+      });
+      barsEl.innerHTML = barsHtml;
+    }
+  }).catch(function(){});
+
+  // 4. Journal — feeds Intelligence section
+  fetch('/api/odin/journal').then(function(r){ return r.json(); }).then(function(j) {
+    if (!j) return;
+    journalData = j;
+    odinSetVal('odin-intel-decisions', j.resolved_decisions || 0);
+    odinSetVal('odin-intel-patterns', j.active_patterns || 0);
+    odinSetVal('odin-intel-knowledge', j.total_knowledge || 0);
+    // Loop counts
+    odinSetVal('odin-loop-trade-count', (j.total_decisions || 0) + ' logged');
+    odinSetVal('odin-loop-analyze-count', (j.active_patterns || 0) + ' found');
+    // Patterns
+    var patternsEl = document.getElementById('odin-top-patterns');
+    if (patternsEl && j.top_patterns && j.top_patterns.length) {
+      var html = '';
+      j.top_patterns.forEach(function(p) {
+        var conf = ((p.confidence||0)*100).toFixed(0);
+        var confColor = conf >= 70 ? 'var(--success)' : conf >= 40 ? 'var(--warning)' : 'var(--text-muted)';
+        html += '<span style="display:inline-block;margin:2px 6px 2px 0;padding:2px 8px;border-radius:4px;background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.15);font-size:0.7rem;">';
+        html += '<span style="font-weight:600;">' + (p.combo||'') + '</span> <span style="color:' + confColor + ';">' + conf + '%</span></span>';
+      });
+      patternsEl.innerHTML = html;
+    } else if (patternsEl) {
+      patternsEl.innerHTML = '<span style="color:var(--text-muted);font-style:italic;">No patterns learned yet &mdash; needs more trade data</span>';
+    }
+    // Recompute intel score after journal loads
+    odinUpdateIntelScore(journalData, evolutionData, edgeStatus, healthOverall);
+  }).catch(function(){});
+
+  // 5. Evolution — feeds Intelligence section
+  fetch('/api/odin/evolution').then(function(r){ return r.json(); }).then(function(evo) {
+    evolutionData = evo;
+    odinSetVal('odin-intel-gen', evo.current_gen || 0);
+    odinSetVal('odin-loop-evolve-count', 'Gen ' + (evo.current_gen || 0));
+    // Apply status
+    if (evo.best_wr > 0) {
+      odinSetVal('odin-loop-apply-status', 'WR ' + (evo.best_wr||0).toFixed(1) + '%');
+    } else {
+      odinSetVal('odin-loop-apply-status', 'Pending');
+    }
+    // Recompute intel score after evolution loads
+    odinUpdateIntelScore(journalData, evolutionData, edgeStatus, healthOverall);
+  }).catch(function(){});
+}
+
+function odinUpdateIntelScore(journal, evolution, edge, health) {
+  var score = odinComputeIntelScore(journal, evolution, edge, health);
+  odinRenderIntelRing(score);
+}
+
+/* ── Signal Cycle ── */
+var _odinScInterval = null;
+var _odinScData = null;
+async function loadOdinSignalCycle() {
+  try {
+    var resp = await fetch('/api/odin/signal-cycle');
+    _odinScData = await resp.json();
+    renderOdinSignalCycle();
+    if (!_odinScInterval) _odinScInterval = setInterval(renderOdinSignalCycle, 1000);
+  } catch(e) {}
+}
+function renderOdinSignalCycle() {
+  var d = _odinScData;
+  if (!d || !d.last_eval_at) return;
+  var elapsed = (Date.now() / 1000) - d.last_eval_at;
+  var agoText = elapsed < 60 ? Math.floor(elapsed) + 's' : elapsed < 3600 ? Math.floor(elapsed/60) + 'm' : Math.floor(elapsed/3600) + 'h';
+  var timerEl = document.getElementById('odin-sc-timer');
+  var symsEl = document.getElementById('odin-sc-syms');
+  var dotEl = document.getElementById('odin-sc-dot');
+  var detailEl = document.getElementById('odin-sc-detail');
+  if (timerEl) timerEl.textContent = agoText;
+  if (symsEl) symsEl.textContent = (d.symbols_scanned||0) + ' syms';
+  if (dotEl) { var interval = d.cycle_seconds || 300; dotEl.style.color = elapsed < interval*1.5 ? '#22c55e' : elapsed < interval*5 ? '#f59e0b' : '#ef4444'; }
+  if (detailEl) detailEl.innerHTML = 'Last cycle: ' + agoText + ' ago | ' + (d.symbols_scanned||0) + ' symbols | Regime: ' + (d.regime||'--') + ' | Positions: ' + (d.open_positions||0);
+}
+
+/* ── Auto-refresh ── */
+var _odinInterval = null;
+(function() {
+  var _origLoadOdin = window.loadOdinTab;
+  window.loadOdinTab = function() {
+    odinRefresh();
+    odinLoadLastOmni();
+    loadOdinSignalCycle();
+    if (_odinInterval) clearInterval(_odinInterval);
+    _odinInterval = setInterval(odinRefresh, 30000);
+  };
+  var _origSwitch = window.switchTab;
+  if (_origSwitch) {
+    window.switchTab = function(tab) {
+      if (tab !== 'odin' && _odinInterval) { clearInterval(_odinInterval); _odinInterval = null; }
+      _origSwitch(tab);
+    };
+  }
+})();
+</script>

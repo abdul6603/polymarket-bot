@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Swarm &mdash; Command Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="/static/dashboard.css?v={{ cache_bust }}">
+</head>
+<body>
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-brand-text">
+      <span style="color:var(--agent-quant);font-weight:700;">Agent Swarm</span>
+    </div>
+    <div class="sidebar-online"><span class="dot-online"></span><span id="sidebar-agents-online">12</span> Agents Online</div>
+  </div>
+
+  <div class="sidebar-scroll">
+    <div class="sidebar-section-label">OVERVIEW</div>
+    <button class="sidebar-btn active" data-tab="overview" style="--accent:var(--text-secondary);" onclick="switchTab('overview')">Command Center</button>
+
+    <div class="sidebar-section-label sidebar-section-traders">PORTFOLIO</div>
+    <button class="sidebar-btn sidebar-btn-traders" data-tab="traders" style="--accent:#10B981;" onclick="switchTab('traders')">Unified Portfolio</button>
+    <button class="sidebar-btn" data-tab="pnl" style="--accent:#10B981;" onclick="switchTab('pnl')">P&amp;L Analysis</button>
+
+    <div class="sidebar-section-label">TRADING AGENTS</div>
+    <button class="sidebar-btn" data-tab="garves-live" style="--accent:var(--agent-garves);" onclick="switchTab('garves-live')">Garves</button>
+    <button class="sidebar-btn" data-tab="odin" style="--accent:var(--agent-odin);" onclick="switchTab('odin')">Odin</button>
+    <button class="sidebar-btn" data-tab="hawk" style="--accent:var(--agent-hawk);" onclick="switchTab('hawk')">Hawk</button>
+    <button class="sidebar-btn" data-tab="oracle" style="--accent:var(--agent-oracle);" onclick="switchTab('oracle')">Oracle</button>
+    <button class="sidebar-btn" data-tab="quant" style="--accent:var(--agent-quant);" onclick="switchTab('quant')">Quant</button>
+
+    <div class="sidebar-section-label">INTELLIGENCE</div>
+    <button class="sidebar-btn" data-tab="discord" style="--accent:#5865F2;" onclick="switchTab('discord')">Discord Alpha</button>
+    <button class="sidebar-btn" data-tab="atlas" style="--accent:var(--agent-atlas);" onclick="switchTab('atlas')">Atlas</button>
+
+    <div class="sidebar-section-label">INFRASTRUCTURE</div>
+    <button class="sidebar-btn" data-tab="intelligence" style="--accent:#9B59B6;" onclick="switchTab('intelligence')">AI Infrastructure</button>
+    <button class="sidebar-btn" data-tab="system" style="--accent:#aaaaaa;" onclick="switchTab('system')">System Monitor</button>
+  </div>
+
+  <div class="sidebar-footer">
+    <input type="text" class="sidebar-search" id="sidebar-search" placeholder="Search agents..." autocomplete="off" oninput="sidebarSearch(this.value)">
+    <div class="sidebar-global-status" id="sidebar-global-status">
+      <span class="sidebar-status-dot"></span>All Systems Nominal
+    </div>
+  </div>
+</nav>
+
+<main class="main">
+  <header class="header">
+    <div class="header-left">
+      <h1 class="header-title">Agent Swarm <span style="color:var(--text-muted);font-weight:400;font-size:0.7em;">&mdash; Command Center</span></h1>
+      <div class="header-subtitle"><span class="dot-online"></span> <span id="agents-online-count">12</span> Agents Online</div>
+    </div>
+    <div class="header-right">
+      <button class="btn" id="demo-mode-toggle" onclick="toggleDemoMode()" style="font-size:0.68rem;">
+        <span id="demo-mode-label">Live Data</span>
+      </button>
+      Last update: <span id="last-update">--:--:--</span>
+    </div>
+  </header>
+
+  {% include 'tabs/overview.html' %}
+  {% include 'tabs/traders.html' %}
+  {% include 'tabs/pnl.html' %}
+  {% include 'tabs/garves_live.html' %}
+  {% include 'tabs/odin.html' %}
+  {% include 'tabs/hawk.html' %}
+  {% include 'tabs/oracle.html' %}
+  {% include 'tabs/quant.html' %}
+  {% include 'tabs/discord.html' %}
+  {% include 'tabs/atlas.html' %}
+  {% include 'tabs/intelligence.html' %}
+  {% include 'tabs/system.html' %}
+
+  <!-- Video Modal -->
+  <div class="video-modal" id="video-modal">
+    <div class="video-modal-inner">
+      <video id="modal-video" controls></video>
+      <div class="video-modal-btns">
+        <button class="btn" id="modal-download-btn">Download</button>
+        <button class="btn btn-error" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI Modal -->
+  <div class="generic-modal" id="kpi-modal">
+    <div class="generic-modal-inner" style="position:relative;">
+      <div class="modal-title" id="kpi-modal-title">Performance KPIs</div>
+      <div id="kpi-modal-content"></div>
+      <div style="margin-top:var(--space-6);text-align:right;">
+        <button class="btn btn-error" onclick="closeKPIModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Agency Footer -->
+  <footer style="text-align:center;padding:24px 16px;margin-top:40px;border-top:1px solid var(--border);font-family:var(--font-mono);font-size:0.68rem;color:var(--text-muted);">
+    <div style="margin-bottom:6px;">
+      <span style="color:var(--agent-quant);font-weight:700;">Agent Swarm</span>
+      &mdash; Multi-Agent AI Trading &amp; Intelligence Platform
+    </div>
+    <div>
+      Built with Python, Flask, Local LLMs &amp; Cloud AI
+      &nbsp;&bull;&nbsp; 12 Autonomous Agents
+      &nbsp;&bull;&nbsp; Real-Time Orchestration
+    </div>
+  </footer>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="/static/js/components.js?v={{ cache_bust }}"></script>
+<script src="/static/js/charts.js?v={{ cache_bust }}"></script>
+<script src="/static/dashboard_v2.js?v={{ cache_bust }}"></script>
+<script>
+// Cmd/Ctrl+K focuses sidebar search
+document.addEventListener('keydown', function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    var s = document.getElementById('sidebar-search');
+    if (s) s.focus();
+  }
+});
+</script>
+</body>
+</html>

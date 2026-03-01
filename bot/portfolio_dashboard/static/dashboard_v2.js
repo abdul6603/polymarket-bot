@@ -2463,7 +2463,7 @@ async function atlasHubEval() {
         }
         body += '</div>';
       }
-      html += atlasSection('Brotherhood', 'var(--agent-atlas)', body);
+      html += atlasSection('Agent Network', 'var(--agent-atlas)', body);
     }
 
     // Strengths + Gaps side by side
@@ -6265,19 +6265,19 @@ async function thorUpdateDashboard() {
 }
 
 async function thorUpdateBrotherhood() {
-  var btn = document.getElementById('btn-update-brotherhood');
+  var btn = document.getElementById('btn-update-agent-sheet');
   var status = document.getElementById('thor-action-status');
   btn.disabled = true;
   btn.textContent = 'Submitting...';
   status.textContent = '';
   try {
-    var resp = await fetch('/api/thor/update-brotherhood', {method: 'POST'});
+    var resp = await fetch('/api/thor/update-agent-sheet', {method: 'POST'});
     var data = await resp.json();
     if (data.error) {
       status.textContent = 'Error: ' + data.error;
       status.style.color = 'var(--error)';
     } else {
-      status.textContent = 'Task submitted to Thor (' + (data.task_id || '').substring(0, 12) + ') — he will update the Brotherhood Sheet';
+      status.textContent = 'Task submitted to Thor (' + (data.task_id || '').substring(0, 12) + ') — he will update the Agent Sheet';
       status.style.color = 'var(--success)';
     }
   } catch(e) {
@@ -6285,7 +6285,7 @@ async function thorUpdateBrotherhood() {
     status.style.color = 'var(--error)';
   }
   btn.disabled = false;
-  btn.textContent = 'Update Brotherhood Sheet';
+  btn.textContent = 'Update Agent Sheet';
 }
 
 async function loadSmartActions() {
@@ -9541,7 +9541,7 @@ async function loadViperTab() {
     renderSorenOpportunities(sorenOppData);
   } catch(e) {}
 
-  // Brotherhood P&L
+  // Agent Network P&L
   loadViperPnl();
 
   // Anomalies
@@ -12773,3 +12773,113 @@ function lisaRefreshAll() {
   var el = document.getElementById('lisa-updated');
   if (el) el.textContent = new Date().toLocaleTimeString();
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   PORTFOLIO — Demo Mode & Sensitive Data Masking
+   ═══════════════════════════════════════════════════════════════ */
+
+var _DEMO_MODE = false;
+
+function toggleDemoMode() {
+  _DEMO_MODE = !_DEMO_MODE;
+  var btn = document.getElementById('demo-mode-toggle');
+  var label = document.getElementById('demo-mode-label');
+  if (!btn || !label) return;
+
+  if (_DEMO_MODE) {
+    btn.classList.add('demo-active');
+    label.textContent = 'Demo Data';
+    // Add demo banner
+    if (!document.getElementById('demo-banner')) {
+      var banner = document.createElement('div');
+      banner.id = 'demo-banner';
+      banner.className = 'demo-banner';
+      banner.textContent = 'DEMO MODE — Showing sample data. Toggle to see live data.';
+      document.body.insertBefore(banner, document.body.firstChild);
+    }
+    _applyDemoMasking();
+  } else {
+    btn.classList.remove('demo-active');
+    label.textContent = 'Live Data';
+    var banner = document.getElementById('demo-banner');
+    if (banner) banner.remove();
+    _removeDemoMasking();
+  }
+}
+
+function _applyDemoMasking() {
+  // Mask wallet addresses (any element containing 0x... patterns)
+  document.querySelectorAll('[id*="wallet"], [id*="address"]').forEach(function(el) {
+    if (el.textContent.match(/0x[a-fA-F0-9]{6,}/)) {
+      el.setAttribute('data-original', el.textContent);
+      el.textContent = el.textContent.replace(/0x([a-fA-F0-9]{4})[a-fA-F0-9]+([a-fA-F0-9]{4})/g, '0x$1...$2');
+      el.classList.add('wallet-masked');
+    }
+  });
+
+  // Mask real PNL numbers with demo values
+  var demoData = {
+    'garves-hero-today-pnl': '+$12.47',
+    'garves-hero-total-pnl': '+$847.23',
+    'hawk-pnl': '+$234.56',
+    'hawk-daily-pnl': '+$18.92',
+    'traders-hero-portfolio': '$2,847.00',
+    'traders-hero-pnl': '+$156.78'
+  };
+  Object.keys(demoData).forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) {
+      el.setAttribute('data-original', el.textContent);
+      el.textContent = demoData[id];
+    }
+  });
+}
+
+function _removeDemoMasking() {
+  // Restore masked wallet addresses
+  document.querySelectorAll('.wallet-masked').forEach(function(el) {
+    var orig = el.getAttribute('data-original');
+    if (orig) el.textContent = orig;
+    el.classList.remove('wallet-masked');
+  });
+
+  // Restore real PNL values
+  document.querySelectorAll('[data-original]').forEach(function(el) {
+    var orig = el.getAttribute('data-original');
+    if (orig) {
+      el.textContent = orig;
+      el.removeAttribute('data-original');
+    }
+  });
+}
+
+/* Mask wallet addresses in dynamically loaded content */
+var _origFetch = window.fetch;
+window.fetch = function() {
+  return _origFetch.apply(this, arguments).then(function(response) {
+    if (!_DEMO_MODE) return response;
+    // Clone response and mask wallet addresses in JSON responses
+    var clone = response.clone();
+    return clone;
+  });
+};
+
+/* Auto-mask any Brotherhood references that slip through in dynamic content */
+(function() {
+  var observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(m) {
+      m.addedNodes.forEach(function(node) {
+        if (node.nodeType !== 1) return;
+        // Replace any "Brotherhood" text in new DOM elements
+        var walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, null, false);
+        var textNode;
+        while (textNode = walker.nextNode()) {
+          if (textNode.textContent.indexOf('Brotherhood') !== -1) {
+            textNode.textContent = textNode.textContent.replace(/Brotherhood/g, 'Agent Network');
+          }
+        }
+      });
+    });
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+})();

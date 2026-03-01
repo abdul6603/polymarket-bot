@@ -1,0 +1,731 @@
+<!-- HAWK — Sports & Weather Directional Trader -->
+<div class="tab-content" id="tab-hawk">
+
+  <!-- Hidden compat elements -->
+  <div id="intel-hawk" class="intel-meter" style="display:none;"></div>
+  <span id="hawk-cycle-mode-badge" style="display:none;">NORMAL</span>
+  <span id="hawk-sc-dot" style="display:none;"></span>
+  <span id="hawk-sc-timer" style="display:none;"></span>
+  <div style="display:none;">
+    <span id="hawk-domain-sports-pnl"></span>
+    <span id="hawk-domain-weather-pnl"></span>
+    <span id="hawk-domain-arb-pnl"></span>
+    <span id="hawk-weather-markets">0</span>
+    <span id="hawk-weather-trades">0</span>
+    <span id="hawk-weather-pnl">$0.00</span>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       HEADER
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="hk-header">
+    <div class="hk-header-top">
+      <div class="hk-header-left">
+        <h1 class="hk-title">Hawk <span class="hk-title-sep">&mdash;</span> <span class="hk-title-role">Sports &amp; Weather Directional Trader</span></h1>
+        <div class="hk-tagline">Trade probabilities, not narratives. &nbsp;&bull;&nbsp; Survival first. &nbsp;&bull;&nbsp; Simplicity compounds.</div>
+      </div>
+      <div class="hk-header-right">
+        <span id="hawk-mode-badge" class="trading-mode-badge trading-mode-paper">Trading: Paper Money</span>
+        <button class="trading-mode-toggle" id="hawk-mode-toggle" onclick="toggleHawkMode()">Switch</button>
+      </div>
+    </div>
+    <div class="hk-pills-row">
+      <span class="hk-pill hk-pill-on" id="hawk-pill-scanner"><span class="hk-pill-dot"></span>Pre-Game Scanner</span>
+      <span class="hk-pill" id="hawk-pill-live"><span class="hk-pill-dot" style="background:#ff4444;box-shadow:0 0 6px #ff4444;"></span>Live In-Play</span>
+      <span class="hk-pill" id="hawk-pill-espn">ESPN Feed</span>
+      <span class="hk-pill" id="hawk-pill-odds">Odds API</span>
+      <span id="hawk-cycle-timer" class="hk-cycle-pill"
+        onmouseenter="document.getElementById('hawk-sc-tooltip').style.display='block'"
+        onmouseleave="document.getElementById('hawk-sc-tooltip').style.display='none'">
+        <span class="hk-pill-dot" style="animation:rxPulse 2s ease-in-out infinite;"></span>
+        Next: <span id="hawk-cycle-countdown" style="min-width:38px;text-align:center;">--</span>
+        <span style="color:rgba(255,255,255,0.12);">|</span>
+        <span style="font-size:0.66rem;color:var(--text-muted);">#<span id="hawk-cycle-num">0</span></span>
+        <span style="color:rgba(255,255,255,0.12);">|</span>
+        <span id="hawk-sc-markets" style="font-size:0.66rem;color:var(--text-muted);">-- mkts</span>
+        <div id="hawk-sc-tooltip" style="display:none;position:absolute;right:0;bottom:calc(100% + 8px);z-index:100;background:var(--surface-elevated);border:1px solid rgba(255,215,0,0.2);border-radius:10px;padding:12px 16px;min-width:240px;box-shadow:0 12px 40px rgba(0,0,0,0.5);font-size:0.68rem;text-align:left;font-weight:400;white-space:normal;backdrop-filter:blur(16px);">
+          <div style="font-weight:700;margin-bottom:6px;color:var(--agent-hawk);">Scan Pipeline</div>
+          <div style="color:var(--text-muted);line-height:1.5;">Filters 1000s of markets, analyzes edge via LLM + sportsbook odds, scores confidence tiers &amp; risk checks.</div>
+          <div id="hawk-sc-detail" style="margin-top:6px;color:var(--text-muted);"></div>
+        </div>
+      </span>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       HERO METRICS (4 glass-cards)
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="hk-metrics">
+    <div class="hk-metric-card">
+      <div class="hk-metric-icon" style="background:rgba(0,255,136,0.06);border-color:rgba(0,255,136,0.15);color:var(--success);">$</div>
+      <div class="hk-metric-body">
+        <div class="hk-metric-val" id="hawk-pnl">$0.00</div>
+        <div class="hk-metric-lbl">Total P&amp;L</div>
+        <div class="hk-metric-sub">Today: <span id="hawk-daily-pnl" style="font-weight:600;">$0.00</span></div>
+        <div id="hawk-loss-cap-bar" style="margin-top:3px;"></div>
+      </div>
+    </div>
+    <div class="hk-metric-card">
+      <div class="hk-metric-icon" style="background:rgba(255,215,0,0.06);border-color:rgba(255,215,0,0.15);color:var(--agent-hawk);">%</div>
+      <div class="hk-metric-body">
+        <div class="hk-metric-val" id="hawk-winrate" style="color:var(--agent-hawk);">--</div>
+        <div class="hk-metric-lbl">Win Rate</div>
+        <div class="hk-metric-sub" id="hawk-domain-wr-cards" style="display:flex;gap:6px;">
+          <span>S:<span id="hawk-domain-sports-wr" style="font-weight:600;">--</span></span>
+          <span>W:<span id="hawk-domain-weather-wr" style="font-weight:600;color:#4FC3F7;">--</span></span>
+          <span>A:<span id="hawk-domain-arb-wr" style="font-weight:600;color:#00ff88;">--</span></span>
+        </div>
+      </div>
+    </div>
+    <div class="hk-metric-card">
+      <div class="hk-metric-icon" style="background:rgba(0,212,255,0.06);border-color:rgba(0,212,255,0.15);color:#00d4ff;">P</div>
+      <div class="hk-metric-body">
+        <div class="hk-metric-val"><span id="hawk-open-bets">0</span><span class="hk-metric-small"> / <span id="hawk-total-trades">0</span></span></div>
+        <div class="hk-metric-lbl">Active / Total Trades</div>
+        <div class="hk-metric-sub">
+          <span id="hawk-capital" style="font-weight:600;color:var(--agent-hawk);">--</span>
+          <span id="hawk-capital-live" style="display:none;font-size:0.54rem;color:var(--success);margin-left:2px;vertical-align:middle;">LIVE</span>
+          <span style="margin-left:6px;color:var(--text-muted);">Cash:<span id="hawk-capital-cash" style="color:#00d4ff;margin-left:2px;">--</span></span>
+          <span style="margin-left:4px;color:var(--text-muted);">Pos:<span id="hawk-capital-positions" style="color:var(--agent-hawk);margin-left:2px;">--</span></span>
+        </div>
+      </div>
+    </div>
+    <div class="hk-metric-card">
+      <div class="hk-metric-icon" style="background:rgba(138,92,246,0.06);border-color:rgba(138,92,246,0.15);color:#8B5CF6;">E</div>
+      <div class="hk-metric-body">
+        <div class="hk-metric-val" id="hawk-avg-risk" style="color:var(--text-secondary);">--</div>
+        <div class="hk-metric-lbl">Edge Quality</div>
+        <div class="hk-metric-sub">Streak: <span id="hawk-streak-num" style="font-weight:700;color:var(--agent-hawk);">0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       SUB-TAB NAVIGATION
+       ═══════════════════════════════════════════════════════════════ -->
+  <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;">
+    <button class="hawk-subtab" data-sub="overview" onclick="hawkSwitchSub('overview')">Overview</button>
+    <button class="hawk-subtab active" data-sub="live" onclick="hawkSwitchSub('live')">&#9733; Live Monitor</button>
+    <button class="hawk-subtab" data-sub="positions" onclick="hawkSwitchSub('positions')">Open Positions</button>
+    <button class="hawk-subtab" data-sub="history" onclick="hawkSwitchSub('history')">Trade History</button>
+    <button class="hawk-subtab" data-sub="performance" onclick="hawkSwitchSub('performance')">Performance Insights</button>
+    <button class="hawk-subtab" data-sub="intelligence" onclick="hawkSwitchSub('intelligence')">Intelligence</button>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL 1: OVERVIEW
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="hawk-panel" id="hawk-panel-overview" style="display:none;">
+
+    <!-- Engine Status Cards -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;">
+      <div class="glass-card" style="border-left:3px solid var(--agent-hawk);padding:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-weight:700;font-size:0.78rem;color:var(--text);">Pre-Game Scanner</span>
+          <span style="font-size:0.58rem;padding:2px 8px;border-radius:10px;background:rgba(255,215,0,0.12);color:var(--agent-hawk);font-weight:600;">PRIMARY</span>
+        </div>
+        <div style="font-size:0.68rem;color:var(--text-muted);line-height:1.5;">Scans Polymarket for contested sports &amp; weather markets. LLM + sportsbook odds analysis, confidence tiers, risk scoring.</div>
+      </div>
+      <div class="glass-card" style="border-left:3px solid #ff4444;padding:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-weight:700;font-size:0.78rem;color:var(--text);">Live In-Play</span>
+          <span style="font-size:0.58rem;padding:2px 8px;border-radius:10px;background:rgba(255,68,68,0.12);color:#ff4444;font-weight:600;">REAL-TIME</span>
+        </div>
+        <div style="font-size:0.68rem;color:var(--text-muted);line-height:1.5;">Monitors active games via ESPN. Detects momentum shifts and live odds discrepancies for in-play trading.</div>
+      </div>
+      <div class="glass-card" style="border-left:3px solid #4FC3F7;padding:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-weight:700;font-size:0.78rem;color:var(--text);">Weather Intel</span>
+          <span style="font-size:0.58rem;padding:2px 8px;border-radius:10px;background:rgba(79,195,247,0.12);color:#4FC3F7;font-weight:600;">$0 COST</span>
+        </div>
+        <div style="font-size:0.68rem;color:var(--text-muted);line-height:1.5;">Open-Meteo ensemble (GFS 31 + ECMWF 51), NWS hourly, NOAA NHC hurricane tracking. Zero API cost.</div>
+      </div>
+      <div class="glass-card" style="border-left:3px solid #00ff88;padding:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-weight:700;font-size:0.78rem;color:var(--text);">Arb Engine</span>
+          <span style="font-size:0.58rem;padding:2px 8px;border-radius:10px;background:rgba(0,255,136,0.12);color:#00ff88;font-weight:600;">GUARANTEED</span>
+        </div>
+        <div style="font-size:0.68rem;color:var(--text-muted);line-height:1.5;">Detects guaranteed-profit arbitrage when binary outcome prices sum below $1.00. Zero-risk execution.</div>
+      </div>
+    </div>
+
+    <!-- Pipeline Visualization -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;font-weight:600;">Scan Pipeline</div>
+      <div class="hk-pipeline">
+        <div class="hk-pipeline-item"><span class="hk-pipeline-val" id="hawk-scan-total">--</span><span class="hk-pipeline-lbl">eligible</span></div>
+        <span class="hk-pipeline-arrow">&rarr;</span>
+        <div class="hk-pipeline-item"><span class="hk-pipeline-val" id="hawk-scan-contested">--</span><span class="hk-pipeline-lbl">contested</span></div>
+        <span class="hk-pipeline-arrow">&rarr;</span>
+        <div class="hk-pipeline-item"><span class="hk-pipeline-val" style="color:var(--success);" id="hawk-scan-sports">--</span><span class="hk-pipeline-lbl">sports</span></div>
+        <span class="hk-pipeline-sep">+</span>
+        <div class="hk-pipeline-item"><span class="hk-pipeline-val" style="color:#4FC3F7;" id="hawk-scan-weather">--</span><span class="hk-pipeline-lbl">weather</span></div>
+        <span class="hk-pipeline-sep">+</span>
+        <div class="hk-pipeline-item"><span class="hk-pipeline-val" style="color:#00BFFF;" id="hawk-scan-nonsports">--</span><span class="hk-pipeline-lbl">non-sports</span></div>
+        <span class="hk-pipeline-arrow">=</span>
+        <div class="hk-pipeline-item"><span class="hk-pipeline-val hk-pipeline-final" id="hawk-scan-analyzed">--</span><span class="hk-pipeline-lbl">analyzed</span></div>
+        <span id="hawk-kalshi-badge" style="display:none;margin-left:8px;padding:2px 8px;border-radius:4px;font-size:0.62rem;font-weight:700;background:rgba(138,43,226,0.15);border:1px solid rgba(138,43,226,0.4);color:#b388ff;">KALSHI: <span id="hawk-kalshi-count">0</span></span>
+      </div>
+    </div>
+
+    <!-- Scan Summary Badges -->
+    <div id="hawk-scan-summary" style="display:none;margin-bottom:14px;">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <div class="widget-badge"><span class="wb-label">Scanned:</span> <span id="hawk-total-scanned">0</span></div>
+        <div class="widget-badge"><span class="wb-label">Contested:</span> <span id="hawk-contested">0</span></div>
+        <div class="widget-badge"><span class="wb-label">Analyzed:</span> <span id="hawk-analyzed">0</span></div>
+        <div class="widget-badge"><span class="wb-label">Opps:</span> <span id="hawk-opp-count" style="color:var(--agent-hawk);font-weight:700;">0</span></div>
+        <div class="widget-badge"><span class="wb-label">Est. Profit:</span> <span id="hawk-total-ev" style="color:var(--success);font-weight:700;">$0</span></div>
+        <div class="widget-badge"><span class="wb-label">Last:</span> <span id="hawk-last-scan" style="color:var(--text-muted);">--</span></div>
+      </div>
+    </div>
+
+    <!-- Agent Activity Feed -->
+    <div class="glass-card" style="padding:14px;">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px;font-weight:600;">Agent Activity</div>
+      <div id="hawk-activity-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:200px;overflow-y:auto;">
+        <span class="text-muted">Waiting for activity...</span>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL 2: LIVE MONITOR (DEFAULT — visible on load)
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="hawk-panel" id="hawk-panel-live">
+
+    <!-- Scan Progress Bar -->
+    <div id="hawk-scan-progress" style="display:none;margin-bottom:14px;">
+      <div class="hk-progress-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <span id="hawk-scan-step" style="font-weight:600;color:var(--agent-hawk);font-size:0.82rem;">Starting scan...</span>
+          <span id="hawk-scan-pct" style="font-size:0.72rem;color:var(--text-muted);">0%</span>
+        </div>
+        <div style="height:4px;background:rgba(255,255,255,0.04);border-radius:2px;overflow:hidden;">
+          <div id="hawk-scan-bar" style="height:100%;width:0%;background:linear-gradient(90deg,#FFD700,#ffaa00);border-radius:2px;transition:width 0.5s ease;"></div>
+        </div>
+        <div id="hawk-scan-detail" style="font-size:0.70rem;color:var(--text-muted);margin-top:6px;"></div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="hk-tools" style="margin-bottom:14px;">
+      <div class="hk-tools-row">
+        <button class="hk-tool-btn hk-tool-primary" id="hawk-scan-btn" onclick="hawkTriggerScan()">Trigger Scan</button>
+        <button class="hk-tool-btn" onclick="hawkSimResolve()">Check Resolutions</button>
+        <button class="hk-tool-btn" onclick="healthCheckAgent('hawk')">Health Check</button>
+        <button class="hk-tool-btn" onclick="hawkRefreshIntel()">Refresh Intel</button>
+        <button class="hk-tool-btn" onclick="hawkLoadPerformance()">Refresh Performance</button>
+      </div>
+      <div class="health-inline" id="hawk-health-result"></div>
+      <div id="hawk-sim-resolve-msg" style="display:none;margin:8px 0;padding:8px 14px;border-radius:6px;font-size:0.78rem;"></div>
+    </div>
+
+    <!-- Trade Suggestions -->
+    <div class="glass-card" style="padding:16px;margin-bottom:14px;" id="hawk-suggestions-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-weight:700;font-size:0.82rem;color:var(--text);">Trade Suggestions</span>
+          <span id="hawk-sug-count" style="font-size:0.72rem;color:var(--text-muted);font-weight:400;"></span>
+        </div>
+      </div>
+      <div id="hawk-suggestions-list">
+        <div class="text-muted" style="text-align:center;padding:24px;font-size:0.76rem;">No suggestions yet &mdash; trigger a scan</div>
+      </div>
+    </div>
+
+    <!-- Reasoning Panel -->
+    <div id="hawk-reasoning-panel" style="display:none;margin-bottom:14px;">
+      <div class="hk-reasoning-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div style="flex:1;">
+            <div class="hk-reasoning-header">WHY THIS TRADE</div>
+            <div id="hawk-reasoning-market" style="font-weight:600;color:var(--agent-hawk);font-size:0.82rem;margin-bottom:10px;"></div>
+            <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;" id="hawk-reasoning-badges"></div>
+            <div class="hk-reasoning-row"><div class="hk-reasoning-lbl">REASONING</div><div id="hawk-reasoning-text" class="hk-reasoning-val"></div></div>
+            <div class="hk-reasoning-row"><div class="hk-reasoning-lbl">MONEY THESIS</div><div id="hawk-reasoning-money" class="hk-reasoning-val" style="color:#00ff44;"></div></div>
+            <div class="hk-reasoning-row"><div class="hk-reasoning-lbl">NEWS FACTOR</div><div id="hawk-reasoning-news" class="hk-reasoning-val"></div></div>
+            <div class="hk-reasoning-row"><div class="hk-reasoning-lbl">EDGE SOURCE</div><div id="hawk-reasoning-edge-src" class="hk-reasoning-val" style="color:var(--agent-hawk);"></div></div>
+          </div>
+          <button onclick="document.getElementById('hawk-reasoning-panel').style.display='none'" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:1.2rem;padding:0 4px;line-height:1;">&times;</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Live Opportunities -->
+    <div class="glass-card" style="padding:16px;margin-bottom:14px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-weight:700;font-size:0.82rem;color:var(--text);">Live Opportunities</span>
+          <span id="hawk-opp-total-label" style="font-size:0.72rem;color:var(--text-muted);font-weight:400;"></span>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;" id="hawk-cat-filter-pills"></div>
+      <div id="hawk-opp-groups"></div>
+    </div>
+
+    <!-- Live In-Play Monitor -->
+    <div class="hk-live" id="hawk-live-monitor" style="display:none;">
+      <div class="hk-live-header">
+        <h2 class="hk-section-title" style="margin:0;color:#ff4444;">
+          <span class="hk-live-pulse"></span>LIVE IN-PLAY MONITOR
+          <span id="hawk-live-count" style="font-size:0.72rem;color:var(--text-muted);font-weight:400;margin-left:8px;">0 games</span>
+        </h2>
+      </div>
+      <div id="hawk-live-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px;"></div>
+      <div id="hawk-live-actions-log" style="margin-top:10px;display:none;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:6px;">Recent Live Actions</div>
+        <div id="hawk-live-actions-list" style="font-family:var(--font-mono);font-size:0.72rem;max-height:120px;overflow-y:auto;"></div>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL 3: OPEN POSITIONS
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="hawk-panel" id="hawk-panel-positions" style="display:none;">
+
+    <div class="hk-positions">
+      <div class="hk-positions-header">
+        <h2 class="hk-section-title" style="margin:0;">
+          Open Positions
+          <span id="hawk-pos-count-badge" style="font-size:0.72rem;color:var(--text-muted);font-weight:400;margin-left:6px;">0</span>
+        </h2>
+        <span id="hawk-pos-live-dot" style="display:none;font-size:0.6rem;color:var(--success);font-weight:600;">&#9679; LIVE</span>
+      </div>
+      <div class="hk-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Market</th>
+              <th>Dir</th>
+              <th>Size</th>
+              <th>Entry</th>
+              <th>Now</th>
+              <th>Timer</th>
+              <th>P&amp;L</th>
+              <th>Payout</th>
+              <th>Return</th>
+              <th>Category</th>
+              <th>Risk</th>
+            </tr>
+          </thead>
+          <tbody id="hawk-pos-tbody">
+            <tr><td colspan="11" class="text-muted" style="text-align:center;padding:24px;">Loading on-chain positions...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="hk-risk-bar">
+        <span class="hk-risk-item"><span id="hawk-risk-low" style="color:#00ff44;">0 Low</span></span>
+        <span class="hk-risk-item"><span id="hawk-risk-med" style="color:#FFD700;">0 Med</span></span>
+        <span class="hk-risk-item"><span id="hawk-risk-high" style="color:#ff6600;">0 High</span></span>
+        <span class="hk-risk-item"><span id="hawk-risk-extreme" style="color:#ff3333;">0 Extreme</span></span>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL 4: TRADE HISTORY
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="hawk-panel" id="hawk-panel-history" style="display:none;">
+
+    <!-- Best & Worst Trades -->
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:14px;">
+      <div class="glass-card" style="padding:14px;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--success);margin-bottom:8px;font-weight:600;">Best Trade</div>
+        <div id="hsim-best-trade">
+          <div class="text-muted" style="text-align:center;padding:12px;font-size:0.76rem;">No resolved trades yet</div>
+        </div>
+      </div>
+      <div class="glass-card" style="padding:14px;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--error);margin-bottom:8px;font-weight:600;">Worst Trade</div>
+        <div id="hsim-worst-trade">
+          <div class="text-muted" style="text-align:center;padding:12px;font-size:0.76rem;">No resolved trades yet</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- History Table -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;font-weight:600;">Trade Log</div>
+      <div class="hk-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Time</th><th>Market</th><th>Category</th><th>Edge</th><th>Result</th></tr>
+          </thead>
+          <tbody id="hawk-hist-tbody">
+            <tr><td colspan="5" class="text-muted" style="text-align:center;padding:24px;">No trade history</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Win Rate & Streak -->
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:14px;">
+      <div class="glass-card" style="padding:14px;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:8px;font-weight:600;">Win Rate</div>
+        <div class="chart-container chart-sm"><canvas id="hawk-wr-donut"></canvas></div>
+      </div>
+      <div class="glass-card" style="padding:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;">
+        <div id="hawk-streak-display" style="text-align:center;">
+          <div style="font-size:0.72rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.06em;">Current Streak</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL 5: PERFORMANCE INSIGHTS (lazy loaded)
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="hawk-panel" id="hawk-panel-performance" style="display:none;">
+
+    <!-- Performance Breakdowns -->
+    <div id="hawk-performance-section" style="margin-bottom:14px;">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;font-weight:600;">Performance Breakdowns</div>
+      <div class="grid-3" id="hawk-performance-grid">
+        <div class="glass-card" style="padding:14px;">
+          <h4 class="hk-mini-title">By Category</h4>
+          <div id="hawk-perf-category"><span class="text-muted" style="font-size:0.76rem;">Loading...</span></div>
+        </div>
+        <div class="glass-card" style="padding:14px;">
+          <h4 class="hk-mini-title">By Risk Level</h4>
+          <div id="hawk-perf-risk"><span class="text-muted" style="font-size:0.76rem;">Loading...</span></div>
+        </div>
+        <div class="glass-card" style="padding:14px;">
+          <h4 class="hk-mini-title">By Edge Range</h4>
+          <div id="hawk-perf-edge"><span class="text-muted" style="font-size:0.76rem;">Loading...</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category Heatmap -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;font-weight:600;">Category Heatmap</div>
+      <div id="hawk-category-heatmap">
+        <div class="text-muted" style="text-align:center;padding:12px;font-size:0.76rem;">Waiting for category data...</div>
+      </div>
+    </div>
+
+    <!-- Model-Market Gap -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;font-weight:600;">Model-Market Gap</div>
+      <div class="chart-container" style="height:250px;"><canvas id="hawk-gap-scatter"></canvas></div>
+    </div>
+
+    <!-- Edge Source Effectiveness -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;" id="hawk-edge-effectiveness-section">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;font-weight:600;">Edge Source Effectiveness</div>
+      <div id="hawk-edge-effectiveness">
+        <div class="text-muted" style="text-align:center;padding:16px;font-size:0.76rem;">Run analysis to see edge source data</div>
+      </div>
+    </div>
+
+    <!-- Calibration Curve -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;" id="hawk-calibration-section">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;font-weight:600;">Calibration Curve</div>
+      <div id="hawk-calibration-curve">
+        <div class="text-muted" style="text-align:center;padding:16px;font-size:0.76rem;">Run analysis to see calibration data</div>
+      </div>
+    </div>
+
+    <!-- CLV -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;" id="hawk-clv-section">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;font-weight:600;">Closing Line Value (CLV)</div>
+      <div id="hawk-clv-content">
+        <div class="text-muted" style="text-align:center;padding:16px;font-size:0.76rem;">Loading CLV data...</div>
+      </div>
+    </div>
+
+    <!-- Category Tuning -->
+    <div class="glass-card" style="padding:14px;" id="hawk-tuning-section">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;font-weight:600;">Category Tuning</div>
+      <div id="hawk-tuning-content">
+        <div class="text-muted" style="text-align:center;padding:16px;font-size:0.76rem;">Loading tuning data...</div>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       PANEL 6: INTELLIGENCE & SELF-IMPROVEMENT (lazy loaded)
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="hawk-panel" id="hawk-panel-intelligence" style="display:none;">
+
+    <!-- Score Cards -->
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;">
+      <div class="glass-card" style="text-align:center;padding:14px;border-top:2px solid var(--agent-hawk);">
+        <div style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);color:var(--agent-hawk);" id="hawk-self-score">--</div>
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-top:4px;">Self-Improvement</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;" id="hawk-self-score-detail">Calculating...</div>
+      </div>
+      <div class="glass-card" style="text-align:center;padding:14px;border-top:2px solid #ff6600;">
+        <div style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);color:#ff6600;" id="hawk-mistake-freq">0</div>
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-top:4px;">Toxic Patterns</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;" id="hawk-mistake-trend">No patterns detected</div>
+      </div>
+      <div class="glass-card" style="text-align:center;padding:14px;border-top:2px solid #4FC3F7;">
+        <div style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);color:#4FC3F7;" id="hawk-model-accuracy">--</div>
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-top:4px;">Model Accuracy</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;" id="hawk-model-accuracy-detail">6D learner average</div>
+      </div>
+      <div class="glass-card" style="text-align:center;padding:14px;border-top:2px solid var(--agent-hawk);">
+        <div style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);color:var(--agent-hawk);" id="hawk-lessons-count">0</div>
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-top:4px;">Lessons Learned</div>
+        <div style="font-size:0.62rem;color:var(--text-muted);margin-top:2px;" id="hawk-lessons-count-detail">From trade reviews</div>
+      </div>
+    </div>
+
+    <!-- Core Principles -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;border-left:3px solid var(--agent-hawk);">
+      <div class="hk-principles-title">CORE PRINCIPLES</div>
+      <div class="hk-principles-grid">
+        <span class="hk-principle">Trade probabilities, not narratives</span>
+        <span class="hk-principle">Automate discipline</span>
+        <span class="hk-principle">Edge must be measurable</span>
+        <span class="hk-principle">Logs &gt; opinions</span>
+        <span class="hk-principle">Survival first</span>
+        <span class="hk-principle">Scale only what is proven</span>
+        <span class="hk-principle">Simplicity compounds</span>
+      </div>
+    </div>
+
+    <!-- Lessons Learned -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;font-weight:600;">Last Lessons Learned</div>
+      <div id="hawk-lessons-list">
+        <div class="text-muted" style="text-align:center;padding:16px;font-size:0.76rem;">No lessons yet &mdash; complete trade reviews to generate</div>
+      </div>
+    </div>
+
+    <!-- 6D Learner Accuracy -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;font-weight:600;">6D Learner Accuracy</div>
+      <div class="hk-learner-grid" id="hawk-learner-grid">
+        <div class="hk-learner-card" id="hawk-learner-edge-source"><div class="hk-learner-lbl">Edge Source</div><div class="hk-learner-val" id="hawk-learner-edge-source-wr">--</div></div>
+        <div class="hk-learner-card" id="hawk-learner-category"><div class="hk-learner-lbl">Category</div><div class="hk-learner-val" id="hawk-learner-category-wr">--</div></div>
+        <div class="hk-learner-card" id="hawk-learner-direction"><div class="hk-learner-lbl">Direction</div><div class="hk-learner-val" id="hawk-learner-direction-wr">--</div></div>
+        <div class="hk-learner-card" id="hawk-learner-confidence"><div class="hk-learner-lbl">Confidence</div><div class="hk-learner-val" id="hawk-learner-confidence-wr">--</div></div>
+        <div class="hk-learner-card" id="hawk-learner-risk"><div class="hk-learner-lbl">Risk Level</div><div class="hk-learner-val" id="hawk-learner-risk-wr">--</div></div>
+        <div class="hk-learner-card" id="hawk-learner-time"><div class="hk-learner-lbl">Time Horizon</div><div class="hk-learner-val" id="hawk-learner-time-wr">--</div></div>
+      </div>
+    </div>
+
+    <!-- Failure Patterns -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;" id="hawk-failure-patterns-section">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;font-weight:600;">Failure Patterns</div>
+      <div id="hawk-failure-patterns">
+        <div class="text-muted" style="text-align:center;padding:16px;font-size:0.76rem;">No toxic patterns detected</div>
+      </div>
+    </div>
+
+    <!-- Dynamic Recommendations -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;" id="hawk-dynamic-recs-section">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;font-weight:600;">Dynamic Recommendations</div>
+      <div id="hawk-dynamic-recs">
+        <div class="text-muted" style="text-align:center;padding:16px;font-size:0.76rem;">No recommendations yet</div>
+      </div>
+    </div>
+
+    <!-- Trade Reviews -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;" id="hawk-reviews-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);font-weight:600;">Trade Reviews</span>
+          <span id="hawk-review-count" style="font-size:0.72rem;color:var(--text-muted);font-weight:400;"></span>
+        </div>
+        <button onclick="hawkRefreshReviews()" class="hk-sm-btn">Refresh Analysis</button>
+      </div>
+      <div id="hawk-reviews-list">
+        <div class="text-muted" style="text-align:center;padding:24px;font-size:0.76rem;">No trade reviews yet</div>
+      </div>
+    </div>
+
+    <!-- Weekly Competitive Advantage Check -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;font-weight:600;">Weekly Competitive Advantage Check</div>
+      <div class="hk-competitive" id="hawk-competitive-check">
+        <div class="hk-competitive-grid">
+          <div class="hk-competitive-item">
+            <div class="hk-competitive-q">What edge is disappearing?</div>
+            <div class="hk-competitive-a" id="hawk-ca-edge">Awaiting weekly review...</div>
+          </div>
+          <div class="hk-competitive-item">
+            <div class="hk-competitive-q">What new inefficiency appeared?</div>
+            <div class="hk-competitive-a" id="hawk-ca-ineff">Awaiting weekly review...</div>
+          </div>
+          <div class="hk-competitive-item">
+            <div class="hk-competitive-q">What can be automated?</div>
+            <div class="hk-competitive-a" id="hawk-ca-auto">Awaiting weekly review...</div>
+          </div>
+          <div class="hk-competitive-item">
+            <div class="hk-competitive-q">What can be parallelized?</div>
+            <div class="hk-competitive-a" id="hawk-ca-parallel">Awaiting weekly review...</div>
+          </div>
+          <div class="hk-competitive-item">
+            <div class="hk-competitive-q">What can be delegated?</div>
+            <div class="hk-competitive-a" id="hawk-ca-delegate">Awaiting weekly review...</div>
+          </div>
+        </div>
+        <div class="hk-competitive-footer">Stagnation kills systematic traders.</div>
+      </div>
+    </div>
+
+    <!-- Intel Sync (referenced by renderHawkIntelSync) -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;display:none;" id="hawk-intel-sync-section">
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:10px;font-weight:600;">Intelligence Sync</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;" id="hawk-intel-badges"></div>
+      <div class="hk-table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Source</th><th>Status</th><th>Last Sync</th><th>Items</th></tr></thead>
+          <tbody id="hawk-intel-tbody"><tr><td colspan="4" class="text-muted" style="text-align:center;padding:16px;">No intel sync data</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Weather Intelligence -->
+    <div class="glass-card" style="padding:14px;margin-bottom:14px;border-left:3px solid #4FC3F7;" id="hawk-weather-section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);font-weight:600;">Weather Intelligence</span>
+          <span style="font-size:0.60rem;color:#4FC3F7;font-weight:400;">$0 cost &mdash; ensemble models</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
+        <div class="stat-card" data-accent="hawk" style="padding:10px 14px;">
+          <div class="stat-value" id="hawk-wx-scanned" style="color:#4FC3F7;font-size:1.1rem;">0</div>
+          <div class="stat-label" style="font-size:0.64rem;">Markets Scanned</div>
+        </div>
+        <div class="stat-card" data-accent="hawk" style="padding:10px 14px;">
+          <div class="stat-value" id="hawk-wx-opps" style="color:var(--agent-hawk);font-size:1.1rem;">0</div>
+          <div class="stat-label" style="font-size:0.64rem;">Opportunities</div>
+        </div>
+        <div class="stat-card" data-accent="hawk" style="padding:10px 14px;">
+          <div class="stat-value" id="hawk-wx-wr" style="color:var(--success);font-size:1.1rem;">--</div>
+          <div class="stat-label" style="font-size:0.64rem;">Win Rate</div>
+        </div>
+      </div>
+      <div class="glass-card" style="margin-bottom:12px;border-left:3px solid #4FC3F7;padding:10px 14px;">
+        <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:6px;font-weight:600;">Data Sources</div>
+        <div id="hawk-wx-sources" style="font-family:var(--font-mono);font-size:0.74rem;">
+          <div style="display:flex;gap:16px;flex-wrap:wrap;">
+            <div><span style="color:#4FC3F7;font-weight:600;">Open-Meteo Ensemble</span> <span class="text-muted">GFS (31) + ECMWF IFS (51)</span></div>
+            <div><span style="color:#4FC3F7;font-weight:600;">api.weather.gov</span> <span class="text-muted">NWS + hourly (US)</span></div>
+            <div><span style="color:#4FC3F7;font-weight:600;">NOAA NHC</span> <span class="text-muted">Hurricane tracking</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:6px;font-weight:600;">Recent Weather Trades</div>
+      <div class="hk-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Market</th><th>Dir</th><th>Edge</th><th>Confidence</th><th>Result</th><th>P&amp;L</th></tr>
+          </thead>
+          <tbody id="hawk-wx-trades-tbody">
+            <tr><td colspan="6" class="text-muted" style="text-align:center;padding:16px;">No weather trades yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Arb Engine -->
+    <div class="glass-card" style="padding:14px;border-left:3px solid #00ff88;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);font-weight:600;">Arb Engine</span>
+          <span style="font-size:0.60rem;color:#00ff88;font-weight:400;">guaranteed profit</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
+        <div class="stat-card" data-accent="hawk" style="padding:10px 14px;">
+          <div class="stat-value" id="hawk-arb-open" style="color:var(--agent-hawk);font-size:1.1rem;">0</div>
+          <div class="stat-label" style="font-size:0.64rem;">Open Arbs</div>
+        </div>
+        <div class="stat-card" data-accent="hawk" style="padding:10px 14px;">
+          <div class="stat-value" id="hawk-arb-total" style="color:var(--text-secondary);font-size:1.1rem;">0</div>
+          <div class="stat-label" style="font-size:0.64rem;">Total Executed</div>
+        </div>
+        <div class="stat-card" data-accent="hawk" style="padding:10px 14px;">
+          <div class="stat-value" id="hawk-arb-profit" style="color:var(--success);font-size:1.1rem;">$0.00</div>
+          <div class="stat-label" style="font-size:0.64rem;">Total Profit</div>
+        </div>
+      </div>
+      <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);margin-bottom:6px;font-weight:600;">Open Arb Positions</div>
+      <div class="hk-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Market</th><th>Cost</th><th>Profit/Share</th><th>Shares</th><th>Expected Profit</th><th>Time</th></tr>
+          </thead>
+          <tbody id="hawk-arb-tbody">
+            <tr><td colspan="6" class="text-muted" style="text-align:center;padding:16px;">No open arb positions</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- Final Rule -->
+  <div class="hk-final-rule" style="margin-top:20px;">This is not a money printer. This is a probabilistic system competing against retail emotion, faster bots, and better capitalized players. <strong>Operate accordingly.</strong></div>
+
+</div>
+
+<!-- ═══ Hawk Sub-Tab Styles ═══ -->
+<style>
+.hawk-subtab {
+  background: var(--surface-elevated);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 5px 16px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.hawk-subtab:hover {
+  color: var(--text);
+  border-color: var(--text-muted);
+}
+.hawk-subtab.active {
+  background: #FFD700;
+  color: #000;
+  border-color: #FFD700;
+}
+</style>
+
+<!-- ═══ Hawk Sub-Tab Switching ═══ -->
+<script>
+function hawkSwitchSub(name) {
+  document.querySelectorAll('.hawk-panel').forEach(function(p) { p.style.display = 'none'; });
+  var panel = document.getElementById('hawk-panel-' + name);
+  if (panel) panel.style.display = '';
+  document.querySelectorAll('.hawk-subtab').forEach(function(b) {
+    b.classList.toggle('active', b.getAttribute('data-sub') === name);
+  });
+  if (name === 'intelligence' && !window._hawkIntelLoaded) {
+    window._hawkIntelLoaded = true;
+    if (typeof loadHawkIntelligence === 'function') loadHawkIntelligence();
+    if (typeof loadHawkWeather === 'function') loadHawkWeather();
+    if (typeof loadHawkArbStatus === 'function') loadHawkArbStatus();
+  }
+  if (name === 'performance' && !window._hawkPerfLoaded) {
+    window._hawkPerfLoaded = true;
+    if (typeof hawkLoadPerformance === 'function') hawkLoadPerformance();
+    if (typeof loadHawkGapHeatmap === 'function') loadHawkGapHeatmap();
+    if (typeof loadHawkCLV === 'function') loadHawkCLV();
+    if (typeof loadHawkTuning === 'function') loadHawkTuning();
+  }
+}
+</script>

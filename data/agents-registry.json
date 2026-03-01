@@ -1,0 +1,14 @@
+{
+  "odin": {
+    "name": "Odin",
+    "role": "Futures Trader",
+    "status": "active",
+    "version": "4.0.0",
+    "skills": 13,
+    "total_trades": 24,
+    "win_rate": 29.2,
+    "total_pnl": -145.03,
+    "last_trade": "2026-03-01 01:08",
+    "updated_at": "2026-03-01T01:08:27.283982-05:00"
+  }
+}
