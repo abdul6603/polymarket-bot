@@ -16,8 +16,27 @@ DATA_DIR = Path.home() / "polymarket-bot" / "data"
 VISION_COUNT_FILE = DATA_DIR / "discord_vision_count.json"
 
 
+_DB_INITIALIZED = False
+
+
+def _ensure_db() -> bool:
+    """Ensure DB exists and tables are created. Returns True if available."""
+    global _DB_INITIALIZED
+    if _DB_INITIALIZED:
+        return True
+    try:
+        from discord_scraper.db import init_db
+        init_db()
+        _DB_INITIALIZED = True
+        log.info("Discord DB auto-initialized via safety net")
+        return True
+    except Exception as e:
+        log.debug("Discord DB init failed: %s", str(e)[:100])
+        return DB_PATH.exists()
+
+
 def _db_available() -> bool:
-    return DB_PATH.exists()
+    return _ensure_db()
 
 
 def _conn():
@@ -264,3 +283,61 @@ def api_discord_approve(signal_id):
     except Exception as e:
         log.error("Approve error: %s", str(e)[:100])
         return jsonify({"ok": False, "error": str(e)[:100]}), 500
+
+
+@discord_bp.route("/api/discord/chart-ideas")
+def api_discord_chart_ideas():
+    """Chart ideas from charts-ideas channel with Odin evaluation scores."""
+    try:
+        if ODIN_STATUS_FILE.exists():
+            data = json.loads(ODIN_STATUS_FILE.read_text())
+            pipeline = data.get("discord_pipeline", {})
+            ideas = pipeline.get("chart_ideas", [])
+            return jsonify(ideas)
+    except Exception as e:
+        log.debug("Chart ideas error: %s", str(e)[:100])
+
+    # Fallback: pull from signals DB where channel is charts-ideas
+    if _db_available():
+        conn = _conn()
+        rows = conn.execute("""
+            SELECT s.*, m.author, m.channel_name, m.content as msg_content
+            FROM signals s
+            JOIN messages m ON s.message_id = m.id
+            WHERE m.channel_name = 'charts-ideas'
+            ORDER BY s.id DESC LIMIT 20
+        """).fetchall()
+        conn.close()
+        return jsonify([dict(r) for r in rows])
+
+    return jsonify([])
+
+
+@discord_bp.route("/api/discord/exit-monitor")
+def api_discord_exit_monitor():
+    """Exit monitor status — last check, channels watched, recent exits."""
+    try:
+        from discord_scraper.config import (
+            FAST_POLL_INTERVAL_SECONDS, TRUSTED_CHANNEL_IDS, CHANNELS,
+        )
+        trusted_names = [
+            CHANNELS[cid]["name"] for cid in TRUSTED_CHANNEL_IDS if cid in CHANNELS
+        ]
+
+        # Check recent exit events from event bus
+        recent_exits = []
+        try:
+            from shared.events import get_events
+            recent_exits = get_events(event_type="discord_exit_signal", limit=5)
+        except Exception:
+            pass
+
+        return jsonify({
+            "active": True,
+            "interval": FAST_POLL_INTERVAL_SECONDS,
+            "channels": trusted_names,
+            "recent_exits": recent_exits,
+        })
+    except Exception as e:
+        log.debug("Exit monitor status error: %s", str(e)[:100])
+        return jsonify({"active": False, "interval": 0, "channels": []})

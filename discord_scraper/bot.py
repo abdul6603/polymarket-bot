@@ -22,7 +22,9 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from discord_scraper.config import (
     DISCORD_TOKEN, CHANNELS, CHANNEL_IDS,
-    POLL_INTERVAL_SECONDS, MESSAGE_FETCH_LIMIT, VISION_DAILY_CAP,
+    POLL_INTERVAL_SECONDS, FAST_POLL_INTERVAL_SECONDS,
+    MESSAGE_FETCH_LIMIT, VISION_DAILY_CAP,
+    TRUSTED_CHANNEL_IDS,
 )
 from discord_scraper import db, analyzer
 
@@ -203,6 +205,38 @@ _CANCEL_PATTERNS = re.compile(
 )
 _R_PATTERN = re.compile(r"([+-]?\d*\.?\d+)\s*[rR]\b")
 
+# Exit signal patterns — TRUSTED trader says "close/exit/get out"
+_EXIT_PATTERNS = re.compile(
+    r"(?:close\s*(?:here|now|it|position)?|exit\s*(?:here|now)?|"
+    r"take\s*profit\s*here|get\s*out|cut\s*it|flatten|bail\s*out|"
+    r"close\s*all|dump\s*it|out\s*(?:now|here))",
+    re.I,
+)
+
+
+def _publish_exit_signal(channel_name: str, author: str, content: str, ticker: str | None) -> None:
+    """Publish a discord_exit_signal event to the shared event bus."""
+    try:
+        from shared.events import publish as bus_publish
+        bus_publish(
+            agent="discord_scraper",
+            event_type="discord_exit_signal",
+            severity="critical",
+            summary=f"EXIT: {author} says close in #{channel_name} ({ticker or '?'})",
+            data={
+                "channel": channel_name,
+                "author": author,
+                "ticker": ticker,
+                "raw_content": content[:300],
+                "detected_at": time.time(),
+            },
+        )
+        log.info("[DISCORD-EXIT] Published exit signal from %s in #%s: %s",
+                 author, channel_name, ticker or "unknown ticker")
+    except ImportError:
+        log.warning("[DISCORD] Event bus not available for exit signal")
+
+
 # Ticker detection for override
 _TICKERS = [
     "BTC", "ETH", "SOL", "XRP", "DOGE", "AVAX", "LINK", "ADA",
@@ -322,6 +356,11 @@ def process_message(msg: dict, channel_id: int) -> None:
     log.info("[DISCORD] New message in #%s from %s: %s",
              channel_cfg["name"], author, content[:80] if content else "(image)")
 
+    # Check for exit signals in CRITICAL channels
+    if content and channel_cfg["priority"] == "CRITICAL" and _EXIT_PATTERNS.search(content):
+        exit_ticker = _detect_ticker(content)
+        _publish_exit_signal(channel_cfg["name"], author, content, exit_ticker)
+
     # Analyze — vision or text
     signal_data = None
     if has_image and channel_cfg.get("vision"):
@@ -390,10 +429,11 @@ def process_message(msg: dict, channel_id: int) -> None:
             _generate_agent_discussion(signal_data, channel_cfg, author, signal_id, row_id)
 
 
-def poll_channels() -> int:
-    """Poll all channels for new messages. Returns count of new messages."""
+def poll_channels(trusted_only: bool = False) -> int:
+    """Poll channels for new messages. If trusted_only, only poll CRITICAL channels."""
     total_new = 0
-    for channel_id in CHANNEL_IDS:
+    channels = TRUSTED_CHANNEL_IDS if trusted_only else CHANNEL_IDS
+    for channel_id in channels:
         after = _last_seen.get(channel_id)
         messages = _fetch_messages(channel_id, after=after)
 
@@ -451,16 +491,22 @@ def run() -> None:
                      CHANNELS[channel_id]["name"], newest["id"])
         time.sleep(0.5)
 
-    log.info("[DISCORD] Ready. Polling every %ds...", POLL_INTERVAL_SECONDS)
+    log.info("[DISCORD] Ready. Polling every %ds (TRUSTED fast: %ds)...",
+             POLL_INTERVAL_SECONDS, FAST_POLL_INTERVAL_SECONDS)
 
     cycle = 0
     while _running:
         try:
             cycle += 1
-            new_count = poll_channels()
+            if cycle % 2 == 0:
+                # Full poll — all channels
+                new_count = poll_channels()
+            else:
+                # Fast poll — TRUSTED channels only (30s exit monitoring)
+                new_count = poll_channels(trusted_only=True)
             if new_count > 0:
                 log.info("[DISCORD] Cycle %d: %d new messages processed", cycle, new_count)
-            time.sleep(POLL_INTERVAL_SECONDS)
+            time.sleep(FAST_POLL_INTERVAL_SECONDS)
         except KeyboardInterrupt:
             break
         except Exception as e:

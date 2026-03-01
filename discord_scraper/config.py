@@ -51,8 +51,14 @@ CHANNEL_IDS = list(CHANNELS.keys())
 
 # Rate limits — stay under Discord radar
 POLL_INTERVAL_SECONDS = 60  # check each channel every 60s
+FAST_POLL_INTERVAL_SECONDS = 30  # TRUSTED channels polled faster for exit signals
 MESSAGE_FETCH_LIMIT = 10    # last N messages per poll
 VISION_DAILY_CAP = 10       # max vision LLM calls per day
+
+# TRUSTED channel IDs (auto-derived from CRITICAL priority)
+TRUSTED_CHANNEL_IDS = [
+    cid for cid, cfg in CHANNELS.items() if cfg["priority"] == "CRITICAL"
+]
 
 # Paths
 DATA_DIR_NAME = "discord_scraper"

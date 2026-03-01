@@ -334,6 +334,7 @@ class OdinBot:
             asyncio.create_task(self._brotherhood_loop(), name="brotherhood"),
             asyncio.create_task(self._health_loop(), name="health"),
             asyncio.create_task(self._scalp_sniper_loop(), name="scalp_sniper"),
+            asyncio.create_task(self._discord_exit_monitor_loop(), name="discord_exit"),
         ]
         if self._ws:
             tasks.append(asyncio.create_task(self._ws_event_loop(), name="ws_events"))
@@ -1068,6 +1069,25 @@ class OdinBot:
                 self._discord_pipeline.check_approvals()
             except Exception as e:
                 log.debug("[BROTHERHOOD] Error: %s", str(e)[:150])
+
+    async def _discord_exit_monitor_loop(self) -> None:
+        """Poll event bus every 30s for discord exit signals."""
+        while self._running:
+            await asyncio.sleep(30)
+            try:
+                from shared.events import get_events
+                events = get_events(event_type="discord_exit_signal", limit=10)
+                for event in events:
+                    eid = event.get("id", "")
+                    # Skip already-processed exit signals
+                    if not hasattr(self, "_processed_exit_ids"):
+                        self._processed_exit_ids = set()
+                    if eid in self._processed_exit_ids:
+                        continue
+                    self._processed_exit_ids.add(eid)
+                    self._discord_pipeline.process_exit_signal(event)
+            except Exception as e:
+                log.debug("[DISCORD-EXIT-MONITOR] Error: %s", str(e)[:150])
 
     # ── WebSocket Event Loop (Phase 3) ──
 

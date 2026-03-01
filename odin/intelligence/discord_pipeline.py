@@ -27,7 +27,8 @@ log = logging.getLogger("odin.discord_pipeline")
 class TraderTier(Enum):
     TRUSTED = "trusted"    # kiku, sn06 — auto-execute
     GOOD = "good"          # abns92, miku — full voting
-    LEARNING = "learning"  # charts-ideas — KB only
+    EVALUATE = "evaluate"  # charts-ideas — score only, no execution
+    LEARNING = "learning"  # ut-education — KB only
 
 
 TRADER_REGISTRY: dict[str, TraderTier] = {
@@ -37,8 +38,9 @@ TRADER_REGISTRY: dict[str, TraderTier] = {
     "miku": TraderTier.GOOD,
 }
 
-# Channels that map to LEARNING tier regardless of author
-LEARNING_CHANNELS = {"charts-ideas", "ut-education"}
+# Channel → tier overrides (regardless of author)
+EVALUATE_CHANNELS = {"charts-ideas"}
+LEARNING_CHANNELS = {"ut-education"}
 
 TIER_RISK = {
     TraderTier.TRUSTED: {"max_risk_usd": 180, "hard_cap_usd": 220, "max_positions": 3},
@@ -245,6 +247,8 @@ class DiscordPipeline:
             self._process_trusted(signal)
         elif tier == TraderTier.GOOD:
             self._process_good(signal)
+        elif tier == TraderTier.EVALUATE:
+            self._process_evaluate(signal)
         elif tier == TraderTier.LEARNING:
             self._feed_to_atlas_kb(signal)
 
@@ -254,7 +258,9 @@ class DiscordPipeline:
 
     def _classify_tier(self, author: str, channel: str) -> Optional[TraderTier]:
         """Classify trader tier from author name and channel."""
-        # Learning channels override author tier
+        # Channel overrides (regardless of author)
+        if channel in EVALUATE_CHANNELS:
+            return TraderTier.EVALUATE
         if channel in LEARNING_CHANNELS:
             return TraderTier.LEARNING
 
@@ -294,11 +300,14 @@ class DiscordPipeline:
             self._tg_blocked(signal)
             return
 
-        # Check 3: Don't open same-symbol position if already in one
-        symbol = f"{signal.ticker}USDT"
-        if self._order_mgr.has_position_for_symbol(symbol):
+        # Check 3: Block only if there's already a DISCORD position in same ticker
+        open_same_ticker = [
+            p for p in self._discord_positions.values()
+            if p.get("status") == "open" and p.get("ticker") == signal.ticker
+        ]
+        if open_same_ticker:
             signal.decision = "blocked"
-            signal.blocked_reason = f"Already in {symbol} position"
+            signal.blocked_reason = f"Already have Discord position in {signal.ticker}"
             self._stats["blocked"] += 1
             log.info("[DISCORD] BLOCKED %s: %s", signal.trader, signal.blocked_reason)
             self._tg_blocked(signal)
@@ -386,6 +395,63 @@ class DiscordPipeline:
             log.info("[DISCORD] Rejected: %s %s from %s (%.1f < %d)",
                      signal.ticker, signal.direction, signal.trader,
                      weighted_score, SCORE_MANUAL_REVIEW)
+
+    # ── Evaluate Path (charts-ideas) ──
+
+    def _process_evaluate(self, signal: DiscordSignal) -> None:
+        """Score via 4-agent voting but NO execution. Jordan approves via dashboard/TG."""
+        # Run voting to get a score
+        votes = self._run_voting(signal)
+        signal.vote_result = votes
+        weighted_score = self._calculate_weighted_score(votes)
+        signal.decision_score = weighted_score
+
+        # Classify recommendation
+        if weighted_score >= 75:
+            signal.decision = "recommended"
+        elif weighted_score >= 50:
+            signal.decision = "interesting"
+        else:
+            signal.decision = "pass"
+
+        log.info("[DISCORD] EVALUATE %s %s from %s: score=%.1f → %s",
+                 signal.ticker, signal.direction, signal.trader,
+                 weighted_score, signal.decision)
+
+        # Always feed to Atlas KB
+        self._feed_to_atlas_kb(signal)
+
+        # Store in chart_ideas list for API
+        if not hasattr(self, "_chart_ideas"):
+            self._chart_ideas = []
+        self._chart_ideas.append(signal.to_dict())
+        if len(self._chart_ideas) > 50:
+            self._chart_ideas = self._chart_ideas[-50:]
+
+        # TG alert for recommended ideas
+        if signal.decision == "recommended":
+            self._tg_chart_idea(signal)
+
+    def _tg_chart_idea(self, signal: DiscordSignal) -> None:
+        """TG alert for high-scoring chart ideas."""
+        tg = self._get_tg()
+        if not tg:
+            return
+        try:
+            _dir_icon = "\U0001f7e2" if signal.direction == "LONG" else "\U0001f534"
+            msg = (
+                f"\U0001f4ca *ODIN — CHART IDEA (Recommended)*\n"
+                f"\n"
+                f"{_dir_icon} *{signal.direction} {signal.ticker}*\n"
+                f"\U0001f464 {signal.trader} | #{signal.channel}\n"
+                f"\U0001f9e0 Score: *{signal.decision_score:.0f}*/100\n"
+            )
+            if signal.strategy:
+                msg += f"\U0001f4dd _{signal.strategy}_\n"
+            msg += f"\n\U0001f449 Approve via dashboard to execute"
+            tg.send(msg, parse_mode="Markdown")
+        except Exception as e:
+            log.debug("[DISCORD] TG chart idea error: %s", str(e)[:80])
 
     def _run_voting(self, signal: DiscordSignal) -> dict[str, dict]:
         """Run 4-agent LLM voting. Returns {agent: {vote, confidence, reason}}."""
@@ -502,21 +568,19 @@ class DiscordPipeline:
         if not current_price or current_price <= 0:
             return None
 
-        # Calculate SL
+        # Calculate SL — TRUSTED uses trader's SL as-is, others fall back to 2%
         sl = signal.stop_loss
         if not sl or sl <= 0:
-            # ATR fallback — use 2% SL
             sl_pct = 0.02
             if signal.direction == "LONG":
                 sl = round(current_price * (1 - sl_pct), 2)
             else:
                 sl = round(current_price * (1 + sl_pct), 2)
 
-        # Calculate TP
+        # Calculate TP — TRUSTED uses trader's TP as-is, others fall back to 2R
         tp = signal.take_profit
         sl_dist = abs(current_price - sl)
         if not tp or tp <= 0:
-            # 2R from SL distance
             if signal.direction == "LONG":
                 tp = round(current_price + sl_dist * 2.0, 2)
             else:
@@ -702,6 +766,60 @@ class DiscordPipeline:
         except Exception:
             pass
 
+    # ── Exit Signal Processing ──
+
+    def process_exit_signal(self, event_data: dict) -> bool:
+        """Process a discord_exit_signal event. Returns True if a position was closed."""
+        data = event_data.get("data", event_data)
+        channel = (data.get("channel") or "").lower()
+        author = (data.get("author") or "").lower()
+        ticker = (data.get("ticker") or "").upper()
+
+        if not ticker:
+            log.debug("[DISCORD-EXIT] No ticker in exit signal from %s", author)
+            return False
+
+        # Find matching open discord position by ticker + source channel/trader
+        closed = False
+        for pos_id, pos in list(self._discord_positions.items()):
+            if pos.get("status") != "open":
+                continue
+            if pos.get("ticker", "").upper() != ticker:
+                continue
+            # Match: same ticker from same channel or trader
+            pos_channel = (pos.get("channel") or "").lower()
+            pos_trader = (pos.get("trader") or "").lower()
+            if author == pos_trader or channel == pos_channel:
+                log.info("[DISCORD-EXIT] Closing %s %s (from %s) — exit signal from %s",
+                         pos.get("direction"), ticker, pos_trader, author)
+                # Close via order manager
+                symbol = f"{ticker}USDT"
+                try:
+                    self._order_mgr.close_position(symbol, reason="discord_exit_signal")
+                    pos["status"] = "closed_discord_exit"
+                    pos["closed_at"] = time.time()
+                    pos["exit_reason"] = f"Exit signal from {author} in #{channel}"
+                    self._save_positions()
+                    closed = True
+
+                    # TG alert
+                    tg = self._get_tg()
+                    if tg:
+                        tg.send(
+                            f"\U0001f6a8 *DISCORD EXIT*\n\n"
+                            f"Closed *{pos.get('direction', '')} {ticker}*\n"
+                            f"\U0001f464 Exit from: {author} in #{channel}\n"
+                            f"\U0001f4dd _{data.get('raw_content', '')[:100]}_",
+                            parse_mode="Markdown",
+                        )
+                except Exception as e:
+                    log.warning("[DISCORD-EXIT] Close error for %s: %s", symbol, str(e)[:100])
+
+        if not closed:
+            log.debug("[DISCORD-EXIT] No matching position for %s exit from %s", ticker, author)
+
+        return closed
+
     # ── Manual Approval Polling ──
 
     def check_approvals(self) -> None:
@@ -837,6 +955,10 @@ class DiscordPipeline:
         if len(self._recent_signals) > 20:
             self._recent_signals = self._recent_signals[-20:]
 
+    def get_chart_ideas(self) -> list[dict]:
+        """Return chart ideas with evaluation scores."""
+        return getattr(self, "_chart_ideas", [])
+
     def get_status(self) -> dict:
         open_positions = [
             p for p in self._discord_positions.values()
@@ -851,6 +973,7 @@ class DiscordPipeline:
             "registered_traders": {
                 k: v.value for k, v in TRADER_REGISTRY.items()
             },
+            "chart_ideas": self.get_chart_ideas()[-10:],
         }
 
 
