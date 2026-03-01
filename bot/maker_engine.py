@@ -211,10 +211,10 @@ class MakerEngine:
         self.quote_size_usd = float(os.getenv("MAKER_QUOTE_SIZE_USD", "5.0"))
         self.tick_interval_s = float(os.getenv("MAKER_TICK_INTERVAL_S", "5.0"))
 
-        # Spread params (tightened Feb 27 2026 for more fills)
+        # Spread params (tightened Feb 28 2026 for competitive fills)
         self.min_half_spread = 0.025  # 5c total floor
         self.max_half_spread = 0.08   # 16c total ceiling
-        self.base_half_spread = 0.03  # 6c total base (was 8c)
+        self.base_half_spread = 0.02  # 4c total base (was 6c)
 
         # Inventory Manager — on-chain synced, source of truth
         wallet = cfg.funder_address or os.getenv("FUNDER_ADDRESS", "")
@@ -244,6 +244,9 @@ class MakerEngine:
         # HARD BANKROLL CAP: tracks total USD committed by maker (persists across restarts)
         self._committed_file = Path(__file__).parent.parent / "data" / "maker_committed.json"
         self._maker_total_committed = self._load_committed()
+
+        # Early profit-take cooldown (token_id -> last attempt timestamp)
+        self._profit_take_cooldown: dict[str, float] = {}
 
         # Fair value + TTR caches
         self._last_fair: dict[str, float] = {}
@@ -306,6 +309,18 @@ class MakerEngine:
         self._maker_total_committed = amount
         self._save_committed()
         log.info("[MAKER] Committed reset to $%.2f", amount)
+
+    def _reconcile_committed(self) -> None:
+        """Auto-release committed capital when positions resolve/get claimed."""
+        on_chain = self._inv_mgr.get_total_exposure()
+        pending = sum(q.size_usd for q in self._active_quotes)
+        actual_used = on_chain + pending
+        if self._maker_total_committed > actual_used + 5.0:
+            old = self._maker_total_committed
+            self._maker_total_committed = max(0, actual_used)
+            self._save_committed()
+            log.info("[MAKER] Capital recycled: committed $%.0f → $%.0f (freed $%.0f)",
+                     old, self._maker_total_committed, old - self._maker_total_committed)
 
     def _sync_open_orders(self) -> None:
         """Sync open orders from CLOB on startup so we track what's already live."""
@@ -383,9 +398,12 @@ class MakerEngine:
         """Dynamic half-spread based on volatility regime and inventory skew."""
         half_spread = self.base_half_spread
 
-        # For non-crypto markets with real book spreads, use 35% of book spread
+        # For markets with real book spreads, undercut proportionally
         if book_spread is not None and book_spread > 0.01:
-            half_spread = book_spread * 0.35
+            if book_spread < 0.04:  # tight competitive book
+                half_spread = book_spread * 0.50  # more aggressive
+            else:
+                half_spread = book_spread * 0.35
             half_spread = max(0.005, min(0.04, half_spread))  # 0.5-4 cent range
             return half_spread  # skip ATR-based calculation (no candle data for non-crypto)
 
@@ -486,10 +504,10 @@ class MakerEngine:
                     "size": size, "price": price,
                     "reason": f"total exposure cap hit (${total_exposure:.0f} on-chain + ${order_cost:.0f} new > ${max_exposure:.0f} max)"}
 
-        # 4. Per-market exposure cap ($30 = room for both sides)
+        # 4. Per-market exposure cap ($50 = room for BTC brackets + both sides)
         exposure = self._inv_mgr.get_market_exposure(up_token, down_token)
         cat = self._token_category.get(token_id, "crypto")
-        max_per_market = self.quote_size_usd * 3.0
+        max_per_market = self.quote_size_usd * 5.0
         if exposure["total_usd"] >= max_per_market:
             return {"action": "block", "side": side, "token_id": token_id,
                     "size": size, "price": price,
@@ -1008,6 +1026,24 @@ class MakerEngine:
             params["skip_sell"] = True
         return params
 
+    def _early_profit_take(self) -> None:
+        """Sell positions at 95¢+ to free capital instead of waiting for resolution."""
+        for token_id, fair in self._last_fair.items():
+            if fair < 0.95:
+                continue
+            # Cooldown: don't retry same token within 5 min
+            if token_id in self._profit_take_cooldown:
+                if time.time() - self._profit_take_cooldown[token_id] < 300:
+                    continue
+            pos = self._inv_mgr.get_position(token_id)
+            if not pos or pos["size"] < 1.0:
+                continue
+            asset = self._token_asset.get(token_id, "?")
+            log.info("[MAKER] Early exit: %s at %.0f¢ (%.1f shares) — freeing capital",
+                     asset.upper(), fair * 100, pos["size"])
+            self._reduce_inventory(token_id, asset, target_shares=0.0)
+            self._profit_take_cooldown[token_id] = time.time()
+
     def _reduce_inventory(self, token_id: str, asset: str, target_shares: float = 0.0) -> None:
         """Reduce inventory toward target. Used for TTR flattening."""
         pos = self._inv_mgr.get_position(token_id)
@@ -1094,6 +1130,9 @@ class MakerEngine:
         # On-chain inventory sync (every 30s)
         self._inv_mgr.sync_if_stale()
 
+        # Auto-reconcile committed capital (release resolved positions)
+        self._reconcile_committed()
+
         # Kill switch: disable if session P&L drops below threshold
         bankroll = self.cfg.maker_bankroll_usd
         max_session_loss = float(os.getenv("MAKER_MAX_SESSION_LOSS", "0"))
@@ -1121,6 +1160,9 @@ class MakerEngine:
                 self._balance_mgr.report_exposure(self._inv_mgr.get_total_exposure())
             except Exception:
                 pass
+
+        # Early profit-take: sell 95¢+ positions to free capital
+        self._early_profit_take()
 
         quotes_placed = 0
         for mkt in markets:
