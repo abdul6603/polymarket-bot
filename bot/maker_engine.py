@@ -1028,6 +1028,9 @@ class MakerEngine:
 
     def _early_profit_take(self) -> None:
         """Sell positions at 95¢+ to free capital instead of waiting for resolution."""
+        high = {tid: f for tid, f in self._last_fair.items() if f >= 0.90}
+        if high:
+            log.info("[MAKER] Profit-take scan: %d tokens at 90c+ in _last_fair", len(high))
         for token_id, fair in self._last_fair.items():
             if fair < 0.95:
                 continue
@@ -1229,6 +1232,8 @@ class MakerEngine:
                     self._last_fair[up_token] = implied_price
                     if down_token:
                         self._last_fair[down_token] = 1.0 - implied_price
+                    log.info("[MAKER] High-value tracked: %s implied=%.4f (skipping quotes)",
+                             asset.upper(), implied_price)
                 continue
 
             # Orderbook imbalance adjustment: shift fair value toward heavy side
