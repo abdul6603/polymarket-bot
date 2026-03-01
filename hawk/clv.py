@@ -216,7 +216,9 @@ def get_realtime_clv(condition_id: str, token_id: str) -> dict | None:
 
     Returns dict with realtime_clv, realtime_clv_pct, current_price, entry_price, age_hours
     or None if no unresolved entry found.
-    """    if not CLV_FILE.exists():
+    """
+
+    if not CLV_FILE.exists():
         return None
 
     entry_rec = None
@@ -225,8 +227,7 @@ def get_realtime_clv(condition_id: str, token_id: str) -> dict | None:
             for line in f:
                 line = line.strip()
                 if not line:
-                    continue
-                r = json.loads(line)
+                    continue                r = json.loads(line)
                 if (r.get("condition_id") == condition_id and
                         r.get("token_id", "") == token_id and
                         not r.get("resolved")):
