@@ -21,7 +21,7 @@ import traceback
 from pathlib import Path
 from typing import List
 
-from flask import Flask, Blueprint, jsonify, current_app, render_template_string
+from flask import Flask, Blueprint, jsonify, current_app, render_template, render_template_string
 
 log = logging.getLogger("bot.live_dashboard")
 
@@ -96,7 +96,13 @@ def create_app(config: dict | None = None) -> Flask:
 
     config: optional dict to pass into app.config.update()
     """
-    app = Flask(__name__, static_folder=None)
+    _bot_dir = Path(__file__).resolve().parent
+    app = Flask(
+        __name__,
+        static_folder=str(_bot_dir / "static"),
+        static_url_path="/static",
+        template_folder=str(_bot_dir / "templates"),
+    )
     # Minimal config defaults
     app.config.setdefault("DEBUG", False)
     app.config.setdefault("SECRET_KEY", os.environ.get("DASHBOARD_SECRET", "dashboard_secret"))
@@ -163,14 +169,19 @@ def create_app(config: dict | None = None) -> Flask:
         for m in failed_imports:
             log.warning(" - Failed route module: %s", m)
 
-    # Basic root route
+    # Main dashboard route — serve the full Command Center UI
     @app.route("/")
     def index():
         if app._failed_route_imports:
             return render_template_string(
                 "<h1>Dashboard</h1><p>Degraded. Visit <a href='/status'>/status</a>.</p>"
             )
-        return render_template_string("<h1>Dashboard</h1><p>All systems nominal.</p>")
+        try:
+            import time as _t
+            return render_template("dashboard.html", cache_bust=str(int(_t.time())))
+        except Exception:
+            log.exception("Failed to render dashboard.html")
+            return render_template_string("<h1>Dashboard</h1><p>Template error. Check logs.</p>")
 
     return app
 
