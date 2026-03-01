@@ -73,19 +73,22 @@ def claim_for_eoa(
 
     for cid in condition_ids:
         cid_bytes = bytes.fromhex(cid.replace("0x", ""))
-        tx = ctf.functions.redeemPositions(
-            collateral, parent, cid_bytes, [1, 2]
-        ).build_transaction({
-            "from": acct.address,
-            "nonce": nonce,
-            "gasPrice": min(w3.eth.gas_price, MAX_GAS_PRICE),
-            "gas": 200_000,
-            "chainId": 137,
-        })
-        signed = acct.sign_transaction(tx)
-        tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
-        tx_hashes.append(tx_hash.hex())
-        nonce += 1
+        # Redeem each index set separately — [1,2] is a merge (needs both sides),
+        # but we typically hold only the winning side.
+        for idx_set in [[1], [2]]:
+            tx = ctf.functions.redeemPositions(
+                collateral, parent, cid_bytes, idx_set
+            ).build_transaction({
+                "from": acct.address,
+                "nonce": nonce,
+                "gasPrice": min(w3.eth.gas_price, MAX_GAS_PRICE),
+                "gas": 200_000,
+                "chainId": 137,
+            })
+            signed = acct.sign_transaction(tx)
+            tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+            tx_hashes.append(tx_hash.hex())
+            nonce += 1
 
     return tx_hashes
 
@@ -110,51 +113,54 @@ def claim_for_proxy(
     usdc_contract = w3.eth.contract(address=Web3.to_checksum_address(USDC_E), abi=usdc_abi)
     pre_bal = usdc_contract.functions.balanceOf(proxy).call() / 1e6
 
+    # Gnosis Safe pre-approved signature (owner == msg.sender)
+    sig = (
+        b"\x00" * 12
+        + bytes.fromhex(acct.address[2:])
+        + b"\x00" * 32
+        + b"\x01"
+    )
+
     for cid in condition_ids:
         cid_bytes = bytes.fromhex(cid.replace("0x", ""))
-        call_data = ctf.encode_abi(
-            "redeemPositions",
-            [collateral, parent, cid_bytes, [1, 2]],
-        )
+        # Redeem each index set separately — [1,2] is a merge (needs both sides),
+        # but we typically hold only the winning side.
+        for idx_set in [[1], [2]]:
+            call_data = ctf.encode_abi(
+                "redeemPositions",
+                [collateral, parent, cid_bytes, idx_set],
+            )
 
-        # Gnosis Safe pre-approved signature (owner == msg.sender)
-        sig = (
-            b"\x00" * 12
-            + bytes.fromhex(acct.address[2:])
-            + b"\x00" * 32
-            + b"\x01"
-        )
-
-        tx = safe.functions.execTransaction(
-            Web3.to_checksum_address(CTF_ADDRESS),  # to
-            0,                                       # value
-            bytes.fromhex(call_data[2:]),            # data
-            0,                                       # operation (CALL)
-            0, 0, 0,                                 # gas params (0 = use tx gas)
-            "0x0000000000000000000000000000000000000000",  # gasToken
-            "0x0000000000000000000000000000000000000000",  # refundReceiver
-            sig,                                     # signatures
-        ).build_transaction({
-            "from": acct.address,
-            "nonce": nonce,
-            "gasPrice": min(w3.eth.gas_price, MAX_GAS_PRICE),
-            "gas": 350_000,
-            "chainId": 137,
-        })
-        signed = acct.sign_transaction(tx)
-        tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
-        tx_hashes.append(tx_hash.hex())
-        log.info("[CLAIM] Sent proxy redeem tx %s (nonce=%d)", tx_hash.hex()[:18], nonce)
-        # Wait for confirmation before next tx (avoids gas pre-reservation issues)
-        try:
-            receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
-            log.info("[CLAIM] Confirmed block=%d status=%d gas_used=%d",
-                     receipt.blockNumber, receipt.status, receipt.gasUsed)
-        except Exception as e:
-            log.warning("[CLAIM] Wait for receipt failed: %s", str(e)[:100])
-            # Mark as failed to prevent retry loop
-            _failed_cids[cid] = time.time()
-        nonce += 1
+            tx = safe.functions.execTransaction(
+                Web3.to_checksum_address(CTF_ADDRESS),  # to
+                0,                                       # value
+                bytes.fromhex(call_data[2:]),            # data
+                0,                                       # operation (CALL)
+                0, 0, 0,                                 # gas params (0 = use tx gas)
+                "0x0000000000000000000000000000000000000000",  # gasToken
+                "0x0000000000000000000000000000000000000000",  # refundReceiver
+                sig,                                     # signatures
+            ).build_transaction({
+                "from": acct.address,
+                "nonce": nonce,
+                "gasPrice": min(w3.eth.gas_price, MAX_GAS_PRICE),
+                "gas": 350_000,
+                "chainId": 137,
+            })
+            signed = acct.sign_transaction(tx)
+            tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+            tx_hashes.append(tx_hash.hex())
+            log.info("[CLAIM] Sent proxy redeem tx %s (nonce=%d, idx=%s)",
+                     tx_hash.hex()[:18], nonce, idx_set)
+            # Wait for confirmation before next tx
+            try:
+                receipt = w3.eth.wait_for_transaction_receipt(tx_hash, timeout=120)
+                log.info("[CLAIM] Confirmed block=%d status=%d gas_used=%d",
+                         receipt.blockNumber, receipt.status, receipt.gasUsed)
+            except Exception as e:
+                log.warning("[CLAIM] Wait for receipt failed: %s", str(e)[:100])
+                _failed_cids[cid] = time.time()
+            nonce += 1
 
     # Check USDC balance after claiming — if unchanged, mark all cids as failed
     try:
