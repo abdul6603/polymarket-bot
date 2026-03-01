@@ -47,11 +47,34 @@ VIPER_ROOT = Path(__file__).parent.parent / "viper"
 _ADDED_PATHS: set[str] = set()
 
 def ensure_path(p: str | Path) -> None:
-    """Add a path to sys.path if not already there."""
-    s = str(p)
-    if s not in _ADDED_PATHS and s not in sys.path:
-        sys.path.insert(0, s)
-        _ADDED_PATHS.add(s)
+    """Add a path to sys.path if not already there.
+
+    Defensive behaviour:
+    - Only insert existing directories (Path.is_dir()).
+    - Log when skipping missing paths so Robotox / operators can see why imports failed.
+    - Track inserted paths in _ADDED_PATHS to avoid repeated sys.path pollution.
+    """
+    try:
+        # Normalize to Path so we can reliably check existence
+        _p = Path(p)
+        s = str(_p)
+        logger = logging.getLogger(__name__)
+
+        # Only add if the path exists and is a directory
+        if not _p.exists() or not _p.is_dir():
+            logger.debug("ensure_path: skipping missing/non-dir path: %s", s)
+            return
+
+        # Insert once, avoid duplicates in sys.path and our set
+        if s not in _ADDED_PATHS and s not in sys.path:
+            sys.path.insert(0, s)
+            _ADDED_PATHS.add(s)
+            logger.debug("ensure_path: added to sys.path: %s", s)
+        else:
+            logger.debug("ensure_path: already present, skipping: %s", s)
+    except Exception:
+        # Never raise from this helper; sys.path modifications are best-effort.
+        logging.getLogger(__name__).exception("ensure_path: unexpected failure for %s", str(p))
 
 ensure_path(ATLAS_ROOT.parent)
 ensure_path(SHELBY_ROOT_DIR)
