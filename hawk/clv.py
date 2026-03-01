@@ -134,7 +134,7 @@ def update_on_resolution(condition_id: str, won: bool) -> CLVRecord | None:
                      r["clv"], r["clv_pct"], entry, closing, r.get("question", "")[:60])
             break
 
-    # Rewrite file
+    # Rewrite file (atomic via same-dir tmp file)
     if updated:
         try:
             DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -142,7 +142,9 @@ def update_on_resolution(condition_id: str, won: bool) -> CLVRecord | None:
             # write via a tmp file then replace atomically
             with open(tmp, "w", encoding="utf-8") as f:
                 for r in records:
-                    f.write(json.dumps(r) + "\n")
+                    # ensure consistent encoding and stable JSON lines
+                    f.write(json.dumps(r, ensure_ascii=False) + "\n")
+            # atomic replace on same filesystem
             tmp.replace(CLV_FILE)
         except Exception:
             log.exception("[CLV] Failed to update CLV file for %s", condition_id[:12])
