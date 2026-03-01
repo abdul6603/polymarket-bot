@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.viper.jobhunter</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/macuser/polymarket-bot/.venv/bin/python</string>
+        <string>/Users/macuser/polymarket-bot/viper/run_job_hunter.py</string>
+        <string>--loop</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>/Users/macuser/polymarket-bot</string>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardOutPath</key>
+    <string>/tmp/viper_jobhunter.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/viper_jobhunter.log</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/Users/macuser/polymarket-bot/.venv/bin</string>
+    </dict>
+</dict>
+</plist>
