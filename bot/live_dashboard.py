@@ -63,17 +63,28 @@ def _register_blueprints(app: Flask, package_name: str = "bot.routes") -> List[s
                 app.register_blueprint(bp)
                 log.info("Registered blueprint from %s", mod_name)
             else:
-                # If module defines a register_routes(app) function, call it.
-                reg = getattr(mod, "register_routes", None)
-                if callable(reg):
-                    try:
-                        reg(app)
-                        log.info("Registered routes via register_routes() in %s", mod_name)
-                    except Exception:
-                        log.exception("register_routes() failed in %s", mod_name)
-                        failed.append(mod_name)
-                else:
-                    log.debug("No blueprint or register_routes() in %s — skipping", mod_name)
+                # Search for any *_bp Blueprint attribute
+                found = False
+                for attr_name in dir(mod):
+                    if attr_name.endswith("_bp"):
+                        obj = getattr(mod, attr_name, None)
+                        if isinstance(obj, Blueprint):
+                            app.register_blueprint(obj)
+                            log.info("Registered blueprint %s from %s", attr_name, mod_name)
+                            found = True
+                            break
+                if not found:
+                    # If module defines a register_routes(app) function, call it.
+                    reg = getattr(mod, "register_routes", None)
+                    if callable(reg):
+                        try:
+                            reg(app)
+                            log.info("Registered routes via register_routes() in %s", mod_name)
+                        except Exception:
+                            log.exception("register_routes() failed in %s", mod_name)
+                            failed.append(mod_name)
+                    else:
+                        log.debug("No blueprint or register_routes() in %s — skipping", mod_name)
         except Exception:
             log.exception("Failed to import/register routes from %s", mod_name)
             failed.append(mod_name)

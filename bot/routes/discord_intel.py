@@ -10,6 +10,7 @@ from flask import Blueprint, jsonify, request
 
 log = logging.getLogger(__name__)
 discord_bp = Blueprint("discord_intel", __name__)
+bp = discord_bp  # Auto-discovered by live_dashboard
 
 DB_PATH = Path.home() / "polymarket-bot" / "data" / "discord_intel.db"
 DATA_DIR = Path.home() / "polymarket-bot" / "data"
