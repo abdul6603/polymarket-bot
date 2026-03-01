@@ -16,7 +16,7 @@ MIN_WALLET_SCORE = 50
 
 # ── Polling ──
 POLL_INTERVAL_S = 4
-POSITION_CHANGE_MIN_USD = 1000        # Real whale moves are $1K+ (filters noise)
+POSITION_CHANGE_MIN_USD = 500         # Whale moves $500+ (catches more entries)
 CACHE_TTL_S = 15                      # Fast polling — catch moves early
 
 # ── Copy Trade Rules ──
@@ -24,9 +24,9 @@ _BANKROLL = float(os.getenv("BANKROLL_USD", "1000"))
 MAX_COPY_SIZE_USD = round(_BANKROLL * 0.03, 2)  # 3% of bankroll per trade
 MAX_COPY_PCT_OF_WHALE = 0.15          # 15% of whale's trade size
 MAX_DAILY_EXPOSURE_USD = round(_BANKROLL * 0.25, 2)  # 25% of bankroll/day
-MAX_SLIPPAGE_PCT = 6.0                # Tighter fills — skip if >6% slippage
-MIN_CONSENSUS = 2                     # 2+ whales must agree on direction
-MAX_IMPLIED_PRICE = 0.55              # Never buy above $0.55
+MAX_SLIPPAGE_PCT = 15.0               # Allow more slippage — whales move price
+MIN_CONSENSUS = 1                     # 1 high-score whale is enough to copy
+MAX_IMPLIED_PRICE = 0.85              # Allow conviction plays up to $0.85
 MIN_MARKET_DURATION_S = 3600          # Only copy on markets with 1h+ remaining
 
 # ── Performance Tracking / Auto-blacklist ──

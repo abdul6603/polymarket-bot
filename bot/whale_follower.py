@@ -550,6 +550,11 @@ class WhaleMonitor:
                 and float(p.get("size", 0)) > 0
             ]
 
+            if data and not crypto_positions:
+                non_crypto = [p.get("title", "?")[:50] for p in data[:3]]
+                log.debug("[WHALE] %s has %d positions but 0 crypto — samples: %s",
+                          wallet[:12], len(data), non_crypto)
+
             self._response_cache[wallet] = (now, crypto_positions)
             return crypto_positions
 
@@ -961,6 +966,8 @@ class CopyExecutor:
             from datetime import datetime, timezone
             end_dt = datetime.fromisoformat(end_str.replace("Z", "+00:00"))
             remaining = (end_dt - datetime.now(timezone.utc)).total_seconds()
+            if remaining < 0:
+                return None
             return remaining
         except Exception as e:
             log.debug("[WHALE] Market duration check error: %s", str(e)[:80])
@@ -1341,12 +1348,30 @@ class WhaleTracker:
         signals = self.monitor.poll_wallets()
         self._stats["signals_generated"] += len(signals)
 
+        if self._tick_count % 10 == 0:
+            tracked_count = len(self.db.get_tracked_wallets())
+            log.info(
+                "[WHALE] tick=%d tracked=%d signals_total=%d executed=%d skipped=%d",
+                self._tick_count, tracked_count,
+                self._stats["signals_generated"],
+                self._stats["trades_executed"],
+                self._stats["trades_skipped"],
+            )
+
+        if signals:
+            log.info("[WHALE] %d signal(s) this tick", len(signals))
+
         # Execute consensus signals
         for signal in signals:
             try:
                 result = self.executor.execute_signal(signal)
                 if result:
                     self._stats["trades_executed"] += 1
+                    log.info(
+                        "[WHALE] EXECUTED: %s %s $%.2f from %s",
+                        signal.get("title", "?")[:40], signal.get("side", "?"),
+                        result.get("size_usd", 0), signal.get("wallet", "?")[:12],
+                    )
                 else:
                     self._stats["trades_skipped"] += 1
             except Exception as e:
