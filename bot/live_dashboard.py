@@ -164,15 +164,17 @@ def create_app(config: dict | None = None) -> Flask:
     return app
 
 
+# Module-level app instance for importers (e.g. Robotox health check)
+app = create_app()
 if __name__ == "__main__":
     # Allow running the dashboard directly for local development.
     logging.basicConfig(level=logging.INFO)
-    app = create_app({"DEBUG": True})
+    app = create_app()
     # Use socketio.run if available, else fallback to Flask's built-in server.
     sio = app.extensions.get("socketio")
     if sio:
         try:
-            sio.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 7777)))
+            sio.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 7777)), allow_unsafe_werkzeug=True)
         except Exception:
             log.exception("SocketIO run failed — falling back to Flask.run")
             app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 7777)))
