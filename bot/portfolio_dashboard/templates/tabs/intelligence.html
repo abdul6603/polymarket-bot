@@ -1,5 +1,31 @@
 <div id="tab-intelligence" class="tab-content">
 
+  <!-- Agent Hero Card -->
+  <div class="agent-hero" style="--hero-accent:#9B59B6;">
+    <div class="agent-hero-top">
+      <div class="agent-hero-icon" style="background:rgba(155,89,182,0.15);color:#9B59B6;">AI</div>
+      <div>
+        <div class="agent-hero-title">AI Infrastructure — Local LLM + Cloud Router</div>
+        <div class="agent-hero-role">Self-Hosted 35B Parameter Model with Smart Fallback</div>
+      </div>
+    </div>
+    <div class="agent-hero-desc">
+      The AI infrastructure layer hosts a <strong>local 35-billion parameter model</strong> (Qwen 3.5 MoE)
+      running on Apple Silicon, providing $0/call inference for the entire agent network. A smart routing
+      layer directs each request to the optimal model — local for routine analysis, cloud AI (OpenAI GPT-4o,
+      Claude) for tasks requiring frontier reasoning. Tracks cost per agent, per call, and per model with
+      full transparency. The fallback chain ensures zero downtime: local → OpenAI → Claude.
+    </div>
+    <div class="agent-hero-caps">
+      <span class="agent-cap agent-cap-highlight">Self-Hosted LLM</span>
+      <span class="agent-cap">35B Parameters (MoE)</span>
+      <span class="agent-cap">$0/Call Local Inference</span>
+      <span class="agent-cap">Smart Model Routing</span>
+      <span class="agent-cap">Cost Per Agent Tracking</span>
+      <span class="agent-cap">3-Tier Fallback Chain</span>
+    </div>
+  </div>
+
   <!-- S1: Header + Quick Stats -->
   <div class="intel-header">
     <div class="intel-title-group">

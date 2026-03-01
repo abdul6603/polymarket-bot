@@ -1,24 +1,35 @@
-<!-- OVERVIEW TAB -->
+<!-- OVERVIEW — Landing Page -->
 <div class="tab-content active" id="tab-overview">
 
-  <!-- Section 1: Header Bar -->
-  <div class="ov-header">
-    <div class="ov-title-group">
-      <span class="ov-title">EYE ECOSYSTEM</span>
-      <span class="ov-subtitle">COMMAND CENTER</span>
+  <!-- Hero Section -->
+  <div class="landing-hero">
+    <h1>Autonomous AI Agent Network</h1>
+    <div class="tagline">
+      A fleet of 12 specialized AI agents operating 24/7 — trading crypto, prediction markets, and futures
+      while an intelligence layer researches, backtests, and optimizes strategies in real time.
     </div>
-    <div class="ov-header-right">
-      <span class="ov-badge" id="ov-agent-count-badge"><span class="dot-online"></span> -- Online</span>
-      <span class="ov-badge" id="ov-llm-badge" style="background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:var(--text-muted);">
-        <span class="dot-offline" id="ov-llm-dot"></span> LLM --
-      </span>
-      <span class="ov-timestamp" id="ov-updated">--:--</span>
-      <button class="btn" onclick="refresh()" style="padding:4px 10px;font-size:0.7rem;">&#x27F3;</button>
+    <div class="landing-stats">
+      <div class="landing-stat">
+        <div class="landing-stat-val" id="ov-agents">12</div>
+        <div class="landing-stat-lbl">Autonomous Agents</div>
+      </div>
+      <div class="landing-stat">
+        <div class="landing-stat-val">3</div>
+        <div class="landing-stat-lbl">Live Markets</div>
+      </div>
+      <div class="landing-stat">
+        <div class="landing-stat-val">24/7</div>
+        <div class="landing-stat-lbl">Uptime</div>
+      </div>
+      <div class="landing-stat">
+        <div class="landing-stat-val">$0</div>
+        <div class="landing-stat-lbl">LLM Cost (Local AI)</div>
+      </div>
     </div>
   </div>
 
   <!-- Resource Vitals Strip -->
-  <div id="ov-resource-strip" style="display:flex;gap:16px;margin-bottom:var(--space-4);padding:8px 14px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);">
+  <div id="ov-resource-strip" style="display:flex;gap:16px;margin-bottom:16px;padding:8px 14px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);">
     <div style="flex:1;">
       <div style="display:flex;justify-content:space-between;font-size:0.64rem;font-family:var(--font-mono);margin-bottom:3px;">
         <span style="color:var(--text-muted);">CPU</span>
@@ -50,86 +61,189 @@
 
   <div id="ov-garves-health-banner" style="display:none;margin-bottom:12px;padding:10px 16px;border-radius:8px;font-size:0.78rem;font-weight:600;"></div>
 
-  <!-- Section 1b: Metric Cards -->
-  <div class="grid-4" style="margin-bottom:var(--space-6);">
-    <div class="stat-card" data-accent="success"><div class="stat-value" id="ov-pnl">--</div><div class="stat-label">Total PNL</div></div>
-    <div class="stat-card" data-accent="shelby"><div class="stat-value" id="ov-agents">--</div><div class="stat-label">Active Agents</div></div>
-    <div class="stat-card" data-accent="garves"><div class="stat-value" id="ov-trades">--</div><div class="stat-label">Trades (WR%)</div></div>
-    <div class="stat-card" data-accent="error"><div class="stat-value" id="ov-alerts">--</div><div class="stat-label">Critical Alerts</div></div>
-  </div>
-
-  <!-- Section 2: Intelligence Panel + Agent Grid -->
-  <div class="ov-main-row">
-    <!-- Left: Team Intelligence -->
-    <div class="ov-intel-panel glass-card" id="team-intelligence"></div>
-    <!-- Right: Agent Grid (3x4) -->
-    <div style="flex:1;min-width:0;">
-      <div class="ov-agent-grid" id="agent-grid"></div>
+  <!-- Live Metrics -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;">
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Total P&amp;L</div>
+      <div id="ov-pnl" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">--</div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Active Agents</div>
+      <div id="ov-agents-live" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">--</div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Trades (WR%)</div>
+      <div id="ov-trades" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">--</div>
+    </div>
+    <div class="glass-card" style="text-align:center;padding:14px;">
+      <div class="text-muted" style="font-size:0.64rem;text-transform:uppercase;letter-spacing:0.05em;">Critical Alerts</div>
+      <div id="ov-alerts" style="font-size:1.4rem;font-weight:800;font-family:var(--font-mono);">--</div>
     </div>
   </div>
 
-  <!-- Section 3: Priority Actions -->
-  <div class="glass-card" style="margin-top:var(--space-6);">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--space-4);">
-      <h2 class="section-title" data-accent="thor" style="margin-bottom:0;">Priority Actions</h2>
-      <span style="font-size:0.64rem;color:var(--text-muted);font-family:var(--font-mono);letter-spacing:0.06em;">AUTO-GENERATED</span>
+  <!-- Trading Agents -->
+  <div class="landing-section-title">Trading Agents</div>
+  <div class="agent-grid">
+    <div class="agent-grid-card" style="--card-accent:var(--agent-garves);" onclick="switchTab('garves-live')">
+      <div class="agent-grid-name">Garves</div>
+      <div class="agent-grid-role">Crypto Prediction Market Trader</div>
+      <div class="agent-grid-desc">Multi-engine consensus trading on Polymarket BTC 5-minute markets. Uses maker orders for favorable fills, cross-validates 8+ technical indicators, and auto-sizes positions with Kelly criterion.</div>
+      <div class="agent-grid-tags">
+        <span class="agent-grid-tag">Live Trading</span>
+        <span class="agent-grid-tag">Maker Engine</span>
+        <span class="agent-grid-tag">Multi-Signal</span>
+      </div>
     </div>
-    <div id="overview-smart-actions" style="max-height:280px;overflow-y:auto;">
-      <span class="text-muted" style="font-size:0.76rem;">Loading smart actions...</span>
+    <div class="agent-grid-card" style="--card-accent:var(--agent-hawk);" onclick="switchTab('hawk')">
+      <div class="agent-grid-name">Hawk</div>
+      <div class="agent-grid-role">Multi-Domain Prediction Market Trader</div>
+      <div class="agent-grid-desc">Scans thousands of non-crypto prediction markets across sports, weather, and politics. Uses LLM analysis + sportsbook odds comparison to find mispriced contracts with statistical edge.</div>
+      <div class="agent-grid-tags">
+        <span class="agent-grid-tag">Live Trading</span>
+        <span class="agent-grid-tag">LLM Analysis</span>
+        <span class="agent-grid-tag">Multi-Domain</span>
+      </div>
     </div>
-  </div>
-
-  <!-- Section 3b: Collapsible — Recent Errors (default CLOSED) -->
-  <div class="collapse-section" style="margin-top:var(--space-6);">
-    <div class="collapse-trigger">
-      <h2 class="section-title" data-accent="error" style="margin-bottom:0;">Recent Errors <span id="ov-error-count" style="font-size:0.62rem;background:var(--error);color:#fff;padding:1px 6px;border-radius:8px;margin-left:6px;display:inline-block;min-width:16px;text-align:center;">0</span></h2>
+    <div class="agent-grid-card" style="--card-accent:var(--agent-odin);" onclick="switchTab('odin')">
+      <div class="agent-grid-name">Odin</div>
+      <div class="agent-grid-role">Futures Swing Trader (Hyperliquid)</div>
+      <div class="agent-grid-desc">BTC/ETH perpetual futures using Smart Money Concepts (SMC) structure + macro regime detection. Conviction-scored entries with dynamic TP/SL, position sizing via macro multiplier.</div>
+      <div class="agent-grid-tags">
+        <span class="agent-grid-tag">Futures</span>
+        <span class="agent-grid-tag">SMC + Macro</span>
+        <span class="agent-grid-tag">Conviction Engine</span>
+      </div>
     </div>
-    <div class="collapse-body">
-      <div class="glass-card" style="max-height:200px;overflow-y:auto;">
-        <div id="ov-errors" style="font-family:var(--font-mono);font-size:0.74rem;">
-          <span class="text-muted">No errors detected.</span>
-        </div>
+    <div class="agent-grid-card" style="--card-accent:var(--agent-oracle);" onclick="switchTab('oracle')">
+      <div class="agent-grid-name">Oracle</div>
+      <div class="agent-grid-role">Weekly Probability Ensemble</div>
+      <div class="agent-grid-desc">Analyzes 60+ crypto markets weekly using a multi-model AI ensemble (Claude + Qwen + Gemini). Produces calibrated probability estimates that feed other trading agents.</div>
+      <div class="agent-grid-tags">
+        <span class="agent-grid-tag">Multi-Model</span>
+        <span class="agent-grid-tag">Probability Calibration</span>
+        <span class="agent-grid-tag">60+ Markets</span>
+      </div>
+    </div>
+    <div class="agent-grid-card" style="--card-accent:var(--agent-quant);" onclick="switchTab('quant')">
+      <div class="agent-grid-name">Quant</div>
+      <div class="agent-grid-role">Strategy Backtesting Lab</div>
+      <div class="agent-grid-desc">Automated strategy optimization with walk-forward validation, Monte Carlo simulation (10K paths), CUSUM edge decay detection, and per-trade learning. Recommends parameter changes — never executes.</div>
+      <div class="agent-grid-tags">
+        <span class="agent-grid-tag">Walk-Forward</span>
+        <span class="agent-grid-tag">Monte Carlo</span>
+        <span class="agent-grid-tag">Self-Learning</span>
       </div>
     </div>
   </div>
 
-  <!-- Section 4: Collapsible — Agent Comms (default CLOSED) -->
-  <div class="collapse-section" style="margin-top:var(--space-8);">
-    <div class="collapse-trigger">
-      <h2 class="section-title" style="margin-bottom:0;">Agent Comms</h2>
+  <!-- Intelligence Layer -->
+  <div class="landing-section-title">Intelligence Layer</div>
+  <div class="agent-grid">
+    <div class="agent-grid-card" style="--card-accent:var(--agent-atlas);" onclick="switchTab('atlas')">
+      <div class="agent-grid-name">Atlas</div>
+      <div class="agent-grid-role">24/7 Research Engine</div>
+      <div class="agent-grid-desc">Runs 45-minute research cycles feeding intelligence to every agent. Maintains a semantic knowledge base with observations, learnings, and cross-agent insights. Supports deep research queries and KB search.</div>
+      <div class="agent-grid-tags">
+        <span class="agent-grid-tag">Semantic KB</span>
+        <span class="agent-grid-tag">Cross-Agent Intel</span>
+        <span class="agent-grid-tag">Deep Research</span>
+      </div>
     </div>
-    <div class="collapse-body">
-      <div class="glass-card">
-        <div id="agent-comms-feed" style="font-family:var(--font-mono);font-size:0.74rem;max-height:320px;overflow-y:auto;"><span class="text-muted">Loading agent communications...</span></div>
+    <div class="agent-grid-card" style="--card-accent:#5865F2;" onclick="switchTab('discord')">
+      <div class="agent-grid-name">Discord Intel</div>
+      <div class="agent-grid-role">Alpha Signal Pipeline</div>
+      <div class="agent-grid-desc">Monitors Discord trading channels, extracts alpha signals using NLP, tracks trader leaderboards, and surfaces high-conviction trade ideas with community vote aggregation.</div>
+      <div class="agent-grid-tags">
+        <span class="agent-grid-tag">NLP Extraction</span>
+        <span class="agent-grid-tag">Signal Pipeline</span>
+        <span class="agent-grid-tag">Leaderboard</span>
       </div>
     </div>
   </div>
 
-  <!-- Section 4b: Collapsible — Claude Brain (default CLOSED) -->
-  <div class="collapse-section">
-    <div class="collapse-trigger">
-      <h2 class="section-title" style="color:#e0e0e0;margin-bottom:0;">Claude Brain</h2>
-    </div>
-    <div class="collapse-body">
-      <div class="glass-card" style="margin-bottom:var(--space-4);">
-        <div id="claude-commands" style="max-height:250px;overflow-y:auto;"><span class="text-muted">Loading commands...</span></div>
+  <!-- Infrastructure -->
+  <div class="landing-section-title">Infrastructure</div>
+  <div class="agent-grid">
+    <div class="agent-grid-card" style="--card-accent:#10B981;" onclick="switchTab('traders')">
+      <div class="agent-grid-name">Portfolio View</div>
+      <div class="agent-grid-role">Unified Cross-Agent Aggregation</div>
+      <div class="agent-grid-desc">Single pane of glass across all trading agents. Aggregated positions, P&L, risk exposure, and performance metrics with per-agent breakdowns and trade history.</div>
+      <div class="agent-grid-tags">
+        <span class="agent-grid-tag">Aggregation</span>
+        <span class="agent-grid-tag">Risk View</span>
+        <span class="agent-grid-tag">Live Positions</span>
       </div>
-      <div class="glass-card">
-        <div style="display:flex;gap:8px;margin-bottom:6px;align-items:center;">
-          <input type="text" class="input" id="claude-brain-topic" placeholder="Topic..." style="flex:1;font-size:0.76rem;padding:5px 10px;">
-          <div id="claude-brain-type-pills" style="display:flex;gap:4px;">
-            <button class="brain-pill active" data-type="note" onclick="setBrainType('claude','note',this)">Note</button>
-            <button class="brain-pill" data-type="command" onclick="setBrainType('claude','command',this)">Cmd</button>
-            <button class="brain-pill" data-type="memory" onclick="setBrainType('claude','memory',this)">Mem</button>
-          </div>
-        </div>
-        <div style="display:flex;gap:8px;">
-          <textarea class="input" id="claude-brain-content" placeholder="Instructions, knowledge, or notes for Claude..." style="flex:1;min-height:48px;font-size:0.76rem;padding:5px 10px;resize:vertical;box-sizing:border-box;"></textarea>
-          <button class="btn btn-primary" onclick="addBrainNote('claude')" style="align-self:flex-end;padding:6px 14px;font-size:0.74rem;">Add</button>
-        </div>
-        <input type="hidden" id="claude-brain-type" value="note">
-        <div id="claude-brain-list" style="margin-top:10px;max-height:350px;overflow-y:auto;"><div class="text-muted" style="text-align:center;padding:12px;font-size:0.74rem;">No notes yet.</div></div>
+    </div>
+    <div class="agent-grid-card" style="--card-accent:#9B59B6;" onclick="switchTab('intelligence')">
+      <div class="agent-grid-name">AI Infrastructure</div>
+      <div class="agent-grid-role">Local LLM + Cloud AI Router</div>
+      <div class="agent-grid-desc">Hosts a local 35B-parameter model (Qwen 3.5 MoE) for $0/call inference. Smart router falls back to cloud AI (OpenAI/Claude) only when needed. Tracks costs per agent per call.</div>
+      <div class="agent-grid-tags">
+        <span class="agent-grid-tag">Local LLM</span>
+        <span class="agent-grid-tag">Smart Routing</span>
+        <span class="agent-grid-tag">Cost Tracking</span>
+      </div>
+    </div>
+    <div class="agent-grid-card" style="--card-accent:#aaaaaa;" onclick="switchTab('system')">
+      <div class="agent-grid-name">System Monitor</div>
+      <div class="agent-grid-role">Infrastructure Health</div>
+      <div class="agent-grid-desc">Real-time process monitoring, port scanning, resource utilization, and agent health checks. Auto-restart via LaunchAgents with health-gated keepalive.</div>
+      <div class="agent-grid-tags">
+        <span class="agent-grid-tag">Process Monitor</span>
+        <span class="agent-grid-tag">Auto-Restart</span>
+        <span class="agent-grid-tag">Health Checks</span>
       </div>
     </div>
   </div>
+
+  <!-- Tech Stack -->
+  <div class="landing-section-title">Technology Stack</div>
+  <div class="glass-card" style="text-align:center;padding:20px;">
+    <div class="tech-stack">
+      <span class="tech-badge">Python 3.12</span>
+      <span class="tech-badge">Flask + WebSocket</span>
+      <span class="tech-badge">Qwen 3.5 35B (Local)</span>
+      <span class="tech-badge">Claude API</span>
+      <span class="tech-badge">OpenAI GPT-4o</span>
+      <span class="tech-badge">Polymarket CLOB</span>
+      <span class="tech-badge">Hyperliquid DEX</span>
+      <span class="tech-badge">Chart.js</span>
+      <span class="tech-badge">SQLite</span>
+      <span class="tech-badge">JSONL Event Bus</span>
+      <span class="tech-badge">macOS LaunchAgents</span>
+      <span class="tech-badge">Tailscale VPN</span>
+    </div>
+  </div>
+
+  <!-- Live Agent Grid (populated by JS) -->
+  <div style="margin-top:24px;">
+    <div class="landing-section-title">Live Agent Status</div>
+    <div class="ov-agent-grid" id="agent-grid"></div>
+  </div>
+
+  <!-- Priority Actions -->
+  <div class="glass-card" style="margin-top:16px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+      <span style="font-family:var(--font-mono);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);">Priority Actions</span>
+      <span style="font-size:0.64rem;color:var(--text-muted);font-family:var(--font-mono);">AUTO-GENERATED</span>
+    </div>
+    <div id="overview-smart-actions" style="max-height:280px;overflow-y:auto;"></div>
+  </div>
+
+  <!-- Hidden compat elements -->
+  <div style="display:none;">
+    <div id="team-intelligence"></div>
+    <div id="ov-error-count">0</div>
+    <div id="ov-errors"></div>
+    <div id="agent-comms-feed"></div>
+    <div id="claude-commands"></div>
+    <div id="claude-brain-topic"></div>
+    <div id="claude-brain-content"></div>
+    <div id="claude-brain-type"></div>
+    <div id="claude-brain-list"></div>
+    <div id="ov-agent-count-badge"></div>
+    <div id="ov-llm-badge"><span id="ov-llm-dot"></span></div>
+    <div id="ov-updated"></div>
+  </div>
+
 </div>
