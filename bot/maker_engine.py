@@ -1028,22 +1028,20 @@ class MakerEngine:
 
     def _early_profit_take(self) -> None:
         """Sell positions at 95¢+ to free capital instead of waiting for resolution."""
-        high = {tid: f for tid, f in self._last_fair.items() if f >= 0.90}
-        if high:
-            log.info("[MAKER] Profit-take scan: %d tokens at 90c+ in _last_fair", len(high))
-        for token_id, fair in self._last_fair.items():
-            if fair < 0.95:
+        for token_id, pos in self._inv_mgr.get_all_positions().items():
+            cur_price = pos.get("cur_price", 0)
+            if cur_price < 0.95:
+                continue
+            if pos["size"] < 1.0:
                 continue
             # Cooldown: don't retry same token within 5 min
             if token_id in self._profit_take_cooldown:
                 if time.time() - self._profit_take_cooldown[token_id] < 300:
                     continue
-            pos = self._inv_mgr.get_position(token_id)
-            if not pos or pos["size"] < 1.0:
-                continue
-            asset = self._token_asset.get(token_id, "?")
-            log.info("[MAKER] Early exit: %s at %.0f¢ (%.1f shares) — freeing capital",
-                     asset.upper(), fair * 100, pos["size"])
+            asset = self._token_asset.get(token_id, pos.get("market_title", "?"))
+            log.info("[MAKER] Early exit: %s at %.0f¢ (%.1f shares) — freeing ~$%.0f",
+                     asset.upper(), cur_price * 100, pos["size"], pos["size"] * cur_price)
+            self._last_fair[token_id] = cur_price
             self._reduce_inventory(token_id, asset, target_shares=0.0)
             self._profit_take_cooldown[token_id] = time.time()
 
@@ -1228,12 +1226,6 @@ class MakerEngine:
             fair = self.compute_fair_value(asset, implied_price, remaining_s=remaining_s)
             if fair is None:
                 # Still track high-value positions for profit-taking
-                if implied_price is not None and implied_price >= 0.93:
-                    self._last_fair[up_token] = implied_price
-                    if down_token:
-                        self._last_fair[down_token] = 1.0 - implied_price
-                    log.info("[MAKER] High-value tracked: %s implied=%.4f (skipping quotes)",
-                             asset.upper(), implied_price)
                 continue
 
             # Orderbook imbalance adjustment: shift fair value toward heavy side
