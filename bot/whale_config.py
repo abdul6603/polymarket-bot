@@ -1,4 +1,8 @@
-"""Whale Tracker configuration — Smart Money Follower for Garves."""
+"""Whale Engine configuration — independent Smart Money Follower.
+
+Own bankroll ($100), own wallet (WHALE_PRIVATE_KEY), own daily cap.
+Completely separate from Garves taker/maker/killshot engines.
+"""
 from __future__ import annotations
 
 import os
@@ -19,11 +23,11 @@ POLL_INTERVAL_S = 4
 POSITION_CHANGE_MIN_USD = 500         # Whale moves $500+ (catches more entries)
 CACHE_TTL_S = 15                      # Fast polling — catch moves early
 
-# ── Copy Trade Rules ──
-_BANKROLL = float(os.getenv("BANKROLL_USD", "1000"))
-MAX_COPY_SIZE_USD = round(_BANKROLL * 0.03, 2)  # 3% of bankroll per trade
+# ── Whale Engine Bankroll (separate from Garves) ──
+_BANKROLL = float(os.getenv("WHALE_BANKROLL_USD", "100"))
+MAX_COPY_SIZE_USD = round(_BANKROLL * 0.05, 2)  # 5% per trade ($5)
 MAX_COPY_PCT_OF_WHALE = 0.15          # 15% of whale's trade size
-MAX_DAILY_EXPOSURE_USD = round(_BANKROLL * 0.25, 2)  # 25% of bankroll/day
+MAX_DAILY_EXPOSURE_USD = round(_BANKROLL * 0.25, 2)  # 25%/day ($25)
 MAX_SLIPPAGE_PCT = 15.0               # Allow more slippage — whales move price
 MIN_CONSENSUS = 1                     # 1 high-score whale is enough to copy
 MAX_IMPLIED_PRICE = 0.85              # Allow conviction plays up to $0.85

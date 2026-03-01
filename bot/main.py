@@ -156,9 +156,36 @@ class TradingBot:
         )
         log.info("[SNIPE] dry_run=%s (SNIPE_DRY_RUN)", cfg.snipe_dry_run)
 
-        # Whale Follower — Smart Money copy trader (uses snipe wallet)
+        # Whale Engine — independent Smart Money copy trader (own wallet + bankroll)
+        whale_client = None
+        _whale_key = os.environ.get("WHALE_PRIVATE_KEY", "")
+        if _whale_key:
+            try:
+                from py_clob_client.client import ClobClient as _WC
+                from py_clob_client.clob_types import ApiCreds as _WA
+                whale_client = _WC(
+                    cfg.clob_host,
+                    key=_whale_key,
+                    chain_id=137,
+                    funder=os.environ.get("WHALE_FUNDER_ADDRESS") or None,
+                    signature_type=2,
+                )
+                _wapi = os.environ.get("WHALE_CLOB_API_KEY", "")
+                if _wapi:
+                    whale_client.set_api_creds(_WA(
+                        api_key=_wapi,
+                        api_secret=os.environ.get("WHALE_CLOB_API_SECRET", ""),
+                        api_passphrase=os.environ.get("WHALE_CLOB_API_PASSPHRASE", ""),
+                    ))
+                whale_client.get_ok()
+                log.info("[WHALE] CLOB connection OK (own wallet)")
+            except Exception:
+                log.warning("[WHALE] Wallet init failed — paper mode only until WHALE_PRIVATE_KEY configured")
+                whale_client = None
+        else:
+            log.info("[WHALE] No WHALE_PRIVATE_KEY — paper mode only")
         self.whale_tracker = WhaleTracker(
-            clob_client=snipe_client,
+            clob_client=whale_client,
             dry_run=cfg.whale_dry_run,
         )
 
