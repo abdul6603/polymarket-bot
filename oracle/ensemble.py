@@ -516,7 +516,7 @@ def _query_gemini(cfg: OracleConfig, system: str, user: str) -> dict | None:
                 json={
                     "system_instruction": {"parts": [{"text": system}]},
                     "contents": [{"parts": [{"text": user}]}],
-                    "generationConfig": {"temperature": 0.3, "maxOutputTokens": 4096, "responseMimeType": "application/json"},
+                    "generationConfig": {"temperature": 0.3, "maxOutputTokens": 8192},
                 },
                 timeout=90,
             )
