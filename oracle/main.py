@@ -227,6 +227,9 @@ class OracleBot:
                     f"\U0001f4b5 P&L: *${_res_pnl:+.2f}*"
                 )
 
+        # Step 1b: Expire stale pending predictions (prevents permanent market lockout)
+        self.tracker.expire_stale_predictions(max_age_days=7)
+
         # Step 2: Scan weekly markets (Polymarket + Kalshi)
         log.info("Step 2: Scanning weekly markets...")
         poly_markets = scan_weekly_markets(self.cfg)

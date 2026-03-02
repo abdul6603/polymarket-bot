@@ -479,7 +479,7 @@ def _query_claude(cfg: OracleConfig, system: str, user: str) -> dict | None:
             "https://api.anthropic.com/v1/messages",
             headers={
                 "x-api-key": cfg.claude_api_key,
-                "anthropic-version": "2023-06-01",
+                "anthropic-version": "2025-01-01",
                 "content-type": "application/json",
             },
             json={
@@ -494,33 +494,60 @@ def _query_claude(cfg: OracleConfig, system: str, user: str) -> dict | None:
             data = resp.json()
             text = data.get("content", [{}])[0].get("text", "")
             return _parse_json_response(text)
-        log.warning("Claude API error: %d", resp.status_code)
+        log.warning("Claude API error: %d — %s", resp.status_code, resp.text[:300])
     except Exception as e:
         log.warning("Claude query failed: %s", e)
     return None
 
 
 def _query_gemini(cfg: OracleConfig, system: str, user: str) -> dict | None:
-    """Query Google Gemini API."""
-    try:
-        resp = requests.post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/{cfg.gemini_model}:generateContent",
-            params={"key": cfg.gemini_api_key},
-            headers={"content-type": "application/json"},
-            json={
-                "system_instruction": {"parts": [{"text": system}]},
-                "contents": [{"parts": [{"text": user}]}],
-                "generationConfig": {"temperature": 0.3, "maxOutputTokens": 2000},
-            },
-            timeout=60,
-        )
-        if resp.status_code == 200:
-            data = resp.json()
-            text = data.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-            return _parse_json_response(text)
-        log.warning("Gemini API error: %d", resp.status_code)
-    except Exception as e:
-        log.warning("Gemini query failed: %s", e)
+    """Query Google Gemini API with fallback model."""
+    models_to_try = [cfg.gemini_model, "gemini-2.0-flash"]
+    # Deduplicate while preserving order
+    seen = set()
+    models_to_try = [m for m in models_to_try if m not in seen and not seen.add(m)]
+
+    for model in models_to_try:
+        try:
+            resp = requests.post(
+                f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+                params={"key": cfg.gemini_api_key},
+                headers={"content-type": "application/json"},
+                json={
+                    "system_instruction": {"parts": [{"text": system}]},
+                    "contents": [{"parts": [{"text": user}]}],
+                    "generationConfig": {"temperature": 0.3, "maxOutputTokens": 2000},
+                },
+                timeout=60,
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                candidates = data.get("candidates", [])
+                if not candidates:
+                    # Safety filter or empty response
+                    block_reason = data.get("promptFeedback", {}).get("blockReason", "unknown")
+                    log.warning("Gemini %s returned no candidates (block_reason=%s)", model, block_reason)
+                    continue
+                finish_reason = candidates[0].get("finishReason", "")
+                if finish_reason == "SAFETY":
+                    log.warning("Gemini %s blocked by safety filter (finishReason=SAFETY)", model)
+                    continue
+                text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+                if not text:
+                    log.warning("Gemini %s returned empty text, full response: %s", model, json.dumps(data)[:500])
+                    continue
+                parsed = _parse_json_response(text)
+                if parsed:
+                    log.info("Gemini %s returned valid predictions", model)
+                    return parsed
+                log.warning("Gemini %s returned unparseable text: %s", model, text[:300])
+            elif resp.status_code == 404:
+                log.warning("Gemini model %s not found (404), trying fallback", model)
+                continue
+            else:
+                log.warning("Gemini %s API error: %d — %s", model, resp.status_code, resp.text[:300])
+        except Exception as e:
+            log.warning("Gemini %s query failed: %s", model, e)
     return None
 
 

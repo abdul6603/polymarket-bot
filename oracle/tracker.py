@@ -10,7 +10,7 @@ import json
 import logging
 import sqlite3
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -211,6 +211,23 @@ class OracleTracker:
         log.info("Resolved %d predictions, total P&L: $%.2f", resolved, total_pnl)
         return {"resolved": resolved, "pnl": total_pnl}
 
+    def expire_stale_predictions(self, max_age_days: int = 7) -> int:
+        """Expire pending predictions older than max_age_days.
+
+        Stale dry-run predictions permanently block markets — mark them
+        as 'expired' so they no longer count as open positions.
+        """
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=max_age_days)).strftime("%Y-%m-%d %H:%M:%S")
+        cur = self.db.execute(
+            "UPDATE predictions SET outcome = 'expired', resolved_at = datetime('now') "
+            "WHERE outcome = 'pending' AND created_at < ?",
+            (cutoff,),
+        )
+        self.db.commit()
+        if cur.rowcount > 0:
+            log.info("Expired %d stale predictions older than %d days", cur.rowcount, max_age_days)
+        return cur.rowcount
+
     def get_open_condition_ids(self) -> set[str]:
         """Return condition_ids of predictions that are still pending (open positions)."""
         rows = self.db.execute(
@@ -221,7 +238,7 @@ class OracleTracker:
     def count_trades_today(self, today_str: str) -> int:
         """Count trades already placed today (across all scans)."""
         row = self.db.execute(
-            "SELECT COUNT(*) FROM predictions WHERE week_start = ? AND size > 0",
+            "SELECT COUNT(*) FROM predictions WHERE date(created_at) = ? AND size > 0",
             (today_str,),
         ).fetchone()
         return row[0] if row else 0
