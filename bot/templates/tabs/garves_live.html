@@ -389,7 +389,7 @@
           <div style="display:flex;align-items:center;gap:8px;">
             <span style="width:8px;height:8px;border-radius:50;background:#ef4444;display:inline-block;animation:pulse-glow 2s ease-in-out infinite;"></span>
             <span class="gv-engine-header-title">Killshot</span>
-            <span id="killshot-engine-mode" class="gv-mode-badge dry">PAPER</span>
+            <span id="killshot-engine-mode" class="gv-mode-badge live">LIVE</span>
           </div>
           <div class="gv-engine-subtitle">Late-Window Maker Snipe &bull; Final 60s of 5m Windows</div>
         </div>
@@ -430,31 +430,36 @@
       <div class="glass-card" style="padding:10px 14px;margin-bottom:14px;">
         <div class="gv-section-title" style="margin-bottom:8px;color:#ef4444;">Strategy</div>
         <div style="font-size:0.72rem;color:var(--text-secondary);line-height:1.6;">
-          Monitors Binance spot price during 5m windows. In the final 60 seconds, if the price has moved
-          significantly from the open (direction &ldquo;locked&rdquo;), simulates posting a <strong>maker limit order</strong>
-          on the winning side at 82-93&cent;. Zero maker fees + rebates. Holds to resolution.
+          v2.0: Kelly Criterion sizing, adaptive time-decaying threshold, sum-to-one arb detection, Rust sub-20ms executor, Binance @aggTrade leading indicator, BTC&rarr;alt cascade, circuit breakers, streak risk mgmt. Entry at <strong>90-95&cent; maker</strong>. Holds to resolution.
         </div>
         <div class="gv-thresholds-bar" style="margin-top:10px;">
-          <div class="gv-threshold-item">Bankroll: <span id="ks-cfg-bankroll">$50</span></div>
+          <div class="gv-threshold-item">Bankroll: <span id="ks-cfg-bankroll">$150</span></div>
           <div class="dot-sep"></div>
-          <div class="gv-threshold-item">Max Bet: <span id="ks-cfg-maxbet">$5</span></div>
+          <div class="gv-threshold-item">Max Bet: <span id="ks-cfg-maxbet">$30</span></div>
           <div class="dot-sep"></div>
-          <div class="gv-threshold-item">Threshold: <span id="ks-cfg-threshold">0.05%</span></div>
+          <div class="gv-threshold-item">Kelly: <span style="color:#22c55e;">ON</span> (0.5x)</div>
           <div class="dot-sep"></div>
-          <div class="gv-threshold-item">Entry: <span id="ks-cfg-entry">82-93&cent;</span></div>
+          <div class="gv-threshold-item">Entry: <span id="ks-cfg-entry">90-95&cent;</span></div>
           <div class="dot-sep"></div>
           <div class="gv-threshold-item">Kill Zone: <span id="ks-cfg-killzone">T-60s</span></div>
+          <div class="dot-sep"></div>
+          <div class="gv-threshold-item">Arb: <span style="color:#22c55e;">ON</span></div>
+          <div class="dot-sep"></div>
+          <div class="gv-threshold-item">Rust: <span id="ks-rust-status" style="color:#22c55e;">UP</span></div>
+          <div class="dot-sep"></div>
+          <div class="gv-threshold-item">Cascade: <span style="color:#22c55e;">ON</span></div>
         </div>
       </div>
 
       <!-- Session Stats -->
       <div class="glass-card" style="padding:10px 14px;margin-bottom:14px;">
         <div class="gv-section-title" style="margin-bottom:8px;color:#ef4444;">Session Stats</div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;">
           <div><div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;">Session Trades</div><div id="ks-session-trades" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">0</div></div>
           <div><div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;">Session Wins</div><div id="ks-session-wins" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);color:#22c55e;">0</div></div>
           <div><div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;">Session P&amp;L</div><div id="ks-session-pnl" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">$0.00</div></div>
           <div><div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;">Daily Loss</div><div id="ks-daily-loss" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);color:#ef4444;">$0.00</div></div>
+          <div><div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;">Arb Trades</div><div id="ks-arb-count" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);color:#8b5cf6;">0</div></div>
         </div>
       </div>
 
@@ -1406,6 +1411,7 @@ function loadKillshotData() {
     var sp = d.session_pnl || 0;
     if (el('ks-session-pnl')) { el('ks-session-pnl').textContent = '$' + sp.toFixed(2); el('ks-session-pnl').style.color = sp >= 0 ? '#22c55e' : '#ef4444'; }
     if (el('ks-daily-loss')) el('ks-daily-loss').textContent = '$' + (d.daily_loss || 0).toFixed(2);
+    if (el('ks-arb-count')) el('ks-arb-count').textContent = d.arb_count || 0;
     if (el('ks-pending-count')) el('ks-pending-count').textContent = d.pending || 0;
 
     /* Pending trades table */
@@ -1417,7 +1423,7 @@ function loadKillshotData() {
       } else {
         var html = '';
         pending.forEach(function(p) {
-          var dirColor = p.direction === 'up' ? '#22c55e' : '#ef4444';
+          var dirColor = p.direction === 'arb' ? '#8b5cf6' : p.direction === 'up' ? '#22c55e' : '#ef4444';
           html += '<tr><td>' + (p.asset || '').toUpperCase() + '</td>';
           html += '<td style="color:' + dirColor + ';font-weight:600;">' + (p.direction || '').toUpperCase() + '</td>';
           html += '<td>' + ((p.entry_price || 0) * 100).toFixed(0) + '\u00a2</td>';
@@ -1440,7 +1446,7 @@ function loadKillshotData() {
     var html = '';
     trades.slice(-30).reverse().forEach(function(t) {
       var ts = t.timestamp ? new Date(t.timestamp * 1000).toLocaleTimeString() : '--';
-      var dirColor = t.direction === 'up' ? '#22c55e' : '#ef4444';
+      var dirColor = t.direction === 'arb' ? '#8b5cf6' : t.direction === 'up' ? '#22c55e' : '#ef4444';
       var resultColor = t.outcome === 'win' ? '#22c55e' : t.outcome === 'loss' ? '#ef4444' : '#888';
       var pnlVal = t.pnl != null ? '$' + t.pnl.toFixed(2) : '--';
       var pnlColor = (t.pnl || 0) >= 0 ? '#22c55e' : '#ef4444';

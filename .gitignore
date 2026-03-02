@@ -18,3 +18,4 @@ data/*.db-shm
 data/*.jsonl
 data/*.json
 data/archives/
+killshot/rust-executor/target/

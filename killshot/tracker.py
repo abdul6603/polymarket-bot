@@ -27,10 +27,10 @@ class PaperTrade:
     asset: str
     market_id: str
     question: str
-    direction: str        # "up" or "down"
-    entry_price: float    # simulated maker order price (e.g. 0.87)
+    direction: str        # "up", "down", or "arb"
+    entry_price: float    # simulated maker order price (or total cost per pair for arb)
     size_usd: float       # dollar amount committed
-    shares: float         # size_usd / entry_price
+    shares: float         # size_usd / entry_price (or num pairs for arb)
     window_end_ts: float  # when this 5m window closes
     spot_delta_pct: float # spot price change % that triggered this trade
     open_price: float     # asset open price at window start
@@ -88,11 +88,18 @@ class PaperTracker:
         self._pending.append(trade)
         self._session_trades += 1
         self._append_to_file(trade)
-        log.info(
-            "[KILLSHOT] Paper trade: %s %s @ %.0f¢ ($%.2f, %.1f shares) | delta=%.3f%%",
-            trade.direction.upper(), trade.asset, trade.entry_price * 100,
-            trade.size_usd, trade.shares, trade.spot_delta_pct * 100,
-        )
+        if trade.direction == "arb":
+            log.info(
+                "[KILLSHOT] Arb trade: %s | cost=%.0f¢/pair | $%.2f (%d pairs)",
+                trade.asset, trade.entry_price * 100,
+                trade.size_usd, int(trade.shares),
+            )
+        else:
+            log.info(
+                "[KILLSHOT] Paper trade: %s %s @ %.0f¢ ($%.2f, %.1f shares) | delta=%.3f%%",
+                trade.direction.upper(), trade.asset, trade.entry_price * 100,
+                trade.size_usd, trade.shares, trade.spot_delta_pct * 100,
+            )
 
     def resolve_trades(self, price_cache) -> list[PaperTrade]:
         """Check pending trades — resolve any whose window has closed."""
@@ -115,6 +122,30 @@ class PaperTracker:
                 log.warning(
                     "[KILLSHOT] Expired: %s %s (missed resolution window)",
                     trade.direction, trade.asset,
+                )
+                continue
+
+            # Arb trades — guaranteed win (bought both sides)
+            if trade.direction == "arb":
+                trade.outcome = "win"
+                trade.pnl = round(trade.shares * (1.0 - trade.entry_price), 4)
+                trade.resolved_at = now
+                self._session_pnl += trade.pnl
+                self._session_wins += 1
+                resolved.append(trade)
+                self._update_in_file(trade)
+
+                wr = (self._session_wins / max(self._session_trades, 1)) * 100
+                log.info(
+                    "[KILLSHOT] ARB WIN: %s | P&L $%.2f | Session: $%.2f (WR %.0f%%)",
+                    trade.asset, trade.pnl, self._session_pnl, wr,
+                )
+                self._notify_tg(
+                    "\u2705 <b>Killshot ARB WIN</b>\n"
+                    f"{trade.asset.upper()} | Both sides bought\n"
+                    f"P&L: <b>+${trade.pnl:.2f}</b>\n"
+                    f"Session: ${self._session_pnl:.2f} | WR {wr:.0f}% "
+                    f"({self._session_trades} trades)"
                 )
                 continue
 
@@ -216,6 +247,7 @@ class PaperTracker:
         resolved = [t for t in all_trades if t.get("outcome") in ("win", "loss")]
         wins = sum(1 for t in resolved if t["outcome"] == "win")
         total_pnl = sum(t.get("pnl", 0) for t in resolved)
+        arb_count = sum(1 for t in all_trades if t.get("direction") == "arb")
         avg_entry = 0.0
         if all_trades:
             avg_entry = sum(t.get("entry_price", 0) for t in all_trades) / len(all_trades)
@@ -233,6 +265,7 @@ class PaperTracker:
             "session_trades": self._session_trades,
             "session_wins": self._session_wins,
             "daily_loss": round(abs(min(self._session_pnl, 0)), 2),
+            "arb_count": arb_count,
         }
 
     def _load_all_trades(self) -> list[dict]:

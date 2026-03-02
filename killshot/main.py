@@ -2,8 +2,9 @@
 
 Runs as a separate process alongside Garves. Discovers 5m markets via
 Gamma slug lookups, monitors Binance spot prices in real-time, and
-simulates paper trades when direction is determined in the final 60
-seconds of each window.
+trades when direction is determined in the final seconds of each window.
+
+Enhanced with Binance @aggTrade leading indicator and 1-minute market support.
 
 Usage:
     cd ~/polymarket-bot && .venv/bin/python -m killshot.main
@@ -29,6 +30,7 @@ from bot.snipe.window_tracker import WindowTracker
 from killshot.config import KillshotConfig
 from killshot.clob_ws import ClobWS
 from killshot.engine import KillshotEngine
+from killshot.eval_tracker import EvalTracker
 from killshot.tracker import PaperTracker
 
 log = logging.getLogger("killshot")
@@ -66,62 +68,72 @@ class Market5m:
 
 # ── Market scanner ──────────────────────────────────────────────
 
-def _scan_5m_markets(assets: list[str]) -> list[Market5m]:
-    """Scan Gamma + CLOB for active 5m crypto up/down markets.
+def _scan_markets(assets: list[str], market_types: str = "5m") -> list[Market5m]:
+    """Scan Gamma + CLOB for active crypto up/down markets.
 
-    Uses timestamp-based slug lookups: {coin}-updown-5m-{unix_ts}
-    where ts aligns to 5-minute boundaries.
+    Supports multiple market types: 5m, 1m (comma-separated).
+    Uses timestamp-based slug lookups: {coin}-updown-{type}-{unix_ts}
     """
     now = time.time()
-    current_ts = int(now // 300) * 300
-    intervals = [current_ts, current_ts + 300]
-
+    types = [t.strip() for t in market_types.split(",")]
     results: list[Market5m] = []
     seen: set[str] = set()
 
     with httpx.Client(timeout=8) as client:
-        for ts in intervals:
-            for asset in assets:
-                coin = _ASSET_SHORT.get(asset)
-                if not coin:
-                    continue
-                slug = f"{coin}-updown-5m-{ts}"
-                try:
-                    resp = client.get(
-                        "https://gamma-api.polymarket.com/markets",
-                        params={"slug": slug},
-                    )
-                    if resp.status_code != 200:
+        for mtype in types:
+            if mtype == "5m":
+                interval = 300
+            elif mtype == "1m":
+                interval = 60
+            else:
+                continue
+
+            current_ts = int(now // interval) * interval
+            intervals = [current_ts, current_ts + interval]
+            if mtype == "1m":
+                intervals.append(current_ts + interval * 2)
+
+            for ts in intervals:
+                for asset in assets:
+                    coin = _ASSET_SHORT.get(asset)
+                    if not coin:
                         continue
-                    for m in resp.json():
-                        cid = m.get("conditionId") or m.get("condition_id", "")
-                        if not cid or cid in seen or m.get("closed"):
-                            continue
-
-                        # Fetch full CLOB data (includes tokens with IDs)
-                        clob_resp = client.get(
-                            f"https://clob.polymarket.com/markets/{cid}",
+                    slug = f"{coin}-updown-{mtype}-{ts}"
+                    try:
+                        resp = client.get(
+                            "https://gamma-api.polymarket.com/markets",
+                            params={"slug": slug},
                         )
-                        if clob_resp.status_code != 200:
+                        if resp.status_code != 200:
                             continue
-                        clob_market = clob_resp.json()
-                        if not clob_market.get("accepting_orders"):
-                            continue
+                        for m in resp.json():
+                            cid = m.get("conditionId") or m.get("condition_id", "")
+                            if not cid or cid in seen or m.get("closed"):
+                                continue
 
-                        question = clob_market.get("question", "")
-                        detected = _detect_asset(question)
-                        if not detected or detected not in assets:
-                            continue
+                            clob_resp = client.get(
+                                f"https://clob.polymarket.com/markets/{cid}",
+                            )
+                            if clob_resp.status_code != 200:
+                                continue
+                            clob_market = clob_resp.json()
+                            if not clob_market.get("accepting_orders"):
+                                continue
 
-                        seen.add(cid)
-                        results.append(Market5m(
-                            market_id=clob_market.get("condition_id", cid),
-                            question=question[:120],
-                            asset=detected,
-                            raw=clob_market,
-                        ))
-                except Exception as e:
-                    log.debug("Scan error for %s/%d: %s", asset, ts, str(e)[:80])
+                            question = clob_market.get("question", "")
+                            detected = _detect_asset(question)
+                            if not detected or detected not in assets:
+                                continue
+
+                            seen.add(cid)
+                            results.append(Market5m(
+                                market_id=clob_market.get("condition_id", cid),
+                                question=question[:120],
+                                asset=detected,
+                                raw=clob_market,
+                            ))
+                    except Exception as e:
+                        log.debug("Scan error for %s/%s/%d: %s", mtype, asset, ts, str(e)[:80])
 
     return results
 
@@ -160,15 +172,22 @@ def main() -> None:
     bot_cfg = BotConfig()
 
     log.info("=" * 60)
-    log.info("KILLSHOT — Late-Window Maker Snipe")
+    log.info("KILLSHOT — Late-Window Maker Snipe v2.0")
     log.info("=" * 60)
     log.info("Mode:       %s", "PAPER" if cfg.dry_run else "LIVE")
     log.info("Bankroll:   $%.0f", cfg.bankroll_usd)
     log.info("Max bet:    $%.0f", cfg.max_bet_usd)
     log.info("Assets:     %s", ", ".join(cfg.assets))
     log.info("Kill zone:  T-%ds to T-%ds", cfg.window_seconds, cfg.min_window_seconds)
-    log.info("Threshold:  %.4f%%", cfg.direction_threshold * 100)
+    log.info("Threshold:  %.4f%% (adaptive=%s)", cfg.direction_threshold * 100, cfg.adaptive_threshold)
     log.info("Entry:      %.0f¢ - %.0f¢", cfg.entry_price_min * 100, cfg.entry_price_max * 100)
+    log.info("Kelly:      %s (fraction=%.2f)", "ON" if cfg.kelly_enabled else "OFF", cfg.kelly_fraction)
+    log.info("Arb:        %s (threshold=%.2f)", "ON" if cfg.arb_enabled else "OFF", cfg.arb_threshold)
+    log.info("Exposure:   $%.0f max", cfg.max_exposure_usd)
+    log.info("Rust:       %s (%s)", "ON" if cfg.rust_executor_enabled else "OFF", cfg.rust_executor_url)
+    log.info("Binance:    %s", "ON" if cfg.binance_agg_enabled else "OFF")
+    log.info("Cascade:    %s (delay=%.1fs)", "ON" if cfg.cascade_enabled else "OFF", cfg.cascade_delay_s)
+    log.info("Markets:    %s", cfg.market_types)
     log.info("Tick:       %.1fs | Scan: %.0fs", cfg.tick_interval_s, cfg.scan_interval_s)
     log.info("=" * 60)
 
@@ -215,16 +234,34 @@ def main() -> None:
     chainlink_ws.start()
     log.info("Chainlink RTDS feed starting...")
 
-    # Start CLOB orderbook WebSocket (replaces REST polling — instant book reads)
+    # Start CLOB orderbook WebSocket (replaces REST polling)
     clob_ws = ClobWS()
     clob_ws.start()
     log.info("CLOB orderbook WebSocket starting...")
 
+    # Phase 2d: Start Binance @aggTrade leading indicator
+    binance_agg = None
+    if cfg.binance_agg_enabled:
+        try:
+            from killshot.binance_agg import BinanceAggWS
+            binance_agg = BinanceAggWS(cfg.assets)
+            binance_agg.start()
+            log.info("Binance @aggTrade feed starting...")
+        except Exception:
+            log.exception("Binance aggTrade init failed — continuing without")
+
     binance_feed = BinanceFeed(bot_cfg, price_cache)
     window_tracker = WindowTracker(bot_cfg, price_cache)
     tracker = PaperTracker()
-    engine = KillshotEngine(cfg, price_cache, tracker, clob_client=clob_client,
-                            chainlink_ws=chainlink_ws, clob_ws=clob_ws)
+    engine = KillshotEngine(
+        cfg, price_cache, tracker, clob_client=clob_client,
+        chainlink_ws=chainlink_ws, clob_ws=clob_ws,
+        binance_agg=binance_agg,
+    )
+
+    # Start 50-trade evaluation tracker
+    eval_tracker = EvalTracker()
+    eval_tracker.start()
 
     # Start Binance WebSocket feed (runs in daemon threads)
     loop = asyncio.new_event_loop()
@@ -244,6 +281,24 @@ def main() -> None:
     if btc:
         log.info("BTC price: $%.2f — feed alive", btc)
 
+    # Check Rust executor health
+    if cfg.rust_executor_enabled:
+        try:
+            import httpx as hx
+            resp = hx.get(f"{cfg.rust_executor_url}/health", timeout=3.0)
+            if resp.status_code == 200:
+                health = resp.json()
+                log.info(
+                    "Rust executor: UP (uptime=%.0fs, orders=%d, avg_latency=%.1fms)",
+                    health.get("uptime_s", 0),
+                    health.get("orders_sent", 0),
+                    health.get("avg_latency_ms", 0),
+                )
+            else:
+                log.warning("Rust executor: returned %d — will fall back to Python", resp.status_code)
+        except Exception:
+            log.warning("Rust executor: NOT RUNNING at %s — will fall back to Python", cfg.rust_executor_url)
+
     last_scan = 0.0
     last_status_write = 0.0
     last_cleanup = 0.0
@@ -259,13 +314,13 @@ def main() -> None:
 
             # Periodic market scan
             if now - last_scan > cfg.scan_interval_s:
-                markets = _scan_5m_markets(cfg.assets)
+                markets = _scan_markets(cfg.assets, cfg.market_types)
                 if markets:
                     window_tracker.update(markets)
                 active = len(window_tracker.all_active_windows())
                 log.info(
-                    "Scan: %d markets found, %d active windows",
-                    len(markets), active,
+                    "Scan: %d markets found, %d active windows (types=%s)",
+                    len(markets), active, cfg.market_types,
                 )
 
                 # Update CLOB WS subscriptions for active windows
@@ -287,8 +342,21 @@ def main() -> None:
             resolved = tracker.resolve_trades(price_cache)
             if resolved:
                 engine.report_resolved(resolved)
+                # Feed to 50-trade evaluator
+                for t in resolved:
+                    if t.outcome in ("win", "loss"):
+                        remaining = max(0, int(t.window_end_ts - t.timestamp))
+                        eval_tracker.record_trade(
+                            direction=t.direction,
+                            asset=t.asset,
+                            entry_c=int(t.entry_price * 100),
+                            size=t.size_usd,
+                            t_left=remaining,
+                            result=t.outcome.upper(),
+                            pnl=t.pnl,
+                        )
 
-            # Periodic cleanup (every hour — time-based, not tick-based)
+            # Periodic cleanup (every hour)
             if now - last_cleanup > 3600:
                 engine.cleanup_expired()
                 last_cleanup = now
@@ -308,7 +376,11 @@ def main() -> None:
 
     # Graceful shutdown
     log.info("Shutting down Killshot...")
+    eval_tracker.stop()
     clob_ws.stop()
+    chainlink_ws.stop()
+    if binance_agg:
+        binance_agg.stop()
     tracker.write_status()
     price_cache.save_candles()
     binance_feed._running = False

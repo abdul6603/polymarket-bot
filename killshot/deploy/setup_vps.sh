@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # ──────────────────────────────────────────────────────────────
-# Killshot VPS Setup — Ubuntu 22.04+ on AWS eu-west-2 t3.micro
+# Killshot VPS Setup — Ubuntu 22.04+ on AWS us-east-1 t3.micro
 #
 # Run as root (or via sudo) on a fresh instance:
 #   chmod +x setup_vps.sh && sudo ./setup_vps.sh

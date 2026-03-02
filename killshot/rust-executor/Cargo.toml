@@ -1,0 +1,25 @@
+[package]
+name = "killshot-executor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+polymarket-client-sdk = "0.3"
+alloy-primitives = "1"
+alloy-signer-local = "1"
+axum = "0.8"
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+dotenvy = "0.15"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+rust_decimal = "1"
+rust_decimal_macros = "1"
+anyhow = "1"
+
+[profile.release]
+opt-level = 3
+lto = false
+strip = true
+codegen-units = 1
