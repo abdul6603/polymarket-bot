@@ -230,13 +230,13 @@ def run_ensemble(
             model_outputs["claude"] = result
             log.info("Claude returned %d predictions", len(result.get("predictions", {})))
 
-    if cfg.gemini_api_key:
-        result = _query_gemini(cfg, system_prompt, user_prompt)
+    if cfg.openai_api_key:
+        result = _query_openai(cfg, system_prompt, user_prompt)
         if result:
-            model_outputs["gemini"] = result
-            log.info("Gemini returned %d predictions", len(result.get("predictions", {})))
+            model_outputs["openai"] = result
+            log.info("GPT-5.2 returned %d predictions", len(result.get("predictions", {})))
         else:
-            log.warning("Gemini returned no parseable predictions")
+            log.warning("GPT-5.2 returned no parseable predictions")
 
     if cfg.grok_api_key:
         result = _query_grok(cfg, system_prompt, user_prompt)
@@ -500,55 +500,33 @@ def _query_claude(cfg: OracleConfig, system: str, user: str) -> dict | None:
     return None
 
 
-def _query_gemini(cfg: OracleConfig, system: str, user: str) -> dict | None:
-    """Query Google Gemini API with fallback model."""
-    models_to_try = [cfg.gemini_model, "gemini-2.0-flash"]
-    # Deduplicate while preserving order
-    seen = set()
-    models_to_try = [m for m in models_to_try if m not in seen and not seen.add(m)]
-
-    for model in models_to_try:
-        try:
-            resp = requests.post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-                params={"key": cfg.gemini_api_key},
-                headers={"content-type": "application/json"},
-                json={
-                    "system_instruction": {"parts": [{"text": system}]},
-                    "contents": [{"parts": [{"text": user}]}],
-                    "generationConfig": {"temperature": 0.3, "maxOutputTokens": 8192},
-                },
-                timeout=90,
-            )
-            if resp.status_code == 200:
-                data = resp.json()
-                candidates = data.get("candidates", [])
-                if not candidates:
-                    block_reason = data.get("promptFeedback", {}).get("blockReason", "unknown")
-                    log.warning("Gemini %s returned no candidates (block_reason=%s)", model, block_reason)
-                    continue
-                finish_reason = candidates[0].get("finishReason", "")
-                if finish_reason == "SAFETY":
-                    log.warning("Gemini %s blocked by safety filter (finishReason=SAFETY)", model)
-                    continue
-                if finish_reason == "MAX_TOKENS":
-                    log.warning("Gemini %s output truncated (MAX_TOKENS)", model)
-                text = candidates[0].get("content", {}).get("parts", [{}])[0].get("text", "")
-                if not text:
-                    log.warning("Gemini %s returned empty text, full response: %s", model, json.dumps(data)[:500])
-                    continue
-                parsed = _parse_json_response(text)
-                if parsed:
-                    log.info("Gemini %s returned valid predictions", model)
-                    return parsed
-                log.warning("Gemini %s returned unparseable text (finishReason=%s): %s", model, finish_reason, text[:300])
-            elif resp.status_code == 404:
-                log.warning("Gemini model %s not found (404), trying fallback", model)
-                continue
-            else:
-                log.warning("Gemini %s API error: %d — %s", model, resp.status_code, resp.text[:300])
-        except Exception as e:
-            log.warning("Gemini %s query failed: %s", model, e)
+def _query_openai(cfg: OracleConfig, system: str, user: str) -> dict | None:
+    """Query OpenAI GPT-5.2 API."""
+    try:
+        resp = requests.post(
+            "https://api.openai.com/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {cfg.openai_api_key}",
+                "content-type": "application/json",
+            },
+            json={
+                "model": cfg.openai_model,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": user},
+                ],
+                "temperature": 0.3,
+                "max_tokens": 4000,
+            },
+            timeout=90,
+        )
+        if resp.status_code == 200:
+            data = resp.json()
+            text = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+            return _parse_json_response(text)
+        log.warning("GPT-5.2 API error: %d — %s", resp.status_code, resp.text[:300])
+    except Exception as e:
+        log.warning("GPT-5.2 query failed: %s", e)
     return None
 
 

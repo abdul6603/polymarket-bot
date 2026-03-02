@@ -43,14 +43,14 @@ class OracleConfig:
     # --- Model Ensemble ---
     claude_api_key: str = _env("ANTHROPIC_API_KEY")
     claude_model: str = _env("ORACLE_CLAUDE_MODEL", "claude-sonnet-4-20250514")
-    gemini_api_key: str = _env("GEMINI_API_KEY")
-    gemini_model: str = _env("ORACLE_GEMINI_MODEL", "gemini-2.5-flash")
+    openai_api_key: str = _env("OPENAI_API_KEY")
+    openai_model: str = _env("ORACLE_OPENAI_MODEL", "gpt-5.2")
     grok_api_key: str = _env("XAI_API_KEY")
     grok_model: str = _env("ORACLE_GROK_MODEL", "grok-3")
     ensemble_weights: dict[str, float] = field(default_factory=lambda: {
-        "claude": 0.45,
-        "grok": 0.30,
-        "gemini": 0.25,
+        "claude": 0.40,
+        "openai": 0.35,
+        "grok": 0.25,
     })
 
     # --- External Data ---
