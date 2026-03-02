@@ -403,8 +403,8 @@ class OracleBot:
         _wagered = sum(t.size for t in selected)
         _trade_lines = ""
         for t in selected[:5]:
-            _t_dir_icon = "\U0001f7e2" if t.direction == "YES" else "\U0001f534"
-            _trade_lines += f"  {_t_dir_icon} {t.question[:50]} — ${t.size:.0f} ({t.edge*100:.0f}% edge)\n"
+            _t_dir_icon = "\U0001f7e2" if t.side == "YES" else "\U0001f534"
+            _trade_lines += f"  {_t_dir_icon} {t.market.question[:50]} — ${t.size:.0f} ({t.edge_abs*100:.0f}% edge)\n"
         if not _trade_lines:
             _trade_lines = "  No trades this cycle\n"
         _oracle_tg(
