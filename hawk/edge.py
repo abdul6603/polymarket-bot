@@ -28,7 +28,13 @@ class TradeOpportunity:
 
 # Fix 2: R:R ratio filter — only bet when potential win > 1.2x potential loss
 MIN_RR_RATIO = 0.65
-MAX_TOKEN_PRICE = 0.60  # Never buy tokens above $0.50 (Kelly sizing caps downside)
+MAX_TOKEN_PRICE = 0.60  # Never buy tokens above $0.60 (Kelly sizing caps downside)
+
+# Entry price floor — never buy tokens below 5c (illiquid garbage, fake edge)
+MIN_TOKEN_PRICE = 0.05
+
+# Weather YES probability floor — don't buy YES unless model is >= 30% confident
+MIN_WEATHER_YES_PROB = 0.30
 
 # Fix 5: Confidence floor — reject GPT guesses (sportsbook-backed exempt)
 MIN_CONFIDENCE = 0.60
@@ -395,6 +401,18 @@ def calculate_edge(
     if not has_sportsbook and not has_weather_model and not has_cross_platform and estimate.confidence < MIN_CONFIDENCE:
         log.info("Rejected low-confidence trade: conf=%.2f < %.2f | %s",
                  estimate.confidence, MIN_CONFIDENCE, market.question[:50])
+        return None
+
+    # Entry price floor — reject illiquid sub-5c tokens (fake edge, no real market)
+    if buy_price < MIN_TOKEN_PRICE:
+        log.info("[FLOOR] Rejected sub-%.0fc entry: $%.3f | %s",
+                 MIN_TOKEN_PRICE * 100, buy_price, market.question[:50])
+        return None
+
+    # Weather YES probability floor — need strong model confidence to buy YES
+    if has_weather_model and direction == "yes" and est_prob < MIN_WEATHER_YES_PROB:
+        log.info("[FLOOR] Rejected low-prob weather YES: prob=%.1f%% < %.0f%% | %s",
+                 est_prob * 100, MIN_WEATHER_YES_PROB * 100, market.question[:50])
         return None
 
     # Fix 2: R:R ratio filter — potential win must exceed 1.2x potential loss

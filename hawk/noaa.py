@@ -20,6 +20,16 @@ from bot.http_session import get_session
 
 log = logging.getLogger(__name__)
 
+
+def _clamp_probability(prob: float) -> float:
+    """Clamp weather probability to 2%-98% range.
+
+    Weather ensembles can output 0% or 100% but real-world uncertainty
+    means these extremes are never justified. Markets at 1c/99c are
+    illiquid traps, not free money.
+    """
+    return max(0.02, min(0.98, prob))
+
 # ── City Geocoding (major Polymarket cities) ──
 
 CITY_COORDS: dict[str, tuple[float, float]] = {
@@ -608,8 +618,8 @@ def get_temperature_probability(
     else:
         count = sum(1 for v in members if v >= threshold)
 
-    prob = count / total
-    log.info("[NOAA] %s temp %s %.0f%s on %s: %d/%d members = %.1f%%",
+    prob = max(0.02, min(0.98, count / total))
+    log.info("[NOAA] %s temp %s %.0f%s on %s: %d/%d members = %.1f%% (clamped)",
              city, direction, threshold, unit_sym, target_date, count, total, prob * 100)
     return prob
 
@@ -978,6 +988,7 @@ def analyze_weather_market(question: str) -> dict | None:
                     nowcast_prob = None
 
                 if nowcast_prob is not None:
+                    nowcast_prob = _clamp_probability(nowcast_prob)
                     # Nowcast is very reliable for <6h
                     nowcast_conf = 0.90 if horizon_hours < 6 else 0.85
                     log.info("[NOWCAST] Same-day analysis: prob=%.2f conf=%.2f | %dh horizon | %s",
@@ -1001,7 +1012,7 @@ def analyze_weather_market(question: str) -> dict | None:
             query.city, query.target_date, query.bucket_ranges, unit=query.unit,
         )
         if bucket_probs is not None:
-            total_prob = sum(bucket_probs.values())
+            total_prob = _clamp_probability(sum(bucket_probs.values()))
             if True:  # Always return bucket result — 0% is a valid answer, don't fall through
                 # Count ensemble members for metadata
                 coords = CITY_COORDS.get(query.city.lower(), (0, 0))
