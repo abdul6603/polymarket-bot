@@ -165,7 +165,8 @@ def _match_game(
     # Log a compact id or name for debugging (avoid nested ternary in format string)
     match_id = ""
     if best_match:
-        match_id = best_match.get("id") or best_match.get("name", "") or ""
+        # keep guard for different event schemas
+        match_id = best_match.get("id") or best_match.get("name") or ""
     log.debug("[ESPN] Matched event (score=%.3f): %s", best_score, match_id)
     return best_match
 def get_match_context(
