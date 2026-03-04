@@ -447,14 +447,19 @@
         </div>
       </div>
 
-      <!-- Session Stats -->
+      <!-- Session & Daily Stats -->
       <div class="glass-card" style="padding:10px 14px;margin-bottom:14px;">
-        <div class="gv-section-title" style="margin-bottom:8px;color:#ef4444;">Session Stats</div>
+        <div class="gv-section-title" style="margin-bottom:8px;color:#ef4444;">Session &amp; Daily (7pm ET)</div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
           <div><div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;">Session Trades</div><div id="ks-session-trades" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">0</div></div>
           <div><div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;">Session Wins</div><div id="ks-session-wins" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);color:#22c55e;">0</div></div>
           <div><div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;">Session P&amp;L</div><div id="ks-session-pnl" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">$0.00</div></div>
           <div><div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;">Daily Loss</div><div id="ks-daily-loss" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);color:#ef4444;">$0.00</div></div>
+        </div>
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+          <div><div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;">Daily P&amp;L (7pm ET)</div><div id="ks-daily-pnl" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">$0.00</div></div>
+          <div><div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;">Daily Trades</div><div id="ks-daily-trades" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">0</div></div>
+          <div><div style="font-size:0.62rem;color:var(--text-muted);text-transform:uppercase;">Daily WR</div><div id="ks-daily-wr" style="font-size:1.1rem;font-weight:700;font-family:var(--font-mono);">--</div></div>
         </div>
       </div>
 
@@ -1406,6 +1411,12 @@ function loadKillshotData() {
     var sp = d.session_pnl || 0;
     if (el('ks-session-pnl')) { el('ks-session-pnl').textContent = '$' + sp.toFixed(2); el('ks-session-pnl').style.color = sp >= 0 ? '#22c55e' : '#ef4444'; }
     if (el('ks-daily-loss')) el('ks-daily-loss').textContent = '$' + (d.daily_loss || 0).toFixed(2);
+    var dp = d.daily_pnl != null ? d.daily_pnl : 0;
+    var dt = d.daily_trades != null ? d.daily_trades : 0;
+    var dw = d.daily_wins != null ? d.daily_wins : 0;
+    if (el('ks-daily-pnl')) { el('ks-daily-pnl').textContent = '$' + dp.toFixed(2); el('ks-daily-pnl').style.color = dp >= 0 ? '#22c55e' : '#ef4444'; }
+    if (el('ks-daily-trades')) el('ks-daily-trades').textContent = dt;
+    if (el('ks-daily-wr')) el('ks-daily-wr').textContent = dt > 0 ? (dw / dt * 100).toFixed(0) + '%' : '--';
     if (el('ks-pending-count')) el('ks-pending-count').textContent = d.pending || 0;
 
     /* Pending trades table */

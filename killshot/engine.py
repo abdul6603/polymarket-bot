@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import logging
 import time
+from pathlib import Path
 
 import httpx
 
@@ -22,6 +23,24 @@ from bot.snipe.window_tracker import Window
 from bot.snipe import clob_book
 
 log = logging.getLogger("killshot.engine")
+
+# Persist pending GTC orders so restarts don't orphan them
+_DATA_DIR = Path(__file__).resolve().parent.parent / "data"
+PENDING_ORDERS_FILE = _DATA_DIR / "killshot_pending_orders.json"
+
+
+class _WindowSnapshot:
+    """Minimal window data for restored pending orders (fill recording)."""
+    __slots__ = ("market_id", "question", "asset", "end_ts", "open_price", "up_token_id", "down_token_id")
+
+    def __init__(self, d: dict):
+        self.market_id = d.get("market_id", "")
+        self.question = d.get("question", "")
+        self.asset = d.get("asset", "")
+        self.end_ts = float(d.get("end_ts", 0))
+        self.open_price = float(d.get("open_price", 0))
+        self.up_token_id = d.get("up_token_id") or ""
+        self.down_token_id = d.get("down_token_id") or ""
 
 
 class KillshotEngine:
@@ -53,6 +72,136 @@ class KillshotEngine:
         self._pending_limit_orders: dict[str, dict] = {}  # market_id -> order info
         # Spread state
         self._spread_logged: set[str] = set()
+
+        # Restore pending GTC orders from disk (survives restarts)
+        self._load_pending_orders()
+        # Cancel any CLOB orders we don't track (orphans from crash between legs or lost state)
+        if not self._dry_run and self._client:
+            self._reconcile_open_orders()
+
+    def _window_to_snapshot(self, window) -> dict:
+        """Serialize Window for persistence."""
+        return {
+            "market_id": getattr(window, "market_id", ""),
+            "question": getattr(window, "question", ""),
+            "asset": getattr(window, "asset", ""),
+            "end_ts": getattr(window, "end_ts", 0),
+            "open_price": getattr(window, "open_price", 0),
+            "up_token_id": getattr(window, "up_token_id", "") or "",
+            "down_token_id": getattr(window, "down_token_id", "") or "",
+        }
+
+    def _save_pending_orders(self) -> None:
+        """Persist _pending_limit_orders to disk so restarts can restore and avoid orphans."""
+        if not self._pending_limit_orders:
+            if PENDING_ORDERS_FILE.exists():
+                try:
+                    PENDING_ORDERS_FILE.unlink()
+                except OSError:
+                    pass
+            return
+        _DATA_DIR.mkdir(parents=True, exist_ok=True)
+        out = {}
+        for market_id, info in self._pending_limit_orders.items():
+            snap = {"placed_at": info["placed_at"]}
+            if info.get("type") == "spread":
+                snap["type"] = "spread"
+                snap["up_order_id"] = info["up_order_id"]
+                snap["down_order_id"] = info["down_order_id"]
+                snap["up_token_id"] = info.get("up_token_id") or ""
+                snap["down_token_id"] = info.get("down_token_id") or ""
+                snap["up_price"] = info["up_price"]
+                snap["down_price"] = info["down_price"]
+                snap["up_shares"] = info["up_shares"]
+                snap["down_shares"] = info["down_shares"]
+                snap["size_usd"] = info["size_usd"]
+            else:
+                snap["type"] = "momentum"
+                snap["order_id"] = info["order_id"]
+                snap["token_id"] = info.get("token_id") or ""
+                snap["price"] = info["price"]
+                snap["shares"] = info["shares"]
+                snap["size_usd"] = info["size_usd"]
+            snap["window_snapshot"] = self._window_to_snapshot(info["window"])
+            out[market_id] = snap
+        try:
+            with open(PENDING_ORDERS_FILE, "w") as f:
+                json.dump(out, f, indent=0)
+        except OSError as e:
+            log.warning("[KILLSHOT] Failed to save pending orders: %s", str(e)[:80])
+
+    def _load_pending_orders(self) -> None:
+        """Restore _pending_limit_orders from disk after restart."""
+        if not PENDING_ORDERS_FILE.exists():
+            return
+        try:
+            with open(PENDING_ORDERS_FILE) as f:
+                data = json.load(f)
+        except (OSError, json.JSONDecodeError) as e:
+            log.warning("[KILLSHOT] Failed to load pending orders: %s", str(e)[:80])
+            return
+        for market_id, snap in data.items():
+            ws = _WindowSnapshot(snap.get("window_snapshot") or {})
+            placed_at = float(snap.get("placed_at", 0))
+            if placed_at <= 0:
+                continue
+            if snap.get("type") == "spread":
+                self._pending_limit_orders[market_id] = {
+                    "type": "spread",
+                    "up_order_id": snap.get("up_order_id", ""),
+                    "down_order_id": snap.get("down_order_id", ""),
+                    "up_token_id": snap.get("up_token_id") or "",
+                    "down_token_id": snap.get("down_token_id") or "",
+                    "up_price": float(snap.get("up_price", 0)),
+                    "down_price": float(snap.get("down_price", 0)),
+                    "up_shares": float(snap.get("up_shares", 0)),
+                    "down_shares": float(snap.get("down_shares", 0)),
+                    "size_usd": float(snap.get("size_usd", 0)),
+                    "placed_at": placed_at,
+                    "window": ws,
+                }
+            else:
+                self._pending_limit_orders[market_id] = {
+                    "order_id": snap.get("order_id", ""),
+                    "token_id": snap.get("token_id") or "",
+                    "price": float(snap.get("price", 0)),
+                    "shares": float(snap.get("shares", 0)),
+                    "size_usd": float(snap.get("size_usd", 0)),
+                    "placed_at": placed_at,
+                    "window": ws,
+                }
+        if self._pending_limit_orders:
+            log.info("[KILLSHOT] Restored %d pending GTC orders from disk", len(self._pending_limit_orders))
+
+    def _reconcile_open_orders(self) -> None:
+        """Cancel any CLOB open order we don't track (orphans from crash or lost state)."""
+        known_ids = set()
+        for info in self._pending_limit_orders.values():
+            if info.get("type") == "spread":
+                known_ids.add(info.get("up_order_id"))
+                known_ids.add(info.get("down_order_id"))
+            else:
+                known_ids.add(info.get("order_id"))
+        known_ids.discard("")
+        known_ids.discard("unknown")
+        try:
+            resp = self._client.get_orders()
+            orders = resp if isinstance(resp, list) else resp.get("data", []) or []
+        except Exception as e:
+            log.warning("[KILLSHOT] Reconcile: get_orders failed: %s", str(e)[:80])
+            return
+        cancelled = 0
+        for order in orders:
+            oid = order.get("id") or order.get("orderID", "")
+            status = (order.get("status") or "").lower()
+            if status not in ("live", "open", "active"):
+                continue
+            if oid and oid not in known_ids:
+                if self._cancel_order(oid):
+                    cancelled += 1
+                    log.info("[KILLSHOT] Reconcile: cancelled orphan order %s", oid[:12])
+        if cancelled:
+            log.info("[KILLSHOT] Reconcile: cancelled %d orphan order(s)", cancelled)
 
     def tick(self, windows: list[Window]) -> None:
         """Called every tick (default 0.1s) — check all active windows for kill zone entry."""
@@ -359,6 +508,9 @@ class KillshotEngine:
             )
             self._tracker.record_trade(up_trade, strategy="spread")
             self._tracker.record_trade(down_trade, strategy="spread")
+            self._tracker.notify_spread_entry(
+                window.asset, up_ask, down_ask, cfg.spread_max_bet_usd, guaranteed_profit_pct,
+            )
 
             log.info(
                 "[KILLSHOT] PAPER SPREAD: %s | UP %.0f¢ (%.1f sh) + DOWN %.0f¢ (%.1f sh) | "
@@ -410,6 +562,7 @@ class KillshotEngine:
                 "[KILLSHOT] Spread GTC placed: UP=%s DOWN=%s",
                 up_oid[:12], down_oid[:12],
             )
+            self._save_pending_orders()
             return True
 
         # One or both failed — cancel the successful one
@@ -661,6 +814,7 @@ class KillshotEngine:
                         "placed_at": time.time(),
                         "window": window,
                     }
+                    self._save_pending_orders()
                     return None
             except Exception as e:
                 log.warning("[KILLSHOT] Rust GTC failed — falling back to Python: %s", str(e)[:100])
@@ -707,6 +861,7 @@ class KillshotEngine:
                 "placed_at": time.time(),
                 "window": window,
             }
+            self._save_pending_orders()
             return None
 
         except Exception as e:
@@ -742,6 +897,8 @@ class KillshotEngine:
 
         for mid in to_remove:
             self._pending_limit_orders.pop(mid, None)
+        if to_remove:
+            self._save_pending_orders()
 
     def _check_momentum_order(self, market_id: str, info: dict,
                               age: float, timeout_s: int, to_remove: list) -> None:
@@ -849,6 +1006,14 @@ class KillshotEngine:
             )
             self._tracker.record_trade(up_trade, strategy="spread")
             self._tracker.record_trade(down_trade, strategy="spread")
+            guaranteed_pct = (1.0 - (info["up_price"] + info["down_price"])) * 100
+            self._tracker.notify_spread_entry(
+                window.asset,
+                info["up_price"],
+                info["down_price"],
+                info["size_usd"],
+                guaranteed_pct,
+            )
             to_remove.append(market_id)
             log.info(
                 "[KILLSHOT] Spread FILLED: %s UP@%.0f¢ + DOWN@%.0f¢ | $%.2f",
@@ -901,15 +1066,20 @@ class KillshotEngine:
             to_remove.append(market_id)
 
     def _cancel_order(self, order_id: str) -> bool:
-        """Cancel a GTC order via py_clob_client."""
+        """Cancel a GTC order via py_clob_client. Retries up to 3 times to avoid orphan on transient failure."""
         if not self._client:
             return False
-        try:
-            self._client.cancel(order_id)
-            return True
-        except Exception as e:
-            log.warning("[KILLSHOT] Cancel failed for %s: %s", order_id[:12], str(e)[:100])
-            return False
+        last_err = None
+        for attempt in range(3):
+            try:
+                self._client.cancel(order_id)
+                return True
+            except Exception as e:
+                last_err = e
+                if attempt < 2:
+                    time.sleep(1.0)
+        log.warning("[KILLSHOT] Cancel failed for %s after 3 attempts: %s", order_id[:12], str(last_err)[:100])
+        return False
 
     def _check_order_fill(self, order_id: str) -> bool:
         """Check if a GTC order has been filled."""
@@ -1055,6 +1225,7 @@ class KillshotEngine:
             k: v for k, v in self._pending_limit_orders.items()
             if v.get("placed_at", 0) > cutoff
         }
+        self._save_pending_orders()
         removed = before - len(self._traded_windows)
         if removed:
             log.debug("[KILLSHOT] Cleaned %d expired window IDs", removed)

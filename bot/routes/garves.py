@@ -2125,6 +2125,7 @@ def api_killshot_status():
                 "total_pnl": 0, "avg_entry_price": 0,
                 "session_pnl": 0, "session_trades": 0,
                 "session_wins": 0, "daily_loss": 0,
+                "daily_pnl": 0, "daily_trades": 0, "daily_wins": 0,
                 "pending_details": [], "updated_at": 0,
             })
         data = json.loads(KILLSHOT_STATUS_FILE.read_text())

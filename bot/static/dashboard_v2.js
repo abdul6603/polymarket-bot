@@ -21,7 +21,7 @@ function renderLossCapBar(containerId, dailyPnl, cap, period) {
     + '<div style="font-size:0.56rem;margin-top:1px;color:' + color + ';font-weight:600;">' + label + '</div>';
 }
 
-var TAB_ALIASES = {'performance': 'traders'};
+var TAB_ALIASES = {'performance': 'traders', 'killshot': 'garves-live'};
 
 function switchTab(tab) {
   var contentTab = TAB_ALIASES[tab] || tab;
@@ -37,6 +37,9 @@ function switchTab(tab) {
   refresh();
   if (tab === 'performance' && typeof tradersSwitchSub === 'function') {
     setTimeout(function() { tradersSwitchSub('performance'); }, 250);
+  }
+  if (tab === 'killshot' && typeof garvesSelectEngine === 'function') {
+    setTimeout(function() { garvesSelectEngine('killshot'); }, 250);
   }
 }
 

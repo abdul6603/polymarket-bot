@@ -2,6 +2,7 @@
 
 Resolution: checks CLOB book price for our token after window close.
 If token bid > 0.50, we won (resolved to $1). If < 0.50, we lost ($0).
+Daily PnL resets every day at 7pm ET.
 """
 from __future__ import annotations
 
@@ -10,7 +11,9 @@ import logging
 import os
 import time
 from dataclasses import asdict, dataclass
+from datetime import datetime, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 log = logging.getLogger("killshot.tracker")
 
@@ -47,6 +50,22 @@ class PaperTrade:
     resolved_at: float = 0.0
 
 
+# 7pm ET — daily PnL resets at this time each day
+_ET = ZoneInfo("America/New_York")
+_DAILY_RESET_HOUR_ET = 19
+
+
+def _last_7pm_et_ts() -> float:
+    """Unix timestamp of the most recent 7pm ET (today or yesterday)."""
+    now_et = datetime.now(_ET)
+    if now_et.hour >= _DAILY_RESET_HOUR_ET:
+        boundary = now_et.replace(hour=_DAILY_RESET_HOUR_ET, minute=0, second=0, microsecond=0)
+    else:
+        yesterday = now_et.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
+        boundary = yesterday.replace(hour=_DAILY_RESET_HOUR_ET, minute=0, second=0, microsecond=0)
+    return boundary.timestamp()
+
+
 class PaperTracker:
     """Tracks trades, resolves via CLOB book price, computes stats."""
 
@@ -56,6 +75,10 @@ class PaperTracker:
         self._session_pnl: float = 0.0
         self._session_trades: int = 0
         self._session_wins: int = 0
+        self._daily_pnl: float = 0.0
+        self._daily_trades: int = 0
+        self._daily_wins: int = 0
+        self._daily_reset_ts: float = 0.0  # last 7pm ET boundary we reset at
         self._load_pending()
 
     def _load_pending(self) -> None:
@@ -92,6 +115,15 @@ class PaperTracker:
                     continue
         if self._pending:
             log.info("Loaded %d pending trades from disk (won't count in session stats)", len(self._pending))
+
+    def _maybe_reset_daily(self) -> None:
+        """Reset daily PnL stats when we've passed a new 7pm ET boundary."""
+        boundary = _last_7pm_et_ts()
+        if boundary > self._daily_reset_ts:
+            self._daily_pnl = 0.0
+            self._daily_trades = 0
+            self._daily_wins = 0
+            self._daily_reset_ts = boundary
 
     def record_trade(self, trade: PaperTrade, strategy: str = "directional") -> None:
         """Log a new trade."""
@@ -183,8 +215,14 @@ class PaperTracker:
                 if won:
                     self._session_wins += 1
                 self._session_pnl += trade.pnl
+                self._maybe_reset_daily()
+                self._daily_trades += 1
+                if won:
+                    self._daily_wins += 1
+                self._daily_pnl += trade.pnl
 
             wr = (self._session_wins / max(self._session_trades, 1)) * 100
+            daily_wr = (self._daily_wins / max(self._daily_trades, 1)) * 100
             tag = " [inherited]" if inherited else ""
             log.info(
                 "[KILLSHOT] %s: %s %s | P&L $%.2f | Session: $%.2f (WR %.0f%%)%s",
@@ -194,11 +232,13 @@ class PaperTracker:
             emoji = "\u2705" if trade.outcome == "win" else "\u274c"
             sign = "+" if trade.pnl >= 0 else ""
             strat_label = {"momentum": "MOM", "spread": "SPR", "directional": "KZ"}.get(trade.strategy, "KZ")
+            daily_sign = "+" if self._daily_pnl >= 0 else ""
             self._notify_tg(
                 f"{emoji} <b>Killshot [{strat_label}] {trade.outcome.upper()}</b>\n"
                 f"{trade.direction.upper()} {trade.asset.upper()} @ {trade.entry_price:.0%}\n"
                 f"P&L: <b>{sign}${trade.pnl:.2f}</b>\n"
-                f"Session: {sign if self._session_pnl >= 0 else ''}${self._session_pnl:.2f} | WR {wr:.0f}% ({self._session_trades} trades)"
+                f"Session: {sign if self._session_pnl >= 0 else ''}${self._session_pnl:.2f} | WR {wr:.0f}% ({self._session_trades} trades)\n"
+                f"Daily: {daily_sign if self._daily_pnl >= 0 else ''}${self._daily_pnl:.2f} | WR {daily_wr:.0f}% ({self._daily_trades} trades)"
             )
 
         self._pending = still_pending
@@ -217,6 +257,22 @@ class PaperTracker:
             )
         except Exception:
             pass
+
+    def notify_spread_entry(
+        self,
+        asset: str,
+        up_ask: float,
+        down_ask: float,
+        total_usd: float,
+        guaranteed_profit_pct: float,
+    ) -> None:
+        """Send Telegram notification when a spread trade is entered (both legs)."""
+        combined_cent = (up_ask + down_ask) * 100
+        self._notify_tg(
+            "\u2696\ufe0f <b>Killshot [SPR] ENTRY</b>\n"
+            f"{asset.upper()} UP @ {up_ask:.0%} + DOWN @ {down_ask:.0%} = {combined_cent:.0f}\u00a2\n"
+            f"Size: <b>${total_usd:.2f}</b> | Guaranteed: <b>{guaranteed_profit_pct:.1f}\u00a2/$</b>"
+        )
 
     # ── File I/O ────────────────────────────────────────────────
 
@@ -281,6 +337,7 @@ class PaperTracker:
                 "pnl": round(s_pnl, 2),
             }
 
+        self._maybe_reset_daily()
         return {
             "total_trades": len(all_trades),
             "resolved": len(resolved),
@@ -293,6 +350,9 @@ class PaperTracker:
             "session_pnl": round(self._session_pnl, 2),
             "session_trades": self._session_trades,
             "session_wins": self._session_wins,
+            "daily_pnl": round(self._daily_pnl, 2),
+            "daily_trades": self._daily_trades,
+            "daily_wins": self._daily_wins,
             "daily_loss": round(abs(min(self._session_pnl, 0)), 2),
             "by_strategy": strat_stats,
         }
