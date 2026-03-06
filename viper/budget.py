@@ -2,27 +2,52 @@
 import logging
 from typing import Optional, Dict, Any
 
-logger = logging.getLogger("ViperAgent.Budget")
+logger = logging.getLogger("BudgetManager")
 
-def check_budget() -> bool:
+def manage_budget(decision: Optional[Dict[str, str]]) -> None:
     """
-    Checks if the agent has sufficient budget to execute trades.
-    Returns True if budget is sufficient, False otherwise.
-    Returns False on error to prevent trading with invalid state.
+    Manages budget state based on decisions.
+    Ensures state transitions are atomic or wrapped in error handling.
     """
     try:
-        # Placeholder for actual budget check logic
-        # Example: Check account balance, margin requirements, exposure limits
+        logger.debug("Managing budget...")
         
-        logger.debug("Checking budget constraints...")
+        if not decision:
+            logger.info("No decision provided. Skipping budget update.")
+            return
+
+        action = decision.get("action", "")
+        reason = decision.get("reason", "")
         
-        # Mock result: Budget is sufficient
-        return True
+        # Simulate budget update logic
+        current_budget = _get_current_budget()
         
-    except ValueError as e:
-        logger.warning(f"Invalid budget state: {e}")
-        return False
+        if action == "REDUCE_EXPOSURE":
+            logger.info(f"Reducing exposure due to: {reason}")
+            # Logic to reduce position size
+            _update_budget(current_budget, -0.1)
+            
+        elif action == "HOLD":
+            logger.info(f"Holding position. Reason: {reason}")
+            # Logic to maintain current state
+            
+        else:
+            logger.warning(f"Unknown action: {action}")
+
     except Exception as e:
-        logger.error(f"Budget check failed: {e}", exc_info=True)
-        return False
-```
+        logger.error(f"Budget management failed: {e}")
+        # Fallback: Log error and do not crash the agent
+
+def _get_current_budget() -> float:
+    """
+    Simulates fetching current budget.
+    """
+    return 10000.0
+
+def _update_budget(current: float, change: float) -> float:
+    """
+    Simulates updating budget.
+    """
+    new_budget = current + change
+    logger.info(f"Budget updated: {current} -> {new_budget}")
+    return new_budget

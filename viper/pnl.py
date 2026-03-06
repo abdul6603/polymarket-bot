@@ -2,31 +2,63 @@
 import logging
 from typing import Optional, Dict, Any
 
-logger = logging.getLogger("ViperAgent.PnL")
+logger = logging.getLogger("PnLCalculator")
 
 def calculate_pnl() -> Optional[Dict[str, Any]]:
     """
-    Calculates Profit and Loss based on current market data.
-    Returns a dict with PnL data or None if data is missing/malformed.
+    Calculates Profit and Loss.
+    Wraps logic in try-except to handle data parsing errors or connection timeouts.
     """
     try:
-        # Placeholder for actual PnL calculation logic
-        # Example: Fetch open positions, fetch current prices, calculate delta
-        
         logger.debug("Calculating PnL...")
         
-        # Mock result
-        return {
-            "total_pnl": 0.0,
-            "realized_pnl": 0.0,
-            "unrealized_pnl": 0.0,
-            "timestamp": "2023-10-27T12:00:00Z"
+        # Simulate fetching trade data
+        trades = _fetch_trades()
+        
+        if not trades:
+            logger.warning("No trades found to calculate PnL.")
+            return None
+
+        total_pnl = 0.0
+        trade_count = 0
+        
+        for trade in trades:
+            try:
+                # Safe division and calculation
+                entry_price = float(trade.get("entry_price", 0))
+                exit_price = float(trade.get("exit_price", 0))
+                quantity = float(trade.get("quantity", 0))
+                
+                if entry_price == 0:
+                    continue
+                    
+                pnl = (exit_price - entry_price) * quantity
+                total_pnl += pnl
+                trade_count += 1
+                
+            except (ValueError, TypeError) as e:
+                logger.warning(f"Invalid trade data format: {e}. Skipping trade.")
+                continue
+
+        result = {
+            "total_pnl": total_pnl,
+            "trade_count": trade_count,
+            "avg_pnl": total_pnl / trade_count if trade_count > 0 else 0.0
         }
         
-    except KeyError as e:
-        logger.warning(f"Missing data key in PnL calculation: {e}")
-        return None
+        logger.info(f"PnL Calculation complete: {result}")
+        return result
+
     except Exception as e:
-        logger.error(f"PnL calculation failed: {e}", exc_info=True)
+        logger.error(f"Critical error in PnL calculation: {e}")
         return None
-```
+
+def _fetch_trades() -> Optional[list]:
+    """
+    Simulates fetching trade history.
+    """
+    # Placeholder implementation
+    return [
+        {"entry_price": 100.0, "exit_price": 105.0, "quantity": 10},
+        {"entry_price": 110.0, "exit_price": 108.0, "quantity": 5}
+    ]
