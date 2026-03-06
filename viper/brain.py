@@ -1,83 +1,69 @@
 ```python
 import logging
-import time
-from typing import List, Dict, Any
-from datetime import datetime, timedelta
+from typing import Dict, Any, Optional
+from datetime import datetime
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("viper.brain")
 
-class ViperBrain:
-    """
-    The brain of the Viper module.
-    Manages agent lifecycle, unpause logic, and health checks.
-    """
-    
-    def __init__(self, agents: List[Any]):
-        self.agents = agents
-        self.health_check_interval = 60  # seconds
-        self.unpause_check_interval = 30 # seconds
+class DecisionEngine:
+    def __init__(self):
+        self.decision_log: List[Dict[str, Any]] = []
+        self.error_count = 0
 
-    def run_health_monitor(self):
+    def decide(self, context: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
-        Background loop to monitor agent health and trigger unpause if needed.
+        Make a decision based on context data.
+        Implements logging and exception handling to prevent infinite error loops.
         """
-        logger.info("Starting Viper Brain health monitor.")
-        
-        while True:
-            try:
-                self._check_agent_health()
-                self._attempt_unpause_paused_agents()
-                
-                time.sleep(self.health_check_interval)
-                
-            except Exception as e:
-                logger.error(f"Brain monitor loop error: {e}", exc_info=True)
-                time.sleep(10)
+        try:
+            if not context:
+                logger.warning("No context provided for decision making.")
+                return {"decision": "hold", "reason": "no_context"}
 
-    def _check_agent_health(self):
-        """
-        Checks if agents are responding or stuck in error states.
-        """
-        for agent in self.agents:
-            status = agent.get_status()
-            if status.get("status") == "error":
-                logger.warning(f"Agent {agent.agent_id} is in error state.")
-                # Logic to trigger recovery or alert could go here
+            # Simulate decision logic
+            # In production, this would analyze anomaly.py and pnl.py outputs
+            risk_level = context.get("risk_level", "medium")
+            pnl_status = context.get("pnl_status", "neutral")
+            
+            decision = "hold"
+            reason = "default"
 
-    def _attempt_unpause_paused_agents(self):
-        """
-        Periodic re-check to unpause tasks if the LLM or connection is available.
-        Implements the logic suggested in past successful tasks.
-        """
-        for agent in self.agents:
-            if agent.is_paused:
-                # Simulate health check: Is the LLM available?
-                # In production, this would call a health check endpoint
-                is_healthy = self._check_llm_health()
-                
-                if is_healthy:
-                    logger.info(f"LLM healthy. Attempting to unpause {agent.agent_id}.")
-                    if agent.unpause():
-                        logger.info(f"Successfully unpause {agent.agent_id}.")
-                    else:
-                        logger.warning(f"Failed to unpause {agent.agent_id}.")
-                else:
-                    logger.debug(f"LLM still unhealthy. Pausing {agent.agent_id} continues.")
+            if pnl_status == "critical_error":
+                decision = "stop_trading"
+                reason = "System error detected in PnL module"
+            elif risk_level == "high" and pnl_status == "loss":
+                decision = "reduce_position"
+                reason = "High risk with current losses"
+            elif pnl_status == "profit":
+                decision = "hold_or_add"
+                reason = "Profitable trend detected"
 
-    def _check_llm_health(self) -> bool:
-        """
-        Simulates an LLM health check.
-        Returns True if the system is ready to process tasks.
-        """
-        # Placeholder for actual health check logic
-        # e.g., try to ping the LLM endpoint
-        return True 
+            decision_record = {
+                "decision": decision,
+                "reason": reason,
+                "context_snapshot": {k: v for k, v in context.items() if k != "sensitive_data"},
+                "timestamp": datetime.utcnow().isoformat()
+            }
 
-    def add_agent(self, agent):
-        self.agents.append(agent)
-        logger.info(f"Added agent {agent.agent_id} to brain.")
+            self.decision_log.append(decision_record)
+            logger.info(f"Decision made: {decision} - {reason}")
+            return decision_record
 
-    def remove_agent(self, agent_id: str):
-        self.agents = [a for a in self.agents if a.agent_id != agent_id]
-        logger.info(f"Removed agent {agent_id} from brain.")
+        except Exception as e:
+            self.error_count += 1
+            logger.error(f"Decision engine exception: {e}", exc_info=True)
+            
+            # Circuit breaker logic: if errors exceed threshold, stop making decisions
+            if self.error_count > 3:
+                logger.critical("Too many decision errors. Entering safe mode.")
+                return {"decision": "safe_mode", "reason": "Too many errors"}
+            
+            return {"decision": "hold", "reason": "Error in decision logic"}
+
+    def get_log(self) -> List[Dict[str, Any]]:
+        return self.decision_log
+
+def make_decision(context: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    engine = DecisionEngine()
+    return engine.decide(context)
 ```

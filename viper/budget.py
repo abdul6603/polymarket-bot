@@ -1,75 +1,64 @@
 ```python
 import logging
-from typing import Optional, Dict, Any
+from typing import Dict, Any, Optional
+from datetime import datetime
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("viper.budget")
 
 class BudgetManager:
-    """
-    Manages agent budgets and spending limits.
-    Provides structured error reporting to prevent crashes.
-    """
-    
-    def __init__(self, initial_budget: float):
-        self.budget = initial_budget
-        self.spent = 0.0
-        self.error_log = []
+    def __init__(self, initial_balance: float = 10000.0):
+        self.balance = initial_balance
+        self.max_drawdown = 0.20  # 20% max drawdown
+        self.state_history: List[Dict[str, Any]] = []
 
-    def spend(self, amount: float, context: str) -> Optional[Dict[str, Any]]:
+    def update(self, pnl_change: float) -> Optional[Dict[str, Any]]:
         """
-        Attempts to spend from the budget.
-        Returns structured error object if failed, instead of raising exception.
+        Update budget with new PnL change.
+        Validates state and prevents crashes on invalid data.
         """
-        if amount < 0:
-            error = {
-                "type": "invalid_amount",
-                "message": "Amount cannot be negative",
-                "amount": amount,
-                "context": context
+        try:
+            if not isinstance(pnl_change, (int, float)):
+                raise ValueError(f"Invalid PnL change type: {type(pnl_change)}")
+
+            new_balance = self.balance + pnl_change
+            
+            if new_balance < 0:
+                logger.warning(f"Balance went negative: {new_balance}. Resetting to 0.")
+                new_balance = 0.0
+
+            # Check drawdown
+            max_loss = self.balance * self.max_drawdown
+            if self.balance - new_balance > max_loss:
+                logger.critical(f"Max drawdown exceeded! Current: {self.balance}, New: {new_balance}")
+                # Trigger emergency stop or alert
+                return {"status": "drawdown_exceeded", "balance": new_balance}
+
+            self.balance = new_balance
+            record = {
+                "timestamp": datetime.utcnow().isoformat(),
+                "previous_balance": self.balance - pnl_change,
+                "pnl_change": pnl_change,
+                "new_balance": new_balance,
+                "status": "updated"
             }
-            self.error_log.append(error)
-            logger.warning(f"Invalid spend attempt: {error}")
-            return error
+            self.state_history.append(record)
+            logger.info(f"Budget updated: {new_balance:.2f}")
+            return record
 
-        if self.budget - self.spent < amount:
-            error = {
-                "type": "insufficient_funds",
-                "message": "Budget exceeded",
-                "available": self.budget - self.spent,
-                "requested": amount,
-                "context": context
-            }
-            self.error_log.append(error)
-            logger.warning(f"Insufficient funds: {error}")
-            return error
+        except ValueError as e:
+            logger.error(f"Budget validation error: {e}")
+            return {"status": "validation_failed", "message": str(e)}
+        except Exception as e:
+            logger.critical(f"Unexpected budget error: {e}", exc_info=True)
+            return {"status": "critical_error", "message": str(e)}
 
-        self.spent += amount
-        logger.info(f"Spend successful: {amount} in {context}. Remaining: {self.budget - self.spent}")
-        
-        return {
-            "status": "success",
-            "remaining": self.budget - self.spent,
-            "context": context
-        }
+    def get_balance(self) -> float:
+        return self.balance
 
-    def get_budget_status(self) -> Dict[str, Any]:
-        return {
-            "total_budget": self.budget,
-            "spent": self.spent,
-            "remaining": self.budget - self.spent,
-            "error_count": len(self.error_log)
-        }
+    def get_history(self) -> List[Dict[str, Any]]:
+        return self.state_history
 
-    def reset_budget(self, new_budget: float):
-        self.budget = new_budget
-        self.spent = 0.0
-        self.error_log = []
-        logger.info(f"Budget reset to {new_budget}.")
-
-    def get_errors(self) -> list:
-        return self.error_log
-
-    def clear_errors(self):
-        self.error_log = []
-        logger.info("Error log cleared.")
+def update_budget(pnl_change: float, initial_balance: float = 10000.0) -> Optional[Dict[str, Any]]:
+    manager = BudgetManager(initial_balance)
+    return manager.update(pnl_change)
 ```
