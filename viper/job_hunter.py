@@ -26,6 +26,7 @@ from viper.sources.remoteok import scan_remoteok
 from viper.sources.weworkremotely import scan_weworkremotely
 from viper.sources.hackernews import scan_hackernews
 from viper.telegram_alerts import send_job_alert, send_summary
+from viper.lead_writer import write_leads
 
 log = logging.getLogger(__name__)
 ET = ZoneInfo("America/New_York")
@@ -410,6 +411,13 @@ def run_scan() -> dict:
 
     # Sort by score descending
     freelance_jobs.sort(key=lambda j: j["score"], reverse=True)
+
+    # Write to viper_leads.json for Claude Overseer
+    try:
+        new_leads = write_leads(freelance_jobs)
+        log.info("[JOB_HUNTER] Wrote %d new leads to viper_leads.json", new_leads)
+    except Exception as e:
+        log.error("[JOB_HUNTER] Lead writer failed: %s", str(e)[:200])
 
     for job in freelance_jobs:
         if job["score"] < MIN_ALERT_SCORE:

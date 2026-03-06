@@ -11,9 +11,9 @@ import praw
 
 log = logging.getLogger(__name__)
 
-SUBREDDITS = ["forhire", "slavelabour", "freelance"]
+SUBREDDITS = ["forhire", "slavelabour", "freelance", "smallbusiness", "realtors", "Entrepreneur"]
 HIRING_PATTERNS = re.compile(
-    r"\[hiring\]|\[paid\]|looking\s+for|need\s+a?\s*(developer|coder|writer|scraper|bot)",
+    r"\[hiring\]|\[paid\]|looking\s+for|need\s+a?\s*(developer|coder|writer|scraper|bot|chatbot|automation)",
     re.IGNORECASE,
 )
 SKIP_KEYWORDS = [
@@ -27,6 +27,8 @@ SKILL_KEYWORDS = {
         "script", "telegram", "discord", "flask", "django", "selenium",
         "web scraping", "data pipeline", "backend", "developer", "coder",
         "programming", "software", "n8n", "zapier", "airtable",
+        "chatbot", "ai", "llm", "gpt", "whatsapp", "automation",
+        "appointment", "booking", "real estate",
     ],
     "content": [
         "seo", "article", "blog", "content", "copywriting", "writer",

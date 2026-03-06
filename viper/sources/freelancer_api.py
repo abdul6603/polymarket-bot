@@ -18,6 +18,13 @@ SEARCH_QUERIES = [
     "seo article writing",
     "api integration python",
     "data pipeline",
+    "chatbot",
+    "ai chatbot",
+    "whatsapp bot",
+    "ai automation",
+    "small business bot",
+    "real estate bot",
+    "appointment booking bot",
 ]
 
 FREELANCER_SEARCH_URL = "https://www.freelancer.com/api/projects/0.1/projects/active/"
@@ -41,6 +48,8 @@ SKILL_KEYWORDS = {
         "python", "bot", "scraper", "scraping", "api",
         "script", "telegram", "discord", "flask", "selenium",
         "backend", "data pipeline", "n8n",
+        "chatbot", "ai", "llm", "gpt", "whatsapp",
+        "automation", "appointment", "booking",
     ],
     "content": [
         "seo", "article", "blog", "content", "copywriting", "writer",

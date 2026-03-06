@@ -19,6 +19,12 @@ SEARCH_QUERIES = [
     "web scraping",
     "seo article writing",
     "seo content strategy",
+    "chatbot development",
+    "ai chatbot",
+    "whatsapp bot",
+    "ai automation business",
+    "small business chatbot",
+    "appointment booking bot",
 ]
 
 UPWORK_SEARCH_URL = "https://www.upwork.com/ab/jobs/search/url"
@@ -28,6 +34,7 @@ SKILL_KEYWORDS = {
         "python", "bot", "scraper", "scraping", "automation", "api",
         "script", "telegram", "discord", "flask", "selenium", "n8n",
         "developer", "backend", "data pipeline",
+        "chatbot", "ai", "llm", "gpt", "whatsapp", "appointment", "booking",
     ],
     "content": [
         "seo", "article", "blog", "content", "copywriting", "writer",
