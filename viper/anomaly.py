@@ -1,43 +1,48 @@
 ```python
 import logging
-from typing import List, Dict, Optional
+from typing import Dict, Any, Optional
 
 logger = logging.getLogger("AnomalyDetector")
 
-def detect_anomalies() -> Optional[List[Dict[str, str]]]:
+def detect_anomalies(data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
-    Detects anomalies in market data or system state.
-    Returns a list of anomaly dicts or None if no anomalies found.
-    Wraps logic in try-except to prevent crashes.
+    Detect anomalies in market data.
+    Returns a safe default state if data is missing or malformed.
     """
+    default_response = {
+        "is_anomalous": False,
+        "details": "No anomalies detected or data unavailable.",
+        "confidence": 0.0
+    }
+    
+    if data is None:
+        logger.warning("No data provided to anomaly detection. Returning safe state.")
+        return default_response
+
     try:
-        # Placeholder for actual detection logic
-        # In production, this would query Atlas or real-time data streams
-        logger.debug("Running anomaly detection...")
+        # Simulate anomaly detection logic
+        # In production, this would check volatility, volume spikes, etc.
+        volatility = data.get("volatility", 0.0)
+        volume_spike = data.get("volume_spike", False)
         
-        # Simulated logic: Check for high volatility or missing data
-        # Replace with actual data fetching logic
-        data = _fetch_market_data()
+        if volatility > 5.0 or volume_spike:
+            logger.info(f"Anomaly detected: Volatility={volatility}, VolumeSpike={volume_spike}")
+            return {
+                "is_anomalous": True,
+                "details": f"High volatility ({volatility}) or volume spike detected.",
+                "confidence": 0.9
+            }
+            
+        return {
+            "is_anomalous": False,
+            "details": "Market conditions normal.",
+            "confidence": 1.0
+        }
         
-        if not data:
-            logger.warning("No market data available for anomaly detection.")
-            return None
-
-        anomalies = []
-        # Example check: If data is empty or null
-        if data.get("status") == "error":
-            anomalies.append({"type": "data_error", "message": "Market data status error"})
-        
-        # Add more checks here
-        return anomalies if anomalies else None
-
+    except KeyError as e:
+        logger.error(f"Missing key in anomaly data: {e}")
+        return default_response
     except Exception as e:
-        logger.error(f"Anomaly detection failed: {e}")
-        return None
-
-def _fetch_market_data() -> Optional[Dict[str, Any]]:
-    """
-    Simulates fetching market data.
-    """
-    # Placeholder implementation
-    return {"status": "ok", "volatility": 0.05}
+        logger.error(f"Unexpected error in anomaly detection: {e}", exc_info=True)
+        return default_response
+```

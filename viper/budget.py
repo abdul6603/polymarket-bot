@@ -1,53 +1,46 @@
 ```python
 import logging
-from typing import Optional, Dict, Any
+from typing import Dict, Any, Optional
 
 logger = logging.getLogger("BudgetManager")
 
-def manage_budget(decision: Optional[Dict[str, str]]) -> None:
+def check_budget(wallet_state: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
-    Manages budget state based on decisions.
-    Ensures state transitions are atomic or wrapped in error handling.
+    Check if trading is allowed based on budget.
+    Returns a safe state if wallet state is inaccessible.
     """
+    default_response = {
+        "can_trade": False,
+        "available_balance": 0.0,
+        "error": "No wallet state provided."
+    }
+    
+    if wallet_state is None:
+        logger.warning("No wallet state provided. Trading disabled.")
+        return default_response
+
     try:
-        logger.debug("Managing budget...")
+        balance = float(wallet_state.get("available_balance", 0))
+        min_balance = float(wallet_state.get("min_balance_required", 100.0))
         
-        if not decision:
-            logger.info("No decision provided. Skipping budget update.")
-            return
-
-        action = decision.get("action", "")
-        reason = decision.get("reason", "")
-        
-        # Simulate budget update logic
-        current_budget = _get_current_budget()
-        
-        if action == "REDUCE_EXPOSURE":
-            logger.info(f"Reducing exposure due to: {reason}")
-            # Logic to reduce position size
-            _update_budget(current_budget, -0.1)
+        if balance < min_balance:
+            logger.info(f"Balance ({balance}) below minimum required ({min_balance}). Trading disabled.")
+            return {
+                "can_trade": False,
+                "available_balance": balance,
+                "error": "Insufficient balance."
+            }
             
-        elif action == "HOLD":
-            logger.info(f"Holding position. Reason: {reason}")
-            # Logic to maintain current state
-            
-        else:
-            logger.warning(f"Unknown action: {action}")
-
+        return {
+            "can_trade": True,
+            "available_balance": balance,
+            "error": None
+        }
+        
+    except (ValueError, TypeError) as e:
+        logger.error(f"Failed to parse budget data: {e}")
+        return default_response
     except Exception as e:
-        logger.error(f"Budget management failed: {e}")
-        # Fallback: Log error and do not crash the agent
-
-def _get_current_budget() -> float:
-    """
-    Simulates fetching current budget.
-    """
-    return 10000.0
-
-def _update_budget(current: float, change: float) -> float:
-    """
-    Simulates updating budget.
-    """
-    new_budget = current + change
-    logger.info(f"Budget updated: {current} -> {new_budget}")
-    return new_budget
+        logger.error(f"Unexpected error in budget check: {e}", exc_info=True)
+        return default_response
+```

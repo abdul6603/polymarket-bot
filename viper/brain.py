@@ -1,47 +1,53 @@
 ```python
 import logging
-from typing import Optional, Dict, Any
+from typing import Dict, Any, Optional
 
 logger = logging.getLogger("ViperBrain")
 
-def make_decision(pnl_data: Optional[Dict[str, Any]], anomalies: Optional[list]) -> Optional[Dict[str, str]]:
+def make_decision(pnl_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
-    Makes trading decisions based on PnL and anomalies.
-    Implements exception handling for invalid inputs.
+    Make trading decisions based on PnL and market state.
+    Returns a 'hold' decision if inputs are invalid to prevent crashes.
     """
+    default_decision = {
+        "action": "HOLD",
+        "reason": "Invalid or missing data.",
+        "confidence": 0.0
+    }
+    
+    if pnl_data is None:
+        logger.warning("No PnL data provided. Decision: HOLD.")
+        return default_decision
+
     try:
-        logger.debug("Brain processing decision logic...")
+        valid = pnl_data.get("valid", False)
+        pnl = pnl_data.get("pnl", 0.0)
         
-        # Validate inputs
-        if not isinstance(pnl_data, dict) and pnl_data is not None:
-            logger.warning("Invalid PnL data type.")
-            return None
+        if not valid:
+            logger.warning("PnL data marked invalid. Decision: HOLD.")
+            return default_decision
             
-        if not isinstance(anomalies, list) and anomalies is not None:
-            logger.warning("Invalid anomalies data type.")
-            anomalies = None
-
-        # Decision Logic
-        if anomalies:
-            logger.info("High anomaly detected. Decision: HOLD/FLIGHT.")
-            return {"action": "HOLD", "reason": "Anomalies detected"}
-
-        if pnl_data and pnl_data.get("total_pnl", 0) < -100:
-            logger.info("Significant loss detected. Decision: REDUCE_EXPOSURE.")
-            return {"action": "REDUCE_EXPOSURE", "reason": "Loss threshold breached"}
-        
-        if pnl_data and pnl_data.get("total_pnl", 0) > 50:
-            logger.info("Profitable. Decision: HOLD/ACCUMULATE.")
-            return {"action": "HOLD", "reason": "Positive trend"}
-
-        return {"action": "HOLD", "reason": "No clear signal"}
-
+        # Simple logic: If PnL is positive, take profit. If negative, cut loss.
+        if pnl > 0:
+            return {
+                "action": "TAKE_PROFIT",
+                "reason": f"Positive PnL detected: {pnl}",
+                "confidence": 0.8
+            }
+        elif pnl < 0:
+            return {
+                "action": "CUT_LOSS",
+                "reason": f"Negative PnL detected: {pnl}",
+                "confidence": 0.8
+            }
+        else:
+            return {
+                "action": "HOLD",
+                "reason": "PnL is zero or negligible.",
+                "confidence": 0.5
+            }
+            
     except Exception as e:
-        logger.error(f"Decision logic failed: {e}")
-        return None
-
-def validate_input(data: Any) -> bool:
-    """
-    Simple input validation helper.
-    """
-    return data is not None
+        logger.error(f"Error in decision logic: {e}", exc_info=True)
+        return default_decision
+```
