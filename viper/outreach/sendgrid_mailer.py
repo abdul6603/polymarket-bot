@@ -1,6 +1,6 @@
-"""SendGrid email sender for cold outreach.
+"""Resend email sender for cold outreach.
 
-Free tier: 100 emails/day. Requires SENDGRID_API_KEY in .env.
+Requires RESEND_API_KEY in .env.
 """
 from __future__ import annotations
 
@@ -10,29 +10,28 @@ from pathlib import Path
 
 log = logging.getLogger(__name__)
 
+_DEFAULT_FROM = "DarkCode AI <darkcodeai@proton.me>"
 
-def _load_config() -> tuple[str, str, str]:
-    """Load SendGrid config from env or .env file.
 
-    Returns (api_key, from_email, from_name).
+def _load_config() -> tuple[str, str]:
+    """Load Resend config from env or .env file.
+
+    Returns (api_key, from_address).
     """
-    api_key = os.environ.get("SENDGRID_API_KEY", "")
-    from_email = os.environ.get("SENDGRID_FROM_EMAIL", "")
-    from_name = os.environ.get("SENDGRID_FROM_NAME", "DarkCode AI")
+    api_key = os.environ.get("RESEND_API_KEY", "")
+    from_addr = os.environ.get("RESEND_FROM", _DEFAULT_FROM)
 
-    if not api_key or not from_email:
+    if not api_key:
         env_path = Path.home() / "polymarket-bot" / ".env"
         if env_path.exists():
             for line in env_path.read_text().splitlines():
                 line = line.strip()
-                if line.startswith("SENDGRID_API_KEY=") and not api_key:
+                if line.startswith("RESEND_API_KEY=") and not api_key:
                     api_key = line.split("=", 1)[1].strip()
-                elif line.startswith("SENDGRID_FROM_EMAIL=") and not from_email:
-                    from_email = line.split("=", 1)[1].strip()
-                elif line.startswith("SENDGRID_FROM_NAME="):
-                    from_name = line.split("=", 1)[1].strip()
+                elif line.startswith("RESEND_FROM="):
+                    from_addr = line.split("=", 1)[1].strip()
 
-    return api_key, from_email, from_name
+    return api_key, from_addr
 
 
 def send_email(
@@ -41,53 +40,48 @@ def send_email(
     body: str,
     to_name: str = "",
 ) -> dict:
-    """Send a single email via SendGrid.
+    """Send a single email via Resend.
 
     Returns dict with 'success', 'status_code', 'error' keys.
     """
-    api_key, from_email, from_name = _load_config()
+    api_key, from_addr = _load_config()
 
     if not api_key:
         return {
             "success": False,
             "status_code": 0,
-            "error": "SENDGRID_API_KEY not configured. Add to .env file.",
-        }
-    if not from_email:
-        return {
-            "success": False,
-            "status_code": 0,
-            "error": "SENDGRID_FROM_EMAIL not configured. Add to .env file.",
+            "error": "RESEND_API_KEY not configured. Add to .env file.",
         }
 
     try:
-        from sendgrid import SendGridAPIClient
-        from sendgrid.helpers.mail import Mail, Email, To, Content
+        import resend
 
-        message = Mail(
-            from_email=Email(from_email, from_name),
-            to_emails=To(to_email, to_name),
-            subject=subject,
-            plain_text_content=Content("text/plain", body),
-        )
+        resend.api_key = api_key
 
-        sg = SendGridAPIClient(api_key)
-        response = sg.send(message)
+        resp = resend.Emails.send({
+            "from": from_addr,
+            "to": [to_email],
+            "subject": subject,
+            "text": body,
+        })
 
-        success = 200 <= response.status_code < 300
+        # Resend returns an object with an 'id' on success
+        email_id = getattr(resp, "id", None) or (resp.get("id") if isinstance(resp, dict) else None)
+        success = bool(email_id)
+
         if success:
-            log.info("Email sent to %s (status %d)", to_email, response.status_code)
+            log.info("Email sent to %s (id: %s)", to_email, email_id)
         else:
-            log.warning("SendGrid returned %d for %s", response.status_code, to_email)
+            log.warning("Resend response for %s: %s", to_email, resp)
 
         return {
             "success": success,
-            "status_code": response.status_code,
-            "error": "" if success else f"HTTP {response.status_code}",
+            "status_code": 200 if success else 400,
+            "error": "" if success else str(resp),
         }
 
     except Exception as e:
-        log.error("SendGrid error for %s: %s", to_email, e)
+        log.error("Resend error for %s: %s", to_email, e)
         return {
             "success": False,
             "status_code": 0,
