@@ -46,6 +46,9 @@ class ScrapedBusiness:
     # Scrape quality
     pages_scraped: int = 0
     text_chars: int = 0
+    # Prospector additions
+    raw_html: str = ""
+    contact_form_url: str = ""
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -70,7 +73,8 @@ def scrape_business(url: str, niche: str = "auto") -> ScrapedBusiness:
     """Scrape a business website and extract structured data."""
     biz = ScrapedBusiness(url=url)
 
-    # Fetch homepage
+    # Fetch homepage (also capture raw HTML for chatbot detection)
+    biz.raw_html = _fetch_raw_html(url)
     homepage_soup = _fetch_page(url)
     if homepage_soup is None:
         log.warning("Could not fetch homepage: %s", url)
@@ -94,6 +98,10 @@ def scrape_business(url: str, niche: str = "auto") -> ScrapedBusiness:
     _extract_brand_color(homepage_soup, biz)
     _extract_tagline(homepage_soup, biz)
     _extract_description(homepage_soup, biz)
+
+    # Contact form fallback
+    if not biz.email:
+        biz.contact_form_url = _find_contact_form_url(homepage_soup, url)
 
     # Discover and scrape subpages
     subpage_urls = _discover_subpages(homepage_soup, url)
@@ -136,6 +144,26 @@ def _fetch_page(url: str) -> BeautifulSoup | None:
     except Exception as e:
         log.debug("Failed to fetch %s: %s", url, e)
         return None
+
+
+def _fetch_raw_html(url: str) -> str:
+    """Fetch raw HTML string for chatbot detection."""
+    try:
+        resp = requests.get(url, headers=_HEADERS, timeout=_TIMEOUT, allow_redirects=True)
+        resp.raise_for_status()
+        return resp.text
+    except Exception as e:
+        log.debug("Failed to fetch raw HTML %s: %s", url, e)
+        return ""
+
+
+def _find_contact_form_url(soup: BeautifulSoup, base_url: str) -> str:
+    """Find a contact page URL from navigation links."""
+    for a in soup.find_all("a", href=True):
+        href_text = (a.get_text(strip=True) + " " + a["href"]).lower()
+        if "contact" in href_text:
+            return urljoin(base_url, a["href"])
+    return ""
 
 
 def _detect_niche(text: str) -> str:
