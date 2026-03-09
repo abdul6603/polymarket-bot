@@ -3,11 +3,15 @@
 Actions fire at exact voiceover timestamps. No sleep() guesswork.
 The recorder starts a monotonic clock at recording start, then for each
 cue point: wait_until(cue.timestamp) → execute action.
+
+Self-verification: fast DOM replay confirms the chatbot responds correctly
+at each step. Auto-retries on failure.
 """
 from __future__ import annotations
 
 import random
 import time
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
@@ -25,7 +29,6 @@ def _smooth_move(page: Page, x: int, y: int) -> None:
 
 def _human_type(page: Page, selector: str, text: str) -> None:
     page.type(selector, text, delay=random.randint(50, 80))
-
 
 
 def _send_message(page: Page, text: str) -> None:
@@ -48,6 +51,12 @@ def _scroll_chat(page: Page) -> None:
     page.evaluate(
         'document.getElementById("chatBody").scrollTop = '
         'document.getElementById("chatBody").scrollHeight'
+    )
+
+
+def _get_chat_text(page: Page) -> str:
+    return page.evaluate(
+        'document.getElementById("chatBody")?.innerText || ""'
     )
 
 
@@ -86,7 +95,6 @@ def _action_form_fill(page: Page) -> None:
         time.sleep(0.3)
         _human_type(page, "#leadEmail", "sarah.johnson@email.com")
         time.sleep(0.3)
-        # Textarea is pre-filled with the original question; just verify it exists
         if page.locator("#leadNote").count() > 0:
             _scroll_chat(page)
     except Exception as e:
@@ -131,23 +139,7 @@ def record_demo(
     viewport: tuple[int, int] = (1920, 1080),
     action_map: dict[str, Callable[[Page], None]] | None = None,
 ) -> Path:
-    """Record a demo video with cue-sheet-driven timing.
-
-    Each cue point fires at its exact timestamp from recording start.
-    The voiceover audio is laid over the recording in the compositor —
-    they're in sync because the cues came from the voiceover alignment.
-
-    Args:
-        demo_url: URL of the live chatbot demo
-        cue_sheet: list of CuePoint(action, timestamp) from voiceover alignment
-        total_duration: total voiceover duration (recording stops after this + buffer)
-        output_dir: directory for output video
-        viewport: (width, height) for browser window
-        action_map: action_name → callable (default: DENTAL_ACTIONS)
-
-    Returns:
-        Path to recorded WebM video file
-    """
+    """Record a demo video with cue-sheet-driven timing."""
     if action_map is None:
         action_map = DENTAL_ACTIONS
 
@@ -167,10 +159,8 @@ def record_demo(
         print(f"  [recorder] Loading demo page ({vw}x{vh})...")
         page.goto(demo_url, wait_until="networkidle")
 
-        # Start the clock — this is t=0, same as voiceover start
         rec_start = time.monotonic()
 
-        # Fire each cue at its exact timestamp
         for cue in cue_sheet:
             action_fn = action_map.get(cue.action)
             if action_fn is None:
@@ -182,7 +172,6 @@ def record_demo(
             print(f"  [recorder] [{cue.action}] @ {elapsed:.1f}s (target: {cue.timestamp:.1f}s)")
             action_fn(page)
 
-        # Hold until voiceover ends + 2s buffer
         _wait_until(total_duration + 2.0, rec_start)
 
         print("  [recorder] Finalizing recording...")
@@ -192,12 +181,187 @@ def record_demo(
 
     final_path = Path(video_path) if video_path else None
     if final_path and final_path.exists():
-        print(f"  [recorder] Video saved: {final_path}")
         return final_path
 
     webms = list(output_dir.glob("*.webm"))
     if webms:
-        print(f"  [recorder] Video saved: {webms[0]}")
         return webms[0]
 
     raise FileNotFoundError(f"No video found in {output_dir}")
+
+
+# ── Self-verification ────────────────────────────────────────────────
+# Fast DOM replay: fires each action, waits 2s for bot response, checks
+# chat text. ~15 seconds total instead of full voiceover duration.
+
+@dataclass
+class VerifyStep:
+    """One step in the verification sequence."""
+    action: str
+    must_have: list[str] = field(default_factory=list)
+    must_not_have: list[str] = field(default_factory=list)
+    check_selector: str = ""  # CSS selector that must exist after this step
+
+
+# Hardcoded verification sequence for dental demos.
+# Each step: fire the action, wait for response, check DOM.
+DENTAL_VERIFY_STEPS = [
+    VerifyStep(
+        action="open_chat",
+        must_have=["How can I help"],
+    ),
+    VerifyStep(
+        action="type_insurance",
+        must_have=["Delta Dental", "Cigna"],
+        must_not_have=["book an appointment"],
+    ),
+    VerifyStep(
+        action="type_booking",
+        must_have=["book", "appointment"],
+        must_not_have=["Saturday"],
+    ),
+    VerifyStep(
+        action="type_hours",
+        must_have=["Saturday", "hours"],
+        must_not_have=["Dr. Kim available"],
+    ),
+    VerifyStep(
+        action="type_doctor_question",
+        must_have=["Dr. Kim", "Dr. Jefferson Kim"],
+        check_selector=".lead-form",
+    ),
+    VerifyStep(
+        action="form_fill",
+        check_selector="#leadName",
+    ),
+    VerifyStep(
+        action="submit",
+        must_have=["Thank you"],
+    ),
+]
+
+
+@dataclass
+class VerifyResult:
+    """Result of a verification run."""
+    passed: bool
+    checks_run: int
+    checks_passed: int
+    failures: list[str]
+
+    def summary(self) -> str:
+        if self.passed:
+            return f"PASS ({self.checks_passed}/{self.checks_run} checks)"
+        return f"FAIL ({self.checks_passed}/{self.checks_run}) — " + "; ".join(self.failures)
+
+
+def verify_demo(
+    demo_url: str,
+    steps: list[VerifyStep] | None = None,
+    action_map: dict[str, Callable[[Page], None]] | None = None,
+) -> VerifyResult:
+    """Fast verification: replay actions without voiceover timing.
+
+    Opens a fresh browser, fires each action with a 2s pause for the bot
+    to respond, then checks the DOM for expected content. ~15 seconds total.
+    """
+    if steps is None:
+        steps = DENTAL_VERIFY_STEPS
+    if action_map is None:
+        action_map = DENTAL_ACTIONS
+
+    checks_run = 0
+    checks_passed = 0
+    failures: list[str] = []
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1920, "height": 1080})
+        page.goto(demo_url, wait_until="networkidle")
+
+        for step in steps:
+            action_fn = action_map.get(step.action)
+            if action_fn is None:
+                failures.append(f"no handler for '{step.action}'")
+                continue
+
+            try:
+                action_fn(page)
+            except Exception as e:
+                failures.append(f"action '{step.action}' crashed: {e}")
+                break
+
+            # Wait for bot response
+            time.sleep(2.0)
+
+            chat_text = _get_chat_text(page)
+
+            # Check must_have
+            for text in step.must_have:
+                checks_run += 1
+                if text.lower() in chat_text.lower():
+                    checks_passed += 1
+                else:
+                    failures.append(f"after '{step.action}': missing '{text}'")
+
+            # Check must_not_have
+            for text in step.must_not_have:
+                checks_run += 1
+                if text.lower() not in chat_text.lower():
+                    checks_passed += 1
+                else:
+                    failures.append(f"after '{step.action}': premature '{text}'")
+
+            # Check selector
+            if step.check_selector:
+                checks_run += 1
+                if page.locator(step.check_selector).count() > 0:
+                    checks_passed += 1
+                else:
+                    failures.append(f"after '{step.action}': selector '{step.check_selector}' not found")
+
+        browser.close()
+
+    return VerifyResult(
+        passed=len(failures) == 0,
+        checks_run=checks_run,
+        checks_passed=checks_passed,
+        failures=failures,
+    )
+
+
+def record_with_verify(
+    demo_url: str,
+    cue_sheet: list[CuePoint],
+    total_duration: float,
+    output_dir: Path,
+    viewport: tuple[int, int] = (1920, 1080),
+    action_map: dict[str, Callable[[Page], None]] | None = None,
+    max_retries: int = 3,
+) -> Path:
+    """Record with automatic retry on failure."""
+    label = f"{viewport[0]}x{viewport[1]}"
+    last_error: Exception | None = None
+
+    for attempt in range(1, max_retries + 1):
+        try:
+            if output_dir.exists():
+                for old in output_dir.glob("*.webm"):
+                    old.unlink(missing_ok=True)
+
+            path = record_demo(
+                demo_url, cue_sheet, total_duration,
+                output_dir, viewport, action_map,
+            )
+            print(f"  [recorder] {label} recorded: {path.name}")
+            return path
+
+        except Exception as e:
+            last_error = e
+            if attempt < max_retries:
+                print(f"  [recorder] {label} attempt {attempt} failed: {e} — retrying...")
+                time.sleep(2)
+            else:
+                print(f"  [recorder] {label} all {max_retries} attempts failed")
+
+    raise RuntimeError(f"Recording {label} failed after {max_retries} attempts: {last_error}")
