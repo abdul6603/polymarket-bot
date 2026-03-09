@@ -693,9 +693,9 @@ body {{
     var body = document.getElementById("chatBody");
     var msg;
     if (doctor) {{
-      msg = "That's a great question for " + doctor.name + ". Let me connect you — leave your info and your question, and we'll have them follow up directly.";
+      msg = "Great choice! " + doctor.name + " is wonderful. Their availability depends on the current schedule — leave your info below and our team will check and follow up with you directly.";
     }} else {{
-      msg = "That's a great question for our dental team. Let me connect you — leave your info and your question, and we'll have the right doctor follow up directly.";
+      msg = "That's a great question for our dental team. Leave your info below and we'll have the right doctor follow up with you directly.";
     }}
     addBotMessage(msg);
 

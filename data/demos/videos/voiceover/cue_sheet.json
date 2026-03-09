@@ -1,0 +1,30 @@
+[
+  {
+    "action": "open_chat",
+    "timestamp": 7.709
+  },
+  {
+    "action": "type_insurance",
+    "timestamp": 9.532
+  },
+  {
+    "action": "type_booking",
+    "timestamp": 25.82
+  },
+  {
+    "action": "type_hours",
+    "timestamp": 35.746
+  },
+  {
+    "action": "type_doctor_question",
+    "timestamp": 47.74
+  },
+  {
+    "action": "form_fill",
+    "timestamp": 58.421
+  },
+  {
+    "action": "submit",
+    "timestamp": 69.276
+  }
+]

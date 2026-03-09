@@ -35,27 +35,34 @@ DENTAL_SCRIPT_TEXT = (
     "Hey, check this out — I built a custom AI assistant for Belknap Dental. "
     "Watch what happens when a patient visits the website and clicks the chat. "
     "Let's ask about insurance — this is the number one question dental offices get. "
-    "Boom — instant answer. No staff time wasted. "
+    "See how it instantly knows which plans they accept — Cigna, MetLife, Blue Cross — "
+    "no phone call needed. The patient gets their answer in seconds. "
     "Now let's try booking an appointment. "
-    "It walks them right through the process. "
-    "And if they ask about hours... "
-    "Right there. Twenty-four seven. Even when the office is closed. "
-    "Now here's the best part — watch what happens when someone asks about a specific doctor... "
-    "It recognizes the doctor, and connects them directly — capturing their info as a lead. "
+    "It gives patients a direct way to schedule, twenty-four seven, "
+    "even when the office is closed. No more missed calls. "
+    "And if they ask about hours on the weekend... "
+    "It handles common questions like Saturday hours automatically. "
+    "The front desk never has to answer this again. "
+    "Now here's the best part — watch what happens when someone asks about a specific doctor. "
+    "The bot knows your doctors. Dr. Jefferson Kim is the lead dentist here. "
+    "For something this specific, it connects the patient directly — "
+    "capturing their name, phone, and email as a lead. "
+    "And their original question is saved right in the form. "
     "Name, phone, email — sent straight to the office. "
     "This runs twenty-four seven, never calls in sick, and pays for itself "
     "in the first week. I built this specifically for your practice — "
     "want me to set it up?"
 )
 
-# Each cue fires the action when the voice starts saying the phrase
+# Each cue fires the action when the voice starts saying the phrase.
+# Phrases must appear VERBATIM in DENTAL_SCRIPT_TEXT above.
 DENTAL_CUES = [
     {"action": "open_chat", "at_phrase": "clicks the chat"},
     {"action": "type_insurance", "at_phrase": "ask about insurance"},
-    {"action": "click_booking", "at_phrase": "try booking"},
+    {"action": "type_booking", "at_phrase": "try booking"},
     {"action": "type_hours", "at_phrase": "ask about hours"},
-    {"action": "trigger_form", "at_phrase": "best part"},
-    {"action": "form_fill", "at_phrase": "capturing their info"},
+    {"action": "type_doctor_question", "at_phrase": "asks about a specific doctor"},
+    {"action": "form_fill", "at_phrase": "capturing their name"},
     {"action": "submit", "at_phrase": "sent straight"},
 ]
 

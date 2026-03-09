@@ -64,24 +64,15 @@ def _action_type_insurance(page: Page) -> None:
     _send_message(page, "Do you accept Delta Dental insurance?")
 
 
-def _action_click_booking(page: Page) -> None:
-    try:
-        btn = page.locator('.quick-btn:has-text("Book Appointment")')
-        if btn.count() > 0:
-            bx, by = _get_element_center(page, '.quick-btn:has-text("Book Appointment")')
-            _smooth_move(page, bx, by)
-            btn.click()
-        else:
-            _send_message(page, "How do I book an appointment?")
-    except Exception:
-        _send_message(page, "How do I book an appointment?")
+def _action_type_booking(page: Page) -> None:
+    _send_message(page, "How do I book an appointment?")
 
 
 def _action_type_hours(page: Page) -> None:
     _send_message(page, "What are your hours on Saturday?")
 
 
-def _action_trigger_form(page: Page) -> None:
+def _action_type_doctor_question(page: Page) -> None:
     _send_message(page, "Is Dr. Kim available for a consultation this week?")
 
 
@@ -114,9 +105,9 @@ def _action_submit(page: Page) -> None:
 DENTAL_ACTIONS: dict[str, Callable[[Page], None]] = {
     "open_chat": _action_open_chat,
     "type_insurance": _action_type_insurance,
-    "click_booking": _action_click_booking,
+    "type_booking": _action_type_booking,
     "type_hours": _action_type_hours,
-    "trigger_form": _action_trigger_form,
+    "type_doctor_question": _action_type_doctor_question,
     "form_fill": _action_form_fill,
     "submit": _action_submit,
 }

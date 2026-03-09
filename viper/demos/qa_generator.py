@@ -127,8 +127,8 @@ def _dental_templates(biz: ScrapedBusiness) -> list[QAPair]:
         ),
         QAPair(
             question="Who are your doctors?",
-            answer=f"We have four wonderful doctors at {name}: Dr. Rayanne E. Lee (Orthodontist), Dr. Jefferson Kim (General Dentist & Invisalign), Dr. Peter Wilson (General Dentist & Invisalign), and Dr. Jordan Betel (General Dentist, laser-certified). Each brings unique expertise to give you the best care possible.",
-            keywords=["doctors", "doctor", "who", "team", "staff", "provider", "dr"],
+            answer=f"Our lead dentist is Dr. Jefferson Kim, DMD — a General Dentist and certified Invisalign provider focused on patient comfort and trust. We also have Dr. Rayanne Lee (Orthodontist), Dr. Peter Wilson (General Dentist & Invisalign), and Dr. Jordan Betel (General Dentist, laser-certified).",
+            keywords=["doctors", "doctor", "who", "team", "staff", "provider", "dr", "works there"],
             category="doctor",
         ),
         QAPair(
@@ -139,7 +139,7 @@ def _dental_templates(biz: ScrapedBusiness) -> list[QAPair]:
         ),
         QAPair(
             question="Tell me about Dr. Kim",
-            answer=f"Dr. Jefferson Kim, DMD is a general dentist at {name} who also offers Invisalign treatments. He graduated from Western University and is known for his personalized approach to care. Originally from North Carolina, Dr. Kim is passionate about building lasting relationships with his patients.",
+            answer=f"Our lead dentist is Dr. Jefferson Kim, DMD — a General Dentist and certified Invisalign provider at {name}. He values the art of dentistry and is known for building trust with every patient. Dr. Kim focuses on personalized care and making sure you feel comfortable from your very first visit.",
             keywords=["kim", "jefferson", "dr kim"],
             category="doctor",
         ),

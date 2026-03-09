@@ -191,7 +191,7 @@
   },
   {
     "question": "Who are your doctors?",
-    "answer": "We have four wonderful doctors at Belknap Dental Associates: Dr. Rayanne E. Lee (Orthodontist), Dr. Jefferson Kim (General Dentist & Invisalign), Dr. Peter Wilson (General Dentist & Invisalign), and Dr. Jordan Betel (General Dentist, laser-certified). Each brings unique expertise to give you the best care possible.",
+    "answer": "Our lead dentist is Dr. Jefferson Kim, DMD — a General Dentist and certified Invisalign provider focused on patient comfort and trust. We also have Dr. Rayanne Lee (Orthodontist), Dr. Peter Wilson (General Dentist & Invisalign), and Dr. Jordan Betel (General Dentist, laser-certified).",
     "keywords": [
       "doctors",
       "doctor",
@@ -199,7 +199,8 @@
       "team",
       "staff",
       "provider",
-      "dr"
+      "dr",
+      "works there"
     ],
     "category": "doctor"
   },
@@ -217,7 +218,7 @@
   },
   {
     "question": "Tell me about Dr. Kim",
-    "answer": "Dr. Jefferson Kim, DMD is a general dentist at Belknap Dental Associates who also offers Invisalign treatments. He graduated from Western University and is known for his personalized approach to care. Originally from North Carolina, Dr. Kim is passionate about building lasting relationships with his patients.",
+    "answer": "Our lead dentist is Dr. Jefferson Kim, DMD — a General Dentist and certified Invisalign provider at Belknap Dental Associates. He values the art of dentistry and is known for building trust with every patient. Dr. Kim focuses on personalized care and making sure you feel comfortable from your very first visit.",
     "keywords": [
       "kim",
       "jefferson",
