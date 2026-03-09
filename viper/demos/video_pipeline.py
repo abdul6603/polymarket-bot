@@ -93,7 +93,7 @@ CONFIGS = {
 }
 
 
-def generate_demo(config: DemoConfig) -> tuple[Path, Path]:
+def generate_demo(config: DemoConfig, skip_voiceover: bool = False) -> tuple[Path, Path]:
     """Generate a complete demo video.
 
     Pipeline:
@@ -122,24 +122,46 @@ def generate_demo(config: DemoConfig) -> tuple[Path, Path]:
         )
 
     # Step 1: Generate voiceover
-    print("\n=== Step 1: Generating voiceover segments ===")
     vo_dir = config.output_dir / "voiceover"
-    segments = generate_segments(config.voiceover_script, api_key, vo_dir)
+    voiceover_path = vo_dir / "voiceover_full.wav"
 
-    total_duration = sum(s.duration_sec for s in segments) + 0.3 * (len(segments) - 1)
-    print(f"  Total voiceover duration: {total_duration:.1f}s")
+    if skip_voiceover and voiceover_path.exists():
+        print("\n=== Step 1: Reusing existing voiceover ===")
+        # Rebuild segment info from existing WAV files
+        import wave
+        segments = []
+        for item in config.voiceover_script:
+            seg_path = vo_dir / f"{item['id']}.wav"
+            if seg_path.exists():
+                with wave.open(str(seg_path), "rb") as wf:
+                    dur = wf.getnframes() / wf.getframerate()
+                segments.append(SegmentInfo(id=item["id"], path=seg_path, duration_sec=dur))
+            else:
+                raise FileNotFoundError(f"Missing cached segment: {seg_path}")
+        total_duration = sum(s.duration_sec for s in segments) + 0.3 * (len(segments) - 1)
+        print(f"  Cached voiceover: {total_duration:.1f}s ({len(segments)} segments)")
+    else:
+        print("\n=== Step 1: Generating voiceover segments ===")
+        segments = generate_segments(config.voiceover_script, api_key, vo_dir)
+        total_duration = sum(s.duration_sec for s in segments) + 0.3 * (len(segments) - 1)
+        print(f"  Total voiceover duration: {total_duration:.1f}s")
+        voiceover_path = concat_voiceover(segments, voiceover_path)
 
-    voiceover_path = concat_voiceover(segments, vo_dir / "voiceover_full.wav")
+    # Step 2a: Record desktop (1920x1080) for horizontal
+    print("\n=== Step 2a: Recording desktop demo (1920x1080) ===")
+    rec_desktop = config.output_dir / "recording_desktop"
+    video_path = record_demo(config.demo_url, segments, rec_desktop, viewport=(1920, 1080))
 
-    # Step 2: Record browser demo
-    print("\n=== Step 2: Recording browser demo ===")
-    rec_dir = config.output_dir / "recording"
-    video_path = record_demo(config.demo_url, segments, rec_dir)
+    # Step 2b: Record mobile (390x844) for vertical
+    print("\n=== Step 2b: Recording mobile demo (390x844) ===")
+    rec_mobile = config.output_dir / "recording_mobile"
+    mobile_video_path = record_demo(config.demo_url, segments, rec_mobile, viewport=(390, 844))
 
     # Step 3: Composite final videos
     print("\n=== Step 3: Compositing final videos ===")
     h_path, v_path = composite(
         video_path, voiceover_path, config.output_dir, config.business_name,
+        vertical_video_path=mobile_video_path,
     )
 
     print(f"\n=== Done! ===")
@@ -162,13 +184,18 @@ def main() -> None:
         default=None,
         help="Override output directory",
     )
+    parser.add_argument(
+        "--skip-voiceover",
+        action="store_true",
+        help="Reuse existing voiceover WAVs (saves ElevenLabs credits)",
+    )
     args = parser.parse_args()
 
     config = CONFIGS[args.business]
     if args.output_dir:
         config.output_dir = args.output_dir
 
-    generate_demo(config)
+    generate_demo(config, skip_voiceover=args.skip_voiceover)
 
 
 if __name__ == "__main__":

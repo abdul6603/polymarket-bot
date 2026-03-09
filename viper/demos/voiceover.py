@@ -76,7 +76,7 @@ def generate_segments(
         # Generate with conversational settings (NOT Soren's dramatic style)
         audio_gen = client.text_to_speech.convert(
             text=text,
-            voice_id="f5KRUAmxOzuhrrp8V3zv",  # Titan
+            voice_id="nPczCjzI2devNBz1zQrb",  # Brian — deep, resonant, conversational
             model_id="eleven_multilingual_v2",
             voice_settings={
                 "stability": 0.55,

@@ -44,7 +44,11 @@ def _send_message(page: Page, text: str) -> None:
     """Type a message in chat input and send it."""
     _human_type(page, "#chatInput", text)
     time.sleep(random.uniform(0.3, 0.5))
-    page.press("#chatInput", "Enter")
+    # Click the send button explicitly (more reliable than Enter in headless)
+    try:
+        page.click(".chat-input button")
+    except Exception:
+        page.keyboard.press("Enter")
 
 
 def _build_timing(segments: list[SegmentInfo]) -> dict[str, float]:
@@ -67,6 +71,7 @@ def record_demo(
     demo_url: str,
     segments: list[SegmentInfo],
     output_dir: Path,
+    viewport: tuple[int, int] = (1920, 1080),
 ) -> Path:
     """Record a demo video with realistic browser interactions.
 
@@ -76,19 +81,21 @@ def record_demo(
         demo_url: URL of the live chatbot demo
         segments: list of SegmentInfo with durations for timing
         output_dir: directory for output video
+        viewport: (width, height) for the browser window
 
     Returns:
         Path to recorded WebM video file
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     durations = _build_timing(segments)
+    vw, vh = viewport
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(
-            viewport={"width": 1920, "height": 1080},
+            viewport={"width": vw, "height": vh},
             record_video_dir=str(output_dir),
-            record_video_size={"width": 1920, "height": 1080},
+            record_video_size={"width": vw, "height": vh},
         )
         page = context.new_page()
 
@@ -153,15 +160,25 @@ def record_demo(
         # 9. trigger_form — Ask something to trigger lead capture
         print("  [recorder] Triggering lead form...")
         _human_delay(0.5, 1.0)
-        _send_message(page, "Can I get a price for invisalign for my teenager?")
+        _send_message(page, "hello there")
         time.sleep(durations.get("trigger_form", 3.0) * 0.3)
 
         # Wait for lead form to appear
         _wait_for_response(page)
+        # Scroll to bottom to ensure form is visible
+        page.evaluate('document.getElementById("chatBody").scrollTop = document.getElementById("chatBody").scrollHeight')
         try:
             page.wait_for_selector(".lead-form", timeout=8000)
         except Exception:
-            print("  [recorder] Warning: lead form not detected, continuing...")
+            # Fallback: try another unmatchable question
+            print("  [recorder] Retrying with fallback question...")
+            _send_message(page, "hi")
+            _wait_for_response(page)
+            page.evaluate('document.getElementById("chatBody").scrollTop = document.getElementById("chatBody").scrollHeight')
+            try:
+                page.wait_for_selector(".lead-form", timeout=8000)
+            except Exception:
+                print("  [recorder] Warning: lead form not detected, continuing...")
 
         # 10. form_fill — Fill out the lead form
         print("  [recorder] Filling lead form...")
