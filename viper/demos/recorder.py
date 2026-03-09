@@ -98,34 +98,34 @@ def record_demo(
             record_video_size={"width": vw, "height": vh},
         )
         page = context.new_page()
+        # Ensure viewport is set before navigation so CSS media queries fire
+        page.set_viewport_size({"width": vw, "height": vh})
 
-        print("  [recorder] Loading demo page...")
+        print(f"  [recorder] Loading demo page ({vw}x{vh})...")
         page.goto(demo_url, wait_until="networkidle")
 
-        # === Interaction sequence (timed to voiceover) ===
+        # === Interaction sequence ===
+        # Max 1-1.5s pause between actions — keep it continuous
 
-        # 1. intro — Page loads, pause
-        time.sleep(durations.get("intro", 3.0))
+        # 1. intro — Page loads, brief pause
+        time.sleep(min(durations.get("intro", 3.0), 2.0))
 
-        # 2. open_chat — Mouse moves to chat FAB, clicks
+        # 2. open_chat — Click chat FAB
         print("  [recorder] Opening chat...")
         cx, cy = _get_element_center(page, "#chatFab")
         _smooth_move(page, cx, cy)
-        time.sleep(0.3)
         page.click("#chatFab")
-        # Wait for chat window to open + greeting to load
         page.wait_for_selector(".chat-window.open", timeout=5000)
-        time.sleep(durations.get("open_chat", 3.0))
+        time.sleep(1.0)
 
         # 3. ask_insurance — Type insurance question
         print("  [recorder] Asking about insurance...")
-        _human_delay(0.5, 1.0)
+        _human_delay(0.5, 0.8)
         _send_message(page, "Do you accept Delta Dental insurance?")
-        time.sleep(durations.get("ask_insurance", 3.0) * 0.3)
 
         # 4. insurance_response — Wait for bot response
         _wait_for_response(page)
-        time.sleep(durations.get("insurance_response", 2.0))
+        time.sleep(1.0)
 
         # 5. book_appt — Click "Book Appointment" quick button
         print("  [recorder] Clicking Book Appointment...")
@@ -134,43 +134,36 @@ def record_demo(
             if btn.count() > 0:
                 bx, by = _get_element_center(page, '.quick-btn:has-text("Book Appointment")')
                 _smooth_move(page, bx, by)
-                time.sleep(0.3)
                 btn.click()
             else:
-                # Fallback: type it manually
                 _send_message(page, "How do I book an appointment?")
         except Exception:
             _send_message(page, "How do I book an appointment?")
-        time.sleep(durations.get("book_appt", 2.0) * 0.3)
 
         # 6. appt_response — Wait for response
         _wait_for_response(page)
-        time.sleep(durations.get("appt_response", 2.0))
+        time.sleep(1.0)
 
         # 7. ask_hours — Type hours question
         print("  [recorder] Asking about hours...")
-        _human_delay(0.5, 1.0)
+        _human_delay(0.3, 0.6)
         _send_message(page, "What are your hours on Saturday?")
-        time.sleep(durations.get("ask_hours", 1.5) * 0.3)
 
         # 8. hours_response — Wait for response
         _wait_for_response(page)
-        time.sleep(durations.get("hours_response", 3.0))
+        time.sleep(1.2)
 
         # 9. trigger_form — Ask something to trigger lead capture
         print("  [recorder] Triggering lead form...")
-        _human_delay(0.5, 1.0)
+        _human_delay(0.3, 0.6)
         _send_message(page, "hello there")
-        time.sleep(durations.get("trigger_form", 3.0) * 0.3)
 
         # Wait for lead form to appear
         _wait_for_response(page)
-        # Scroll to bottom to ensure form is visible
         page.evaluate('document.getElementById("chatBody").scrollTop = document.getElementById("chatBody").scrollHeight')
         try:
             page.wait_for_selector(".lead-form", timeout=8000)
         except Exception:
-            # Fallback: try another unmatchable question
             print("  [recorder] Retrying with fallback question...")
             _send_message(page, "hi")
             _wait_for_response(page)
@@ -182,32 +175,31 @@ def record_demo(
 
         # 10. form_fill — Fill out the lead form
         print("  [recorder] Filling lead form...")
-        time.sleep(durations.get("form_fill", 2.5) * 0.3)
+        time.sleep(0.5)
 
         try:
-            # Scroll chat body to see form
             page.evaluate('document.getElementById("chatBody").scrollTop = document.getElementById("chatBody").scrollHeight')
-            time.sleep(0.5)
+            time.sleep(0.3)
 
             _human_type(page, "#leadName", "Sarah Johnson")
-            time.sleep(0.5)
+            time.sleep(0.3)
             _human_type(page, "#leadPhone", "603-555-0142")
-            time.sleep(0.5)
+            time.sleep(0.3)
             _human_type(page, "#leadEmail", "sarah.johnson@email.com")
-            time.sleep(0.5)
+            time.sleep(0.3)
         except Exception as e:
             print(f"  [recorder] Warning: form fill issue: {e}")
 
         # 11. submit — Submit the form
         print("  [recorder] Submitting form...")
-        time.sleep(durations.get("submit", 2.5) * 0.3)
+        time.sleep(0.5)
         try:
             page.click(".lead-form button")
         except Exception:
             pass
 
         # 12. closing — Pause on confirmation
-        time.sleep(durations.get("closing", 6.0))
+        time.sleep(min(durations.get("closing", 6.0), 3.0))
 
         # Close browser to finalize recording
         print("  [recorder] Finalizing recording...")
