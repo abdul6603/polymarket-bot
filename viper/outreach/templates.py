@@ -30,11 +30,12 @@ _TEMPLATES: dict[str, dict[str, str]] = {
         "body": (
             "{greeting},\n\n"
             "I noticed {business_name} doesn't have a chat assistant on the website. "
-            "I actually built one that handles the questions your front desk gets "
+            "I built one that handles the questions your front desk gets "
             "most — insurance, appointment booking, hours, doctor availability.\n\n"
             "Here's a working demo I put together for a practice like yours:\n"
             "{demo_url}\n\n"
-            "Would it be worth a 5-minute look?\n\n"
+            "Reply to this email and I'll build a custom version "
+            "for {business_name} within 24 hours — no cost, no commitment.\n\n"
             "Jordan\n"
             "DarkCode AI"
         ),
