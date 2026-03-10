@@ -46,6 +46,18 @@ class LocalProspect:
         return asdict(self)
 
 
+def _pick_contact_name(listing: MapsListing, scraped: ScrapedBusiness | None) -> str:
+    """Pick best contact name — prefer business name if it IS a doctor name."""
+    biz = listing.business_name
+    # If business name is already a doctor ("Dr. Jennifer Mcconathy"), use it
+    if biz.startswith("Dr.") or biz.startswith("Dr "):
+        return biz
+    # Otherwise use first scraped team member if available
+    if scraped and scraped.team_members:
+        return scraped.team_members[0]
+    return ""
+
+
 def build_prospect(
     listing: MapsListing,
     scraped: ScrapedBusiness | None,
@@ -56,7 +68,7 @@ def build_prospect(
     now = datetime.now(_TZ).isoformat(timespec="seconds")
     return LocalProspect(
         business_name=listing.business_name,
-        contact_name=(scraped.team_members[0] if scraped and scraped.team_members else ""),
+        contact_name=_pick_contact_name(listing, scraped),
         website=listing.website_url or (scraped.url if scraped else ""),
         phone=listing.phone or (scraped.phone if scraped else ""),
         email=scraped.email if scraped else "",

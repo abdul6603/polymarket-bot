@@ -363,26 +363,27 @@ def _extract_faq(soup: BeautifulSoup, biz: ScrapedBusiness) -> None:
 
 def _extract_team(soup: BeautifulSoup, text: str, biz: ScrapedBusiness) -> None:
     """Extract team member names."""
-    # Stop words that are NOT part of a person's name
-    _NAME_STOPWORDS = {
+    # Words that are NOT part of a person's name — common in dental website text
+    _NOT_NAMES = {
         "meet", "our", "the", "and", "with", "about", "team", "staff",
         "doctor", "dentist", "office", "welcome", "schedule", "visit",
         "call", "contact", "view", "read", "more", "click", "here",
         "new", "patient", "your", "has", "been", "for", "from",
+        "launches", "provides", "offers", "accepts", "performs",
+        "specializes", "practices", "dental", "oral", "surgery",
+        "implant", "cosmetic", "general", "family", "pediatric",
+        "orthodontic", "service", "care", "treatment", "health",
+        "associates", "center", "clinic", "group", "practice",
+        "professional", "comprehensive", "emergency", "routine",
     }
 
-    # Look for common team patterns: "Dr. Name" or "Name, Title"
-    dr_pattern = re.findall(r'Dr\.?\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2}', text)
-    for raw_name in dr_pattern:
-        # Strip trailing stop words ("Dr. King Meet Our" → "Dr. King")
-        parts = raw_name.split()
-        cleaned = []
-        for part in parts:
-            if part.lower() in _NAME_STOPWORDS:
-                break
-            cleaned.append(part)
-        name = " ".join(cleaned)
-        if len(name) > 3 and name not in biz.team_members:
+    # Match "Dr. Firstname Lastname" — strict: exactly 2 name parts after Dr.
+    dr_pattern = re.findall(r'Dr\.?\s+([A-Z][a-z]+)\s+([A-Z][a-z]+)', text)
+    for first, last in dr_pattern:
+        if first.lower() in _NOT_NAMES or last.lower() in _NOT_NAMES:
+            continue
+        name = f"Dr. {first} {last}"
+        if name not in biz.team_members:
             biz.team_members.append(name)
 
     # Look for team cards with names in headings
