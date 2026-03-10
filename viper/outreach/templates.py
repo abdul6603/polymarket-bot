@@ -34,8 +34,6 @@ _TEMPLATES: dict[str, dict[str, str]] = {
             "most — insurance, appointment booking, hours, doctor availability.\n\n"
             "Here's a working demo I put together for a practice like yours:\n"
             "{demo_url}\n\n"
-            "\U0001f4f1 Mobile preview: {demo_url}videos/mobile-preview.mp4\n"
-            "\U0001f5a5 Desktop preview: {demo_url}videos/desktop-preview.mp4\n\n"
             "Reply to this email and I'll build a custom version "
             "for {business_name} within 24 hours — no cost, no commitment.\n\n"
             "Jordan\n"

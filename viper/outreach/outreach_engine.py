@@ -86,7 +86,33 @@ def _validate_lead(lead: dict) -> tuple[bool, str]:
             if existing.get("email") == email:
                 return False, f"Duplicate email: {email} already queued as {existing['business_name']}"
 
+    # 6. Every URL in email must be live (200 status)
+    dead = _check_urls_live(body)
+    if dead:
+        return False, f"Dead links in email: {', '.join(dead)}"
+
     return True, ""
+
+
+def _check_urls_live(text: str) -> list[str]:
+    """Extract all URLs from text and verify each returns HTTP 200.
+
+    Returns list of dead/broken URLs. Empty list = all good.
+    """
+    import re as _re
+    urls = _re.findall(r'https?://[^\s,)<>"]+', text)
+    dead: list[str] = []
+    for url in urls:
+        try:
+            resp = requests.head(url, timeout=8, allow_redirects=True)
+            if resp.status_code != 200:
+                # Retry with GET — some servers reject HEAD
+                resp = requests.get(url, timeout=8, allow_redirects=True, stream=True)
+                if resp.status_code != 200:
+                    dead.append(f"{url} ({resp.status_code})")
+        except Exception as e:
+            dead.append(f"{url} (unreachable: {e})")
+    return dead
 
 
 def _send_tg(text: str, buttons: list[list[dict]] | None = None) -> bool:
