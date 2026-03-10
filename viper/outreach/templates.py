@@ -26,71 +26,76 @@ def get_outreach_message(
 
 _TEMPLATES: dict[str, dict[str, str]] = {
     "dental": {
-        "subject": "Built something for {business_name} — 24/7 patient booking",
+        "subject": "Quick question for {business_name}",
         "body": (
             "{greeting},\n\n"
-            "Your front desk can't answer calls after hours. "
-            "I built something that can:\n\n"
+            "I noticed {business_name} doesn't have a chat assistant on the website. "
+            "I actually built one that handles the questions your front desk gets "
+            "most — insurance, appointment booking, hours, doctor availability.\n\n"
+            "Here's a working demo I put together for a practice like yours:\n"
             "{demo_url}\n\n"
-            "It handles the #1 question dental patients ask — insurance — "
-            "plus appointment booking, hours, and doctor availability. "
-            "24/7, no hold time, no missed calls.\n\n"
-            "Built specifically for {business_name}. Free to try.\n\n"
-            "— DarkCode AI"
+            "Would it be worth a 5-minute look?\n\n"
+            "Jordan\n"
+            "DarkCode AI"
         ),
     },
     "real_estate": {
-        "subject": "Built something for {business_name} — instant property answers",
+        "subject": "Quick idea for {business_name}",
         "body": (
             "{greeting},\n\n"
-            "Buyers browsing your listings at 11 PM have questions. "
-            "I built something that answers them instantly:\n\n"
+            "Buyers browsing your listings at 11 PM have questions but no one "
+            "to ask. I built a chat assistant that handles property details, "
+            "showing requests, and neighborhood questions — and captures "
+            "their contact info before they move on.\n\n"
+            "Here's a working demo:\n"
             "{demo_url}\n\n"
-            "It handles property details, scheduling showings, neighborhood info, "
-            "and captures leads — all while you sleep. "
-            "No more losing buyers to agents who respond faster.\n\n"
-            "Built specifically for {business_name}. Free to try.\n\n"
-            "— DarkCode AI"
+            "Worth a look?\n\n"
+            "Jordan\n"
+            "DarkCode AI"
         ),
     },
     "chiropractor": {
-        "subject": "Built something for {business_name} — 24/7 patient intake",
+        "subject": "Quick idea for {business_name}",
         "body": (
             "{greeting},\n\n"
-            "New patients want to book before the pain goes away. "
-            "Your website can't do that at 2 AM. This can:\n\n"
+            "Most new patients want to book when the pain hits — not during "
+            "office hours. I built a chat assistant that answers insurance "
+            "questions, explains treatments, and books appointments around "
+            "the clock.\n\n"
+            "Here's a working demo for a practice like yours:\n"
             "{demo_url}\n\n"
-            "Answers insurance questions, explains your treatments, "
-            "and books appointments around the clock. "
-            "No more voicemails that never convert.\n\n"
-            "Built specifically for {business_name}. Free to try.\n\n"
-            "— DarkCode AI"
+            "Would this be useful for {business_name}?\n\n"
+            "Jordan\n"
+            "DarkCode AI"
         ),
     },
     "auto_repair": {
-        "subject": "Built something for {business_name} — instant service quotes",
+        "subject": "Quick idea for {business_name}",
         "body": (
             "{greeting},\n\n"
-            "Car owners Google their problem, find your shop, and then... "
-            "call during business hours? Most won't. This will catch them:\n\n"
+            "Car owners Google their problem, find your shop, and then "
+            "have to call during business hours. Most don't. I built a "
+            "chat assistant that answers service questions, gives estimate "
+            "ranges, and books appointments on the spot.\n\n"
+            "Here's a working demo:\n"
             "{demo_url}\n\n"
-            "Answers service questions, gives estimate ranges, "
-            "and books appointments — 24/7, no phone tag.\n\n"
-            "Built specifically for {business_name}. Free to try.\n\n"
-            "— DarkCode AI"
+            "Think this could work for {business_name}?\n\n"
+            "Jordan\n"
+            "DarkCode AI"
         ),
     },
     "general": {
-        "subject": "Built a 24/7 assistant for {business_name}",
+        "subject": "Quick question for {business_name}",
         "body": (
             "{greeting},\n\n"
-            "Your website visitors have questions after hours. "
-            "I built something that answers them instantly:\n\n"
+            "I noticed {business_name} doesn't have a chat assistant on the "
+            "website. I built one that handles common questions, books "
+            "appointments, and captures visitor info after hours.\n\n"
+            "Here's a working demo:\n"
             "{demo_url}\n\n"
-            "It handles FAQs, books appointments, and captures leads — "
-            "24/7, no hold time. Your front desk will thank you.\n\n"
-            "Built specifically for {business_name}. Free to try.\n\n"
-            "— DarkCode AI"
+            "Worth a quick look?\n\n"
+            "Jordan\n"
+            "DarkCode AI"
         ),
     },
 }
