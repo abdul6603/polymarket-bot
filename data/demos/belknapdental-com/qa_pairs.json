@@ -14,7 +14,7 @@
   },
   {
     "question": "How do I book an appointment?",
-    "answer": "You can call us at 603-742-4735 or use our online booking. We'll find a time that works for you!",
+    "answer": "You can book online at belknapdental.com or call us at 603-742-4735. We'll find a time that works for you!",
     "keywords": [
       "appointment",
       "book",
@@ -26,7 +26,7 @@
   },
   {
     "question": "Do you accept my insurance?",
-    "answer": "We accept Cigna, MetLife, Guardian, Blue Cross, Anthem, GEHA. Not sure if yours is covered? Call us at 603-742-4735 and we'll verify your benefits for free.",
+    "answer": "We accept a wide range of dental insurance for general dentistry, including: AlwaysCare/UNUM, Assurant/Sunlife, Bento, BCBS Federal, Anthem/BCBS (Grid+ and Complete), CIGNA (Total and Connection Dental), Delta Premier, GEHA, Guardian, Martin's Point NE Delta, MetLife PPO, Principal PPO, Sunlife, UNUM, and United Concordia private employer plans. Not sure if yours is covered? Call us at 603-742-4735 and we'll verify your benefits for free.",
     "keywords": [
       "insurance",
       "accept",
@@ -35,7 +35,18 @@
       "delta",
       "cigna",
       "aetna",
-      "metlife"
+      "metlife",
+      "bcbs",
+      "blue cross",
+      "anthem",
+      "guardian",
+      "geha",
+      "unum",
+      "principal",
+      "concordia",
+      "bento",
+      "sunlife",
+      "assurant"
     ],
     "category": "insurance"
   },
@@ -135,7 +146,7 @@
   },
   {
     "question": "What payment options do you have?",
-    "answer": "We accept most insurance plans, cash, credit cards, and offer financing options for larger treatments. Call 603-742-4735 to discuss payment plans.",
+    "answer": "We accept CareCredit for financing larger treatments, plus cash and credit cards. If you're out-of-network, we'll submit insurance claims on your behalf. Call 603-742-4735 to discuss payment options.",
     "keywords": [
       "payment",
       "pay",
@@ -143,7 +154,11 @@
       "credit",
       "cash",
       "payment plan",
-      "afford"
+      "afford",
+      "carecredit",
+      "care credit",
+      "out of network",
+      "out-of-network"
     ],
     "category": "billing"
   },
@@ -338,5 +353,69 @@
       "safe"
     ],
     "category": "safety"
+  },
+  {
+    "question": "What insurance do you accept for orthodontics?",
+    "answer": "For orthodontic treatment, we accept Assurant, Anthem Private Employer, Delta PPO and Premier, Guardian, MetLife, Principal, and United Concordia Private Employer plans. Call 603-742-4735 to verify your orthodontic coverage.",
+    "keywords": [
+      "orthodontic insurance",
+      "ortho insurance",
+      "braces insurance",
+      "braces coverage",
+      "invisalign insurance",
+      "orthodontic coverage"
+    ],
+    "category": "insurance"
+  },
+  {
+    "question": "Do you have a membership plan?",
+    "answer": "Yes! For patients without insurance, we offer our in-house Illumitrac membership plan with a $55 lifetime activation fee:\n\n- Child (12 and under): $34/month\n- Adult: $42/month\n- Adult PerioCare: $59/month\n\nIncludes cleanings, exams, x-rays, and 15% off all other treatments. Call 603-742-4735 to sign up.",
+    "keywords": [
+      "membership",
+      "no insurance",
+      "uninsured",
+      "without insurance",
+      "illumitrac",
+      "discount plan",
+      "dental plan",
+      "monthly plan",
+      "subscription"
+    ],
+    "category": "membership"
+  },
+  {
+    "question": "Do you accept CareCredit?",
+    "answer": "Yes! We accept CareCredit for financing dental treatments. We also take cash and credit cards. Call 603-742-4735 to discuss payment options.",
+    "keywords": [
+      "carecredit",
+      "care credit",
+      "financing",
+      "finance",
+      "payment plan"
+    ],
+    "category": "billing"
+  },
+  {
+    "question": "What if my insurance is out-of-network?",
+    "answer": "No problem! If you're out-of-network, we'll submit insurance claims on your behalf so you can still get reimbursed. Call 603-742-4735 and we'll help you understand your coverage.",
+    "keywords": [
+      "out-of-network",
+      "out of network",
+      "not in network",
+      "oon"
+    ],
+    "category": "insurance"
+  },
+  {
+    "question": "How do I book online?",
+    "answer": "You can book online at belknapdental.com or call us at 603-742-4735. We'll find a time that works for you!",
+    "keywords": [
+      "book online",
+      "online booking",
+      "online appointment",
+      "website booking",
+      "online schedule"
+    ],
+    "category": "booking"
   }
 ]
