@@ -1,11 +1,12 @@
-"""Outreach approval queue — stores leads pending Jordan's YES/NO on Telegram.
+"""Outreach approval queue — stores leads pending Jordan's approval on Telegram.
 
-Flow:
-    1. Outreach engine queues a lead here
-    2. Shelby sends TG message with YES/NO buttons
-    3. Jordan taps YES → send_email() fires, lead marked 'approved'
-    4. Jordan taps NO → lead marked 'declined'
-    5. No reply in 24h → auto-skip, notify Jordan
+Two-gate flow:
+    1. Outreach engine queues a lead (status: pending)
+    2. Shelby sends Gate 1 TG (lead info, YES/NO)
+    3. Jordan taps YES → status: lead_approved → Gate 2 TG (email draft, GO/SKIP)
+    4. Jordan taps GO → status: approved → Resend fires
+    5. Jordan taps NO (Gate 1) or SKIP (Gate 2) → status: declined
+    6. No reply in 24h → status: expired
 """
 from __future__ import annotations
 
@@ -79,24 +80,37 @@ def queue_lead(
     return lead_id
 
 
-def approve_lead(lead_id: str) -> dict | None:
-    """Mark lead as approved. Returns the lead dict or None if not found."""
+def approve_lead_gate(lead_id: str) -> dict | None:
+    """Gate 1: Jordan approved the lead. Move to draft review stage."""
     queue = _load_queue()
     for entry in queue:
         if entry["id"] == lead_id and entry["status"] == "pending":
+            entry["status"] = "lead_approved"
+            entry["decided_at"] = datetime.now(_TZ).isoformat(timespec="seconds")
+            _save_queue(queue)
+            log.info("Lead %s passed Gate 1: %s", lead_id, entry["business_name"])
+            return entry
+    return None
+
+
+def approve_lead(lead_id: str) -> dict | None:
+    """Gate 2: Jordan approved the email draft. Ready to send."""
+    queue = _load_queue()
+    for entry in queue:
+        if entry["id"] == lead_id and entry["status"] == "lead_approved":
             entry["status"] = "approved"
             entry["decided_at"] = datetime.now(_TZ).isoformat(timespec="seconds")
             _save_queue(queue)
-            log.info("Lead %s approved: %s", lead_id, entry["business_name"])
+            log.info("Lead %s passed Gate 2 (GO): %s", lead_id, entry["business_name"])
             return entry
     return None
 
 
 def decline_lead(lead_id: str) -> dict | None:
-    """Mark lead as declined. Returns the lead dict or None if not found."""
+    """Mark lead as declined. Works from pending or lead_approved status."""
     queue = _load_queue()
     for entry in queue:
-        if entry["id"] == lead_id and entry["status"] == "pending":
+        if entry["id"] == lead_id and entry["status"] in ("pending", "lead_approved"):
             entry["status"] = "declined"
             entry["decided_at"] = datetime.now(_TZ).isoformat(timespec="seconds")
             _save_queue(queue)

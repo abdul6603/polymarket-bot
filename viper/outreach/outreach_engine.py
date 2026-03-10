@@ -1,13 +1,18 @@
 """Outreach engine — orchestrates the Viper→Shelby→Jordan approval pipeline.
 
-Flow for every qualified lead:
-1. DETECTED chatbot → auto-skip (never spam someone with a chatbot)
-2. NOT_FOUND / UNCERTAIN → queue for Jordan's approval on Telegram
-3. Jordan taps YES → Shelby sends email via Resend
-4. Jordan taps NO → lead logged as declined
-5. No reply in 24h → auto-skip, notify Jordan
+TWO-GATE approval flow (nothing sends without Jordan's explicit GO):
 
-Jordan's only job: reply YES or NO on Telegram.
+Gate 1 — LEAD APPROVAL:
+  1. DETECTED chatbot → auto-skip
+  2. NOT_FOUND / UNCERTAIN → TG message to Jordan with lead info
+  3. Jordan taps YES → move to Gate 2. NO → decline.
+
+Gate 2 — EMAIL DRAFT REVIEW:
+  4. Full email draft sent to Jordan on Telegram
+  5. Jordan taps GO → Resend fires the email
+  6. Jordan taps SKIP → email NOT sent, lead declined
+
+No reply in 24h → auto-skip, notify Jordan.
 """
 from __future__ import annotations
 
@@ -37,8 +42,8 @@ def _notify_jordan(message: str) -> None:
         print(f"  [TG] {message}")
 
 
-def _send_approval_request(lead_id: str, prospect, niche_key: str, msg: dict, demo_url: str) -> None:
-    """Send TG message with YES/NO buttons for Jordan's approval."""
+def _send_approval_request(lead_id: str, prospect, niche_key: str) -> None:
+    """Gate 1: Send TG message with lead info only. YES/NO buttons."""
     try:
         sys.path.insert(0, str(Path.home()))
         from shelby.core.telegram import get_bot
@@ -46,33 +51,57 @@ def _send_approval_request(lead_id: str, prospect, niche_key: str, msg: dict, de
         chatbot_line = "No" if prospect.chatbot_confidence == "NOT_FOUND" else "Unknown (scanner uncertain)"
 
         text = (
-            f"New Lead\n\n"
+            f"GATE 1 — New Lead\n\n"
             f"Business: {prospect.business_name}\n"
             f"Niche: {niche_key}\n"
             f"Email: {prospect.email}\n"
             f"Has chatbot: {chatbot_line}\n"
             f"Score: {prospect.score}/10\n\n"
-            f"Message ready to send:\n"
-            f"Subject: {msg['subject']}\n\n"
-            f"{msg['body'][:500]}\n\n"
-            f"Reply:\n"
-            f"YES — send it\n"
-            f"NO — skip it"
+            f"Approve this lead?"
         )
 
         buttons = [
             [
-                {"text": "YES — send it", "callback_data": f"outreach_yes:{lead_id}"},
-                {"text": "NO — skip it", "callback_data": f"outreach_no:{lead_id}"},
+                {"text": "YES — build email", "callback_data": f"outreach_yes:{lead_id}"},
+                {"text": "NO — skip", "callback_data": f"outreach_no:{lead_id}"},
             ],
         ]
 
         bot = get_bot()
         bot.send_with_keyboard(text, buttons)
-        log.info("Sent approval request for %s (lead %s)", prospect.business_name, lead_id)
+        log.info("Gate 1 sent for %s (lead %s)", prospect.business_name, lead_id)
     except Exception as e:
-        log.error("Failed to send TG approval for %s: %s", prospect.business_name, e)
-        print(f"  [TG FALLBACK] Approval needed for {prospect.business_name} ({prospect.email}) — lead_id: {lead_id}")
+        log.error("Failed to send Gate 1 TG for %s: %s", prospect.business_name, e)
+        print(f"  [TG FALLBACK] Gate 1 approval needed for {prospect.business_name} ({prospect.email}) — lead_id: {lead_id}")
+
+
+def send_draft_review(lead: dict) -> None:
+    """Gate 2: Send TG message with full email draft. GO/SKIP buttons."""
+    try:
+        sys.path.insert(0, str(Path.home()))
+        from shelby.core.telegram import get_bot
+
+        text = (
+            f"GATE 2 — Email Draft\n\n"
+            f"To: {lead['email']} ({lead['business_name']})\n"
+            f"Subject: {lead['subject']}\n\n"
+            f"{lead['body']}\n\n"
+            f"Send this email?"
+        )
+
+        buttons = [
+            [
+                {"text": "GO — send it", "callback_data": f"outreach_go:{lead['id']}"},
+                {"text": "SKIP — don't send", "callback_data": f"outreach_skip:{lead['id']}"},
+            ],
+        ]
+
+        bot = get_bot()
+        bot.send_with_keyboard(text, buttons)
+        log.info("Gate 2 draft sent for %s (lead %s)", lead["business_name"], lead["id"])
+    except Exception as e:
+        log.error("Failed to send Gate 2 TG for %s: %s", lead["business_name"], e)
+        print(f"  [TG FALLBACK] Gate 2 draft review needed for {lead['business_name']} — lead_id: {lead['id']}")
 
 
 def send_approved_email(lead: dict) -> dict:
@@ -177,8 +206,8 @@ def run_outreach(
             prospect_data=p.to_dict(),
         )
 
-        # Send TG approval request to Jordan
-        _send_approval_request(lead_id, p, niche_key, msg, demo_url)
+        # Send Gate 1 TG approval request to Jordan (lead info only)
+        _send_approval_request(lead_id, p, niche_key)
         stats["queued"] += 1
         print(f"  [outreach] Queued {p.business_name} → TG sent to Jordan (lead {lead_id})")
 
