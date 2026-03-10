@@ -155,8 +155,57 @@ def discover_businesses(
 
         browser.close()
 
+    # Filter out individual doctor listings — only keep practices
+    before = len(listings)
+    listings = [l for l in listings if not _is_individual_doctor(l.business_name)]
+    if len(listings) < before:
+        log.info("Filtered %d individual doctor listings", before - len(listings))
+
     log.info("Discovered %d businesses for '%s'", len(listings), query)
     return listings
+
+
+def _is_individual_doctor(name: str) -> bool:
+    """Return True if the listing is an individual doctor, not a practice."""
+    return name.startswith("Dr.") or name.startswith("Dr ")
+
+
+def deduplicate_listings(listings: list[MapsListing]) -> list[MapsListing]:
+    """Merge listings sharing the same website domain — keep the practice, not the individual."""
+    from urllib.parse import urlparse
+
+    domain_map: dict[str, MapsListing] = {}
+    result: list[MapsListing] = []
+
+    for listing in listings:
+        if not listing.website_url:
+            result.append(listing)
+            continue
+
+        domain = urlparse(listing.website_url).netloc.lower().lstrip("www.")
+        if domain not in domain_map:
+            domain_map[domain] = listing
+            result.append(listing)
+        else:
+            existing = domain_map[domain]
+            is_dr = _is_individual_doctor(listing.business_name)
+            existing_is_dr = _is_individual_doctor(existing.business_name)
+            if is_dr and not existing_is_dr:
+                # Keep existing (practice), drop this one (individual)
+                log.info("Dedup: dropped '%s' (shares domain with '%s')",
+                         listing.business_name, existing.business_name)
+            elif not is_dr and existing_is_dr:
+                # Replace existing (individual) with this one (practice)
+                log.info("Dedup: replaced '%s' with '%s' (same domain)",
+                         existing.business_name, listing.business_name)
+                result = [listing if l is existing else l for l in result]
+                domain_map[domain] = listing
+            else:
+                # Both same type — keep first
+                log.info("Dedup: dropped '%s' (duplicate domain of '%s')",
+                         listing.business_name, existing.business_name)
+
+    return result
 
 
 def _handle_consent(page, delay: float) -> None:

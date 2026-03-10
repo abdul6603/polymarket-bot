@@ -10,7 +10,7 @@ from pathlib import Path
 # Allow running as `python viper/run_prospector.py` from repo root
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from viper.prospecting.maps_scraper import discover_businesses
+from viper.prospecting.maps_scraper import discover_businesses, deduplicate_listings
 from viper.prospecting.chatbot_detector import detect_chatbot, ChatbotDetectionResult
 from viper.prospecting.local_scorer import score_prospect
 from viper.prospecting.prospect_writer import (
@@ -78,6 +78,10 @@ def main() -> int:
         return 0
 
     print(f"  Found {len(listings)} businesses")
+
+    # Dedup — merge listings sharing same website domain
+    listings = deduplicate_listings(listings)
+    print(f"  After dedup: {len(listings)} unique practices")
 
     # Step 2 — Enrich each listing
     prospects = []

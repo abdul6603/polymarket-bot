@@ -19,7 +19,10 @@ _HEADERS = {
 }
 _TIMEOUT = 15
 _SUBPAGE_KEYWORDS = ["about", "services", "contact", "faq", "team", "staff",
-                     "insurance", "listings", "agents", "hours", "meet"]
+                     "insurance", "listings", "agents", "hours", "meet",
+                     # Dental/medical — emails often hide on these pages
+                     "patient-forms", "new-patients", "new-patient", "appointments",
+                     "forms", "billing", "referral", "providers", "doctors"]
 
 
 @dataclass
@@ -161,7 +164,8 @@ def _find_contact_form_url(soup: BeautifulSoup, base_url: str) -> str:
     """Find a contact page URL from navigation links."""
     for a in soup.find_all("a", href=True):
         href_text = (a.get_text(strip=True) + " " + a["href"]).lower()
-        if "contact" in href_text:
+        if any(kw in href_text for kw in ["contact", "appointment", "request",
+                                           "book", "schedule", "inquiry"]):
             return urljoin(base_url, a["href"])
     return ""
 
@@ -220,8 +224,12 @@ def _extract_contact(text: str, biz: ScrapedBusiness) -> None:
         email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', text)
         if email_match:
             candidate = email_match.group()
-            # Skip common non-business emails
-            if not any(d in candidate.lower() for d in ["example.com", "sentry.io", "wixpress"]):
+            # Skip common non-business emails and platform addresses
+            if not any(d in candidate.lower() for d in [
+                "example.com", "sentry.io", "wixpress",
+                "wordpress.com", "wpengine.com", "squarespace.com",
+                "godaddy.com", "googleapis.com",
+            ]):
                 biz.email = candidate
 
 
@@ -362,7 +370,7 @@ def _extract_faq(soup: BeautifulSoup, biz: ScrapedBusiness) -> None:
 
 
 def _extract_team(soup: BeautifulSoup, text: str, biz: ScrapedBusiness) -> None:
-    """Extract team member names."""
+    """Extract team member names from body content only (not nav/header/footer)."""
     # Words that are NOT part of a person's name — common in dental website text
     _NOT_NAMES = {
         "meet", "our", "the", "and", "with", "about", "team", "staff",
@@ -376,6 +384,17 @@ def _extract_team(soup: BeautifulSoup, text: str, biz: ScrapedBusiness) -> None:
         "associates", "center", "clinic", "group", "practice",
         "professional", "comprehensive", "emergency", "routine",
     }
+
+    # Use body content only — strip nav, header, footer to avoid
+    # parsing navigation text like "Meet Our Team" as a doctor name
+    body = soup.find("main") or soup.find("article") or soup.find("body")
+    if body:
+        # Remove nav/header/footer elements before extracting text
+        import copy
+        body = copy.copy(body)
+        for tag in body.find_all(["nav", "header", "footer"]):
+            tag.decompose()
+        text = body.get_text(" ", strip=True)
 
     # Match "Dr. Firstname Lastname" — strict: 3+ chars per name part
     dr_pattern = re.findall(r'Dr\.?\s+([A-Z][a-z]{2,})\s+([A-Z][a-z]{2,})', text)

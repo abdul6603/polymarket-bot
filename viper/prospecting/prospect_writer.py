@@ -47,12 +47,7 @@ class LocalProspect:
 
 
 def _pick_contact_name(listing: MapsListing, scraped: ScrapedBusiness | None) -> str:
-    """Pick best contact name — prefer business name if it IS a doctor name."""
-    biz = listing.business_name
-    # If business name is already a doctor ("Dr. Jennifer Mcconathy"), use it
-    if biz.startswith("Dr.") or biz.startswith("Dr "):
-        return biz
-    # Otherwise use first scraped team member if available
+    """Pick contact name from scraped website ONLY. Never from Maps."""
     if scraped and scraped.team_members:
         return scraped.team_members[0]
     return ""

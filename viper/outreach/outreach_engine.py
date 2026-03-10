@@ -48,6 +48,47 @@ if not _TG_TOKEN:
                 _TG_CHAT_ID = line.split("=", 1)[1].strip()
 
 
+def _validate_lead(lead: dict) -> tuple[bool, str]:
+    """Pre-send checklist. Returns (ok, reason)."""
+    biz = lead.get("business_name", "")
+
+    # 1. Practice name must not be an individual doctor
+    if biz.startswith("Dr.") or biz.startswith("Dr "):
+        return False, f"Individual doctor, not a practice: {biz}"
+
+    # 2. Greeting must be clean — no junk words
+    body = lead.get("body", "")
+    if body:
+        greeting = body.split("\n")[0]
+        bad_words = ["meet", "launch", "team", "staff", "click", "view", "read",
+                     "our", "welcome", "schedule", "visit", "call", "contact"]
+        if any(bad in greeting.lower() for bad in bad_words):
+            return False, f"Bad greeting: {greeting}"
+
+    # 3. Email must exist and look valid (not a URL)
+    email = lead.get("email", "")
+    if email and email.startswith("http"):
+        return False, f"Email is a URL, not an address: {email}"
+    if not email or "@" not in email:
+        return False, f"No email for {biz}"
+
+    # 4. Subject and body must not be empty
+    if not lead.get("subject") or not lead.get("body"):
+        return False, f"Empty subject or body for {biz}"
+
+    # 5. No duplicate — check queue for same email
+    from viper.outreach.approval_queue import _load_queue
+    queue = _load_queue()
+    for existing in queue:
+        if existing["id"] == lead.get("id"):
+            continue
+        if existing["status"] in ("pending", "lead_approved", "approved"):
+            if existing.get("email") == email:
+                return False, f"Duplicate email: {email} already queued as {existing['business_name']}"
+
+    return True, ""
+
+
 def _send_tg(text: str, buttons: list[list[dict]] | None = None) -> bool:
     """Send a Telegram message with optional inline keyboard buttons."""
     if not _TG_TOKEN or not _TG_CHAT_ID:
@@ -116,6 +157,15 @@ def _send_approval_request(lead_id: str, prospect, niche_key: str) -> None:
 
 def send_draft_review(lead: dict) -> None:
     """Gate 2: Send TG message with full email draft. GO/SKIP buttons."""
+    # Pre-send validation — block junk before it reaches Jordan
+    ok, reason = _validate_lead(lead)
+    if not ok:
+        log.warning("Gate 2 BLOCKED for %s: %s", lead.get("business_name"), reason)
+        _send_tg(f"BLOCKED: {reason}")
+        from viper.outreach.approval_queue import decline_lead
+        decline_lead(lead["id"])
+        return
+
     text = (
         f"<b>GATE 2 — Email Draft</b>\n\n"
         f"To: {lead['email']} ({lead['business_name']})\n"
@@ -208,6 +258,12 @@ def run_outreach(
             slug = "".join(c for c in slug if c.isalnum() or c == "-")
             demo_url = f"{_DEMO_BASE}{slug}/"
 
+        # Filter individual doctors at outreach level too
+        if p.business_name.startswith("Dr.") or p.business_name.startswith("Dr "):
+            log.info("Skipping %s — individual doctor, not a practice", p.business_name)
+            stats["skipped"] += 1
+            continue
+
         # Build message
         msg = get_outreach_message(
             niche=niche_key,
@@ -215,6 +271,15 @@ def run_outreach(
             demo_url=demo_url,
             contact_name=p.contact_name,
         )
+
+        # Greeting sanity check before queuing
+        greeting = msg["body"].split("\n")[0] if msg.get("body") else ""
+        bad_words = ["meet", "launch", "team", "staff", "click", "view", "read",
+                     "our", "welcome", "schedule", "visit", "call", "contact"]
+        if any(bad in greeting.lower() for bad in bad_words):
+            log.warning("Bad greeting for %s: %s — skipping", p.business_name, greeting)
+            stats["skipped"] += 1
+            continue
 
         if dry_run:
             print(f"  [DRY RUN] Would queue {p.business_name} ({p.email}) for Jordan approval")
