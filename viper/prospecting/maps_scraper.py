@@ -56,6 +56,9 @@ def discover_businesses(
         page.goto(url, wait_until="domcontentloaded")
         time.sleep(delay)
 
+        # Handle Google cookie consent wall (common on non-US IPs)
+        _handle_consent(page, delay)
+
         # CAPTCHA check
         if "sorry" in page.url.lower() or page.query_selector("form#captcha-form"):
             browser.close()
@@ -110,6 +113,35 @@ def discover_businesses(
 
     log.info("Discovered %d businesses for '%s'", len(listings), query)
     return listings
+
+
+def _handle_consent(page, delay: float) -> None:
+    """Click through Google's cookie consent dialog if present."""
+    if "consent.google" not in page.url:
+        return
+
+    log.info("Cookie consent wall detected — accepting")
+    # Try multiple button selectors (text varies by locale)
+    for selector in [
+        'button:has-text("Accept all")',
+        'button:has-text("Alles accepteren")',
+        'button:has-text("Tout accepter")',
+        'button:has-text("Aceptar todo")',
+        'form[action*="consent"] button:nth-of-type(2)',
+    ]:
+        btn = page.query_selector(selector)
+        if btn:
+            btn.click()
+            time.sleep(delay + 1)
+            log.info("Consent accepted, now at: %s", page.url)
+            return
+
+    # Fallback: try the second button in the consent form
+    buttons = page.query_selector_all("form button")
+    if len(buttons) >= 2:
+        buttons[-1].click()
+        time.sleep(delay + 1)
+        log.info("Consent accepted (fallback), now at: %s", page.url)
 
 
 def _parse_card(card, page) -> MapsListing:
