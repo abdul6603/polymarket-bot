@@ -229,6 +229,7 @@ body {
   color: var(--text);
   align-self: flex-start;
   border-bottom-left-radius: 4px;
+  white-space: pre-line;
 }
 .msg.user {
   background: var(--brand);
@@ -421,7 +422,7 @@ body {
 
 <script>
 (function() {
-  var QA_DATA = [{"q": "What are your hours?", "a": "We're open Business Hours Monday 7:30 AM  - 4:30 PM Tuesday 7:30 AM  - 4:30 PM Wednesday 7:30 AM  - 4:30 PM Thu. Call us at 603-742-4735 if you need to confirm availability.", "kw": ["hours", "open", "close", "time", "schedule", "when"], "cat": "hours"}, {"q": "How do I book an appointment?", "a": "You can call us at 603-742-4735 or use our online booking. We'll find a time that works for you!", "kw": ["appointment", "book", "schedule", "visit", "come in"], "cat": "booking"}, {"q": "Do you accept my insurance?", "a": "We accept Cigna, MetLife, Guardian, Blue Cross, Anthem, GEHA. Not sure if yours is covered? Call us at 603-742-4735 and we'll verify your benefits for free.", "kw": ["insurance", "accept", "cover", "plan", "delta", "cigna", "aetna", "metlife"], "cat": "insurance"}, {"q": "What services do you offer?", "a": "At Belknap Dental Associates, we offer General Dentistry, Cosmetic Dentistry, Teeth Whitening, Dental Implants, Orthodontics, Root Canal, Crowns, Dentures. We're here for all your dental needs!", "kw": ["services", "offer", "provide", "do you do", "treatments", "procedures"], "cat": "services"}, {"q": "Are you accepting new patients?", "a": "Yes! Belknap Dental Associates is always welcoming new patients. Call 603-742-4735 to get started — we'll make your first visit easy and comfortable.", "kw": ["new patient", "accepting", "first time", "join", "sign up", "register"], "cat": "new_patient"}, {"q": "What should I expect at my first visit?", "a": "Your first visit includes a comprehensive exam, X-rays, and a cleaning. We'll discuss your dental health and create a personalized treatment plan. Plan for about 60-90 minutes.", "kw": ["first visit", "first appointment", "expect", "what happens", "new patient visit"], "cat": "new_patient"}, {"q": "Do you handle dental emergencies?", "a": "Yes, we handle dental emergencies! If you're in pain or had an accident, call 603-742-4735 immediately. We'll get you in as soon as possible.", "kw": ["emergency", "urgent", "pain", "toothache", "broken", "knocked out", "accident"], "cat": "emergency"}, {"q": "How much does a cleaning cost?", "a": "Cleaning costs vary based on your insurance coverage. Most plans cover preventive cleanings at 100%. Call 603-742-4735 for a cost estimate with your specific insurance.", "kw": ["cost", "price", "how much", "cleaning", "fee", "charge", "expensive"], "cat": "pricing"}, {"q": "Do you offer teeth whitening?", "a": "Yes! We offer professional teeth whitening that delivers dramatic results safely. Ask about our options at your next visit or call 603-742-4735 to learn more.", "kw": ["whitening", "whiten", "white", "bright", "bleach", "stain"], "cat": "cosmetic"}, {"q": "Do you see children?", "a": "Absolutely! We love treating kids at Belknap Dental Associates. We recommend bringing children in for their first visit by age 1 or when their first tooth appears.", "kw": ["children", "kids", "child", "pediatric", "baby", "toddler", "son", "daughter"], "cat": "pediatric"}, {"q": "What payment options do you have?", "a": "We accept most insurance plans, cash, credit cards, and offer financing options for larger treatments. Call 603-742-4735 to discuss payment plans.", "kw": ["payment", "pay", "finance", "credit", "cash", "payment plan", "afford"], "cat": "billing"}, {"q": "Where are you located?", "a": "Belknap Dental Associates is located at a convenient location in the area. We have easy parking available for patients.", "kw": ["location", "located", "where", "address", "directions", "find you", "parking"], "cat": "location"}, {"q": "Do you offer Invisalign?", "a": "Yes! We're proud to offer Invisalign clear aligners at Belknap Dental Associates. Schedule a consultation to see if Invisalign is right for you.", "kw": ["invisalign", "braces", "straighten", "alignment", "crooked", "orthodont"], "cat": "orthodontics"}, {"q": "Who are your dentists?", "a": "Our team includes Dr. Rayanne Lee, Dr. Jefferson Kim, Dr. Peter Wilson, Dr. Jordan Betel. Dr. Rayanne Lee is our board-certified orthodontist, Dr. Jefferson Kim and Dr. Peter Wilson handle general dentistry and Invisalign, and Dr. Jordan Betel specializes in general dentistry with laser certification and same-day crowns.", "kw": ["dentist", "doctor", "who", "team", "staff", "provider", "dr", "doctors"], "cat": "team"}, {"q": "Who are your doctors?", "a": "Our lead dentist is Dr. Jefferson Kim, DMD — a General Dentist and certified Invisalign provider focused on patient comfort and trust. We also have Dr. Rayanne Lee (Orthodontist), Dr. Peter Wilson (General Dentist & Invisalign), and Dr. Jordan Betel (General Dentist, laser-certified).", "kw": ["doctors", "doctor", "who", "team", "staff", "provider", "dr", "works there"], "cat": "doctor"}, {"q": "Tell me about Dr. Lee", "a": "Dr. Rayanne E. Lee, DMD is our board-certified orthodontist. She trained at Harvard and specializes in orthodontic care for patients of all ages — from children to adults. Whether you need braces or aligners, Dr. Lee has you covered.", "kw": ["lee", "rayanne", "orthodontist", "ortho", "dr lee"], "cat": "doctor"}, {"q": "Tell me about Dr. Kim", "a": "Our lead dentist is Dr. Jefferson Kim, DMD — a General Dentist and certified Invisalign provider at Belknap Dental Associates. He values the art of dentistry and is known for building trust with every patient. Dr. Kim focuses on personalized care and making sure you feel comfortable from your very first visit.", "kw": ["kim", "jefferson", "dr kim"], "cat": "doctor"}, {"q": "Tell me about Dr. Wilson", "a": "Dr. Peter Wilson, DMD is a general dentist at Belknap Dental Associates with a focus on Invisalign. He graduated from Boston University and is known for his gentle, compassionate approach. Dr. Wilson makes every patient feel at ease, even if you're nervous about the dentist.", "kw": ["wilson", "peter", "dr wilson"], "cat": "doctor"}, {"q": "Tell me about Dr. Betel", "a": "Dr. Jordan Betel, DMD is a general dentist at Belknap Dental Associates who specializes in laser dentistry and same-day crowns. He graduated from Nova Southeastern University and loves using the latest technology to make your visit faster and more comfortable.", "kw": ["betel", "jordan betel", "laser", "same-day", "dr betel"], "cat": "doctor"}, {"q": "Do you have an orthodontist?", "a": "Yes! Dr. Rayanne E. Lee is our board-certified orthodontist. She trained at Harvard and provides orthodontic care for all ages, including braces and clear aligners. Call us to schedule an orthodontic consultation.", "kw": ["orthodontist", "ortho", "braces", "alignment", "orthodontic"], "cat": "doctor"}, {"q": "Do you offer sedation dentistry?", "a": "Yes, we offer sedation options for patients who feel anxious about dental visits. We want every visit to be comfortable and stress-free.", "kw": ["sedation", "anxious", "nervous", "afraid", "fear", "anxiety", "sleep", "nitrous"], "cat": "comfort"}, {"q": "What about dental implants?", "a": "We offer dental implants as a permanent solution for missing teeth. Call 603-742-4735 to schedule a consultation and learn if implants are right for you.", "kw": ["implant", "missing tooth", "replace", "permanent"], "cat": "implants"}, {"q": "Do you take walk-ins?", "a": "We prefer appointments so we can give you dedicated time, but we do our best to accommodate walk-ins and emergencies. Call 603-742-4735 to check availability.", "kw": ["walk-in", "walk in", "without appointment", "drop in", "no appointment"], "cat": "booking"}, {"q": "Can I see you on weekends?", "a": "Please call us at 603-742-4735 to check our weekend availability. We understand busy schedules and try to offer convenient appointment times.", "kw": ["weekend", "saturday", "sunday", "after hours", "evening"], "cat": "hours"}, {"q": "Do you do root canals?", "a": "Yes, we perform root canal therapy at Belknap Dental Associates. It's a routine procedure and we ensure your comfort throughout. Don't worry — modern root canals are much easier than you might think!", "kw": ["root canal", "endodontic", "nerve", "infected tooth"], "cat": "services"}, {"q": "What COVID precautions do you take?", "a": "Patient safety is our top priority. We follow all CDC and ADA guidelines including enhanced sanitization, air filtration, and screening protocols.", "kw": ["covid", "safety", "precaution", "sanitize", "clean", "protocol", "safe"], "cat": "safety"}];
+  var QA_DATA = [{"q": "What are your hours?", "a": "We're open Business Hours Monday 7:30 AM  - 4:30 PM Tuesday 7:30 AM  - 4:30 PM Wednesday 7:30 AM  - 4:30 PM Thu. Call us at 603-742-4735 if you need to confirm availability.", "kw": ["hours", "open", "close", "time", "schedule", "when"], "cat": "hours"}, {"q": "How do I book an appointment?", "a": "You can call us at 603-742-4735 or use our online booking. We'll find a time that works for you!", "kw": ["appointment", "book", "schedule", "visit", "come in"], "cat": "booking"}, {"q": "Do you accept my insurance?", "a": "We accept Cigna, MetLife, Guardian, Blue Cross, Anthem, GEHA. Not sure if yours is covered? Call us at 603-742-4735 and we'll verify your benefits for free.", "kw": ["insurance", "accept", "cover", "plan", "delta", "cigna", "aetna", "metlife"], "cat": "insurance"}, {"q": "What services do you offer?", "a": "At Belknap Dental Associates, we offer General Dentistry, Cosmetic Dentistry, Teeth Whitening, Dental Implants, Orthodontics, Root Canal, Crowns, Dentures. We're here for all your dental needs!", "kw": ["services", "offer", "provide", "do you do", "treatments", "procedures"], "cat": "services"}, {"q": "Are you accepting new patients?", "a": "Yes! Belknap Dental Associates is always welcoming new patients. Call 603-742-4735 to get started — we'll make your first visit easy and comfortable.", "kw": ["new patient", "accepting", "first time", "join", "sign up", "register"], "cat": "new_patient"}, {"q": "What should I expect at my first visit?", "a": "Your first visit includes a comprehensive exam, X-rays, and a cleaning. We'll discuss your dental health and create a personalized treatment plan. Plan for about 60-90 minutes.", "kw": ["first visit", "first appointment", "expect", "what happens", "new patient visit"], "cat": "new_patient"}, {"q": "Do you handle dental emergencies?", "a": "Yes, we handle dental emergencies! If you're in pain or had an accident, call 603-742-4735 immediately. We'll get you in as soon as possible.", "kw": ["emergency", "urgent", "pain", "toothache", "broken", "knocked out", "accident"], "cat": "emergency"}, {"q": "How much does a cleaning cost?", "a": "Cleaning costs vary based on your insurance coverage. Most plans cover preventive cleanings at 100%. Call 603-742-4735 for a cost estimate with your specific insurance.", "kw": ["cost", "price", "how much", "cleaning", "fee", "charge", "expensive"], "cat": "pricing"}, {"q": "Do you offer teeth whitening?", "a": "Yes! We offer professional teeth whitening that delivers dramatic results safely. Ask about our options at your next visit or call 603-742-4735 to learn more.", "kw": ["whitening", "whiten", "white", "bright", "bleach", "stain"], "cat": "cosmetic"}, {"q": "Do you see children?", "a": "Absolutely! We love treating kids at Belknap Dental Associates. We recommend bringing children in for their first visit by age 1 or when their first tooth appears.", "kw": ["children", "kids", "child", "pediatric", "baby", "toddler", "son", "daughter"], "cat": "pediatric"}, {"q": "What payment options do you have?", "a": "We accept most insurance plans, cash, credit cards, and offer financing options for larger treatments. Call 603-742-4735 to discuss payment plans.", "kw": ["payment", "pay", "finance", "credit", "cash", "payment plan", "afford"], "cat": "billing"}, {"q": "Where are you located?", "a": "We're located at 40 Chestnut St #2, Dover, NH 03820. Easy parking available. Call us at 603-742-4735.", "kw": ["location", "located", "where", "address", "directions", "find you", "parking"], "cat": "location"}, {"q": "Do you offer Invisalign?", "a": "Yes! We're proud to offer Invisalign clear aligners at Belknap Dental Associates. Schedule a consultation to see if Invisalign is right for you.", "kw": ["invisalign", "braces", "straighten", "alignment", "crooked", "orthodont"], "cat": "orthodontics"}, {"q": "Who are your dentists?", "a": "We have 4 doctors on our team:\n\n- Dr. Rayanne E. Lee, DMD \u2014 Orthodontist (Harvard-trained)\n- Dr. Jefferson Kim, DMD \u2014 General Dentist, Invisalign Provider\n- Dr. Peter Wilson, DMD \u2014 General Dentist, Invisalign\n- Dr. Jordan Betel, DMD \u2014 General Dentist, Laser Dentistry & Same-Day Crowns\n\nCall 603-742-4735 to schedule with any of our doctors.", "kw": ["dentist", "doctor", "who", "team", "staff", "provider", "dr", "doctors", "how many", "meet the team"], "cat": "team"}, {"q": "Who are your doctors?", "a": "We have 4 doctors on our team:\n\n- Dr. Rayanne E. Lee, DMD \u2014 Orthodontist (Harvard-trained)\n- Dr. Jefferson Kim, DMD \u2014 General Dentist, Invisalign Provider\n- Dr. Peter Wilson, DMD \u2014 General Dentist, Invisalign\n- Dr. Jordan Betel, DMD \u2014 General Dentist, Laser Dentistry & Same-Day Crowns\n\nCall 603-742-4735 to schedule with any of our doctors.", "kw": ["doctors", "doctor", "who", "team", "staff", "provider", "dr", "works there", "how many", "meet the team"], "cat": "doctor"}, {"q": "Tell me about Dr. Lee", "a": "Dr. Rayanne E. Lee, DMD is our board-certified orthodontist. She trained at Harvard and specializes in orthodontic care for patients of all ages — from children to adults. Whether you need braces or aligners, Dr. Lee has you covered.", "kw": ["lee", "rayanne", "orthodontist", "ortho", "dr lee"], "cat": "doctor"}, {"q": "Tell me about Dr. Kim", "a": "Our lead dentist is Dr. Jefferson Kim, DMD — a General Dentist and certified Invisalign provider at Belknap Dental Associates. He values the art of dentistry and is known for building trust with every patient. Dr. Kim focuses on personalized care and making sure you feel comfortable from your very first visit.", "kw": ["kim", "jefferson", "dr kim"], "cat": "doctor"}, {"q": "Tell me about Dr. Wilson", "a": "Dr. Peter Wilson, DMD is a general dentist at Belknap Dental Associates with a focus on Invisalign. He graduated from Boston University and is known for his gentle, compassionate approach. Dr. Wilson makes every patient feel at ease, even if you're nervous about the dentist.", "kw": ["wilson", "peter", "dr wilson"], "cat": "doctor"}, {"q": "Tell me about Dr. Betel", "a": "Dr. Jordan Betel, DMD is a general dentist at Belknap Dental Associates who specializes in laser dentistry and same-day crowns. He graduated from Nova Southeastern University and loves using the latest technology to make your visit faster and more comfortable.", "kw": ["betel", "jordan betel", "laser", "same-day", "dr betel"], "cat": "doctor"}, {"q": "Do you have an orthodontist?", "a": "Yes! Dr. Rayanne E. Lee is our board-certified orthodontist. She trained at Harvard and provides orthodontic care for all ages, including braces and clear aligners. Call us to schedule an orthodontic consultation.", "kw": ["orthodontist", "ortho", "braces", "alignment", "orthodontic"], "cat": "doctor"}, {"q": "Do you offer sedation dentistry?", "a": "Yes, we offer sedation options for patients who feel anxious about dental visits. We want every visit to be comfortable and stress-free.", "kw": ["sedation", "anxious", "nervous", "afraid", "fear", "anxiety", "sleep", "nitrous"], "cat": "comfort"}, {"q": "What about dental implants?", "a": "We offer dental implants as a permanent solution for missing teeth. Call 603-742-4735 to schedule a consultation and learn if implants are right for you.", "kw": ["implant", "missing tooth", "replace", "permanent"], "cat": "implants"}, {"q": "Do you take walk-ins?", "a": "We prefer appointments so we can give you dedicated time, but we do our best to accommodate walk-ins and emergencies. Call 603-742-4735 to check availability.", "kw": ["walk-in", "walk in", "without appointment", "drop in", "no appointment"], "cat": "booking"}, {"q": "Can I see you on weekends?", "a": "Please call us at 603-742-4735 to check our weekend availability. We understand busy schedules and try to offer convenient appointment times.", "kw": ["weekend", "saturday", "sunday", "after hours", "evening"], "cat": "hours"}, {"q": "Do you do root canals?", "a": "Yes, we perform root canal therapy at Belknap Dental Associates. It's a routine procedure and we ensure your comfort throughout. Don't worry — modern root canals are much easier than you might think!", "kw": ["root canal", "endodontic", "nerve", "infected tooth"], "cat": "services"}, {"q": "What COVID precautions do you take?", "a": "Patient safety is our top priority. We follow all CDC and ADA guidelines including enhanced sanitization, air filtration, and screening protocols.", "kw": ["covid", "safety", "precaution", "sanitize", "clean", "protocol", "safe"], "cat": "safety"}];
   var QUICK_ACTIONS = [{"label": "Book Appointment", "q": "How do I book an appointment?"}, {"label": "Insurance", "q": "Do you accept my insurance?"}, {"label": "Services", "q": "What services do you offer?"}, {"label": "Emergency", "q": "Do you handle dental emergencies?"}];
   var BUSINESS_NAME = "Belknap Dental Associates";
   var PHONE = "603-742-4735";
@@ -434,6 +435,8 @@ body {
 
   var chatOpen = false;
   var initialized = false;
+  var lastAnswer = null;
+  var lastCategory = null;
 
   window.toggleChat = function() {
     chatOpen = !chatOpen;
@@ -518,6 +521,7 @@ body {
     var inputWords = inputLower.split(/\s+/);
     var bestScore = 0;
     var bestAnswer = null;
+    var bestCat = null;
 
     for (var i = 0; i < QA_DATA.length; i++) {
       var qa = QA_DATA[i];
@@ -550,11 +554,12 @@ body {
       if (score > bestScore) {
         bestScore = score;
         bestAnswer = qa.a;
+        bestCat = qa.cat;
       }
     }
 
     if (bestScore >= 15) {
-      return bestAnswer;
+      return {a: bestAnswer, cat: bestCat};
     }
     return null;
   }
@@ -577,7 +582,7 @@ body {
   }
 
   function isAvailabilityQuestion(text) {
-    var terms = ["available", "availability", "consultation", "schedule with", "appointment with", "appointment", "meet with", "when can i see", "can i see", "this week", "next week", "open slot", "book with", "want to see", "want to book"];
+    var terms = ["available", "availability", "consultation", "schedule with", "appointment with", "appointment", "meet with", "when can i see", "can i see", "this week", "next week", "open slot", "book with", "want to see", "want to book", "book"];
     var lower = text.toLowerCase();
     for (var i = 0; i < terms.length; i++) {
       if (lower.indexOf(terms[i]) !== -1) return true;
@@ -594,6 +599,25 @@ body {
     return false;
   }
 
+  function isOnlineBookingQuestion(text) {
+    var lower = text.toLowerCase();
+    return (lower.indexOf("online") !== -1 && (lower.indexOf("book") !== -1 || lower.indexOf("schedule") !== -1 || lower.indexOf("appointment") !== -1));
+  }
+
+  function showLeadCaptureForm() {
+    var body = document.getElementById("chatBody");
+    var form = document.createElement("div");
+    form.className = "lead-form";
+    form.innerHTML =
+      "<p>Leave your info and we will get back to you:</p>" +
+      "<input type=\"text\" id=\"leadName\" placeholder=\"Your name\">" +
+      "<input type=\"tel\" id=\"leadPhone\" placeholder=\"Phone number\">" +
+      "<input type=\"email\" id=\"leadEmail\" placeholder=\"Email address\">" +
+      "<button onclick=\"submitLead()\" type=\"button\">Send</button>";
+    body.appendChild(form);
+    body.scrollTop = body.scrollHeight;
+  }
+
   function handleUserInput(text) {
     addUserMessage(text);
     showTyping();
@@ -608,30 +632,54 @@ body {
         return;
       }
 
+      // Online booking → lead form
+      if (isOnlineBookingQuestion(text)) {
+        addBotMessage("We'd love to get you scheduled! Leave your info below and we'll reach out to book your appointment.");
+        showLeadCaptureForm();
+        lastCategory = "online_booking";
+        lastAnswer = null;
+        return;
+      }
+
       // Gather context
       var doctor = detectDoctorMention(text);
-      var answer = findBestMatch(text);
+      var match = findBestMatch(text);
       var availability = isAvailabilityQuestion(text);
       var medical = isMedicalQuestion(text);
 
-      // Tier 3: Doctor-specific or medical lead capture (check BEFORE Tier 2)
+      // Tier 3: Doctor-specific booking → lead form (check BEFORE Tier 2)
       if (doctor && availability) {
         showDoctorLeadCapture(text, doctor);
+        lastCategory = "booking";
+        lastAnswer = null;
         return;
       }
-      if (medical && !answer) {
+      if (medical && !match) {
         showDoctorLeadCapture(text, null);
+        lastCategory = "medical";
+        lastAnswer = null;
         return;
       }
 
-      // Tier 2: Knowledge base answer
-      if (answer) {
-        addBotMessage(answer);
+      // Tier 2: Knowledge base answer (with repeat detection)
+      if (match) {
+        if (match.a === lastAnswer) {
+          addBotMessage("Looks like you want more details on this. Leave your info and our team will follow up directly.");
+          showLeadCaptureForm();
+          lastCategory = match.cat;
+          lastAnswer = null;
+          return;
+        }
+        addBotMessage(match.a);
+        lastAnswer = match.a;
+        lastCategory = match.cat;
         return;
       }
 
       // Fallback: Generic lead capture
       showLeadCapture(text);
+      lastCategory = null;
+      lastAnswer = null;
     }, delay);
   }
 
@@ -662,19 +710,8 @@ body {
   }
 
   function showLeadCapture(originalQuestion) {
-    var body = document.getElementById("chatBody");
     addBotMessage("Great question! Let me connect you with " + BUSINESS_NAME + " directly so they can give you the best answer.");
-
-    var form = document.createElement("div");
-    form.className = "lead-form";
-    form.innerHTML =
-      "<p>Leave your info and we will get back to you:</p>" +
-      "<input type=\"text\" id=\"leadName\" placeholder=\"Your name\">" +
-      "<input type=\"tel\" id=\"leadPhone\" placeholder=\"Phone number\">" +
-      "<input type=\"email\" id=\"leadEmail\" placeholder=\"Email address\">" +
-      "<button onclick=\"submitLead()\" type=\"button\">Send</button>";
-    body.appendChild(form);
-    body.scrollTop = body.scrollHeight;
+    showLeadCaptureForm();
   }
 
   window.submitLead = function() {

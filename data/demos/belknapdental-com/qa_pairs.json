@@ -149,7 +149,7 @@
   },
   {
     "question": "Where are you located?",
-    "answer": "Belknap Dental Associates is located at a convenient location in the area. We have easy parking available for patients.",
+    "answer": "We're located at 40 Chestnut St #2, Dover, NH 03820. Easy parking available. Call us at 603-742-4735.",
     "keywords": [
       "location",
       "located",
@@ -176,7 +176,7 @@
   },
   {
     "question": "Who are your dentists?",
-    "answer": "Our team includes Dr. Rayanne Lee, Dr. Jefferson Kim, Dr. Peter Wilson, Dr. Jordan Betel. Dr. Rayanne Lee is our board-certified orthodontist, Dr. Jefferson Kim and Dr. Peter Wilson handle general dentistry and Invisalign, and Dr. Jordan Betel specializes in general dentistry with laser certification and same-day crowns.",
+    "answer": "We have 4 doctors on our team:\n\n- Dr. Rayanne E. Lee, DMD — Orthodontist (Harvard-trained)\n- Dr. Jefferson Kim, DMD — General Dentist, Invisalign Provider\n- Dr. Peter Wilson, DMD — General Dentist, Invisalign\n- Dr. Jordan Betel, DMD — General Dentist, Laser Dentistry & Same-Day Crowns\n\nCall 603-742-4735 to schedule with any of our doctors.",
     "keywords": [
       "dentist",
       "doctor",
@@ -185,13 +185,15 @@
       "staff",
       "provider",
       "dr",
-      "doctors"
+      "doctors",
+      "how many",
+      "meet the team"
     ],
     "category": "team"
   },
   {
     "question": "Who are your doctors?",
-    "answer": "Our lead dentist is Dr. Jefferson Kim, DMD — a General Dentist and certified Invisalign provider focused on patient comfort and trust. We also have Dr. Rayanne Lee (Orthodontist), Dr. Peter Wilson (General Dentist & Invisalign), and Dr. Jordan Betel (General Dentist, laser-certified).",
+    "answer": "We have 4 doctors on our team:\n\n- Dr. Rayanne E. Lee, DMD — Orthodontist (Harvard-trained)\n- Dr. Jefferson Kim, DMD — General Dentist, Invisalign Provider\n- Dr. Peter Wilson, DMD — General Dentist, Invisalign\n- Dr. Jordan Betel, DMD — General Dentist, Laser Dentistry & Same-Day Crowns\n\nCall 603-742-4735 to schedule with any of our doctors.",
     "keywords": [
       "doctors",
       "doctor",
@@ -200,7 +202,9 @@
       "staff",
       "provider",
       "dr",
-      "works there"
+      "works there",
+      "how many",
+      "meet the team"
     ],
     "category": "doctor"
   },
