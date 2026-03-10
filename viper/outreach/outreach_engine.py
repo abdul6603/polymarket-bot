@@ -33,6 +33,13 @@ log = logging.getLogger(__name__)
 # Demo URL base — GitHub Pages
 _DEMO_BASE = "https://darkcode-ai.github.io/chatbot-demos/"
 
+# ONLY demos that are live and verified on GitHub Pages.
+# NEVER auto-generate slugs. If a niche isn't here, use belknapdental-com.
+_VERIFIED_DEMOS: dict[str, str] = {
+    "dental": "belknapdental-com",
+    "real_estate": "greatislandrealty-com",
+}
+
 # Telegram Bot API — read from env or Shelby's .env
 _TG_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 _TG_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
@@ -279,13 +286,11 @@ def run_outreach(
             stats["already_contacted"] += 1
             continue
 
-        # Build demo URL
+        # Build demo URL — ONLY use verified, live demos
         if demo_slug:
             demo_url = f"{_DEMO_BASE}{demo_slug}/"
         else:
-            slug = p.business_name.lower().replace(" ", "-").replace(".", "")
-            slug = "".join(c for c in slug if c.isalnum() or c == "-")
-            demo_url = f"{_DEMO_BASE}{slug}/"
+            demo_url = f"{_DEMO_BASE}{_VERIFIED_DEMOS.get(niche_key, 'belknapdental-com')}/"
 
         # Filter individual doctors at outreach level too
         if p.business_name.startswith("Dr.") or p.business_name.startswith("Dr "):
