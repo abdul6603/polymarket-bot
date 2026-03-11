@@ -2,21 +2,16 @@
 
 When Jordan hits BID, this module:
 1. Reads the lead details
-2. Generates a tailored proposal using our skill set
+2. Generates a tailored proposal using PAS framework
 3. Sends to TG with SEND/COPY button
 
-Proposals are persuasive, specific, and show we already understand their problem.
+Uses marketing psychology: PAS (Problem-Agitate-Solve), price anchoring
+vs agencies, scarcity (limited slots), and urgency (24h turnaround).
 """
 from __future__ import annotations
 
-import json
 import logging
-import os
 import re
-import sys
-from pathlib import Path
-
-import requests
 
 from viper.tg_router import send as tg_send
 
@@ -60,12 +55,8 @@ def generate_proposal(lead: dict) -> str:
     description = lead.get("description", "")
     source = lead.get("source", "")
     skills = [s.lower() for s in lead.get("skills", [])]
-    url = lead.get("url", "")
 
-    # Detect what they need
     needs = _detect_needs(title, description, skills)
-
-    # Build the proposal
     proposal = _build_proposal(needs, title, description, source)
 
     return proposal
@@ -100,26 +91,28 @@ def _detect_needs(title: str, description: str, skills: list[str]) -> list[str]:
 
 
 def _build_proposal(needs: list[str], title: str, description: str, source: str) -> str:
-    """Build a persuasive proposal tailored to their needs."""
+    """Build a persuasive proposal using PAS framework.
 
-    # Opening — show we read their post
+    Problem  — Mirror their pain (show we read the post)
+    Agitate  — What happens if they don't fix it
+    Solve    — Our capabilities as outcomes, not features
+    Proof    — Credibility + price anchor vs agencies
+    CTA      — Urgency + clear next step
+    """
     opener = _craft_opener(needs, title, description)
-
-    # Middle — what we bring
+    agitation = _craft_agitation(needs, description)
     relevant_skills = _match_skills(needs)
-
-    # Proof / differentiator
     proof = _craft_proof(needs)
-
-    # CTA
     cta = _craft_cta(source)
 
-    lines = []
-    lines.append(opener)
+    lines = [opener]
+    if agitation:
+        lines.append("")
+        lines.append(agitation)
     lines.append("")
-    lines.append("Here's what I can help with:")
+    lines.append("What I'll deliver:")
     lines.append("")
-    for skill in relevant_skills[:6]:
+    for skill in relevant_skills[:5]:
         lines.append(f"- {skill}")
     lines.append("")
     lines.append(proof)
@@ -164,13 +157,47 @@ def _craft_opener(needs: list[str], title: str, description: str) -> str:
     )
 
 
+def _craft_agitation(needs: list[str], description: str) -> str:
+    """Cost of inaction — what they lose by not solving this."""
+    desc_lower = description.lower()
+
+    if "automation" in needs or "n8n" in desc_lower or "make" in desc_lower:
+        return (
+            "Every week this stays manual, your team burns hours on tasks "
+            "a workflow can handle in seconds. That's not just time — it's "
+            "compounding opportunity cost."
+        )
+    if "chatbot" in needs:
+        return (
+            "Right now, every after-hours visitor leaves with unanswered questions. "
+            "That's real revenue walking out the door — 24/7."
+        )
+    if "scraping" in needs:
+        return (
+            "Manual data collection doesn't scale. By the time you've gathered "
+            "100 records by hand, your competitor already has 10,000."
+        )
+    if "seo" in needs or "content" in needs:
+        return (
+            "Every month without proper SEO is another month your competitors "
+            "rank above you. Organic traffic compounds — the longer you wait, "
+            "the harder it is to catch up."
+        )
+    if "lead_gen" in needs:
+        return (
+            "Manual outreach caps at maybe 20 emails/day. Automated systems "
+            "do 200+ with personalization. That's a 10x pipeline difference."
+        )
+    return ""
+
+
 def _match_skills(needs: list[str]) -> list[str]:
     """Return relevant skills matched to their needs."""
     matched = []
 
     skill_map = {
         "automation": [
-            "End-to-end n8n & Make workflow development (I build production systems, not prototypes)",
+            "End-to-end n8n & Make workflow development (production systems, not prototypes)",
             "Error handling, retry logic, and monitoring built into every workflow",
             "Weekly maintenance & iteration as your needs evolve",
         ],
@@ -250,24 +277,40 @@ def _match_skills(needs: list[str]) -> list[str]:
 
 
 def _craft_proof(needs: list[str]) -> str:
-    """Add credibility / differentiator."""
+    """Credibility + price anchor vs agencies."""
     return (
-        "I work async, communicate clearly, and ship fast. "
-        "I'm not a prompt engineer who discovered n8n last week — "
-        "I build real production systems that handle edge cases and scale. "
+        "Agencies charge $5K-$15K for this kind of work and take 6-8 weeks. "
+        "I work solo, ship in days, and charge a fraction of that — "
+        "no overhead, no project managers, no bloat.\n\n"
+        "I build production systems, not prototypes. Error handling, "
+        "monitoring, and edge cases are built in from day one. "
         "Happy to share examples of similar work."
     )
 
 
 def _craft_cta(source: str) -> str:
-    """Call to action based on platform."""
+    """Call to action with urgency + clear next step."""
+    urgency = "I take on 2-3 projects at a time so I can actually focus on each one."
+
     if "n8n" in source.lower() or "community" in source.lower():
-        return "DM me or drop a reply — happy to jump on a quick async chat to scope this out."
+        return (
+            f"{urgency} DM me or drop a reply — I'll send a quick scope "
+            "breakdown within 24 hours, no commitment."
+        )
     if "reddit" in source.lower():
-        return "DM me if interested — I'll send over relevant examples."
+        return (
+            f"{urgency} DM me and I'll send over relevant examples + "
+            "a rough scope — takes me 10 minutes, saves you hours of searching."
+        )
     if "hackernews" in source.lower() or "hn" in source.lower():
-        return "Email in my profile — let's discuss scope and timeline."
-    return "Let me know if you'd like to discuss — I can scope this out quickly."
+        return (
+            f"{urgency} Email in my profile — I'll reply with a concrete "
+            "plan within 24 hours."
+        )
+    return (
+        f"{urgency} Let me know if you'd like to discuss — I'll put together "
+        "a quick scope and timeline within 24 hours."
+    )
 
 
 # ── Send proposal to TG ─────────────────────────────────────────────
