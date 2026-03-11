@@ -85,6 +85,12 @@ def _handle_callback(bot_token: str, update: dict) -> None:
     elif data.startswith("outreach_skip:"):
         lead_id = data.replace("outreach_skip:", "")
         _handle_outreach_skip(bot_token, cb_id, chat_id, message_id, original_text, lead_id)
+    elif data.startswith("drip_send:"):
+        step_id = data.replace("drip_send:", "")
+        _handle_drip_send(bot_token, cb_id, chat_id, message_id, original_text, step_id)
+    elif data.startswith("drip_stop:"):
+        seq_id = data.replace("drip_stop:", "")
+        _handle_drip_stop(bot_token, cb_id, chat_id, message_id, original_text, seq_id)
     else:
         _answer_callback(bot_token, cb_id, "Unknown action")
 
@@ -181,6 +187,56 @@ def _handle_outreach_go(bot_token, cb_id, chat_id, message_id, original_text, le
         log.info("Gate 2 GO for %s: %s", lead_id, result.get("success"))
     except Exception as e:
         log.error("Gate 2 GO failed for %s: %s", lead_id, e)
+        _answer_callback(bot_token, cb_id, f"Error: {e}")
+
+
+def _handle_drip_send(bot_token, cb_id, chat_id, message_id, original_text, step_id):
+    """Drip: Approve and send a follow-up email."""
+    try:
+        from viper.drip_runner import get_stored_draft
+        from viper.outreach.email_sequences import approve_followup, mark_sent
+        from viper.outreach.sendgrid_mailer import send_email
+
+        draft = get_stored_draft(step_id)
+        if not draft:
+            _answer_callback(bot_token, cb_id, "Draft expired — re-run drip cycle")
+            _edit_message(bot_token, chat_id, message_id, original_text + "\n\nDraft expired.")
+            return
+
+        approve_followup(step_id)
+        result = send_email(
+            to_email=draft["to_email"],
+            subject=draft["subject"],
+            body=draft["body"],
+            to_name=draft.get("contact_name", ""),
+        )
+        if result["success"]:
+            mark_sent(step_id)
+            _answer_callback(bot_token, cb_id, "Follow-up sent!")
+            _edit_message(bot_token, chat_id, message_id, original_text + f"\n\nSENT to {draft['to_email']}")
+        else:
+            _answer_callback(bot_token, cb_id, "Send failed")
+            _edit_message(bot_token, chat_id, message_id, original_text + f"\n\nFAILED: {result['error']}")
+        log.info("Drip SEND for %s: success=%s", step_id, result.get("success"))
+    except Exception as e:
+        log.error("Drip SEND failed for %s: %s", step_id, e)
+        _answer_callback(bot_token, cb_id, f"Error: {e}")
+
+
+def _handle_drip_stop(bot_token, cb_id, chat_id, message_id, original_text, seq_id):
+    """Drip: Cancel entire follow-up sequence."""
+    try:
+        from viper.outreach.email_sequences import cancel_sequence_by_id
+        biz_name = cancel_sequence_by_id(seq_id)
+        if biz_name:
+            _answer_callback(bot_token, cb_id, "Sequence cancelled")
+            _edit_message(bot_token, chat_id, message_id, original_text + f"\n\nSEQUENCE CANCELLED for {biz_name}")
+        else:
+            _answer_callback(bot_token, cb_id, "Sequence not found")
+            _edit_message(bot_token, chat_id, message_id, original_text + "\n\nSequence not found or already cancelled.")
+        log.info("Drip STOP for seq %s (biz=%s)", seq_id, biz_name)
+    except Exception as e:
+        log.error("Drip STOP failed for seq %s: %s", seq_id, e)
         _answer_callback(bot_token, cb_id, f"Error: {e}")
 
 

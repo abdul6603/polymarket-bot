@@ -742,10 +742,21 @@ def run_scan() -> dict:
 
 def run_loop(interval_minutes: int = 30) -> None:
     """Run scanner in a loop with configurable interval."""
+    from viper.drip_runner import run_drip_cycle
+
     log.info("[JOB_HUNTER] Starting loop (interval=%d min)", interval_minutes)
     while True:
         try:
             run_scan()
         except Exception as e:
             log.exception("[JOB_HUNTER] Cycle error: %s", str(e)[:200])
+
+        # Check for due follow-up emails (drip sequences)
+        try:
+            drip_count = run_drip_cycle()
+            if drip_count:
+                log.info("[JOB_HUNTER] Drip cycle: %d follow-ups sent to TG", drip_count)
+        except Exception as e:
+            log.exception("[JOB_HUNTER] Drip cycle error: %s", str(e)[:200])
+
         time.sleep(interval_minutes * 60)

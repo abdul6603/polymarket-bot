@@ -254,6 +254,21 @@ def cancel_sequence(lead_id: str) -> bool:
     return found
 
 
+def cancel_sequence_by_id(seq_id: str) -> str:
+    """Cancel a sequence by its seq_id. Returns business_name or empty string."""
+    sequences = _load_sequences()
+    for seq in sequences:
+        if seq["id"] == seq_id and seq["status"] == "active":
+            seq["status"] = "cancelled"
+            for step in seq["steps"]:
+                if step["status"] == "pending":
+                    step["status"] = "cancelled"
+            _save_sequences(sequences)
+            log.info("Cancelled sequence %s (%s)", seq_id, seq["business_name"])
+            return seq["business_name"]
+    return ""
+
+
 def mark_replied(lead_id: str) -> bool:
     """Auto-cancel sequence when a reply is detected."""
     return cancel_sequence(lead_id)
