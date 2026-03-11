@@ -66,6 +66,8 @@ _TEMPLATES: dict[str, dict[str, str]] = {
             "their contact info before they move on.\n\n"
             "Here's a working demo:\n"
             "{demo_url}\n\n"
+            "\U0001f4f1 Mobile preview: {demo_url}videos/mobile-preview.mp4\n"
+            "\U0001f5a5\ufe0f Desktop preview: {demo_url}videos/desktop-preview.mp4\n\n"
             "Worth a look?\n\n"
             "Jordan\n"
             "DarkCode AI"
