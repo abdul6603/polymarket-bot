@@ -96,17 +96,20 @@ def send_job_alert(
     if score_10 == int(score_10):
         score_10 = int(score_10)
 
+    # HOT label for 8.0+ leads
+    hot_label = " \U0001f525 HOT" if score_10 >= 8.0 else ""
+
     # Escape HTML
     name = name.replace("<", "&lt;").replace(">", "&gt;")
     need_summary = need_summary.replace("<", "&lt;").replace(">", "&gt;")
 
     text = (
-        f"\U0001f4b0 <b>INBOUND LEAD</b>\n\n"
+        f"\U0001f4b0 <b>INBOUND LEAD{hot_label}</b>\n\n"
         f"Company/Person: {name}\n"
         f"Website: {url}\n"
         f"What they need: {need_summary}\n"
         f"Budget: {budget_display}\n"
-        f"Score: {score_10}/10\n"
+        f"Score: {score_10}/10{hot_label}\n"
         f"Source: {source_display}\n"
         f"Can we do this: <b>{fit}</b>"
     )

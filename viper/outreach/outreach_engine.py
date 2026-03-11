@@ -143,15 +143,17 @@ def _send_approval_request(lead_id: str, prospect, niche_key: str) -> None:
         else:
             contact_line = "\nNeeds manual lookup (contact form on site)"
 
+    hot_label = " \U0001f525 HOT" if prospect.score >= 8.0 else ""
+
     text = (
-        f"<b>GATE 1 — New Lead</b>\n\n"
+        f"<b>GATE 1 — New Lead{hot_label}</b>\n\n"
         f"Business: {prospect.business_name}\n"
         f"Niche: {niche_key}\n"
         f"Email: {email_line}{contact_line}\n"
         f"Website: {prospect.website}\n"
         f"Phone: {prospect.phone}\n"
         f"Has chatbot: {chatbot_line}\n"
-        f"Score: {prospect.score}/10\n\n"
+        f"Score: {prospect.score}/10{hot_label}\n\n"
         f"Approve this lead?"
     )
 
