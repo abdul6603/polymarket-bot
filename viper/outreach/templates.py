@@ -1,12 +1,22 @@
-"""Niche-personalized cold outreach templates for local business prospecting.
+"""Cold outreach email templates — strict rules.
 
-Rules:
-- Sound human, not robotic. Write like a real person, not a template.
-- Lead with THEIR problem, not our product.
-- Video previews (mobile + desktop) in EVERY email.
-- Demo link in every email — it's the hook.
-- Short. Scannable. Every sentence earns the next.
-- NO pitching SEO/content writing in cold emails.
+RULES (Jordan-enforced):
+- Subject: NEVER mention DarkCode. Frame as question about THEIR business.
+  Pattern: "quick question about [Business Name]'s [specific issue]"
+- Body line 1: Specific seo-audit finding from their site.
+- Body line 2: Cost of that problem (lost leads, Google penalty, etc.).
+- ONE demo link. No video links, no portfolio, no carrd.
+- CTA: "If you want a version customized for [Business], I'll build it
+  in 24 hours — on me."
+- Sign off: Jordan, DarkCode AI
+
+NEVER DO:
+- Apologize or hedge ("I know this sounds forward")
+- Say "no strings" or "free to try"
+- Use "if you're curious"
+- Include multiple links
+- Open with anything about us ("I built", "I noticed")
+- Use generic pain points not from the actual audit
 """
 from __future__ import annotations
 
@@ -28,143 +38,197 @@ def get_outreach_message(
 ) -> dict[str, str]:
     """Return personalized subject + body for a niche.
 
+    Args:
+        findings: Pre-formatted findings string from format_findings_for_email().
+                  Each line starts with "- ". First finding becomes the email opener.
+
     Returns dict with 'subject' and 'body' keys (plain text).
     """
     greeting = f"Hi {contact_name}" if contact_name else "Hi"
-    niche_key = resolve_niche_key(niche) if niche not in _TEMPLATES else niche
-    template = _TEMPLATES.get(niche_key, _TEMPLATES["general"])
+    niche_key = resolve_niche_key(niche) if niche not in _NICHE_BODIES else niche
 
-    findings_block = ""
+    # Parse findings into individual lines
+    finding_lines = []
     if findings:
-        findings_block = (
-            f"I took a look at {business_name}'s website and noticed "
-            f"a few things:\n\n{findings}\n\n"
-        )
+        finding_lines = [
+            line.lstrip("- ").strip()
+            for line in findings.strip().splitlines()
+            if line.strip()
+        ]
 
-    # Video block for every niche — uses the demo_url to build video paths
-    video_block = (
-        "Here's a 30-second walkthrough so you can see it in action:\n"
-        f"  Horizontal: {demo_url}videos/desktop-preview.mp4\n"
-        f"  Vertical: {demo_url}videos/mobile-preview.mp4\n"
+    # Build subject from first finding (specific to their site)
+    if finding_lines:
+        subject = _subject_from_finding(business_name, finding_lines[0])
+    else:
+        subject = _FALLBACK_SUBJECTS.get(
+            niche_key,
+            f"Quick question about {business_name}'s website",
+        ).format(business_name=business_name)
+
+    # Build body: finding opener → cost → demo → CTA
+    opener = _build_opener(finding_lines, business_name, niche_key)
+    niche_body = _NICHE_BODIES.get(niche_key, _NICHE_BODIES["general"])
+    cost_line = niche_body["cost"].format(business_name=business_name)
+
+    niche_label = _NICHE_LABELS.get(niche_key, "business")
+    body = (
+        f"{greeting},\n\n"
+        f"{opener}\n\n"
+        f"{cost_line}\n\n"
+        f"I put together a working demo for a similar {niche_label} "
+        f"— you can try it here:\n"
+        f"{demo_url}\n\n"
+        f"If you want a version customized for {business_name}, "
+        f"I'll build it in 24 hours — on me.\n\n"
+        f"Jordan\n"
+        f"DarkCode AI"
     )
 
-    return {
-        "subject": template["subject"].format(business_name=business_name),
-        "body": template["body"].format(
-            greeting=greeting,
-            business_name=business_name,
-            demo_url=demo_url,
-            findings=findings_block,
-            video_block=video_block,
-        ),
-    }
+    return {"subject": subject, "body": body}
 
 
-_TEMPLATES: dict[str, dict[str, str]] = {
+def _subject_from_finding(business_name: str, finding: str) -> str:
+    """Generate subject line from the first audit finding.
+
+    Pattern: "Quick question about {Business}'s {specific issue}"
+    Never mentions DarkCode.
+    """
+    # Map common finding patterns to short subject-line pain points
+    finding_lower = finding.lower()
+
+    if "chatbot" in finding_lower or "live chat" in finding_lower:
+        pain = "after-hours inquiries"
+    elif "meta description" in finding_lower:
+        pain = "Google search preview"
+    elif "viewport" in finding_lower or "mobile" in finding_lower:
+        pain = "mobile experience"
+    elif "schema" in finding_lower or "structured data" in finding_lower:
+        pain = "Google listing"
+    elif "alt text" in finding_lower:
+        pain = "image SEO"
+    elif "faq" in finding_lower:
+        pain = "FAQ page"
+    elif "contact form" in finding_lower:
+        pain = "contact page"
+    elif "ssl" in finding_lower or "https" in finding_lower:
+        pain = "site security"
+    elif "h1" in finding_lower:
+        pain = "homepage SEO"
+    else:
+        pain = "website"
+
+    return f"Quick question about {business_name}'s {pain}"
+
+
+_NICHE_LABELS: dict[str, str] = {
+    "dental": "dental practice",
+    "real_estate": "real estate agency",
+    "chiropractor": "chiropractic office",
+    "auto_repair": "auto shop",
+    "general": "business",
+}
+
+_FALLBACK_OPENERS: dict[str, str] = {
+    "dental": (
+        "{business_name}'s website doesn't have a way to handle "
+        "patient questions after hours — every unanswered inquiry "
+        "is a potential new patient walking to a competitor."
+    ),
+    "real_estate": (
+        "{business_name}'s website doesn't have a way to handle "
+        "buyer questions after hours — every unanswered inquiry "
+        "is a potential showing lost to the next agent."
+    ),
+    "chiropractor": (
+        "{business_name}'s website doesn't have a way to handle "
+        "patient questions after hours — every unanswered inquiry "
+        "is someone booking with the next chiropractor they find."
+    ),
+    "auto_repair": (
+        "{business_name}'s website doesn't have a way to handle "
+        "customer questions after hours — every missed call is a "
+        "$500+ repair job going to the shop down the road."
+    ),
+    "general": (
+        "{business_name}'s website doesn't have a way to handle "
+        "visitor questions after hours — every unanswered inquiry "
+        "is a potential customer walking to a competitor."
+    ),
+}
+
+
+def _build_opener(finding_lines: list[str], business_name: str, niche_key: str = "general") -> str:
+    """Build the email opener from audit findings.
+
+    Line 1 = specific finding from their site.
+    Line 2+ = additional findings if available (max 2 extra).
+    """
+    if not finding_lines:
+        template = _FALLBACK_OPENERS.get(niche_key, _FALLBACK_OPENERS["general"])
+        return template.format(business_name=business_name)
+
+    # First finding is the main opener
+    opener = f"{business_name}'s website: {finding_lines[0]}."
+
+    # Add 1-2 more findings as supporting evidence
+    extras = finding_lines[1:3]
+    if extras:
+        extra_text = ". ".join(extras)
+        opener += f" Also — {extra_text}."
+
+    return opener
+
+
+# ── Niche-specific cost lines ──
+# Each niche gets a "cost of the problem" that follows the findings opener.
+
+_NICHE_BODIES: dict[str, dict[str, str]] = {
     "dental": {
-        "subject": "I built something for {business_name} — 2 min to check out",
-        "body": (
-            "{greeting},\n\n"
-            "{findings}"
-            "I know this sounds forward, but I actually built a working chat "
-            "assistant specifically for dental practices like {business_name}.\n\n"
-            "It handles the stuff that eats up your front desk's time — "
-            "insurance questions, appointment requests, hours, which dentist "
-            "handles what. Works 24/7, even when you're closed.\n\n"
-            "Here's the live demo (takes 30 seconds to try):\n"
-            "{demo_url}\n\n"
-            "{video_block}\n"
-            "If you're curious, just reply to this email. I'll build a custom "
-            "version for {business_name} within 24 hours — free, no strings.\n\n"
-            "Jordan\n"
-            "DarkCode AI\n"
-            "darkcodeai.carrd.co"
+        "cost": (
+            "Most dental practices lose 10-15 new patient inquiries per month "
+            "to unanswered after-hours calls and website questions. At $200-500 "
+            "per new patient lifetime value, that adds up fast."
         ),
     },
     "real_estate": {
-        "subject": "Built this for {business_name} — worth 30 seconds",
-        "body": (
-            "{greeting},\n\n"
-            "{findings}"
-            "Someone's browsing your listings at 11 PM. They have questions "
-            "about the neighborhood, the HOA, whether you handle rentals too. "
-            "They're not going to wait until morning — they'll move on.\n\n"
-            "I built a chat assistant that handles those conversations, "
-            "answers property questions, and captures their info before "
-            "they disappear. It's trained on YOUR listings and services.\n\n"
-            "Here's a working demo:\n"
-            "{demo_url}\n\n"
-            "{video_block}\n"
-            "Reply if you want me to build one for {business_name}. Takes "
-            "me 24 hours, costs you nothing to try.\n\n"
-            "Jordan\n"
-            "DarkCode AI\n"
-            "darkcodeai.carrd.co"
+        "cost": (
+            "Buyers browsing listings at 10 PM aren't going to wait until "
+            "morning for answers — they move to the next agent. Every "
+            "unanswered question is a lost showing."
         ),
     },
     "chiropractor": {
-        "subject": "Quick idea for {business_name}",
-        "body": (
-            "{greeting},\n\n"
-            "{findings}"
-            "When someone's back goes out at 9 PM, they're Googling "
-            "chiropractors right then. If your site can't answer their "
-            "questions and book them in, they'll call whoever can.\n\n"
-            "I built a chat assistant that handles insurance questions, "
-            "explains your treatments in plain English, and books "
-            "appointments — even at 2 AM.\n\n"
-            "Here's a working demo:\n"
-            "{demo_url}\n\n"
-            "{video_block}\n"
-            "Want me to build one for {business_name}? Reply and I'll "
-            "have a custom version ready in 24 hours. Free to try.\n\n"
-            "Jordan\n"
-            "DarkCode AI\n"
-            "darkcodeai.carrd.co"
+        "cost": (
+            "When someone's in pain at night, they're searching for help "
+            "right then. If your site can't answer their insurance and "
+            "availability questions, they'll book with whoever can."
         ),
     },
     "auto_repair": {
-        "subject": "Quick idea for {business_name}",
-        "body": (
-            "{greeting},\n\n"
-            "{findings}"
-            "When someone's car breaks down, they need answers NOW — "
-            "not a voicemail. What services you offer, rough pricing, "
-            "whether you can fit them in today.\n\n"
-            "I built a chat assistant that handles all of that. Answers "
-            "service questions, gives estimate ranges, books appointments "
-            "on the spot. Works 24/7.\n\n"
-            "Here's a working demo:\n"
-            "{demo_url}\n\n"
-            "{video_block}\n"
-            "Interested? Reply and I'll build a custom version for "
-            "{business_name}. 24 hours, no cost to try.\n\n"
-            "Jordan\n"
-            "DarkCode AI\n"
-            "darkcodeai.carrd.co"
+        "cost": (
+            "When someone's car breaks down, they need answers now — "
+            "not a voicemail. Every call that goes unanswered is a $500+ "
+            "repair job going to the shop down the road."
         ),
     },
     "general": {
-        "subject": "I built something for {business_name}",
-        "body": (
-            "{greeting},\n\n"
-            "{findings}"
-            "I noticed {business_name} doesn't have a chat assistant on "
-            "the site yet — so I went ahead and built a working demo.\n\n"
-            "It handles common questions, books appointments, and captures "
-            "visitor info when you're not around. Basically a front desk "
-            "that never sleeps.\n\n"
-            "Here's the live demo (takes 30 seconds):\n"
-            "{demo_url}\n\n"
-            "{video_block}\n"
-            "Worth a look? Reply and I'll customize it for "
-            "{business_name} in 24 hours. Free, no strings.\n\n"
-            "Jordan\n"
-            "DarkCode AI\n"
-            "darkcodeai.carrd.co"
+        "cost": (
+            "Every visitor who leaves your site with an unanswered question "
+            "is a potential customer you'll never see again. Most businesses "
+            "lose 20-30% of leads this way."
         ),
     },
 }
+
+# Fallback subjects when no audit findings are available
+_FALLBACK_SUBJECTS: dict[str, str] = {
+    "dental": "Quick question about {business_name}'s patient inquiries",
+    "real_estate": "Quick question about {business_name}'s after-hours leads",
+    "chiropractor": "Quick question about {business_name}'s patient intake",
+    "auto_repair": "Quick question about {business_name}'s missed calls",
+    "general": "Quick question about {business_name}'s website",
+}
+
 
 # Map common niche search terms to template keys
 NICHE_MAP: dict[str, str] = {
