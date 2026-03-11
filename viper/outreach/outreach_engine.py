@@ -314,7 +314,7 @@ def run_outreach(
             stats["queued"] += 1
             continue
 
-        # Queue for approval
+        # Queue for approval (dedup built in — returns "" if duplicate)
         lead_id = queue_lead(
             business_name=p.business_name,
             email=p.email,
@@ -328,6 +328,10 @@ def run_outreach(
             contact_name=p.contact_name,
             prospect_data=p.to_dict(),
         )
+
+        if not lead_id:
+            stats["skipped"] += 1
+            continue
 
         # Send Gate 1 TG approval request to Jordan (lead info only)
         _send_approval_request(lead_id, p, niche_key)

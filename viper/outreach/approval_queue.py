@@ -74,6 +74,13 @@ def queue_lead(
     }
 
     queue = _load_queue()
+
+    # Dedup — never queue the same business twice
+    existing_names = {e["business_name"].lower().strip() for e in queue}
+    if business_name.lower().strip() in existing_names:
+        log.info("Skipped duplicate: %s already in queue", business_name)
+        return ""
+
     queue.append(entry)
     _save_queue(queue)
     log.info("Queued lead %s: %s (%s)", lead_id, business_name, email)
