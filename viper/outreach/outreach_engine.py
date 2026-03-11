@@ -70,7 +70,7 @@ def _validate_lead(lead: dict) -> tuple[bool, str]:
     body = lead.get("body", "")
     if body:
         greeting = body.split("\n")[0]
-        bad_words = ["meet", "launch", "team", "staff", "click", "view", "read",
+        bad_words = ["meet", "launch", "staff", "click", "view", "read",
                      "our", "welcome", "schedule", "visit", "call", "contact"]
         if any(bad in greeting.lower() for bad in bad_words):
             return False, f"Bad greeting: {greeting}"
@@ -304,7 +304,7 @@ def run_outreach(
 
         # Greeting sanity check before queuing
         greeting = msg["body"].split("\n")[0] if msg.get("body") else ""
-        bad_words = ["meet", "launch", "team", "staff", "click", "view", "read",
+        bad_words = ["meet", "launch", "staff", "click", "view", "read",
                      "our", "welcome", "schedule", "visit", "call", "contact"]
         if any(bad in greeting.lower() for bad in bad_words):
             log.warning("Bad greeting for %s: %s — skipping", p.business_name, greeting)
