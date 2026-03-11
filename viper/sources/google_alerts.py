@@ -6,6 +6,7 @@ or in data/google_alert_feeds.json.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -13,6 +14,7 @@ import re
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 import feedparser
 
@@ -76,6 +78,22 @@ def _get_feed_urls() -> list[str]:
     return list(set(feeds))  # Deduplicate
 
 
+def _unwrap_google_url(url: str) -> str:
+    """Extract the real destination URL from a Google Alerts redirect.
+
+    Google Alerts wraps URLs as:
+      https://www.google.com/url?rct=j&sa=t&url=REAL_URL&ct=...&cd=...&usg=...
+    The ct/cd/usg params change between fetches, breaking dedup.
+    """
+    parsed = urlparse(url)
+    if parsed.hostname and "google.com" in parsed.hostname and parsed.path == "/url":
+        qs = parse_qs(parsed.query)
+        inner = qs.get("url", [""])[0]
+        if inner:
+            return inner
+    return url
+
+
 def _classify(text: str) -> tuple[str, list[str]]:
     """Classify text and return (category, matched_skills)."""
     lower = text.lower()
@@ -112,8 +130,14 @@ def scan_google_alerts() -> list[GoogleAlertLead]:
             feed_title = feed.feed.get("title", "Google Alert")
 
             for entry in feed.entries:
-                url = entry.get("link", "")
-                if not url or url in seen_urls:
+                raw_url = entry.get("link", "")
+                if not raw_url:
+                    continue
+
+                # Unwrap Google redirect URLs to get the real destination
+                url = _unwrap_google_url(raw_url)
+
+                if url in seen_urls:
                     continue
                 seen_urls.add(url)
 
@@ -125,8 +149,8 @@ def scan_google_alerts() -> list[GoogleAlertLead]:
                 full_text = f"{title} {description}"
                 category, matched = _classify(full_text)
 
-                # Generate a stable ID from URL
-                job_id = f"ga_{hash(url) & 0xFFFFFFFF:08x}"
+                # Stable hash from the unwrapped URL (MD5, not hash())
+                job_id = f"ga_{hashlib.md5(url.encode()).hexdigest()[:8]}"
 
                 leads.append(GoogleAlertLead(
                     title=title[:200],

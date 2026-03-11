@@ -90,6 +90,7 @@ _COMPETITOR_RE = re.compile(
 )
 
 _NEWS_DOMAINS = frozenset([
+    # Major tech/news
     "techcrunch.com", "itpro.com", "wired.com", "theverge.com",
     "zdnet.com", "venturebeat.com", "mashable.com", "cnet.com",
     "reuters.com", "bloomberg.com", "forbes.com", "medium.com",
@@ -97,6 +98,16 @@ _NEWS_DOMAINS = frozenset([
     "stackoverflow.com", "arstechnica.com", "engadget.com",
     "thenextweb.com", "gizmodo.com", "businessinsider.com",
     "cnbc.com", "bbc.com", "nytimes.com",
+    # Industry/trade press (leak through Google Alerts)
+    "cxtoday.com", "scmr.com", "newarkadvocate.com", "delawareonline.com",
+    "prnewswire.com", "globenewswire.com", "businesswire.com",
+    "prweb.com", "marketwatch.com", "yahoo.com", "msn.com",
+    "techradar.com", "infoworld.com", "computerworld.com",
+    "theregister.com", "siliconangle.com", "digiday.com",
+    "adweek.com", "martech.org", "searchengineland.com",
+    "searchenginejournal.com", "socialmediatoday.com",
+    "eweek.com", "informationweek.com", "sdxcentral.com",
+    "fiercetelecom.com", "lightreading.com",
 ])
 
 _BIG_COMPANIES = [
@@ -149,11 +160,15 @@ def _is_garbage_lead(job: dict) -> tuple[bool, str]:
             return True, "ProductHunt launch, no hiring intent"
 
     # 5. Google Alerts intent filter — reject unless hiring intent
+    #    "chatbot"/"automation" alone is NOT enough — news articles about AI products
+    #    contain those words. Require hiring intent OR freelance-specific phrases.
     if source == "GoogleAlerts":
         if not _HIRING_INTENT_RE.search(f"{title} {description}"):
-            # Also allow if it has coding skill keywords (some alerts are legit job posts)
-            coding_kws = ["freelance", "contractor", "project", "gig", "chatbot", "bot", "automation"]
-            if not any(kw in text for kw in coding_kws):
+            freelance_kws = [
+                "freelance", "contractor", "looking for a developer",
+                "need a developer", "gig", "project budget",
+            ]
+            if not any(kw in text for kw in freelance_kws):
                 return True, "GoogleAlerts: no hiring intent"
 
     # 6. HN freelancer thread filter — "Seeking freelancer?" = people offering, not hiring
