@@ -38,8 +38,8 @@ _DEMO_BASE = "https://darkcode-ai.github.io/chatbot-demos/"
 # ONLY demos that are live and verified on GitHub Pages.
 # NEVER auto-generate slugs. If a niche isn't here, use belknapdental-com.
 _VERIFIED_DEMOS: dict[str, str] = {
-    "dental": "belknapdental-com",
-    "real_estate": "greatislandrealty-com",
+    "dental": "dental-demo",
+    "real_estate": "realestate-demo",
 }
 
 # Telegram Bot API — read from env or Shelby's .env
