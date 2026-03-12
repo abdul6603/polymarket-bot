@@ -74,7 +74,7 @@ _RESIDENTIAL_RE_ONLY_MARKERS = [
     "Schedule Showings",         # RE feature card
     "Home Valuation",            # RE feature card
     "AGENT_DATA",                # RE JS variable
-    "Real Estate Assistant",     # RE hero badge
+    "AI-Powered Real Estate Assistant",  # RE hero badge (exact)
     "buying process",            # RE QA
     "pre-qualified",             # RE mortgage QA
     "open house",                # RE QA
