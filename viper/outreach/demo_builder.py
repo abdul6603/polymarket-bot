@@ -27,11 +27,50 @@ log = logging.getLogger(__name__)
 
 REPO_DIR = Path.home() / "chatbot-demos"
 
-# Template slugs by niche
+# Template slugs by niche — STRICT mapping, NO fallback
 _TEMPLATE_MAP = {
     "dental": "dental-demo",
     "real_estate": "realestate-demo",
 }
+
+# Niche aliases — normalize sloppy input to canonical niche
+_NICHE_ALIASES = {
+    "dental": "dental",
+    "dentist": "dental",
+    "real_estate": "real_estate",
+    "realestate": "real_estate",
+    "real-estate": "real_estate",
+    "re": "real_estate",
+    "realtor": "real_estate",
+}
+
+# Cross-contamination blocklists — if ANY of these appear in the wrong
+# niche's output, the build MUST be aborted
+_DENTAL_ONLY_MARKERS = [
+    "Insurance Check",           # dental feature card
+    "dental emergencies",        # dental feature card
+    "dental insurance",          # dental QA
+    "DOCTOR_DATA",               # dental JS variable
+    "Dental Assistant",          # dental hero badge
+    "dental needs",              # dental QA phrasing
+    "root canal",                # purely dental
+    "cleaning cost",             # dental cleaning
+    "first tooth",               # pediatric dental
+    "treating kids",             # pediatric dental
+    "dental team",               # dental QA
+]
+_RE_ONLY_MARKERS = [
+    "Browse Listings",           # RE feature card
+    "Schedule Viewings",         # RE feature card
+    "Home Valuation",            # RE feature card
+    "AGENT_DATA",                # RE JS variable
+    "Real Estate Assistant",     # RE hero badge
+    "buying process",            # RE QA
+    "pre-qualified",             # RE mortgage QA
+    "open house",                # RE QA
+    "investment properties",     # RE QA
+    "market analysis",           # RE QA
+]
 
 # Placeholder names/phones in generic templates
 _DENTAL_PLACEHOLDERS = {
@@ -62,40 +101,84 @@ def build_demo_html(
 ) -> str:
     """Build a custom chatbot demo HTML page.
 
-    1. Scrape the prospect's website for detailed business info
-    2. Read the generic niche template
-    3. Customize with real business data (8 required categories)
-    4. Return the full HTML string
+    CRITICAL: niche MUST be resolved BEFORE template selection.
+    NEVER fall back to dental. Unknown niche = hard error.
 
     Returns:
         The customized HTML string ready to deploy.
-    """
-    # 1. Scrape for real business data
-    scraped = _scrape_for_demo(website)
 
-    # 2. Read the generic template
-    template_slug = _TEMPLATE_MAP.get(niche, "dental-demo")
+    Raises:
+        ValueError: if niche is unknown or cross-contamination detected.
+    """
+    # 1. STRICT niche resolution — no silent fallback
+    canonical_niche = _NICHE_ALIASES.get(niche.lower().strip() if niche else "")
+    if not canonical_niche:
+        raise ValueError(
+            f"[DEMO_BUILDER] UNKNOWN NICHE '{niche}' for {business_name}. "
+            f"Valid: {list(_NICHE_ALIASES.keys())}. ABORTING — will NOT default to dental."
+        )
+
+    # 2. Load the CORRECT template for this niche
+    template_slug = _TEMPLATE_MAP[canonical_niche]
     template_path = REPO_DIR / template_slug / "index.html"
     if not template_path.exists():
         raise FileNotFoundError(f"Template not found: {template_path}")
     template = template_path.read_text()
 
-    # 3. Merge all data sources (scraped > prospect_data > defaults)
+    log.info("[DEMO_BUILDER] Niche=%s → template=%s for %s",
+             canonical_niche, template_slug, business_name)
+
+    # 3. Scrape for real business data
+    scraped = _scrape_for_demo(website)
+
+    # 4. Merge all data sources (scraped > prospect_data > defaults)
     data = _merge_data(scraped, prospect_data, business_name)
 
-    # 4. Apply customizations based on niche
-    if niche == "real_estate":
+    # 5. Apply niche-specific customization — NEVER cross-niche
+    if canonical_niche == "real_estate":
         html = _customize_realestate(template, data)
-    else:
+    elif canonical_niche == "dental":
         html = _customize_dental(template, data)
+    else:
+        raise ValueError(f"No customizer for niche: {canonical_niche}")
 
-    # 5. Upgrade lead capture form (dental=6 fields, RE=8 fields)
-    html = _upgrade_lead_capture_form(html, niche=niche)
+    # 6. Upgrade lead capture form (dental=6 fields, RE=8 fields)
+    html = _upgrade_lead_capture_form(html, niche=canonical_niche)
+
+    # 7. MANDATORY cross-contamination check — abort if wrong niche content
+    contamination = _check_niche_contamination(html, canonical_niche)
+    if contamination:
+        msg = (f"[DEMO_BUILDER] CROSS-CONTAMINATION detected for {business_name} "
+               f"(niche={canonical_niche}): {contamination}")
+        log.error(msg)
+        raise ValueError(msg)
 
     log.info("[DEMO_BUILDER] Built demo for %s (niche=%s, team=%d, services=%d, quality=%d)",
-             business_name, niche, len(data["team"]), len(data["services"]),
+             business_name, canonical_niche, len(data["team"]), len(data["services"]),
              _calc_data_quality(data))
     return html
+
+
+def _check_niche_contamination(html: str, niche: str) -> list[str]:
+    """Check that the built HTML does NOT contain content from the wrong niche.
+
+    Returns list of contamination findings (empty = clean).
+    """
+    findings: list[str] = []
+    html_lower = html.lower()
+
+    if niche == "dental":
+        # Dental demo must NOT contain RE-only markers
+        for marker in _RE_ONLY_MARKERS:
+            if marker.lower() in html_lower:
+                findings.append(f"dental demo contains RE marker: '{marker}'")
+    elif niche == "real_estate":
+        # RE demo must NOT contain dental-only markers
+        for marker in _DENTAL_ONLY_MARKERS:
+            if marker.lower() in html_lower:
+                findings.append(f"RE demo contains dental marker: '{marker}'")
+
+    return findings
 
 
 def run_quality_gate(html: str, niche: str = "auto") -> tuple[bool, list[str]]:
@@ -1142,8 +1225,8 @@ def _build_realestate_qa(data: dict) -> list[dict]:
         "q": "Are you accepting new clients?",
         "a": f"Absolutely! {name} is always welcoming new clients. Whether you're a first-time buyer, seasoned investor, or looking to sell, we're here to help.\n\n{phone_cta} to get started!",
         "kw": ["new client", "new clients", "accepting", "first time", "sign up",
-               "new patient", "taking on"],
-        "cat": "new_patient",
+               "taking on", "work with you"],
+        "cat": "new_client",
     })
 
     # ── Mortgage / Pre-qualification ──
