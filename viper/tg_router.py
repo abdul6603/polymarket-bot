@@ -5,7 +5,7 @@ Each pipeline has its own Telegram bot:
   OUTREACH — Pipeline 1 (prospector/outreach) → @VIPER_OUTRACH_BOT
 
 Reads VIPER_INBOUND_BOT_TOKEN/CHAT_ID and VIPER_OUTREACH_BOT_TOKEN/CHAT_ID.
-Fallback: single TELEGRAM_BOT_TOKEN + CHAT_ID with [INBOUND]/[OUTREACH] prefix.
+NEVER falls back to Shelby's bot — refuses to send if Viper token is missing.
 """
 from __future__ import annotations
 
@@ -46,13 +46,24 @@ _ENV = _load_env()
 
 
 def _resolve(channel: str) -> tuple[str, str, str]:
-    """Return (bot_token, chat_id, prefix) for the given channel."""
-    if channel == "INBOUND" and _ENV["VIPER_INBOUND_BOT_TOKEN"]:
-        return _ENV["VIPER_INBOUND_BOT_TOKEN"], _ENV["VIPER_INBOUND_CHAT_ID"], ""
-    if channel == "OUTREACH" and _ENV["VIPER_OUTREACH_BOT_TOKEN"]:
-        return _ENV["VIPER_OUTREACH_BOT_TOKEN"], _ENV["VIPER_OUTREACH_CHAT_ID"], ""
-    # Fallback: single bot with prefix
-    return _ENV["TELEGRAM_BOT_TOKEN"], _ENV["TELEGRAM_CHAT_ID"], f"[{channel}] "
+    """Return (bot_token, chat_id, prefix) for the given channel.
+
+    NEVER falls back to Shelby's generic bot. If the channel-specific
+    token is missing, return empty strings so send() refuses to fire.
+    """
+    if channel == "INBOUND":
+        if _ENV["VIPER_INBOUND_BOT_TOKEN"]:
+            return _ENV["VIPER_INBOUND_BOT_TOKEN"], _ENV["VIPER_INBOUND_CHAT_ID"], ""
+        log.error("[TG_ROUTER] VIPER_INBOUND_BOT_TOKEN not set — REFUSING to fall back to Shelby's bot")
+        return "", "", ""
+    if channel == "OUTREACH":
+        if _ENV["VIPER_OUTREACH_BOT_TOKEN"]:
+            return _ENV["VIPER_OUTREACH_BOT_TOKEN"], _ENV["VIPER_OUTREACH_CHAT_ID"], ""
+        log.error("[TG_ROUTER] VIPER_OUTREACH_BOT_TOKEN not set — REFUSING to fall back to Shelby's bot")
+        return "", "", ""
+    # Unknown channel — refuse
+    log.error("[TG_ROUTER] Unknown channel %s — refusing to send", channel)
+    return "", "", ""
 
 
 def send(
