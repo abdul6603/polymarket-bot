@@ -61,7 +61,7 @@ _DENTAL_ONLY_MARKERS = [
 ]
 _RE_ONLY_MARKERS = [
     "Browse Listings",           # RE feature card
-    "Schedule Viewings",         # RE feature card
+    "Schedule Showings",         # RE feature card
     "Home Valuation",            # RE feature card
     "AGENT_DATA",                # RE JS variable
     "Real Estate Assistant",     # RE hero badge
@@ -69,7 +69,6 @@ _RE_ONLY_MARKERS = [
     "pre-qualified",             # RE mortgage QA
     "open house",                # RE QA
     "investment properties",     # RE QA
-    "market analysis",           # RE QA
 ]
 
 # Placeholder names/phones in generic templates
