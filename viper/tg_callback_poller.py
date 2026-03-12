@@ -178,7 +178,18 @@ def _build_demo_and_review(bot_token: str, lead: dict) -> None:
             prospect_data=lead.get("prospect_data", {}),
         )
 
-        # 2. Deploy to GitHub Pages
+        # 2. Quality gate — 7 test questions must ALL pass
+        from viper.outreach.demo_builder import run_quality_gate
+        gate_pass, gate_failures = run_quality_gate(html)
+        if not gate_pass:
+            fail_text = "\n".join(f"  - {f}" for f in gate_failures)
+            log.warning("[DEMO_FLOW] Quality gate FAILED for %s:\n%s", biz, fail_text)
+            from viper.outreach.outreach_engine import _send_tg
+            _send_tg(f"DEMO QUALITY GATE FAILED for {biz}:\n{fail_text}\n\n"
+                     f"Lead {lead_id} blocked — demo needs fixes before Gate 2.")
+            return
+
+        # 3. Deploy to GitHub Pages
         from viper.outreach.demo_deployer import deploy_demo
         demo_url, deployed = deploy_demo(biz, html, niche)
 
@@ -189,11 +200,11 @@ def _build_demo_and_review(bot_token: str, lead: dict) -> None:
                      f"Lead {lead_id} is stuck at lead_approved. Fix and retry.")
             return
 
-        # 3. Update lead with custom demo URL
+        # 4. Update lead with custom demo URL
         lead["demo_url"] = demo_url
         lead["demo_is_custom"] = True
 
-        # 4. Regenerate email with custom demo URL
+        # 5. Regenerate email with custom demo URL
         from viper.outreach.templates import get_outreach_message, resolve_niche_key
         from viper.prospecting.site_auditor import format_findings_for_email
 
@@ -213,7 +224,7 @@ def _build_demo_and_review(bot_token: str, lead: dict) -> None:
         lead["subject"] = msg["subject"]
         lead["body"] = msg["body"]
 
-        # 5. Save updated lead back to queue
+        # 6. Save updated lead back to queue
         from viper.outreach.approval_queue import _load_queue, _save_queue
         queue = _load_queue()
         for entry in queue:
@@ -225,7 +236,7 @@ def _build_demo_and_review(bot_token: str, lead: dict) -> None:
                 break
         _save_queue(queue)
 
-        # 6. Send Gate 2 draft review
+        # 7. Send Gate 2 draft review
         from viper.outreach.outreach_engine import send_draft_review
         send_draft_review(lead)
         log.info("[DEMO_FLOW] Demo deployed + Gate 2 sent for %s → %s", biz, demo_url)

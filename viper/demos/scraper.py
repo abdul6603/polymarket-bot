@@ -41,6 +41,11 @@ class ScrapedBusiness:
     description: str = ""
     brand_color: str = "#2563eb"
     niche: str = "general"
+    # Payment & patient info
+    payment_methods: list[str] = field(default_factory=list)
+    accepting_new_patients: bool = True  # default true unless explicitly stated
+    new_patient_info: str = ""
+    emergency_info: str = ""
     # Dental-specific
     insurance_plans: list[str] = field(default_factory=list)
     # Real estate-specific
@@ -127,11 +132,19 @@ def scrape_business(url: str, niche: str = "auto") -> ScrapedBusiness:
     # Extract niche-specific data from all text
     _extract_services(all_text, biz)
     _extract_hours(all_text, biz)
+    _extract_address(homepage_soup, all_text, biz)
+    _extract_payment_methods(all_text, biz)
+    _extract_new_patient_info(all_text, biz)
+    _extract_emergency_info(all_text, biz)
 
     if niche == "dental":
         _extract_insurance(all_text, biz)
     elif niche == "real_estate":
         _extract_areas(all_text, biz)
+
+    # Normalize phone to (XXX) XXX-XXXX
+    if biz.phone:
+        biz.phone = _format_phone(biz.phone)
 
     log.info("Scraped %s: quality=%d, pages=%d, chars=%d",
              biz.name or url, biz.quality_score, biz.pages_scraped, biz.text_chars)
@@ -483,3 +496,106 @@ def _extract_areas(text: str, biz: ScrapedBusiness) -> None:
     for area in nh_areas:
         if area in text and area not in biz.areas_served:
             biz.areas_served.append(area)
+
+
+def _format_phone(phone: str) -> str:
+    """Normalize phone to (XXX) XXX-XXXX format."""
+    digits = re.sub(r'\D', '', phone)
+    if len(digits) == 11 and digits[0] == '1':
+        digits = digits[1:]
+    if len(digits) == 10:
+        return f"({digits[:3]}) {digits[3:6]}-{digits[6:]}"
+    return phone  # Return original if can't normalize
+
+
+def _extract_address(soup: BeautifulSoup, text: str, biz: ScrapedBusiness) -> None:
+    """Extract full business address."""
+    if biz.address:
+        return
+
+    # 1. Schema.org PostalAddress
+    import json as _json
+    for script in soup.find_all("script", type="application/ld+json"):
+        try:
+            data = _json.loads(script.string or "")
+            items = data if isinstance(data, list) else [data]
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                addr = item.get("address")
+                if isinstance(addr, dict):
+                    parts = [
+                        addr.get("streetAddress", ""),
+                        addr.get("addressLocality", ""),
+                        addr.get("addressRegion", ""),
+                        addr.get("postalCode", ""),
+                    ]
+                    full = ", ".join(p for p in parts if p)
+                    if len(full) > 10:
+                        biz.address = full
+                        return
+        except Exception:
+            continue
+
+    # 2. Regex: "123 Main St, City, ST 12345" pattern
+    addr_re = re.search(
+        r'(\d{1,5}\s+[\w\s.]+(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Boulevard|Blvd|Lane|Ln|Way|Place|Pl|Suite|Ste|Floor|Fl)[\w\s.,#]*,'
+        r'\s*[A-Z][a-z]+[\w\s]*,?\s*[A-Z]{2}\s+\d{5}(?:-\d{4})?)',
+        text,
+    )
+    if addr_re:
+        biz.address = addr_re.group(1).strip()
+
+
+def _extract_payment_methods(text: str, biz: ScrapedBusiness) -> None:
+    """Extract accepted payment methods and financing options."""
+    payments = {
+        "CareCredit": ["carecredit", "care credit"],
+        "Credit Cards": ["credit card", "visa", "mastercard", "american express"],
+        "Cash": ["cash"],
+        "Check": ["check", "checks accepted"],
+        "Payment Plans": ["payment plan", "financing", "monthly payments"],
+        "HSA/FSA": ["hsa", "fsa", "health savings", "flexible spending"],
+        "LendingClub": ["lendingclub", "lending club"],
+        "Sunbit": ["sunbit"],
+        "Proceed Finance": ["proceed finance"],
+    }
+    text_lower = text.lower()
+    for method, keywords in payments.items():
+        if any(kw in text_lower for kw in keywords):
+            if method not in biz.payment_methods:
+                biz.payment_methods.append(method)
+
+
+def _extract_new_patient_info(text: str, biz: ScrapedBusiness) -> None:
+    """Extract new patient information."""
+    text_lower = text.lower()
+
+    # Check if accepting new patients
+    if "not accepting new patients" in text_lower or "not taking new patients" in text_lower:
+        biz.accepting_new_patients = False
+
+    # Extract new patient process info
+    np_patterns = [
+        r'(?:new patient|first visit|first appointment)[s]?[:\s]+([^.]{20,200}\.)',
+        r'(?:welcome new patients?|accepting new patients?)[.!]?\s*([^.]{10,200}\.)',
+    ]
+    for pat in np_patterns:
+        m = re.search(pat, text, re.IGNORECASE)
+        if m and not biz.new_patient_info:
+            biz.new_patient_info = m.group(0).strip()[:300]
+            break
+
+
+def _extract_emergency_info(text: str, biz: ScrapedBusiness) -> None:
+    """Extract emergency handling info."""
+    emergency_patterns = [
+        r'(?:dental emergenc|emergency)[yies]*[:\s]+([^.]{20,250}\.)',
+        r'(?:after.?hours|urgent care)[:\s]+([^.]{20,200}\.)',
+        r'(?:if you (?:have|experience|are having) (?:a |an )?(?:dental )?emergenc)[^.]{10,200}\.',
+    ]
+    for pat in emergency_patterns:
+        m = re.search(pat, text, re.IGNORECASE)
+        if m and not biz.emergency_info:
+            biz.emergency_info = m.group(0).strip()[:300]
+            break
