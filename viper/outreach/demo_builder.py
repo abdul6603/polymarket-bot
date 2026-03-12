@@ -38,10 +38,12 @@ _NICHE_ALIASES = {
     "dental": "dental",
     "dentist": "dental",
     "real_estate": "real_estate",
+    "real estate": "real_estate",
     "realestate": "real_estate",
     "real-estate": "real_estate",
     "re": "real_estate",
     "realtor": "real_estate",
+    "realty": "real_estate",
 }
 
 # Cross-contamination blocklists — if ANY of these appear in the wrong
