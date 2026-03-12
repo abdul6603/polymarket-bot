@@ -86,6 +86,7 @@ def format_greeting_name(raw_name: str, niche: str = "") -> str:
 _DEMO_SLUGS = {
     "dental": "dental-demo",
     "real_estate": "realestate-demo",
+    "commercial_re": "commercial-re-demo",
 }
 
 
@@ -184,6 +185,7 @@ def _subject_from_finding(business_name: str, finding: str) -> str:
 _NICHE_LABELS: dict[str, str] = {
     "dental": "dental practice",
     "real_estate": "real estate agency",
+    "commercial_re": "commercial real estate firm",
     "chiropractor": "chiropractic office",
     "auto_repair": "auto shop",
     "general": "business",
@@ -199,6 +201,11 @@ _FALLBACK_OPENERS: dict[str, str] = {
         "Your website doesn't have a way to handle buyer questions "
         "after hours — every unanswered inquiry is a potential "
         "showing lost to the next agent."
+    ),
+    "commercial_re": (
+        "Your website doesn't have a way to handle tenant and "
+        "investor questions after hours — every unanswered inquiry "
+        "is a potential lease or deal walking to the next broker."
     ),
     "chiropractor": (
         "Your website doesn't have a way to handle patient questions "
@@ -359,6 +366,13 @@ _NICHE_BODIES: dict[str, dict[str, str]] = {
             "unanswered question is a lost showing."
         ),
     },
+    "commercial_re": {
+        "cost": (
+            "Tenants and investors researching spaces after hours won't wait "
+            "until morning — they'll call the next broker. Every unanswered "
+            "inquiry is a lease or sale walking out the door."
+        ),
+    },
     "chiropractor": {
         "cost": (
             "When someone's in pain at night, they're searching for help "
@@ -386,6 +400,7 @@ _NICHE_BODIES: dict[str, dict[str, str]] = {
 _FALLBACK_SUBJECTS: dict[str, str] = {
     "dental": "Quick question about {business_name}'s patient inquiries",
     "real_estate": "Quick question about {business_name}'s after-hours leads",
+    "commercial_re": "Quick question about {business_name}'s tenant inquiries",
     "chiropractor": "Quick question about {business_name}'s patient intake",
     "auto_repair": "Quick question about {business_name}'s missed calls",
     "general": "Quick question about {business_name}'s website",
@@ -403,6 +418,9 @@ NICHE_MAP: dict[str, str] = {
     "realtor": "real_estate",
     "real estate agent": "real_estate",
     "real estate agency": "real_estate",
+    "commercial real estate": "commercial_re",
+    "commercial": "commercial_re",
+    "cre": "commercial_re",
     "chiropractor": "chiropractor",
     "chiropractic": "chiropractor",
     "auto repair": "auto_repair",

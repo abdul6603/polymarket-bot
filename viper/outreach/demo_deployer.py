@@ -68,7 +68,11 @@ def _ensure_repo() -> bool:
 
 def _copy_videos(demo_dir: Path, niche: str) -> None:
     """Copy video preview files from the generic template."""
-    template_slug = "dental-demo" if niche != "real_estate" else "realestate-demo"
+    niche_template_map = {
+        "real_estate": "realestate-demo",
+        "commercial_re": "commercial-re-demo",
+    }
+    template_slug = niche_template_map.get(niche, "dental-demo")
     src_videos = REPO_DIR / template_slug / "videos"
     if not src_videos.exists():
         log.warning("[DEPLOYER] No video source at %s", src_videos)
