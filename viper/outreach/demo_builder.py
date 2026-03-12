@@ -89,8 +89,8 @@ def build_demo_html(
     else:
         html = _customize_dental(template, data)
 
-    # 5. Upgrade lead capture form to 6 fields
-    html = _upgrade_lead_capture_form(html)
+    # 5. Upgrade lead capture form (dental=6 fields, RE=8 fields)
+    html = _upgrade_lead_capture_form(html, niche=niche)
 
     log.info("[DEMO_BUILDER] Built demo for %s (niche=%s, team=%d, services=%d, quality=%d)",
              business_name, niche, len(data["team"]), len(data["services"]),
@@ -98,13 +98,29 @@ def build_demo_html(
     return html
 
 
-def run_quality_gate(html: str) -> tuple[bool, list[str]]:
+def run_quality_gate(html: str, niche: str = "auto") -> tuple[bool, list[str]]:
     """Run 7 mandatory test questions against the built QA_DATA.
 
+    Dental questions:
+      1. What are your hours?
+      2. Do you accept my insurance?
+      3. What services do you offer?
+      4. How do I book an appointment?
+      5. Are you accepting new patients?
+      6. Do you handle dental emergencies?
+      7. Where are you located?
+
+    Real estate questions:
+      1. What areas do you cover?
+      2. I want to schedule a showing
+      3. How does the buying process work with your team?
+      4. Can you help me sell my home?
+      5. Who is the agent I'd be working with?
+      6. What types of properties do you specialize in?
+      7. What's your contact info?
+
     Returns (all_pass, list_of_failures).
-    Each failure is a string like "hours: answer contains placeholder".
     """
-    # Extract QA_DATA from the built HTML
     m = re.search(r"var QA_DATA = (\[.*?\]);", html, re.DOTALL)
     if not m:
         return False, ["QA_DATA not found in HTML"]
@@ -114,15 +130,20 @@ def run_quality_gate(html: str) -> tuple[bool, list[str]]:
     except json.JSONDecodeError:
         return False, ["QA_DATA JSON parse failed"]
 
-    # Extract PHONE and BUSINESS_NAME
     phone_m = re.search(r'var PHONE = "(.+?)";', html)
     phone = phone_m.group(1) if phone_m else ""
     name_m = re.search(r'var BUSINESS_NAME = "(.+?)";', html)
     biz_name = name_m.group(1) if name_m else ""
 
+    # Auto-detect niche from template markers
+    if niche == "auto":
+        if "AGENT_DATA" in html:
+            niche = "real_estate"
+        else:
+            niche = "dental"
+
     failures: list[str] = []
 
-    # Build a simple keyword matcher (same logic as the JS findBestMatch)
     def find_answer(question: str) -> dict | None:
         q_lower = question.lower()
         best = None
@@ -137,59 +158,123 @@ def run_quality_gate(html: str) -> tuple[bool, list[str]]:
                 best = entry
         return best if best_score > 0 else None
 
-    # Test 1: Hours
-    ans = find_answer("What are your hours?")
-    if not ans:
-        failures.append("hours: no QA entry matched")
-    elif "555-123-4567" in ans["a"] and phone != "555-123-4567":
-        failures.append("hours: answer still contains placeholder phone")
-    elif "Demo Dental" in ans["a"] or "Demo Realty" in ans["a"]:
-        failures.append("hours: answer still contains placeholder business name")
+    def _check_no_placeholder(ans: dict, label: str) -> None:
+        """Check answer doesn't contain placeholder data."""
+        a = ans["a"]
+        if "555-123-4567" in a and phone != "555-123-4567":
+            failures.append(f"{label}: answer still contains placeholder phone 555-123-4567")
+        if "(555) 987-6543" in a and phone != "(555) 987-6543":
+            failures.append(f"{label}: answer still contains placeholder phone (555) 987-6543")
+        if "Demo Dental" in a and "Demo Dental" not in biz_name:
+            failures.append(f"{label}: answer still contains 'Demo Dental'")
+        if "Demo Realty" in a and "Demo Realty" not in biz_name:
+            failures.append(f"{label}: answer still contains 'Demo Realty'")
 
-    # Test 2: Insurance
-    ans = find_answer("Do you accept my insurance?")
-    if not ans:
-        failures.append("insurance: no QA entry matched")
-    elif "555-123-4567" in ans["a"] and phone != "555-123-4567":
-        failures.append("insurance: answer still contains placeholder phone")
+    if niche == "real_estate":
+        # RE Test 1: Areas
+        ans = find_answer("What areas do you cover?")
+        if not ans:
+            failures.append("areas: no QA entry matched")
+        else:
+            _check_no_placeholder(ans, "areas")
 
-    # Test 3: Services
-    ans = find_answer("What services do you offer?")
-    if not ans:
-        failures.append("services: no QA entry matched")
-    elif "Demo Dental" in ans["a"] or "Demo Realty" in ans["a"]:
-        failures.append("services: answer still contains placeholder name")
+        # RE Test 2: Showings
+        ans = find_answer("I want to schedule a showing")
+        if not ans:
+            failures.append("showing: no QA entry matched")
+        else:
+            _check_no_placeholder(ans, "showing")
+            if phone and phone not in ans["a"]:
+                failures.append(f"showing: answer missing real phone ({phone})")
 
-    # Test 4: Booking
-    ans = find_answer("How do I book an appointment?")
-    if not ans:
-        failures.append("booking: no QA entry matched")
-    elif phone and phone not in ans["a"]:
-        failures.append(f"booking: answer missing real phone ({phone})")
+        # RE Test 3: Buying process
+        ans = find_answer("How does the buying process work with your team?")
+        if not ans:
+            failures.append("buying: no QA entry matched")
+        else:
+            _check_no_placeholder(ans, "buying")
 
-    # Test 5: New patients
-    ans = find_answer("Are you accepting new patients?")
-    if not ans:
-        failures.append("new_patient: no QA entry matched")
-    elif phone and phone not in ans["a"]:
-        failures.append(f"new_patient: answer missing real phone ({phone})")
+        # RE Test 4: Selling
+        ans = find_answer("Can you help me sell my home?")
+        if not ans:
+            failures.append("selling: no QA entry matched")
+        else:
+            _check_no_placeholder(ans, "selling")
 
-    # Test 6: Emergency
-    ans = find_answer("Do you handle dental emergencies?")
-    if not ans:
-        # Try broader match for real estate
-        ans = find_answer("Do you handle emergencies?")
-    if not ans:
-        failures.append("emergency: no QA entry matched")
-    elif phone and phone not in ans["a"]:
-        failures.append(f"emergency: answer missing real phone ({phone})")
+        # RE Test 5: Agent
+        ans = find_answer("Who is the agent I'd be working with?")
+        if not ans:
+            failures.append("agent: no QA entry matched")
+        else:
+            _check_no_placeholder(ans, "agent")
 
-    # Test 7: Location
-    ans = find_answer("Where are you located?")
-    if not ans:
-        failures.append("location: no QA entry matched")
-    elif "123 Main Street" in ans["a"] and biz_name != "Demo Dental Practice":
-        failures.append("location: answer still contains placeholder address")
+        # RE Test 6: Specialties
+        ans = find_answer("What types of properties do you specialize in?")
+        if not ans:
+            failures.append("specialties: no QA entry matched")
+        else:
+            _check_no_placeholder(ans, "specialties")
+
+        # RE Test 7: Contact info
+        ans = find_answer("What's your contact info?")
+        if not ans:
+            failures.append("contact: no QA entry matched")
+        else:
+            _check_no_placeholder(ans, "contact")
+            if phone and phone not in ans["a"]:
+                failures.append(f"contact: answer missing real phone ({phone})")
+
+    else:
+        # Dental Test 1: Hours
+        ans = find_answer("What are your hours?")
+        if not ans:
+            failures.append("hours: no QA entry matched")
+        else:
+            _check_no_placeholder(ans, "hours")
+
+        # Dental Test 2: Insurance
+        ans = find_answer("Do you accept my insurance?")
+        if not ans:
+            failures.append("insurance: no QA entry matched")
+        else:
+            _check_no_placeholder(ans, "insurance")
+
+        # Dental Test 3: Services
+        ans = find_answer("What services do you offer?")
+        if not ans:
+            failures.append("services: no QA entry matched")
+        else:
+            _check_no_placeholder(ans, "services")
+
+        # Dental Test 4: Booking
+        ans = find_answer("How do I book an appointment?")
+        if not ans:
+            failures.append("booking: no QA entry matched")
+        elif phone and phone not in ans["a"]:
+            failures.append(f"booking: answer missing real phone ({phone})")
+
+        # Dental Test 5: New patients
+        ans = find_answer("Are you accepting new patients?")
+        if not ans:
+            failures.append("new_patient: no QA entry matched")
+        elif phone and phone not in ans["a"]:
+            failures.append(f"new_patient: answer missing real phone ({phone})")
+
+        # Dental Test 6: Emergency
+        ans = find_answer("Do you handle dental emergencies?")
+        if not ans:
+            ans = find_answer("Do you handle emergencies?")
+        if not ans:
+            failures.append("emergency: no QA entry matched")
+        elif phone and phone not in ans["a"]:
+            failures.append(f"emergency: answer missing real phone ({phone})")
+
+        # Dental Test 7: Location
+        ans = find_answer("Where are you located?")
+        if not ans:
+            failures.append("location: no QA entry matched")
+        elif "123 Main Street" in ans["a"] and biz_name != "Demo Dental Practice":
+            failures.append("location: answer still contains placeholder address")
 
     all_pass = len(failures) == 0
     return all_pass, failures
@@ -240,6 +325,14 @@ def _merge_data(scraped, prospect_data: dict, business_name: str) -> dict:
     emergency_info = (s.emergency_info if s else "") or ""
     faq_entries = (s.faq_entries if s else []) or []
 
+    # RE-specific
+    areas_served = (s.areas_served if s else []) or []
+    re_specialties = (s.re_specialties if s else []) or []
+    credentials = (s.credentials if s else "") or ""
+    languages = (s.languages if s else []) or []
+    buying_process = (s.buying_process if s else "") or ""
+    selling_process = (s.selling_process if s else "") or ""
+
     return {
         "name": business_name,
         "phone": phone,
@@ -256,6 +349,13 @@ def _merge_data(scraped, prospect_data: dict, business_name: str) -> dict:
         "accepting_new_patients": accepting_new,
         "emergency_info": emergency_info,
         "faq_entries": faq_entries,
+        # RE-specific
+        "areas_served": areas_served,
+        "re_specialties": re_specialties,
+        "credentials": credentials,
+        "languages": languages,
+        "buying_process": buying_process,
+        "selling_process": selling_process,
     }
 
 
@@ -794,6 +894,18 @@ def _customize_realestate(template: str, data: dict) -> str:
                   lambda m: f"var QA_DATA = {qa_json};",
                   html, flags=re.DOTALL)
 
+    # ── QUICK_ACTIONS ──
+    quick = [
+        {"label": "Browse Listings", "q": "What properties do you have available?"},
+        {"label": "Schedule Showing", "q": "I want to schedule a showing"},
+        {"label": "Sell My Home", "q": "Can you help me sell my home?"},
+        {"label": "Free Valuation", "q": "Can you do a market analysis or home valuation?"},
+    ]
+    quick_json = json.dumps(quick)
+    html = re.sub(r"var QUICK_ACTIONS = \[.*?\];",
+                  lambda m: f"var QUICK_ACTIONS = {quick_json};",
+                  html, flags=re.DOTALL)
+
     # ── Bulk phone/name replacement ──
     if phone != old["phone"]:
         html = html.replace(old["phone"], phone)
@@ -803,13 +915,13 @@ def _customize_realestate(template: str, data: dict) -> str:
 
 
 def _build_realestate_qa(data: dict) -> list[dict]:
-    """Build comprehensive real estate QA_DATA."""
+    """Build comprehensive real estate QA_DATA covering all required categories."""
     qa: list[dict] = []
     name = data["name"]
     phone = data["phone"] or "our office"
     phone_cta = f"Call us at {phone}" if data["phone"] else "Contact us"
 
-    # Contact
+    # ── Contact Info ──
     contact_parts = []
     if data["phone"]:
         contact_parts.append(f"Phone: {phone}")
@@ -822,131 +934,318 @@ def _build_realestate_qa(data: dict) -> list[dict]:
     qa.append({
         "q": "What is your contact info?",
         "a": f"Here's how to reach {name}:\n\n{contact_text}",
-        "kw": ["contact info", "contact information", "how to contact", "reach you", "contact"],
+        "kw": ["contact info", "contact information", "how to contact", "reach you",
+               "get in touch", "contact details", "contact"],
         "cat": "contact",
     })
     qa.append({
         "q": "What is your phone number?",
         "a": f"You can reach us at {phone}. We're happy to help!",
-        "kw": ["phone", "phone number", "call you", "telephone", "your number"],
+        "kw": ["phone", "phone number", "call you", "telephone", "your number", "number"],
         "cat": "contact",
     })
+    if data["email"]:
+        qa.append({
+            "q": "What is your email?",
+            "a": f"You can email us at {data['email']}, or call {phone}. We respond within one business day.",
+            "kw": ["email", "email address", "your email", "e-mail", "mail"],
+            "cat": "contact",
+        })
 
-    # Hours
+    # ── Hours ──
     hours_formatted = _format_hours_full_week(data["hours_raw"])
     if hours_formatted:
         qa.append({
             "q": "What are your hours?",
-            "a": f"Our hours at {name}:\n\n{hours_formatted}\n\n{phone_cta} if you need to confirm availability.",
-            "kw": ["hours", "open", "close", "time", "schedule", "when"],
+            "a": f"Our office hours at {name}:\n\n{hours_formatted}\n\nNeed to meet outside these hours? Our agents are flexible — {phone_cta.lower()} to arrange a time.",
+            "kw": ["hours", "open", "close", "time", "schedule", "when", "office hours", "business hours"],
             "cat": "hours",
         })
     else:
         qa.append({
             "q": "What are your hours?",
-            "a": f"Please call us at {phone} for our current office hours.",
-            "kw": ["hours", "open", "close", "time", "schedule", "when"],
+            "a": f"Our agents are available by appointment and our office is open during regular business hours. {phone_cta} to schedule a time that works for you.",
+            "kw": ["hours", "open", "close", "time", "schedule", "when", "office hours", "business hours"],
             "cat": "hours",
         })
 
-    # Services
+    # ── Areas Served ──
+    if data.get("areas_served"):
+        areas_text = ", ".join(data["areas_served"][:12])
+        qa.append({
+            "q": "What areas do you cover?",
+            "a": f"We serve {areas_text} and surrounding communities. Whether you're buying or selling in any of these areas, our agents know the local market inside and out.\n\n{phone_cta} to discuss properties in your preferred area!",
+            "kw": ["areas", "cover", "serve", "neighborhoods", "cities", "towns", "where",
+                   "service area", "what areas", "which areas", "communities"],
+            "cat": "areas",
+        })
+    else:
+        qa.append({
+            "q": "What areas do you cover?",
+            "a": f"We serve the local area and surrounding communities. {phone_cta} to discuss properties in your preferred neighborhood!",
+            "kw": ["areas", "cover", "serve", "neighborhoods", "cities", "towns", "where",
+                   "service area", "what areas", "which areas", "communities"],
+            "cat": "areas",
+        })
+
+    # ── Specialties / Property Types ──
+    if data.get("re_specialties"):
+        spec_text = ", ".join(data["re_specialties"][:8])
+        qa.append({
+            "q": "What types of properties do you specialize in?",
+            "a": f"At {name}, we specialize in {spec_text}.\n\nNo matter what type of property you're looking for, we have the expertise to help. {phone_cta}!",
+            "kw": ["specialize", "specialty", "specialties", "types of properties", "property types",
+                   "what kind", "what type", "focus", "expertise"],
+            "cat": "specialties",
+        })
+    else:
+        qa.append({
+            "q": "What types of properties do you specialize in?",
+            "a": f"At {name}, we work with all property types including single-family homes, condos, townhomes, and investment properties.\n\n{phone_cta} to discuss what you're looking for!",
+            "kw": ["specialize", "specialty", "specialties", "types of properties", "property types",
+                   "what kind", "what type", "focus", "expertise"],
+            "cat": "specialties",
+        })
+
+    # ── Services ──
     if data["services"]:
         svc_text = ", ".join(data["services"][:12])
         qa.append({
             "q": "What services do you offer?",
-            "a": f"At {name}, we offer {svc_text}.\n\n{phone_cta} to discuss your real estate needs.",
+            "a": f"At {name}, we provide {svc_text}.\n\n{phone_cta} to discuss how we can help with your real estate goals.",
             "kw": ["services", "what do you offer", "provide", "do you do"],
             "cat": "services",
         })
     else:
         qa.append({
             "q": "What services do you offer?",
-            "a": f"At {name}, we provide comprehensive real estate services including buyer and seller representation, market analysis, and more.\n\n{phone_cta}.",
+            "a": f"At {name}, we provide comprehensive real estate services including buyer representation, seller representation, market analysis, home valuation, and more.\n\n{phone_cta}.",
             "kw": ["services", "what do you offer", "provide", "do you do"],
             "cat": "services",
         })
 
-    # Insurance/Payment → Commission/fees for RE
-    qa.append({
-        "q": "Do you accept my insurance?",
-        "a": f"Real estate services don't typically involve insurance. {phone_cta} to discuss our commission structure and fees.",
-        "kw": ["insurance", "fee", "commission", "cost", "how much"],
-        "cat": "insurance",
-    })
+    # ── Team / Agents ──
+    creds_text = f" ({data['credentials']})" if data.get("credentials") else ""
+    lang_text = ""
+    if data.get("languages"):
+        lang_text = f"\n\nLanguages: English, {', '.join(data['languages'])}"
 
-    # Team
     if data["team"]:
         if len(data["team"]) == 1:
-            team_text = f"Our lead agent is {data['team'][0]}."
+            team_text = f"Your agent is {data['team'][0]}{creds_text}."
         else:
             team_list = "\n".join(f"- {t}" for t in data["team"])
-            team_text = f"We have {len(data['team'])} experienced agents:\n\n{team_list}"
+            team_text = f"We have {len(data['team'])} experienced agents on our team{creds_text}:\n\n{team_list}"
 
         qa.append({
-            "q": "Who are your agents?",
-            "a": f"{team_text}\n\n{phone_cta} to connect with the right agent.",
-            "kw": ["agents", "agent", "team", "staff", "who works", "realtors", "realtor", "meet the team"],
+            "q": "Who is the agent I'd be working with?",
+            "a": f"{team_text}{lang_text}\n\n{phone_cta} to connect with the right agent for your needs!",
+            "kw": ["agent", "agents", "who", "team", "staff", "realtors", "realtor",
+                   "meet the team", "your team", "working with", "who would i", "which agent"],
             "cat": "team",
+        })
+
+        # Individual agent entries
+        for member in data["team"]:
+            parts = member.split()
+            first_name = parts[0].lower()
+            last_name = parts[-1].lower().rstrip(",") if len(parts) >= 2 else ""
+
+            kw = [k for k in [last_name, first_name] if k]
+            qa.append({
+                "q": f"Tell me about {member}",
+                "a": f"{member} is part of our team at {name}. {phone_cta} to schedule a consultation.",
+                "kw": kw,
+                "cat": "agent",
+            })
+    else:
+        qa.append({
+            "q": "Who is the agent I'd be working with?",
+            "a": f"Our experienced team at {name}{creds_text} is ready to help!{lang_text}\n\n{phone_cta} to connect with an agent.",
+            "kw": ["agent", "agents", "who", "team", "staff", "realtors", "realtor",
+                   "meet the team", "working with", "who would i"],
+            "cat": "team",
+        })
+
+    # ── Buying Process ──
+    if data.get("buying_process"):
+        qa.append({
+            "q": "How does the buying process work with your team?",
+            "a": f"{data['buying_process']}\n\n{phone_cta} to schedule a free buyer consultation!",
+            "kw": ["buying process", "buy a home", "buy a house", "how to buy", "steps to buy",
+                   "buying steps", "purchase", "homebuying", "buyer consultation"],
+            "cat": "buying",
         })
     else:
         qa.append({
-            "q": "Who are your agents?",
-            "a": f"Our experienced team at {name} is ready to help! {phone_cta} to connect with an agent.",
-            "kw": ["agents", "agent", "team", "staff", "who works", "realtors", "realtor"],
-            "cat": "team",
+            "q": "How does the buying process work with your team?",
+            "a": f"The home buying process with {name}:\n\n1. Free buyer consultation to understand your needs\n2. Get pre-qualified with our preferred lenders\n3. Browse listings and tour homes\n4. Make a competitive offer\n5. Home inspection and appraisal\n6. Negotiate and finalize\n7. Closing day — get your keys!\n\nOur agents guide you through every step. {phone_cta} to get started!",
+            "kw": ["buying process", "buy a home", "buy a house", "how to buy", "steps to buy",
+                   "buying steps", "purchase", "homebuying", "buyer consultation"],
+            "cat": "buying",
         })
 
-    # New clients
+    # ── Selling Process ──
+    if data.get("selling_process"):
+        qa.append({
+            "q": "Can you help me sell my home?",
+            "a": f"Absolutely! {data['selling_process']}\n\n{phone_cta} for a free home valuation!",
+            "kw": ["sell", "selling", "list my home", "list my house", "listing agent",
+                   "sell my home", "sell my house", "listing process", "how to sell"],
+            "cat": "selling",
+        })
+    else:
+        qa.append({
+            "q": "Can you help me sell my home?",
+            "a": f"Absolutely! Here's how {name} helps you sell:\n\n1. Free comparative market analysis (CMA)\n2. Professional staging and photography\n3. Marketing across MLS and major real estate sites\n4. Open houses and private showings\n5. Expert negotiation for top dollar\n6. Transaction management through closing\n\n{phone_cta} for a free consultation!",
+            "kw": ["sell", "selling", "list my home", "list my house", "listing agent",
+                   "sell my home", "sell my house", "listing process", "how to sell"],
+            "cat": "selling",
+        })
+
+    # ── Viewings / Showings ──
     qa.append({
-        "q": "Are you accepting new patients?",
-        "a": f"Absolutely! {name} is always taking on new clients. {phone_cta} to get started — we'd love to help you find your dream home!",
-        "kw": ["new patient", "new client", "accepting", "first time", "sign up"],
+        "q": "I want to schedule a showing",
+        "a": f"Scheduling a showing is easy! You can:\n\n1. Call us at {phone}\n2. Leave your info in the chat\n3. Visit our website to browse listings\n\nWe offer flexible scheduling including evenings and weekends. Most showings can be arranged within 24-48 hours!",
+        "kw": ["showing", "viewing", "tour", "see the house", "see the property", "visit",
+               "schedule a viewing", "book a viewing", "private showing", "walkthrough",
+               "open house", "schedule a showing"],
+        "cat": "viewing",
+    })
+
+    # ── New Clients ──
+    qa.append({
+        "q": "Are you accepting new clients?",
+        "a": f"Absolutely! {name} is always welcoming new clients. Whether you're a first-time buyer, seasoned investor, or looking to sell, we're here to help.\n\n{phone_cta} to get started!",
+        "kw": ["new client", "new clients", "accepting", "first time", "sign up",
+               "new patient", "taking on"],
         "cat": "new_patient",
     })
 
-    # Emergency
+    # ── Mortgage / Pre-qualification ──
+    qa.append({
+        "q": "How do I get pre-qualified for a mortgage?",
+        "a": f"Getting pre-qualified is a great first step! You'll need proof of income, credit history, and bank statements. We partner with trusted local lenders who can pre-qualify you quickly.\n\n{phone_cta} and we'll connect you with the right lender!",
+        "kw": ["pre-qualified", "pre-qualify", "prequalify", "prequalified", "pre-approval",
+               "mortgage", "loan", "financing", "lender", "how much can i afford", "afford"],
+        "cat": "mortgage",
+    })
+
+    # ── Home Valuation ──
+    qa.append({
+        "q": "Can you do a market analysis or home valuation?",
+        "a": f"Absolutely! We offer free Comparative Market Analyses (CMAs). We'll analyze recent sales, current trends, and your home's unique features to give you an accurate value estimate.\n\n{phone_cta} or leave your info for a free report within 24 hours!",
+        "kw": ["market analysis", "home valuation", "home value", "worth", "how much is my home",
+               "cma", "appraisal", "comparable", "comps", "property value", "estimate"],
+        "cat": "valuation",
+    })
+
+    # ── First-Time Buyers ──
+    qa.append({
+        "q": "Do you help first-time homebuyers?",
+        "a": f"Yes! We love working with first-time homebuyers. We can help with first-time buyer programs (FHA, USDA, state grants), down payment assistance, and guide you through every step.\n\n{phone_cta} for a free first-time buyer consultation!",
+        "kw": ["first-time", "first time", "first home", "never bought", "new buyer",
+               "starter home", "fha", "down payment assistance", "first time buyer"],
+        "cat": "firsttime",
+    })
+
+    # ── Investment ──
+    qa.append({
+        "q": "Do you handle investment properties?",
+        "a": f"Absolutely! We help investors with multi-family properties, rental income analysis, 1031 exchanges, fix-and-flip opportunities, and long-term wealth-building strategies.\n\n{phone_cta} to discuss your investment goals!",
+        "kw": ["investment", "invest", "rental property", "rental income", "cap rate",
+               "multi-family", "duplex", "triplex", "roi", "1031", "flip", "investor"],
+        "cat": "investment",
+    })
+
+    # ── Urgent / Emergency ──
     qa.append({
         "q": "Do you handle emergencies?",
-        "a": f"If you have an urgent real estate need, call {phone} directly. We're responsive and will get back to you as quickly as possible.",
-        "kw": ["emergency", "urgent", "asap", "rush", "immediate"],
+        "a": f"If you have an urgent real estate need — a time-sensitive offer, last-minute closing issue, or emergency situation — call {phone} directly. We're responsive and will get back to you as quickly as possible.",
+        "kw": ["emergency", "emergencies", "urgent", "asap", "rush", "immediate", "time-sensitive"],
         "cat": "emergency",
     })
 
-    # Booking
+    # ── Booking / Consultation ──
     qa.append({
         "q": "How do I book an appointment?",
-        "a": f"You can schedule a consultation by calling {phone} or leaving your info in the chat! We'll set up a time to discuss your needs.",
-        "kw": ["appointment", "book", "schedule", "consultation", "meet"],
+        "a": f"You can schedule a free consultation by calling {phone} or leaving your info in the chat! We'll set up a time to discuss your buying or selling goals.",
+        "kw": ["appointment", "book", "schedule", "consultation", "meet", "come in"],
         "cat": "booking",
     })
 
-    # Location
+    # ── Location ──
     if data["address"]:
         qa.append({
             "q": "Where are you located?",
-            "a": f"We're located at {data['address']}. {phone_cta} for directions.",
-            "kw": ["location", "located", "where", "address", "directions", "find you"],
+            "a": f"Our office is located at {data['address']}. {phone_cta} for directions or to schedule an in-office meeting.",
+            "kw": ["location", "located", "where", "address", "directions", "find you",
+                   "parking", "office"],
             "cat": "location",
         })
     else:
         qa.append({
             "q": "Where are you located?",
-            "a": f"Please visit our website or call {phone} for our office location.",
-            "kw": ["location", "located", "where", "address", "directions"],
+            "a": f"Please visit our website or call {phone} for our office location. We can also meet at a location convenient for you!",
+            "kw": ["location", "located", "where", "address", "directions", "find you", "office"],
             "cat": "location",
         })
+
+    # ── Neighborhoods / Schools ──
+    qa.append({
+        "q": "Tell me about neighborhoods and school districts",
+        "a": f"We're experts in all local neighborhoods! We can help you find the perfect area based on school ratings, commute times, walkability, safety, and property value trends.\n\nTell us what matters most and we'll recommend the best neighborhoods. {phone_cta}!",
+        "kw": ["neighborhood", "neighborhoods", "school", "schools", "school district",
+               "area", "community", "safe", "walkable", "commute", "best area"],
+        "cat": "neighborhoods",
+    })
+
+    # ── Closing Costs ──
+    qa.append({
+        "q": "What are typical closing costs?",
+        "a": f"Closing costs typically run 2-5% of the purchase price and include loan fees, title insurance, inspection, appraisal, and taxes. We'll provide a detailed estimate early so there are no surprises.\n\n{phone_cta} for specifics!",
+        "kw": ["closing costs", "closing fees", "how much to close", "settlement", "fees", "closing"],
+        "cat": "closing",
+    })
+
+    # ── Inspection ──
+    qa.append({
+        "q": "What does a home inspection cover?",
+        "a": f"A professional inspection covers foundation, roof, plumbing, electrical, HVAC, windows, and more. Inspections cost $300-$500 and take 2-3 hours. We never recommend skipping this step.\n\n{phone_cta} for inspector recommendations!",
+        "kw": ["inspection", "inspect", "home inspection", "inspector", "structural"],
+        "cat": "inspection",
+    })
+
+    # ── Scraped FAQ entries ──
+    for faq in data.get("faq_entries", [])[:10]:
+        q_text = faq.get("q", "")
+        a_text = faq.get("a", "")
+        if q_text and a_text:
+            words = re.findall(r'[a-z]{3,}', q_text.lower())
+            stop_words = {"what", "how", "does", "your", "the", "you", "can", "are", "this", "that", "with", "for", "from"}
+            kw = [w for w in words if w not in stop_words][:6]
+            if kw:
+                qa.append({"q": q_text, "a": a_text, "kw": kw, "cat": "faq"})
 
     return qa
 
 
 # ── Enhanced lead capture form ──────────────────────────────────────
 
-def _upgrade_lead_capture_form(html: str) -> str:
-    """Replace the 3-field lead capture form with the enhanced 6-field version.
+def _upgrade_lead_capture_form(html: str, niche: str = "dental") -> str:
+    """Replace the 3-field lead capture form with the enhanced version.
 
-    New fields: name, phone, email, preferred date/time, new/existing patient, reason.
+    Dental: name, phone, email, preferred date/time, new/existing patient, reason.
+    Real estate: name, phone, email, buying/selling/both, budget, timeline,
+                 preferred areas, renting or own.
     """
-    # Replace showLeadCaptureForm() function
+    if niche == "real_estate":
+        return _upgrade_lead_form_re(html)
+    return _upgrade_lead_form_dental(html)
+
+
+def _upgrade_lead_form_dental(html: str) -> str:
+    """Dental: 6-field lead capture form."""
     old_form_fn = (
         '  function showLeadCaptureForm() {\n'
         '    var body = document.getElementById("chatBody");\n'
@@ -1001,6 +1300,84 @@ def _upgrade_lead_capture_form(html: str) -> str:
     html = html.replace(old_doc_form, new_doc_form)
 
     # Add CSS for the select element (insert before .lead-form button)
+    old_css = ".lead-form button {"
+    new_css = (
+        ".lead-form select {\n"
+        "  width: 100%;\n"
+        "  padding: 8px;\n"
+        "  margin: 4px 0;\n"
+        "  border: 1px solid #ddd;\n"
+        "  border-radius: 4px;\n"
+        "  font-size: 13px;\n"
+        "  background: #fff;\n"
+        "}\n"
+        ".lead-form button {"
+    )
+    html = html.replace(old_css, new_css, 1)
+
+    return html
+
+
+def _upgrade_lead_form_re(html: str) -> str:
+    """Real estate: 8-field lead capture form."""
+    # Replace the generic 3-field showLeadCaptureForm
+    old_form_fn = (
+        '  function showLeadCaptureForm() {\n'
+        '    var body = document.getElementById("chatBody");\n'
+        '    var form = document.createElement("div");\n'
+        '    form.className = "lead-form";\n'
+        '    form.innerHTML =\n'
+        '      "<p>Want us to reach out? Leave your info:</p>" +\n'
+        '      "<input type=\\"text\\" id=\\"leadName\\" placeholder=\\"Your name\\">" +\n'
+        '      "<input type=\\"tel\\" id=\\"leadPhone\\" placeholder=\\"Phone number\\">" +\n'
+        '      "<input type=\\"email\\" id=\\"leadEmail\\" placeholder=\\"Email address\\">" +\n'
+        '      "<button onclick=\\"submitLead()\\" type=\\"button\\">Send</button>";\n'
+        '    body.appendChild(form);\n'
+        '    body.scrollTop = body.scrollHeight;\n'
+        '  }'
+    )
+
+    new_form_fn = (
+        '  function showLeadCaptureForm() {\n'
+        '    var body = document.getElementById("chatBody");\n'
+        '    var form = document.createElement("div");\n'
+        '    form.className = "lead-form";\n'
+        '    form.innerHTML =\n'
+        '      "<p>Want us to reach out? Leave your info:</p>" +\n'
+        '      "<input type=\\"text\\" id=\\"leadName\\" placeholder=\\"Your full name\\">" +\n'
+        '      "<input type=\\"tel\\" id=\\"leadPhone\\" placeholder=\\"Phone number\\">" +\n'
+        '      "<input type=\\"email\\" id=\\"leadEmail\\" placeholder=\\"Email address\\">" +\n'
+        '      "<select id=\\"leadIntent\\"><option value=\\"\\">Are you buying, selling, or both?</option><option value=\\"buying\\">Buying</option><option value=\\"selling\\">Selling</option><option value=\\"both\\">Both</option><option value=\\"renting\\">Renting</option><option value=\\"investing\\">Investing</option></select>" +\n'
+        '      "<input type=\\"text\\" id=\\"leadBudget\\" placeholder=\\"Budget range (e.g. $300K-$500K)\\">" +\n'
+        '      "<input type=\\"text\\" id=\\"leadTimeline\\" placeholder=\\"Timeline (e.g. 3-6 months)\\">" +\n'
+        '      "<input type=\\"text\\" id=\\"leadAreas\\" placeholder=\\"Preferred areas/neighborhoods\\">" +\n'
+        '      "<select id=\\"leadCurrentStatus\\"><option value=\\"\\">Currently renting or own?</option><option value=\\"renting\\">Renting</option><option value=\\"own\\">Own</option><option value=\\"other\\">Other</option></select>" +\n'
+        '      "<button onclick=\\"submitLead()\\" type=\\"button\\">Send</button>";\n'
+        '    body.appendChild(form);\n'
+        '    body.scrollTop = body.scrollHeight;\n'
+        '  }'
+    )
+    html = html.replace(old_form_fn, new_form_fn)
+
+    # Also upgrade the agent-specific lead capture form
+    old_agent_form = (
+        '      "<input type=\\"text\\" id=\\"leadName\\" placeholder=\\"Your name\\">" +\n'
+        '      "<input type=\\"tel\\" id=\\"leadPhone\\" placeholder=\\"Phone number\\">" +\n'
+        '      "<input type=\\"email\\" id=\\"leadEmail\\" placeholder=\\"Email address\\">" +\n'
+        '      "<textarea id=\\"leadNote\\" placeholder=\\"What are you looking for?\\">"'
+    )
+    new_agent_form = (
+        '      "<input type=\\"text\\" id=\\"leadName\\" placeholder=\\"Your full name\\">" +\n'
+        '      "<input type=\\"tel\\" id=\\"leadPhone\\" placeholder=\\"Phone number\\">" +\n'
+        '      "<input type=\\"email\\" id=\\"leadEmail\\" placeholder=\\"Email address\\">" +\n'
+        '      "<select id=\\"leadIntent\\"><option value=\\"\\">Are you buying, selling, or both?</option><option value=\\"buying\\">Buying</option><option value=\\"selling\\">Selling</option><option value=\\"both\\">Both</option></select>" +\n'
+        '      "<input type=\\"text\\" id=\\"leadBudget\\" placeholder=\\"Budget range\\">" +\n'
+        '      "<input type=\\"text\\" id=\\"leadTimeline\\" placeholder=\\"Timeline (e.g. 3-6 months)\\">" +\n'
+        '      "<textarea id=\\"leadNote\\" placeholder=\\"What are you looking for?\\">"'
+    )
+    html = html.replace(old_agent_form, new_agent_form)
+
+    # Add CSS for select elements
     old_css = ".lead-form button {"
     new_css = (
         ".lead-form select {\n"

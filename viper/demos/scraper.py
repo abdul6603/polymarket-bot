@@ -51,6 +51,11 @@ class ScrapedBusiness:
     # Real estate-specific
     listings_sample: list[dict] = field(default_factory=list)
     areas_served: list[str] = field(default_factory=list)
+    re_specialties: list[str] = field(default_factory=list)
+    credentials: str = ""  # REALTOR®, broker, license#, etc.
+    languages: list[str] = field(default_factory=list)
+    buying_process: str = ""
+    selling_process: str = ""
     # Scrape quality
     pages_scraped: int = 0
     text_chars: int = 0
@@ -74,6 +79,8 @@ class ScrapedBusiness:
         if self.team_members: score += 5
         if self.description: score += 10
         if self.insurance_plans or self.areas_served: score += 10
+        if self.re_specialties: score += 5
+        if self.credentials: score += 5
         return min(score, 100)
 
 
@@ -141,6 +148,10 @@ def scrape_business(url: str, niche: str = "auto") -> ScrapedBusiness:
         _extract_insurance(all_text, biz)
     elif niche == "real_estate":
         _extract_areas(all_text, biz)
+        _extract_re_specialties(all_text, biz)
+        _extract_credentials(all_text, biz)
+        _extract_languages(all_text, biz)
+        _extract_buying_process(all_text, biz)
 
     # Normalize phone to (XXX) XXX-XXXX
     if biz.phone:
@@ -485,17 +496,37 @@ def _extract_insurance(text: str, biz: ScrapedBusiness) -> None:
 
 
 def _extract_areas(text: str, biz: ScrapedBusiness) -> None:
-    """Extract areas served (real estate)."""
-    # Look for NH towns/cities commonly near Dover
-    nh_areas = [
-        "Dover", "Portsmouth", "Rochester", "Durham", "Newmarket",
-        "Barrington", "Somersworth", "Madbury", "Lee", "Exeter",
-        "Hampton", "Rye", "Kittery", "York", "Berwick",
-        "Rollinsford", "Strafford", "Farmington",
+    """Extract areas served (real estate) — generic, not NH-specific."""
+    # 1. Look for "serving X, Y, Z" or "areas: X, Y, Z" patterns
+    area_patterns = [
+        r'(?:serving|areas?\s*(?:served|we\s*(?:cover|serve)))[:\s]+([A-Z][a-z]+(?:\s*,\s*[A-Z][a-z]+){1,10})',
+        r'(?:neighborhoods?|communities|cities|towns)[:\s]+([A-Z][a-z]+(?:\s*,\s*[A-Z][a-z]+){1,10})',
+        r'(?:covering|service area)[:\s]+([A-Z][a-z]+(?:\s*,\s*[A-Z][a-z]+){1,10})',
     ]
-    for area in nh_areas:
-        if area in text and area not in biz.areas_served:
+    for pat in area_patterns:
+        m = re.search(pat, text)
+        if m:
+            areas = [a.strip() for a in m.group(1).split(",") if a.strip()]
+            for area in areas:
+                if area not in biz.areas_served and len(area) > 2:
+                    biz.areas_served.append(area)
+            if biz.areas_served:
+                return
+
+    # 2. Look for city/state mentions near service-related keywords
+    context_pattern = re.findall(
+        r'(?:in|near|around|serving|covering)\s+([A-Z][a-z]{2,}(?:\s+[A-Z][a-z]{2,})?)',
+        text
+    )
+    # Filter out common false positives
+    _AREA_STOP = {"Our", "The", "We", "Your", "This", "Call", "Contact", "Visit",
+                  "Schedule", "Learn", "Find", "Get", "View", "See", "Meet", "Ask",
+                  "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"}
+    for area in context_pattern[:15]:
+        if area not in _AREA_STOP and area not in biz.areas_served and len(area) > 2:
             biz.areas_served.append(area)
+        if len(biz.areas_served) >= 10:
+            break
 
 
 def _format_phone(phone: str) -> str:
@@ -598,4 +629,103 @@ def _extract_emergency_info(text: str, biz: ScrapedBusiness) -> None:
         m = re.search(pat, text, re.IGNORECASE)
         if m and not biz.emergency_info:
             biz.emergency_info = m.group(0).strip()[:300]
+            break
+
+
+def _extract_re_specialties(text: str, biz: ScrapedBusiness) -> None:
+    """Extract real estate specialties."""
+    specialties = {
+        "Buyer Representation": ["buyer representation", "buyer's agent", "buyers agent", "buying agent"],
+        "Seller Representation": ["seller representation", "listing agent", "sellers agent", "seller's agent"],
+        "Investment Properties": ["investment propert", "investor", "rental income", "cap rate", "1031"],
+        "Rentals": ["rental", "property management", "tenant", "landlord"],
+        "Luxury Homes": ["luxury home", "luxury real estate", "high-end", "estate home", "million dollar"],
+        "First-Time Buyers": ["first-time buyer", "first time buyer", "first home", "starter home"],
+        "Foreclosures": ["foreclosure", "short sale", "bank owned", "reo"],
+        "Commercial": ["commercial real estate", "commercial propert", "office space", "retail space"],
+        "Relocation": ["relocation", "corporate relocation", "moving assistance"],
+        "New Construction": ["new construction", "new build", "builder", "custom home"],
+        "Condos & Townhomes": ["condo", "townhome", "townhouse"],
+        "Land & Lots": ["land", "vacant lot", "acreage", "build site"],
+    }
+    text_lower = text.lower()
+    for spec, keywords in specialties.items():
+        if any(kw in text_lower for kw in keywords):
+            if spec not in biz.re_specialties:
+                biz.re_specialties.append(spec)
+
+
+def _extract_credentials(text: str, biz: ScrapedBusiness) -> None:
+    """Extract agent credentials — REALTOR, broker, license, etc."""
+    if biz.credentials:
+        return
+    creds = []
+    text_lower = text.lower()
+    if "realtor" in text_lower or "realtor\u00ae" in text_lower:
+        creds.append("REALTOR\u00ae")
+    if "licensed broker" in text_lower or "broker" in text_lower:
+        creds.append("Licensed Broker")
+    if "crs" in text_lower:
+        creds.append("CRS")
+    if "abr" in text_lower:
+        creds.append("ABR")
+    if "gri" in text_lower:
+        creds.append("GRI")
+    if "sres" in text_lower:
+        creds.append("SRES")
+
+    # License number
+    lic_m = re.search(r'(?:license|lic)[.\s#:]+(\w{5,15})', text, re.IGNORECASE)
+    if lic_m:
+        creds.append(f"License #{lic_m.group(1)}")
+
+    if creds:
+        biz.credentials = ", ".join(creds)
+
+
+def _extract_languages(text: str, biz: ScrapedBusiness) -> None:
+    """Extract languages spoken."""
+    languages = {
+        "Spanish": ["spanish", "espa\u00f1ol", "habla espa\u00f1ol", "se habla"],
+        "French": ["french", "fran\u00e7ais"],
+        "Portuguese": ["portuguese", "portugu\u00eas"],
+        "Mandarin": ["mandarin", "chinese"],
+        "Korean": ["korean"],
+        "Vietnamese": ["vietnamese"],
+        "Russian": ["russian"],
+        "Arabic": ["arabic"],
+        "Hindi": ["hindi"],
+        "Italian": ["italian"],
+        "German": ["german"],
+        "Japanese": ["japanese"],
+    }
+    text_lower = text.lower()
+    for lang, keywords in languages.items():
+        if any(kw in text_lower for kw in keywords):
+            if lang not in biz.languages:
+                biz.languages.append(lang)
+
+
+def _extract_buying_process(text: str, biz: ScrapedBusiness) -> None:
+    """Extract buying/selling process descriptions."""
+    # Buying process
+    buy_patterns = [
+        r'(?:buying process|how to buy|steps to buy|buyer.s guide)[:\s]+([^.]{20,300}\.)',
+        r'(?:first.?time buyer|new buyer)[s]?[:\s]+([^.]{20,200}\.)',
+    ]
+    for pat in buy_patterns:
+        m = re.search(pat, text, re.IGNORECASE)
+        if m and not biz.buying_process:
+            biz.buying_process = m.group(0).strip()[:400]
+            break
+
+    # Selling process
+    sell_patterns = [
+        r'(?:selling process|how to sell|listing process|seller.s guide)[:\s]+([^.]{20,300}\.)',
+        r'(?:list your home|sell your home|ready to sell)[.!]?\s*([^.]{20,200}\.)',
+    ]
+    for pat in sell_patterns:
+        m = re.search(pat, text, re.IGNORECASE)
+        if m and not biz.selling_process:
+            biz.selling_process = m.group(0).strip()[:400]
             break
