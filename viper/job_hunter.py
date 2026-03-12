@@ -89,6 +89,16 @@ _COMPETITOR_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Builder/showcase posts — people sharing what they built, not buying
+_BUILDER_RE = re.compile(
+    r"\bshow\s+hn\b|\bmy\s+project\b|\bi\s+built\b|\bi\s+made\b|"
+    r"\bjust\s+launched\b|\bjust\s+shipped\b|\bcheck\s+out\s+my\b|"
+    r"\bopen[\s-]?source\b|\bside\s+project\b|\bweekend\s+project\b|"
+    r"\bi\s+created\b|\bi\s+developed\b|\bhere['']?s\s+my\b|"
+    r"\bmy\s+(?:new\s+)?(?:app|tool|saas|startup|product|repo|library)\b",
+    re.IGNORECASE,
+)
+
 _NEWS_DOMAINS = frozenset([
     # Major tech/news
     "techcrunch.com", "itpro.com", "wired.com", "theverge.com",
@@ -150,33 +160,40 @@ def _is_garbage_lead(job: dict) -> tuple[bool, str]:
     if _COMPETITOR_RE.search(f"{title} {description}"):
         return True, "competitor/self-promo"
 
-    # 2. News domain blocklist — GoogleAlerts only
+    # 2. Builder/showcase filter — Indie Hackers, HN, GitHub
+    #    "I built X" / "my project" / "Show HN" / open-source shares = builders, not buyers
+    if source in ("IndieHackers", "HackerNews", "ProductHunt"):
+        if _BUILDER_RE.search(f"{title} {description}"):
+            if not _HIRING_INTENT_RE.search(f"{title} {description}"):
+                return True, "builder showcase, not a buyer"
+
+    # 3. News domain blocklist — GoogleAlerts only
     if source == "GoogleAlerts":
         url_lower = url.lower()
         for domain in _NEWS_DOMAINS:
             if domain in url_lower:
                 return True, f"news domain: {domain}"
 
-    # 3. Big company filter
+    # 4. Big company filter
     for company in _BIG_COMPANIES:
         if f"@ {company}" in text or f"@{company}" in text:
             return True, f"big company: {company}"
         if title.lower().startswith(f"{company} "):
             return True, f"big company: {company}"
 
-    # 4. ProductHunt filter — reject unless explicit hiring intent
+    # 5. ProductHunt filter — reject unless explicit hiring intent
     if source == "ProductHunt":
         if not _HIRING_INTENT_RE.search(f"{title} {description}"):
             return True, "ProductHunt launch, no hiring intent"
 
-    # 5. "Company launching AI" article filter — all sources
+    # 6. "Company launching AI" article filter — all sources
     #    Articles about companies releasing AI products are NOT hiring leads.
     #    Check title first (strongest signal), then title+description.
     if _AI_LAUNCH_RE.search(title):
         if not _HIRING_INTENT_RE.search(f"{title} {description}"):
             return True, "AI product launch article, not hiring"
 
-    # 6. Google Alerts intent filter — reject unless hiring intent
+    # 7. Google Alerts intent filter — reject unless hiring intent
     #    "chatbot"/"automation" alone is NOT enough — news articles about AI products
     #    contain those words. Require hiring intent OR freelance-specific phrases.
     if source == "GoogleAlerts":
@@ -188,7 +205,7 @@ def _is_garbage_lead(job: dict) -> tuple[bool, str]:
             if not any(kw in text for kw in freelance_kws):
                 return True, "GoogleAlerts: no hiring intent"
 
-    # 7. HN freelancer thread filter — "Seeking freelancer?" = people offering, not hiring
+    # 8. HN freelancer thread filter — "Seeking freelancer?" = people offering, not hiring
     if source == "HackerNews" and job.get("thread_type") == "freelancer":
         if not _HIRING_INTENT_RE.search(f"{title} {description}"):
             # In "Seeking freelancer?" threads, most posts are freelancers advertising
@@ -236,7 +253,8 @@ def _load_seen() -> dict[str, float]:
     try:
         data = json.loads(SEEN_JOBS_FILE.read_text())
         now = time.time()
-        return {k: v for k, v in data.items() if now - v < 604800}
+        # Keep: permanent entries (v < 0 = Jordan BID/SKIP'd) + entries < 7 days old
+        return {k: v for k, v in data.items() if v < 0 or now - v < 604800}
     except Exception:
         return {}
 

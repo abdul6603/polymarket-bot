@@ -274,4 +274,22 @@ def mark_lead_status(lead_hash: str, status: str) -> bool:
             OVERSEER_LEADS.write_text(json.dumps(data, indent=2))
         log.info("[LEAD_WRITER] Marked lead %s as %s", lead_hash[:8], status)
 
+        # Permanently mark this hash in seen_jobs so it never resurfaces
+        # Uses -1 timestamp = permanent (survives the 7-day TTL cleanup)
+        _stamp_seen_permanent(lead_hash)
+
     return updated
+
+
+def _stamp_seen_permanent(lead_hash: str) -> None:
+    """Add a lead hash to viper_seen_jobs.json as permanent (never expires)."""
+    seen_file = DATA_DIR / "viper_seen_jobs.json"
+    seen: dict = {}
+    if seen_file.exists():
+        try:
+            seen = json.loads(seen_file.read_text())
+        except Exception:
+            seen = {}
+    # -1 = permanent — _load_seen() preserves entries with v < 0
+    seen[lead_hash] = -1
+    seen_file.write_text(json.dumps(seen, indent=2))

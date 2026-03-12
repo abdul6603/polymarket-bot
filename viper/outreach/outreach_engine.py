@@ -326,9 +326,21 @@ def run_outreach(
             stats["skipped"] += 1
             continue
 
-        # Dedup check
+        # Dedup check — outreach log (sent emails) + approval queue (all statuses)
         if already_contacted(p.email, niche, city):
             log.info("Already contacted %s — skipping", p.business_name)
+            stats["already_contacted"] += 1
+            continue
+
+        # Also check approval queue — never re-queue accepted or declined leads
+        from viper.outreach.approval_queue import _load_queue
+        existing_queue = _load_queue()
+        already_queued = any(
+            e.get("email") == p.email
+            for e in existing_queue
+        )
+        if already_queued:
+            log.info("Already in queue %s — skipping", p.business_name)
             stats["already_contacted"] += 1
             continue
 
