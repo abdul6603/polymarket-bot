@@ -711,7 +711,7 @@ def _customize_dental(template: str, data: dict) -> str:
     # ── HTML replacements ──
     html = re.sub(r"<title>.*?</title>",
                   f"<title>{_html_escape(name)} - AI Assistant Demo</title>", html)
-    html = html.replace(f"<h1>{old['name']}</h1>", f"<h1>{_html_escape(name)}</h1>")
+    html = html.replace(f"<h1>{old['name']}</h1>", f"<h1>{_html_escape(_short_business_name(name))}</h1>")
     html = html.replace(f"<p>{old['tagline']}</p>",
                         f"<p>{_html_escape(data['tagline'] or 'Your Trusted Dental Care Provider')}</p>")
     html = html.replace(f"<h4>{old['name']}</h4>", f"<h4>{_html_escape(name)}</h4>")
@@ -1088,7 +1088,7 @@ def _customize_realestate(template: str, data: dict) -> str:
     # ── HTML replacements ──
     html = re.sub(r"<title>.*?</title>",
                   f"<title>{_html_escape(name)} - AI Assistant Demo</title>", html)
-    html = html.replace(f"<h1>{old['name']}</h1>", f"<h1>{_html_escape(name)}</h1>")
+    html = html.replace(f"<h1>{old['name']}</h1>", f"<h1>{_html_escape(_short_business_name(name))}</h1>")
     html = html.replace(f'<div class="tagline">{old["tagline"]}</div>',
                         f'<div class="tagline">{_html_escape(data["tagline"] or "Your Trusted Real Estate Partner")}</div>')
     html = html.replace(f"<h4>{old['name']}</h4>", f"<h4>{_html_escape(name)}</h4>")
@@ -1460,7 +1460,7 @@ def _customize_commercial_re(template: str, data: dict) -> str:
     # ── HTML replacements ──
     html = re.sub(r"<title>.*?</title>",
                   f"<title>{_html_escape(name)} - AI Assistant Demo</title>", html)
-    html = html.replace(f"<h1>{old['name']}</h1>", f"<h1>{_html_escape(name)}</h1>")
+    html = html.replace(f"<h1>{old['name']}</h1>", f"<h1>{_html_escape(_short_business_name(name))}</h1>")
     html = html.replace(
         f'<div class="tagline">{old["tagline"]}</div>',
         f'<div class="tagline">{_html_escape(data["tagline"] or "Your Trusted Commercial Real Estate Partner")}</div>')

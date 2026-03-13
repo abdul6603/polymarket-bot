@@ -41,6 +41,52 @@ def _possessive(name: str) -> str:
     return f"{name}'s"
 
 
+def _short_business_name(name: str) -> str:
+    """Shorten compound business names for subjects and headings.
+
+    Rules:
+    - "Nathan Riel - The Riel Estate Team - Keller Williams Realty"
+      → "The Riel Estate Team"  (middle segment, most specific)
+    - "John J. Dean Jr. - Engel & Volkers Boston" → "Engel & Volkers Boston"
+    - "Darcy Bento, South Boston Realtor - Bento Real Estate Group"
+      → "Bento Real Estate Group"
+    - Short names stay as-is.
+
+    Strategy: if name has " - " separators, pick the best segment.
+    If name has ", " separator, pick the business part (after comma) if it
+    looks like a business, otherwise keep the person part.
+    """
+    name = name.strip()
+    if len(name) <= 40:
+        return name
+
+    # Split on " - " or " – "
+    segments = [s.strip() for s in name.replace(" – ", " - ").split(" - ") if s.strip()]
+    if len(segments) >= 3:
+        # 3+ segments: middle is usually the team/brand name
+        return segments[1]
+    if len(segments) == 2:
+        # 2 segments: prefer the one that looks like a business (not a person)
+        # If first segment is a person name (short, no LLC/Inc/Team/Group), use second
+        first, second = segments
+        biz_words = ["team", "group", "realty", "real estate", "dental",
+                     "associates", "company", "inc", "llc", "partners"]
+        if any(w in second.lower() for w in biz_words):
+            return second
+        if any(w in first.lower() for w in biz_words):
+            return first
+        return second  # default to second segment
+
+    # Try comma split
+    if ", " in name:
+        parts = [p.strip() for p in name.split(", ", 1)]
+        if len(parts) == 2 and len(parts[1]) > 10:
+            return parts[0]  # "Darcy Bento, South Boston Realtor" → "Darcy Bento"
+
+    # Fallback: truncate
+    return name[:40]
+
+
 def format_greeting_name(raw_name: str, niche: str = "") -> str:
     """Format a contact name for email greetings.
 
@@ -131,7 +177,7 @@ def get_outreach_message(
         subject = _subject_from_finding(business_name, finding_lines[0])
     else:
         pain = _FALLBACK_PAIN.get(niche_key, "website")
-        subject = f"Quick question about {_possessive(business_name)} {pain}"
+        subject = f"Quick question about {_possessive(_short_business_name(business_name))} {pain}"
 
     # Build body: finding opener → cost → demo → CTA
     opener = _build_opener(finding_lines, business_name, niche_key)
@@ -185,7 +231,7 @@ def _subject_from_finding(business_name: str, finding: str) -> str:
     else:
         pain = "website"
 
-    return f"Quick question about {_possessive(business_name)} {pain}"
+    return f"Quick question about {_possessive(_short_business_name(business_name))} {pain}"
 
 
 _NICHE_LABELS: dict[str, str] = {
