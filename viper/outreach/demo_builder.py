@@ -112,7 +112,7 @@ _RESIDENTIAL_RE_ONLY_MARKERS = [
 
 _COMMERCIAL_RE_ONLY_MARKERS = [
     "Tenant Representation",     # CRE feature card
-    "Property Management",       # CRE feature card
+    "Property Management Services",  # CRE-specific (not generic "Property Management")
     "Asset & Investment",        # CRE feature card
     "BROKER_DATA",               # CRE JS variable
     "Commercial RE Assistant",   # CRE hero badge
