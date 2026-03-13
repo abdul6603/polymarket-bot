@@ -23,6 +23,30 @@ import logging
 import re
 from pathlib import Path
 
+
+def _short_business_name(name: str) -> str:
+    """Shorten compound business names for headings."""
+    name = name.strip()
+    if len(name) <= 40:
+        return name
+    segments = [s.strip() for s in name.replace(" \u2013 ", " - ").split(" - ") if s.strip()]
+    if len(segments) >= 3:
+        return segments[1]
+    if len(segments) == 2:
+        first, second = segments
+        biz_words = ["team", "group", "realty", "real estate", "dental",
+                     "associates", "company", "inc", "llc", "partners"]
+        if any(w in second.lower() for w in biz_words):
+            return second
+        if any(w in first.lower() for w in biz_words):
+            return first
+        return second
+    if ", " in name:
+        parts = [p.strip() for p in name.split(", ", 1)]
+        if len(parts) == 2 and len(parts[1]) > 10:
+            return parts[0]
+    return name[:40]
+
 log = logging.getLogger(__name__)
 
 REPO_DIR = Path.home() / "chatbot-demos"
