@@ -114,7 +114,6 @@ _RESIDENTIAL_RE_ONLY_MARKERS = [
     "buying process",            # RE QA
     "pre-qualified",             # RE mortgage QA
     "open house",                # RE QA
-    "investment properties",     # RE QA
     "dream home",
     "first-time buyers",
     "home inspection",
