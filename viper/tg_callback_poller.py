@@ -130,7 +130,7 @@ def _handle_skip(bot_token, cb_id, chat_id, message_id, original_text, lead_hash
 
 
 def _handle_outreach_yes(bot_token, cb_id, chat_id, message_id, original_text, lead_id):
-    """Gate 1: Approve outreach lead → build custom demo → Gate 2."""
+    """Gate 1: Approve outreach lead → delete msg → stats → build demo → Gate 2."""
     try:
         from viper.outreach.approval_queue import approve_lead_gate
         lead = approve_lead_gate(lead_id)
@@ -138,10 +138,9 @@ def _handle_outreach_yes(bot_token, cb_id, chat_id, message_id, original_text, l
             _answer_callback(bot_token, cb_id, "Lead not found")
             _edit_message(bot_token, chat_id, message_id, original_text + "\n\nLead not found or already decided.")
             return
-        _answer_callback(bot_token, cb_id, "Approved — building custom demo...")
-        _edit_message(bot_token, chat_id, message_id,
-                      original_text + f"\n\nAPPROVED: {lead.get('business_name', lead_id)}"
-                      f"\nBuilding custom demo — Gate 2 coming shortly...")
+        _answer_callback(bot_token, cb_id, "Approved!")
+        _delete_message(bot_token, chat_id, message_id)
+        _send_gate1_stats(bot_token, chat_id, "YES", lead)
 
         # Build demo + deploy + Gate 2 in background thread (takes ~60-90s)
         t = threading.Thread(
@@ -251,13 +250,14 @@ def _build_demo_and_review(bot_token: str, lead: dict) -> None:
 
 
 def _handle_outreach_no(bot_token, cb_id, chat_id, message_id, original_text, lead_id):
-    """Gate 1: Skip outreach lead."""
+    """Gate 1: Skip outreach lead → delete msg → stats."""
     try:
         from viper.outreach.approval_queue import decline_lead
         lead = decline_lead(lead_id)
         name = lead.get("business_name", lead_id) if lead else lead_id
         _answer_callback(bot_token, cb_id, "Skipped")
-        _edit_message(bot_token, chat_id, message_id, original_text + f"\n\nSKIPPED: {name}")
+        _delete_message(bot_token, chat_id, message_id)
+        _send_gate1_stats(bot_token, chat_id, "NO", lead or {"business_name": name})
         log.info("Gate 1 NO for %s", lead_id)
     except Exception as e:
         log.error("Gate 1 NO failed for %s: %s", lead_id, e)
@@ -396,6 +396,64 @@ def _delete_message(bot_token: str, chat_id: int, message_id: int) -> None:
         )
     except Exception:
         pass
+
+
+def _send_gate1_stats(bot_token: str, chat_id: int, action: str, lead: dict) -> None:
+    """Send rich stats dashboard after Gate 1 YES/NO."""
+    try:
+        from viper.outreach.approval_queue import _load_queue
+        from collections import Counter
+        queue = _load_queue()
+
+        sent = sum(1 for l in queue if l["status"] in ("approved", "sent"))
+        declined = sum(1 for l in queue if l["status"] == "declined")
+        gate2_waiting = sum(1 for l in queue if l["status"] == "lead_approved")
+        pending = sum(1 for l in queue if l["status"] == "pending")
+        held = sum(1 for l in queue if l["status"] == "needs_contact_name")
+
+        # Niche breakdown for approved + sent
+        active = [l for l in queue if l["status"] in ("lead_approved", "approved", "sent")]
+        niche_counts = Counter(l.get("niche", "unknown") for l in active)
+        niche_lines = "\n".join(f"    {n}: {c}" for n, c in niche_counts.most_common())
+
+        # States & cities from pending (what's left to review)
+        pending_leads = [l for l in queue if l["status"] == "pending"]
+        states = set()
+        cities = set()
+        for l in pending_leads:
+            city = l.get("city", "")
+            if city:
+                cities.add(city)
+                parts = city.split()
+                if len(parts) >= 2:
+                    states.add(parts[-1])
+
+        biz = lead.get("business_name", "?")
+        niche = lead.get("niche", "")
+        icon = "\u2705" if action == "YES" else "\u274c"
+        action_word = "APPROVED" if action == "YES" else "SKIPPED"
+        building = "\n\n\U0001f527 <i>Building custom demo... Gate 2 coming shortly</i>" if action == "YES" else ""
+
+        text = (
+            f"{icon} <b>{action_word}:</b> {biz} ({niche}){building}\n\n"
+            f"\U0001f4ca <b>Pipeline Stats</b>\n"
+            f"\u2709\ufe0f Sent: {sent}\n"
+            f"\U0001f3d7 Gate 2 (demo building): {gate2_waiting}\n"
+            f"\U0001f4cb Gate 1 remaining: {pending}\n"
+            f"\u274c Skipped: {declined}\n"
+            f"\U0001f50d Needs contact name: {held}\n\n"
+            f"\U0001f3af <b>Approved Niches</b>\n{niche_lines if niche_lines else '    (none yet)'}\n\n"
+            f"\U0001f5fa <b>Pending Review</b>\n"
+            f"    States: {', '.join(sorted(states)) if states else 'none'}\n"
+            f"    Cities: {', '.join(sorted(cities)) if cities else 'none'}"
+        )
+        requests.post(
+            f"https://api.telegram.org/bot{bot_token}/sendMessage",
+            json={"chat_id": chat_id, "text": text, "parse_mode": "HTML"},
+            timeout=5,
+        )
+    except Exception as e:
+        log.error("Gate 1 stats send failed: %s", e)
 
 
 def _send_outreach_stats(bot_token: str, chat_id: int, action: str, lead_name: str) -> None:
