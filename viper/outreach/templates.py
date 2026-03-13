@@ -6,7 +6,7 @@ RULES (Jordan-enforced):
 - Body line 1: Specific seo-audit finding from their site.
 - Body line 2: Cost of that problem (lost leads, Google penalty, etc.).
 - ONE demo link. No video links, no portfolio, no carrd.
-- CTA: "If you want a version customized for [Business], I'll build it
+- CTA: "If you want to tweak anything, I'll adjust it
   in 24 hours — on me."
 - Sign off: Jordan, DarkCode AI
 
@@ -184,16 +184,15 @@ def get_outreach_message(
     niche_body = _NICHE_BODIES.get(niche_key, _NICHE_BODIES["general"])
     cost_line = niche_body["cost"].format(business_name=business_name)
 
-    niche_label = _NICHE_LABELS.get(niche_key, "business")
     body = (
         f"{greeting},\n\n"
         f"{opener}\n\n"
         f"{cost_line}\n\n"
-        f"I put together a working demo for a similar {niche_label} "
+        f"I built a working demo for {_short_business_name(business_name)} "
         f"— you can try it here:\n"
         f"{demo_url}\n\n"
-        f"If you want a version customized for {business_name}, "
-        f"I'll build it in 24 hours — on me.\n\n"
+        f"If you want to tweak anything, I'll adjust it "
+        f"in 24 hours — on me.\n\n"
         f"Jordan\n"
         f"DarkCode AI"
     )

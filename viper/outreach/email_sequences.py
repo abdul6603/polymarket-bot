@@ -182,12 +182,11 @@ def generate_followup_draft(step_info: dict) -> dict:
     elif step_type == "value_add":
         body = (
             f"{greeting},\n\n"
-            f"Thought you might find this useful — we recently built a chat "
-            f"assistant for a similar business that now handles 90%+ of their "
-            f"common questions automatically. Their front desk staff went from "
-            f"30+ daily phone calls to under 10.\n\n"
-            f"The demo I sent earlier shows exactly how it works for a "
-            f"business like {biz}.\n\n"
+            f"Thought you might find this useful — businesses using a chat "
+            f"assistant like the one I built for {biz} handle 90%+ of "
+            f"common questions automatically. Front desk staff typically "
+            f"go from 30+ daily phone calls to under 10.\n\n"
+            f"The demo I sent earlier shows exactly how it'd work for you.\n\n"
             f"Worth a 2-minute look?\n\n"
             f"Jordan\n"
             f"DarkCode AI"
