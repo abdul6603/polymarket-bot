@@ -280,7 +280,8 @@ def _handle_outreach_go(bot_token, cb_id, chat_id, message_id, original_text, le
         result = send_approved_email(lead)
         if result["success"]:
             _answer_callback(bot_token, cb_id, "Email sent!")
-            _edit_message(bot_token, chat_id, message_id, original_text + f"\n\nSENT to {lead['email']}")
+            _delete_message(bot_token, chat_id, message_id)
+            _send_outreach_stats(bot_token, chat_id, "SENT", lead.get("business_name", lead_id))
         else:
             _answer_callback(bot_token, cb_id, "Send failed")
             _edit_message(bot_token, chat_id, message_id, original_text + f"\n\nFAILED: {result['error']}")
@@ -347,7 +348,8 @@ def _handle_outreach_skip(bot_token, cb_id, chat_id, message_id, original_text, 
         lead = decline_lead(lead_id)
         name = lead.get("business_name", lead_id) if lead else lead_id
         _answer_callback(bot_token, cb_id, "Skipped")
-        _edit_message(bot_token, chat_id, message_id, original_text + f"\n\nEmail skipped for {name}")
+        _delete_message(bot_token, chat_id, message_id)
+        _send_outreach_stats(bot_token, chat_id, "SKIPPED", name)
         log.info("Gate 2 SKIP for %s", lead_id)
     except Exception as e:
         log.error("Gate 2 SKIP failed for %s: %s", lead_id, e)
@@ -382,6 +384,48 @@ def _edit_message(bot_token: str, chat_id: int, message_id: int, text: str) -> N
         )
     except Exception:
         pass
+
+
+def _delete_message(bot_token: str, chat_id: int, message_id: int) -> None:
+    """Delete a message from the chat."""
+    try:
+        requests.post(
+            f"https://api.telegram.org/bot{bot_token}/deleteMessage",
+            json={"chat_id": chat_id, "message_id": message_id},
+            timeout=5,
+        )
+    except Exception:
+        pass
+
+
+def _send_outreach_stats(bot_token: str, chat_id: int, action: str, lead_name: str) -> None:
+    """Send a stats summary after each GO/SKIP action."""
+    try:
+        from viper.outreach.approval_queue import _load_queue
+        queue = _load_queue()
+        sent = sum(1 for l in queue if l["status"] in ("approved", "sent"))
+        skipped = sum(1 for l in queue if l["status"] == "declined")
+        waiting = sum(1 for l in queue if l["status"] == "lead_approved")
+        pending = sum(1 for l in queue if l["status"] == "pending")
+        held = sum(1 for l in queue if l["status"] == "needs_contact_name")
+
+        icon = "\u2705" if action == "SENT" else "\u274c"
+        text = (
+            f"{icon} <b>{action}:</b> {lead_name}\n\n"
+            f"\U0001f4ca <b>Outreach Stats</b>\n"
+            f"\u2709\ufe0f Sent: {sent}\n"
+            f"\u274c Skipped: {skipped}\n"
+            f"\u23f3 Gate 2 waiting: {waiting}\n"
+            f"\U0001f4cb Pending Gate 1: {pending}\n"
+            f"\U0001f50d Needs contact name: {held}"
+        )
+        requests.post(
+            f"https://api.telegram.org/bot{bot_token}/sendMessage",
+            json={"chat_id": chat_id, "text": text, "parse_mode": "HTML"},
+            timeout=5,
+        )
+    except Exception as e:
+        log.error("Stats send failed: %s", e)
 
 
 # ── Poller loop ─────────────────────────────────────────────────────

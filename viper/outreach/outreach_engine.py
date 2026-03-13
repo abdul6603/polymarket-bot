@@ -189,9 +189,15 @@ def send_draft_review(lead: dict) -> None:
                  f"Demo must be built before Gate 2 can proceed.")
         return
 
+    city = lead.get("city", "")
+    niche = lead.get("niche", "")
+    location_line = f"Location: {city}\n" if city else ""
+
     text = (
         f"<b>GATE 2 — Email Draft</b>\n\n"
         f"To: {lead['email']} ({lead['business_name']})\n"
+        f"{location_line}"
+        f"Niche: {niche}\n"
         f"Demo: {lead.get('demo_url', 'N/A')}\n"
         f"Subject: {lead['subject']}\n\n"
         f"{lead['body']}\n\n"
