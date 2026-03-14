@@ -158,14 +158,19 @@ def add_lead_to_campaign(
         return False
 
 
+def _v2_headers(api_key: str) -> dict:
+    """Build v2 auth headers."""
+    return {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+
+
 def create_campaign(
     name: str,
-    subject: str,
-    body: str,
+    subject: str = "",
+    body: str = "",
     schedule: dict | None = None,
     sending_accounts: list[str] | None = None,
 ) -> str:
-    """Create a new Instantly campaign.
+    """Create a new Instantly campaign via v2 API.
 
     Returns campaign_id or empty string on failure.
     """
@@ -173,18 +178,22 @@ def create_campaign(
     if not api_key:
         return ""
 
-    payload = {
-        "api_key": api_key,
-        "name": name,
-    }
+    payload = {"name": name}
 
     try:
-        resp = requests.post(f"{_API_BASE_V1}/campaign/create", json=payload, timeout=_TIMEOUT)
-        if resp.status_code == 200:
+        resp = requests.post(
+            f"{_API_BASE_V2}/campaigns",
+            json=payload,
+            headers=_v2_headers(api_key),
+            timeout=_TIMEOUT,
+        )
+        if resp.status_code in (200, 201):
             data = resp.json()
             campaign_id = data.get("id", "")
             log.info("Created Instantly campaign: %s (%s)", name, campaign_id)
             return campaign_id
+        else:
+            log.error("Instantly create_campaign %d: %s", resp.status_code, resp.text[:200])
     except Exception as e:
         log.error("Instantly create_campaign failed: %s", e)
 
