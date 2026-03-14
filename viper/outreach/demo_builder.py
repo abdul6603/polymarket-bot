@@ -56,6 +56,9 @@ _TEMPLATE_MAP = {
     "dental": "dental-demo",
     "real_estate": "realestate-demo",
     "commercial_re": "commercial-re-demo",
+    "hvac": "hvac-demo",
+    "legal": "legal-demo",
+    "medspa": "medspa-demo",
 }
 
 # Niche aliases — normalize sloppy input to canonical niche
@@ -88,6 +91,44 @@ _NICHE_ALIASES = {
     "cre": "commercial_re",
     "property management": "commercial_re",
     "investment group": "commercial_re",
+    # HVAC
+    "hvac": "hvac",
+    "heating": "hvac",
+    "cooling": "hvac",
+    "air conditioning": "hvac",
+    "ac": "hvac",
+    "furnace": "hvac",
+    "plumbing": "hvac",
+    "plumber": "hvac",
+    "hvac company": "hvac",
+    "heating and cooling": "hvac",
+    "home services": "hvac",
+    # Legal
+    "legal": "legal",
+    "lawyer": "legal",
+    "attorney": "legal",
+    "law firm": "legal",
+    "law office": "legal",
+    "legal services": "legal",
+    "law": "legal",
+    "personal injury": "legal",
+    "family law": "legal",
+    "criminal defense": "legal",
+    "immigration lawyer": "legal",
+    "estate planning": "legal",
+    # Med Spa
+    "medspa": "medspa",
+    "med spa": "medspa",
+    "medical spa": "medspa",
+    "med-spa": "medspa",
+    "aesthetics": "medspa",
+    "aesthetic clinic": "medspa",
+    "cosmetic clinic": "medspa",
+    "botox": "medspa",
+    "dermatology": "medspa",
+    "skin clinic": "medspa",
+    "beauty clinic": "medspa",
+    "laser clinic": "medspa",
 }
 
 # Cross-contamination blocklists — if ANY of these appear in the wrong
@@ -132,6 +173,39 @@ _COMMERCIAL_RE_ONLY_MARKERS = [
     "sq ft managed",             # CRE QA
 ]
 
+_HVAC_ONLY_MARKERS = [
+    "Emergency Service Requests", # HVAC feature card
+    "Schedule Maintenance",       # HVAC feature card
+    "TECH_DATA",                  # HVAC JS variable
+    "heating or cooling",         # HVAC greeting
+    "furnace won't start",        # HVAC troubleshooting
+    "duct cleaning",              # HVAC service
+    "tune-up",                    # HVAC maintenance
+    "AC not cooling",             # HVAC troubleshooting
+]
+
+_LEGAL_ONLY_MARKERS = [
+    "Free Case Evaluation",       # Legal feature card
+    "Practice Areas",             # Legal feature card
+    "ATTORNEY_DATA",              # Legal JS variable
+    "statute of limitations",     # Legal QA
+    "contingency fee",            # Legal pricing
+    "case evaluation",            # Legal QA
+    "attorney-client privilege",  # Legal confidentiality
+    "criminal defense",           # Legal practice area
+]
+
+_MEDSPA_ONLY_MARKERS = [
+    "Book Treatment",             # Med Spa feature card
+    "New Patient Specials",       # Med Spa feature card
+    "PROVIDER_DATA",              # Med Spa JS variable
+    "aesthetic goals",            # Med Spa greeting
+    "Botox",                      # Med Spa treatment
+    "dermal fillers",             # Med Spa treatment
+    "microneedling",              # Med Spa treatment
+    "HydraFacial",                # Med Spa treatment
+]
+
 # Placeholder names/phones in generic templates
 _DENTAL_PLACEHOLDERS = {
     "name": "Demo Dental Practice",
@@ -152,6 +226,27 @@ _COMMERCIAL_RE_PLACEHOLDERS = {
     "phone": "(555) 987-6543",
     "tagline": "Your Trusted Commercial Real Estate Partner",
     "address": "",
+}
+
+_HVAC_PLACEHOLDERS = {
+    "name": "Demo HVAC Company",
+    "phone": "555-123-4567",
+    "tagline": "Your Trusted Home Service Partner",
+    "address": "123 Service Drive",
+}
+
+_LEGAL_PLACEHOLDERS = {
+    "name": "Demo Law Firm",
+    "phone": "555-123-4567",
+    "tagline": "Experienced Legal Representation You Can Trust",
+    "address": "123 Justice Boulevard, Suite 300",
+}
+
+_MEDSPA_PLACEHOLDERS = {
+    "name": "Demo Med Spa",
+    "phone": "555-123-4567",
+    "tagline": "Your Destination for Aesthetic Excellence",
+    "address": "123 Aesthetic Drive",
 }
 
 # Days of the week — used for full-week hours formatting
@@ -202,14 +297,18 @@ def build_demo_html(
     data = _merge_data(scraped, prospect_data, business_name)
 
     # 5. Apply niche-specific customization — NEVER cross-niche
-    if canonical_niche == "commercial_re":
-        html = _customize_commercial_re(template, data)
-    elif canonical_niche == "real_estate":
-        html = _customize_realestate(template, data)
-    elif canonical_niche == "dental":
-        html = _customize_dental(template, data)
-    else:
+    _CUSTOMIZERS = {
+        "commercial_re": _customize_commercial_re,
+        "real_estate": _customize_realestate,
+        "dental": _customize_dental,
+        "hvac": _customize_hvac,
+        "legal": _customize_legal,
+        "medspa": _customize_medspa,
+    }
+    customizer = _CUSTOMIZERS.get(canonical_niche)
+    if not customizer:
         raise ValueError(f"No customizer for niche: {canonical_niche}")
+    html = customizer(template, data)
 
     # 6. Upgrade lead capture form (dental=6, RE=8, CRE=7 fields)
     html = _upgrade_lead_capture_form(html, niche=canonical_niche)
@@ -231,33 +330,26 @@ def build_demo_html(
 def _check_niche_contamination(html: str, niche: str) -> list[str]:
     """Check that the built HTML does NOT contain content from the wrong niche.
 
-    Each niche checks against BOTH other niches' markers.
+    Each niche checks against ALL other niches' markers.
     Returns list of contamination findings (empty = clean).
     """
+    _ALL_MARKERS = {
+        "dental": _DENTAL_ONLY_MARKERS,
+        "real_estate": _RESIDENTIAL_RE_ONLY_MARKERS,
+        "commercial_re": _COMMERCIAL_RE_ONLY_MARKERS,
+        "hvac": _HVAC_ONLY_MARKERS,
+        "legal": _LEGAL_ONLY_MARKERS,
+        "medspa": _MEDSPA_ONLY_MARKERS,
+    }
     findings: list[str] = []
     html_lower = html.lower()
 
-    if niche == "dental":
-        for marker in _RESIDENTIAL_RE_ONLY_MARKERS:
+    for other_niche, markers in _ALL_MARKERS.items():
+        if other_niche == niche:
+            continue
+        for marker in markers:
             if marker.lower() in html_lower:
-                findings.append(f"dental demo contains residential RE marker: '{marker}'")
-        for marker in _COMMERCIAL_RE_ONLY_MARKERS:
-            if marker.lower() in html_lower:
-                findings.append(f"dental demo contains commercial RE marker: '{marker}'")
-    elif niche == "real_estate":
-        for marker in _DENTAL_ONLY_MARKERS:
-            if marker.lower() in html_lower:
-                findings.append(f"RE demo contains dental marker: '{marker}'")
-        for marker in _COMMERCIAL_RE_ONLY_MARKERS:
-            if marker.lower() in html_lower:
-                findings.append(f"RE demo contains commercial RE marker: '{marker}'")
-    elif niche == "commercial_re":
-        for marker in _DENTAL_ONLY_MARKERS:
-            if marker.lower() in html_lower:
-                findings.append(f"CRE demo contains dental marker: '{marker}'")
-        for marker in _RESIDENTIAL_RE_ONLY_MARKERS:
-            if marker.lower() in html_lower:
-                findings.append(f"CRE demo contains residential RE marker: '{marker}'")
+                findings.append(f"{niche} demo contains {other_niche} marker: '{marker}'")
 
     return findings
 
@@ -305,6 +397,12 @@ def run_quality_gate(html: str, niche: str = "auto") -> tuple[bool, list[str]]:
             niche = "commercial_re"
         elif "AGENT_DATA" in html:
             niche = "real_estate"
+        elif "TECH_DATA" in html:
+            niche = "hvac"
+        elif "ATTORNEY_DATA" in html:
+            niche = "legal"
+        elif "PROVIDER_DATA" in html:
+            niche = "medspa"
         else:
             niche = "dental"
 
@@ -337,6 +435,12 @@ def run_quality_gate(html: str, niche: str = "auto") -> tuple[bool, list[str]]:
             failures.append(f"{label}: answer still contains 'Demo Realty'")
         if "Demo CRE" in a and "Demo CRE" not in biz_name:
             failures.append(f"{label}: answer still contains 'Demo CRE'")
+        if "Demo HVAC" in a and "Demo HVAC" not in biz_name:
+            failures.append(f"{label}: answer still contains 'Demo HVAC'")
+        if "Demo Law" in a and "Demo Law" not in biz_name:
+            failures.append(f"{label}: answer still contains 'Demo Law'")
+        if "Demo Med Spa" in a and "Demo Med Spa" not in biz_name:
+            failures.append(f"{label}: answer still contains 'Demo Med Spa'")
 
     if niche == "commercial_re":
         # CRE Test 1: Areas/Markets
@@ -437,6 +541,146 @@ def run_quality_gate(html: str, niche: str = "auto") -> tuple[bool, list[str]]:
 
         # RE Test 7: Contact info
         ans = find_answer("What's your contact info?")
+        if not ans:
+            failures.append("contact: no QA entry matched")
+        else:
+            _check_no_placeholder(ans, "contact")
+            if phone and phone not in ans["a"]:
+                failures.append(f"contact: answer missing real phone ({phone})")
+
+    elif niche == "hvac":
+        # HVAC Test 1: Hours
+        ans = find_answer("What are your hours?")
+        if not ans:
+            failures.append("hours: no QA entry matched")
+        else:
+            _check_no_placeholder(ans, "hours")
+
+        # HVAC Test 2: Emergency
+        ans = find_answer("Do you offer emergency service?")
+        if not ans:
+            failures.append("emergency: no QA entry matched")
+        else:
+            _check_no_placeholder(ans, "emergency")
+
+        # HVAC Test 3: Services
+        ans = find_answer("What services do you offer?")
+        if not ans:
+            failures.append("services: no QA entry matched")
+        else:
+            _check_no_placeholder(ans, "services")
+
+        # HVAC Test 4: Booking
+        ans = find_answer("How do I schedule a service call?")
+        if not ans:
+            failures.append("booking: no QA entry matched")
+        elif phone and phone not in ans["a"]:
+            failures.append(f"booking: answer missing real phone ({phone})")
+
+        # HVAC Test 5: Pricing
+        ans = find_answer("How much does AC repair cost?")
+        if not ans:
+            failures.append("pricing: no QA entry matched")
+
+        # HVAC Test 6: Maintenance
+        ans = find_answer("Do you offer maintenance plans?")
+        if not ans:
+            failures.append("maintenance: no QA entry matched")
+
+        # HVAC Test 7: Contact
+        ans = find_answer("What is your contact info?")
+        if not ans:
+            failures.append("contact: no QA entry matched")
+        else:
+            _check_no_placeholder(ans, "contact")
+            if phone and phone not in ans["a"]:
+                failures.append(f"contact: answer missing real phone ({phone})")
+
+    elif niche == "legal":
+        # Legal Test 1: Hours
+        ans = find_answer("What are your hours?")
+        if not ans:
+            failures.append("hours: no QA entry matched")
+        else:
+            _check_no_placeholder(ans, "hours")
+
+        # Legal Test 2: Consultation
+        ans = find_answer("Do you offer free consultations?")
+        if not ans:
+            failures.append("consultation: no QA entry matched")
+        else:
+            _check_no_placeholder(ans, "consultation")
+
+        # Legal Test 3: Practice Areas
+        ans = find_answer("What practice areas do you handle?")
+        if not ans:
+            failures.append("practice_areas: no QA entry matched")
+        else:
+            _check_no_placeholder(ans, "practice_areas")
+
+        # Legal Test 4: Fees
+        ans = find_answer("How much do you charge?")
+        if not ans:
+            failures.append("fees: no QA entry matched")
+
+        # Legal Test 5: Case Evaluation
+        ans = find_answer("Can you evaluate my case?")
+        if not ans:
+            failures.append("case_eval: no QA entry matched")
+
+        # Legal Test 6: Confidentiality
+        ans = find_answer("Is our conversation confidential?")
+        if not ans:
+            failures.append("confidentiality: no QA entry matched")
+
+        # Legal Test 7: Contact
+        ans = find_answer("What is your contact info?")
+        if not ans:
+            failures.append("contact: no QA entry matched")
+        else:
+            _check_no_placeholder(ans, "contact")
+            if phone and phone not in ans["a"]:
+                failures.append(f"contact: answer missing real phone ({phone})")
+
+    elif niche == "medspa":
+        # Med Spa Test 1: Hours
+        ans = find_answer("What are your hours?")
+        if not ans:
+            failures.append("hours: no QA entry matched")
+        else:
+            _check_no_placeholder(ans, "hours")
+
+        # Med Spa Test 2: Treatments
+        ans = find_answer("What treatments do you offer?")
+        if not ans:
+            failures.append("treatments: no QA entry matched")
+        else:
+            _check_no_placeholder(ans, "treatments")
+
+        # Med Spa Test 3: Botox pricing
+        ans = find_answer("How much does Botox cost?")
+        if not ans:
+            failures.append("pricing: no QA entry matched")
+
+        # Med Spa Test 4: Consultation
+        ans = find_answer("Do you offer free consultations?")
+        if not ans:
+            failures.append("consultation: no QA entry matched")
+
+        # Med Spa Test 5: Booking
+        ans = find_answer("How do I book an appointment?")
+        if not ans:
+            failures.append("booking: no QA entry matched")
+        elif phone and phone not in ans["a"]:
+            failures.append(f"booking: answer missing real phone ({phone})")
+
+        # Med Spa Test 6: New Patient Specials
+        ans = find_answer("Do you have new patient specials?")
+        if not ans:
+            failures.append("specials: no QA entry matched")
+
+        # Med Spa Test 7: Contact
+        ans = find_answer("What is your contact info?")
         if not ans:
             failures.append("contact: no QA entry matched")
         else:
@@ -2047,3 +2291,481 @@ def _build_broker_data_js(team: list[str]) -> str:
                       f'specialty: "Commercial Real Estate Broker"}}')
 
     return "[" + ", ".join(brokers) + "]"
+
+
+def _build_tech_data_js(team: list[str]) -> str:
+    """Build the TECH_DATA JavaScript array from technician names."""
+    techs = []
+    for member in team:
+        parts = member.split()
+        last_name = parts[-1].lower().rstrip(",") if len(parts) >= 2 else parts[0].lower()
+        techs.append(f'{{name: "{_js_escape(member)}", '
+                     f'lastName: "{last_name}", '
+                     f'specialty: "HVAC Technician"}}')
+    return "[" + ", ".join(techs) + "]"
+
+
+def _build_attorney_data_js(team: list[str]) -> str:
+    """Build the ATTORNEY_DATA JavaScript array from attorney names."""
+    attorneys = []
+    for member in team:
+        parts = member.split()
+        clean = [p.rstrip(",") for p in parts if p not in ("Esq.", "Esq", "JD", "J.D.")]
+        last_name = clean[-1].lower() if len(clean) >= 2 else clean[0].lower() if clean else ""
+        attorneys.append(f'{{name: "{_js_escape(member)}", '
+                        f'lastName: "{last_name}", '
+                        f'specialty: "Attorney"}}')
+    return "[" + ", ".join(attorneys) + "]"
+
+
+def _build_provider_data_js(team: list[str]) -> str:
+    """Build the PROVIDER_DATA JavaScript array from provider names."""
+    providers = []
+    for member in team:
+        parts = member.split()
+        clean = [p.rstrip(",") for p in parts if p not in ("MD", "DO", "NP", "PA", "RN")]
+        last_name = clean[-1].lower() if len(clean) >= 2 else clean[0].lower() if clean else ""
+        providers.append(f'{{name: "{_js_escape(member)}", '
+                        f'lastName: "{last_name}", '
+                        f'specialty: "Aesthetic Provider"}}')
+    return "[" + ", ".join(providers) + "]"
+
+
+# ── HVAC Customizer ────────────────────────────────────────────────
+
+def _customize_hvac(template: str, data: dict) -> str:
+    """Customize the generic HVAC template with real business data."""
+    old = _HVAC_PLACEHOLDERS
+    html = template
+    name = data["name"]
+    phone = data["phone"] or old["phone"]
+
+    # ── HTML replacements ──
+    html = re.sub(r"<title>.*?</title>",
+                  f"<title>{_html_escape(name)} - AI Assistant Demo</title>", html)
+    html = html.replace(f"<h1>{old['name']}</h1>", f"<h1>{_html_escape(_short_business_name(name))}</h1>")
+    html = html.replace(f"<p>{old['tagline']}</p>",
+                        f"<p>{_html_escape(data['tagline'] or 'Your Trusted Heating & Cooling Experts')}</p>")
+    html = html.replace(f"<h4>{old['name']}</h4>", f"<h4>{_html_escape(name)}</h4>")
+
+    # Brand color
+    if data.get("brand_color") and data["brand_color"] != "#2563eb":
+        html = re.sub(r"--brand:\s*#[0-9a-fA-F]{6};", f"--brand: {data['brand_color']};", html)
+
+    # ── JavaScript variable replacements ──
+    html = re.sub(r'var BUSINESS_NAME = ".*?";',
+                  f'var BUSINESS_NAME = "{_js_escape(name)}";', html)
+    html = re.sub(r'var PHONE = ".*?";',
+                  f'var PHONE = "{_js_escape(phone)}";', html)
+
+    # Replace TECH_DATA if we have team members
+    if data["team"]:
+        tech_js = _build_tech_data_js(data["team"])
+        html = re.sub(r"var TECH_DATA = \[.*?\];", f"var TECH_DATA = {tech_js};",
+                      html, flags=re.DOTALL)
+
+    # ── Build comprehensive QA_DATA ──
+    qa = _build_hvac_qa(data)
+    qa_json = json.dumps(qa, ensure_ascii=False)
+    html = re.sub(r"var QA_DATA = \[.*?\];",
+                  lambda m: f"var QA_DATA = {qa_json};",
+                  html, flags=re.DOTALL)
+
+    # ── QUICK_ACTIONS ──
+    quick = [
+        {"label": "Emergency Service", "q": "Do you offer emergency service?"},
+        {"label": "Schedule Service", "q": "How do I schedule a service call?"},
+        {"label": "Get a Quote", "q": "Do you offer free estimates?"},
+        {"label": "Service Area", "q": "Do you service my area?"},
+    ]
+    quick_json = json.dumps(quick)
+    html = re.sub(r"var QUICK_ACTIONS = \[.*?\];",
+                  lambda m: f"var QUICK_ACTIONS = {quick_json};",
+                  html, flags=re.DOTALL)
+
+    # ── Bulk phone replacement ──
+    if phone != old["phone"]:
+        html = html.replace(old["phone"], phone)
+
+    return html
+
+
+def _build_hvac_qa(data: dict) -> list[dict]:
+    """Build comprehensive HVAC QA_DATA."""
+    qa: list[dict] = []
+    name = data["name"]
+    phone = data["phone"] or "our office"
+    phone_cta = f"Call us at {phone}" if data["phone"] else "Contact us"
+
+    # Hours
+    hours_text = data.get("hours_text") or "Monday through Friday, 7:00 AM - 6:00 PM, and Saturday 8:00 AM - 2:00 PM"
+    qa.append({"q": "What are your hours?",
+               "a": f"We're available {hours_text}. For after-hours emergencies, call {phone} — we have 24/7 emergency service.",
+               "kw": ["hours", "open", "close", "time", "schedule", "when"], "cat": "hours"})
+
+    # Emergency
+    qa.append({"q": "Do you offer emergency service?",
+               "a": f"Yes! We provide 24/7 emergency HVAC service. If your heating or AC breaks down, call {phone} immediately. We'll dispatch a technician as soon as possible.",
+               "kw": ["emergency", "urgent", "broken", "no heat", "no ac", "not working", "24/7"], "cat": "emergency"})
+
+    # Scheduling
+    qa.append({"q": "How do I schedule a service call?",
+               "a": f"You can schedule a service call by calling us at {phone} or through our website. We offer same-day and next-day appointments for most services.",
+               "kw": ["schedule", "book", "appointment", "service call", "come out"], "cat": "booking"})
+
+    # Services
+    services = data.get("services", [])
+    if services:
+        svc_list = "\n".join(f"\u2022 {s}" for s in services[:10])
+        qa.append({"q": "What services do you offer?",
+                   "a": f"We provide a full range of HVAC services:\n\n{svc_list}\n\n{phone_cta} for a free estimate.",
+                   "kw": ["services", "what do you do", "offer", "provide", "repairs", "install"], "cat": "services"})
+    else:
+        qa.append({"q": "What services do you offer?",
+                   "a": f"We provide a full range of HVAC services:\n\n\u2022 AC repair and installation\n\u2022 Heating and furnace repair\n\u2022 Tune-ups and seasonal maintenance\n\u2022 Duct cleaning and repair\n\u2022 Indoor air quality solutions\n\u2022 Thermostat installation\n\u2022 New system installations\n\n{phone_cta} for a free estimate.",
+                   "kw": ["services", "what do you do", "offer", "provide", "repairs", "install"], "cat": "services"})
+
+    # Pricing
+    qa.append({"q": "How much does AC repair cost?",
+               "a": f"Repair costs depend on the issue. Our diagnostic fee is waived if you proceed with the repair. Most common repairs range from $150-$500. {phone_cta} for a specific estimate.",
+               "kw": ["cost", "price", "how much", "expensive", "fee", "charge", "estimate", "quote"], "cat": "pricing"})
+
+    # Free estimates
+    qa.append({"q": "Do you offer free estimates?",
+               "a": f"Yes! We offer free estimates on new system installations and replacements. {phone_cta} to schedule yours.",
+               "kw": ["free estimate", "free quote", "estimate", "quote"], "cat": "pricing"})
+
+    # Service area
+    qa.append({"q": "Do you service my area?",
+               "a": f"We service a wide area including the greater metro region and surrounding communities. Call {phone} with your zip code and we'll confirm coverage right away.",
+               "kw": ["service area", "my area", "come to", "location", "zip code", "where", "coverage"], "cat": "service_area"})
+
+    # Maintenance plans
+    qa.append({"q": "Do you offer maintenance plans?",
+               "a": f"Yes! Our HVAC maintenance plan includes:\n\n\u2022 2 tune-ups per year (spring AC + fall heating)\n\u2022 Priority scheduling\n\u2022 15% discount on all repairs\n\u2022 No overtime charges\n\n{phone_cta} to sign up.",
+               "kw": ["maintenance plan", "tune-up", "annual", "seasonal", "preventive", "membership"], "cat": "maintenance"})
+
+    # Troubleshooting - AC
+    qa.append({"q": "My AC is not cooling",
+               "a": f"If your AC isn't cooling, try these steps first:\n\n1. Check your thermostat settings\n2. Replace the air filter\n3. Make sure vents aren't blocked\n4. Check the outdoor unit for debris\n\nIf it still won't cool, call {phone} — we can usually get a technician out same day.",
+               "kw": ["not cooling", "warm air", "hot air", "ac not working", "won't cool", "blowing warm"], "cat": "troubleshooting"})
+
+    # Troubleshooting - Furnace
+    qa.append({"q": "My furnace won't turn on",
+               "a": f"If your furnace won't start:\n\n1. Check the thermostat is set to HEAT\n2. Make sure the furnace switch is ON\n3. Check the circuit breaker\n4. Replace the air filter\n\nIf it still won't start, call {phone} for emergency service.",
+               "kw": ["furnace", "heater", "no heat", "won't start", "heating", "not heating", "cold"], "cat": "troubleshooting"})
+
+    # Contact
+    address = data.get("address", "")
+    addr_line = f"\nAddress: {address}" if address else ""
+    qa.append({"q": "What is your contact info?",
+               "a": f"Here's how to reach us:\n\nPhone: {phone}{addr_line}\n24/7 Emergency Line: {phone}\n\nWe're here to help with all your heating and cooling needs!",
+               "kw": ["contact info", "contact information", "how to contact", "reach you", "get in touch", "contact"], "cat": "contact"})
+
+    # Location
+    if address:
+        qa.append({"q": "Where are you located?",
+                   "a": f"We're located at {address}. We serve the entire metro area. Call {phone} for service.",
+                   "kw": ["location", "located", "where", "address", "directions"], "cat": "location"})
+
+    # Phone
+    qa.append({"q": "What is your phone number?",
+               "a": f"You can reach us at {phone}. We're happy to help!",
+               "kw": ["phone", "phone number", "call", "telephone", "number"], "cat": "contact"})
+
+    # Financing
+    qa.append({"q": "Do you offer financing?",
+               "a": f"Yes! We offer flexible financing options for new system installations and major repairs. 0% interest options available for qualified buyers. {phone_cta} to learn more.",
+               "kw": ["financing", "finance", "payment plan", "monthly payment", "afford"], "cat": "billing"})
+
+    return qa
+
+
+# ── Legal Customizer ──────────────────────────────────────────────
+
+def _customize_legal(template: str, data: dict) -> str:
+    """Customize the generic legal template with real business data."""
+    old = _LEGAL_PLACEHOLDERS
+    html = template
+    name = data["name"]
+    phone = data["phone"] or old["phone"]
+
+    # ── HTML replacements ──
+    html = re.sub(r"<title>.*?</title>",
+                  f"<title>{_html_escape(name)} - AI Assistant Demo</title>", html)
+    html = html.replace(f"<h1>{old['name']}</h1>", f"<h1>{_html_escape(_short_business_name(name))}</h1>")
+    html = html.replace(f"<p>{old['tagline']}</p>",
+                        f"<p>{_html_escape(data['tagline'] or 'Experienced Legal Representation You Can Trust')}</p>")
+    html = html.replace(f"<h4>{old['name']}</h4>", f"<h4>{_html_escape(name)}</h4>")
+
+    # Brand color
+    if data.get("brand_color") and data["brand_color"] != "#1e3a5f":
+        html = re.sub(r"--brand:\s*#[0-9a-fA-F]{6};", f"--brand: {data['brand_color']};", html)
+
+    # ── JavaScript variable replacements ──
+    html = re.sub(r'var BUSINESS_NAME = ".*?";',
+                  f'var BUSINESS_NAME = "{_js_escape(name)}";', html)
+    html = re.sub(r'var PHONE = ".*?";',
+                  f'var PHONE = "{_js_escape(phone)}";', html)
+
+    # Replace ATTORNEY_DATA if we have team members
+    if data["team"]:
+        attorney_js = _build_attorney_data_js(data["team"])
+        html = re.sub(r"var ATTORNEY_DATA = \[.*?\];", f"var ATTORNEY_DATA = {attorney_js};",
+                      html, flags=re.DOTALL)
+
+    # ── Build comprehensive QA_DATA ──
+    qa = _build_legal_qa(data)
+    qa_json = json.dumps(qa, ensure_ascii=False)
+    html = re.sub(r"var QA_DATA = \[.*?\];",
+                  lambda m: f"var QA_DATA = {qa_json};",
+                  html, flags=re.DOTALL)
+
+    # ── QUICK_ACTIONS ──
+    quick = [
+        {"label": "Free Consultation", "q": "Do you offer free consultations?"},
+        {"label": "Practice Areas", "q": "What practice areas do you handle?"},
+        {"label": "Case Evaluation", "q": "Can you evaluate my case?"},
+        {"label": "Fees & Payment", "q": "How much do you charge?"},
+    ]
+    quick_json = json.dumps(quick)
+    html = re.sub(r"var QUICK_ACTIONS = \[.*?\];",
+                  lambda m: f"var QUICK_ACTIONS = {quick_json};",
+                  html, flags=re.DOTALL)
+
+    # ── Bulk phone replacement ──
+    if phone != old["phone"]:
+        html = html.replace(old["phone"], phone)
+
+    return html
+
+
+def _build_legal_qa(data: dict) -> list[dict]:
+    """Build comprehensive legal QA_DATA."""
+    qa: list[dict] = []
+    name = data["name"]
+    phone = data["phone"] or "our office"
+    phone_cta = f"Call us at {phone}" if data["phone"] else "Contact us"
+
+    # Hours
+    hours_text = data.get("hours_text") or "Monday through Friday, 8:30 AM - 5:30 PM"
+    qa.append({"q": "What are your hours?",
+               "a": f"Our office is open {hours_text}. We're available by appointment outside regular hours for urgent matters. {phone_cta} to schedule.",
+               "kw": ["hours", "open", "close", "time", "schedule", "when"], "cat": "hours"})
+
+    # Consultation
+    qa.append({"q": "Do you offer free consultations?",
+               "a": f"Yes! We offer a free initial consultation to discuss your case and legal options. There's no obligation. {phone_cta} to schedule your consultation.",
+               "kw": ["free consultation", "consultation", "consult", "initial meeting", "first visit"], "cat": "consultation"})
+
+    # Practice Areas
+    services = data.get("services", [])
+    if services:
+        svc_list = "\n".join(f"\u2022 {s}" for s in services[:10])
+        qa.append({"q": "What practice areas do you handle?",
+                   "a": f"Our practice areas include:\n\n{svc_list}\n\n{phone_cta} for a free consultation.",
+                   "kw": ["practice areas", "areas of law", "specialize", "handle", "types of cases", "services"], "cat": "services"})
+    else:
+        qa.append({"q": "What practice areas do you handle?",
+                   "a": f"We handle a wide range of legal matters including:\n\n\u2022 Personal Injury\n\u2022 Family Law & Divorce\n\u2022 Criminal Defense\n\u2022 Estate Planning\n\u2022 Business Law\n\u2022 Real Estate Law\n\u2022 Immigration\n\n{phone_cta} for a free consultation.",
+                   "kw": ["practice areas", "areas of law", "specialize", "handle", "types of cases", "services"], "cat": "services"})
+
+    # Fees
+    qa.append({"q": "How much do you charge?",
+               "a": f"Our fee structure depends on the type of case:\n\n\u2022 Personal injury: Contingency fee (no win, no fee)\n\u2022 Other cases: We offer competitive rates and payment plans\n\u2022 Free initial consultation for all cases\n\n{phone_cta} to discuss your specific situation.",
+               "kw": ["cost", "price", "how much", "charge", "fee", "expensive", "contingency", "payment", "afford"], "cat": "pricing"})
+
+    # Case evaluation
+    qa.append({"q": "Can you evaluate my case?",
+               "a": f"We offer a free case evaluation. During this consultation, our attorneys will review the details of your situation, explain your legal options, and recommend the best path forward. {phone_cta} to get started.",
+               "kw": ["case evaluation", "evaluate", "review my case", "assess", "look at my case", "chances"], "cat": "consultation"})
+
+    # Booking
+    qa.append({"q": "How do I schedule an appointment?",
+               "a": f"You can schedule a consultation by calling us at {phone} or through our website. We offer in-person, phone, and video consultations for your convenience.",
+               "kw": ["schedule", "book", "appointment", "come in", "meet", "visit"], "cat": "booking"})
+
+    # Confidentiality
+    qa.append({"q": "Is our conversation confidential?",
+               "a": "Absolutely. All communications between you and our attorneys are protected by attorney-client privilege. Everything you share with us is strictly confidential.",
+               "kw": ["confidential", "confidentiality", "private", "privilege", "secret", "share"], "cat": "confidentiality"})
+
+    # Statute of limitations
+    qa.append({"q": "What is the statute of limitations?",
+               "a": f"The statute of limitations varies by case type and state. It's important to act quickly to protect your rights. {phone_cta} for a free consultation — we'll help you understand the deadlines that apply to your case.",
+               "kw": ["statute of limitations", "time limit", "deadline", "how long do I have", "too late"], "cat": "legal_info"})
+
+    # Contact
+    address = data.get("address", "")
+    addr_line = f"\nAddress: {address}" if address else ""
+    qa.append({"q": "What is your contact info?",
+               "a": f"Here's how to reach us:\n\nPhone: {phone}{addr_line}\n\nWe look forward to helping you with your legal needs.",
+               "kw": ["contact info", "contact information", "how to contact", "reach you", "get in touch", "contact"], "cat": "contact"})
+
+    # Location
+    if address:
+        qa.append({"q": "Where are you located?",
+                   "a": f"Our office is located at {address}. {phone_cta} for directions.",
+                   "kw": ["location", "located", "where", "address", "directions"], "cat": "location"})
+
+    # Phone
+    qa.append({"q": "What is your phone number?",
+               "a": f"You can reach us at {phone}. We're here to help!",
+               "kw": ["phone", "phone number", "call", "telephone", "number"], "cat": "contact"})
+
+    # Payment plans
+    qa.append({"q": "Do you offer payment plans?",
+               "a": f"Yes! We offer flexible payment plans to make legal representation accessible. {phone_cta} to discuss payment options.",
+               "kw": ["payment plan", "payment plans", "financing", "monthly payment", "afford"], "cat": "billing"})
+
+    return qa
+
+
+# ── Med Spa Customizer ────────────────────────────────────────────
+
+def _customize_medspa(template: str, data: dict) -> str:
+    """Customize the generic med spa template with real business data."""
+    old = _MEDSPA_PLACEHOLDERS
+    html = template
+    name = data["name"]
+    phone = data["phone"] or old["phone"]
+
+    # ── HTML replacements ──
+    html = re.sub(r"<title>.*?</title>",
+                  f"<title>{_html_escape(name)} - AI Assistant Demo</title>", html)
+    html = html.replace(f"<h1>{old['name']}</h1>", f"<h1>{_html_escape(_short_business_name(name))}</h1>")
+    html = html.replace(f"<p>{old['tagline']}</p>",
+                        f"<p>{_html_escape(data['tagline'] or 'Your Destination for Aesthetic Excellence')}</p>")
+    html = html.replace(f"<h4>{old['name']}</h4>", f"<h4>{_html_escape(name)}</h4>")
+
+    # Brand color
+    if data.get("brand_color") and data["brand_color"] != "#9333ea":
+        html = re.sub(r"--brand:\s*#[0-9a-fA-F]{6};", f"--brand: {data['brand_color']};", html)
+
+    # ── JavaScript variable replacements ──
+    html = re.sub(r'var BUSINESS_NAME = ".*?";',
+                  f'var BUSINESS_NAME = "{_js_escape(name)}";', html)
+    html = re.sub(r'var PHONE = ".*?";',
+                  f'var PHONE = "{_js_escape(phone)}";', html)
+
+    # Replace PROVIDER_DATA if we have team members
+    if data["team"]:
+        provider_js = _build_provider_data_js(data["team"])
+        html = re.sub(r"var PROVIDER_DATA = \[.*?\];", f"var PROVIDER_DATA = {provider_js};",
+                      html, flags=re.DOTALL)
+
+    # ── Build comprehensive QA_DATA ──
+    qa = _build_medspa_qa(data)
+    qa_json = json.dumps(qa, ensure_ascii=False)
+    html = re.sub(r"var QA_DATA = \[.*?\];",
+                  lambda m: f"var QA_DATA = {qa_json};",
+                  html, flags=re.DOTALL)
+
+    # ── QUICK_ACTIONS ──
+    quick = [
+        {"label": "Book Treatment", "q": "How do I book an appointment?"},
+        {"label": "Browse Services", "q": "What treatments do you offer?"},
+        {"label": "New Patient Specials", "q": "Do you have new patient specials?"},
+        {"label": "Free Consultation", "q": "Do you offer free consultations?"},
+    ]
+    quick_json = json.dumps(quick)
+    html = re.sub(r"var QUICK_ACTIONS = \[.*?\];",
+                  lambda m: f"var QUICK_ACTIONS = {quick_json};",
+                  html, flags=re.DOTALL)
+
+    # ── Bulk phone replacement ──
+    if phone != old["phone"]:
+        html = html.replace(old["phone"], phone)
+
+    return html
+
+
+def _build_medspa_qa(data: dict) -> list[dict]:
+    """Build comprehensive med spa QA_DATA."""
+    qa: list[dict] = []
+    name = data["name"]
+    phone = data["phone"] or "our office"
+    phone_cta = f"Call us at {phone}" if data["phone"] else "Contact us"
+
+    # Hours
+    hours_text = data.get("hours_text") or "Monday through Friday, 9:00 AM - 7:00 PM, and Saturday 9:00 AM - 5:00 PM"
+    qa.append({"q": "What are your hours?",
+               "a": f"We're open {hours_text}. Sunday by appointment only. {phone_cta} to book your visit.",
+               "kw": ["hours", "open", "close", "time", "schedule", "when"], "cat": "hours"})
+
+    # Treatments
+    services = data.get("services", [])
+    if services:
+        svc_list = "\n".join(f"\u2022 {s}" for s in services[:10])
+        qa.append({"q": "What treatments do you offer?",
+                   "a": f"We offer a full range of aesthetic treatments:\n\n{svc_list}\n\n{phone_cta} for a free consultation.",
+                   "kw": ["treatments", "services", "what do you do", "offer", "provide", "menu"], "cat": "services"})
+    else:
+        qa.append({"q": "What treatments do you offer?",
+                   "a": f"We offer a full range of aesthetic treatments:\n\n\u2022 Botox & Dysport\n\u2022 Dermal fillers (lips, cheeks, jawline)\n\u2022 Laser skin resurfacing\n\u2022 Chemical peels\n\u2022 Microneedling\n\u2022 IPL photofacial\n\u2022 Body contouring\n\u2022 HydraFacial\n\u2022 Medical-grade skincare\n\n{phone_cta} for a free consultation.",
+                   "kw": ["treatments", "services", "what do you do", "offer", "provide", "menu"], "cat": "services"})
+
+    # Botox pricing
+    qa.append({"q": "How much does Botox cost?",
+               "a": f"Botox is priced per unit. Most patients need 20-60 units depending on the treatment area. We offer competitive pricing and new patient specials. {phone_cta} for a personalized quote during your free consultation.",
+               "kw": ["botox", "cost", "price", "how much", "expensive", "per unit", "dysport"], "cat": "pricing"})
+
+    # Free consultations
+    qa.append({"q": "Do you offer free consultations?",
+               "a": f"Yes! We offer complimentary consultations for all new patients. Our providers will assess your goals, recommend treatments, and create a personalized plan. {phone_cta} to schedule.",
+               "kw": ["free consultation", "consultation", "consult", "assessment", "evaluate", "first visit"], "cat": "consultation"})
+
+    # Booking
+    qa.append({"q": "How do I book an appointment?",
+               "a": f"You can book an appointment by calling us at {phone} or through our website. We offer same-day and next-day availability for many treatments.",
+               "kw": ["book", "appointment", "schedule", "reserve", "sign up", "come in"], "cat": "booking"})
+
+    # New patient specials
+    qa.append({"q": "Do you have new patient specials?",
+               "a": f"Yes! We offer exclusive specials for first-time clients:\n\n\u2022 Free initial consultation\n\u2022 New patient discount on first treatment\n\u2022 Complimentary skincare assessment\n\n{phone_cta} to learn about current promotions.",
+               "kw": ["specials", "deals", "discount", "promotion", "new patient", "first time", "offer", "new client"], "cat": "promotions"})
+
+    # Fillers
+    qa.append({"q": "What are dermal fillers?",
+               "a": f"Dermal fillers are injectable treatments that restore volume and smooth wrinkles. We use premium fillers for:\n\n\u2022 Lip enhancement\n\u2022 Cheek contouring\n\u2022 Jawline definition\n\u2022 Under-eye hollows\n\nResults are immediate and last 6-18 months. {phone_cta} for a consultation.",
+               "kw": ["fillers", "filler", "dermal", "lips", "cheeks", "jawline", "volume", "inject"], "cat": "services"})
+
+    # Safety
+    qa.append({"q": "Is Botox safe?",
+               "a": "Botox is FDA-approved and one of the most studied cosmetic treatments in the world. When administered by our trained and certified providers, it's very safe with minimal side effects.",
+               "kw": ["safe", "safety", "side effects", "risk", "dangerous", "hurt", "pain"], "cat": "safety"})
+
+    # Results duration
+    qa.append({"q": "How long does Botox last?",
+               "a": "Botox results typically last 3-4 months. Many patients schedule maintenance treatments every 3 months to maintain their results.",
+               "kw": ["how long", "last", "duration", "wear off", "maintain", "results", "temporary"], "cat": "results"})
+
+    # Microneedling
+    qa.append({"q": "What is microneedling?",
+               "a": f"Microneedling creates tiny micro-channels in the skin to stimulate collagen production. Benefits include reduced fine lines, improved skin texture, minimized pore size, and reduced acne scars. Most patients need 3-6 sessions. {phone_cta} to learn more.",
+               "kw": ["microneedling", "needling", "collagen", "pores", "acne scars", "skin texture"], "cat": "services"})
+
+    # Contact
+    address = data.get("address", "")
+    addr_line = f"\nAddress: {address}" if address else ""
+    qa.append({"q": "What is your contact info?",
+               "a": f"Here's how to reach us:\n\nPhone: {phone}{addr_line}\n\nWe're here to help you look and feel your best!",
+               "kw": ["contact info", "contact information", "how to contact", "reach you", "get in touch", "contact"], "cat": "contact"})
+
+    # Location
+    if address:
+        qa.append({"q": "Where are you located?",
+                   "a": f"We're located at {address}. We look forward to welcoming you! {phone_cta} for directions.",
+                   "kw": ["location", "located", "where", "address", "directions"], "cat": "location"})
+
+    # Phone
+    qa.append({"q": "What is your phone number?",
+               "a": f"You can reach us at {phone}. We'd love to hear from you!",
+               "kw": ["phone", "phone number", "call", "telephone", "number"], "cat": "contact"})
+
+    # Financing
+    qa.append({"q": "Do you offer financing?",
+               "a": f"Yes! We offer flexible financing and payment plans for treatments. We want to make your aesthetic goals accessible. {phone_cta} to ask about financing options.",
+               "kw": ["financing", "finance", "payment plan", "monthly payment", "afford"], "cat": "billing"})
+
+    return qa
