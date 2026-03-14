@@ -17,7 +17,7 @@ import requests
 
 log = logging.getLogger(__name__)
 
-_API_URL = "https://api.apollo.io/v1/mixed_people/search"
+_API_URL = "https://api.apollo.io/api/v1/mixed_people/search"
 _TIMEOUT = 15
 
 
