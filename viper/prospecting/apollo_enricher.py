@@ -17,7 +17,7 @@ import requests
 
 log = logging.getLogger(__name__)
 
-_API_URL = "https://api.apollo.io/api/v1/mixed_people/search"
+_API_URL = "https://api.apollo.io/api/v1/mixed_people/api_search"
 _TIMEOUT = 15
 
 
@@ -81,7 +81,7 @@ def enrich_email(
     headers = {
         "Content-Type": "application/json",
         "Cache-Control": "no-cache",
-        "X-Api-Key": api_key,
+        "x-api-key": api_key,
     }
 
     payload = {
