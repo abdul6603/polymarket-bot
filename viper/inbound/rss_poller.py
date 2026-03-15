@@ -14,14 +14,16 @@ import json
 import logging
 import time
 import xml.etree.ElementTree as ET
-from datetime import datetime, timedelta, timezone
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime
 from pathlib import Path
 from urllib.request import urlopen, Request
 from urllib.error import URLError
+from zoneinfo import ZoneInfo
 
 log = logging.getLogger(__name__)
 
-_TZ_ET = timezone(timedelta(hours=-5))
+_TZ_ET = ZoneInfo("America/New_York")
 _DATA_DIR = Path.home() / "polymarket-bot" / "data"
 _FEEDS_FILE = Path.home() / "polymarket-bot" / "viper" / "inbound" / "rss_feeds.json"
 _SEEN_FILE = _DATA_DIR / "inbound_seen.json"
@@ -229,15 +231,18 @@ def _load_seen() -> set:
         try:
             return set(json.loads(_SEEN_FILE.read_text()))
         except Exception:
+            log.warning("Corrupted seen file at %s — starting fresh", _SEEN_FILE)
             return set()
     return set()
 
 
 def _save_seen(seen: set) -> None:
-    # Keep last 5000 to prevent unbounded growth
-    recent = sorted(seen)[-5000:]
+    # Cap at 25K to prevent unbounded growth (covers ~3 days of feeds)
+    items = list(seen)
+    if len(items) > 25000:
+        items = items[-25000:]
     _SEEN_FILE.parent.mkdir(parents=True, exist_ok=True)
-    _SEEN_FILE.write_text(json.dumps(recent))
+    _SEEN_FILE.write_text(json.dumps(items))
 
 
 def _log_lead(entry: dict, result: dict, feed_keyword: str) -> None:
@@ -281,7 +286,7 @@ def _send_tg_alert(entry: dict, result: dict) -> None:
     )
 
     try:
-        tg_send(text, parse_mode="HTML", channel="outreach")
+        tg_send(text, channel="INBOUND")
         log.info("TG alert sent for: %s (score %d)", entry.get("title", "")[:40], result["score"])
     except Exception as e:
         log.error("TG alert failed: %s", e)
@@ -306,13 +311,19 @@ def poll_all_feeds() -> dict:
     seen = _load_seen()
     stats = {"polled": 0, "new": 0, "hot": 0, "warm": 0, "archived": 0}
 
-    for feed in feeds:
-        url = feed.get("url", "")
-        keyword = feed.get("keyword", "")
-        if not url:
-            continue
+    # Fetch all feeds in parallel (10 threads)
+    feed_results = {}
+    valid_feeds = [(f.get("url", ""), f.get("keyword", "")) for f in feeds if f.get("url")]
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        futures = {pool.submit(_fetch_feed, url): (url, kw) for url, kw in valid_feeds}
+        for future in as_completed(futures):
+            url, kw = futures[future]
+            try:
+                feed_results[(url, kw)] = future.result()
+            except Exception:
+                feed_results[(url, kw)] = []
 
-        entries = _fetch_feed(url)
+    for (url, keyword), entries in feed_results.items():
         stats["polled"] += 1
 
         for entry in entries:

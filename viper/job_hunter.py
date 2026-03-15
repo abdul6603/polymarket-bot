@@ -766,6 +766,7 @@ def run_scan() -> dict:
 def run_loop(interval_minutes: int = 30) -> None:
     """Run scanner in a loop with configurable interval."""
     from viper.drip_runner import run_drip_cycle
+    from viper.inbound.rss_poller import poll_all_feeds
 
     log.info("[JOB_HUNTER] Starting loop (interval=%d min)", interval_minutes)
     while True:
@@ -784,7 +785,6 @@ def run_loop(interval_minutes: int = 30) -> None:
 
         # Poll inbound RSS feeds (Google Alerts)
         try:
-            from viper.inbound.rss_poller import poll_all_feeds
             inbound = poll_all_feeds()
             if inbound.get("hot", 0) or inbound.get("warm", 0):
                 log.info("[JOB_HUNTER] Inbound: %d hot, %d warm leads", inbound["hot"], inbound["warm"])
