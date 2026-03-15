@@ -28,6 +28,8 @@ from urllib.request import urlopen, Request
 from urllib.error import URLError
 from zoneinfo import ZoneInfo
 
+from viper.viper_q import score as viper_q_score, detect_niche as vq_detect_niche
+
 log = logging.getLogger(__name__)
 
 _TZ_ET = ZoneInfo("America/New_York")
@@ -251,13 +253,18 @@ def poll_reddit() -> dict:
 
             if is_match:
                 stats["matches"] += 1
-                # Simple score: 20 base + 10 per matched keyword, cap 100
-                score = min(100, 20 + len(matched) * 10)
-                classification = "HOT" if score >= 60 else "WARM"
-
-                _log_lead(post, matched, score, classification)
-                _send_alert(post, matched, score)
-                stats["alerts"] += 1
+                # Use unified VIPER-Q scoring
+                result = viper_q_score(
+                    post.get("title", ""),
+                    post.get("body", ""),
+                    metadata={"num_comments": post.get("num_comments", 0)},
+                )
+                if result["score"] >= 50:
+                    _log_lead(post, matched, result["score"], result["classification"])
+                    _send_alert(post, matched, result["score"])
+                    stats["alerts"] += 1
+                else:
+                    _log_lead(post, matched, result["score"], result["classification"])
 
     _save_seen(seen)
 
