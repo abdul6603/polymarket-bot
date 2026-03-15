@@ -44,8 +44,8 @@ ET = timezone(timedelta(hours=-5))
 
 # ── Configuration ────────────────────────────────────────────────────────
 
-NICHES = ["dental practice", "real estate"]
-CITIES = ["Boston MA", "Cambridge MA", "Worcester MA", "Springfield MA", "Lowell MA"]
+NICHES = ["HVAC contractor", "personal injury lawyer", "med spa"]
+CITIES = ["Portland ME", "Boston MA", "Manchester NH", "Nashua NH", "Concord NH", "Worcester MA", "Providence RI"]
 MAX_PER_CITY = 25
 MIN_SCORE = 7.0
 SITE_DELAY = 1.5  # seconds between scrapes

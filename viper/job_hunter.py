@@ -8,11 +8,8 @@ Sources:
   - Google Alerts RSS (8+ configured feeds)
   - Reddit (r/forhire, r/freelance, etc.) — requires PRAW creds
   - Indie Hackers (Firebase API)
-  - Product Hunt RSS
   - n8n Community Jobs (Discourse RSS)
   - Make.com Hire a Pro (Discourse RSS)
-  - RemoteOK JSON API
-  - We Work Remotely RSS
 """
 from __future__ import annotations
 
@@ -26,8 +23,6 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from viper.sources.remoteok import scan_remoteok
-from viper.sources.weworkremotely import scan_weworkremotely
 from viper.sources.hackernews import scan_hackernews
 from viper.sources.google_alerts import scan_google_alerts
 from viper.sources.reddit import scan_reddit
@@ -41,10 +36,6 @@ from viper.lead_writer import write_leads
 #     from viper.sources.indiehackers import scan_indiehackers
 # except ImportError:
 #     scan_indiehackers = None
-try:
-    from viper.sources.producthunt import scan_producthunt
-except ImportError:
-    scan_producthunt = None  # type: ignore[assignment]
 try:
     from viper.sources.n8n_community import scan_n8n_community
 except ImportError:
@@ -164,7 +155,7 @@ def _is_garbage_lead(job: dict) -> tuple[bool, str]:
 
     # 2. Builder/showcase filter — Indie Hackers, HN, GitHub
     #    "I built X" / "my project" / "Show HN" / open-source shares = builders, not buyers
-    if source in ("IndieHackers", "HackerNews", "ProductHunt"):
+    if source in ("IndieHackers", "HackerNews"):
         if _BUILDER_RE.search(f"{title} {description}"):
             if not _HIRING_INTENT_RE.search(f"{title} {description}"):
                 return True, "builder showcase, not a buyer"
@@ -182,11 +173,6 @@ def _is_garbage_lead(job: dict) -> tuple[bool, str]:
             return True, f"big company: {company}"
         if title.lower().startswith(f"{company} "):
             return True, f"big company: {company}"
-
-    # 5. ProductHunt filter — reject unless explicit hiring intent
-    if source == "ProductHunt":
-        if not _HIRING_INTENT_RE.search(f"{title} {description}"):
-            return True, "ProductHunt launch, no hiring intent"
 
     # 6. "Company launching AI" article filter — all sources
     #    Articles about companies releasing AI products are NOT hiring leads.
@@ -233,7 +219,7 @@ def _is_fulltime_job(title: str, description: str, budget: str, source: str) -> 
     if hit_count >= 2:
         return True
 
-    if source in ("RemoteOK", "WeWorkRemotely", "HackerNews"):
+    if source == "HackerNews":
         freelance_signals = [
             "freelance", "contract", "project", "gig",
             "part-time", "part time", "fixed price",
@@ -488,40 +474,6 @@ def run_scan() -> dict:
     # a buyer-vs-builder intent filter is built.
     # See: _BUILDER_RE in _is_garbage_lead() for the filter pattern.
 
-    # --- Product Hunt (optional — Pro only) ---
-    if scan_producthunt is not None:
-        try:
-            ph_jobs = scan_producthunt()
-            source_counts["ProductHunt"] = len(ph_jobs)
-            for pj in ph_jobs:
-                total_scanned += 1
-                h = _job_hash("producthunt", pj.job_id)
-                if h in seen:
-                    continue
-                score = _score_job(
-                    category=pj.category,
-                    matched_skills=pj.matched_skills,
-                )
-                all_jobs.append({
-                    "source": "ProductHunt",
-                    "title": pj.title,
-                    "description": pj.description,
-                    "url": pj.url,
-                    "category": pj.category,
-                    "skills": pj.matched_skills,
-                    "budget": "",
-                    "budget_usd_min": 0,
-                    "budget_usd_max": 0,
-                    "bid_count": None,
-                    "score": score,
-                    "hash": h,
-                    "suggested_bid": "Apply",
-                    "suggested_delivery_days": 0,
-                    "client_country": "",
-                })
-        except Exception as e:
-            log.error("[JOB_HUNTER] Product Hunt scan failed: %s", str(e)[:200])
-
     # --- n8n Community Jobs (optional — Pro only) ---
     if scan_n8n_community is not None:
         try:
@@ -592,77 +544,6 @@ def run_scan() -> dict:
                 })
         except Exception as e:
             log.error("[JOB_HUNTER] Make.com scan failed: %s", str(e)[:200])
-
-    # --- RemoteOK ---
-    try:
-        rok_jobs = scan_remoteok()
-        source_counts["RemoteOK"] = len(rok_jobs)
-        for rk in rok_jobs:
-            total_scanned += 1
-            h = _job_hash("remoteok", rk.job_id)
-            if h in seen:
-                continue
-            score = _score_job(
-                category=rk.category,
-                matched_skills=rk.matched_skills,
-                budget_min=rk.salary_min / 12 if rk.salary_min else 0,
-                budget_max=rk.salary_max / 12 if rk.salary_max else 0,
-            )
-            salary_str = ""
-            if rk.salary_min and rk.salary_max:
-                salary_str = f"${rk.salary_min:,}-${rk.salary_max:,}/yr"
-            all_jobs.append({
-                "source": "RemoteOK",
-                "title": f"{rk.title} @ {rk.company}" if rk.company else rk.title,
-                "description": rk.description,
-                "url": rk.url,
-                "category": rk.category,
-                "skills": rk.matched_skills,
-                "budget": salary_str,
-                "budget_usd_min": 0,
-                "budget_usd_max": 0,
-                "bid_count": None,
-                "score": score,
-                "hash": h,
-                "suggested_bid": "Apply",
-                "suggested_delivery_days": 0,
-                "client_country": "",
-            })
-    except Exception as e:
-        log.error("[JOB_HUNTER] RemoteOK scan failed: %s", str(e)[:200])
-
-    # --- We Work Remotely ---
-    try:
-        wwr_jobs = scan_weworkremotely()
-        source_counts["WeWorkRemotely"] = len(wwr_jobs)
-        for wj in wwr_jobs:
-            total_scanned += 1
-            h = _job_hash("wwr", wj.job_id)
-            if h in seen:
-                continue
-            score = _score_job(
-                category=wj.category,
-                matched_skills=wj.matched_skills,
-            )
-            all_jobs.append({
-                "source": "WeWorkRemotely",
-                "title": f"{wj.title} @ {wj.company}" if wj.company else wj.title,
-                "description": wj.description,
-                "url": wj.url,
-                "category": wj.category,
-                "skills": wj.matched_skills,
-                "budget": "",
-                "budget_usd_min": 0,
-                "budget_usd_max": 0,
-                "bid_count": None,
-                "score": score,
-                "hash": h,
-                "suggested_bid": "Apply",
-                "suggested_delivery_days": 0,
-                "client_country": "",
-            })
-    except Exception as e:
-        log.error("[JOB_HUNTER] WWR scan failed: %s", str(e)[:200])
 
     # Log source counts
     log.info("[JOB_HUNTER] Source scan results: %s", source_counts)
@@ -799,5 +680,14 @@ def run_loop(interval_minutes: int = 30) -> None:
                 log.info("[JOB_HUNTER] Reddit: %d matches, %d alerts", reddit_stats["matches"], reddit_stats["alerts"])
         except Exception as e:
             log.exception("[JOB_HUNTER] Reddit poll error: %s", str(e)[:200])
+
+        # Poll F5Bot keyword alerts (Reddit + HN)
+        try:
+            from viper.inbound.f5bot_poller import poll_f5bot
+            f5bot = poll_f5bot()
+            if f5bot.get("hot", 0) or f5bot.get("warm", 0):
+                log.info("[JOB_HUNTER] F5Bot: %d hot, %d warm leads", f5bot["hot"], f5bot["warm"])
+        except Exception as e:
+            log.debug("[JOB_HUNTER] F5Bot poll failed: %s", str(e)[:100])
 
         time.sleep(interval_minutes * 60)

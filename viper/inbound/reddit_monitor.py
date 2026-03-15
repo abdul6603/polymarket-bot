@@ -57,25 +57,38 @@ ALL_SUBS = BUSINESS_SUBS + AI_SUBS + INDUSTRY_SUBS
 # ── Buyer Intent Keywords ───────────────────────────────────────────
 
 HIGH_INTENT = [
+    # Direct buyer signals — someone wants to BUY or HIRE
     "looking for chatbot", "need a chatbot", "chatbot for my business",
-    "need automation", "automate my business", "ai for my business",
-    "missed calls", "losing leads", "after hours calls",
+    "need automation", "want to automate", "automate my business",
+    "ai for my business", "looking for AI",
     "chatbot developer needed", "recommend a chatbot", "who can build",
+    "looking to hire", "need a developer", "budget for",
+    "looking for someone to build", "can anyone recommend",
+    # Pain signals — business owner describing a problem we solve
+    "missed calls", "losing leads", "after hours calls",
     "appointment scheduling bot", "booking automation",
     "virtual receptionist", "answering service",
     "patient scheduling", "client intake automation",
-    "need help with", "looking for someone to build",
-    "can anyone recommend", "does anyone use", "what chatbot",
-    "how do i automate", "tired of missing", "no one answers",
+    "tired of missing", "no one answers",
+    # Removed: "need help with" (too broad — matches consumer questions)
 ]
 
-# Filter OUT job seekers and self-promotion
+# Filter OUT job seekers, self-promotion, and consumer garbage
 SKIP_PATTERNS = [
     "i built", "i created", "check out my", "i made",
     "hiring", "job opening", "we're looking to hire",
     "i'm a developer", "available for work", "my portfolio",
     "sponsored", "affiliate link", "discount code",
+    # Consumer questions — NOT business leads
+    "id please", "identify", "can someone identify",
+    "repair", "broken", "fix my",
+    "homework", "school project", "eli5", "class assignment",
+    # Reddit noise
+    "weekly thread", "megathread", "daily discussion",
 ]
+
+# Authors to always skip
+SKIP_AUTHORS = {"AutoModerator", "[deleted]", "automoderator"}
 
 _FETCH_TIMEOUT = 10
 _MAX_POSTS = 25  # per subreddit
@@ -235,6 +248,18 @@ def poll_reddit() -> dict:
 
             seen.add(post_id)
             stats["new_posts"] += 1
+
+            # Skip AutoModerator and deleted accounts
+            author = post.get("author", "")
+            if author in SKIP_AUTHORS:
+                continue
+
+            # Skip duplicate URLs (same post seen via different path)
+            post_url = post.get("url", "")
+            if post_url and post_url in seen:
+                continue
+            if post_url:
+                seen.add(post_url)
 
             title = post.get("title", "")
             body = post.get("body", "")

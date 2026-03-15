@@ -58,8 +58,6 @@ SOURCE_ADJUSTMENTS = {
     "GoogleAlerts": 1.0,
     "n8n_community": 1.0,
     "Make_community": 1.0,
-    "RemoteOK": -2.0,
-    "WeWorkRemotely": -2.0,
 }
 MAX_LEADS_KEPT = 50
 
