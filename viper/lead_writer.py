@@ -5,8 +5,10 @@ Scores leads using the 5-dimension system (fit, rate, effort, competition, clien
 """
 from __future__ import annotations
 
+import fcntl
 import json
 import logging
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -16,6 +18,20 @@ ET = ZoneInfo("America/New_York")
 
 DATA_DIR = Path(__file__).parent.parent / "data"
 LEADS_FILE = DATA_DIR / "viper_leads.json"
+LEADS_LOCK = DATA_DIR / "viper_leads.lock"
+
+
+@contextmanager
+def _leads_lock():
+    """File lock for viper_leads.json — prevents race conditions between agents."""
+    LEADS_LOCK.parent.mkdir(parents=True, exist_ok=True)
+    fd = open(LEADS_LOCK, "w")
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        fd.close()
 
 # Also write to Claude Overseer data dir
 OVERSEER_LEADS = Path.home() / "claude_overseer" / "data" / "viper_leads.json"
@@ -189,8 +205,14 @@ def write_leads(jobs: list[dict]) -> int:
     """Write jobs to viper_leads.json in Claude-readable format.
 
     Only includes leads with composite >= COMPOSITE_THRESHOLD.
-    Returns number of leads written.
+    Returns number of leads written. Uses file locking to prevent race conditions.
     """
+    with _leads_lock():
+        return _write_leads_inner(jobs)
+
+
+def _write_leads_inner(jobs: list[dict]) -> int:
+    """Inner write function — called within file lock."""
     # Load existing leads
     existing = []
     if LEADS_FILE.exists():
@@ -258,12 +280,14 @@ def write_leads(jobs: list[dict]) -> int:
 def mark_lead_status(lead_hash: str, status: str) -> bool:
     """Mark a lead's status in viper_leads.json (bid/skip/contacted).
 
-    Args:
-        lead_hash: The hash prefix used in callback_data (up to 20 chars).
-        status: New status string (e.g. "bid", "skip").
-
+    Uses file locking to prevent race conditions with write_leads().
     Returns True if found and updated, False otherwise.
     """
+    with _leads_lock():
+        return _mark_lead_status_inner(lead_hash, status)
+
+
+def _mark_lead_status_inner(lead_hash: str, status: str) -> bool:
     if not LEADS_FILE.exists():
         return False
 
