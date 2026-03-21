@@ -690,4 +690,13 @@ def run_loop(interval_minutes: int = 30) -> None:
         except Exception as e:
             log.debug("[JOB_HUNTER] F5Bot poll failed: %s", str(e)[:100])
 
+        # Poll Algora bounties (code bounties for cash)
+        try:
+            from viper.inbound.algora_bounties import poll_algora
+            algora = poll_algora()
+            if algora.get("new", 0):
+                log.info("[JOB_HUNTER] Algora: %d new bounties, %d alerted", algora["new"], algora["alerted"])
+        except Exception as e:
+            log.debug("[JOB_HUNTER] Algora poll failed: %s", str(e)[:100])
+
         time.sleep(interval_minutes * 60)
