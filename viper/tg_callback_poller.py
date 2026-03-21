@@ -66,40 +66,14 @@ def _handle_callback(bot_token: str, update: dict) -> None:
     message_id = msg.get("message_id")
     original_text = msg.get("text", "")
 
-    # Determine action
-    if data.startswith("viper_bid:"):
-        lead_hash = data.replace("viper_bid:", "")
-        _handle_bid(bot_token, cb_id, chat_id, message_id, original_text, lead_hash)
-    elif data.startswith("viper_skip:"):
-        lead_hash = data.replace("viper_skip:", "")
-        _handle_skip(bot_token, cb_id, chat_id, message_id, original_text, lead_hash)
-    elif data.startswith("outreach_yes:"):
-        lead_id = data.replace("outreach_yes:", "")
-        _handle_outreach_yes(bot_token, cb_id, chat_id, message_id, original_text, lead_id)
-    elif data.startswith("outreach_no:"):
-        lead_id = data.replace("outreach_no:", "")
-        _handle_outreach_no(bot_token, cb_id, chat_id, message_id, original_text, lead_id)
-    elif data.startswith("outreach_go:"):
-        lead_id = data.replace("outreach_go:", "")
-        _handle_outreach_go(bot_token, cb_id, chat_id, message_id, original_text, lead_id)
-    elif data.startswith("outreach_skip:"):
-        lead_id = data.replace("outreach_skip:", "")
-        _handle_outreach_skip(bot_token, cb_id, chat_id, message_id, original_text, lead_id)
-    elif data.startswith("outreach_batch_go:"):
-        niche_key = data.replace("outreach_batch_go:", "")
-        _handle_batch_go(bot_token, cb_id, chat_id, message_id, original_text, niche_key)
-    elif data.startswith("outreach_batch_skip:"):
-        niche_key = data.replace("outreach_batch_skip:", "")
-        _handle_batch_skip(bot_token, cb_id, chat_id, message_id, original_text, niche_key)
-    elif data.startswith("drip_send:"):
-        step_id = data.replace("drip_send:", "")
-        _handle_drip_send(bot_token, cb_id, chat_id, message_id, original_text, step_id)
-    elif data.startswith("drip_stop:"):
-        seq_id = data.replace("drip_stop:", "")
-        _handle_drip_stop(bot_token, cb_id, chat_id, message_id, original_text, seq_id)
-    else:
-        _answer_callback(bot_token, cb_id, "Unknown action")
+    # Dispatch via registry
+    for prefix, handler in _CALLBACK_HANDLERS.items():
+        if data.startswith(prefix):
+            payload = data[len(prefix):]
+            handler(bot_token, cb_id, chat_id, message_id, original_text, payload)
+            return
 
+    _answer_callback(bot_token, cb_id, "Unknown action")
 
 def _handle_bid(bot_token, cb_id, chat_id, message_id, original_text, lead_hash):
     """BID on an inbound lead — mark status + auto-generate proposal."""
@@ -474,6 +448,24 @@ def _normalize_niche(niche: str) -> str:
         return "realestate"
     return n.replace(" ", "_")
 
+
+
+# ── Callback dispatch registry ──────────────────────────────────────────────
+# Maps callback data prefix -> handler function.
+# Each handler receives (bot_token, cb_id, chat_id, message_id, original_text, payload)
+# where payload is the string after the "prefix:" in the callback data.
+_CALLBACK_HANDLERS: dict[str, callable] = {
+    "viper_bid:":           _handle_bid,
+    "viper_skip:":          _handle_skip,
+    "outreach_yes:":        _handle_outreach_yes,
+    "outreach_no:":         _handle_outreach_no,
+    "outreach_go:":         _handle_outreach_go,
+    "outreach_skip:":       _handle_outreach_skip,
+    "outreach_batch_go:":   _handle_batch_go,
+    "outreach_batch_skip:": _handle_batch_skip,
+    "drip_send:":           _handle_drip_send,
+    "drip_stop:":           _handle_drip_stop,
+}
 
 
 # ── TG API helpers ──────────────────────────────────────────────────
